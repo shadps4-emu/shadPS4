@@ -463,6 +463,10 @@ bool getIsConnectedToNetwork() {
     return isConnectedToNetwork.get();
 }
 
+void setConnectedToNetwork(bool enable, bool game_specific) {
+    isConnectedToNetwork.set(enable, game_specific);
+}
+
 void setGpuId(s32 selectedGpuId, bool game_specific) {
     gpuId.set(selectedGpuId, game_specific);
 }
@@ -523,8 +527,8 @@ void setReadbackLinearImages(bool enable, bool game_specific) {
     readbackLinearImagesEnabled.set(enable, game_specific);
 }
 
-void setDirectMemoryAccess(bool enable) {
-    directMemoryAccessEnabled.base_value = enable;
+void setDirectMemoryAccess(bool enable, bool game_specific) {
+    directMemoryAccessEnabled.set(enable, game_specific);
 }
 
 void setDumpShaders(bool enable, bool game_specific) {
@@ -587,8 +591,12 @@ void setLanguage(u32 language, bool game_specific) {
     m_language.set(language, game_specific);
 }
 
-void setNeoMode(bool enable) {
-    isNeo.base_value = enable;
+void setNeoMode(bool enable, bool game_specific) {
+    isNeo.set(enable, game_specific);
+}
+
+void setDevKitConsole(bool enable, bool game_specific) {
+    isDevKit.set(enable, game_specific);
 }
 
 void setLogType(const string& type, bool game_specific) {
@@ -716,8 +724,8 @@ bool getPSNSignedIn() {
     return isPSNSignedIn.get();
 }
 
-void setPSNSignedIn(bool sign) {
-    isPSNSignedIn.base_value = sign;
+void setPSNSignedIn(bool sign, bool game_specific) {
+    isPSNSignedIn.set(sign, game_specific);
 }
 
 string getDefaultControllerID() {
@@ -978,6 +986,11 @@ void save(const std::filesystem::path& path, bool is_game_specific, bool reset_g
     chooseHomeTab.setTomlValue(data, "General", "chooseHomeTab", is_game_specific, reset_gs_values);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific, reset_gs_values);
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific, reset_gs_values);
+    isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific, reset_gs_values);
+    isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific, reset_gs_values);
+    isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific, reset_gs_values);
+    isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific,
+                                      reset_gs_values);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific, reset_gs_values);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific,
@@ -1005,6 +1018,8 @@ void save(const std::filesystem::path& path, bool is_game_specific, bool reset_g
     fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific, reset_gs_values);
     rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific, reset_gs_values);
     rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific, reset_gs_values);
+    directMemoryAccessEnabled.setTomlValue(data, "GPU", "directMemoryAccess", is_game_specific,
+                                           reset_gs_values);
 
     gpuId.setTomlValue(data, "Vulkan", "gpuId", is_game_specific, reset_gs_values);
     vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific, reset_gs_values);
@@ -1070,10 +1085,6 @@ void save(const std::filesystem::path& path, bool is_game_specific, bool reset_g
         data["Keys"]["TrophyKey"] = trophyKey;
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
-        data["General"]["isPS4Pro"] = isNeo.base_value;
-        data["General"]["isDevKit"] = isDevKit.base_value;
-        data["General"]["isPSNSignedIn"] = isPSNSignedIn.base_value;
-        data["General"]["isConnectedToNetwork"] = isConnectedToNetwork.base_value;
         data["General"]["defaultControllerID"] = defaultControllerID.base_value;
 
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
@@ -1082,7 +1093,6 @@ void save(const std::filesystem::path& path, bool is_game_specific, bool reset_g
 
         data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
-        data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
 
         data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
@@ -1100,7 +1110,17 @@ void save(const std::filesystem::path& path, bool is_game_specific, bool reset_g
 
 void setDefaultValues(bool is_game_specific) {
 
-    // Entries set by game-specific settings GUI
+    // Entries with game-specific settings that are in the game-specific setings GUI but not in
+    // the global settings GUI
+    if (is_game_specific) {
+        isNeo.set(false, is_game_specific);
+        isDevKit.set(false, is_game_specific);
+        isPSNSignedIn.set(false, is_game_specific);
+        isConnectedToNetwork.set(false, is_game_specific);
+        directMemoryAccessEnabled.set(false, is_game_specific);
+    }
+
+    // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
     volumeSlider.set(100, is_game_specific);
     isTrophyPopupDisabled.set(false, is_game_specific);
@@ -1159,10 +1179,6 @@ void setDefaultValues(bool is_game_specific) {
     if (!is_game_specific) {
 
         // General
-        isNeo.base_value = false;
-        isDevKit.base_value = false;
-        isPSNSignedIn.base_value = false;
-        isConnectedToNetwork.base_value = false;
         enableDiscordRPC = false;
         compatibilityData = false;
         checkCompatibilityOnStartup = false;
@@ -1180,7 +1196,6 @@ void setDefaultValues(bool is_game_specific) {
         shouldPatchShaders.base_value = false;
         internalScreenWidth.base_value = 1280;
         internalScreenHeight.base_value = 720;
-        directMemoryAccessEnabled.base_value = false;
 
         // GUI
         load_game_size = true;

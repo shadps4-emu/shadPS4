@@ -59,7 +59,7 @@ void setReadbacks(bool enable, bool game_specific = false);
 bool readbackLinearImages();
 void setReadbackLinearImages(bool enable, bool game_specific = false);
 bool directMemoryAccess();
-void setDirectMemoryAccess(bool enable);
+void setDirectMemoryAccess(bool enable, bool game_specific = false);
 bool dumpShaders();
 void setDumpShaders(bool enable, bool game_specific = false);
 u32 vblankFreq();
@@ -102,12 +102,14 @@ bool getUseSpecialPad();
 void setSpecialPadClass(int type);
 int getSpecialPadClass();
 bool getPSNSignedIn();
-void setPSNSignedIn(bool sign); // no ui setting
+void setPSNSignedIn(bool sign, bool game_specific = false);
 bool patchShaders();            // no set
 bool fpsColor();                // no set
 bool isNeoModeConsole();
-void setNeoMode(bool enable);  // no ui setting
-bool isDevKitConsole();        // no set
+void setNeoMode(bool enable, bool game_specific = false);
+bool isDevKitConsole();
+void setDevKitConsole(bool enable, bool game_specific = false);
+
 bool vkValidationGpuEnabled(); // no set
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use, bool game_specific = false);
@@ -123,6 +125,8 @@ bool getRcasEnabled();
 void setRcasEnabled(bool enable, bool game_specific = false);
 int getRcasAttenuation();
 void setRcasAttenuation(int value, bool game_specific = false);
+bool getIsConnectedToNetwork();
+void setConnectedToNetwork(bool enable, bool game_specific = false);
 
 // TODO
 bool GetLoadGameSizeEnabled();
@@ -130,7 +134,6 @@ std::filesystem::path GetSaveDataPath();
 void setLoadGameSizeEnabled(bool enable);
 bool getCompatibilityEnabled();
 bool getCheckCompatibilityOnStartup();
-bool getIsConnectedToNetwork();
 std::string getUserName();
 std::string getChooseHomeTab();
 bool GetUseUnifiedInputConfig();

@@ -107,6 +107,12 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->updaterGroupBox->setVisible(false);
         ui->discordRPCCheckbox->setVisible(false);
         ui->emulatorLanguageGroupBox->setVisible(false);
+    } else {
+        ui->dmaCheckBox->setVisible(false);
+        ui->devkitCheckBox->setVisible(false);
+        ui->neoCheckBox->setVisible(false);
+        ui->networkConnectedCheckBox->setVisible(false);
+        ui->psnSignInCheckBox->setVisible(false);
     }
 
     std::filesystem::path config_file =
@@ -636,6 +642,13 @@ void SettingsDialog::LoadValuesFromConfig() {
         ui->micComboBox->setCurrentIndex(0);
     }
 
+    ui->dmaCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "directMemoryAccess", false));
+    ui->neoCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4Pro", false));
+    ui->devkitCheckBox->setChecked(toml::find_or<bool>(data, "General", "isDevKit", false));
+    ui->networkConnectedCheckBox->setChecked(
+        toml::find_or<bool>(data, "General", "isConnectedToNetwork", false));
+    ui->psnSignInCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPSNSignedIn", false));
+
     // First options is auto selection -1, so gpuId on the GUI will always have to subtract 1
     // when setting and add 1 when getting to select the correct gpu in Qt
     ui->graphicsAdapterBox->setCurrentIndex(toml::find_or<int>(data, "Vulkan", "gpuId", -1) + 1);
@@ -953,6 +966,15 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void SettingsDialog::UpdateSettings(bool game_specific) {
+    // Entries that are only in the game-specific gui
+
+    if (game_specific) {
+        Config::setDirectMemoryAccess(ui->dmaCheckBox->isChecked(), true);
+        Config::setDevKitConsole(ui->devkitCheckBox->isChecked(), true);
+        Config::setNeoMode(ui->neoCheckBox->isChecked(), true);
+        Config::setConnectedToNetwork(ui->networkConnectedCheckBox->isChecked(), true);
+        Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), true);
+    }
 
     // Entries with game-specific settings, needs the game-specific arg
     Config::setIsFullscreen(

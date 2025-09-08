@@ -142,6 +142,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
+    LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
