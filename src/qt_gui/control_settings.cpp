@@ -95,22 +95,19 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
 
     connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
         QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString RValue = tr("R:") + " " + RedValue;
-        ui->RLabel->setText(RValue);
+        ui->RLabel->setText(RedValue);
         UpdateLightbarColor();
     });
 
     connect(ui->GSlider, &QSlider::valueChanged, this, [this](int value) {
         QString GreenValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString GValue = tr("G:") + " " + GreenValue;
-        ui->GLabel->setText(GValue);
+        ui->GLabel->setText(GreenValue);
         UpdateLightbarColor();
     });
 
     connect(ui->BSlider, &QSlider::valueChanged, this, [this](int value) {
         QString BlueValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString BValue = tr("B:") + " " + BlueValue;
-        ui->BLabel->setText(BValue);
+        ui->BLabel->setText(BlueValue);
         UpdateLightbarColor();
     });
 
@@ -564,8 +561,7 @@ void ControlSettings::SetUIValuestoMappings() {
                     std::string Rstring = lightbarstring.substr(0, comma_pos2);
                     ui->RSlider->setValue(std::stoi(Rstring));
                     QString RedValue = QString("%1").arg(std::stoi(Rstring), 3, 10, QChar('0'));
-                    QString RValue = tr("R:") + " " + RedValue;
-                    ui->RLabel->setText(RValue);
+                    ui->RLabel->setText(RedValue);
                 }
 
                 std::string GBstring = lightbarstring.substr(comma_pos2 + 1);
@@ -574,14 +570,12 @@ void ControlSettings::SetUIValuestoMappings() {
                     std::string Gstring = GBstring.substr(0, comma_pos3);
                     ui->GSlider->setValue(std::stoi(Gstring));
                     QString GreenValue = QString("%1").arg(std::stoi(Gstring), 3, 10, QChar('0'));
-                    QString GValue = tr("G:") + " " + GreenValue;
-                    ui->GLabel->setText(GValue);
+                    ui->GLabel->setText(GreenValue);
 
                     std::string Bstring = GBstring.substr(comma_pos3 + 1);
                     ui->BSlider->setValue(std::stoi(Bstring));
                     QString BlueValue = QString("%1").arg(std::stoi(Bstring), 3, 10, QChar('0'));
-                    QString BValue = tr("B:") + " " + BlueValue;
-                    ui->BLabel->setText(BValue);
+                    ui->BLabel->setText(BlueValue);
                 }
             }
         }

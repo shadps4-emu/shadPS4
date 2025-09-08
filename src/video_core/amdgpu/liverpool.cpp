@@ -9,6 +9,7 @@
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -64,6 +65,7 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
 }
 
 Liverpool::Liverpool() {
+    num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
 }
 
@@ -163,7 +165,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
         const auto* it_body = reinterpret_cast<const u32*>(header) + 1;
         switch (opcode) {
         case PM4ItOpcode::Nop: {
-            const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
+            // const auto* nop = reinterpret_cast<const PM4CmdNop*>(header);
             break;
         }
         case PM4ItOpcode::WriteConstRam: {
@@ -604,7 +606,15 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
                 } else if (event->event_index.Value() == EventIndex::ZpassDone) {
-                    LOG_WARNING(Render, "Unimplemented occlusion query");
+                    if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                        static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
+                        static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
+                        u64* results = event->Address<u64*>();
+                        for (s32 i = 0; i < num_counter_pairs; ++i, results += 2) {
+                            *results = pixel_counter | OcclusionCounterValidMask;
+                        }
+                        pixel_counter += OcclusionCounterStep;
+                    }
                 }
                 break;
             }

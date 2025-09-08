@@ -6,6 +6,7 @@
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
+#include <afunix.h>
 #include <iphlpapi.h>
 #include <mstcpip.h>
 #include <winsock2.h>
@@ -145,6 +146,35 @@ struct P2PSocket : public Socket {
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
     std::optional<net_socket> Native() override {
         return {};
+    }
+};
+
+struct UnixSocket : public Socket {
+    net_socket sock;
+    int socket_type;
+    explicit UnixSocket(int domain, int type, int protocol)
+        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
+        socket_type = type;
+    }
+    explicit UnixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+    bool IsValid() const override;
+    int Close() override;
+    int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
+    int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
+    int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
+    int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
+    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                   u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
+    int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
+    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
+    int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
+    int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return sock;
     }
 };
 

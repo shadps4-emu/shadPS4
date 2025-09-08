@@ -49,8 +49,12 @@ Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
         return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, ctx.ConstU32(element));
     case IR::Attribute::CullDistance:
         return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, ctx.ConstU32(element));
-    case IR::Attribute::RenderTargetId:
+    case IR::Attribute::PointSize:
+        return ctx.output_point_size;
+    case IR::Attribute::RenderTargetIndex:
         return ctx.output_layer;
+    case IR::Attribute::ViewportIndex:
+        return ctx.output_viewport_index;
     case IR::Attribute::Depth:
         return ctx.frag_depth;
     default:
@@ -74,9 +78,10 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     case IR::Attribute::ClipDistance:
     case IR::Attribute::CullDistance:
     case IR::Attribute::Depth:
+    case IR::Attribute::PointSize:
         return {ctx.F32[1], false};
-    case IR::Attribute::RenderTargetId:
-    case IR::Attribute::ViewportId:
+    case IR::Attribute::RenderTargetIndex:
+    case IR::Attribute::ViewportIndex:
         return {ctx.S32[1], true};
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
