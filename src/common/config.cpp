@@ -773,8 +773,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (!std::filesystem::exists(path, error)) {
         if (!is_game_specific) {
             save(path);
-            return;
         }
+        return;
     }
 
     toml::value data;
