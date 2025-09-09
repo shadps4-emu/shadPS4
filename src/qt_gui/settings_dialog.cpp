@@ -548,7 +548,7 @@ void SettingsDialog::LoadValuesFromConfig() {
 
     std::error_code error;
     if (!std::filesystem::exists(config_file, error)) {
-        Config::load(config_file, game_specific);
+        Config::load(config_file, game_specific, true);
     }
 
     try {

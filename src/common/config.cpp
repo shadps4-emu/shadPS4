@@ -99,7 +99,6 @@ public:
     }
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false, bool reset_gs_values = false) {
-
         if (is_game_specific && reset_gs_values) {
             data[header][key] = base_value;
         } else {
@@ -768,11 +767,15 @@ void setRcasAttenuation(int value, bool game_specific) {
     rcasAttenuation.set(value, game_specific);
 }
 
-void load(const std::filesystem::path& path, bool is_game_specific) {
+void load(const std::filesystem::path& path, bool is_game_specific, bool create_if_absent) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
     if (!std::filesystem::exists(path, error)) {
-        save(path, is_game_specific, true);
+        if (is_game_specific && create_if_absent) {
+            save(path, is_game_specific, true);
+        } else if (!is_game_specific) {
+            save(path);
+        }
     }
 
     toml::value data;
