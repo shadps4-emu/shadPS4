@@ -305,6 +305,9 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             runtime_info.fs_info.addr_flags.persp_sample_ena) {
             ctx.AddCapability(spv::Capability::SampleRateShading);
         }
+        if (info.has_layer_output) {
+            ctx.AddCapability(spv::Capability::Geometry);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
