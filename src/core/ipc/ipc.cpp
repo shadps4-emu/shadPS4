@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 
-#include "SDL3/SDL.h"
+#include <SDL3/SDL.h>
 
 #include "common/memory_patcher.h"
 #include "common/thread.h"
