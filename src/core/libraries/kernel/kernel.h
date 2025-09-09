@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "core/linker.h"
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/linker.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
