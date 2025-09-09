@@ -5,8 +5,10 @@
 
 #include <cstring>
 #include "common/bit_field.h"
-#include "common/rdtsc.h"
 #include "common/types.h"
+#include "common/uint128.h"
+#include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/kernel/time.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
@@ -343,6 +345,16 @@ static u64 GetGpuClock64() {
     return static_cast<u64>(ticks);
 }
 
+static u64 GetGpuPerfCounter() {
+    const auto cpu_freq = Libraries::Kernel::sceKernelGetTscFrequency();
+    const auto gpu_freq = Libraries::GnmDriver::sceGnmGetGpuCoreClockFrequency();
+
+    const auto cpu_cycles = Libraries::Kernel::sceKernelReadTsc();
+    const auto gpu_cycles = Common::MultiplyAndDivide64(cpu_cycles, gpu_freq, cpu_freq);
+
+    return gpu_cycles;
+}
+
 // VGT_EVENT_INITIATOR.EVENT_TYPE
 enum class EventType : u32 {
     SampleStreamoutStats1 = 1,
@@ -473,7 +485,7 @@ struct PM4CmdEventWriteEop {
             break;
         }
         case DataSelect::PerfCounter: {
-            write_mem(address, Common::FencedRDTSC(), sizeof(u64));
+            write_mem(address, GetGpuPerfCounter(), sizeof(u64));
             break;
         }
         default: {
@@ -937,7 +949,7 @@ struct PM4CmdReleaseMem {
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            *Address<u64>() = GetGpuPerfCounter();
             break;
         }
         default: {
