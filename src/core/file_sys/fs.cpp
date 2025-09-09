@@ -235,6 +235,30 @@ File* HandleTable::GetSocket(int d) {
     return file;
 }
 
+File* HandleTable::GetEpoll(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Epoll) {
+        return nullptr;
+    }
+    return file;
+}
+
+File* HandleTable::GetResolver(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Resolver) {
+        return nullptr;
+    }
+    return file;
+}
+
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
     for (auto* file : m_files) {
         if (file != nullptr && file->m_host_name == host_name) {

@@ -621,11 +621,12 @@ int PS4_SYSV_ABI sceNetEpollAbort() {
 
 int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
                                     OrbisNetEpollEvent* event) {
-    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
-    if (!epoll) {
+    auto file = FDTable::Instance()->GetEpoll(epollid);
+    if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
     }
+    auto epoll = file->epoll;
     LOG_WARNING(Lib_Net, "called, epollid = {} ({}), op = {}, id = {}", epollid, epoll->name,
                 magic_enum::enum_name(op), id);
 
@@ -703,33 +704,37 @@ int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
         return ORBIS_NET_ERROR_EINVAL;
     }
 
-    auto epoll = Common::Singleton<EpollTable>::Instance()->CreateHandle(name);
-
-    return epoll;
+    auto fd = FDTable::Instance()->CreateHandle();
+    auto* epoll = FDTable::Instance()->GetFile(fd);
+    epoll->is_opened = true;
+    epoll->type = Core::FileSys::FileType::Epoll;
+    epoll->epoll = std::make_shared<Epoll>(name);
+    epoll->m_guest_name = name;
+    return fd;
 }
 
 int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
-    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
-    if (!epoll) {
+    auto file = FDTable::Instance()->GetEpoll(epollid);
+    if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
     }
 
-    LOG_INFO(Lib_Net, "called, epollid = {} ({})", epollid, epoll->name);
+    LOG_INFO(Lib_Net, "called, epollid = {} ({})", epollid, file->epoll->name);
 
-    epoll->Destroy();
+    file->epoll->Destroy();
 
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
                                  int timeout) {
-    auto epoll = Common::Singleton<EpollTable>::Instance()->GetEpoll(epollid);
-    if (!epoll) {
+    auto file = FDTable::Instance()->GetEpoll(epollid);
+    if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
     }
-
+    auto epoll = file->epoll;
     LOG_INFO(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
              epoll->name, maxevents, timeout);
 
