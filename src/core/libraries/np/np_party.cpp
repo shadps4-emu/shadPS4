@@ -142,56 +142,45 @@ s32 PS4_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("3e4k2mzLkmc", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyCheckCallback);
-    LIB_FUNCTION("nOZRy-slBoA", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyCreate);
-    LIB_FUNCTION("XQSUbbnpPBA", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyCreateA);
-    LIB_FUNCTION("DRA3ay-1DFQ", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyGetId);
-    LIB_FUNCTION("F1P+-wpxQow", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyGetMemberInfo);
-    LIB_FUNCTION("v2RYVGrJDkM", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetMemberInfoA);
-    LIB_FUNCTION("T2UOKf00ZN0", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyGetMembers);
-    LIB_FUNCTION("TaNw7W25QJw", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyGetMembersA);
-    LIB_FUNCTION("4gOMfNYzllw", "libSceNpParty", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("3e4k2mzLkmc", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCheckCallback);
+    LIB_FUNCTION("nOZRy-slBoA", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCreate);
+    LIB_FUNCTION("XQSUbbnpPBA", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCreateA);
+    LIB_FUNCTION("DRA3ay-1DFQ", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetId);
+    LIB_FUNCTION("F1P+-wpxQow", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetMemberInfo);
+    LIB_FUNCTION("v2RYVGrJDkM", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetMemberInfoA);
+    LIB_FUNCTION("T2UOKf00ZN0", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetMembers);
+    LIB_FUNCTION("TaNw7W25QJw", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetMembersA);
+    LIB_FUNCTION("4gOMfNYzllw", "libSceNpParty", 1, "libSceNpParty",
                  sceNpPartyGetMemberSessionInfo);
-    LIB_FUNCTION("EKi1jx59SP4", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetMemberVoiceInfo);
-    LIB_FUNCTION("aEzKdJzATZ0", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyGetState);
-    LIB_FUNCTION("o7grRhiGHYI", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetStateAsUser);
-    LIB_FUNCTION("EjyAI+QNgFw", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetStateAsUserA);
-    LIB_FUNCTION("-lc6XZnQXvM", "libSceNpParty", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("EKi1jx59SP4", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetMemberVoiceInfo);
+    LIB_FUNCTION("aEzKdJzATZ0", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetState);
+    LIB_FUNCTION("o7grRhiGHYI", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetStateAsUser);
+    LIB_FUNCTION("EjyAI+QNgFw", "libSceNpParty", 1, "libSceNpParty", sceNpPartyGetStateAsUserA);
+    LIB_FUNCTION("-lc6XZnQXvM", "libSceNpParty", 1, "libSceNpParty",
                  sceNpPartyGetVoiceChatPriority);
-    LIB_FUNCTION("lhYCTQmBkds", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyInitialize);
-    LIB_FUNCTION("RXNCDw2GDEg", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyJoin);
-    LIB_FUNCTION("J8jAi-tfJHc", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyLeave);
-    LIB_FUNCTION("kA88gbv71ao", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyRegisterHandler);
-    LIB_FUNCTION("+v4fVHMwFWc", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyRegisterHandlerA);
-    LIB_FUNCTION("zo4G5WWYpKg", "libSceNpParty", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("lhYCTQmBkds", "libSceNpParty", 1, "libSceNpParty", sceNpPartyInitialize);
+    LIB_FUNCTION("RXNCDw2GDEg", "libSceNpParty", 1, "libSceNpParty", sceNpPartyJoin);
+    LIB_FUNCTION("J8jAi-tfJHc", "libSceNpParty", 1, "libSceNpParty", sceNpPartyLeave);
+    LIB_FUNCTION("kA88gbv71ao", "libSceNpParty", 1, "libSceNpParty", sceNpPartyRegisterHandler);
+    LIB_FUNCTION("+v4fVHMwFWc", "libSceNpParty", 1, "libSceNpParty", sceNpPartyRegisterHandlerA);
+    LIB_FUNCTION("zo4G5WWYpKg", "libSceNpParty", 1, "libSceNpParty",
                  sceNpPartyRegisterPrivateHandler);
-    LIB_FUNCTION("U6VdUe-PNAY", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartySendBinaryMessage);
-    LIB_FUNCTION("nazKyHygHhY", "libSceNpParty", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("U6VdUe-PNAY", "libSceNpParty", 1, "libSceNpParty", sceNpPartySendBinaryMessage);
+    LIB_FUNCTION("nazKyHygHhY", "libSceNpParty", 1, "libSceNpParty",
                  sceNpPartySetVoiceChatPriority);
-    LIB_FUNCTION("-MFiL7hEnPE", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyShowInvitationList);
-    LIB_FUNCTION("yARHEYLajs0", "libSceNpParty", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyShowInvitationListA);
-    LIB_FUNCTION("oLYkibiHqRA", "libSceNpParty", 1, "libSceNpParty", 1, 1, sceNpPartyTerminate);
-    LIB_FUNCTION("zQ7gIvt11Pc", "libSceNpParty", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("-MFiL7hEnPE", "libSceNpParty", 1, "libSceNpParty", sceNpPartyShowInvitationList);
+    LIB_FUNCTION("yARHEYLajs0", "libSceNpParty", 1, "libSceNpParty", sceNpPartyShowInvitationListA);
+    LIB_FUNCTION("oLYkibiHqRA", "libSceNpParty", 1, "libSceNpParty", sceNpPartyTerminate);
+    LIB_FUNCTION("zQ7gIvt11Pc", "libSceNpParty", 1, "libSceNpParty",
                  sceNpPartyUnregisterPrivateHandler);
-    LIB_FUNCTION("nOZRy-slBoA", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1, sceNpPartyCreate);
-    LIB_FUNCTION("F1P+-wpxQow", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetMemberInfo);
-    LIB_FUNCTION("T2UOKf00ZN0", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
-                 sceNpPartyGetMembers);
-    LIB_FUNCTION("o7grRhiGHYI", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("nOZRy-slBoA", "libSceNpPartyCompat", 1, "libSceNpParty", sceNpPartyCreate);
+    LIB_FUNCTION("F1P+-wpxQow", "libSceNpPartyCompat", 1, "libSceNpParty", sceNpPartyGetMemberInfo);
+    LIB_FUNCTION("T2UOKf00ZN0", "libSceNpPartyCompat", 1, "libSceNpParty", sceNpPartyGetMembers);
+    LIB_FUNCTION("o7grRhiGHYI", "libSceNpPartyCompat", 1, "libSceNpParty",
                  sceNpPartyGetStateAsUser);
-    LIB_FUNCTION("kA88gbv71ao", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("kA88gbv71ao", "libSceNpPartyCompat", 1, "libSceNpParty",
                  sceNpPartyRegisterHandler);
-    LIB_FUNCTION("-MFiL7hEnPE", "libSceNpPartyCompat", 1, "libSceNpParty", 1, 1,
+    LIB_FUNCTION("-MFiL7hEnPE", "libSceNpPartyCompat", 1, "libSceNpParty",
                  sceNpPartyShowInvitationList);
 };
 

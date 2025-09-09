@@ -290,71 +290,62 @@ int PS4_SYSV_ABI sceHttp2WaitAsync() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("AS45QoYHjc4", "libSceHttp2", 1, "libSceHttp2", 1, 1, _Z5dummyv);
-    LIB_FUNCTION("IZ-qjhRqvjk", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AbortRequest);
-    LIB_FUNCTION("flPxnowtvWY", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AddCookie);
-    LIB_FUNCTION("nrPfOE8TQu0", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AddRequestHeader);
-    LIB_FUNCTION("WeuDjj5m4YU", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2AuthCacheFlush);
-    LIB_FUNCTION("JlFGR4v50Kw", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2CookieExport);
-    LIB_FUNCTION("5VlQSzXW-SQ", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2CookieFlush);
-    LIB_FUNCTION("B5ibZI5UlzU", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2CookieImport);
-    LIB_FUNCTION("N4UfjvWJsMw", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2CreateCookieBox);
-    LIB_FUNCTION("mmyOCxQMVYQ", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2CreateRequestWithURL);
-    LIB_FUNCTION("+wCt7fCijgk", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2CreateTemplate);
-    LIB_FUNCTION("O9ync3F-JVI", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2DeleteCookieBox);
-    LIB_FUNCTION("c8D9qIjo8EY", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2DeleteRequest);
-    LIB_FUNCTION("pDom5-078DA", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2DeleteTemplate);
-    LIB_FUNCTION("-rdXUi2XW90", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2GetAllResponseHeaders);
-    LIB_FUNCTION("m-OL13q8AI8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetAuthEnabled);
-    LIB_FUNCTION("od5QCZhZSfw", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetAutoRedirect);
-    LIB_FUNCTION("GQFGj0rYX+A", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetCookie);
-    LIB_FUNCTION("IX23slKvtQI", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetCookieBox);
-    LIB_FUNCTION("eij7UzkUqK8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetCookieStats);
-    LIB_FUNCTION("otUQuZa-mv0", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetMemoryPoolStats);
-    LIB_FUNCTION("o0DBQpFE13o", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2GetResponseContentLength);
-    LIB_FUNCTION("9XYJwCf3lEA", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2GetStatusCode);
-    LIB_FUNCTION("3JCe3lCbQ8A", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2Init);
-    LIB_FUNCTION("QygCNNmbGss", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2ReadData);
-    LIB_FUNCTION("bGN-6zbo7ms", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2ReadDataAsync);
-    LIB_FUNCTION("klwUy2Wg+q8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2RedirectCacheFlush);
-    LIB_FUNCTION("jHdP0CS4ZlA", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2RemoveRequestHeader);
-    LIB_FUNCTION("rbqZig38AT8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SendRequest);
-    LIB_FUNCTION("A+NVAFu4eCg", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SendRequestAsync);
-    LIB_FUNCTION("jjFahkBPCYs", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAuthEnabled);
-    LIB_FUNCTION("Wwj6HbB2mOo", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAuthInfoCallback);
-    LIB_FUNCTION("b9AvoIaOuHI", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetAutoRedirect);
-    LIB_FUNCTION("n8hMLe31OPA", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetConnectionWaitTimeOut);
-    LIB_FUNCTION("-HIO4VT87v8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetConnectTimeOut);
-    LIB_FUNCTION("jrVHsKCXA0g", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetCookieBox);
-    LIB_FUNCTION("mPKVhQqh2Es", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetCookieMaxNum);
-    LIB_FUNCTION("o7+WXe4WadE", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetCookieMaxNumPerDomain);
-    LIB_FUNCTION("6a0N6GPD7RM", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetCookieMaxSize);
-    LIB_FUNCTION("zdtXKn9X7no", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetCookieRecvCallback);
-    LIB_FUNCTION("McYmUpQ3-DY", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetCookieSendCallback);
-    LIB_FUNCTION("uRosf8GQbHQ", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetInflateGZIPEnabled);
-    LIB_FUNCTION("09tk+kIA1Ns", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetMinSslVersion);
-    LIB_FUNCTION("UL4Fviw+IAM", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetPreSendCallback);
-    LIB_FUNCTION("izvHhqgDt44", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetRecvTimeOut);
-    LIB_FUNCTION("BJgi0CH7al4", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetRedirectCallback);
-    LIB_FUNCTION("FSAFOzi0FpM", "libSceHttp2", 1, "libSceHttp2", 1, 1,
-                 sceHttp2SetRequestContentLength);
-    LIB_FUNCTION("Gcjh+CisAZM", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetResolveRetry);
-    LIB_FUNCTION("ACjtE27aErY", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetResolveTimeOut);
-    LIB_FUNCTION("XPtW45xiLHk", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetSendTimeOut);
-    LIB_FUNCTION("YrWX+DhPHQY", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetSslCallback);
-    LIB_FUNCTION("VYMxTcBqSE0", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SetTimeOut);
-    LIB_FUNCTION("B37SruheQ5Y", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SslDisableOption);
-    LIB_FUNCTION("EWcwMpbr5F8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2SslEnableOption);
-    LIB_FUNCTION("YiBUtz-pGkc", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2Term);
-    LIB_FUNCTION("MOp-AUhdfi8", "libSceHttp2", 1, "libSceHttp2", 1, 1, sceHttp2WaitAsync);
+    LIB_FUNCTION("AS45QoYHjc4", "libSceHttp2", 1, "libSceHttp2", _Z5dummyv);
+    LIB_FUNCTION("IZ-qjhRqvjk", "libSceHttp2", 1, "libSceHttp2", sceHttp2AbortRequest);
+    LIB_FUNCTION("flPxnowtvWY", "libSceHttp2", 1, "libSceHttp2", sceHttp2AddCookie);
+    LIB_FUNCTION("nrPfOE8TQu0", "libSceHttp2", 1, "libSceHttp2", sceHttp2AddRequestHeader);
+    LIB_FUNCTION("WeuDjj5m4YU", "libSceHttp2", 1, "libSceHttp2", sceHttp2AuthCacheFlush);
+    LIB_FUNCTION("JlFGR4v50Kw", "libSceHttp2", 1, "libSceHttp2", sceHttp2CookieExport);
+    LIB_FUNCTION("5VlQSzXW-SQ", "libSceHttp2", 1, "libSceHttp2", sceHttp2CookieFlush);
+    LIB_FUNCTION("B5ibZI5UlzU", "libSceHttp2", 1, "libSceHttp2", sceHttp2CookieImport);
+    LIB_FUNCTION("N4UfjvWJsMw", "libSceHttp2", 1, "libSceHttp2", sceHttp2CreateCookieBox);
+    LIB_FUNCTION("mmyOCxQMVYQ", "libSceHttp2", 1, "libSceHttp2", sceHttp2CreateRequestWithURL);
+    LIB_FUNCTION("+wCt7fCijgk", "libSceHttp2", 1, "libSceHttp2", sceHttp2CreateTemplate);
+    LIB_FUNCTION("O9ync3F-JVI", "libSceHttp2", 1, "libSceHttp2", sceHttp2DeleteCookieBox);
+    LIB_FUNCTION("c8D9qIjo8EY", "libSceHttp2", 1, "libSceHttp2", sceHttp2DeleteRequest);
+    LIB_FUNCTION("pDom5-078DA", "libSceHttp2", 1, "libSceHttp2", sceHttp2DeleteTemplate);
+    LIB_FUNCTION("-rdXUi2XW90", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetAllResponseHeaders);
+    LIB_FUNCTION("m-OL13q8AI8", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetAuthEnabled);
+    LIB_FUNCTION("od5QCZhZSfw", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetAutoRedirect);
+    LIB_FUNCTION("GQFGj0rYX+A", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetCookie);
+    LIB_FUNCTION("IX23slKvtQI", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetCookieBox);
+    LIB_FUNCTION("eij7UzkUqK8", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetCookieStats);
+    LIB_FUNCTION("otUQuZa-mv0", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetMemoryPoolStats);
+    LIB_FUNCTION("o0DBQpFE13o", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetResponseContentLength);
+    LIB_FUNCTION("9XYJwCf3lEA", "libSceHttp2", 1, "libSceHttp2", sceHttp2GetStatusCode);
+    LIB_FUNCTION("3JCe3lCbQ8A", "libSceHttp2", 1, "libSceHttp2", sceHttp2Init);
+    LIB_FUNCTION("QygCNNmbGss", "libSceHttp2", 1, "libSceHttp2", sceHttp2ReadData);
+    LIB_FUNCTION("bGN-6zbo7ms", "libSceHttp2", 1, "libSceHttp2", sceHttp2ReadDataAsync);
+    LIB_FUNCTION("klwUy2Wg+q8", "libSceHttp2", 1, "libSceHttp2", sceHttp2RedirectCacheFlush);
+    LIB_FUNCTION("jHdP0CS4ZlA", "libSceHttp2", 1, "libSceHttp2", sceHttp2RemoveRequestHeader);
+    LIB_FUNCTION("rbqZig38AT8", "libSceHttp2", 1, "libSceHttp2", sceHttp2SendRequest);
+    LIB_FUNCTION("A+NVAFu4eCg", "libSceHttp2", 1, "libSceHttp2", sceHttp2SendRequestAsync);
+    LIB_FUNCTION("jjFahkBPCYs", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetAuthEnabled);
+    LIB_FUNCTION("Wwj6HbB2mOo", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetAuthInfoCallback);
+    LIB_FUNCTION("b9AvoIaOuHI", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetAutoRedirect);
+    LIB_FUNCTION("n8hMLe31OPA", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetConnectionWaitTimeOut);
+    LIB_FUNCTION("-HIO4VT87v8", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetConnectTimeOut);
+    LIB_FUNCTION("jrVHsKCXA0g", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieBox);
+    LIB_FUNCTION("mPKVhQqh2Es", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieMaxNum);
+    LIB_FUNCTION("o7+WXe4WadE", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieMaxNumPerDomain);
+    LIB_FUNCTION("6a0N6GPD7RM", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieMaxSize);
+    LIB_FUNCTION("zdtXKn9X7no", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieRecvCallback);
+    LIB_FUNCTION("McYmUpQ3-DY", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetCookieSendCallback);
+    LIB_FUNCTION("uRosf8GQbHQ", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetInflateGZIPEnabled);
+    LIB_FUNCTION("09tk+kIA1Ns", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetMinSslVersion);
+    LIB_FUNCTION("UL4Fviw+IAM", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetPreSendCallback);
+    LIB_FUNCTION("izvHhqgDt44", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetRecvTimeOut);
+    LIB_FUNCTION("BJgi0CH7al4", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetRedirectCallback);
+    LIB_FUNCTION("FSAFOzi0FpM", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetRequestContentLength);
+    LIB_FUNCTION("Gcjh+CisAZM", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetResolveRetry);
+    LIB_FUNCTION("ACjtE27aErY", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetResolveTimeOut);
+    LIB_FUNCTION("XPtW45xiLHk", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetSendTimeOut);
+    LIB_FUNCTION("YrWX+DhPHQY", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetSslCallback);
+    LIB_FUNCTION("VYMxTcBqSE0", "libSceHttp2", 1, "libSceHttp2", sceHttp2SetTimeOut);
+    LIB_FUNCTION("B37SruheQ5Y", "libSceHttp2", 1, "libSceHttp2", sceHttp2SslDisableOption);
+    LIB_FUNCTION("EWcwMpbr5F8", "libSceHttp2", 1, "libSceHttp2", sceHttp2SslEnableOption);
+    LIB_FUNCTION("YiBUtz-pGkc", "libSceHttp2", 1, "libSceHttp2", sceHttp2Term);
+    LIB_FUNCTION("MOp-AUhdfi8", "libSceHttp2", 1, "libSceHttp2", sceHttp2WaitAsync);
 };
 
 } // namespace Libraries::Http2

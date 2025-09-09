@@ -121,17 +121,17 @@ s32 PS4_SYSV_ABI sceMoveTerm() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("j1ITE-EoJmE", "libSceMove", 1, "libSceMove", 1, 1, sceMoveInit);
-    LIB_FUNCTION("HzC60MfjJxU", "libSceMove", 1, "libSceMove", 1, 1, sceMoveOpen);
-    LIB_FUNCTION("GWXTyxs4QbE", "libSceMove", 1, "libSceMove", 1, 1, sceMoveGetDeviceInfo);
-    LIB_FUNCTION("ttU+JOhShl4", "libSceMove", 1, "libSceMove", 1, 1, sceMoveReadStateLatest);
-    LIB_FUNCTION("f2bcpK6kJfg", "libSceMove", 1, "libSceMove", 1, 1, sceMoveReadStateRecent);
-    LIB_FUNCTION("y5h7f8H1Jnk", "libSceMove", 1, "libSceMove", 1, 1, sceMoveGetExtensionPortInfo);
-    LIB_FUNCTION("IFQwtT2CeY0", "libSceMove", 1, "libSceMove", 1, 1, sceMoveSetVibration);
-    LIB_FUNCTION("T8KYHPs1JE8", "libSceMove", 1, "libSceMove", 1, 1, sceMoveSetLightSphere);
-    LIB_FUNCTION("zuxWAg3HAac", "libSceMove", 1, "libSceMove", 1, 1, sceMoveResetLightSphere);
-    LIB_FUNCTION("XX6wlxpHyeo", "libSceMove", 1, "libSceMove", 1, 1, sceMoveClose);
-    LIB_FUNCTION("tsZi60H4ypY", "libSceMove", 1, "libSceMove", 1, 1, sceMoveTerm);
+    LIB_FUNCTION("j1ITE-EoJmE", "libSceMove", 1, "libSceMove", sceMoveInit);
+    LIB_FUNCTION("HzC60MfjJxU", "libSceMove", 1, "libSceMove", sceMoveOpen);
+    LIB_FUNCTION("GWXTyxs4QbE", "libSceMove", 1, "libSceMove", sceMoveGetDeviceInfo);
+    LIB_FUNCTION("ttU+JOhShl4", "libSceMove", 1, "libSceMove", sceMoveReadStateLatest);
+    LIB_FUNCTION("f2bcpK6kJfg", "libSceMove", 1, "libSceMove", sceMoveReadStateRecent);
+    LIB_FUNCTION("y5h7f8H1Jnk", "libSceMove", 1, "libSceMove", sceMoveGetExtensionPortInfo);
+    LIB_FUNCTION("IFQwtT2CeY0", "libSceMove", 1, "libSceMove", sceMoveSetVibration);
+    LIB_FUNCTION("T8KYHPs1JE8", "libSceMove", 1, "libSceMove", sceMoveSetLightSphere);
+    LIB_FUNCTION("zuxWAg3HAac", "libSceMove", 1, "libSceMove", sceMoveResetLightSphere);
+    LIB_FUNCTION("XX6wlxpHyeo", "libSceMove", 1, "libSceMove", sceMoveClose);
+    LIB_FUNCTION("tsZi60H4ypY", "libSceMove", 1, "libSceMove", sceMoveTerm);
 };
 
 } // namespace Libraries::Move

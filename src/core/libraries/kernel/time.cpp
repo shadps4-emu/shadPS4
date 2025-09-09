@@ -531,38 +531,38 @@ void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     initial_ptc = clock->GetUptime();
 
     // POSIX
-    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", 1, 1, posix_nanosleep);
-    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", 1, 1, posix_nanosleep);
-    LIB_FUNCTION("QcteRwbsnV0", "libkernel", 1, "libkernel", 1, 1, posix_usleep);
-    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", 1, 1, posix_usleep);
-    LIB_FUNCTION("0wu33hunNdE", "libkernel", 1, "libkernel", 1, 1, posix_sleep);
-    LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", 1, 1, posix_sleep);
-    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", 1, 1, posix_clock_gettime);
-    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", 1, 1, posix_clock_gettime);
-    LIB_FUNCTION("smIj7eqzZE8", "libkernel", 1, "libkernel", 1, 1, posix_clock_getres);
-    LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", 1, 1, posix_clock_getres);
-    LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", 1, 1, posix_gettimeofday);
-    LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", 1, 1, posix_gettimeofday);
-    LIB_FUNCTION("ChCOChPU-YM", "libkernel", 1, "libkernel", 1, 1, sceKernelSettimeofday);
-    LIB_FUNCTION("VdXIDAbJ3tQ", "libScePosix", 1, "libkernel", 1, 1, posix_settimeofday);
-    LIB_FUNCTION("d7nUj1LOdDU", "libScePosix", 1, "libkernel", 1, 1, posix_clock_settime);
+    LIB_FUNCTION("yS8U2TGCe1A", "libkernel", 1, "libkernel", posix_nanosleep);
+    LIB_FUNCTION("yS8U2TGCe1A", "libScePosix", 1, "libkernel", posix_nanosleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libkernel", 1, "libkernel", posix_usleep);
+    LIB_FUNCTION("QcteRwbsnV0", "libScePosix", 1, "libkernel", posix_usleep);
+    LIB_FUNCTION("0wu33hunNdE", "libkernel", 1, "libkernel", posix_sleep);
+    LIB_FUNCTION("0wu33hunNdE", "libScePosix", 1, "libkernel", posix_sleep);
+    LIB_FUNCTION("lLMT9vJAck0", "libkernel", 1, "libkernel", posix_clock_gettime);
+    LIB_FUNCTION("lLMT9vJAck0", "libScePosix", 1, "libkernel", posix_clock_gettime);
+    LIB_FUNCTION("smIj7eqzZE8", "libkernel", 1, "libkernel", posix_clock_getres);
+    LIB_FUNCTION("smIj7eqzZE8", "libScePosix", 1, "libkernel", posix_clock_getres);
+    LIB_FUNCTION("n88vx3C5nW8", "libkernel", 1, "libkernel", posix_gettimeofday);
+    LIB_FUNCTION("n88vx3C5nW8", "libScePosix", 1, "libkernel", posix_gettimeofday);
+    LIB_FUNCTION("ChCOChPU-YM", "libkernel", 1, "libkernel", sceKernelSettimeofday);
+    LIB_FUNCTION("VdXIDAbJ3tQ", "libScePosix", 1, "libkernel", posix_settimeofday);
+    LIB_FUNCTION("d7nUj1LOdDU", "libScePosix", 1, "libkernel", posix_clock_settime);
 
     // Orbis
-    LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTime);
-    LIB_FUNCTION("fgxnMeTNUtY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetProcessTimeCounter);
-    LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("4J2sUJmuHZQ", "libkernel", 1, "libkernel", sceKernelGetProcessTime);
+    LIB_FUNCTION("fgxnMeTNUtY", "libkernel", 1, "libkernel", sceKernelGetProcessTimeCounter);
+    LIB_FUNCTION("BNowx2l588E", "libkernel", 1, "libkernel",
                  sceKernelGetProcessTimeCounterFrequency);
-    LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", 1, 1, sceKernelReadTsc);
-    LIB_FUNCTION("1j3S3n-tTW4", "libkernel", 1, "libkernel", 1, 1, sceKernelGetTscFrequency);
-    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", 1, 1, sceKernelNanosleep);
-    LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", 1, 1, sceKernelUsleep);
-    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", 1, 1, sceKernelSleep);
-    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGettime);
-    LIB_FUNCTION("wRYVA5Zolso", "libkernel", 1, "libkernel", 1, 1, sceKernelClockGetres);
-    LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimeofday);
-    LIB_FUNCTION("kOcnerypnQA", "libkernel", 1, "libkernel", 1, 1, sceKernelGettimezone);
-    LIB_FUNCTION("0NTHN1NKONI", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertLocaltimeToUtc);
-    LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", 1, 1, sceKernelConvertUtcToLocaltime);
+    LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", sceKernelReadTsc);
+    LIB_FUNCTION("1j3S3n-tTW4", "libkernel", 1, "libkernel", sceKernelGetTscFrequency);
+    LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", sceKernelNanosleep);
+    LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", sceKernelUsleep);
+    LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", sceKernelSleep);
+    LIB_FUNCTION("QBi7HCK03hw", "libkernel", 1, "libkernel", sceKernelClockGettime);
+    LIB_FUNCTION("wRYVA5Zolso", "libkernel", 1, "libkernel", sceKernelClockGetres);
+    LIB_FUNCTION("ejekcaNQNq0", "libkernel", 1, "libkernel", sceKernelGettimeofday);
+    LIB_FUNCTION("kOcnerypnQA", "libkernel", 1, "libkernel", sceKernelGettimezone);
+    LIB_FUNCTION("0NTHN1NKONI", "libkernel", 1, "libkernel", sceKernelConvertLocaltimeToUtc);
+    LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", sceKernelConvertUtcToLocaltime);
 }
 
 } // namespace Libraries::Kernel

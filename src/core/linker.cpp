@@ -332,8 +332,6 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     sr.library = library->name;
     sr.library_version = library->version;
     sr.module = module->name;
-    sr.module_version_major = module->version_major;
-    sr.module_version_minor = module->version_minor;
     sr.type = sym_type;
 
     const auto* record = m_hle_symbols.FindSymbol(sr);

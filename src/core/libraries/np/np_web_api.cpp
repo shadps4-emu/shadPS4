@@ -510,183 +510,163 @@ s32 PS4_SYSV_ABI Func_F9A32E8685627436() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("x1Y7yiYSk7c", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("x1Y7yiYSk7c", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiCreateContext);
-    LIB_FUNCTION("y5Ta5JCzQHY", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("y5Ta5JCzQHY", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiCreatePushEventFilter);
-    LIB_FUNCTION("sIFx734+xys", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("sIFx734+xys", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiCreateServicePushEventFilter);
-    LIB_FUNCTION("zE+R6Rcx3W0", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("zE+R6Rcx3W0", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiDeletePushEventFilter);
-    LIB_FUNCTION("PfQ+f6ws764", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("PfQ+f6ws764", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiDeleteServicePushEventFilter);
-    LIB_FUNCTION("vrM02A5Gy1M", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("vrM02A5Gy1M", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterExtdPushEventCallback);
-    LIB_FUNCTION("HVgWmGIOKdk", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("HVgWmGIOKdk", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterNotificationCallback);
-    LIB_FUNCTION("PfSTDCgNMgc", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("PfSTDCgNMgc", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterPushEventCallback);
-    LIB_FUNCTION("kJQJE0uKm5w", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("kJQJE0uKm5w", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterServicePushEventCallback);
-    LIB_FUNCTION("wjYEvo4xbcA", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("wjYEvo4xbcA", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterNotificationCallback);
-    LIB_FUNCTION("qK4o2656W4w", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("qK4o2656W4w", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterPushEventCallback);
-    LIB_FUNCTION("2edrkr0c-wg", "libSceNpWebApiCompat", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("2edrkr0c-wg", "libSceNpWebApiCompat", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterServicePushEventCallback);
-    LIB_FUNCTION("WKcm4PeyJww", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiAbortHandle);
-    LIB_FUNCTION("JzhYTP2fG18", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiAbortRequest);
-    LIB_FUNCTION("joRjtRXTFoc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("WKcm4PeyJww", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiAbortHandle);
+    LIB_FUNCTION("JzhYTP2fG18", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiAbortRequest);
+    LIB_FUNCTION("joRjtRXTFoc", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiAddHttpRequestHeader);
-    LIB_FUNCTION("19KgfJXgM+U", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiAddMultipartPart);
-    LIB_FUNCTION("gVNNyxf-1Sg", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiCheckTimeout);
-    LIB_FUNCTION("KQIkDGf80PQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("19KgfJXgM+U", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiAddMultipartPart);
+    LIB_FUNCTION("gVNNyxf-1Sg", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiCheckTimeout);
+    LIB_FUNCTION("KQIkDGf80PQ", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiClearAllUnusedConnection);
-    LIB_FUNCTION("f-pgaNSd1zc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("f-pgaNSd1zc", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiClearUnusedConnection);
-    LIB_FUNCTION("x1Y7yiYSk7c", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiCreateContext);
-    LIB_FUNCTION("zk6c65xoyO0", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiCreateContextA);
-    LIB_FUNCTION("M2BUB+DNEGE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("x1Y7yiYSk7c", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiCreateContext);
+    LIB_FUNCTION("zk6c65xoyO0", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiCreateContextA);
+    LIB_FUNCTION("M2BUB+DNEGE", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiCreateExtdPushEventFilter);
-    LIB_FUNCTION("79M-JqvvGo0", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiCreateHandle);
-    LIB_FUNCTION("KBxgeNpoRIQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("79M-JqvvGo0", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiCreateHandle);
+    LIB_FUNCTION("KBxgeNpoRIQ", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiCreateMultipartRequest);
-    LIB_FUNCTION("y5Ta5JCzQHY", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("y5Ta5JCzQHY", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiCreatePushEventFilter);
-    LIB_FUNCTION("rdgs5Z1MyFw", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiCreateRequest);
-    LIB_FUNCTION("sIFx734+xys", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("rdgs5Z1MyFw", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiCreateRequest);
+    LIB_FUNCTION("sIFx734+xys", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiCreateServicePushEventFilter);
-    LIB_FUNCTION("XUjdsSTTZ3U", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiDeleteContext);
-    LIB_FUNCTION("pfaJtb7SQ80", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("XUjdsSTTZ3U", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiDeleteContext);
+    LIB_FUNCTION("pfaJtb7SQ80", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiDeleteExtdPushEventFilter);
-    LIB_FUNCTION("5Mn7TYwpl30", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiDeleteHandle);
-    LIB_FUNCTION("zE+R6Rcx3W0", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("5Mn7TYwpl30", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiDeleteHandle);
+    LIB_FUNCTION("zE+R6Rcx3W0", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiDeletePushEventFilter);
-    LIB_FUNCTION("noQgleu+KLE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiDeleteRequest);
-    LIB_FUNCTION("PfQ+f6ws764", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("noQgleu+KLE", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiDeleteRequest);
+    LIB_FUNCTION("PfQ+f6ws764", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiDeleteServicePushEventFilter);
-    LIB_FUNCTION("UJ8H+7kVQUE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("UJ8H+7kVQUE", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiGetConnectionStats);
-    LIB_FUNCTION("2qSZ0DgwTsc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiGetErrorCode);
-    LIB_FUNCTION("VwJ5L0Higg0", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("2qSZ0DgwTsc", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiGetErrorCode);
+    LIB_FUNCTION("VwJ5L0Higg0", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiGetHttpResponseHeaderValue);
-    LIB_FUNCTION("743ZzEBzlV8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("743ZzEBzlV8", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiGetHttpResponseHeaderValueLength);
-    LIB_FUNCTION("k210oKgP80Y", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("k210oKgP80Y", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiGetHttpStatusCode);
-    LIB_FUNCTION("3OnubUs02UM", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("3OnubUs02UM", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiGetMemoryPoolStats);
-    LIB_FUNCTION("G3AnLNdRBjE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiInitialize);
-    LIB_FUNCTION("FkuwsD64zoQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("G3AnLNdRBjE", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiInitialize);
+    LIB_FUNCTION("FkuwsD64zoQ", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiInitializeForPresence);
-    LIB_FUNCTION("c1pKoztonB8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("c1pKoztonB8", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiIntCreateCtxIndExtdPushEventFilter);
-    LIB_FUNCTION("N2Jbx4tIaQ4", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiIntCreateRequest);
-    LIB_FUNCTION("TZSep4xB4EY", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("N2Jbx4tIaQ4", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiIntCreateRequest);
+    LIB_FUNCTION("TZSep4xB4EY", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiIntCreateServicePushEventFilter);
-    LIB_FUNCTION("8Vjplhyyc44", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiIntInitialize);
-    LIB_FUNCTION("VjVukb2EWPc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("8Vjplhyyc44", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiIntInitialize);
+    LIB_FUNCTION("VjVukb2EWPc", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiIntRegisterServicePushEventCallback);
-    LIB_FUNCTION("sfq23ZVHVEw", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("sfq23ZVHVEw", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiIntRegisterServicePushEventCallbackA);
-    LIB_FUNCTION("CQtPRSF6Ds8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiReadData);
-    LIB_FUNCTION("vrM02A5Gy1M", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("CQtPRSF6Ds8", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiReadData);
+    LIB_FUNCTION("vrM02A5Gy1M", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterExtdPushEventCallback);
-    LIB_FUNCTION("jhXKGQJ4egI", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("jhXKGQJ4egI", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterExtdPushEventCallbackA);
-    LIB_FUNCTION("HVgWmGIOKdk", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("HVgWmGIOKdk", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterNotificationCallback);
-    LIB_FUNCTION("PfSTDCgNMgc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("PfSTDCgNMgc", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterPushEventCallback);
-    LIB_FUNCTION("kJQJE0uKm5w", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("kJQJE0uKm5w", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiRegisterServicePushEventCallback);
-    LIB_FUNCTION("KCItz6QkeGs", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("KCItz6QkeGs", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiSendMultipartRequest);
-    LIB_FUNCTION("DsPOTEvSe7M", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("DsPOTEvSe7M", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiSendMultipartRequest2);
-    LIB_FUNCTION("kVbL4hL3K7w", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiSendRequest);
-    LIB_FUNCTION("KjNeZ-29ysQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiSendRequest2);
-    LIB_FUNCTION("6g6q-g1i4XU", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiSetHandleTimeout);
-    LIB_FUNCTION("gRiilVCvfAI", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiSetMaxConnection);
-    LIB_FUNCTION("i0dr6grIZyc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("kVbL4hL3K7w", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiSendRequest);
+    LIB_FUNCTION("KjNeZ-29ysQ", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiSendRequest2);
+    LIB_FUNCTION("6g6q-g1i4XU", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiSetHandleTimeout);
+    LIB_FUNCTION("gRiilVCvfAI", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiSetMaxConnection);
+    LIB_FUNCTION("i0dr6grIZyc", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiSetMultipartContentType);
-    LIB_FUNCTION("qWcbJkBj1Lg", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("qWcbJkBj1Lg", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiSetRequestTimeout);
-    LIB_FUNCTION("asz3TtIqGF8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, sceNpWebApiTerminate);
-    LIB_FUNCTION("PqCY25FMzPs", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("asz3TtIqGF8", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiTerminate);
+    LIB_FUNCTION("PqCY25FMzPs", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterExtdPushEventCallback);
-    LIB_FUNCTION("wjYEvo4xbcA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("wjYEvo4xbcA", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterNotificationCallback);
-    LIB_FUNCTION("qK4o2656W4w", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("qK4o2656W4w", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterPushEventCallback);
-    LIB_FUNCTION("2edrkr0c-wg", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
+    LIB_FUNCTION("2edrkr0c-wg", "libSceNpWebApi", 1, "libSceNpWebApi",
                  sceNpWebApiUnregisterServicePushEventCallback);
-    LIB_FUNCTION("or0e885BlXo", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiUtilityParseNpId);
-    LIB_FUNCTION("uRsskUhAfnM", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1,
-                 sceNpWebApiVshInitialize);
-    LIB_FUNCTION("BkxO0e2+ueg", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_064C4ED1EDBEB9E8);
-    LIB_FUNCTION("B4OVXU6VY9o", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_0783955D4E9563DA);
-    LIB_FUNCTION("Gm138-2DI6g", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_1A6D77F3FD8323A8);
-    LIB_FUNCTION("HgaTom-g+VQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_1E0693A26FE0F954);
-    LIB_FUNCTION("JKm18ddwAM8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_24A9B5F1D77000CF);
-    LIB_FUNCTION("JKqm9Q5MI2E", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_24AAA6F50E4C2361);
-    LIB_FUNCTION("JNiFPWtH-Hk", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_24D8853D6B47FC79);
-    LIB_FUNCTION("J5s+nHxKncU", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_279B3E9C7C4A9DC5);
-    LIB_FUNCTION("KEYeKen41pc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_28461E29E9F8D697);
-    LIB_FUNCTION("PCliRwT6ueA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_3C29624704FAB9E0);
-    LIB_FUNCTION("PwJ4BO0uwR4", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_3F027804ED2EC11E);
-    LIB_FUNCTION("QGbJTngpl80", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_4066C94E782997CD);
-    LIB_FUNCTION("R8hTVoFdvpA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_47C85356815DBE90);
-    LIB_FUNCTION("T86AZUN+O4c", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_4FCE8065437E3B87);
-    LIB_FUNCTION("U2KAvj2rtSE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_536280BE3DABB521);
-    LIB_FUNCTION("V6DhvHJCGfM", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_57A0E1BC724219F3);
-    LIB_FUNCTION("WBl0nAQLZjc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_5819749C040B6637);
-    LIB_FUNCTION("YZjQyCXoYxk", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_6198D0C825E86319);
-    LIB_FUNCTION("YfK56KsJN0M", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_61F2B9E8AB093743);
-    LIB_FUNCTION("a8OI5hE-DUQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_6BC388E6113F0D44);
-    LIB_FUNCTION("dQDwxPjcLRY", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_7500F0C4F8DC2D16);
-    LIB_FUNCTION("daA4FMfpA58", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_75A03814C7E9039F);
-    LIB_FUNCTION("eJ1gJsUhQW4", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_789D6026C521416E);
-    LIB_FUNCTION("fe1j0GOZ7-8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_7DED63D06399EFFF);
-    LIB_FUNCTION("flWi3MA9OVo", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_7E55A2DCC03D395A);
-    LIB_FUNCTION("fmyPn7hpZ-Q", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_7E6C8F9FB86967F4);
-    LIB_FUNCTION("fwS31KfUHoA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_7F04B7D4A7D41E80);
-    LIB_FUNCTION("jhZyUt+lyVc", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_8E167252DFA5C957);
-    LIB_FUNCTION("ldAEblBOOwk", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_95D0046E504E3B09);
-    LIB_FUNCTION("lyhL-aTxj98", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_97284BFDA4F18FDF);
-    LIB_FUNCTION("meMsH0c36rQ", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_99E32C1F4737EAB4);
-    LIB_FUNCTION("nP9mHqC8v4M", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_9CFF661EA0BCBF83);
-    LIB_FUNCTION("nrDh9GesOyk", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_9EB0E1F467AC3B29);
-    LIB_FUNCTION("ojGP5vur+qM", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_A2318FE6FBABFAA3);
-    LIB_FUNCTION("ugei4b97OXE", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_BA07A2E1BF7B3971);
-    LIB_FUNCTION("vQgD7uDMKaA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_BD0803EEE0CC29A0);
-    LIB_FUNCTION("vm9OVSS7E18", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_BE6F4E5524BB135F);
-    LIB_FUNCTION("wNSQ60gepNA", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_C0D490EB481EA4D0);
-    LIB_FUNCTION("wXXTksptCEo", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_C175D392CA6D084A);
-    LIB_FUNCTION("zQE2rxZdLy8", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_CD0136AF165D2F2F);
-    LIB_FUNCTION("0cCtt7Uv6rU", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_D1C0ADB7B52FEAB5);
-    LIB_FUNCTION("4yR2XRjuTRI", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_E324765D18EE4D12);
-    LIB_FUNCTION("54n5gNkHtlM", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_E789F980D907B653);
-    LIB_FUNCTION("+aMuhoVidDY", "libSceNpWebApi", 1, "libSceNpWebApi", 1, 1, Func_F9A32E8685627436);
+    LIB_FUNCTION("or0e885BlXo", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiUtilityParseNpId);
+    LIB_FUNCTION("uRsskUhAfnM", "libSceNpWebApi", 1, "libSceNpWebApi", sceNpWebApiVshInitialize);
+    LIB_FUNCTION("BkxO0e2+ueg", "libSceNpWebApi", 1, "libSceNpWebApi", Func_064C4ED1EDBEB9E8);
+    LIB_FUNCTION("B4OVXU6VY9o", "libSceNpWebApi", 1, "libSceNpWebApi", Func_0783955D4E9563DA);
+    LIB_FUNCTION("Gm138-2DI6g", "libSceNpWebApi", 1, "libSceNpWebApi", Func_1A6D77F3FD8323A8);
+    LIB_FUNCTION("HgaTom-g+VQ", "libSceNpWebApi", 1, "libSceNpWebApi", Func_1E0693A26FE0F954);
+    LIB_FUNCTION("JKm18ddwAM8", "libSceNpWebApi", 1, "libSceNpWebApi", Func_24A9B5F1D77000CF);
+    LIB_FUNCTION("JKqm9Q5MI2E", "libSceNpWebApi", 1, "libSceNpWebApi", Func_24AAA6F50E4C2361);
+    LIB_FUNCTION("JNiFPWtH-Hk", "libSceNpWebApi", 1, "libSceNpWebApi", Func_24D8853D6B47FC79);
+    LIB_FUNCTION("J5s+nHxKncU", "libSceNpWebApi", 1, "libSceNpWebApi", Func_279B3E9C7C4A9DC5);
+    LIB_FUNCTION("KEYeKen41pc", "libSceNpWebApi", 1, "libSceNpWebApi", Func_28461E29E9F8D697);
+    LIB_FUNCTION("PCliRwT6ueA", "libSceNpWebApi", 1, "libSceNpWebApi", Func_3C29624704FAB9E0);
+    LIB_FUNCTION("PwJ4BO0uwR4", "libSceNpWebApi", 1, "libSceNpWebApi", Func_3F027804ED2EC11E);
+    LIB_FUNCTION("QGbJTngpl80", "libSceNpWebApi", 1, "libSceNpWebApi", Func_4066C94E782997CD);
+    LIB_FUNCTION("R8hTVoFdvpA", "libSceNpWebApi", 1, "libSceNpWebApi", Func_47C85356815DBE90);
+    LIB_FUNCTION("T86AZUN+O4c", "libSceNpWebApi", 1, "libSceNpWebApi", Func_4FCE8065437E3B87);
+    LIB_FUNCTION("U2KAvj2rtSE", "libSceNpWebApi", 1, "libSceNpWebApi", Func_536280BE3DABB521);
+    LIB_FUNCTION("V6DhvHJCGfM", "libSceNpWebApi", 1, "libSceNpWebApi", Func_57A0E1BC724219F3);
+    LIB_FUNCTION("WBl0nAQLZjc", "libSceNpWebApi", 1, "libSceNpWebApi", Func_5819749C040B6637);
+    LIB_FUNCTION("YZjQyCXoYxk", "libSceNpWebApi", 1, "libSceNpWebApi", Func_6198D0C825E86319);
+    LIB_FUNCTION("YfK56KsJN0M", "libSceNpWebApi", 1, "libSceNpWebApi", Func_61F2B9E8AB093743);
+    LIB_FUNCTION("a8OI5hE-DUQ", "libSceNpWebApi", 1, "libSceNpWebApi", Func_6BC388E6113F0D44);
+    LIB_FUNCTION("dQDwxPjcLRY", "libSceNpWebApi", 1, "libSceNpWebApi", Func_7500F0C4F8DC2D16);
+    LIB_FUNCTION("daA4FMfpA58", "libSceNpWebApi", 1, "libSceNpWebApi", Func_75A03814C7E9039F);
+    LIB_FUNCTION("eJ1gJsUhQW4", "libSceNpWebApi", 1, "libSceNpWebApi", Func_789D6026C521416E);
+    LIB_FUNCTION("fe1j0GOZ7-8", "libSceNpWebApi", 1, "libSceNpWebApi", Func_7DED63D06399EFFF);
+    LIB_FUNCTION("flWi3MA9OVo", "libSceNpWebApi", 1, "libSceNpWebApi", Func_7E55A2DCC03D395A);
+    LIB_FUNCTION("fmyPn7hpZ-Q", "libSceNpWebApi", 1, "libSceNpWebApi", Func_7E6C8F9FB86967F4);
+    LIB_FUNCTION("fwS31KfUHoA", "libSceNpWebApi", 1, "libSceNpWebApi", Func_7F04B7D4A7D41E80);
+    LIB_FUNCTION("jhZyUt+lyVc", "libSceNpWebApi", 1, "libSceNpWebApi", Func_8E167252DFA5C957);
+    LIB_FUNCTION("ldAEblBOOwk", "libSceNpWebApi", 1, "libSceNpWebApi", Func_95D0046E504E3B09);
+    LIB_FUNCTION("lyhL-aTxj98", "libSceNpWebApi", 1, "libSceNpWebApi", Func_97284BFDA4F18FDF);
+    LIB_FUNCTION("meMsH0c36rQ", "libSceNpWebApi", 1, "libSceNpWebApi", Func_99E32C1F4737EAB4);
+    LIB_FUNCTION("nP9mHqC8v4M", "libSceNpWebApi", 1, "libSceNpWebApi", Func_9CFF661EA0BCBF83);
+    LIB_FUNCTION("nrDh9GesOyk", "libSceNpWebApi", 1, "libSceNpWebApi", Func_9EB0E1F467AC3B29);
+    LIB_FUNCTION("ojGP5vur+qM", "libSceNpWebApi", 1, "libSceNpWebApi", Func_A2318FE6FBABFAA3);
+    LIB_FUNCTION("ugei4b97OXE", "libSceNpWebApi", 1, "libSceNpWebApi", Func_BA07A2E1BF7B3971);
+    LIB_FUNCTION("vQgD7uDMKaA", "libSceNpWebApi", 1, "libSceNpWebApi", Func_BD0803EEE0CC29A0);
+    LIB_FUNCTION("vm9OVSS7E18", "libSceNpWebApi", 1, "libSceNpWebApi", Func_BE6F4E5524BB135F);
+    LIB_FUNCTION("wNSQ60gepNA", "libSceNpWebApi", 1, "libSceNpWebApi", Func_C0D490EB481EA4D0);
+    LIB_FUNCTION("wXXTksptCEo", "libSceNpWebApi", 1, "libSceNpWebApi", Func_C175D392CA6D084A);
+    LIB_FUNCTION("zQE2rxZdLy8", "libSceNpWebApi", 1, "libSceNpWebApi", Func_CD0136AF165D2F2F);
+    LIB_FUNCTION("0cCtt7Uv6rU", "libSceNpWebApi", 1, "libSceNpWebApi", Func_D1C0ADB7B52FEAB5);
+    LIB_FUNCTION("4yR2XRjuTRI", "libSceNpWebApi", 1, "libSceNpWebApi", Func_E324765D18EE4D12);
+    LIB_FUNCTION("54n5gNkHtlM", "libSceNpWebApi", 1, "libSceNpWebApi", Func_E789F980D907B653);
+    LIB_FUNCTION("+aMuhoVidDY", "libSceNpWebApi", 1, "libSceNpWebApi", Func_F9A32E8685627436);
 };
 
 } // namespace Libraries::Np::NpWebApi
