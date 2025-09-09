@@ -737,7 +737,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
                             tr("Input"),   tr("Paths"), tr("Log"),      tr("Debug")};
     int indexTab = tabNames.indexOf(translatedText);
-    if (indexTab == -1)
+    if (indexTab == -1 || !ui->tabWidgetSettings->isVisible())
         indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 }
