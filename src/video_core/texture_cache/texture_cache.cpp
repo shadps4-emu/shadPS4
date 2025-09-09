@@ -285,6 +285,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
+        if (image_info.guest_size == tex_cache_image.info.guest_size &&
+            (image_info.type == AmdGpu::ImageType::Color3D ||
+             tex_cache_image.info.type == AmdGpu::ImageType::Color3D)) {
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
+        }
+
         if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
             image_info.num_bits * image_info.num_samples !=
                 tex_cache_image.info.num_bits * tex_cache_image.info.num_samples) {
