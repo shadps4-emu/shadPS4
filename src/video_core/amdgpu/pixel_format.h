@@ -221,7 +221,7 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
         }
     }
     case NumberFormat::Srgb:
-        return data_format == DataFormat::FormatBc6 ? NumberFormat::Snorm : format;
+        return data_format == DataFormat::FormatBc6 ? NumberFormat::Unorm : format;
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
     case NumberFormat::Sscaled:
