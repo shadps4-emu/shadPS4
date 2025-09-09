@@ -51,9 +51,6 @@ Emulator::Emulator() {
     // Initialize NT API functions and set high priority
 #ifdef _WIN32
     Common::NtApi::Initialize();
-    if (Config::vblankFreq() < 60) {
-        Config::setVblankFreq(60);
-    }
     SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
     // need to init this in order for winsock2 to work
     WORD versionWanted = MAKEWORD(2, 2);
@@ -65,6 +62,10 @@ Emulator::Emulator() {
 Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
+    if (Config::vblankFreq() < 60) {
+        Config::setVblankFreq(60);
+    }
+
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
