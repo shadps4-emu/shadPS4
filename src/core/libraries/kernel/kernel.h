@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "core/linker.h"
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
 
@@ -16,6 +17,8 @@ void ErrSceToPosix(s32 result);
 s32 ErrnoToSceKernelError(s32 e);
 void SetPosixErrno(s32 e);
 s32* PS4_SYSV_ABI __Error();
+
+extern Core::EntryParams entry_params;
 
 template <class F, F f>
 struct OrbisWrapperImpl;

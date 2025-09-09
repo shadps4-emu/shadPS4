@@ -17,10 +17,6 @@
 #include "video_core/texture_cache/sampler.h"
 #include "video_core/texture_cache/tile_manager.h"
 
-namespace Core::Libraries::VideoOut {
-struct BufferAttributeGroup;
-}
-
 namespace VideoCore {
 
 class BufferCache;

@@ -15,6 +15,7 @@
 #include "core/devtools/widget/module_list.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -135,7 +136,7 @@ void Linker::Execute(const std::vector<std::string> args) {
         ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
 
         // Start main module.
-        EntryParams params{};
+        EntryParams& params = Libraries::Kernel::entry_params;
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
