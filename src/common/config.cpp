@@ -254,8 +254,14 @@ std::filesystem::path GetSaveDataPath() {
     return save_data_path;
 }
 
-void setVolumeSlider(int volumeValue, bool game_specific) {
-    volumeSlider.set(volumeValue, game_specific);
+void setVolumeSlider(int volumeValue, bool is_game_specific) {
+    // Since game-specific value can be set by a widget, need a way to set to nullopt
+    if (is_game_specific && volumeValue == -1) {
+        volumeSlider.game_specific_value = std::nullopt;
+        return;
+    }
+
+    volumeSlider.set(volumeValue, is_game_specific);
 }
 
 void setLoadGameSizeEnabled(bool enable) {
@@ -438,16 +444,16 @@ bool getVkGuestMarkersEnabled() {
     return vkGuestMarkers.get();
 }
 
-void setVkCrashDiagnosticEnabled(bool enable, bool game_specific) {
-    vkCrashDiagnostic.set(enable, game_specific);
+void setVkCrashDiagnosticEnabled(bool enable, bool is_game_specific) {
+    vkCrashDiagnostic.set(enable, is_game_specific);
 }
 
-void setVkHostMarkersEnabled(bool enable, bool game_specific) {
-    vkHostMarkers.set(enable, game_specific);
+void setVkHostMarkersEnabled(bool enable, bool is_game_specific) {
+    vkHostMarkers.set(enable, is_game_specific);
 }
 
-void setVkGuestMarkersEnabled(bool enable, bool game_specific) {
-    vkGuestMarkers.set(enable, game_specific);
+void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
+    vkGuestMarkers.set(enable, is_game_specific);
 }
 
 bool getCompatibilityEnabled() {
@@ -462,20 +468,20 @@ bool getIsConnectedToNetwork() {
     return isConnectedToNetwork.get();
 }
 
-void setConnectedToNetwork(bool enable, bool game_specific) {
-    isConnectedToNetwork.set(enable, game_specific);
+void setConnectedToNetwork(bool enable, bool is_game_specific) {
+    isConnectedToNetwork.set(enable, is_game_specific);
 }
 
-void setGpuId(s32 selectedGpuId, bool game_specific) {
-    gpuId.set(selectedGpuId, game_specific);
+void setGpuId(s32 selectedGpuId, bool is_game_specific) {
+    gpuId.set(selectedGpuId, is_game_specific);
 }
 
-void setWindowWidth(u32 width, bool game_specific) {
-    windowWidth.set(width, game_specific);
+void setWindowWidth(u32 width, bool is_game_specific) {
+    windowWidth.set(width, is_game_specific);
 }
 
-void setWindowHeight(u32 height, bool game_specific) {
-    windowHeight.set(height, game_specific);
+void setWindowHeight(u32 height, bool is_game_specific) {
+    windowHeight.set(height, is_game_specific);
 }
 
 void setInternalScreenWidth(u32 width) {
@@ -486,136 +492,136 @@ void setInternalScreenHeight(u32 height) {
     internalScreenHeight.base_value = height;
 }
 
-void setDebugDump(bool enable, bool game_specific) {
-    isDebugDump.set(enable, game_specific);
+void setDebugDump(bool enable, bool is_game_specific) {
+    isDebugDump.set(enable, is_game_specific);
 }
 
-void setLoggingEnabled(bool enable, bool game_specific) {
-    logEnabled.set(enable, game_specific);
+void setLoggingEnabled(bool enable, bool is_game_specific) {
+    logEnabled.set(enable, is_game_specific);
 }
 
-void setCollectShaderForDebug(bool enable, bool game_specific) {
-    isShaderDebug.set(enable, game_specific);
+void setCollectShaderForDebug(bool enable, bool is_game_specific) {
+    isShaderDebug.set(enable, is_game_specific);
 }
 
-void setShowSplash(bool enable, bool game_specific) {
-    isShowSplash.set(enable, game_specific);
+void setShowSplash(bool enable, bool is_game_specific) {
+    isShowSplash.set(enable, is_game_specific);
 }
 
-void setSideTrophy(string side, bool game_specific) {
-    isSideTrophy.set(side, game_specific);
+void setSideTrophy(string side, bool is_game_specific) {
+    isSideTrophy.set(side, is_game_specific);
 }
 
-void setNullGpu(bool enable, bool game_specific) {
-    isNullGpu.set(enable, game_specific);
+void setNullGpu(bool enable, bool is_game_specific) {
+    isNullGpu.set(enable, is_game_specific);
 }
 
-void setAllowHDR(bool enable, bool game_specific) {
-    isHDRAllowed.set(enable, game_specific);
+void setAllowHDR(bool enable, bool is_game_specific) {
+    isHDRAllowed.set(enable, is_game_specific);
 }
 
-void setCopyGPUCmdBuffers(bool enable, bool game_specific) {
-    shouldCopyGPUBuffers.set(enable, game_specific);
+void setCopyGPUCmdBuffers(bool enable, bool is_game_specific) {
+    shouldCopyGPUBuffers.set(enable, is_game_specific);
 }
 
-void setReadbacks(bool enable, bool game_specific) {
-    readbacksEnabled.set(enable, game_specific);
+void setReadbacks(bool enable, bool is_game_specific) {
+    readbacksEnabled.set(enable, is_game_specific);
 }
 
-void setReadbackLinearImages(bool enable, bool game_specific) {
-    readbackLinearImagesEnabled.set(enable, game_specific);
+void setReadbackLinearImages(bool enable, bool is_game_specific) {
+    readbackLinearImagesEnabled.set(enable, is_game_specific);
 }
 
-void setDirectMemoryAccess(bool enable, bool game_specific) {
-    directMemoryAccessEnabled.set(enable, game_specific);
+void setDirectMemoryAccess(bool enable, bool is_game_specific) {
+    directMemoryAccessEnabled.set(enable, is_game_specific);
 }
 
-void setDumpShaders(bool enable, bool game_specific) {
-    shouldDumpShaders.set(enable, game_specific);
+void setDumpShaders(bool enable, bool is_game_specific) {
+    shouldDumpShaders.set(enable, is_game_specific);
 }
 
-void setVkValidation(bool enable, bool game_specific) {
-    vkValidation.set(enable, game_specific);
+void setVkValidation(bool enable, bool is_game_specific) {
+    vkValidation.set(enable, is_game_specific);
 }
 
-void setVkSyncValidation(bool enable, bool game_specific) {
-    vkValidationSync.set(enable, game_specific);
+void setVkSyncValidation(bool enable, bool is_game_specific) {
+    vkValidationSync.set(enable, is_game_specific);
 }
 
-void setRdocEnabled(bool enable, bool game_specific) {
-    rdocEnable.set(enable, game_specific);
+void setRdocEnabled(bool enable, bool is_game_specific) {
+    rdocEnable.set(enable, is_game_specific);
 }
 
-void setVblankFreq(u32 value, bool game_specific) {
-    vblankFrequency.set(value, game_specific);
+void setVblankFreq(u32 value, bool is_game_specific) {
+    vblankFrequency.set(value, is_game_specific);
 }
 
-void setIsFullscreen(bool enable, bool game_specific) {
-    isFullscreen.set(enable, game_specific);
+void setIsFullscreen(bool enable, bool is_game_specific) {
+    isFullscreen.set(enable, is_game_specific);
 }
 
-void setFullscreenMode(string mode, bool game_specific) {
-    fullscreenMode.set(mode, game_specific);
+void setFullscreenMode(string mode, bool is_game_specific) {
+    fullscreenMode.set(mode, is_game_specific);
 }
 
-void setPresentMode(std::string mode, bool game_specific) {
-    presentMode.set(mode, game_specific);
+void setPresentMode(std::string mode, bool is_game_specific) {
+    presentMode.set(mode, is_game_specific);
 }
 
-void setisTrophyPopupDisabled(bool disable, bool game_specific) {
-    isTrophyPopupDisabled.set(disable, game_specific);
+void setisTrophyPopupDisabled(bool disable, bool is_game_specific) {
+    isTrophyPopupDisabled.set(disable, is_game_specific);
 }
 
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
 
-void setCursorState(s16 newCursorState, bool game_specific) {
-    cursorState.set(newCursorState, game_specific);
+void setCursorState(s16 newCursorState, bool is_game_specific) {
+    cursorState.set(newCursorState, is_game_specific);
 }
 
-void setCursorHideTimeout(int newcursorHideTimeout, bool game_specific) {
-    cursorHideTimeout.set(newcursorHideTimeout, game_specific);
+void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific) {
+    cursorHideTimeout.set(newcursorHideTimeout, is_game_specific);
 }
 
-void setMicDevice(string device, bool game_specific) {
-    micDevice.set(device, game_specific);
+void setMicDevice(string device, bool is_game_specific) {
+    micDevice.set(device, is_game_specific);
 }
 
-void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool game_specific) {
-    trophyNotificationDuration.set(newTrophyNotificationDuration, game_specific);
+void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
+    trophyNotificationDuration.set(newTrophyNotificationDuration, is_game_specific);
 }
 
-void setLanguage(u32 language, bool game_specific) {
-    m_language.set(language, game_specific);
+void setLanguage(u32 language, bool is_game_specific) {
+    m_language.set(language, is_game_specific);
 }
 
-void setNeoMode(bool enable, bool game_specific) {
-    isNeo.set(enable, game_specific);
+void setNeoMode(bool enable, bool is_game_specific) {
+    isNeo.set(enable, is_game_specific);
 }
 
-void setDevKitConsole(bool enable, bool game_specific) {
-    isDevKit.set(enable, game_specific);
+void setDevKitConsole(bool enable, bool is_game_specific) {
+    isDevKit.set(enable, is_game_specific);
 }
 
-void setLogType(const string& type, bool game_specific) {
-    logType.set(type, game_specific);
+void setLogType(const string& type, bool is_game_specific) {
+    logType.set(type, is_game_specific);
 }
 
-void setLogFilter(const string& type, bool game_specific) {
-    logFilter.set(type, game_specific);
+void setLogFilter(const string& type, bool is_game_specific) {
+    logFilter.set(type, is_game_specific);
 }
 
-void setSeparateLogFilesEnabled(bool enabled, bool game_specific) {
-    isSeparateLogFilesEnabled.set(enabled, game_specific);
+void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific) {
+    isSeparateLogFilesEnabled.set(enabled, is_game_specific);
 }
 
-void setUserName(const string& name, bool game_specific) {
-    userName.set(name, game_specific);
+void setUserName(const string& name, bool is_game_specific) {
+    userName.set(name, is_game_specific);
 }
 
-void setChooseHomeTab(const string& type, bool game_specific) {
-    chooseHomeTab.set(type, game_specific);
+void setChooseHomeTab(const string& type, bool is_game_specific) {
+    chooseHomeTab.set(type, is_game_specific);
 }
 
 void setUseSpecialPad(bool use) {
@@ -626,8 +632,8 @@ void setSpecialPadClass(int type) {
     specialPadClass.base_value = type;
 }
 
-void setIsMotionControlsEnabled(bool use, bool game_specific) {
-    isMotionControlsEnabled.set(use, game_specific);
+void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
+    isMotionControlsEnabled.set(use, is_game_specific);
 }
 
 void setCompatibilityEnabled(bool use) {
@@ -723,8 +729,8 @@ bool getPSNSignedIn() {
     return isPSNSignedIn.get();
 }
 
-void setPSNSignedIn(bool sign, bool game_specific) {
-    isPSNSignedIn.set(sign, game_specific);
+void setPSNSignedIn(bool sign, bool is_game_specific) {
+    isPSNSignedIn.set(sign, is_game_specific);
 }
 
 string getDefaultControllerID() {
@@ -739,32 +745,32 @@ bool getBackgroundControllerInput() {
     return backgroundControllerInput.get();
 }
 
-void setBackgroundControllerInput(bool enable, bool game_specific) {
-    backgroundControllerInput.set(enable, game_specific);
+void setBackgroundControllerInput(bool enable, bool is_game_specific) {
+    backgroundControllerInput.set(enable, is_game_specific);
 }
 
 bool getFsrEnabled() {
     return fsrEnabled.get();
 }
 
-void setFsrEnabled(bool enable, bool game_specific) {
-    fsrEnabled.set(enable, game_specific);
+void setFsrEnabled(bool enable, bool is_game_specific) {
+    fsrEnabled.set(enable, is_game_specific);
 }
 
 bool getRcasEnabled() {
     return rcasEnabled.get();
 }
 
-void setRcasEnabled(bool enable, bool game_specific) {
-    rcasEnabled.set(enable, game_specific);
+void setRcasEnabled(bool enable, bool is_game_specific) {
+    rcasEnabled.set(enable, is_game_specific);
 }
 
 int getRcasAttenuation() {
     return rcasAttenuation.get();
 }
 
-void setRcasAttenuation(int value, bool game_specific) {
-    rcasAttenuation.set(value, game_specific);
+void setRcasAttenuation(int value, bool is_game_specific) {
+    rcasAttenuation.set(value, is_game_specific);
 }
 
 void load(const std::filesystem::path& path, bool is_game_specific) {

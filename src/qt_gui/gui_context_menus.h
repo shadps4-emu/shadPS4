@@ -68,9 +68,9 @@ public:
         menu.addMenu(openFolderMenu);
 
         QMenu* gameConfigMenu = new QMenu(tr("Game-specific Settings..."), widget);
-        QAction gameConfigConfigure(tr("Configure game-specific settings"), widget);
-        QAction gameConfigCreate(tr("Create game-specific settings from global settings"), widget);
-        QAction gameConfigDelete(tr("Delete game-specific settings"), widget);
+        QAction gameConfigConfigure(tr("Configure Game-specific Settings"), widget);
+        QAction gameConfigCreate(tr("Create Game-specific Settings from Global Settings"), widget);
+        QAction gameConfigDelete(tr("Delete Game-specific Settings"), widget);
 
         if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
                                     (m_games[itemID].serial + ".toml"))) {
@@ -143,9 +143,9 @@ public:
 
         // Compatibility submenu.
         QMenu* compatibilityMenu = new QMenu(tr("Compatibility..."), widget);
-        QAction* updateCompatibility = new QAction(tr("Update database"), widget);
-        QAction* viewCompatibilityReport = new QAction(tr("View report"), widget);
-        QAction* submitCompatibilityReport = new QAction(tr("Submit a report"), widget);
+        QAction* updateCompatibility = new QAction(tr("Update Database"), widget);
+        QAction* viewCompatibilityReport = new QAction(tr("View Report"), widget);
+        QAction* submitCompatibilityReport = new QAction(tr("Submit a Report"), widget);
 
         compatibilityMenu->addAction(updateCompatibility);
         compatibilityMenu->addAction(viewCompatibilityReport);
@@ -414,8 +414,8 @@ public:
         }
 
         if (selected == &gameConfigDelete) {
-            if (QMessageBox::Yes == QMessageBox::question(widget, tr("Confirm Deletion"),
-                                                          tr("Delete Game-specific settings?"),
+            if (QMessageBox::Yes == QMessageBox::question(widget, tr("Confirm deletion"),
+                                                          tr("Delete game-specific settings?"),
                                                           QMessageBox::Yes | QMessageBox::No)) {
                 std::filesystem::remove(
                     Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /

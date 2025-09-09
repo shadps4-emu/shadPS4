@@ -194,19 +194,19 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QWidget::close);
 
     connect(ui->buttonBox, &QDialogButtonBox::clicked, this,
-            [this, config_file, is_game_specific](QAbstractButton* button) {
+            [this, config_file](QAbstractButton* button) {
                 if (button == ui->buttonBox->button(QDialogButtonBox::Save)) {
                     is_saving = true;
                     UpdateSettings(game_specific);
-                    Config::save(config_file, is_game_specific);
+                    Config::save(config_file, game_specific);
                     QWidget::close();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Apply)) {
                     UpdateSettings(game_specific);
-                    Config::save(config_file, is_game_specific);
+                    Config::save(config_file, game_specific);
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)) {
                     setDefaultValues();
-                    Config::setDefaultValues(is_game_specific);
-                    Config::save(config_file, is_game_specific);
+                    Config::setDefaultValues(game_specific);
+                    Config::save(config_file, game_specific);
                     LoadValuesFromConfig();
                 } else if (button == ui->buttonBox->button(QDialogButtonBox::Close)) {
                     ui->backgroundImageOpacitySlider->setValue(backgroundImageOpacitySlider_backup);
@@ -301,9 +301,6 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
 
         connect(ui->BGMVolumeSlider, &QSlider::valueChanged, this,
                 [](int value) { BackgroundMusicPlayer::getInstance().setVolume(value); });
-
-        connect(ui->chooseHomeTabComboBox, &QComboBox::currentTextChanged, this,
-                [](const QString& hometab) { Config::setChooseHomeTab(hometab.toStdString()); });
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 7, 0))
         connect(ui->showBackgroundImageCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
@@ -547,8 +544,10 @@ void SettingsDialog::LoadValuesFromConfig() {
             : Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml";
 
     std::error_code error;
+    bool is_newly_created = false;
     if (!std::filesystem::exists(config_file, error)) {
         Config::save(config_file, game_specific);
+        is_newly_created = true;
     }
 
     try {
@@ -737,7 +736,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     QStringList tabNames = {tr("General"), tr("GUI"),   tr("Graphics"), tr("User"),
                             tr("Input"),   tr("Paths"), tr("Log"),      tr("Debug")};
     int indexTab = tabNames.indexOf(translatedText);
-    if (indexTab == -1 || !ui->tabWidgetSettings->isVisible())
+    if (indexTab == -1 || !ui->tabWidgetSettings->isTabVisible(indexTab) || is_newly_created)
         indexTab = 0;
     ui->tabWidgetSettings->setCurrentIndex(indexTab);
 }
@@ -1125,7 +1124,6 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         }
     }
 
-    // Entries with game-specific values, load from toml file instead of Config::get
     toml::value gs_data;
     game_specific
         ? gs_data = toml::parse(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
@@ -1133,8 +1131,11 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
         : gs_data = data;
 
     int sliderValue = toml::find_or<int>(gs_data, "General", "volumeSlider", 100);
-    Config::setVolumeSlider(sliderValue, game_specific);
     ui->horizontalVolumeSlider->setValue(sliderValue);
+
+    // Since config::set can be called for volume slider (connected to the widget) outside the save
+    // function, need to null it out when closed without saving
+    game_specific ? Config::setVolumeSlider(-1, true) : Config::setVolumeSlider(sliderValue);
 
     if (presenter) {
         presenter->GetFsrSettingsRef().enable =
