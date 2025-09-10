@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/linker.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -16,6 +17,8 @@ void ErrSceToPosix(s32 result);
 s32 ErrnoToSceKernelError(s32 e);
 void SetPosixErrno(s32 e);
 s32* PS4_SYSV_ABI __Error();
+
+extern Core::EntryParams entry_params;
 
 template <class F, F f>
 struct OrbisWrapperImpl;

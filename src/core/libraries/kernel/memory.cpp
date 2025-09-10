@@ -689,62 +689,55 @@ s32 PS4_SYSV_ABI sceKernelGetPrtAperture(s32 id, VAddr* address, u64* size) {
 }
 
 void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", 1, 1, sceKernelAllocateDirectMemory);
-    LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", 1, 1,
-                 sceKernelAllocateMainDirectMemory);
-    LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", 1, 1,
-                 sceKernelAvailableDirectMemorySize);
-    LIB_FUNCTION("hwVSPCmp5tM", "libkernel", 1, "libkernel", 1, 1,
-                 sceKernelCheckedReleaseDirectMemory);
-    LIB_FUNCTION("rVjRvHJ0X6c", "libkernel", 1, "libkernel", 1, 1, sceKernelVirtualQuery);
-    LIB_FUNCTION("7oxv3PPCumo", "libkernel", 1, "libkernel", 1, 1, sceKernelReserveVirtualRange);
-    LIB_FUNCTION("BC+OG5m9+bw", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemoryType);
-    LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", 1, 1, sceKernelGetDirectMemorySize);
-    LIB_FUNCTION("yDBwVAolDgg", "libkernel", 1, "libkernel", 1, 1, sceKernelIsStack);
-    LIB_FUNCTION("jh+8XiK4LeE", "libkernel", 1, "libkernel", 1, 1,
-                 sceKernelIsAddressSanitizerEnabled);
-    LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedDirectMemory);
-    LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory);
-    LIB_FUNCTION("BQQniolj9tQ", "libkernel", 1, "libkernel", 1, 1, sceKernelMapDirectMemory2);
-    LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", 1, 1, sceKernelQueryMemoryProtection);
-    LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", 1, 1, sceKernelDirectMemoryQuery);
-    LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", 1, 1, sceKernelReleaseDirectMemory);
-    LIB_FUNCTION("PGhQHd-dzv8", "libkernel", 1, "libkernel", 1, 1, sceKernelMmap);
-    LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", 1, 1, sceKernelMunmap);
-    LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", 1, 1, sceKernelMapNamedFlexibleMemory);
-    LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", sceKernelAllocateDirectMemory);
+    LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", sceKernelAllocateMainDirectMemory);
+    LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", sceKernelAvailableDirectMemorySize);
+    LIB_FUNCTION("hwVSPCmp5tM", "libkernel", 1, "libkernel", sceKernelCheckedReleaseDirectMemory);
+    LIB_FUNCTION("rVjRvHJ0X6c", "libkernel", 1, "libkernel", sceKernelVirtualQuery);
+    LIB_FUNCTION("7oxv3PPCumo", "libkernel", 1, "libkernel", sceKernelReserveVirtualRange);
+    LIB_FUNCTION("BC+OG5m9+bw", "libkernel", 1, "libkernel", sceKernelGetDirectMemoryType);
+    LIB_FUNCTION("pO96TwzOm5E", "libkernel", 1, "libkernel", sceKernelGetDirectMemorySize);
+    LIB_FUNCTION("yDBwVAolDgg", "libkernel", 1, "libkernel", sceKernelIsStack);
+    LIB_FUNCTION("jh+8XiK4LeE", "libkernel", 1, "libkernel", sceKernelIsAddressSanitizerEnabled);
+    LIB_FUNCTION("NcaWUxfMNIQ", "libkernel", 1, "libkernel", sceKernelMapNamedDirectMemory);
+    LIB_FUNCTION("L-Q3LEjIbgA", "libkernel", 1, "libkernel", sceKernelMapDirectMemory);
+    LIB_FUNCTION("BQQniolj9tQ", "libkernel", 1, "libkernel", sceKernelMapDirectMemory2);
+    LIB_FUNCTION("WFcfL2lzido", "libkernel", 1, "libkernel", sceKernelQueryMemoryProtection);
+    LIB_FUNCTION("BHouLQzh0X0", "libkernel", 1, "libkernel", sceKernelDirectMemoryQuery);
+    LIB_FUNCTION("MBuItvba6z8", "libkernel", 1, "libkernel", sceKernelReleaseDirectMemory);
+    LIB_FUNCTION("PGhQHd-dzv8", "libkernel", 1, "libkernel", sceKernelMmap);
+    LIB_FUNCTION("cQke9UuBQOk", "libkernel", 1, "libkernel", sceKernelMunmap);
+    LIB_FUNCTION("mL8NDH86iQI", "libkernel", 1, "libkernel", sceKernelMapNamedFlexibleMemory);
+    LIB_FUNCTION("aNz11fnnzi4", "libkernel", 1, "libkernel", sceKernelAvailableFlexibleMemorySize);
+    LIB_FUNCTION("aNz11fnnzi4", "libkernel_avlfmem", 1, "libkernel",
                  sceKernelAvailableFlexibleMemorySize);
-    LIB_FUNCTION("aNz11fnnzi4", "libkernel_avlfmem", 1, "libkernel", 1, 1,
-                 sceKernelAvailableFlexibleMemorySize);
-    LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", 1, 1, sceKernelMapFlexibleMemory);
-    LIB_FUNCTION("p5EcQeEeJAE", "libkernel", 1, "libkernel", 1, 1,
-                 _sceKernelRtldSetApplicationHeapAPI);
-    LIB_FUNCTION("2SKEx6bSq-4", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap);
-    LIB_FUNCTION("kBJzF8x4SyE", "libkernel", 1, "libkernel", 1, 1, sceKernelBatchMap2);
-    LIB_FUNCTION("DGMG3JshrZU", "libkernel", 1, "libkernel", 1, 1, sceKernelSetVirtualRangeName);
-    LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", 1, 1,
-                 sceKernelConfiguredFlexibleMemorySize);
+    LIB_FUNCTION("IWIBBdTHit4", "libkernel", 1, "libkernel", sceKernelMapFlexibleMemory);
+    LIB_FUNCTION("p5EcQeEeJAE", "libkernel", 1, "libkernel", _sceKernelRtldSetApplicationHeapAPI);
+    LIB_FUNCTION("2SKEx6bSq-4", "libkernel", 1, "libkernel", sceKernelBatchMap);
+    LIB_FUNCTION("kBJzF8x4SyE", "libkernel", 1, "libkernel", sceKernelBatchMap2);
+    LIB_FUNCTION("DGMG3JshrZU", "libkernel", 1, "libkernel", sceKernelSetVirtualRangeName);
+    LIB_FUNCTION("n1-v6FgU7MQ", "libkernel", 1, "libkernel", sceKernelConfiguredFlexibleMemorySize);
 
-    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", 1, 1, sceKernelMprotect);
-    LIB_FUNCTION("YQOfxL4QfeU", "libkernel", 1, "libkernel", 1, 1, posix_mprotect);
-    LIB_FUNCTION("YQOfxL4QfeU", "libScePosix", 1, "libkernel", 1, 1, posix_mprotect);
-    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", 1, 1, sceKernelMtypeprotect);
+    LIB_FUNCTION("vSMAm3cxYTY", "libkernel", 1, "libkernel", sceKernelMprotect);
+    LIB_FUNCTION("YQOfxL4QfeU", "libkernel", 1, "libkernel", posix_mprotect);
+    LIB_FUNCTION("YQOfxL4QfeU", "libScePosix", 1, "libkernel", posix_mprotect);
+    LIB_FUNCTION("9bfdLIyuwCY", "libkernel", 1, "libkernel", sceKernelMtypeprotect);
 
     // Memory pool
-    LIB_FUNCTION("qCSfqDILlns", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolExpand);
-    LIB_FUNCTION("pU-QydtGcGY", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolReserve);
-    LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolCommit);
-    LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolDecommit);
-    LIB_FUNCTION("YN878uKRBbE", "libkernel", 1, "libkernel", 1, 1, sceKernelMemoryPoolBatch);
+    LIB_FUNCTION("qCSfqDILlns", "libkernel", 1, "libkernel", sceKernelMemoryPoolExpand);
+    LIB_FUNCTION("pU-QydtGcGY", "libkernel", 1, "libkernel", sceKernelMemoryPoolReserve);
+    LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", sceKernelMemoryPoolCommit);
+    LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", sceKernelMemoryPoolDecommit);
+    LIB_FUNCTION("YN878uKRBbE", "libkernel", 1, "libkernel", sceKernelMemoryPoolBatch);
 
-    LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", 1, 1, posix_mmap);
-    LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", 1, 1, posix_mmap);
-    LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", 1, 1, posix_munmap);
-    LIB_FUNCTION("UqDGjXA5yUM", "libScePosix", 1, "libkernel", 1, 1, posix_munmap);
+    LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", posix_mmap);
+    LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", posix_mmap);
+    LIB_FUNCTION("UqDGjXA5yUM", "libkernel", 1, "libkernel", posix_munmap);
+    LIB_FUNCTION("UqDGjXA5yUM", "libScePosix", 1, "libkernel", posix_munmap);
 
     // PRT memory management
-    LIB_FUNCTION("BohYr-F7-is", "libkernel", 1, "libkernel", 1, 1, sceKernelSetPrtAperture);
-    LIB_FUNCTION("L0v2Go5jOuM", "libkernel", 1, "libkernel", 1, 1, sceKernelGetPrtAperture);
+    LIB_FUNCTION("BohYr-F7-is", "libkernel", 1, "libkernel", sceKernelSetPrtAperture);
+    LIB_FUNCTION("L0v2Go5jOuM", "libkernel", 1, "libkernel", sceKernelGetPrtAperture);
 }
 
 } // namespace Libraries::Kernel

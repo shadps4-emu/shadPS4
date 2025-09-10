@@ -35,13 +35,11 @@ int PS4_SYSV_ABI Func_E7EBCE96E92F91F8() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("fl1eoDnwQ4s", "libSceDiscMap", 1, "libSceDiscMap", 1, 1,
-                 sceDiscMapGetPackageSize);
-    LIB_FUNCTION("lbQKqsERhtE", "libSceDiscMap", 1, "libSceDiscMap", 1, 1,
-                 sceDiscMapIsRequestOnHDD);
-    LIB_FUNCTION("fJgP+wqifno", "libSceDiscMap", 1, "libSceDiscMap", 1, 1, Func_7C980FFB0AA27E7A);
-    LIB_FUNCTION("ioKMruft1ek", "libSceDiscMap", 1, "libSceDiscMap", 1, 1, Func_8A828CAEE7EDD5E9);
-    LIB_FUNCTION("5+vOlukvkfg", "libSceDiscMap", 1, "libSceDiscMap", 1, 1, Func_E7EBCE96E92F91F8);
+    LIB_FUNCTION("fl1eoDnwQ4s", "libSceDiscMap", 1, "libSceDiscMap", sceDiscMapGetPackageSize);
+    LIB_FUNCTION("lbQKqsERhtE", "libSceDiscMap", 1, "libSceDiscMap", sceDiscMapIsRequestOnHDD);
+    LIB_FUNCTION("fJgP+wqifno", "libSceDiscMap", 1, "libSceDiscMap", Func_7C980FFB0AA27E7A);
+    LIB_FUNCTION("ioKMruft1ek", "libSceDiscMap", 1, "libSceDiscMap", Func_8A828CAEE7EDD5E9);
+    LIB_FUNCTION("5+vOlukvkfg", "libSceDiscMap", 1, "libSceDiscMap", Func_E7EBCE96E92F91F8);
 };
 
 } // namespace Libraries::DiscMap

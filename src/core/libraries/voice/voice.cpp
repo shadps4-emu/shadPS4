@@ -167,37 +167,36 @@ s32 PS4_SYSV_ABI sceVoiceWriteToIPort() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("oV9GAdJ23Gw", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceConnectIPortToOPort);
-    LIB_FUNCTION("nXpje5yNpaE", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceCreatePort);
-    LIB_FUNCTION("b7kJI+nx2hg", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceDeletePort);
-    LIB_FUNCTION("ajVj3QG2um4", "libSceVoice", 1, "libSceVoice", 0, 0,
-                 sceVoiceDisconnectIPortFromOPort);
-    LIB_FUNCTION("Oo0S5PH7FIQ", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceEnd);
-    LIB_FUNCTION("cJLufzou6bc", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetBitRate);
-    LIB_FUNCTION("Pc4z1QjForU", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetMuteFlag);
-    LIB_FUNCTION("elcxZTEfHZM", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetPortAttr);
-    LIB_FUNCTION("CrLqDwWLoXM", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetPortInfo);
-    LIB_FUNCTION("Z6QV6j7igvE", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetResourceInfo);
-    LIB_FUNCTION("jjkCjneOYSs", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceGetVolume);
-    LIB_FUNCTION("9TrhuGzberQ", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceInit);
-    LIB_FUNCTION("IPHvnM5+g04", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceInitHQ);
-    LIB_FUNCTION("x0slGBQW+wY", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoicePausePort);
-    LIB_FUNCTION("Dinob0yMRl8", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoicePausePortAll);
-    LIB_FUNCTION("cQ6DGsQEjV4", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceReadFromOPort);
-    LIB_FUNCTION("udAxvCePkUs", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceResetPort);
-    LIB_FUNCTION("gAgN+HkiEzY", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceResumePort);
-    LIB_FUNCTION("jbkJFmOZ9U0", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceResumePortAll);
-    LIB_FUNCTION("TexwmOHQsDg", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceSetBitRate);
-    LIB_FUNCTION("gwUynkEgNFY", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceSetMuteFlag);
-    LIB_FUNCTION("oUha0S-Ij9Q", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceSetMuteFlagAll);
-    LIB_FUNCTION("clyKUyi3RYU", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceSetThreadsParams);
-    LIB_FUNCTION("QBFoAIjJoXQ", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceSetVolume);
-    LIB_FUNCTION("54phPH2LZls", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceStart);
-    LIB_FUNCTION("Ao2YNSA7-Qo", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceStop);
-    LIB_FUNCTION("jSZNP7xJrcw", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceUpdatePort);
-    LIB_FUNCTION("hg9T73LlRiU", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceVADAdjustment);
-    LIB_FUNCTION("wFeAxEeEi-8", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceVADSetVersion);
-    LIB_FUNCTION("YeJl6yDlhW0", "libSceVoice", 1, "libSceVoice", 0, 0, sceVoiceWriteToIPort);
+    LIB_FUNCTION("oV9GAdJ23Gw", "libSceVoice", 1, "libSceVoice", sceVoiceConnectIPortToOPort);
+    LIB_FUNCTION("nXpje5yNpaE", "libSceVoice", 1, "libSceVoice", sceVoiceCreatePort);
+    LIB_FUNCTION("b7kJI+nx2hg", "libSceVoice", 1, "libSceVoice", sceVoiceDeletePort);
+    LIB_FUNCTION("ajVj3QG2um4", "libSceVoice", 1, "libSceVoice", sceVoiceDisconnectIPortFromOPort);
+    LIB_FUNCTION("Oo0S5PH7FIQ", "libSceVoice", 1, "libSceVoice", sceVoiceEnd);
+    LIB_FUNCTION("cJLufzou6bc", "libSceVoice", 1, "libSceVoice", sceVoiceGetBitRate);
+    LIB_FUNCTION("Pc4z1QjForU", "libSceVoice", 1, "libSceVoice", sceVoiceGetMuteFlag);
+    LIB_FUNCTION("elcxZTEfHZM", "libSceVoice", 1, "libSceVoice", sceVoiceGetPortAttr);
+    LIB_FUNCTION("CrLqDwWLoXM", "libSceVoice", 1, "libSceVoice", sceVoiceGetPortInfo);
+    LIB_FUNCTION("Z6QV6j7igvE", "libSceVoice", 1, "libSceVoice", sceVoiceGetResourceInfo);
+    LIB_FUNCTION("jjkCjneOYSs", "libSceVoice", 1, "libSceVoice", sceVoiceGetVolume);
+    LIB_FUNCTION("9TrhuGzberQ", "libSceVoice", 1, "libSceVoice", sceVoiceInit);
+    LIB_FUNCTION("IPHvnM5+g04", "libSceVoice", 1, "libSceVoice", sceVoiceInitHQ);
+    LIB_FUNCTION("x0slGBQW+wY", "libSceVoice", 1, "libSceVoice", sceVoicePausePort);
+    LIB_FUNCTION("Dinob0yMRl8", "libSceVoice", 1, "libSceVoice", sceVoicePausePortAll);
+    LIB_FUNCTION("cQ6DGsQEjV4", "libSceVoice", 1, "libSceVoice", sceVoiceReadFromOPort);
+    LIB_FUNCTION("udAxvCePkUs", "libSceVoice", 1, "libSceVoice", sceVoiceResetPort);
+    LIB_FUNCTION("gAgN+HkiEzY", "libSceVoice", 1, "libSceVoice", sceVoiceResumePort);
+    LIB_FUNCTION("jbkJFmOZ9U0", "libSceVoice", 1, "libSceVoice", sceVoiceResumePortAll);
+    LIB_FUNCTION("TexwmOHQsDg", "libSceVoice", 1, "libSceVoice", sceVoiceSetBitRate);
+    LIB_FUNCTION("gwUynkEgNFY", "libSceVoice", 1, "libSceVoice", sceVoiceSetMuteFlag);
+    LIB_FUNCTION("oUha0S-Ij9Q", "libSceVoice", 1, "libSceVoice", sceVoiceSetMuteFlagAll);
+    LIB_FUNCTION("clyKUyi3RYU", "libSceVoice", 1, "libSceVoice", sceVoiceSetThreadsParams);
+    LIB_FUNCTION("QBFoAIjJoXQ", "libSceVoice", 1, "libSceVoice", sceVoiceSetVolume);
+    LIB_FUNCTION("54phPH2LZls", "libSceVoice", 1, "libSceVoice", sceVoiceStart);
+    LIB_FUNCTION("Ao2YNSA7-Qo", "libSceVoice", 1, "libSceVoice", sceVoiceStop);
+    LIB_FUNCTION("jSZNP7xJrcw", "libSceVoice", 1, "libSceVoice", sceVoiceUpdatePort);
+    LIB_FUNCTION("hg9T73LlRiU", "libSceVoice", 1, "libSceVoice", sceVoiceVADAdjustment);
+    LIB_FUNCTION("wFeAxEeEi-8", "libSceVoice", 1, "libSceVoice", sceVoiceVADSetVersion);
+    LIB_FUNCTION("YeJl6yDlhW0", "libSceVoice", 1, "libSceVoice", sceVoiceWriteToIPort);
 };
 
 } // namespace Libraries::Voice

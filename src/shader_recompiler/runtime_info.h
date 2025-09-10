@@ -54,12 +54,12 @@ struct ExportRuntimeInfo {
 
 enum class Output : u8 {
     None,
-    PointSprite,
+    PointSize,
     EdgeFlag,
     KillFlag,
     GsCutFlag,
-    GsMrtIndex,
-    GsVpIndex,
+    RenderTargetIndex,
+    ViewportIndex,
     CullDist0,
     CullDist1,
     CullDist2,

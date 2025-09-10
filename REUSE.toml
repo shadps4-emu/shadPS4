@@ -33,7 +33,6 @@ path = [
     "src/images/dump_icon.png",
     "src/images/exit_icon.png",
     "src/images/favorite_icon.png",
-    "src/images/file_icon.png",
     "src/images/trophy_icon.png",
     "src/images/flag_china.png",
     "src/images/flag_eu.png",

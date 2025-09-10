@@ -97,7 +97,14 @@ bool EqueueInternal::RemoveEvent(u64 id, s16 filter) {
     return has_found;
 }
 
-int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
+int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUseconds* timo) {
+    if (timo != nullptr && *timo == 0) {
+        // Effectively acts as a poll; only events that have already
+        // arrived at the time of this function call can be received
+        return GetTriggeredEvents(ev, num);
+    }
+    const auto micros = timo ? *timo : 0u;
+
     if (HasSmallTimer()) {
         // If a small timer is set, just wait for it to expire.
         return WaitForSmallTimer(ev, num, micros);
@@ -111,9 +118,11 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
     };
 
     if (micros == 0) {
+        // Wait indefinitely for events
         std::unique_lock lock{m_mutex};
         m_cond.wait(lock, predicate);
     } else {
+        // Wait up until the timeout value
         std::unique_lock lock{m_mutex};
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
@@ -124,12 +133,6 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, u32 micros) {
                                          std::chrono::steady_clock::now() - m_events[0].time_added)
                                          .count();
             count = WaitForSmallTimer(ev, num, std::max(0l, long(micros - time_waited)));
-        }
-    }
-
-    if (ev->flags & SceKernelEvent::Flags::OneShot) {
-        for (auto ev_id = 0u; ev_id < count; ++ev_id) {
-            RemoveEvent(ev->ident, ev->filter);
         }
     }
 
@@ -159,18 +162,27 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
 
 int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     int count = 0;
-    for (auto& event : m_events) {
-        if (event.IsTriggered()) {
-            // Event should not trigger again
-            event.ResetTriggerState();
+    for (auto it = m_events.begin(); it != m_events.end();) {
+        if (it->IsTriggered()) {
+            ev[count++] = it->event;
 
-            if (event.event.flags & SceKernelEvent::Flags::Clear) {
-                event.Clear();
+            // Event should not trigger again
+            it->ResetTriggerState();
+
+            if (it->event.flags & SceKernelEvent::Flags::Clear) {
+                it->Clear();
             }
-            ev[count++] = event.event;
+            if (it->event.flags & SceKernelEvent::Flags::OneShot) {
+                it = m_events.erase(it);
+            } else {
+                ++it;
+            }
+
             if (count == num) {
                 break;
             }
+        } else {
+            ++it;
         }
     }
 
@@ -277,19 +289,11 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     }
 
     if (num < 1) {
+        *out = 0;
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    if (timo == nullptr) {
-        // When the timeout is nullptr, we wait indefinitely
-        *out = eq->WaitForEvents(ev, num, 0);
-    } else if (*timo == 0) {
-        // Only events that have already arrived at the time of this function call can be received
-        *out = eq->GetTriggeredEvents(ev, num);
-    } else {
-        // Wait for up to the specified timeout value
-        *out = eq->WaitForEvents(ev, num, *timo);
-    }
+    *out = eq->WaitForEvents(ev, num, timo);
 
     if (*out == 0) {
         return ORBIS_KERNEL_ERROR_ETIMEDOUT;
@@ -484,21 +488,21 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev) {
 }
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEqueue);
-    LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteEqueue);
-    LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEqueue);
-    LIB_FUNCTION("vz+pg2zdopI", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventUserData);
-    LIB_FUNCTION("4R6-OvI2cEA", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEvent);
-    LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", 1, 1, sceKernelAddUserEventEdge);
-    LIB_FUNCTION("R74tt43xP6k", "libkernel", 1, "libkernel", 1, 1, sceKernelAddHRTimerEvent);
-    LIB_FUNCTION("J+LF6LwObXU", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteHRTimerEvent);
-    LIB_FUNCTION("57ZK+ODEXWY", "libkernel", 1, "libkernel", 1, 1, sceKernelAddTimerEvent);
-    LIB_FUNCTION("YWQFUyXIVdU", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteTimerEvent);
-    LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", 1, 1, sceKernelTriggerUserEvent);
-    LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteUserEvent);
-    LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventId);
-    LIB_FUNCTION("23CPPI1tyBY", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventFilter);
-    LIB_FUNCTION("kwGyyjohI50", "libkernel", 1, "libkernel", 1, 1, sceKernelGetEventData);
+    LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);
+    LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", sceKernelDeleteEqueue);
+    LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", sceKernelWaitEqueue);
+    LIB_FUNCTION("vz+pg2zdopI", "libkernel", 1, "libkernel", sceKernelGetEventUserData);
+    LIB_FUNCTION("4R6-OvI2cEA", "libkernel", 1, "libkernel", sceKernelAddUserEvent);
+    LIB_FUNCTION("WDszmSbWuDk", "libkernel", 1, "libkernel", sceKernelAddUserEventEdge);
+    LIB_FUNCTION("R74tt43xP6k", "libkernel", 1, "libkernel", sceKernelAddHRTimerEvent);
+    LIB_FUNCTION("J+LF6LwObXU", "libkernel", 1, "libkernel", sceKernelDeleteHRTimerEvent);
+    LIB_FUNCTION("57ZK+ODEXWY", "libkernel", 1, "libkernel", sceKernelAddTimerEvent);
+    LIB_FUNCTION("YWQFUyXIVdU", "libkernel", 1, "libkernel", sceKernelDeleteTimerEvent);
+    LIB_FUNCTION("F6e0kwo4cnk", "libkernel", 1, "libkernel", sceKernelTriggerUserEvent);
+    LIB_FUNCTION("LJDwdSNTnDg", "libkernel", 1, "libkernel", sceKernelDeleteUserEvent);
+    LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", sceKernelGetEventId);
+    LIB_FUNCTION("23CPPI1tyBY", "libkernel", 1, "libkernel", sceKernelGetEventFilter);
+    LIB_FUNCTION("kwGyyjohI50", "libkernel", 1, "libkernel", sceKernelGetEventData);
 }
 
 } // namespace Libraries::Kernel

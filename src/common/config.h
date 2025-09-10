@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -61,8 +61,8 @@ bool directMemoryAccess();
 void setDirectMemoryAccess(bool enable);
 bool dumpShaders();
 void setDumpShaders(bool enable);
-u32 vblankDiv();
-void setVblankDiv(u32 value);
+u32 vblankFreq();
+void setVblankFreq(u32 value);
 bool getisTrophyPopupDisabled();
 void setisTrophyPopupDisabled(bool disable);
 s16 getCursorState();
