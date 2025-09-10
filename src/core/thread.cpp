@@ -129,7 +129,7 @@ void NativeThread::Initialize() {
     _mm_setcsr(ORBIS_MXCSR);
 #if _WIN64
     // Windows needs the FPUCW register set manually.
-    asm volatile ("fldcw %0" : : "m"(ORBIS_FPUCW));
+    asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
     tid = GetCurrentThreadId();
 #else
     tid = (u64)pthread_self();
