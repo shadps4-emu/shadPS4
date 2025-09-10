@@ -370,6 +370,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEn
         }
 
         if (result != ORBIS_OK) {
+            LOG_ERROR(Kernel_Vmm, "failed with error code {:#x}", result);
             break;
         }
     }
