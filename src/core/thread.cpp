@@ -17,6 +17,7 @@
 namespace Core {
 
 static constexpr u32 ORBIS_MXCSR = 0x9fc0;
+static constexpr u32 ORBIS_FPUCW = 0x037f;
 
 #ifdef _WIN64
 #define KGDT64_R3_DATA (0x28)
@@ -24,8 +25,6 @@ static constexpr u32 ORBIS_MXCSR = 0x9fc0;
 #define KGDT64_R3_CMTEB (0x50)
 #define RPL_MASK (0x03)
 #define EFLAGS_INTERRUPT_MASK (0x200)
-
-static constexpr u32 ORBIS_FPUCW = 0x037f;
 
 void InitializeTeb(INITIAL_TEB* teb, const ::Libraries::Kernel::PthreadAttr* attr) {
     teb->StackBase = (void*)((u64)attr->stackaddr_attr + attr->stacksize_attr);
@@ -126,11 +125,10 @@ void NativeThread::Exit() {
 }
 
 void NativeThread::Initialize() {
-    // MXCSR register needs to be set on all platforms
+    // Set MXCSR and FPUCW registers to the values used by Orbis.
     _mm_setcsr(ORBIS_MXCSR);
-#if _WIN64
-    // Windows needs the FPUCW register set manually.
     asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
+#if _WIN64
     tid = GetCurrentThreadId();
 #else
     tid = (u64)pthread_self();
