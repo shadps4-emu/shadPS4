@@ -85,7 +85,7 @@ enum class NumberClass {
     Uint,
 };
 
-enum class CompSwizzle : u8 {
+enum class CompSwizzle : u32 {
     Zero = 0,
     One = 1,
     Red = 4,

@@ -99,6 +99,11 @@ public:
     // }
 };
 
+// TODO: Fix:
+//     Audio - mainOutputDevice
+//     Audio - padSpkOutputDevice
+//     Debug - ConfigVersion
+//     Keys - TropheyKey
 // General
 static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<bool> isNeo(false);
@@ -118,15 +123,19 @@ static bool checkCompatibilityOnStartup = false;
 static bool compatibilityData = false;
 
 // Input
-static ConfigEntry<int> cursorState(HideCursorState::Idle);
-static ConfigEntry<int> cursorHideTimeout(5); // 5 seconds (default)
-static ConfigEntry<bool> useSpecialPad(false);
-static ConfigEntry<int> specialPadClass(1);
-static ConfigEntry<bool> isMotionControlsEnabled(true);
-static ConfigEntry<bool> useUnifiedInputConfig(true);
-static ConfigEntry<string> micDevice("Default Device");
-static ConfigEntry<string> defaultControllerID("");
-static ConfigEntry<bool> backgroundControllerInput(false);
+static int cursorState = HideCursorState::Idle;
+static int cursorHideTimeout = 5; // 5 seconds (default)
+static bool useSpecialPad = false;
+static int specialPadClass = 1;
+static bool isMotionControlsEnabled = true;
+static bool useUnifiedInputConfig = true;
+static std::string defaultControllerID = "";
+static bool backgroundControllerInput = false;
+
+// Audio
+static std::string micDevice = "Default Device";
+static std::string mainOutputDevice = "Default Device";
+static std::string padSpkOutputDevice = "Default Device";
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -288,6 +297,14 @@ int getCursorHideTimeout() {
 
 string getMicDevice() {
     return micDevice.get();
+}
+
+std::string getMainOutputDevice() {
+    return mainOutputDevice;
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice;
 }
 
 double getTrophyNotificationDuration() {
@@ -566,6 +583,14 @@ void setMicDevice(string device) {
     micDevice.base_value = device;
 }
 
+void setMainOutputDevice(std::string device) {
+    mainOutputDevice = device;
+}
+
+void setPadSpkOutputDevice(std::string device) {
+    padSpkOutputDevice = device;
+}
+
 void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
     trophyNotificationDuration.base_value = newTrophyNotificationDuration;
 }
@@ -789,9 +814,10 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         checkCompatibilityOnStartup = toml::find_or<bool>(general, "checkCompatibilityOnStartup",
                                                           checkCompatibilityOnStartup);
 
-        isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
-        chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
-        defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
+        isConnectedToNetwork =
+            toml::find_or<bool>(general, "isConnectedToNetwork", isConnectedToNetwork);
+        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", chooseHomeTab);
+        defaultControllerID = toml::find_or<std::string>(general, "defaultControllerID", "");
     }
 
     if (data.contains("Input")) {
@@ -803,8 +829,16 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        micDevice.setFromToml(input, "micDevice", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+    }
+
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
+        mainOutputDevice = toml::find_or<std::string>(audio, "mainOutputDevice", mainOutputDevice);
+        padSpkOutputDevice =
+            toml::find_or<std::string>(audio, "padSpkOutputDevice", padSpkOutputDevice);
     }
 
     if (data.contains("GPU")) {
@@ -979,40 +1013,37 @@ void save(const std::filesystem::path& path) {
     data["Input"]["specialPadClass"] = specialPadClass.base_value;
     data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled.base_value;
     data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-    data["Input"]["micDevice"] = micDevice.base_value;
     data["Input"]["backgroundControllerInput"] = backgroundControllerInput.base_value;
-    data["GPU"]["screenWidth"] = windowWidth.base_value;
-    data["GPU"]["screenHeight"] = windowHeight.base_value;
-    data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
-    data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
-    data["GPU"]["nullGpu"] = isNullGpu.base_value;
-    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers.base_value;
-    data["GPU"]["readbacks"] = readbacksEnabled.base_value;
-    data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled.base_value;
-    data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled.base_value;
-    data["GPU"]["dumpShaders"] = shouldDumpShaders.base_value;
-    data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
-    data["GPU"]["vblankFrequency"] = vblankFrequency.base_value;
-    data["GPU"]["Fullscreen"] = isFullscreen.base_value;
-    data["GPU"]["FullscreenMode"] = fullscreenMode.base_value;
-    data["GPU"]["presentMode"] = presentMode.base_value;
-    data["GPU"]["allowHDR"] = isHDRAllowed.base_value;
-    data["GPU"]["fsrEnabled"] = fsrEnabled.base_value;
-    data["GPU"]["rcasEnabled"] = rcasEnabled.base_value;
-    data["GPU"]["rcasAttenuation"] = rcasAttenuation.base_value;
-    data["Vulkan"]["gpuId"] = gpuId.base_value;
-    data["Vulkan"]["validation"] = vkValidation.base_value;
-    data["Vulkan"]["validation_sync"] = vkValidationSync.base_value;
-    data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
-    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic.base_value;
-    data["Vulkan"]["hostMarkers"] = vkHostMarkers.base_value;
-    data["Vulkan"]["guestMarkers"] = vkGuestMarkers.base_value;
-    data["Vulkan"]["rdocEnable"] = rdocEnable.base_value;
-    data["Debug"]["DebugDump"] = isDebugDump.base_value;
-    data["Debug"]["CollectShader"] = isShaderDebug.base_value;
-    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled.base_value;
-    data["Debug"]["FPSColor"] = isFpsColor.base_value;
-    data["Debug"]["logEnabled"] = logEnabled.base_value;
+    data["Audio"]["micDevice"] = micDevice.base_value;
+    data["Audio"]["mainOutputDevice"] = mainOutputDevice;
+    data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
+    data["GPU"]["screenWidth"] = windowWidth;
+    data["GPU"]["screenHeight"] = windowHeight;
+    data["GPU"]["internalScreenWidth"] = internalScreenWidth;
+    data["GPU"]["internalScreenHeight"] = internalScreenHeight;
+    data["GPU"]["nullGpu"] = isNullGpu;
+    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
+    data["GPU"]["readbacks"] = readbacksEnabled;
+    data["GPU"]["readbackLinearImages"] = readbackLinearImagesEnabled;
+    data["GPU"]["directMemoryAccess"] = directMemoryAccessEnabled;
+    data["GPU"]["dumpShaders"] = shouldDumpShaders;
+    data["GPU"]["patchShaders"] = shouldPatchShaders;
+    data["GPU"]["vblankDivider"] = vblankDivider;
+    data["GPU"]["Fullscreen"] = isFullscreen;
+    data["GPU"]["FullscreenMode"] = fullscreenMode;
+    data["GPU"]["allowHDR"] = isHDRAllowed;
+    data["Vulkan"]["gpuId"] = gpuId;
+    data["Vulkan"]["validation"] = vkValidation;
+    data["Vulkan"]["validation_sync"] = vkValidationSync;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
+    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
+    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
+    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
+    data["Vulkan"]["rdocEnable"] = rdocEnable;
+    data["Debug"]["DebugDump"] = isDebugDump;
+    data["Debug"]["CollectShader"] = isShaderDebug;
+    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
+    data["Debug"]["FPSColor"] = isFpsColor;
     data["Debug"]["ConfigVersion"] = config_version;
     data["Keys"]["TrophyKey"] = trophyKey;
 
@@ -1088,8 +1119,12 @@ void setDefaultValues() {
     controllerCustomColorRGB[0] = 0;
     controllerCustomColorRGB[1] = 0;
     controllerCustomColorRGB[2] = 255;
-    micDevice = "Default Device";
     backgroundControllerInput = false;
+
+    // Audio
+    micDevice = "Default Device";
+    mainOutputDevice = "Default Device";
+    padSpkOutputDevice = "Default Device";
 
     // GPU
     windowWidth = 1280;
