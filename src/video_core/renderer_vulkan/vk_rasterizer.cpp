@@ -754,7 +754,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             auto& image_view = texture_cache.FindTexture(image_id, desc);
 
             if (image.binding.force_general || image.binding.is_target) {
-                image.Transit(vk::ImageLayout::eGeneral,
+                image.Transit(instance.IsAttachmentFeedbackLoopLayoutSupported()
+                                  ? vk::ImageLayout::eAttachmentFeedbackLoopOptimalEXT
+                                  : vk::ImageLayout::eGeneral,
                               vk::AccessFlagBits2::eShaderRead |
                                   (image.info.props.is_depth
                                        ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
