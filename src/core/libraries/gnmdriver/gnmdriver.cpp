@@ -2279,8 +2279,8 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmUnmapComputeQueue() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid) {
+    liverpool->asc_queues.erase(Common::SlotId{vqid - 1});
     return ORBIS_OK;
 }
 

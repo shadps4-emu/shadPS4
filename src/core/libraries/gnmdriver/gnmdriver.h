@@ -224,7 +224,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                        const u32* ccb_gpu_addrs[],
                                                        u32* ccb_sizes_in_bytes);
 int PS4_SYSV_ABI sceGnmSubmitDone();
-int PS4_SYSV_ABI sceGnmUnmapComputeQueue();
+int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid);
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner();
 int PS4_SYSV_ABI sceGnmUnregisterOwnerAndResources();
 int PS4_SYSV_ABI sceGnmUnregisterResource();
