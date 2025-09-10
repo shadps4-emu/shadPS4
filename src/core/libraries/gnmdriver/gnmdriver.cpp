@@ -2279,8 +2279,10 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmUnmapComputeQueue() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid) {
+    liverpool->asc_queues.erase(Common::SlotId{vqid - 1});
+    // a simple q&d implementation, called in Uncharted 4 v1.00 and my test renderer homebrew, possibly others?
+    // side effects unknown, if any 
     return ORBIS_OK;
 }
 
