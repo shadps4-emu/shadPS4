@@ -255,12 +255,6 @@ std::filesystem::path GetSaveDataPath() {
 }
 
 void setVolumeSlider(int volumeValue, bool is_game_specific) {
-    // Since game-specific value can be set by a widget, need a way to set to nullopt
-    if (is_game_specific && volumeValue == -1) {
-        volumeSlider.game_specific_value = std::nullopt;
-        return;
-    }
-
     volumeSlider.set(volumeValue, is_game_specific);
 }
 
@@ -1339,6 +1333,12 @@ std::filesystem::path GetFoolproofInputConfigFile(const string& game_id) {
         std::filesystem::copy(default_config_file, config_file);
     }
     return config_file;
+}
+
+void resetGameSpecificValue(std::string entry) {
+    if (entry == "volumeSlider") {
+        volumeSlider.game_specific_value = std::nullopt;
+    }
 }
 
 } // namespace Config

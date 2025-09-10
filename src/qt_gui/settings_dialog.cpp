@@ -1134,8 +1134,9 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
     ui->horizontalVolumeSlider->setValue(sliderValue);
 
     // Since config::set can be called for volume slider (connected to the widget) outside the save
-    // function, need to null it out when closed without saving
-    game_specific ? Config::setVolumeSlider(-1, true) : Config::setVolumeSlider(sliderValue);
+    // function, need to null it out if GS GUI is closed without saving
+    game_specific ? Config::resetGameSpecificValue("volumeSlider")
+                  : Config::setVolumeSlider(sliderValue);
 
     if (presenter) {
         presenter->GetFsrSettingsRef().enable =
