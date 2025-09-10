@@ -12,7 +12,7 @@
     <x>0</x>
     <y>0</y>
     <width>970</width>
-    <height>750</height>
+    <height>765</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -59,7 +59,7 @@
       </size>
      </property>
      <property name="currentIndex">
-      <number>6</number>
+      <number>7</number>
      </property>
      <widget class="QScrollArea" name="generalTab">
       <property name="widgetResizable">
@@ -74,7 +74,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="generalTabVLayout" stretch="0">
@@ -452,8 +452,8 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>400</width>
-                  <height>60</height>
+                  <width>402</width>
+                  <height>68</height>
                  </rect>
                 </property>
                 <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -539,7 +539,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -999,7 +999,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="graphicsTabVLayout" stretch="0,0">
@@ -1406,7 +1406,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="userTabVLayout" stretch="0,0,1">
@@ -1648,7 +1648,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="inputTabVLayout" stretch="0,0">
@@ -1920,7 +1920,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>486</height>
+         <height>501</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="pathsTabLayout">
@@ -2235,7 +2235,7 @@
          <x>0</x>
          <y>0</y>
          <width>946</width>
-         <height>382</height>
+         <height>495</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -2244,17 +2244,11 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0,0">
+       <layout class="QVBoxLayout" name="debugTabVLayout" stretch="0">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
+         <layout class="QVBoxLayout" name="debugVLayout">
           <item>
-           <layout class="QHBoxLayout" name="debugTabHLayout" stretch="0">
+           <layout class="QHBoxLayout" name="debugHLayout">
             <item>
              <widget class="QGroupBox" name="debugTabGroupBox">
               <property name="enabled">
@@ -2318,10 +2312,6 @@
               </layout>
              </widget>
             </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_7">
             <item>
              <widget class="QGroupBox" name="advancedGroupBox">
               <property name="sizePolicy">
@@ -2389,93 +2379,135 @@
             </item>
            </layout>
           </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <property name="topMargin">
-           <number>0</number>
-          </property>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
+           <layout class="QHBoxLayout" name="experimentalHLayout">
             <item>
              <widget class="QGroupBox" name="ExperimentalGroupBox">
               <property name="title">
                <string>Experimental Features</string>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_3">
+               <property name="spacing">
+                <number>6</number>
+               </property>
+               <property name="leftMargin">
+                <number>9</number>
+               </property>
+               <property name="topMargin">
+                <number>9</number>
+               </property>
+               <property name="rightMargin">
+                <number>9</number>
+               </property>
+               <property name="bottomMargin">
+                <number>9</number>
+               </property>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout_11">
-                 <property name="topMargin">
-                  <number>0</number>
+                <widget class="QCheckBox" name="readbacksCheckBox">
+                 <property name="text">
+                  <string>Enable Readbacks</string>
                  </property>
-                 <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_6">
-                   <property name="topMargin">
-                    <number>0</number>
-                   </property>
-                   <item>
-                    <widget class="QCheckBox" name="readbacksCheckBox">
-                     <property name="text">
-                      <string>Enable Readbacks</string>
-                     </property>
-                    </widget>
-                   </item>
-                   <item>
-                    <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
-                     <property name="text">
-                      <string>Enable Readback Linear Images</string>
-                     </property>
-                    </widget>
-                   </item>
-                  </layout>
-                 </item>
-                 <item>
-                  <widget class="QLabel" name="ExperimentalLabel">
-                   <property name="sizeIncrement">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="baseSize">
-                    <size>
-                     <width>0</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="font">
-                    <font>
-                     <pointsize>11</pointsize>
-                     <bold>true</bold>
-                    </font>
-                   </property>
-                   <property name="text">
-                    <string>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</string>
-                   </property>
-                   <property name="scaledContents">
-                    <bool>false</bool>
-                   </property>
-                   <property name="alignment">
-                    <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignTop</set>
-                   </property>
-                   <property name="wordWrap">
-                    <bool>true</bool>
-                   </property>
-                   <property name="margin">
-                    <number>0</number>
-                   </property>
-                   <property name="indent">
-                    <number>-1</number>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="readbackLinearImagesCheckBox">
+                 <property name="text">
+                  <string>Enable Readback Linear Images</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="dmaCheckBox">
+                 <property name="text">
+                  <string>Enable Direct Memory Access</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="devkitCheckBox">
+                 <property name="text">
+                  <string>Enable Devkit Console Mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="neoCheckBox">
+                 <property name="text">
+                  <string>Enable PS4 Pro Mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="psnSignInCheckBox">
+                 <property name="text">
+                  <string>Set &quot;PSN signed-in&quot; to True</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="networkConnectedCheckBox">
+                 <property name="text">
+                  <string>Set &quot;Network Connected&quot; to True</string>
+                 </property>
+                </widget>
                </item>
               </layout>
              </widget>
             </item>
+            <item>
+             <widget class="QLabel" name="ExperimentalLabel">
+              <property name="sizeIncrement">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="baseSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>11</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</string>
+              </property>
+              <property name="scaledContents">
+               <bool>false</bool>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+              <property name="margin">
+               <number>20</number>
+              </property>
+              <property name="indent">
+               <number>-1</number>
+              </property>
+             </widget>
+            </item>
            </layout>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_10">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>5</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>

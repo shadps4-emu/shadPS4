@@ -38,5 +38,6 @@
         <file>images/favorite_icon.png</file>
 	<file>images/trophy_icon.png</file>
 	<file>images/hotkey.png</file>
+	<file>images/game_settings.png</file>
     </qresource>
 </RCC>

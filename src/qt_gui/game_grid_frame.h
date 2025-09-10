@@ -40,6 +40,7 @@ private:
     std::filesystem::path m_current_game_path; // Track current game path to detect changes
     std::shared_ptr<gui_settings> m_gui_settings;
     void SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_games_, int gameCounter);
+    void SetGameConfigIcon(QWidget* parentWidget, QVector<GameInfo> m_games_, int gameCounter);
     bool CompareWithFavorite(GameInfo a, GameInfo b);
 
 public:
