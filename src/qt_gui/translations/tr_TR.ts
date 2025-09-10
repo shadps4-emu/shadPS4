@@ -615,15 +615,15 @@
     </message>
     <message>
       <source>RED</source>
-      <translation type="unfinished">RED</translation>
+      <translation>KIRMIZI</translation>
     </message>
     <message>
       <source>GREEN</source>
-      <translation type="unfinished">GREEN</translation>
+      <translation>YEŞİL</translation>
     </message>
     <message>
       <source>BLUE</source>
-      <translation type="unfinished">BLUE</translation>
+      <translation>MAVİ</translation>
     </message>
   </context>
   <context>
@@ -1054,15 +1054,15 @@
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Kontrolcü Kısayolları</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>FPS Sayacını Göster</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>atanmamış</translation>
     </message>
     <message>
       <source>Quit Emulation</source>
