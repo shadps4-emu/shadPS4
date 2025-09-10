@@ -126,7 +126,7 @@ void NativeThread::Exit() {
 
 void NativeThread::Initialize() {
     // MXCSR register needs to be set on all platforms
-    asm volatile("ldmxcsr %0" : : "m"(ORBIS_MXCSR));
+    _mm_setcsr(ORBIS_MXCSR);
 #if _WIN64
     // Windows needs the FPUCW register set manually.
     asm volatile ("fldcw %0" : : "m"(ORBIS_FPUCW));
