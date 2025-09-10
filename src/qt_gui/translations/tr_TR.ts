@@ -1074,7 +1074,7 @@
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Tam Ekranı Aç/Kapat</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
@@ -1090,7 +1090,7 @@
     </message>
     <message>
       <source>Toggle Mouse to Joystick Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+      <translation>Fareyi Joystick Olarak Kullanmayı Aç/Kapat</translation>
     </message>
     <message>
       <source>Toggle Mouse to Gyro Emulation</source>
@@ -1118,7 +1118,7 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Kaydedilemedi</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
