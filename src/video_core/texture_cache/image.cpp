@@ -14,7 +14,8 @@ namespace VideoCore {
 
 using namespace Vulkan;
 
-static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
+static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
+                                           const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
@@ -23,13 +24,9 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
-
-            // In cases where an image is created as a render/depth target and cleared with compute,
-            // we cannot predict whether it will be used as a storage image. A proper solution would
-            // involve re-creating the resource with a new configuration and copying previous
-            // content into it. However, for now, we will set storage usage for all images (if the
-            // format allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set
-            // by default.
+            // Always create images with storage flag to avoid needing re-creation in case of e.g
+            // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage flag
+            // is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
     }
@@ -128,7 +125,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 
-    usage_flags = ImageUsageFlags(info);
+    usage_flags = ImageUsageFlags(instance, info);
     format_features = FormatFeatureFlags(usage_flags);
 
     switch (info.pixel_format) {

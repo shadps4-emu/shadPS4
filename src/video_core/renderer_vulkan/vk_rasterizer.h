@@ -143,7 +143,8 @@ private:
     boost::container::static_vector<BufferBindingInfo, Shader::NumBuffers> buffer_bindings;
     using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
     boost::container::static_vector<ImageBindingInfo, Shader::NumImages> image_bindings;
-    bool fault_process_pending{false};
+    bool fault_process_pending{};
+    bool attachment_feedback_loop{};
 };
 
 } // namespace Vulkan
