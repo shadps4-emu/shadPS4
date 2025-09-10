@@ -941,6 +941,10 @@ void TextureCache::RunGarbageCollector() {
         if (download && !pressured) {
             return false;
         }
+        if (download &&
+            buffer_cache.IsRegionGpuModified(image.info.guest_address, image.info.guest_size)) {
+            return false;
+        }
         if (download) {
             download_pending.push_back(image_id);
             buffer_cache.ReadEdgeImagePages(image);
