@@ -11,6 +11,7 @@
 #include <csignal>
 #include <pthread.h>
 #include <unistd.h>
+#include <xmmintrin.h>
 #endif
 
 namespace Core {
