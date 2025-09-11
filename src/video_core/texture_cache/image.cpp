@@ -25,8 +25,8 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
         } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
             // Always create images with storage flag to avoid needing re-creation in case of e.g
-            // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage flag
-            // is also used.
+            // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage
+            // flag is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
     }
