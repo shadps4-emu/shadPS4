@@ -57,9 +57,9 @@ void Logger::log_flush() {
         return;
     }
     if (is_err) {
-        LOG_ERROR(Tty, "[{}] {}", prefix, std::string_view{buffer});
+        LOG_DEBUG(Tty, "[{}] {}", prefix, std::string_view{buffer});
     } else {
-        LOG_INFO(Tty, "[{}] {}", prefix, std::string_view{buffer});
+        LOG_DEBUG(Tty, "[{}] {}", prefix, std::string_view{buffer});
     }
     buffer.clear();
 }

@@ -67,7 +67,7 @@ int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded() {
 }
 
 int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
-    LOG_ERROR(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
+    LOG_DEBUG(Lib_SysModule, "(DUMMY) called module = {}", magic_enum::enum_name(id));
     if (static_cast<u16>(id) == 0) {
         LOG_ERROR(Lib_SysModule, "Invalid sysmodule ID: {:#x}", static_cast<u16>(id));
         return ORBIS_SYSMODULE_INVALID_ID;

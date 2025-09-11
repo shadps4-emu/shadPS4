@@ -263,7 +263,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
             // Perform a rendering pass to transfer the channels of source as samples in dest.
             blit_helper.BlitColorToMsDepth(cache_image, new_image);
         } else {
-            LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
+            LOG_DEBUG(Render_Vulkan, "Unimplemented depth overlap copy");
         }
 
         // Free the cache image.

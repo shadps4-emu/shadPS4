@@ -844,7 +844,7 @@ int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, 
 }
 
 int PS4_SYSV_ABI sceHttpWaitRequest() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+    LOG_DEBUG(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
 }
 

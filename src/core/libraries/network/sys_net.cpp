@@ -54,7 +54,7 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     }
     auto new_sock = file->socket->Accept(addr, paddrlen);
     if (!new_sock) {
-        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {:#x}",
+        LOG_DEBUG(Lib_Net, "error creating new socket for accepting: {:#x}",
                   (u32)*Libraries::Kernel::__Error());
         return -1;
     }

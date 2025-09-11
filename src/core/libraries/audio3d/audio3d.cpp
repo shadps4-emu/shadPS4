@@ -297,7 +297,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
             break;
         }
         default:
-            LOG_ERROR(Lib_Audio3d, "Unsupported attribute ID: {:#x}",
+            LOG_DEBUG(Lib_Audio3d, "Unsupported attribute ID: {:#x}",
                       static_cast<u32>(attribute.attribute_id));
             break;
         }

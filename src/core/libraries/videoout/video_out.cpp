@@ -156,7 +156,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     }
 
     if (flipMode != 1) {
-        LOG_WARNING(Lib_VideoOut, "flipmode = {}", flipMode);
+        LOG_DEBUG(Lib_VideoOut, "flipmode = {}", flipMode);
     }
 
     if (bufferIndex < -1 || bufferIndex > 15) {

@@ -33,7 +33,7 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
     if (code[0] != token_mov_vcchi) {
-        LOG_WARNING(Render_Recompiler, "First instruction is not s_mov_b32 vcc_hi, #imm");
+        LOG_DEBUG(Render_Recompiler, "First instruction is not s_mov_b32 vcc_hi, #imm");
     }
 
     Gcn::GcnCodeSlice slice(code.data(), code.data() + code.size());

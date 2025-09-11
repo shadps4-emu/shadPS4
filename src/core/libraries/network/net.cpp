@@ -619,12 +619,12 @@ int PS4_SYSV_ABI sceNetEpollControl() {
 }
 
 int PS4_SYSV_ABI sceNetEpollCreate() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    LOG_DEBUG(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceNetEpollDestroy() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    LOG_DEBUG(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 

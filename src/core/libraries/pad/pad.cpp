@@ -139,7 +139,7 @@ int PS4_SYSV_ABI scePadGetDeviceInfo() {
 
 int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
                                                    OrbisPadExtendedControllerInformation* pInfo) {
-    LOG_INFO(Lib_Pad, "called handle = {}", handle);
+    LOG_DEBUG(Lib_Pad, "called handle = {}", handle);
 
     pInfo->padType1 = 0;
     pInfo->padType2 = 0;
@@ -279,7 +279,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
 
 int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index,
                                const OrbisPadOpenExtParam* pParam) {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+    LOG_DEBUGb_Pad, "(STUBBED) called");
     if (Config::getUseSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
@@ -535,7 +535,7 @@ int PS4_SYSV_ABI scePadReadStateExt() {
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
-    LOG_INFO(Lib_Pad, "(DUMMY) called");
+    LOG_DEBUG(Lib_Pad, "(DUMMY) called");
     if (handle != 1) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
