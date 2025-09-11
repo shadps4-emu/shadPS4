@@ -919,18 +919,6 @@
       <translation>호환성...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation type="unfinished">Update database</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation type="unfinished">View report</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation type="unfinished">Submit a report</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation type="unfinished">Shortcut creation</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation type="unfinished">Add to Favorites</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation type="unfinished">Update Database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation type="unfinished">View Report</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation type="unfinished">Submit a Report</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation type="unfinished">Confirm deletion</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation type="unfinished">Delete game-specific settings?</translation>
     </message>
   </context>
   <context>
@@ -2351,6 +2375,26 @@
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation type="unfinished">Enable Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation type="unfinished">Enable Devkit Console Mode</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Pro Mode</source>
+      <translation type="unfinished">Enable PS4 Pro Mode</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
     </message>
   </context>
   <context>
