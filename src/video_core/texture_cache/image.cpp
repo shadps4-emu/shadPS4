@@ -18,18 +18,20 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
-    if (info.props.is_depth) {
-        usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
-    } else {
-        if (!info.props.is_block) {
+    if (!info.props.is_block) {
+        if (info.props.is_depth) {
+            usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
+
+            // In cases where an image is created as a render/depth target and cleared with compute,
+            // we cannot predict whether it will be used as a storage image. A proper solution would
+            // involve re-creating the resource with a new configuration and copying previous
+            // content into it. However, for now, we will set storage usage for all images (if the
+            // format allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set
+            // by default.
+            usage |= vk::ImageUsageFlagBits::eStorage;
         }
-        // In cases where an image is created as a render/depth target and cleared with compute,
-        // we cannot predict whether it will be used as a storage image. A proper solution would
-        // involve re-creating the resource with a new configuration and copying previous content
-        // into it. However, for now, we will set storage usage for all images (if the format
-        // allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set by default.
-        usage |= vk::ImageUsageFlagBits::eStorage;
     }
 
     return usage;
