@@ -469,7 +469,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
             result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
         }
         if (operand.output_modifier.clamp) {
-            result = ir.FPSaturate(value);
+            result = ir.FPSaturate(result);
         }
     }
 
@@ -499,7 +499,7 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
                 ir.FPMul(value_untyped, ir.Imm64(f64(operand.output_modifier.multiplier)));
         }
         if (operand.output_modifier.clamp) {
-            value_untyped = ir.FPSaturate(value_raw);
+            value_untyped = ir.FPSaturate(value_untyped);
         }
     }
 
