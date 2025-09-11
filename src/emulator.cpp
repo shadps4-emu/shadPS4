@@ -62,10 +62,6 @@ Emulator::Emulator() {
 Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
-    if (Config::vblankFreq() < 60) {
-        Config::setVblankFreq(60);
-    }
-
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
