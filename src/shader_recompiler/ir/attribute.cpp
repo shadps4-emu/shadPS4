@@ -164,6 +164,8 @@ std::string NameOf(Attribute attribute) {
         return "StencilRef";
     case Attribute::SampleMask:
         return "SampleMask";
+    case Attribute::PackedAncillary:
+        return "PackedAncillary";
     default:
         break;
     }

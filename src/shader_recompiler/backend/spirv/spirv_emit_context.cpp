@@ -378,6 +378,10 @@ void EmitContext::DefineInputs() {
             output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
             Decorate(output_layer, spv::Decoration::Flat);
         }
+        if (info.loads.Get(IR::Attribute::SampleIndex)) {
+            sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+            Decorate(sample_index, spv::Decoration::Flat);
+        }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
                 bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,

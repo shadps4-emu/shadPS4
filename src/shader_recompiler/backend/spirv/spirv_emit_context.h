@@ -257,6 +257,7 @@ public:
     Id front_facing{};
     Id frag_depth{};
     Id sample_mask{};
+    Id sample_index{};
     Id clip_distances{};
     Id cull_distances{};
 

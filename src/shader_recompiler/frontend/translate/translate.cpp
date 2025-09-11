@@ -173,9 +173,7 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         }
         if (runtime_info.fs_info.addr_flags.ancillary_ena) {
             if (runtime_info.fs_info.en_flags.ancillary_ena) {
-                const auto mrt_index = ir.GetAttributeU32(IR::Attribute::RenderTargetIndex);
-                ir.SetVectorReg(dst_vreg++, ir.BitFieldInsert(ir.Imm32(0), mrt_index, ir.Imm32(16),
-                                                              ir.Imm32(11)));
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
             } else {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
