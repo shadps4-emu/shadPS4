@@ -24,6 +24,9 @@ static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
+            if (instance->IsAttachmentFeedbackLoopLayoutSupported()) {
+                usage |= vk::ImageUsageFlagBits::eAttachmentFeedbackLoopEXT;
+            }
             // Always create images with storage flag to avoid needing re-creation in case of e.g
             // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage
             // flag is also used.
