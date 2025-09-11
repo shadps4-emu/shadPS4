@@ -1016,11 +1016,11 @@
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation type="unfinished">Configure Game-specific Settings</translation>
+      <translation>Configuració específica del joc</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+      <translation>Crea una configuració específica del joc des de la configuració global</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
@@ -2390,11 +2390,11 @@
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
-      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+      <translation>Estableix l'inici de sessió de PSN a cert</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+      <translation>Estableix la connexió a xarxa com a certa</translation>
     </message>
   </context>
   <context>
