@@ -685,7 +685,7 @@ void SettingsDialog::LoadValuesFromConfig() {
     ui->volumeText->setText(QString::number(ui->horizontalVolumeSlider->sliderPosition()) + "%");
 
     std::string fullScreenMode =
-        toml::find_or<std::string>(data, "General", "FullscreenMode", "Windowed");
+        toml::find_or<std::string>(data, "GPU", "FullscreenMode", "Windowed");
     QString translatedText_FullscreenMode =
         screenModeMap.key(QString::fromStdString(fullScreenMode));
     ui->displayModeComboBox->setCurrentText(translatedText_FullscreenMode);
