@@ -17,6 +17,7 @@
 #include "compatibility_info.h"
 #include "game_info.h"
 #include "gui_settings.h"
+#include "settings_dialog.h"
 #include "trophy_viewer.h"
 
 #ifdef Q_OS_WIN
@@ -66,6 +67,24 @@ public:
 
         menu.addMenu(openFolderMenu);
 
+        QMenu* gameConfigMenu = new QMenu(tr("Game-specific Settings..."), widget);
+        QAction gameConfigConfigure(tr("Configure Game-specific Settings"), widget);
+        QAction gameConfigCreate(tr("Create Game-specific Settings from Global Settings"), widget);
+        QAction gameConfigDelete(tr("Delete Game-specific Settings"), widget);
+
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_games[itemID].serial + ".toml"))) {
+            gameConfigMenu->addAction(&gameConfigConfigure);
+        } else {
+            gameConfigMenu->addAction(&gameConfigCreate);
+        }
+
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_games[itemID].serial + ".toml")))
+            gameConfigMenu->addAction(&gameConfigDelete);
+
+        menu.addMenu(gameConfigMenu);
+
         QString serialStr = QString::fromStdString(m_games[itemID].serial);
         QList<QString> list = gui_settings::Var2List(m_gui_settings->GetValue(gui::favorites_list));
         bool isFavorite = list.contains(serialStr);
@@ -76,6 +95,7 @@ public:
         } else {
             toggleFavorite = new QAction(tr("Add to Favorites"), widget);
         }
+
         QAction createShortcut(tr("Create Shortcut"), widget);
         QAction openCheats(tr("Cheats / Patches"), widget);
         QAction openSfoViewer(tr("SFO Viewer"), widget);
@@ -123,9 +143,9 @@ public:
 
         // Compatibility submenu.
         QMenu* compatibilityMenu = new QMenu(tr("Compatibility..."), widget);
-        QAction* updateCompatibility = new QAction(tr("Update database"), widget);
-        QAction* viewCompatibilityReport = new QAction(tr("View report"), widget);
-        QAction* submitCompatibilityReport = new QAction(tr("Submit a report"), widget);
+        QAction* updateCompatibility = new QAction(tr("Update Database"), widget);
+        QAction* viewCompatibilityReport = new QAction(tr("View Report"), widget);
+        QAction* submitCompatibilityReport = new QAction(tr("Submit a Report"), widget);
 
         compatibilityMenu->addAction(updateCompatibility);
         compatibilityMenu->addAction(viewCompatibilityReport);
@@ -385,6 +405,22 @@ public:
             trophyViewer->show();
             connect(widget->parent(), &QWidget::destroyed, trophyViewer,
                     [trophyViewer]() { trophyViewer->deleteLater(); });
+        }
+
+        if (selected == &gameConfigConfigure || selected == &gameConfigCreate) {
+            auto settingsWindow = new SettingsDialog(m_gui_settings, m_compat_info, widget, true,
+                                                     serialStr.toStdString());
+            settingsWindow->exec();
+        }
+
+        if (selected == &gameConfigDelete) {
+            if (QMessageBox::Yes == QMessageBox::question(widget, tr("Confirm deletion"),
+                                                          tr("Delete game-specific settings?"),
+                                                          QMessageBox::Yes | QMessageBox::No)) {
+                std::filesystem::remove(
+                    Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                    (m_games[itemID].serial + ".toml"));
+            }
         }
 
         if (selected == &createShortcut) {
