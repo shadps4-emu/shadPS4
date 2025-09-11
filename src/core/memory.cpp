@@ -259,7 +259,7 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
-               "Attempted to access invalid address {}", virtual_addr);
+               "Attempted to access invalid address {:#x}", virtual_addr);
     std::scoped_lock lk{mutex};
 
     const u64 alignment = 64_KB;
@@ -352,7 +352,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     // On a PS4, the Fixed flag is ignored if address 0 is provided.
     if (True(flags & MemoryMapFlags::Fixed) && virtual_addr != 0) {
         ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(mapped_addr)),
-                   "Attempted to access invalid address {}", mapped_addr);
+                   "Attempted to access invalid address {:#x}", mapped_addr);
         auto vma = FindVMA(mapped_addr)->second;
         // There's a possible edge case where we're mapping to a partially reserved range.
         // To account for this, unmap any reserved areas within this mapping range first.
@@ -432,7 +432,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(mapped_addr)),
-               "Attempted to access invalid address {}", mapped_addr);
+               "Attempted to access invalid address {:#x}", mapped_addr);
     const u64 size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
@@ -480,7 +480,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
-               "Attempted to access invalid address {}", virtual_addr);
+               "Attempted to access invalid address {:#x}", virtual_addr);
     std::scoped_lock lk{mutex};
 
     const auto it = FindVMA(virtual_addr);
@@ -586,7 +586,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
     size = Common::AlignUp(size, 16_KB);
     do {
         ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
-                   "Attempted to access invalid address {}", virtual_addr);
+                   "Attempted to access invalid address {:#x}", virtual_addr);
         auto it = FindVMA(virtual_addr + unmapped_bytes);
         auto& vma_base = it->second;
         auto unmapped =
@@ -600,7 +600,7 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
 
 s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
-               "Attempted to access invalid address {}", addr);
+               "Attempted to access invalid address {:#x}", addr);
     std::scoped_lock lk{mutex};
 
     const auto it = FindVMA(addr);
@@ -684,7 +684,7 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     s64 protected_bytes = 0;
     while (protected_bytes < aligned_size) {
         ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(aligned_addr)),
-                   "Attempted to access invalid address {}", aligned_addr);
+                   "Attempted to access invalid address {:#x}", aligned_addr);
         auto it = FindVMA(aligned_addr + protected_bytes);
         auto& vma_base = it->second;
         auto result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
@@ -832,7 +832,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
     auto aligned_addr = Common::AlignDown(virtual_addr, 16_KB);
 
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(aligned_addr)),
-               "Attempted to access invalid address {}", aligned_addr);
+               "Attempted to access invalid address {:#x}", aligned_addr);
     auto it = FindVMA(aligned_addr);
     s64 remaining_size = aligned_size;
     auto current_addr = aligned_addr;
@@ -874,7 +874,7 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
-               "Attempted to access invalid address {}", addr);
+               "Attempted to access invalid address {:#x}", addr);
     auto vma_handle = FindVMA(addr);
 
     const VirtualMemoryArea& vma = vma_handle->second;
