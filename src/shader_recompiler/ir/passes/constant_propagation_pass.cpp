@@ -267,7 +267,7 @@ bool FoldPackedAncillary(IR::Block& block, IR::Inst& inst) {
     if (inst.Arg(0).IsImmediate() || !inst.Arg(1).IsImmediate() || !inst.Arg(2).IsImmediate()) {
         return false;
     }
-    const IR::Inst* value = inst.Arg(0).InstRecursive();
+    IR::Inst* value = inst.Arg(0).InstRecursive();
     if (value->GetOpcode() != IR::Opcode::GetAttributeU32 ||
         value->Arg(0).Attribute() != IR::Attribute::PackedAncillary) {
         return false;
@@ -295,6 +295,8 @@ bool FoldPackedAncillary(IR::Block& block, IR::Inst& inst) {
         UNREACHABLE_MSG("Unhandled bitfield extract from ancillary VGPR offset={}, bits={}", offset,
                         bits);
     }
+
+    value->ReplaceUsesWithAndRemove(ir.Imm32(0U));
 
     return true;
 }
