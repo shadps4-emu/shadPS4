@@ -919,18 +919,6 @@
       <translation>Compatibilitat...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Actualitza la base de dades</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visualitza l'informe</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Envia un informe</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Crea una drecera</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Afegeix a preferits</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Configuració específica del joc...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Esborra la configuració específica del joc</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Actualitza la base de dades</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visualitza l'informe</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Envia un informe</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Confirma la supressió</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Vols esborrar la configuració específica del joc?</translation>
     </message>
   </context>
   <context>
@@ -2351,6 +2375,26 @@
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Freqüència Vblank:\nLa taxa de fotogrames a la qual l'emulador es refresca (60 Hz és el valor base, quan el joc s'executa a 30 o 60 fps). Canviar aquest valor pot tenir efectes adversos, com augmentar la velocitat del joc, o trencar la funcionalitat del joc de forma no esperada!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Activa l'accés directe a memòria</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Activa el mode consola de desenvolupador</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Pro Mode</source>
+      <translation>Activa el mode PS4 Pro</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
     </message>
   </context>
   <context>
