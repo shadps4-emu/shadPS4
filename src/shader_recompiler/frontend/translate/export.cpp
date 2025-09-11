@@ -22,7 +22,7 @@ static AmdGpu::NumberFormat NumberFormatCompressed(
     case AmdGpu::Liverpool::ShaderExportFormat::ABGR_SINT16:
         return AmdGpu::NumberFormat::Sint;
     default:
-        UNREACHABLE_MSG("Unimplemented compressed MRT export format {}",
+        UNREACHABLE_MSG("Unimplemented compressed export format {}",
                         static_cast<u32>(export_format));
     }
 }
@@ -42,7 +42,7 @@ static u32 MaskFromExportFormat(u8 mask, AmdGpu::Liverpool::ShaderExportFormat e
         // All components
         return mask;
     default:
-        UNREACHABLE_MSG("Unimplemented uncompressed MRT export format {}",
+        UNREACHABLE_MSG("Unimplemented uncompressed export format {}",
                         static_cast<u32>(export_format));
     }
 }
@@ -118,25 +118,68 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     }
 }
 
+void Translator::ExportDepth(const GcnInst& inst) {
+    const auto& exp = inst.control.exp;
+    if (exp.en == 0) {
+        // No export
+        return;
+    }
+
+    std::array<IR::F32, 4> components{};
+    if (exp.compr) {
+        // Components are float16 packed into a VGPR
+        const auto num_format = NumberFormatCompressed(runtime_info.fs_info.z_export_format);
+        // Export R, G
+        if (exp.en & 1) {
+            const IR::Value unpacked_value =
+                ir.Unpack2x16(num_format, ir.GetVectorReg(IR::VectorReg(inst.src[0].code)));
+            components[0] = IR::F32{ir.CompositeExtract(unpacked_value, 0)};
+            components[1] = IR::F32{ir.CompositeExtract(unpacked_value, 1)};
+        }
+        // Export B, A
+        if ((exp.en >> 2) & 1) {
+            const IR::Value unpacked_value =
+                ir.Unpack2x16(num_format, ir.GetVectorReg(IR::VectorReg(inst.src[1].code)));
+            components[2] = IR::F32{ir.CompositeExtract(unpacked_value, 0)};
+            // components[3] = IR::F32{ir.CompositeExtract(unpacked_value, 1)};
+        }
+    } else {
+        // Components are float32 into separate VGPRS
+        u32 mask = MaskFromExportFormat(exp.en, runtime_info.fs_info.z_export_format);
+        for (u32 i = 0; i < 4; i++, mask >>= 1) {
+            if ((mask & 1) == 0) {
+                continue;
+            }
+            components[i] = ir.GetVectorReg<IR::F32>(IR::VectorReg(inst.src[i].code));
+        }
+    }
+
+    static constexpr std::array MrtzBuiltins = {IR::Attribute::Depth, IR::Attribute::StencilRef,
+                                                IR::Attribute::SampleMask, IR::Attribute::Null};
+    for (u32 i = 0; i < 4; ++i) {
+        if (components[i].IsEmpty()) {
+            continue;
+        }
+        ir.SetAttribute(MrtzBuiltins[i], components[i]);
+    }
+}
+
 void Translator::EmitExport(const GcnInst& inst) {
     if (info.stage == Stage::Fragment && inst.control.exp.vm) {
         ir.Discard(ir.LogicalNot(ir.GetExec()));
     }
 
-    const auto& exp = inst.control.exp;
-    const IR::Attribute attrib{exp.target};
+    const IR::Attribute attrib{inst.control.exp.target};
     if (IR::IsMrt(attrib)) {
         return ExportRenderTarget(inst);
     }
-
-    if (attrib == IR::Attribute::Depth && exp.en != 0 && exp.en != 1) {
-        LOG_WARNING(Render_Vulkan, "Unsupported depth export");
-        return;
+    if (attrib == IR::Attribute::Depth) {
+        return ExportDepth(inst);
     }
 
-    ASSERT_MSG(!exp.compr, "Compressed exports only supported for render targets");
+    ASSERT_MSG(!inst.control.exp.compr, "Compressed exports only supported for render targets");
 
-    u32 mask = exp.en;
+    u32 mask = inst.control.exp.en;
     for (u32 i = 0; i < 4; i++, mask >>= 1) {
         if ((mask & 1) == 0) {
             continue;

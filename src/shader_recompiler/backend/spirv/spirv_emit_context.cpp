@@ -375,7 +375,7 @@ void EmitContext::DefineInputs() {
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         }
         if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
-            output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
+            output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
             Decorate(output_layer, spv::Decoration::Flat);
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
@@ -561,11 +561,11 @@ void EmitContext::DefineVertexBlock() {
             DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
     }
     if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
-        output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+        output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
     }
     if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
         output_viewport_index =
-            DefineVariable(S32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
+            DefineVariable(U32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
     }
 }
 
@@ -649,6 +649,10 @@ void EmitContext::DefineOutputs() {
     case LogicalStage::Fragment: {
         if (info.stores.Get(IR::Attribute::Depth)) {
             frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.stores.Get(IR::Attribute::SampleMask)) {
+            sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
+                                         spv::StorageClass::Output);
         }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
