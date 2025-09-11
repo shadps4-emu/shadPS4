@@ -16,7 +16,8 @@
 namespace Libraries::Net {
 struct Socket;
 struct Epoll;
-}
+struct Resolver;
+} // namespace Libraries::Net
 
 namespace Core::FileSys {
 
@@ -94,6 +95,7 @@ struct File {
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
     std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
     std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
+    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
 };
 
 class HandleTable {
