@@ -461,7 +461,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     // Reset fence for queue submission. Do it here instead of GetRenderFrame() because we may
     // skip frame because of slow swapchain recreation. If a frame skip occurs, we skip signal
     // the frame's present fence and future GetRenderFrame() call will hang waiting for this frame.
-    instance.GetDevice().resetFences(frame->present_done);
+    auto resetFence = instance.GetDevice().resetFences(frame->present_done);
 
     ImGuiID dockId = ImGui::Core::NewFrame(is_reusing_frame);
 

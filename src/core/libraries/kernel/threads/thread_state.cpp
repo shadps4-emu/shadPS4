@@ -100,7 +100,7 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         tcb = TcbCtor(thread, 1 /* initial tls */);
     }
     if (tcb != nullptr) {
-        memset(thread, 0, sizeof(Pthread));
+        memset(static_cast<void*>(thread), 0, sizeof(Pthread));
         std::construct_at(thread);
         thread->tcb = tcb;
         thread->sleepqueue = new SleepQueue{};

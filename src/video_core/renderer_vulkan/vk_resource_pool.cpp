@@ -156,7 +156,7 @@ vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
     if (const auto [pool, tick] = pending_pools.front(); master_semaphore->IsFree(tick)) {
         curr_pool = pool;
         pending_pools.pop_front();
-        device.resetDescriptorPool(curr_pool);
+        auto resetDescriptorPool = device.resetDescriptorPool(curr_pool);
     } else {
         CreateDescriptorPool();
     }
