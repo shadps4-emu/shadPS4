@@ -411,6 +411,9 @@ bool isLoggingEnabled() {
 }
 
 u32 vblankFreq() {
+    if (vblankFrequency.get() < 60) {
+        vblankFrequency = 60;
+    }
     return vblankFrequency.get();
 }
 
