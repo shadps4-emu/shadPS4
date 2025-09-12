@@ -80,20 +80,20 @@ int PS4_SYSV_ABI sceMouseSetProcessPrivilege() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("cAnT0Rw-IwU", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseClose);
-    LIB_FUNCTION("Ymyy1HSSJLQ", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseConnectPort);
-    LIB_FUNCTION("BRXOoXQtb+k", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseDebugGetDeviceId);
-    LIB_FUNCTION("WiGKINCZWkc", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseDeviceOpen);
-    LIB_FUNCTION("eDQTFHbgeTU", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseDisconnectDevice);
-    LIB_FUNCTION("jJP1vYMEPd4", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseDisconnectPort);
-    LIB_FUNCTION("QA9Qupz3Zjw", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseGetDeviceInfo);
-    LIB_FUNCTION("Qs0wWulgl7U", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseInit);
-    LIB_FUNCTION("1FeceR5YhAo", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseMbusInit);
-    LIB_FUNCTION("RaqxZIf6DvE", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseOpen);
-    LIB_FUNCTION("x8qnXqh-tiM", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseRead);
-    LIB_FUNCTION("crkFfp-cmFo", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseSetHandType);
-    LIB_FUNCTION("ghLUU2Z5Lcg", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseSetPointerSpeed);
-    LIB_FUNCTION("6aANndpS0Wo", "libSceMouse", 1, "libSceMouse", 1, 1, sceMouseSetProcessPrivilege);
+    LIB_FUNCTION("cAnT0Rw-IwU", "libSceMouse", 1, "libSceMouse", sceMouseClose);
+    LIB_FUNCTION("Ymyy1HSSJLQ", "libSceMouse", 1, "libSceMouse", sceMouseConnectPort);
+    LIB_FUNCTION("BRXOoXQtb+k", "libSceMouse", 1, "libSceMouse", sceMouseDebugGetDeviceId);
+    LIB_FUNCTION("WiGKINCZWkc", "libSceMouse", 1, "libSceMouse", sceMouseDeviceOpen);
+    LIB_FUNCTION("eDQTFHbgeTU", "libSceMouse", 1, "libSceMouse", sceMouseDisconnectDevice);
+    LIB_FUNCTION("jJP1vYMEPd4", "libSceMouse", 1, "libSceMouse", sceMouseDisconnectPort);
+    LIB_FUNCTION("QA9Qupz3Zjw", "libSceMouse", 1, "libSceMouse", sceMouseGetDeviceInfo);
+    LIB_FUNCTION("Qs0wWulgl7U", "libSceMouse", 1, "libSceMouse", sceMouseInit);
+    LIB_FUNCTION("1FeceR5YhAo", "libSceMouse", 1, "libSceMouse", sceMouseMbusInit);
+    LIB_FUNCTION("RaqxZIf6DvE", "libSceMouse", 1, "libSceMouse", sceMouseOpen);
+    LIB_FUNCTION("x8qnXqh-tiM", "libSceMouse", 1, "libSceMouse", sceMouseRead);
+    LIB_FUNCTION("crkFfp-cmFo", "libSceMouse", 1, "libSceMouse", sceMouseSetHandType);
+    LIB_FUNCTION("ghLUU2Z5Lcg", "libSceMouse", 1, "libSceMouse", sceMouseSetPointerSpeed);
+    LIB_FUNCTION("6aANndpS0Wo", "libSceMouse", 1, "libSceMouse", sceMouseSetProcessPrivilege);
 };
 
 } // namespace Libraries::Mouse

@@ -22,7 +22,7 @@ inline Value ApplySwizzle(IREmitter& ir, const Value& vector, const AmdGpu::Comp
 }
 
 /// Converts gamma corrected value to linear space
-inline F32 ApplyGammaToLinear(IREmitter& ir, F32& c) {
+inline F32 ApplyGammaToLinear(IREmitter& ir, const F32& c) {
     const F32 a =
         ir.FPPow(ir.FPMul(ir.FPAdd(c, ir.Imm32(0.055f)), ir.Imm32(1.0f / 1.055f)), ir.Imm32(2.4f));
     const F32 b = ir.FPMul(c, ir.Imm32(1.0f / 12.92f));
@@ -79,6 +79,9 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
     case AmdGpu::NumberConversion::Uint32ToUnorm: {
         const auto float_val = ir.ConvertUToF(32, 32, ir.BitCast<U32>(value));
         return ir.FPDiv(float_val, ir.Imm32(static_cast<float>(std::numeric_limits<u32>::max())));
+    }
+    case AmdGpu::NumberConversion::SrgbToNorm: {
+        return ApplyGammaToLinear(ir, value);
     }
     default:
         UNREACHABLE();

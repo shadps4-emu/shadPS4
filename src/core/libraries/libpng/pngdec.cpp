@@ -262,14 +262,13 @@ s32 PS4_SYSV_ABI scePngDecQueryMemorySize(const OrbisPngDecCreateParam* param) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("m0uW+8pFyaw", "libScePngDec", 1, "libScePngDec", 1, 1, scePngDecCreate);
-    LIB_FUNCTION("WC216DD3El4", "libScePngDec", 1, "libScePngDec", 1, 1, scePngDecDecode);
-    LIB_FUNCTION("cJ--1xAbj-I", "libScePngDec", 1, "libScePngDec", 1, 1,
-                 scePngDecDecodeWithInputControl);
-    LIB_FUNCTION("QbD+eENEwo8", "libScePngDec", 1, "libScePngDec", 1, 1, scePngDecDelete);
-    LIB_FUNCTION("U6h4e5JRPaQ", "libScePngDec", 1, "libScePngDec", 1, 1, scePngDecParseHeader);
-    LIB_FUNCTION("-6srIGbLTIU", "libScePngDec", 1, "libScePngDec", 1, 1, scePngDecQueryMemorySize);
-    LIB_FUNCTION("cJ--1xAbj-I", "libScePngDec_jvm", 1, "libScePngDec", 1, 1,
+    LIB_FUNCTION("m0uW+8pFyaw", "libScePngDec", 1, "libScePngDec", scePngDecCreate);
+    LIB_FUNCTION("WC216DD3El4", "libScePngDec", 1, "libScePngDec", scePngDecDecode);
+    LIB_FUNCTION("cJ--1xAbj-I", "libScePngDec", 1, "libScePngDec", scePngDecDecodeWithInputControl);
+    LIB_FUNCTION("QbD+eENEwo8", "libScePngDec", 1, "libScePngDec", scePngDecDelete);
+    LIB_FUNCTION("U6h4e5JRPaQ", "libScePngDec", 1, "libScePngDec", scePngDecParseHeader);
+    LIB_FUNCTION("-6srIGbLTIU", "libScePngDec", 1, "libScePngDec", scePngDecQueryMemorySize);
+    LIB_FUNCTION("cJ--1xAbj-I", "libScePngDec_jvm", 1, "libScePngDec",
                  scePngDecDecodeWithInputControl);
 };
 

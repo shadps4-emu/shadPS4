@@ -173,11 +173,11 @@ s32 PS4_SYSV_ABI sceZlibFinalize() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInitialize);
-    LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibFinalize);
-    LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInflate);
-    LIB_FUNCTION("uB8VlDD4e0s", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibWaitForDone);
-    LIB_FUNCTION("2eDcGHC0YaM", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibGetResult);
+    LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", sceZlibInitialize);
+    LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", sceZlibFinalize);
+    LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", sceZlibInflate);
+    LIB_FUNCTION("uB8VlDD4e0s", "libSceZlib", 1, "libSceZlib", sceZlibWaitForDone);
+    LIB_FUNCTION("2eDcGHC0YaM", "libSceZlib", 1, "libSceZlib", sceZlibGetResult);
 };
 
 } // namespace Libraries::Zlib

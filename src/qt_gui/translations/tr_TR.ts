@@ -454,14 +454,6 @@
       <translation>Oyuna özel yapılandırma kullan</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Eylem Düğmeleri</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Renk Ayarları</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>K:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>Y:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>M:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>atanmamış</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Seçenekler</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -648,6 +612,18 @@
     <message>
       <source>Default controller setting removed</source>
       <translation>Varsayılan kontrolcü ayarı kaldırıldı</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation type="unfinished">RED</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation type="unfinished">GREEN</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation type="unfinished">BLUE</translation>
     </message>
   </context>
   <context>
@@ -1071,6 +1047,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation type="unfinished">Quit Emulation</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1125,14 +1188,6 @@
       <translation>Oyuna özel yapılandırma kullan</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Metin Düzenleyici</translation>
     </message>
@@ -1141,28 +1196,12 @@
       <translation>Yardım</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mouse'dan Kontrolcü</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*Etkinleştirmek için oyundayken F7'ye basın</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1291,6 +1330,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Dokunmatik Yüzey Sağ</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation type="unfinished">Log Filter Presets</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation type="unfinished">Comment</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation type="unfinished">Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation type="unfinished">Load</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation type="unfinished">Close</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation type="unfinished">Add a new preset after the selected row</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation type="unfinished">Remove selected presets</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation type="unfinished">Load the selected preset</translation>
     </message>
   </context>
   <context>
@@ -1683,10 +1757,6 @@
       <translation>Grafik Cihazı</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank Bölücü</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Gelişmiş</translation>
     </message>
@@ -1943,10 +2013,6 @@
       <translation>Genişlik/Yükseklik:\nEmülatör penceresinin açılışta boyutunu ayarlar; bu, oyun sırasında yeniden boyutlandırılabilir.\nBu, oyundaki çözünürlükten farklıdır.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Bölücü:\nEmülatörün yenileme hızı bu sayı ile çarpılır. Bu değerin değiştirilmesi olumsuz etkilere yol açabilir; oyun hızını artırabilir veya oyunun beklemediği kritik işlevselliği bozabilir!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Shader&apos;ları Dışa Aktarmayı Etkinleştir:\nTeknik hata ayıklama amacıyla, shader&apos;ları render edildikçe bir klasöre kaydeder.</translation>
     </message>
@@ -2163,10 +2229,6 @@
       <translation> * Desteklenmeyen Vulkan Sürümü</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
       <translation>Deneysel Özellikler</translation>
     </message>
@@ -2247,8 +2309,48 @@
       <translation type="unfinished">RCAS Attenuation:</translation>
     </message>
     <message>
-      <source>0.250</source>
-      <translation type="unfinished">0.250</translation>
+      <source>Load Presets...</source>
+      <translation type="unfinished">Load Presets...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation type="unfinished">Log</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation type="unfinished">Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation type="unfinished">Vblank Frequency</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation type="unfinished">Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
   </context>
   <context>
@@ -2276,77 +2378,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Gizli Kupaları Göster</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Kısayol Tuşlarını Özelleştir</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Kontrolcü Kısayolları</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>FPS Sayacını Göster</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>atanmamış</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Emülatörü Durdur</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Tam Ekrana Geç</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Duraklat</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Klavye Kısayolları</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>FPS Sayacını Göster: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Emülatörü Durdur: n/a</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Tam Ekrana Geç: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Duraklat: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>İpucu: Her bir işlev için en fazla üç giriş atanabilir</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Kaydet</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Uygula</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>İptal</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Bir düğmeye bas</translation>
     </message>
   </context>
 </TS>

@@ -31,14 +31,14 @@
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
-#include "core/libraries/np_auth/np_auth.h"
-#include "core/libraries/np_common/np_common.h"
-#include "core/libraries/np_manager/np_manager.h"
-#include "core/libraries/np_party/np_party.h"
-#include "core/libraries/np_profiledialog/np_profiledialog.h"
-#include "core/libraries/np_score/np_score.h"
-#include "core/libraries/np_trophy/np_trophy.h"
-#include "core/libraries/np_web_api/np_web_api.h"
+#include "core/libraries/np/np_auth.h"
+#include "core/libraries/np/np_common.h"
+#include "core/libraries/np/np_manager.h"
+#include "core/libraries/np/np_party.h"
+#include "core/libraries/np/np_profile_dialog.h"
+#include "core/libraries/np/np_score.h"
+#include "core/libraries/np/np_trophy.h"
+#include "core/libraries/np/np_web_api.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
@@ -88,18 +88,18 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::NetCtl::RegisterLib(sym);
     Libraries::SaveData::RegisterLib(sym);
     Libraries::SaveData::Dialog::RegisterLib(sym);
-    Libraries::Ssl::RegisterLib(sym);
     Libraries::Ssl2::RegisterLib(sym);
     Libraries::SysModule::RegisterLib(sym);
     Libraries::Posix::RegisterLib(sym);
     Libraries::AudioIn::RegisterLib(sym);
-    Libraries::NpCommon::RegisterLib(sym);
-    Libraries::NpManager::RegisterLib(sym);
-    Libraries::NpScore::RegisterLib(sym);
-    Libraries::NpTrophy::RegisterLib(sym);
-    Libraries::NpWebApi::RegisterLib(sym);
-    Libraries::NpProfileDialog::RegisterLib(sym);
-    Libraries::NpAuth::RegisterLib(sym);
+    Libraries::Np::NpCommon::RegisterLib(sym);
+    Libraries::Np::NpManager::RegisterLib(sym);
+    Libraries::Np::NpScore::RegisterLib(sym);
+    Libraries::Np::NpTrophy::RegisterLib(sym);
+    Libraries::Np::NpWebApi::RegisterLib(sym);
+    Libraries::Np::NpProfileDialog::RegisterLib(sym);
+    Libraries::Np::NpAuth::RegisterLib(sym);
+    Libraries::Np::NpParty::RegisterLib(sym);
     Libraries::ScreenShot::RegisterLib(sym);
     Libraries::AppContent::RegisterLib(sym);
     Libraries::PngDec::RegisterLib(sym);
@@ -126,7 +126,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::JpegEnc::RegisterLib(sym);
     Libraries::Mouse::RegisterLib(sym);
     Libraries::WebBrowserDialog::RegisterLib(sym);
-    Libraries::NpParty::RegisterLib(sym);
     Libraries::Zlib::RegisterLib(sym);
     Libraries::Hmd::RegisterLib(sym);
     Libraries::HmdSetupDialog::RegisterLib(sym);
@@ -139,6 +138,9 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rtc::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
+
+    // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
+    // Libraries::Ssl::RegisterLib(sym);
 }
 
 } // namespace Libraries

@@ -113,6 +113,7 @@ struct DynamicState {
         bool blend_constants : 1;
         bool color_write_masks : 1;
         bool line_width : 1;
+        bool feedback_loop_enabled : 1;
     } dirty_state{};
 
     Viewports viewports{};
@@ -149,6 +150,7 @@ struct DynamicState {
     std::array<float, 4> blend_constants{};
     ColorWriteMasks color_write_masks{};
     float line_width{};
+    bool feedback_loop_enabled{};
 
     /// Commits the dynamic state to the provided command buffer.
     void Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf);
@@ -322,6 +324,13 @@ struct DynamicState {
         if (line_width != width) {
             line_width = width;
             dirty_state.line_width = true;
+        }
+    }
+
+    void SetAttachmentFeedbackLoopEnabled(const bool enabled) {
+        if (feedback_loop_enabled != enabled) {
+            feedback_loop_enabled = enabled;
+            dirty_state.feedback_loop_enabled = true;
         }
     }
 };
