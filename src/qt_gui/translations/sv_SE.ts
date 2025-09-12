@@ -1012,39 +1012,39 @@
     </message>
     <message>
       <source>Game-specific Settings...</source>
-      <translation type="unfinished">Game-specific Settings...</translation>
+      <translation>Spelspecifika inställningar...</translation>
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation type="unfinished">Configure Game-specific Settings</translation>
+      <translation>Konfigurera spelspecifika inställningar</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+      <translation>Skapa spelspecifika inställningar från globala inställningar</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
-      <translation type="unfinished">Delete Game-specific Settings</translation>
+      <translation>Ta bort spelspecifika inställningar</translation>
     </message>
     <message>
       <source>Update Database</source>
-      <translation type="unfinished">Update Database</translation>
+      <translation>Uppdatera databasen</translation>
     </message>
     <message>
       <source>View Report</source>
-      <translation type="unfinished">View Report</translation>
+      <translation>Visa rapport</translation>
     </message>
     <message>
       <source>Submit a Report</source>
-      <translation type="unfinished">Submit a Report</translation>
+      <translation>Skicka in en rapport</translation>
     </message>
     <message>
       <source>Confirm deletion</source>
-      <translation type="unfinished">Confirm deletion</translation>
+      <translation>Bekräfta borttagning</translation>
     </message>
     <message>
       <source>Delete game-specific settings?</source>
-      <translation type="unfinished">Delete game-specific settings?</translation>
+      <translation>Ta bort spelspecifika inställningar?</translation>
     </message>
   </context>
   <context>
@@ -2378,23 +2378,23 @@
     </message>
     <message>
       <source>Enable Direct Memory Access</source>
-      <translation type="unfinished">Enable Direct Memory Access</translation>
+      <translation>Aktivera Direct Memory Access</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode</source>
-      <translation type="unfinished">Enable Devkit Console Mode</translation>
+      <translation>Aktivera Devkit-konsolläge</translation>
     </message>
     <message>
       <source>Enable PS4 Pro Mode</source>
-      <translation type="unfinished">Enable PS4 Pro Mode</translation>
+      <translation>Aktivera PS4 Pro-läge</translation>
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
-      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+      <translation>Ställ in &quot;PSN signed-in&quot; till True</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+      <translation>Ställ in &quot;Network Connected&quot; till True</translation>
     </message>
   </context>
   <context>
