@@ -68,7 +68,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 }
 
 u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
-    static constexpr u64 MinSizeToClamp = 2_MB;
+    static constexpr u64 MinSizeToClamp = 3_GB;
     // Dont bother with clamping if the size is small so we dont pay a map lookup on every buffer.
     if (size < MinSizeToClamp) {
         return size;
@@ -114,20 +114,14 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
                "Attempted to access invalid address {:#x}", virtual_addr);
-    const bool is_sparse = std::ranges::any_of(
-        prt_areas, [&](const PrtArea& area) { return area.Overlaps(virtual_addr, size); });
-    if (!is_sparse) {
-        std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), size);
-        return;
-    }
 
     auto vma = FindVMA(virtual_addr);
     while (size) {
         u64 copy_size = std::min<u64>(vma->second.size - (virtual_addr - vma->first), size);
-        if (vma->second.IsFree()) {
-            std::memset(dest, 0, copy_size);
-        } else {
+        if (vma->second.IsMapped()) {
             std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), copy_size);
+        } else {
+            std::memset(dest, 0, copy_size);
         }
         size -= copy_size;
         virtual_addr += copy_size;
