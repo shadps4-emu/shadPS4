@@ -952,7 +952,7 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "dmaCheckBox") {
         text = tr("Enable Direct Memory Access:\\nEnables arbitrary memory access from the GPU to CPU memory.");
     } else if (elementName == "neoCheckBox") {
-        text = tr("Enable PS4 Pro Mode:\\nAdds support for PS4 Pro emulation and memory size.");
+        text = tr("Enable PS4 Neo Mode:\\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.");
     } else if (elementName == "devkitCheckBox") {
         text = tr("Enable Devkit Console Mode:\\nAdds support for Devkit console memory size.");
     } else if (elementName == "networkConnectedCheckBox") {

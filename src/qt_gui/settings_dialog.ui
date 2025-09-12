@@ -452,7 +452,7 @@
                  <rect>
                   <x>0</x>
                   <y>0</y>
-                  <width>402</width>
+                  <width>400</width>
                   <height>68</height>
                  </rect>
                 </property>
@@ -2088,8 +2088,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>944</width>
-         <height>274</height>
+         <width>946</width>
+         <height>299</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -2234,8 +2234,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>495</height>
+         <width>932</width>
+         <height>507</height>
         </rect>
        </property>
        <property name="sizePolicy">
@@ -2433,7 +2433,7 @@
                <item>
                 <widget class="QCheckBox" name="neoCheckBox">
                  <property name="text">
-                  <string>Enable PS4 Pro Mode</string>
+                  <string>Enable PS4 Neo Mode</string>
                  </property>
                 </widget>
                </item>
