@@ -88,6 +88,9 @@ enum class Attribute : u64 {
     OffChipLdsBase = 91,
     TessFactorsBufferBase = 92,
     PointSize = 93,
+    StencilRef = 94,
+    SampleMask = 95,
+    PackedAncillary = 96,
     Max,
 };
 

@@ -14,7 +14,8 @@ namespace VideoCore {
 
 using namespace Vulkan;
 
-static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
+static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance* instance,
+                                           const ImageInfo& info) {
     vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferSrc |
                                 vk::ImageUsageFlagBits::eTransferDst |
                                 vk::ImageUsageFlagBits::eSampled;
@@ -23,13 +24,12 @@ static vk::ImageUsageFlags ImageUsageFlags(const ImageInfo& info) {
             usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         } else {
             usage |= vk::ImageUsageFlagBits::eColorAttachment;
-
-            // In cases where an image is created as a render/depth target and cleared with compute,
-            // we cannot predict whether it will be used as a storage image. A proper solution would
-            // involve re-creating the resource with a new configuration and copying previous
-            // content into it. However, for now, we will set storage usage for all images (if the
-            // format allows), sacrificing a bit of performance. Note use of ExtendedUsage flag set
-            // by default.
+            if (instance->IsAttachmentFeedbackLoopLayoutSupported()) {
+                usage |= vk::ImageUsageFlagBits::eAttachmentFeedbackLoopEXT;
+            }
+            // Always create images with storage flag to avoid needing re-creation in case of e.g
+            // compute clears This sacrifices a bit of performance but is less work. ExtendedUsage
+            // flag is also used.
             usage |= vk::ImageUsageFlagBits::eStorage;
         }
     }
@@ -128,7 +128,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 
-    usage_flags = ImageUsageFlags(info);
+    usage_flags = ImageUsageFlags(instance, info);
     format_features = FormatFeatureFlags(usage_flags);
 
     switch (info.pixel_format) {
@@ -348,11 +348,16 @@ void Image::CopyImage(Image& src_image) {
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
     ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
+    const u32 width = src_info.size.width;
+    const u32 height = src_info.size.height;
+    const u32 depth =
+        info.type == AmdGpu::ImageType::Color3D ? info.size.depth : src_info.size.depth;
+
     boost::container::small_vector<vk::ImageCopy, 8> image_copies;
     for (u32 mip = 0; mip < num_mips; ++mip) {
-        const auto mip_w = std::max(src_info.size.width >> mip, 1u);
-        const auto mip_h = std::max(src_info.size.height >> mip, 1u);
-        const auto mip_d = std::max(src_info.size.depth >> mip, 1u);
+        const auto mip_w = std::max(width >> mip, 1u);
+        const auto mip_h = std::max(height >> mip, 1u);
+        const auto mip_d = std::max(depth >> mip, 1u);
 
         image_copies.emplace_back(vk::ImageCopy{
             .srcSubresource{
@@ -365,7 +370,7 @@ void Image::CopyImage(Image& src_image) {
                 .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = src_info.resources.layers,
+                .layerCount = info.resources.layers,
             },
             .extent = {mip_w, mip_h, mip_d},
         });

@@ -251,15 +251,14 @@ void Rasterizer::EliminateFastClear() {
     if (!col_buf || !col_buf.info.fast_clear) {
         return;
     }
+    VideoCore::TextureCache::RenderTargetDesc desc(col_buf, liverpool->last_cb_extent[0]);
+    const auto& image_view = texture_cache.FindRenderTarget(desc);
     if (!texture_cache.IsMetaCleared(col_buf.CmaskAddress(), col_buf.view.slice_start)) {
         return;
     }
     for (u32 slice = col_buf.view.slice_start; slice <= col_buf.view.slice_max; ++slice) {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
     }
-    const auto& hint = liverpool->last_cb_extent[0];
-    VideoCore::TextureCache::RenderTargetDesc desc(col_buf, hint);
-    const auto& image_view = texture_cache.FindRenderTarget(desc);
     auto& image = texture_cache.GetImage(image_view.image_id);
     const vk::ImageSubresourceRange range = {
         .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -723,11 +722,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             // to force general layout on it.
             image->binding.force_general |= image_desc.is_written;
         }
-        if (image->binding.is_target) {
-            // The image is already bound as target. Since we read and output to it need to force
-            // general layout too.
-            image->binding.force_general = 1u;
-        }
         image->binding.is_bound = 1u;
     }
 
@@ -754,8 +748,15 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             auto& image = texture_cache.GetImage(image_id);
             auto& image_view = texture_cache.FindTexture(image_id, desc);
 
-            if (image.binding.force_general || image.binding.is_target) {
-                image.Transit(vk::ImageLayout::eGeneral,
+            // The image is either bound as storage in a separate descriptor or bound as render
+            // target in feedback loop. Depth images are excluded because they can't be bound as
+            // storage and feedback loop doesn't make sense for them
+            if ((image.binding.force_general || image.binding.is_target) &&
+                !image.info.props.is_depth) {
+                image.Transit(instance.IsAttachmentFeedbackLoopLayoutSupported() &&
+                                      image.binding.is_target
+                                  ? vk::ImageLayout::eAttachmentFeedbackLoopOptimalEXT
+                                  : vk::ImageLayout::eGeneral,
                               vk::AccessFlagBits2::eShaderRead |
                                   (image.info.props.is_depth
                                        ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
@@ -816,6 +817,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
 void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& state) {
     int cb_index = 0;
+    attachment_feedback_loop = false;
     for (auto attach_idx = 0u; attach_idx < state.num_color_attachments; ++attach_idx) {
         if (state.color_attachments[attach_idx].imageView == VK_NULL_HANDLE) {
             continue;
@@ -835,11 +837,14 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             state.height = std::min<u32>(state.height, std::max(image.info.size.height >> mip, 1u));
         }
         auto& image = texture_cache.GetImage(image_id);
-        if (image.binding.force_general) {
-            image.Transit(
-                vk::ImageLayout::eGeneral,
-                vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eShaderRead, {});
-
+        if (image.binding.is_bound) {
+            ASSERT_MSG(!image.binding.force_general,
+                       "Having image both as storage and render target is unsupported");
+            image.Transit(instance.IsAttachmentFeedbackLoopLayoutSupported()
+                              ? vk::ImageLayout::eAttachmentFeedbackLoopOptimalEXT
+                              : vk::ImageLayout::eGeneral,
+                          vk::AccessFlagBits2::eColorAttachmentWrite, {});
+            attachment_feedback_loop = true;
         } else {
             image.Transit(vk::ImageLayout::eColorAttachmentOptimal,
                           vk::AccessFlagBits2::eColorAttachmentWrite |
@@ -859,23 +864,15 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         if (has_stencil) {
             image.aspect_mask |= vk::ImageAspectFlagBits::eStencil;
         }
-        if (image.binding.force_general) {
-            image.Transit(vk::ImageLayout::eGeneral,
-                          vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
-                              vk::AccessFlagBits2::eShaderRead,
-                          {});
-        } else {
-            const auto new_layout = desc.view_info.is_storage
-                                        ? has_stencil
-                                              ? vk::ImageLayout::eDepthStencilAttachmentOptimal
-                                              : vk::ImageLayout::eDepthAttachmentOptimal
-                                    : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                                                  : vk::ImageLayout::eDepthReadOnlyOptimal;
-            image.Transit(new_layout,
-                          vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
-                              vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-                          desc.view_info.range);
-        }
+        const auto new_layout = desc.view_info.is_storage
+                                    ? has_stencil ? vk::ImageLayout::eDepthStencilAttachmentOptimal
+                                                  : vk::ImageLayout::eDepthAttachmentOptimal
+                                : has_stencil ? vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                                              : vk::ImageLayout::eDepthReadOnlyOptimal;
+        image.Transit(new_layout,
+                      vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+                          vk::AccessFlagBits2::eDepthStencilAttachmentRead,
+                      desc.view_info.range);
         state.depth_attachment.imageLayout = image.last_state.layout;
         state.stencil_attachment.imageLayout = image.last_state.layout;
         image.usage.depth_target = true;
@@ -1101,6 +1098,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline, const bool
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
     dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
+    dynamic_state.SetAttachmentFeedbackLoopEnabled(attachment_feedback_loop);
 
     // Commit new dynamic state to the command buffer.
     dynamic_state.Commit(instance, scheduler.CommandBuffer());
