@@ -304,7 +304,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     }
 
     BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline);
+    UpdateDynamicState(*pipeline, is_indexed);
 
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
@@ -359,7 +359,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline);
+    UpdateDynamicState(*pipeline, is_indexed);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
@@ -1092,10 +1092,10 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     }
 }
 
-void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline) const {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline, const bool is_indexed) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
-    UpdatePrimitiveState();
+    UpdatePrimitiveState(is_indexed);
     UpdateRasterizationState();
 
     auto& dynamic_state = scheduler.GetDynamicState();
@@ -1295,12 +1295,12 @@ void Rasterizer::UpdateDepthStencilState() const {
     }
 }
 
-void Rasterizer::UpdatePrimitiveState() const {
+void Rasterizer::UpdatePrimitiveState(const bool is_indexed) const {
     const auto& regs = liverpool->regs;
     auto& dynamic_state = scheduler.GetDynamicState();
 
     const auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
-    ASSERT_MSG(!prim_restart || regs.primitive_restart_index == 0xFFFF ||
+    ASSERT_MSG(!is_indexed || !prim_restart || regs.primitive_restart_index == 0xFFFF ||
                    regs.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
 
