@@ -1240,10 +1240,10 @@
                        <bool>false</bool>
                       </property>
                       <property name="suffix">
-                       <string>Hz</string>
+                       <string notr="true">Hz</string>
                       </property>
                       <property name="minimum">
-                       <number>1</number>
+                       <number>60</number>
                       </property>
                       <property name="maximum">
                        <number>9999</number>
@@ -2088,8 +2088,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>946</width>
-         <height>299</height>
+         <width>944</width>
+         <height>274</height>
         </rect>
        </property>
        <property name="sizePolicy">
