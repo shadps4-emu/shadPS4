@@ -215,7 +215,8 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
                           vk::PhysicalDevicePortabilitySubsetFeaturesKHR,
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
-                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+                          vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
+                          vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -270,6 +271,8 @@ bool Instance::CreateDevice() {
             feature_chain.get<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
         LOG_INFO(Render_Vulkan, "- extendedDynamicState3ColorWriteMask: {}",
                  dynamic_state_3_features.extendedDynamicState3ColorWriteMask);
+        LOG_INFO(Render_Vulkan, "- extendedDynamicState3RasterizationSamples: {}",
+                 dynamic_state_3_features.extendedDynamicState3RasterizationSamples);
     }
     robustness2 = add_extension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
     if (robustness2) {
@@ -320,6 +323,8 @@ bool Instance::CreateDevice() {
             Render_Vulkan, "- workgroupMemoryExplicitLayout16BitAccess: {}",
             workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess);
     }
+    dynamic_rendering_unused_attachments =
+        add_extension(VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME);
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
@@ -436,6 +441,8 @@ bool Instance::CreateDevice() {
             .customBorderColorWithoutFormat = true,
         },
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{
+            .extendedDynamicState3RasterizationSamples =
+                dynamic_state_3_features.extendedDynamicState3RasterizationSamples,
             .extendedDynamicState3ColorWriteMask =
                 dynamic_state_3_features.extendedDynamicState3ColorWriteMask,
         },
@@ -493,6 +500,9 @@ bool Instance::CreateDevice() {
                     .workgroupMemoryExplicitLayoutScalarBlockLayout,
             .workgroupMemoryExplicitLayout16BitAccess =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
+        },
+        vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT{
+            .dynamicRenderingUnusedAttachments = true,
         },
 #ifdef __APPLE__
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
@@ -559,6 +569,10 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+
+    if (!dynamic_rendering_unused_attachments) {
+        device_chain.unlink<vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

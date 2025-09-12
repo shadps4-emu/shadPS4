@@ -150,6 +150,13 @@ public:
         return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
     }
 
+    /// Returns true when the extendedDynamicState3RasterizationSamples feature of
+    /// VK_EXT_extended_dynamic_state3 is supported.
+    bool IsDynamicRasterizationSamplesSupported() const {
+        return dynamic_state_3 &&
+               dynamic_state_3_features.extendedDynamicState3RasterizationSamples;
+    }
+
     /// Returns true when VK_EXT_vertex_input_dynamic_state is supported.
     bool IsVertexInputDynamicState() const {
         return vertex_input_dynamic_state;
@@ -478,6 +485,7 @@ private:
     bool amd_shader_trinary_minmax{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
+    bool dynamic_rendering_unused_attachments{};
     bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};

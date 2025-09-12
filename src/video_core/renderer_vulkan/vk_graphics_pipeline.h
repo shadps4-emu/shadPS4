@@ -41,7 +41,7 @@ struct GraphicsPipelineKey {
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
     Liverpool::ColorBufferMask cb_shader_mask;
     Liverpool::ColorControl::LogicOp logic_op;
-    u32 num_samples;
+    u32 num_samples{};
     u32 mrt_mask;
     struct {
         Liverpool::DepthBuffer::ZFormat z_format : 2;

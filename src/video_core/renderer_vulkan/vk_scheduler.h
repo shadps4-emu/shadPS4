@@ -112,6 +112,7 @@ struct DynamicState {
 
         bool blend_constants : 1;
         bool color_write_masks : 1;
+        bool rasterization_samples : 1;
         bool line_width : 1;
         bool feedback_loop_enabled : 1;
     } dirty_state{};
@@ -149,6 +150,7 @@ struct DynamicState {
 
     std::array<float, 4> blend_constants{};
     ColorWriteMasks color_write_masks{};
+    vk::SampleCountFlagBits rasterization_samples{};
     float line_width{};
     bool feedback_loop_enabled{};
 
@@ -317,6 +319,13 @@ struct DynamicState {
         if (!std::ranges::equal(color_write_masks, color_write_masks_)) {
             color_write_masks = color_write_masks_;
             dirty_state.color_write_masks = true;
+        }
+    }
+
+    void SetRasterizationSamples(const vk::SampleCountFlagBits rasterization_samples_) {
+        if (rasterization_samples != rasterization_samples_) {
+            rasterization_samples = rasterization_samples_;
+            dirty_state.rasterization_samples = true;
         }
     }
 

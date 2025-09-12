@@ -332,7 +332,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.patch_control_points =
         regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
-    key.num_samples = regs.NumSamples();
+    key.num_samples = instance.IsDynamicRasterizationSamplesSupported() ? 1 : regs.NumSamples();
     key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =

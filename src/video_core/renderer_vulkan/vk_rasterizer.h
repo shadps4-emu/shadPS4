@@ -89,8 +89,10 @@ private:
     void Resolve();
     void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
+    std::vector<u32> UniqueSampleCounts() const;
 
-    void UpdateDynamicState(const GraphicsPipeline& pipeline, bool is_indexed) const;
+    void UpdateDynamicState(const GraphicsPipeline& pipeline,
+                            vk::SampleCountFlagBits sample_count, bool is_indexed) const;
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
     void UpdatePrimitiveState(bool is_indexed) const;
