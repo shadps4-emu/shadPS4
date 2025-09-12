@@ -90,10 +90,10 @@ private:
     void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
 
-    void UpdateDynamicState(const GraphicsPipeline& pipeline) const;
+    void UpdateDynamicState(const GraphicsPipeline& pipeline, bool is_indexed) const;
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
-    void UpdatePrimitiveState() const;
+    void UpdatePrimitiveState(bool is_indexed) const;
     void UpdateRasterizationState() const;
 
     bool FilterDraw();
