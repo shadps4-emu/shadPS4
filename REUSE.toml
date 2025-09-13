@@ -33,7 +33,6 @@ path = [
     "src/images/dump_icon.png",
     "src/images/exit_icon.png",
     "src/images/favorite_icon.png",
-    "src/images/file_icon.png",
     "src/images/trophy_icon.png",
     "src/images/flag_china.png",
     "src/images/flag_eu.png",
@@ -75,6 +74,7 @@ path = [
     "src/images/youtube.svg",
     "src/images/trophy.wav",
     "src/images/hotkey.png",
+    "src/images/game_settings.png",
     "src/shadps4.qrc",
     "src/shadps4.rc",
     "src/qt_gui/translations/update_translation.sh",
@@ -133,3 +133,8 @@ SPDX-License-Identifier = "MIT"
 path = "src/video_core/host_shaders/fsr/*"
 SPDX-FileCopyrightText = "Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved."
 SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "dist/qt.conf"
+SPDX-FileCopyrightText = "shadPS4 Emulator Project"
+SPDX-License-Identifier = "GPL-2.0-or-later"

@@ -3,40 +3,50 @@
 
 #include <QDialog>
 #include <QFuture>
+#include <QTimer>
 #include <SDL3/SDL_gamepad.h>
 
-#include "sdl_event_wrapper.h"
+#ifdef _WIN32
+#define LCTRL_KEY 29
+#define LALT_KEY 56
+#define LSHIFT_KEY 42
+#else
+#define LCTRL_KEY 37
+#define LALT_KEY 64
+#define LSHIFT_KEY 50
+#endif
 
 namespace Ui {
-class hotkeys;
+class Hotkeys;
 }
 
-class hotkeys : public QDialog {
+class Hotkeys : public QDialog {
     Q_OBJECT
 
 public:
-    explicit hotkeys(bool GameRunning, QWidget* parent = nullptr);
-    ~hotkeys();
+    explicit Hotkeys(bool GameRunning, QWidget* parent = nullptr);
+    ~Hotkeys();
 
-signals:
-    void PushGamepadEvent();
+private Q_SLOTS:
+    void processSDLEvents(int Type, int Input, int Value);
+    void StartTimer(QPushButton*& button, bool isPad);
+    void SaveHotkeys(bool CloseOnSave);
+    void SetDefault();
 
 private:
     bool eventFilter(QObject* obj, QEvent* event) override;
     void CheckMapping(QPushButton*& button);
-    void StartTimer(QPushButton*& button, bool isButton);
     void DisableMappingButtons();
     void EnableMappingButtons();
-    void SaveHotkeys(bool CloseOnSave);
     void LoadHotkeys();
-    void processSDLEvents(int Type, int Input, int Value);
     void pollSDLEvents();
     void CheckGamePad();
     void SetMapping(QString input);
     void Cleanup();
 
     bool GameRunning;
-    bool EnableButtonMapping = false;
+    bool EnablePadMapping = false;
+    bool EnableKBMapping = false;
     bool MappingCompleted = false;
     bool L2Pressed = false;
     bool R2Pressed = false;
@@ -50,13 +60,29 @@ private:
 
     // use QMap instead of QSet to maintain order of inserted strings
     QMap<int, QString> pressedButtons;
-    QList<QPushButton*> ButtonsList;
+    QList<QPushButton*> PadButtonsList;
+    QList<QPushButton*> KBButtonsList;
     QFuture<void> Polling;
 
-    Ui::hotkeys* ui;
+    Ui::Hotkeys* ui;
+
+    const std::vector<std::string> ControllerInputs = {
+        "cross",        "circle",    "square",      "triangle",    "l1",
+        "r1",           "l2",        "r2",          "l3",
+
+        "r3",           "options",   "pad_up",
+
+        "pad_down",
+
+        "pad_left",     "pad_right", "axis_left_x", "axis_left_y", "axis_right_x",
+        "axis_right_y", "back"};
 
 protected:
     void closeEvent(QCloseEvent* event) override {
         Cleanup();
+    }
+
+    void accept() override {
+        // Blank override to prevent quitting when save button pressed
     }
 };

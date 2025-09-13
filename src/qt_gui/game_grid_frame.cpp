@@ -126,6 +126,7 @@ void GameGridFrame::PopulateGameGrid(QVector<GameInfo> m_games_search, bool from
         image_label->setPixmap(QPixmap::fromImage(icon));
         image_label->move(0, 0);
         SetFavoriteIcon(image_container, m_games_, gameCounter);
+        SetGameConfigIcon(image_container, m_games_, gameCounter);
 
         QLabel* name_label = new QLabel(QString::fromStdString(m_games_[gameCounter].serial));
         name_label->setAlignment(Qt::AlignHCenter);
@@ -252,6 +253,23 @@ void GameGridFrame::SetFavoriteIcon(QWidget* parentWidget, QVector<GameInfo> m_g
     label->raise();
     label->setVisible(isFavorite);
     label->setObjectName("favoriteIcon");
+}
+
+void GameGridFrame::SetGameConfigIcon(QWidget* parentWidget, QVector<GameInfo> m_games_,
+                                      int gameCounter) {
+    std::string serialStr = m_games_[gameCounter].serial;
+
+    bool hasGameConfig = std::filesystem::exists(
+        Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (serialStr + ".toml"));
+
+    QLabel* label = new QLabel(parentWidget);
+    label->setPixmap(QPixmap(":images/game_settings.png")
+                         .scaled(icon_size / 3.8, icon_size / 3.8, Qt::KeepAspectRatio,
+                                 Qt::SmoothTransformation));
+    label->move(2, 2);
+    label->raise();
+    label->setVisible(hasGameConfig);
+    label->setObjectName("gameConfigIcon");
 }
 
 void GameGridFrame::SortByFavorite(QVector<GameInfo>* game_list) {

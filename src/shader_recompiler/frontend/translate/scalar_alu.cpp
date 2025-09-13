@@ -687,6 +687,8 @@ void Translator::S_FF1_I32_B64(const GcnInst& inst) {
             return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
         case OperandField::VccLo:
             return ir.GetVcc();
+        case OperandField::ExecLo:
+            return ir.GetExec();
         default:
             UNREACHABLE_MSG("unhandled operand type {}", magic_enum::enum_name(inst.src[0].field));
         }

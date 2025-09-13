@@ -123,7 +123,6 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
 void ApplyPendingPatches();
 
 void OnGameLoaded() {
-
     if (!patchFile.empty()) {
         std::filesystem::path patchDir = Common::FS::GetUserPath(Common::FS::PathType::PatchesDir);
 
@@ -201,16 +200,11 @@ void OnGameLoaded() {
                     }
                 }
             }
-
-            ApplyPendingPatches();
-            return;
         } else {
             LOG_ERROR(Loader, "couldnt patch parse xml : {}", result.description());
         }
-
-        ApplyPendingPatches();
-        return;
     }
+    ApplyPendingPatches();
 
 #ifdef ENABLE_QT_GUI
     // We use the QT headers for the xml and json parsing, this define is only true on QT builds
@@ -287,6 +281,7 @@ void OnGameLoaded() {
                     QString appVer = xmlReader.attributes().value("AppVer").toString();
 
                     // Check and update the isEnabled attribute
+                    isEnabled = false;
                     for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
                         if (attr.name() == QStringLiteral("isEnabled")) {
                             isEnabled = (attr.value().toString() == "true");

@@ -56,6 +56,10 @@ struct GraphicsPipelineKey {
         u32 depth_clip_enable : 1;
     };
 
+    GraphicsPipelineKey() {
+        std::memset(this, 0, sizeof(*this));
+    }
+
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;
     }
@@ -80,7 +84,7 @@ public:
         return key.write_masks;
     }
 
-    auto GetMrtMask() const {
+    u32 GetMrtMask() const {
         return key.mrt_mask;
     }
 

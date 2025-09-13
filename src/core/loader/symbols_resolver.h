@@ -31,8 +31,6 @@ struct SymbolResolver {
     std::string library;
     u16 library_version;
     std::string module;
-    u8 module_version_major;
-    u8 module_version_minor;
     SymbolType type;
 };
 

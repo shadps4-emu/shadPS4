@@ -29,17 +29,6 @@ static constexpr size_t NumBuffers = 40;
 static constexpr size_t NumSamplers = 16;
 static constexpr size_t NumFMasks = 8;
 
-enum class TextureType : u32 {
-    Color1D,
-    ColorArray1D,
-    Color2D,
-    ColorArray2D,
-    Color3D,
-    ColorCube,
-    Buffer,
-};
-constexpr u32 NUM_TEXTURE_TYPES = 7;
-
 enum class BufferType : u32 {
     Guest,
     Flatbuf,
@@ -221,6 +210,8 @@ struct Info {
     bool has_bitwise_xor{};
     bool has_image_gather{};
     bool has_image_query{};
+    bool has_layer_output{};
+    bool has_viewport_index_output{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
     bool uses_lane_id{};

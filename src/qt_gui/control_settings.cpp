@@ -9,7 +9,6 @@
 #include "common/path_util.h"
 #include "control_settings.h"
 #include "input/input_handler.h"
-#include "sdl_window.h"
 #include "ui_control_settings.h"
 
 ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, bool isGameRunning,
@@ -96,22 +95,19 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
 
     connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
         QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString RValue = tr("R:") + " " + RedValue;
-        ui->RLabel->setText(RValue);
+        ui->RLabel->setText(RedValue);
         UpdateLightbarColor();
     });
 
     connect(ui->GSlider, &QSlider::valueChanged, this, [this](int value) {
         QString GreenValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString GValue = tr("G:") + " " + GreenValue;
-        ui->GLabel->setText(GValue);
+        ui->GLabel->setText(GreenValue);
         UpdateLightbarColor();
     });
 
     connect(ui->BSlider, &QSlider::valueChanged, this, [this](int value) {
         QString BlueValue = QString("%1").arg(value, 3, 10, QChar('0'));
-        QString BValue = tr("B:") + " " + BlueValue;
-        ui->BLabel->setText(BValue);
+        ui->BLabel->setText(BlueValue);
         UpdateLightbarColor();
     });
 
@@ -178,10 +174,10 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     }
 
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
 
     int lineCount = 0;
     std::string line;
@@ -207,6 +203,11 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
 
         output_string = line.substr(0, equal_pos - 1);
         input_string = line.substr(equal_pos + 2);
+
+        if (output_string.contains("hotkey")) {
+            lines.push_back(line);
+            continue;
+        }
 
         bool controllerInputdetected = false;
         for (std::string input : ControllerInputs) {
@@ -397,21 +398,21 @@ void ControlSettings::SetDefault() {
 }
 
 void ControlSettings::AddBoxItems() {
-    ui->ProfileComboBox->addItem("Common Config");
+    ui->ProfileComboBox->addItem(tr("Common Config"));
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         ui->ProfileComboBox->addItem(QString::fromStdString(m_game_info->m_games[i].serial));
     }
-    ui->ProfileComboBox->setCurrentText("Common Config");
-    ui->TitleLabel->setText("Common Config");
+    ui->ProfileComboBox->setCurrentText(tr("Common Config"));
+    ui->TitleLabel->setText(tr("Common Config"));
 }
 
 void ControlSettings::SetUIValuestoMappings() {
     std::string config_id;
-    config_id = (ui->ProfileComboBox->currentText() == "Common Config")
+    config_id = (ui->ProfileComboBox->currentText() == tr("Common Config"))
                     ? "default"
                     : ui->ProfileComboBox->currentText().toStdString();
 
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_id);
+    const auto config_file = Config::GetFoolproofInputConfigFile(config_id);
     std::ifstream file(config_file);
 
     bool CrossExists = false, CircleExists = false, SquareExists = false, TriangleExists = false,
@@ -560,8 +561,7 @@ void ControlSettings::SetUIValuestoMappings() {
                     std::string Rstring = lightbarstring.substr(0, comma_pos2);
                     ui->RSlider->setValue(std::stoi(Rstring));
                     QString RedValue = QString("%1").arg(std::stoi(Rstring), 3, 10, QChar('0'));
-                    QString RValue = tr("R:") + " " + RedValue;
-                    ui->RLabel->setText(RValue);
+                    ui->RLabel->setText(RedValue);
                 }
 
                 std::string GBstring = lightbarstring.substr(comma_pos2 + 1);
@@ -570,14 +570,12 @@ void ControlSettings::SetUIValuestoMappings() {
                     std::string Gstring = GBstring.substr(0, comma_pos3);
                     ui->GSlider->setValue(std::stoi(Gstring));
                     QString GreenValue = QString("%1").arg(std::stoi(Gstring), 3, 10, QChar('0'));
-                    QString GValue = tr("G:") + " " + GreenValue;
-                    ui->GLabel->setText(GValue);
+                    ui->GLabel->setText(GreenValue);
 
                     std::string Bstring = GBstring.substr(comma_pos3 + 1);
                     ui->BSlider->setValue(std::stoi(Bstring));
                     QString BlueValue = QString("%1").arg(std::stoi(Bstring), 3, 10, QChar('0'));
-                    QString BValue = tr("B:") + " " + BlueValue;
-                    ui->BLabel->setText(BValue);
+                    ui->BLabel->setText(BlueValue);
                 }
             }
         }
@@ -641,8 +639,8 @@ void ControlSettings::SetUIValuestoMappings() {
 }
 
 void ControlSettings::GetGameTitle() {
-    if (ui->ProfileComboBox->currentText() == "Common Config") {
-        ui->TitleLabel->setText("Common Config");
+    if (ui->ProfileComboBox->currentText() == tr("Common Config")) {
+        ui->TitleLabel->setText(tr("Common Config"));
     } else {
         for (int i = 0; i < m_game_info->m_games.size(); i++) {
             if (m_game_info->m_games[i].serial ==
@@ -756,6 +754,10 @@ void ControlSettings::DisableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(false);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(false);
 }
 
 void ControlSettings::EnableMappingButtons() {
@@ -766,6 +768,10 @@ void ControlSettings::EnableMappingButtons() {
     for (const auto& i : AxisList) {
         i->setEnabled(true);
     }
+
+    ui->buttonBox->button(QDialogButtonBox::Save)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
+    ui->buttonBox->button(QDialogButtonBox::RestoreDefaults)->setEnabled(true);
 }
 
 void ControlSettings::ConnectAxisInputs(QPushButton*& button) {
@@ -1020,7 +1026,9 @@ void ControlSettings::Cleanup() {
         SDL_QuitSubSystem(SDL_INIT_EVENTS);
         SDL_Quit();
     } else {
-        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        if (!Config::getBackgroundControllerInput()) {
+            SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+        }
         SDL_Event checkGamepad{};
         checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
         SDL_PushEvent(&checkGamepad);

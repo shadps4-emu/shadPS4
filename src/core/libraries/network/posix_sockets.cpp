@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vector>
 #include <common/assert.h>
 #include "common/error.h"
 #include "core/libraries/kernel/file_system.h"
@@ -183,6 +184,32 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
+int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{m_mutex};
+#ifdef _WIN32
+    DWORD bytesSent = 0;
+    LPFN_WSASENDMSG wsasendmsg = nullptr;
+    GUID guid = WSAID_WSASENDMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
+                 sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
+    }
+
+    int res = wsasendmsg(sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), flags,
+                         &bytesSent, nullptr, nullptr);
+
+    if (res == SOCKET_ERROR) {
+        return ConvertReturnErrorCode(-1);
+    }
+    return static_cast<int>(bytesSent);
+#else
+    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
+    return ConvertReturnErrorCode(res);
+#endif
+}
+
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
     std::scoped_lock lock{m_mutex};
@@ -194,6 +221,31 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
     } else {
         return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
     }
+}
+
+int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{receive_mutex};
+#ifdef _WIN32
+    LPFN_WSARECVMSG wsarecvmsg = nullptr;
+    GUID guid = WSAID_WSARECVMSG;
+    DWORD bytes = 0;
+
+    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsarecvmsg,
+                 sizeof(wsarecvmsg), &bytes, nullptr, nullptr) != 0) {
+        return ConvertReturnErrorCode(-1);
+    }
+
+    DWORD bytesReceived = 0;
+    int res = wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), &bytesReceived, nullptr, nullptr);
+
+    if (res == SOCKET_ERROR) {
+        return ConvertReturnErrorCode(-1);
+    }
+    return static_cast<int>(bytesReceived);
+#else
+    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    return ConvertReturnErrorCode(res);
+#endif
 }
 
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
@@ -281,16 +333,41 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             CASE_SETSOCKOPT(SO_REUSEADDR);
             CASE_SETSOCKOPT(SO_KEEPALIVE);
             CASE_SETSOCKOPT(SO_BROADCAST);
-            // CASE_SETSOCKOPT(SO_LINGER);
             CASE_SETSOCKOPT(SO_SNDBUF);
             CASE_SETSOCKOPT(SO_RCVBUF);
-            CASE_SETSOCKOPT(SO_SNDTIMEO);
-            CASE_SETSOCKOPT(SO_RCVTIMEO);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_CONNECTTIMEO, &sockopt_so_connecttimeo);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_REUSEPORT, &sockopt_so_reuseport);
-            CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
             CASE_SETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+        case ORBIS_NET_SO_SNDTIMEO:
+        case ORBIS_NET_SO_RCVTIMEO: {
+            if (optlen != sizeof(int)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
+                return -1;
+            }
+            std::vector<char> val;
+            const auto optname_nat = (optname == ORBIS_NET_SO_SNDTIMEO) ? SO_SNDTIMEO : SO_RCVTIMEO;
+            int timeout_us = *(const int*)optval;
+#ifdef _WIN32
+            DWORD timeout = timeout_us / 1000;
+#else
+            timeval timeout{.tv_sec = timeout_us / 1000000, .tv_usec = timeout_us % 1000000};
+#endif
+            val.insert(val.end(), (char*)&timeout, (char*)&timeout + sizeof(timeout));
+            optlen = sizeof(timeout);
+            return ConvertReturnErrorCode(
+                setsockopt(sock, native_level, optname_nat, val.data(), optlen));
+        }
+        case ORBIS_NET_SO_ONESBCAST: {
+
+            if (optlen != sizeof(sockopt_so_onesbcast)) {
+                *Libraries::Kernel::__Error() = ORBIS_NET_ERROR_EFAULT;
+                return -1;
+            }
+            memcpy(&sockopt_so_onesbcast, optval, optlen);
+            return ConvertReturnErrorCode(
+                setsockopt(sock, native_level, SO_BROADCAST, (const char*)optval, optlen));
+        }
         case ORBIS_NET_SO_TYPE:
         case ORBIS_NET_SO_ERROR: {
             *Libraries::Kernel::__Error() = ORBIS_NET_ENOPROTOOPT;
@@ -410,6 +487,18 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_USESIGNATURE, sockopt_so_usesignature);
             CASE_GETSOCKOPT_VALUE(ORBIS_NET_SO_NAME,
                                   (char)0); // writes an empty string to the output buffer
+        case ORBIS_NET_SO_ERROR_EX: {
+            socklen_t optlen_temp = *optlen;
+            auto retval = ConvertReturnErrorCode(
+                getsockopt(sock, level, SO_ERROR, (char*)optval, &optlen_temp));
+            *optlen = optlen_temp;
+            if (retval < 0) {
+                s32 r = *Libraries::Kernel::__Error();
+                *Libraries::Kernel::__Error() = 0;
+                return r;
+            }
+            return retval;
+        }
         }
     } else if (native_level == IPPROTO_IP) {
         switch (optname) {
