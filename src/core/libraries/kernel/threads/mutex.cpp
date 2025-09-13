@@ -282,13 +282,13 @@ int PthreadMutex::Unlock() {
     if (Type() == PthreadMutexType::Recursive && m_count > 0) [[unlikely]] {
         m_count--;
     } else {
-        int defered = True(m_flags & PthreadMutexFlags::Defered);
-        m_flags &= ~PthreadMutexFlags::Defered;
+        const bool deferred = True(m_flags & PthreadMutexFlags::Deferred);
+        m_flags &= ~PthreadMutexFlags::Deferred;
 
         m_owner = nullptr;
         m_lock.unlock();
 
-        if (curthread->will_sleep == 0 && defered) {
+        if (curthread->will_sleep == 0 && deferred) {
             curthread->WakeAll();
         }
     }

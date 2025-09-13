@@ -27,7 +27,7 @@ struct Pthread;
 
 enum class PthreadMutexFlags : u32 {
     TypeMask = 0xff,
-    Defered = 0x200,
+    Deferred = 0x200,
 };
 DECLARE_ENUM_FLAG_OPERATORS(PthreadMutexFlags)
 
@@ -319,8 +319,13 @@ struct Pthread {
         nwaiter_defer = 0;
     }
 
+    void ClearWake() {
+        // Try to acquire wake semaphore to reset it.
+        void(wake_sema.try_acquire());
+    }
+
     bool Sleep(const OrbisKernelTimespec* abstime, u64 usec) {
-        will_sleep = 0;
+        will_sleep = false;
         if (nwaiter_defer > 0) {
             WakeAll();
         }
