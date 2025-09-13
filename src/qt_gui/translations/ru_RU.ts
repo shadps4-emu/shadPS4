@@ -454,14 +454,6 @@
       <translation>Использовать настройки для каждой игры</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Кнопки действий</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Настройка цвета</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>не назначено</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -648,6 +612,18 @@
     <message>
       <source>Default controller setting removed</source>
       <translation>Настройки геймпада по умолчанию удалены</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>КРАСНЫЙ</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>ЗЕЛЁНЫЙ</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>СИНИЙ</translation>
     </message>
   </context>
   <context>
@@ -1071,6 +1047,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Настроить горячие клавиши</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Горячие клавиши контроллера</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Показать счетчик FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>не назначено</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Завершить эмуляцию</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Перезагрузить назначения кнопок</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Переключить полноэкранный режим</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Переключить паузу</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Горячие клавиши клавиатуры</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Захват Renderdoc (только для отладки)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Переключить мышь в эмуляцию джойстика</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Переключить мышь в эмуляцию гироскопа</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Подсказка: для каждой горячей клавиши может быть назначено до трёх одновремённых вводов</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Сохранить</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Применить</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Отмена</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>По умолчанию</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Не удаётся сохранить</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Невозможно привязать уникальный ввод более одного раза. Дублированные вводы назначены на следующие кнопки:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Ожидание ввода</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1125,14 +1188,6 @@
       <translation>Использовать настройки для каждой игры</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Текстовый редактор</translation>
     </message>
@@ -1141,28 +1196,12 @@
       <translation>Помощь</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Мышь в джойстик</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*нажмите F7 в игре для активации</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1291,6 +1330,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Тачпад справа</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Пресеты фильтров логов</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Комментарий</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Фильтр</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Загрузить</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Закрыть</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Добавить новый пресет после выбранной строки</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Удалить выбранный пресет</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Загрузить выбранный пресет</translation>
     </message>
   </context>
   <context>
@@ -1683,10 +1757,6 @@
       <translation>Графическое устройство</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Делитель Vblank</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Продвинутые</translation>
     </message>
@@ -1943,10 +2013,6 @@
       <translation>Ширина/Высота:\nУстановите размер окна эмулятора при запуске, который может быть изменен во время игры.\nЭто отличается от разрешения в игре.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Делитель Vblank:\nЧастота кадров, с которой обновляется эмулятор, умножается на это число. Изменение этого параметра может иметь негативные последствия, такие как увеличение скорости игры или нарушение критических функций игры, которые этого не ожидают!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Включить дамп шейдеров:\nДля технической отладки сохраняет шейдеры игр в папку во время рендеринга.</translation>
     </message>
@@ -2163,10 +2229,6 @@
       <translation> * Неподдерживаемая версия Vulkan</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
       <translation>Экспериментальные функции</translation>
     </message>
@@ -2232,23 +2294,63 @@
     </message>
     <message>
       <source>FSR Settings</source>
-      <translation type="unfinished">FSR Settings</translation>
+      <translation>Настройки FSR</translation>
     </message>
     <message>
       <source>Enable FSR</source>
-      <translation type="unfinished">Enable FSR</translation>
+      <translation>Включить FSR</translation>
     </message>
     <message>
       <source>Enable RCAS (sharpening)</source>
-      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+      <translation>Включить RCAS (резкость)</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>Затухание RCAS:</translation>
     </message>
     <message>
-      <source>0.250</source>
-      <translation type="unfinished">0.250</translation>
+      <source>Load Presets...</source>
+      <translation>Загрузить пресеты...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Лог</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Открыть локацию лога:\nОткрыть папку, в которой сохраняется файл логов.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Микрофон:\nНет: Не использует микрофон.\nУстройство по умолчанию: Будет использовать устройство по умолчанию в системе.\nИли вручную выберите микрофон из списка.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Громкость:\nРегулируйте громкость игр на глобальном уровне, диапазон может быть 0-500% со значением по умолчанию 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Вкладка по умолчанию при открытии настроек:\nВыберите, какая вкладка будет открыта, по умолчанию выбрано "Общее".</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Показать размер игры в списке:\nПоказывает размер игры в списке.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Включить управление движением:\nКогда включено, будет использоваться управление движением, если оно поддерживается.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Частота Vblank</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation>Гц</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Частота Vblank:\nЧастота кадров, с которой обновляется эмулятор (60 Гц является базовым значением, независимо от того, работает игра в 30 или 60 fps). Изменение этого параметра может иметь негативные последствия, такие как увеличение скорости игры или нарушение критических функций игры, которые этого не ожидают!</translation>
     </message>
   </context>
   <context>
@@ -2276,77 +2378,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Показать скрытые трофеи</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Настроить горячие клавиши</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Горячие клавиши контроллера</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Показать счетчик FPS</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>не назначено</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Остановить эмулятор</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Полноэкранный режим</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Пауза</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Горячие клавиши клавиатуры</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Показать счетчик FPS: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Остановить эмулятор: н/н</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Полноэкранный режим: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Пауза: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Подсказка: для каждой функции может быть назначено до трёх вводов</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Сохранить</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Применить</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Отмена</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Нажмите кнопку</translation>
     </message>
   </context>
 </TS>

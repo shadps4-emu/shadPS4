@@ -283,7 +283,8 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
 
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
-        const auto [buffer, offset] = ObtainBuffer(range.base_address, range.GetSize(), false);
+        const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
+        const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
     }
@@ -922,7 +923,7 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
         for (auto& copy : copies) {
             u8* const src_pointer = staging + copy.srcOffset;
             const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
+            memory->CopySparseMemory(device_addr, src_pointer, copy.size);
             // Apply the staging offset
             copy.srcOffset += offset;
         }
@@ -938,7 +939,7 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
         for (const auto& copy : copies) {
             u8* const src_pointer = staging + copy.srcOffset;
             const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            std::memcpy(src_pointer, std::bit_cast<const u8*>(device_addr), copy.size);
+            memory->CopySparseMemory(device_addr, src_pointer, copy.size);
         }
         scheduler.DeferOperation([buffer = std::move(temp_buffer)]() mutable { buffer.reset(); });
         return src_buffer;

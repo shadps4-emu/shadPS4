@@ -28,6 +28,9 @@ void ConvertDepthMode(EmitContext& ctx) {
 }
 
 void ConvertPositionToClipSpace(EmitContext& ctx) {
+    ASSERT_MSG(!ctx.info.stores.GetAny(IR::Attribute::ViewportIndex),
+               "Multi-viewport with shader clip space conversion not yet implemented.");
+
     const Id type{ctx.F32[1]};
     Id position{ctx.OpLoad(ctx.F32[4], ctx.output_position)};
     const Id x{ctx.OpCompositeExtract(type, position, 0u)};

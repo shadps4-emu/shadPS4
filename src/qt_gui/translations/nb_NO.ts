@@ -454,14 +454,6 @@
       <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Handlingsknapper</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Fargejustering</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>Ikke tildelt</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -648,6 +612,18 @@
     <message>
       <source>Default controller setting removed</source>
       <translation>Fjernet instillinger for standardkontroller</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>RØD</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>GRØNN</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>BLÅ</translation>
     </message>
   </context>
   <context>
@@ -1071,6 +1047,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Tilpass hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Kontroller hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Vis FPS-teller</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>Ikke tildelt</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Avslutt emulering</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Last knappeoppsett på nytt</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Slå av/på fullskjerm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Sett av/på pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Tastatur hurtigtaster</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>RenderDoc opptak (kun for feilsøking)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Slå av/på mus til styrespak emulering</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Slå av/på mus til gyro emulering</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Tips: Opptil tre inndata kan tildeles hver funksjon.</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Lagre</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Bruk</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Gjenopprett standardinnstillinger</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Klarte ikke lagre</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Kan ikke tildele samme inndata mer enn én gang. Dupliserte inndata tildeles følgende taster:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Venter på inndata</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1125,14 +1188,6 @@
       <translation>Bruk oppsett per spill</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Skriveprogram</translation>
     </message>
@@ -1141,28 +1196,12 @@
       <translation>Hjelp</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus til styrespak</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>Trykk F7 i spillet for å bruke</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1291,6 +1330,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Høyre berøringsplate</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Forhåndsinnstillinger for loggfilter</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Kommentar</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Last</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Lukk</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Legg til ny forhåndsinnstilling etter den valgte raden</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Fjern valgte forhåndsinnstillinger</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Last inn den valgte forhåndsinnstillingen</translation>
     </message>
   </context>
   <context>
@@ -1683,10 +1757,6 @@
       <translation>Grafikkenhet</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank skillelinje</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Avansert</translation>
     </message>
@@ -1943,10 +2013,6 @@
       <translation>Bredde / Høyde:\nAngir størrelsen på emulatorvinduet ved oppstart, som kan endres under spillingen.\nDette er annerledes fra oppløsningen i spillet.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank skillelinje:\nBildehastigheten som emulatoren oppdaterer ved, multipliseres med dette tallet. Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Bruk skyggeleggerdumping:\nFor teknisk feilsøking lagrer skyggeleggerne fra spillet i en mappe mens de gjengis.</translation>
     </message>
@@ -2163,10 +2229,6 @@
       <translation> *Ustøttet Vulkan-versjon</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
       <translation>Eksperimentelle funksjoner</translation>
     </message>
@@ -2247,8 +2309,48 @@
       <translation>RCAS demping:</translation>
     </message>
     <message>
-      <source>0.250</source>
-      <translation>0,250</translation>
+      <source>Load Presets...</source>
+      <translation>Last inn forhåndsinnstillinger …</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Logg</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Åpne loggplassering:\nÅpne mappa der loggfilen er lagret.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Mikrofon:\nIngen: Tar ikke mikrofonen i bruk.\nStandard enhet: Tar i bruk standardenheten som angitt av systemet.\nEller velg mikrofonen manuelt fra lista.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volum:\nJuster volum for spill på et globalt nivå, skalaen går fra 0-500%, standarden er 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Standardfanen når innstillingene åpnes:\nVelg hvilken fane som skal åpnes, standarden er «Generelt».</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Vis spillstørrelse i lista:\nViser størrelsen på spillene i spillista.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Bruk bevegelsesstyring:\nNår i bruk, vil den bruke kontrollerens bevegelsesstyring hvis det støttes.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Vblank-frekvens</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation>Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Vblank-frekvens:\nBildehastigheten som emulatoren oppdaterer ved, (60 hz er standard, enten om spillet kjøres med 30 eller 60 fps). Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
     </message>
   </context>
   <context>
@@ -2276,77 +2378,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Vis skjulte trofeer</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Tilpass hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Kontroller hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Vis FPS-teller</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>Ikke tildelt</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Stopp emulator</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Slå av/på fullskjerm</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Sett av/på pause</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Tastatur hurtigtaster</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Vis FPS-teller: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Stopp emulator: Ikke tilgjengelig</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Slå av/på fullskjerm: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Sett av/på pause: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Tips: Opptil tre inndata kan tildeles hver funksjon.</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Lagre</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Bruk</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Avbryt</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Trykk på en knapp</translation>
     </message>
   </context>
 </TS>

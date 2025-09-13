@@ -153,7 +153,7 @@ public:
     bool ScheduleEvent(u64 id, s16 filter,
                        void (*callback)(SceKernelEqueue, const SceKernelEvent&));
     bool RemoveEvent(u64 id, s16 filter);
-    int WaitForEvents(SceKernelEvent* ev, int num, u32 micros);
+    int WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUseconds* timo);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
     int GetTriggeredEvents(SceKernelEvent* ev, int num);
 

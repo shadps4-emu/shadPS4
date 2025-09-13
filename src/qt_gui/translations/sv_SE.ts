@@ -454,14 +454,6 @@
       <translation>Använd konfigurationer per spel</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Handlingsknappar</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Färgjustering</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>omappad</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -648,6 +612,18 @@
     <message>
       <source>Default controller setting removed</source>
       <translation>Inställning för standardkontroller borttagen</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>RÖD</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>GRÖN</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>BLÅ</translation>
     </message>
   </context>
   <context>
@@ -1071,6 +1047,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Snabbtangenter för kontroller</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Visa bildfrekvensräknare</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>omappad</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Avsluta emulering</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Uppdatera knappmappningar</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Växla helskärm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Växla paus</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Tangentbordsgenvägar</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Renderdoc-fångst (endast för felsökning)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Växla mus- till styrspaksemulering</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Växla mus- till gyroemulering</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Tips: Upp till tre samtidiga inmatningar kan tilldelas för varje snabbtangent</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbletter av inmatningar mappas till följande knappar:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Väntar på inmatningar</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1125,14 +1188,6 @@
       <translation>Använd konfiguration per-spel</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Textredigerare</translation>
     </message>
@@ -1141,28 +1196,12 @@
       <translation>Hjälp</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus till styrspak</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*tryck F7 i spelet för att aktivera</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1291,6 +1330,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Pekplatta höger</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Förval för loggfilter</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Kommentar</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Läs in</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Stäng</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Lägg till ett nytt förval efter markerad rad</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Ta bort markerade förval</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Läs in markerade förvalet</translation>
     </message>
   </context>
   <context>
@@ -1683,10 +1757,6 @@
       <translation>Grafikenhet</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank Divider</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Avancerat</translation>
     </message>
@@ -1943,10 +2013,6 @@
       <translation>Bredd/Höjd:\nStäller in storleken för emulatorfönstret vid uppstart, som kan storleksändras under spelning.\nDetta är inte det samma som spelupplösningen.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider:\nBildfrekvensen som emulatorn uppdaterar vid multipliceras med detta tal. Ändra detta kan ha inverkan på saker, såsom ökad spelhastighet eller göra sönder kritisk spelfunktionalitet, som inte förväntar sig denna ändring!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Aktivera Shaders Dumping:\nFör teknisk felsökning, sparar spelets shaders till en mapp när de renderas.</translation>
     </message>
@@ -2163,10 +2229,6 @@
       <translation> * Versionen av Vulkan stöds inte</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
       <translation>Experimentella funktioner</translation>
     </message>
@@ -2212,7 +2274,7 @@
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation>DLC-mapp</translation>
+      <translation>Mapp för nedladdningsbart innehåll (DLC)</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
@@ -2247,8 +2309,48 @@
       <translation>RCAS-dämpning:</translation>
     </message>
     <message>
-      <source>0.250</source>
-      <translation>0.250</translation>
+      <source>Load Presets...</source>
+      <translation>Läs in förval...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Logg</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Öppna loggplatsen:\nÖppna mappen där loggfilen är sparad.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Mikrofon:\nIngen: Använder inte mikrofonen.\nStandardenhet: Använder den standardenhet som är definierad i systemet.\nEller välj manuellt vilken mikrofon som ska användas från listan.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volym:\nJustera volymen för spel på global nivå, intervallet går från 0 till 500% med standardvärdet 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Standardflik vid öppning av inställningar:\nVälj vilken flik som ska öppnas, standard är Allmänt.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Visa spelstorlek i listan:\nSpelets storlek visas i listan.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Aktivera rörelsekontroller:\nNär denna funktion är aktiverad används kontrollens rörelsekontroll om den stöds.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Vblank-frekvens</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation>Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Vblank-frekvens:\nDen bildfrekvens som emulatorn uppdateras med (60 Hz är baslinjen, oavsett om spelet körs med 30 eller 60 bilder/s). Att ändra detta kan ha negativa effekter, såsom att öka spelhastigheten eller förstöra kritiska spelfunktioner som inte förväntar sig denna förändring!</translation>
     </message>
   </context>
   <context>
@@ -2276,77 +2378,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Visa dolda troféer</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Anpassa snabbtangenter</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Snabbtangenter för kontroller</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Visa FPS-räknare</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>inte mappad</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Stoppa emulator</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Växla helskärm</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Växla paus</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Snabbtangenter för tangentbord</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Visa FPS-räknare: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Stoppa emulator: inte tillgänglig</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Växla helskärm: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Växla paus: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Tips: Upp till tre inmatningar kan tilldelas för varje funktion</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Spara</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Tillämpa</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Avbryt</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Tryck en knapp</translation>
     </message>
   </context>
 </TS>

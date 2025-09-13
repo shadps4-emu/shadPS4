@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -35,7 +35,7 @@
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
-#include "core/libraries/np_trophy/np_trophy.h"
+#include "core/libraries/np/np_trophy.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
@@ -136,8 +136,13 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
+    const bool has_game_config = std::filesystem::exists(
+        Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
+    LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
+
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
+    LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
@@ -145,7 +150,8 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
     LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-    LOG_INFO(Config, "GPU vblankDivider: {}", Config::vblankDiv());
+    LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
+    LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", Config::copyGPUCmdBuffers());
     LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
@@ -196,7 +202,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     // Initialize patcher and trophies
     if (!id.empty()) {
         MemoryPatcher::g_game_serial = id;
-        Libraries::NpTrophy::game_serial = id;
+        Libraries::Np::NpTrophy::game_serial = id;
 
         const auto trophyDir =
             Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
@@ -341,16 +347,16 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 }
 
 void Emulator::LoadSystemModules(const std::string& game_serial) {
-    constexpr std::array<SysModules, 10> ModulesToLoad{
-        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterlibSceNgs2},
+    constexpr auto ModulesToLoad = std::to_array<SysModules>(
+        {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
-         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterlibSceLibcInternal},
+         {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", nullptr},
          {"libSceFontFt.sprx", nullptr},
-         {"libSceFreeTypeOt.sprx", nullptr}}};
+         {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);

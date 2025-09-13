@@ -454,14 +454,6 @@
       <translation>Usar configurações por jogo</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Botões de Ação</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Ajuste de Cores</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>não mapeado</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Opções</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -648,6 +612,18 @@
     <message>
       <source>Default controller setting removed</source>
       <translation>Configuração do controle padrão removida</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>VERMELHO</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>VERDE</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>AZUL</translation>
     </message>
   </context>
   <context>
@@ -1071,6 +1047,93 @@
     </message>
   </context>
   <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atalhos</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Atalhos do Controle</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Exibir Contador de FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>não mapeado</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Sair da emulação</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Recarregar mapeamento de botões</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Ativar/desativar Tela cheia</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Ativar/desativar Pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Atalhos do teclado</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Captura de Renderdoc (apenas para depuração)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Salvar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
+    </message>
+  </context>
+  <context>
     <name>KBMSettings</name>
     <message>
       <source>Configure Controls</source>
@@ -1125,14 +1188,6 @@
       <translation>Usar configurações por jogo</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Editor de Texto</translation>
     </message>
@@ -1141,28 +1196,12 @@
       <translation>Ajuda</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mouse para Analógico</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*Pressione F7 no jogo para ativar</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1291,6 +1330,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Touchpad Direito</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation type="unfinished">Log Filter Presets</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation type="unfinished">Comment</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation type="unfinished">Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation type="unfinished">Load</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation type="unfinished">Close</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation type="unfinished">Add a new preset after the selected row</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation type="unfinished">Remove selected presets</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation type="unfinished">Load the selected preset</translation>
     </message>
   </context>
   <context>
@@ -1683,10 +1757,6 @@
       <translation>Placa de Vídeo</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Divisor Vblank</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Avançado</translation>
     </message>
@@ -1943,10 +2013,6 @@
       <translation>Largura/Altura:\nDefine o tamanho da janela do emulador na inicialização, que pode ser redimensionado enquanto joga.\nIsso difere da resolução do jogo.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Divisor Vblank:\nA taxa de quadros em que o emulador atualiza é multiplicada por este número. Mudar isso pode ter efeitos negativos, como aumentar a velocidade do jogo ou quebrar a funcionalidade vital do jogo que não espera que isso mude!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Ativar Exportação de Shaders:\nArmazena os shaders do jogo em uma pasta durante a renderização para fins de depuração técnica.</translation>
     </message>
@@ -2163,10 +2229,6 @@
       <translation> * Versão do Vulkan não suportada</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
       <translation>Recursos Experimentais</translation>
     </message>
@@ -2247,8 +2309,48 @@
       <translation type="unfinished">RCAS Attenuation:</translation>
     </message>
     <message>
-      <source>0.250</source>
-      <translation type="unfinished">0.250</translation>
+      <source>Load Presets...</source>
+      <translation type="unfinished">Load Presets...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation type="unfinished">Log</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Microfone:\nNenhum: Não usa o microfone.\nDispositivo padrão: usará o dispositivo padrão definido no sistema.\nOu escolha manualmente o microfone que será usado na lista.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volume:\nAjuste o volume para os jogos no nível global, o intervalo vai de 0-500% sendo o padrão 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation type="unfinished">Vblank Frequency</translation>
+    </message>
+    <message>
+      <source>Hz</source>
+      <translation>Hz</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
     </message>
   </context>
   <context>
@@ -2276,77 +2378,6 @@
     <message>
       <source>Show Hidden Trophies</source>
       <translation>Mostrar Troféus Ocultos</translation>
-    </message>
-  </context>
-  <context>
-    <name>hotkeys</name>
-    <message>
-      <source>Customize Hotkeys</source>
-      <translation>Personalizar Atalhos</translation>
-    </message>
-    <message>
-      <source>Controller Hotkeys</source>
-      <translation>Atalhos do Controle</translation>
-    </message>
-    <message>
-      <source>Show FPS Counter</source>
-      <translation>Exibir Contador de FPS</translation>
-    </message>
-    <message>
-      <source>unmapped</source>
-      <translation>não mapeado</translation>
-    </message>
-    <message>
-      <source>Stop Emulator</source>
-      <translation>Parar o Emulador</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen</source>
-      <translation>Ativar/desativar Tela cheia</translation>
-    </message>
-    <message>
-      <source>Toggle Pause</source>
-      <translation>Ativar/desativar Pausa</translation>
-    </message>
-    <message>
-      <source>Keyboard Hotkeys</source>
-      <translation>Atalhos do teclado</translation>
-    </message>
-    <message>
-      <source>Show Fps Counter: F10</source>
-      <translation>Exibir Contador de Fps: F10</translation>
-    </message>
-    <message>
-      <source>Stop Emulator: n/a</source>
-      <translation>Parar o Emulador: n/a</translation>
-    </message>
-    <message>
-      <source>Toggle Fullscreen: F11</source>
-      <translation>Ativar/Desativar Tela Cheia: F11</translation>
-    </message>
-    <message>
-      <source>Toggle Pause: F9</source>
-      <translation>Ativar/Desativar Pausa: F9</translation>
-    </message>
-    <message>
-      <source>Tip: Up to three inputs can be assigned for each function</source>
-      <translation>Dica: até três entradas podem ser atribuídas para cada função</translation>
-    </message>
-    <message>
-      <source>Save</source>
-      <translation>Salvar</translation>
-    </message>
-    <message>
-      <source>Apply</source>
-      <translation>Aplicar</translation>
-    </message>
-    <message>
-      <source>Cancel</source>
-      <translation>Cancelar</translation>
-    </message>
-    <message>
-      <source>Press a button</source>
-      <translation>Aperte um botão</translation>
     </message>
   </context>
 </TS>
