@@ -919,18 +919,6 @@
       <translation>Compatibilidad...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Actualizar base de datos</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Ver informe</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Enviar un informe</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Acceso directo creado</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Añadir a favoritos</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Configuración específica del juego...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Cambia la configuración específica del juego</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Crear configuración para el juego a partir de la global</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Eliminar configuración específica del juego</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Actualizar base de datos</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Ver informe</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Enviar un informe</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Confirmar eliminación</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>¿Eliminar la configuración específica del juego?</translation>
     </message>
   </context>
   <context>
@@ -2351,6 +2375,26 @@
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Frecuencia de Vblanks:\nIndica la velocidad de fotogramas con la que se actualizará la imagen del emulador (60 Hz es la línea de base, aunque el juego se muestre a 30 o 60 FPS). ¡Cambiar esta opción puede provocar efectos adversos, como aumentar la velocidad del juego o romper funciones críticas del juego que no esperan cambios en este valor!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Habilitar acceso directo a memoria (DMA)</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Habilitar modo kit de desarrollo</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Pro Mode</source>
+      <translation>Habilitar modo PS4 Pro</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Cambia la opción «Inicio de sesión en PSN» a verdadero</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Cambia la opción «Conexión a red» a verdadero</translation>
     </message>
   </context>
   <context>

@@ -919,18 +919,6 @@
       <translation>Kompatibilitet...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Uppdatera databasen</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visa rapport</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Skicka en rapport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Skapa genväg</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Lägg till i favoriter</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Spelspecifika inställningar...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Konfigurera spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Skapa spelspecifika inställningar från globala inställningar</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Ta bort spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Uppdatera databasen</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visa rapport</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Skicka in en rapport</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Bekräfta borttagning</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Ta bort spelspecifika inställningar?</translation>
     </message>
   </context>
   <context>
@@ -2351,6 +2375,26 @@
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank-frekvens:\nDen bildfrekvens som emulatorn uppdateras med (60 Hz är baslinjen, oavsett om spelet körs med 30 eller 60 bilder/s). Att ändra detta kan ha negativa effekter, såsom att öka spelhastigheten eller förstöra kritiska spelfunktioner som inte förväntar sig denna förändring!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Aktivera Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Aktivera Devkit-konsolläge</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Pro Mode</source>
+      <translation>Aktivera PS4 Pro-läge</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Ställ in &quot;PSN signed-in&quot; till True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Ställ in &quot;Network Connected&quot; till True</translation>
     </message>
   </context>
   <context>

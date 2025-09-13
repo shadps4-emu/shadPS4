@@ -919,18 +919,6 @@
       <translation>Kompatibilitet …</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Oppdater database</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Vis rapport</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Send inn en rapport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Snarvei opprettelse</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Legg til i favoritter</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Innstillinger for enkeltspill …</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Sett opp innstillinger for enkeltspill</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Lag innstillinger for enkeltspill fra globale innstillinger</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Slett innstillinger for enkeltspill</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Oppdater database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Vis rapport</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Send inn en rapport</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Bekreft sletting</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Slett innstillinger for enkeltspill?</translation>
     </message>
   </context>
   <context>
@@ -2351,6 +2375,26 @@
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank-frekvens:\nBildehastigheten som emulatoren oppdaterer ved, (60 hz er standard, enten om spillet kjøres med 30 eller 60 fps). Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Bruk direkte minnetilgang</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Bruk utvikler-konsollmodus</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Pro Mode</source>
+      <translation>Bruk PS4 Pro-modus</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Bruk emulering av PSN-pålogging</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Bruk emulering av nettverkstilgang</translation>
     </message>
   </context>
   <context>
