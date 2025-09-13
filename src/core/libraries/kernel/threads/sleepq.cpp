@@ -53,7 +53,7 @@ void SleepqAdd(void* wchan, Pthread* td) {
         sq->sq_wchan = wchan;
         /* sq->sq_type = type; */
     }
-    td->sleepqueue = NULL;
+    td->sleepqueue = nullptr;
     td->wchan = wchan;
     sq->sq_blocked.push_front(td);
 }
@@ -88,10 +88,10 @@ void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
     td->wchan = nullptr;
 
     auto sq2 = sq->sq_freeq.begin();
-    for (Pthread* td : sq->sq_blocked) {
-        callback(td, arg);
-        td->sleepqueue = std::addressof(*sq2);
-        td->wchan = nullptr;
+    for (Pthread* td2 : sq->sq_blocked) {
+        callback(td2, arg);
+        td2->sleepqueue = std::addressof(*sq2);
+        td2->wchan = nullptr;
         ++sq2;
     }
     sq->sq_blocked.clear();
