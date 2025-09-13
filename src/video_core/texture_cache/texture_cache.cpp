@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/polyfill_thread.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -22,9 +23,10 @@ static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                           BufferCache& buffer_cache_, PageManager& tracker_)
-    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_}, tracker{tracker_},
-      blit_helper{instance, scheduler},
+                           AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
+                           PageManager& tracker_)
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      buffer_cache{buffer_cache_}, tracker{tracker_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
@@ -51,6 +53,9 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
         std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                       DEFAULT_CRITICAL_GC_MEMORY));
     trigger_gc_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
+
+    downloaded_images_thread =
+        std::jthread([&](const std::stop_token& token) { DownloadedImagesThread(token); });
 }
 
 TextureCache::~TextureCache() = default;
@@ -121,10 +126,34 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
-    scheduler.DeferOperation([device_addr = image.info.guest_address, download, download_size] {
-        auto* memory = Core::Memory::Instance();
-        memory->TryWriteBacking(std::bit_cast<u8*>(device_addr), download, download_size);
-    });
+
+    {
+        std::unique_lock lock(downloaded_images_mutex);
+        downloaded_images_queue.emplace(scheduler.CurrentTick(), image.info.guest_address, download,
+                                        download_size);
+        downloaded_images_cv.notify_one();
+    }
+}
+
+void TextureCache::DownloadedImagesThread(const std::stop_token& token) {
+    auto* memory = Core::Memory::Instance();
+    while (!token.stop_requested()) {
+        DownloadedImage image;
+        {
+            std::unique_lock lock{downloaded_images_mutex};
+            Common::CondvarWait(downloaded_images_cv, lock, token,
+                                [this] { return !downloaded_images_queue.empty(); });
+            if (token.stop_requested()) {
+                break;
+            }
+            image = downloaded_images_queue.front();
+            downloaded_images_queue.pop();
+        }
+
+        scheduler.GetMasterSemaphore()->Wait(image.tick);
+        memory->TryWriteBacking(std::bit_cast<u8*>(image.device_addr), image.download,
+                                image.download_size);
+    }
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
