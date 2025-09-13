@@ -558,7 +558,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>L1 and L2</source>
-      <translation type="unfinished">L1 and L2</translation>
+      <translation>L1 und L2</translation>
     </message>
     <message>
       <source>Active Gamepad</source>
