@@ -339,7 +339,7 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
         const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
-        const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
+        const auto [buffer, offset] = ObtainBuffer(range.base_address, size);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
     }
@@ -393,7 +393,7 @@ void BufferCache::BindIndexBuffer(u32 index_offset) {
 
     // Bind index buffer.
     const u32 index_buffer_size = regs.num_indices * index_size;
-    const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size, false);
+    const auto [vk_buffer, offset] = ObtainBuffer(index_address, index_buffer_size);
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindIndexBuffer(vk_buffer->Handle(), offset, index_type);
 }
@@ -449,20 +449,17 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         if (src_gds) {
             return gds_buffer;
         }
-        // Avoid using ObtainBuffer here as that might give us the stream buffer.
-        const BufferId buffer_id = FindBuffer(src, num_bytes);
-        auto& buffer = slot_buffers[buffer_id];
-        if (SynchronizeBuffer(buffer, src, num_bytes, false, true)) {
-            texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
-        }
-        return buffer;
+        const auto [buffer, offset] =
+            ObtainBuffer(src, num_bytes,
+                         ObtainBufferFlags::IgnoreStreamBuffer | ObtainBufferFlags::IsTexelBuffer |
+                             ObtainBufferFlags::InvalidateTextureCache);
+        return *buffer;
     }();
     auto& dst_buffer = [&] -> const Buffer& {
         if (dst_gds) {
             return gds_buffer;
         }
-        // Prefer using ObtainBuffer here as that will auto-mark the region as GPU modified.
-        const auto [buffer, offset] = ObtainBuffer(dst, num_bytes, true);
+        const auto [buffer, offset] = ObtainBuffer(dst, num_bytes, ObtainBufferFlags::IsWritten);
         return *buffer;
     }();
     vk::BufferCopy region{
@@ -525,10 +522,14 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
     });
 }
 
-std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, bool is_written,
-                                                  bool is_texel_buffer, BufferId buffer_id) {
+std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
+                                                  ObtainBufferFlags flags, BufferId buffer_id) {
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
-    if (!is_written && size <= CACHING_PAGESIZE && !IsRegionGpuModified(device_addr, size)) {
+    const bool is_written = True(flags & ObtainBufferFlags::IsWritten);
+    const bool is_texel_buffer = True(flags & ObtainBufferFlags::IsTexelBuffer);
+    const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
+    if (!is_written && !skip_stream_buffer && size <= CACHING_PAGESIZE &&
+        !IsRegionGpuModified(device_addr, size)) {
         const u64 offset = stream_buffer.Copy(device_addr, size, instance.UniformMinAlignment());
         return {&stream_buffer, offset};
     }
@@ -536,9 +537,13 @@ std::pair<Buffer*, u32> BufferCache::ObtainBuffer(VAddr device_addr, u32 size, b
         buffer_id = FindBuffer(device_addr, size);
     }
     Buffer& buffer = slot_buffers[buffer_id];
-    SynchronizeBuffer(buffer, device_addr, size, is_written, is_texel_buffer);
+    const bool img_synced =
+        SynchronizeBuffer(buffer, device_addr, size, is_written, is_texel_buffer);
+    if (img_synced && True(flags & ObtainBufferFlags::InvalidateTextureCache)) {
+        texture_cache.InvalidateMemoryFromGPU(device_addr, size);
+    }
     if (is_written) {
-        gpu_modified_ranges.Add(device_addr, size);
+        MarkRegionAsGpuModified(device_addr, size);
     }
     return {&buffer, buffer.Offset(device_addr)};
 }
@@ -554,7 +559,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBufferForImage(VAddr gpu_addr, u32 si
     }
     // If some buffer within was GPU modified create a full buffer to avoid losing GPU data.
     if (IsRegionGpuModified(gpu_addr, size)) {
-        return ObtainBuffer(gpu_addr, size, false, false);
+        return ObtainBuffer(gpu_addr, size);
     }
     // In all other cases, just do a CPU copy to the staging buffer.
     const auto [data, offset] = staging_buffer.Map(size, 16);
@@ -574,6 +579,12 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
+}
+
+void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
+    gpu_modified_ranges.Add(addr, size);
+    memory_tracker->MarkRegionAsGpuModified(addr, size);
+    texture_cache.MarkAsMaybeReused(addr, size);
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {

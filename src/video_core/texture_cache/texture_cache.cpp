@@ -193,6 +193,13 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     });
 }
 
+void TextureCache::MarkAsMaybeReused(VAddr addr, size_t size) {
+    std::scoped_lock lock{mutex};
+    ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
+        image.flags |= ImageFlagBits::MaybeReused;
+    });
+}
+
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
@@ -519,12 +526,15 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     if (image_ids.size() == 1) {
         // Sometimes image size might not exactly match with requested buffer size
         // If we only found 1 candidate image use it without too many questions.
+        Image& image = slot_images[image_ids[0]];
+        TouchImage(image);
         return image_ids.back();
     }
     if (!image_ids.empty()) {
         for (s32 i = 0; i < image_ids.size(); ++i) {
             Image& image = slot_images[image_ids[i]];
             if (image.info.guest_size == size) {
+                TouchImage(image);
                 return image_ids[i];
             }
         }
@@ -937,12 +947,9 @@ void TextureCache::RunGarbageCollector() {
         }
         --num_deletions;
         auto& image = slot_images[image_id];
-        const bool download = image.SafeToDownload();
+        const bool download =
+            image.SafeToDownload() && False(image.flags & ImageFlagBits::MaybeReused);
         if (download && !pressured) {
-            return false;
-        }
-        if (download &&
-            buffer_cache.IsRegionGpuModified(image.info.guest_address, image.info.guest_size)) {
             return false;
         }
         if (download) {
@@ -990,8 +997,11 @@ void TextureCache::RunGarbageCollector() {
     }
 }
 
-void TextureCache::TouchImage(const Image& image) {
+void TextureCache::TouchImage(Image& image) {
     lru_cache.Touch(image.lru_id, gc_tick);
+
+    // Image is still valid
+    image.flags &= ~ImageFlagBits::MaybeReused;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

@@ -350,12 +350,12 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     }
 
     const auto& [buffer, base] =
-        buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count, false);
+        buffer_cache.ObtainBuffer(arg_address + offset, stride * max_count);
 
     VideoCore::Buffer* count_buffer{};
     u32 count_base{};
     if (count_address != 0) {
-        std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
+        std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4);
     }
 
     BeginRendering(*pipeline, state);
@@ -436,7 +436,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     scheduler.EndRendering();
 
-    const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
+    const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -661,8 +661,15 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 buffer_infos.emplace_back(null_buffer.Handle(), 0, VK_WHOLE_SIZE);
             }
         } else {
-            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
-                vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
+            VideoCore::ObtainBufferFlags flags = {};
+            if (desc.is_written) {
+                flags |= VideoCore::ObtainBufferFlags::IsWritten;
+            }
+            if (desc.is_formatted) {
+                flags |= VideoCore::ObtainBufferFlags::IsTexelBuffer;
+            }
+            const auto [vk_buffer, offset] =
+                buffer_cache.ObtainBuffer(vsharp.base_address, size, flags, buffer_id);
             const u32 alignment =
                 is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
