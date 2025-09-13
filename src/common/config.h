@@ -111,6 +111,8 @@ bool isDevKitConsole();
 void setDevKitConsole(bool enable, bool is_game_specific = false);
 
 bool vkValidationGpuEnabled(); // no set
+int GetExtraDmemInMbytes();
+void SetExtraDmemInMbytes(int value);
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 std::string getDefaultControllerID();
