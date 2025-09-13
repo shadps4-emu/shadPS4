@@ -58,7 +58,7 @@ int PS4_SYSV_ABI AvPlayer::ReadOffsetFile(void* handle, u8* buffer, u64 position
     auto const self = reinterpret_cast<AvPlayer*>(handle);
     std::lock_guard guard(self->m_file_io_mutex);
 
-    const auto read_offset = self->m_init_data_original.file_replacement.readOffset;
+    const auto read_offset = self->m_init_data_original.file_replacement.read_offset;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
     return Core::ExecuteGuest(read_offset, ptr, buffer, position, length);
 }
@@ -72,38 +72,46 @@ u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
     return Core::ExecuteGuest(size, ptr);
 }
 
-SceAvPlayerInitData AvPlayer::StubInitData(const SceAvPlayerInitData& data) {
-    SceAvPlayerInitData result = data;
+AvPlayerInitData AvPlayer::StubInitData(const AvPlayerInitData& data) {
+    AvPlayerInitData result = data;
     result.memory_replacement.object_ptr = this;
     result.memory_replacement.allocate = &AvPlayer::Allocate;
     result.memory_replacement.deallocate = &AvPlayer::Deallocate;
     result.memory_replacement.allocate_texture = &AvPlayer::AllocateTexture;
     result.memory_replacement.deallocate_texture = &AvPlayer::DeallocateTexture;
     if (data.file_replacement.open == nullptr || data.file_replacement.close == nullptr ||
-        data.file_replacement.readOffset == nullptr || data.file_replacement.size == nullptr) {
+        data.file_replacement.read_offset == nullptr || data.file_replacement.size == nullptr) {
         result.file_replacement = {};
     } else {
         result.file_replacement.object_ptr = this;
         result.file_replacement.open = &AvPlayer::OpenFile;
         result.file_replacement.close = &AvPlayer::CloseFile;
-        result.file_replacement.readOffset = &AvPlayer::ReadOffsetFile;
+        result.file_replacement.read_offset = &AvPlayer::ReadOffsetFile;
         result.file_replacement.size = &AvPlayer::SizeFile;
     }
     return result;
 }
 
-AvPlayer::AvPlayer(const SceAvPlayerInitData& data)
+AvPlayer::AvPlayer(const AvPlayerInitData& data)
     : m_init_data(StubInitData(data)), m_init_data_original(data),
       m_state(std::make_unique<AvPlayerState>(m_init_data)) {}
 
-s32 AvPlayer::PostInit(const SceAvPlayerPostInitData& data) {
+s32 AvPlayer::PostInit(const AvPlayerPostInitData& data) {
     m_state->PostInit(data);
     return ORBIS_OK;
 }
 
 s32 AvPlayer::AddSource(std::string_view path) {
-    if (path.empty()) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+    return AddSourceEx(path, AvPlayerSourceType::Unknown);
+}
+
+s32 AvPlayer::AddSourceEx(std::string_view path, AvPlayerSourceType source_type) {
+    if (source_type == AvPlayerSourceType::Unknown) {
+        source_type = GetSourceType(path);
+    }
+    if (source_type == AvPlayerSourceType::Hls) {
+        LOG_ERROR(Lib_AvPlayer, "HTTP Live Streaming is not implemented");
+        return ORBIS_AVPLAYER_ERROR_NOT_SUPPORTED;
     }
     if (!m_state->AddSource(path, GetSourceType(path))) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
@@ -122,7 +130,7 @@ s32 AvPlayer::GetStreamCount() {
     return res;
 }
 
-s32 AvPlayer::GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info) {
+s32 AvPlayer::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
     if (!m_state->GetStreamInfo(stream_index, info)) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
@@ -140,27 +148,49 @@ s32 AvPlayer::EnableStream(u32 stream_index) {
 }
 
 s32 AvPlayer::Start() {
-    if (!m_state->Start()) {
+    if (m_state == nullptr || !m_state->Start()) {
         return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
     }
     return ORBIS_OK;
 }
 
-bool AvPlayer::GetVideoData(SceAvPlayerFrameInfo& video_info) {
+s32 AvPlayer::Pause() {
+    if (m_state == nullptr || !m_state->Pause()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
+}
+
+s32 AvPlayer::Resume() {
+    if (m_state == nullptr || !m_state->Resume()) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    return ORBIS_OK;
+}
+
+s32 AvPlayer::SetAvSyncMode(AvPlayerAvSyncMode sync_mode) {
+    if (m_state == nullptr) {
+        return ORBIS_AVPLAYER_ERROR_OPERATION_FAILED;
+    }
+    m_state->SetAvSyncMode(sync_mode);
+    return ORBIS_OK;
+}
+
+bool AvPlayer::GetVideoData(AvPlayerFrameInfo& video_info) {
     if (m_state == nullptr) {
         return false;
     }
     return m_state->GetVideoData(video_info);
 }
 
-bool AvPlayer::GetVideoData(SceAvPlayerFrameInfoEx& video_info) {
+bool AvPlayer::GetVideoData(AvPlayerFrameInfoEx& video_info) {
     if (m_state == nullptr) {
         return false;
     }
     return m_state->GetVideoData(video_info);
 }
 
-bool AvPlayer::GetAudioData(SceAvPlayerFrameInfo& audio_info) {
+bool AvPlayer::GetAudioData(AvPlayerFrameInfo& audio_info) {
     if (m_state == nullptr) {
         return false;
     }
