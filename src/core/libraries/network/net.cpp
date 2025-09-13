@@ -904,7 +904,7 @@ const char* freebsd_inet_ntop6(const unsigned char* src, char* dst, u64 size) {
             tp += strlen(tp);
             break;
         }
-        tp += sprintf(tp, "%x", words[i]);
+        tp += snprintf(tp, sizeof(tmp) - (tp - tmp), "%x", words[i]);
     }
     /* Was it a trailing run of 0x00's? */
     if (best.base != -1 && (best.base + best.len) == (NS_IN6ADDRSZ / NS_INT16SZ))

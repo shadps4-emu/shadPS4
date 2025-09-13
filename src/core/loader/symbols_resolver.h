@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include "common/assert.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -66,6 +67,8 @@ public:
             return "Tls";
         case SymbolType::NoType:
             return "NoType";
+        default:
+            UNREACHABLE();
         }
     }
 
