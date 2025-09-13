@@ -113,3 +113,8 @@
 	path = externals/hwinfo
 	url = https://github.com/shadps4-emu/ext-hwinfo
 	shallow = true
+[submodule "externals/ext-wepoll"]
+	path = externals/ext-wepoll
+	url = https://github.com/shadps4-emu/ext-wepoll.git
+	shallow = true
+    branch = dist
