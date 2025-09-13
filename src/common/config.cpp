@@ -1032,7 +1032,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
     isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
                                            is_game_specific);
-    logEnabled.setTomlValue(data, "Debug", "logEnable", is_game_specific);
+    logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
