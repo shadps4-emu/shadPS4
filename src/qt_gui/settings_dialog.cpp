@@ -522,6 +522,11 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
         ui->readbacksCheckBox->installEventFilter(this);
         ui->readbackLinearImagesCheckBox->installEventFilter(this);
         ui->dumpShadersCheckBox->installEventFilter(this);
+        ui->dmaCheckBox->installEventFilter(this);
+        ui->devkitCheckBox->installEventFilter(this);
+        ui->neoCheckBox->installEventFilter(this);
+        ui->networkConnectedCheckBox->installEventFilter(this);
+        ui->psnSignInCheckBox->installEventFilter(this);
     }
 }
 
@@ -943,7 +948,18 @@ void SettingsDialog::updateNoteTextEdit(const QString& elementName) {
     } else if (elementName == "gameSizeCheckBox") {
         text = tr("Show Game Size In List:\\nThere is the size of the game in the list.");
     } else if (elementName == "motionControlsCheckBox") {
-        text = tr("Enable Motion Controls:\\nWhen enabled it will use the controller's motion control if supported."); }
+        text = tr("Enable Motion Controls:\\nWhen enabled it will use the controller's motion control if supported.");
+    } else if (elementName == "dmaCheckBox") {
+        text = tr("Enable Direct Memory Access:\\nEnables arbitrary memory access from the GPU to CPU memory.");
+    } else if (elementName == "neoCheckBox") {
+        text = tr("Enable PS4 Neo Mode:\\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.");
+    } else if (elementName == "devkitCheckBox") {
+        text = tr("Enable Devkit Console Mode:\\nAdds support for Devkit console memory size.");
+    } else if (elementName == "networkConnectedCheckBox") {
+        text = tr("Set Network Connected to True:\\nForces games to detect an active network connection. Actual online capabilities are not yet supported.");
+    } else if (elementName == "psnSignInCheckBox") {
+        text = tr("Set PSN Signed-in to True:\\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported."); 
+    }
     // clang-format on
     ui->descriptionText->setText(text.replace("\\n", "\n"));
 }
