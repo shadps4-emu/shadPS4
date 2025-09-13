@@ -1012,19 +1012,19 @@
     </message>
     <message>
       <source>Game-specific Settings...</source>
-      <translation>Отдельные настройки для игры...</translation>
+      <translation>Индивидуальная конфигурация для игры...</translation>
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation>Настроить отдельные настройки для игры</translation>
+      <translation>Настроить индивидуальную конфигурацию для игры</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation>Создать отдельные настройки для игры из глобальных настроек</translation>
+      <translation>Создать индивидуальную конфигурация для игры из глобальных настроек</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
-      <translation>Удалить отдельные настройки для игры</translation>
+      <translation>Удалить индивидуальную конфигурацию для игры</translation>
     </message>
     <message>
       <source>Update Database</source>
