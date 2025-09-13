@@ -917,18 +917,6 @@
         <translation>Compatibility...</translation>
     </message>
     <message>
-        <source>Update database</source>
-        <translation>Update database</translation>
-    </message>
-    <message>
-        <source>View report</source>
-        <translation>View report</translation>
-    </message>
-    <message>
-        <source>Submit a report</source>
-        <translation>Submit a report</translation>
-    </message>
-    <message>
         <source>Shortcut creation</source>
         <translation>Shortcut creation</translation>
     </message>
@@ -1018,6 +1006,42 @@
     </message>
     <message>
         <source>Add to Favorites</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Game-specific Settings...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Configure Game-specific Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Game-specific Settings from Global Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete Game-specific Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Update Database</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View Report</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Submit a Report</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Confirm deletion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete game-specific settings?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2344,6 +2368,26 @@
     </message>
     <message>
         <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Direct Memory Access</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Devkit Console Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable PS4 Pro Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set &quot;PSN signed-in&quot; to True</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set &quot;Network Connected&quot; to True</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

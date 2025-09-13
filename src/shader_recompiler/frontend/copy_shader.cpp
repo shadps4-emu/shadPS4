@@ -49,6 +49,9 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
             const auto& exp = inst.control.exp;
             const IR::Attribute semantic = static_cast<IR::Attribute>(exp.target);
             for (int i = 0; i < inst.src_count; ++i) {
+                if ((exp.en & (1 << i)) == 0) {
+                    continue;
+                }
                 const auto ofs = offsets[inst.src[i].code];
                 if (ofs != -1) {
                     data.attr_map[ofs] = {semantic, i};

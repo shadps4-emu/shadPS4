@@ -344,39 +344,24 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEn
             result = sceKernelMapNamedDirectMemory(&entries[i].start, entries[i].length,
                                                    entries[i].protection, flags,
                                                    static_cast<s64>(entries[i].offset), 0, "anon");
-            LOG_INFO(Kernel_Vmm,
-                     "entry = {}, operation = {}, len = {:#x}, offset = {:#x}, type = {}, "
-                     "result = {}",
-                     i, entries[i].operation, entries[i].length, entries[i].offset,
-                     (u8)entries[i].type, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_UNMAP: {
             result = sceKernelMunmap(entries[i].start, entries[i].length);
-            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
-                     entries[i].operation, entries[i].length, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_PROTECT: {
             result = sceKernelMprotect(entries[i].start, entries[i].length, entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
-                     entries[i].operation, entries[i].length, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_MAP_FLEXIBLE: {
             result = sceKernelMapNamedFlexibleMemory(&entries[i].start, entries[i].length,
                                                      entries[i].protection, flags, "anon");
-            LOG_INFO(Kernel_Vmm,
-                     "entry = {}, operation = {}, len = {:#x}, type = {}, "
-                     "result = {}",
-                     i, entries[i].operation, entries[i].length, (u8)entries[i].type, result);
             break;
         }
         case MemoryOpTypes::ORBIS_KERNEL_MAP_OP_TYPE_PROTECT: {
             result = sceKernelMtypeprotect(entries[i].start, entries[i].length, entries[i].type,
                                            entries[i].protection);
-            LOG_INFO(Kernel_Vmm, "entry = {}, operation = {}, len = {:#x}, result = {}", i,
-                     entries[i].operation, entries[i].length, result);
             break;
         }
         default: {
@@ -385,6 +370,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEn
         }
 
         if (result != ORBIS_OK) {
+            LOG_ERROR(Kernel_Vmm, "failed with error code {:#x}", result);
             break;
         }
     }
