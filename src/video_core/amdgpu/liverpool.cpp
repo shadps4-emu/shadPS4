@@ -866,6 +866,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
 
         if (header->type != 3) {
+            continue;
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", header->type.Value());
         }

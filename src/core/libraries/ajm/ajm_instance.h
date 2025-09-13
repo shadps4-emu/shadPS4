@@ -96,7 +96,6 @@ private:
     AjmSidebandResampleParameters m_resample_parameters{};
     u32 m_total_samples{};
     std::unique_ptr<AjmCodec> m_codec;
-    bool is_initialized = false;
 };
 
 } // namespace Libraries::Ajm

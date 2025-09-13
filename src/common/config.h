@@ -64,6 +64,7 @@ bool dumpShaders();
 void setDumpShaders(bool enable, bool is_game_specific = false);
 u32 vblankFreq();
 void setVblankFreq(u32 value, bool is_game_specific = false);
+std::vector<u64> hashesToSkip();
 bool getisTrophyPopupDisabled();
 void setisTrophyPopupDisabled(bool disable, bool is_game_specific = false);
 s16 getCursorState();
