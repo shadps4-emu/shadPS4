@@ -1021,7 +1021,8 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setCursorHideTimeout(ui->hideCursorComboBox->currentIndex(), game_specific);
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1, game_specific);
     Config::setVolumeSlider(ui->horizontalVolumeSlider->value(), game_specific);
-    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
+    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()],
+                        game_specific);
     Config::setWindowWidth(ui->widthSpinBox->value(), game_specific);
     Config::setWindowHeight(ui->heightSpinBox->value(), game_specific);
     Config::setVblankFreq(ui->vblankSpinBox->value(), game_specific);
