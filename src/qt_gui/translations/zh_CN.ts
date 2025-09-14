@@ -2366,7 +2366,7 @@
     </message>
     <message>
       <source>Enable Devkit Console Mode</source>
-      <translation>启用 Devkit 控制台模式</translation>
+      <translation>启用 Devkit 开发机模式</translation>
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
@@ -2378,47 +2378,47 @@
     </message>
     <message>
       <source>Miscellaneous</source>
-      <translation type="unfinished">Miscellaneous</translation>
+      <translation>其他</translation>
     </message>
     <message>
       <source>Frontend</source>
-      <translation type="unfinished">Frontend</translation>
+      <translation>前端</translation>
     </message>
     <message>
       <source>Experimental</source>
-      <translation type="unfinished">Experimental</translation>
+      <translation>实验性功能</translation>
     </message>
     <message>
       <source>Show Splash Screen When Launching Game</source>
-      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+      <translation>启动游戏时显示启动画面</translation>
     </message>
     <message>
       <source>General Frontend Settings</source>
-      <translation type="unfinished">General Frontend Settings</translation>
+      <translation>常规前端设置</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode</source>
-      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+      <translation>启用 PS4 Pro 模式</translation>
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
-      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+      <translation>启用直接内存访问 (DMA)：\n允许 GPU 直接访问 CPU 内存空间。（可实现高速数据传输，但可能带来稳定性风险）。</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+      <translation>启用 PS4 Pro 模式：\n增加对 PS4 Pro 模拟及内存容量的支持。（注意：当前版本下，大量经测试的游戏会出现运行不稳定的情况！）。</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
-      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+      <translation>启用Devkit开发机模式：\n增加对开发机内存容量的支持。</translation>
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+      <translation>将“网络连接状态”设为“已连接”：\n强制让游戏检测到网络处于连接状态（注意：并不实际支持真实的在线联网功能）。</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+      <translation>将“PSN登录状态”设为“已登录”：\n强制让游戏检测到PSN处于登录状态（注意：并不实际支持真实的PSN网络功能）。</translation>
     </message>
   </context>
   <context>
