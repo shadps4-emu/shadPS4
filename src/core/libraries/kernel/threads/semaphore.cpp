@@ -127,7 +127,7 @@ public:
             thr_name = g_curthread->name;
         }
 
-        s32 GetResult() const {
+        [[nodiscard]] s32 GetResult() const {
             if (was_signaled) {
                 return ORBIS_OK;
             }
