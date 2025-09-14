@@ -2512,7 +2512,7 @@
                 <item>
                  <widget class="QCheckBox" name="neoCheckBox">
                   <property name="text">
-                   <string>Enable PS4 Pro Mode</string>
+                   <string>Enable PS4 Neo Mode</string>
                   </property>
                  </widget>
                 </item>
