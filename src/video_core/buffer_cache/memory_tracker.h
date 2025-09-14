@@ -57,8 +57,6 @@ public:
                 std::scoped_lock lk{manager->lock};
                 manager->template ChangeRegionState<Type::GPU, true>(manager->GetCpuAddr() + offset,
                                                                      size);
-                manager->template ChangeRegionState<Type::GPU, true>(manager->GetCpuAddr() + offset,
-                                                                     size);
             });
     }
 
