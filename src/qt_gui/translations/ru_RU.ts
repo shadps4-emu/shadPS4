@@ -2406,7 +2406,7 @@
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции PS4 Pro и размера памяти. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
+      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции и размера памяти PS4 Pro. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
