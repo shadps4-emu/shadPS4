@@ -1677,20 +1677,12 @@
       <translation>模拟器语言</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>模拟器</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>打开设置时的默认选项卡</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>在列表中显示游戏大小</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>显示启动画面</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1879,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>检查更新</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>界面设置</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2369,10 +2357,6 @@
       <translation>垂直同步频率</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>垂直同步频率：\n此为模拟器的帧率刷新频率（基准为60hz，无论游戏本身以30帧还是60帧运行）。修改此数值可能导致负面影响，例如游戏速度加快，或破坏游戏关键功能（因游戏本身未预设此数值可被修改）！</translation>
     </message>
@@ -2385,16 +2369,56 @@
       <translation>启用 Devkit 控制台模式</translation>
     </message>
     <message>
-      <source>Enable PS4 Pro Mode</source>
-      <translation>启用 PS4 Pro 模式</translation>
-    </message>
-    <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
       <translation>将“PSN登录状态”设为“已登录”</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
       <translation>将“网络连接状态”设为“已连接”</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
     </message>
   </context>
   <context>
