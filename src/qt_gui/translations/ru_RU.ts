@@ -1012,19 +1012,19 @@
     </message>
     <message>
       <source>Game-specific Settings...</source>
-      <translation>Индивидуальная конфигурация для игры...</translation>
+      <translation>Индивидуальная конфигурация...</translation>
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation>Настроить индивидуальную конфигурацию для игры</translation>
+      <translation>Настроить индивидуальную конфигурацию</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation>Создать индивидуальную конфигурация для игры из глобальных настроек</translation>
+      <translation>Создать индивидуальную конфигурацию из глобальных настроек</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
-      <translation>Удалить индивидуальную конфигурацию для игры</translation>
+      <translation>Удалить индивидуальную конфигурацию</translation>
     </message>
     <message>
       <source>Update Database</source>
@@ -1044,7 +1044,7 @@
     </message>
     <message>
       <source>Delete game-specific settings?</source>
-      <translation>Удалить отдельные настройки для игры?</translation>
+      <translation>Удалить индивидуальную конфигурацию?</translation>
     </message>
   </context>
   <context>
@@ -2366,7 +2366,7 @@
     </message>
     <message>
       <source>Enable Devkit Console Mode</source>
-      <translation>Включить режим консоли разработчика</translation>
+      <translation>Включить режим консоли Devkit</translation>
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
@@ -2374,7 +2374,7 @@
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation>Установить &quot;Сеть подключена&quot; на True</translation>
+      <translation>Установить &quot;Подключение к сети&quot; на True</translation>
     </message>
     <message>
       <source>Miscellaneous</source>
@@ -2414,11 +2414,11 @@
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation>Установите для параметра «Сетевое подключение» значение «Истина»:\nЗаставляет игры определять активное сетевое подключение. Фактические онлайн-возможности пока не поддерживаются.</translation>
+      <translation>Установить "Подключение к сети" на True:\nЗаставляет игры определять активное сетевое подключение. Фактические онлайн-возможности пока не поддерживаются.</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation>Установите для параметра «Вход в PSN» значение «Истина»:\nИгры будут принудительно определять активный вход в PSN. Фактические возможности PSN не поддерживаются.</translation>
+      <translation>Установить "Авторизован в PSN" на True:\nЗаставляет игры определять активный вход в PSN. Фактические возможности PSN не поддерживаются.</translation>
     </message>
   </context>
   <context>
