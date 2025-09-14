@@ -9,6 +9,7 @@
 
 #include <fmt/core.h>
 #include "common/config.h"
+#include "common/logging/backend.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/file_sys/fs.h"
@@ -119,7 +120,8 @@ int main(int argc, char* argv[]) {
              std::cout << "Game folder successfully saved.\n";
              exit(0);
          }},
-        {"--set-addon-folder", [&](int& i) {
+        {"--set-addon-folder",
+         [&](int& i) {
              if (++i >= argc) {
                  std::cerr << "Error: Missing argument for --add-addon-folder\n";
                  exit(1);
@@ -136,7 +138,9 @@ int main(int argc, char* argv[]) {
              Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
              std::cout << "Addon folder successfully saved.\n";
              exit(0);
-         }}};
+         }},
+        {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
+    };
 
     if (argc == 1) {
         int dummy = 0; // one does not simply pass 0 directly
