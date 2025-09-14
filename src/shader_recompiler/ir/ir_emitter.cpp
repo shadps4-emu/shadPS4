@@ -708,14 +708,10 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2) {
         return Inst(Opcode::CompositeConstructU32x2, e1, e2);
     case Type::U32x2:
         return Inst(Opcode::CompositeConstructU32x2x2, e1, e2);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x2, e1, e2);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x2, e1, e2);
     case Type::F32x2:
         return Inst(Opcode::CompositeConstructF32x2x2, e1, e2);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x2, e1, e2);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -728,12 +724,8 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     switch (e1.Type()) {
     case Type::U32:
         return Inst(Opcode::CompositeConstructU32x3, e1, e2, e3);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x3, e1, e2, e3);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x3, e1, e2, e3);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x3, e1, e2, e3);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -748,12 +740,8 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     switch (e1.Type()) {
     case Type::U32:
         return Inst(Opcode::CompositeConstructU32x4, e1, e2, e3, e4);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x4, e1, e2, e3, e4);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x4, e1, e2, e3, e4);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x4, e1, e2, e3, e4);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -787,24 +775,12 @@ Value IREmitter::CompositeExtract(const Value& vector, size_t element) {
         return read(Opcode::CompositeExtractU32x3, 3);
     case Type::U32x4:
         return read(Opcode::CompositeExtractU32x4, 4);
-    case Type::F16x2:
-        return read(Opcode::CompositeExtractF16x2, 2);
-    case Type::F16x3:
-        return read(Opcode::CompositeExtractF16x3, 3);
-    case Type::F16x4:
-        return read(Opcode::CompositeExtractF16x4, 4);
     case Type::F32x2:
         return read(Opcode::CompositeExtractF32x2, 2);
     case Type::F32x3:
         return read(Opcode::CompositeExtractF32x3, 3);
     case Type::F32x4:
         return read(Opcode::CompositeExtractF32x4, 4);
-    case Type::F64x2:
-        return read(Opcode::CompositeExtractF64x2, 2);
-    case Type::F64x3:
-        return read(Opcode::CompositeExtractF64x3, 3);
-    case Type::F64x4:
-        return read(Opcode::CompositeExtractF64x4, 4);
     default:
         ThrowInvalidType(vector.Type());
     }
@@ -824,24 +800,12 @@ Value IREmitter::CompositeInsert(const Value& vector, const Value& object, size_
         return insert(Opcode::CompositeInsertU32x3, 3);
     case Type::U32x4:
         return insert(Opcode::CompositeInsertU32x4, 4);
-    case Type::F16x2:
-        return insert(Opcode::CompositeInsertF16x2, 2);
-    case Type::F16x3:
-        return insert(Opcode::CompositeInsertF16x3, 3);
-    case Type::F16x4:
-        return insert(Opcode::CompositeInsertF16x4, 4);
     case Type::F32x2:
         return insert(Opcode::CompositeInsertF32x2, 2);
     case Type::F32x3:
         return insert(Opcode::CompositeInsertF32x3, 3);
     case Type::F32x4:
         return insert(Opcode::CompositeInsertF32x4, 4);
-    case Type::F64x2:
-        return insert(Opcode::CompositeInsertF64x2, 2);
-    case Type::F64x3:
-        return insert(Opcode::CompositeInsertF64x3, 3);
-    case Type::F64x4:
-        return insert(Opcode::CompositeInsertF64x4, 4);
     default:
         ThrowInvalidType(vector.Type());
     }
@@ -862,12 +826,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x2);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x2);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x2);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x2);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -888,12 +848,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x3);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x3);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x3);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x3);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -916,12 +872,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x4);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x4);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x4);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x4);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -934,18 +886,10 @@ Value IREmitter::Select(const U1& condition, const Value& true_value, const Valu
     switch (true_value.Type()) {
     case Type::U1:
         return Inst(Opcode::SelectU1, condition, true_value, false_value);
-    case Type::U8:
-        return Inst(Opcode::SelectU8, condition, true_value, false_value);
-    case Type::U16:
-        return Inst(Opcode::SelectU16, condition, true_value, false_value);
     case Type::U32:
         return Inst(Opcode::SelectU32, condition, true_value, false_value);
-    case Type::U64:
-        return Inst(Opcode::SelectU64, condition, true_value, false_value);
     case Type::F32:
         return Inst(Opcode::SelectF32, condition, true_value, false_value);
-    case Type::F64:
-        return Inst(Opcode::SelectF64, condition, true_value, false_value);
     default:
         UNREACHABLE_MSG("Invalid type {}", true_value.Type());
     }
