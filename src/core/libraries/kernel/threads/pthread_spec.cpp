@@ -21,7 +21,7 @@ int PS4_SYSV_ABI posix_pthread_key_create(PthreadKeyT* key, PthreadKeyDestructor
         it->allocated = 1;
         it->destructor = destructor;
         it->seqno++;
-        *key = std::distance(ThreadKeytable.begin(), it);
+        *key = static_cast<PthreadKeyT>(std::distance(ThreadKeytable.begin(), it));
         return 0;
     }
     return POSIX_EAGAIN;
@@ -44,7 +44,7 @@ int PS4_SYSV_ABI posix_pthread_key_delete(PthreadKeyT key) {
 void _thread_cleanupspecific() {
     Pthread* curthread = g_curthread;
     PthreadKeyDestructor destructor;
-    const void* data = NULL;
+    const void* data = nullptr;
 
     if (curthread->specific == nullptr) {
         return;
@@ -63,7 +63,7 @@ void _thread_cleanupspecific() {
                 }
                 curthread->specific[key].data = nullptr;
                 curthread->specific_data_count--;
-            } else if (curthread->specific[key].data != NULL) {
+            } else if (curthread->specific[key].data != nullptr) {
                 /*
                  * This can happen if the key is deleted via
                  * pthread_key_delete without first setting the value
@@ -97,12 +97,11 @@ void _thread_cleanupspecific() {
 }
 
 int PS4_SYSV_ABI posix_pthread_setspecific(PthreadKeyT key, const void* value) {
-    int ret = 0;
     Pthread* pthread = g_curthread;
 
     if (!pthread->specific) {
-        pthread->specific = new PthreadSpecificElem[PthreadKeysMax]{};
-        if (!pthread->specific) {
+        pthread->specific = new (std::nothrow) PthreadSpecificElem[PthreadKeysMax]{};
+        if (pthread->specific == nullptr) {
             return POSIX_ENOMEM;
         }
     }

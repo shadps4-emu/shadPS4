@@ -7,7 +7,6 @@
 #include <forward_list>
 #include <list>
 #include <mutex>
-#include <semaphore>
 #include <shared_mutex>
 
 #include "common/enum.h"
@@ -55,7 +54,7 @@ struct PthreadMutex {
     PthreadMutexProt m_protocol;
     std::string name;
 
-    PthreadMutexType Type() const noexcept {
+    [[nodiscard]] PthreadMutexType Type() const noexcept {
         return static_cast<PthreadMutexType>(m_flags & PthreadMutexFlags::TypeMask);
     }
 
@@ -115,8 +114,8 @@ enum class ClockId : u32 {
 };
 
 struct PthreadCond {
-    u32 has_user_waiters;
-    u32 has_kern_waiters;
+    bool has_user_waiters;
+    bool has_kern_waiters;
     u32 flags;
     ClockId clock_id;
     std::string name;
@@ -239,7 +238,7 @@ enum class ThreadListFlags : u32 {
 
 using PthreadEntryFunc = void* PS4_SYSV_ABI (*)(void*);
 
-constexpr u32 TidTerminated = 1;
+constexpr s32 TidTerminated = 1;
 
 struct SleepQueue;
 
@@ -253,7 +252,7 @@ struct Pthread {
     static constexpr u32 ThrMagic = 0xd09ba115U;
     static constexpr u32 MaxDeferWaiters = 50;
 
-    std::atomic<long> tid;
+    std::atomic<s32> tid;
     std::mutex lock;
     u32 cycle;
     int locklevel;

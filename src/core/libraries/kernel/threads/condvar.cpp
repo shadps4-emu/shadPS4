@@ -13,16 +13,16 @@ namespace Libraries::Kernel {
 
 static std::mutex CondStaticLock;
 
-#define THR_COND_INITIALIZER ((PthreadCond*)NULL)
+#define THR_COND_INITIALIZER ((PthreadCond*)nullptr)
 #define THR_COND_DESTROYED ((PthreadCond*)1)
 
-static constexpr PthreadCondAttr PhreadCondattrDefault = {
+static constexpr PthreadCondAttr PthreadCondattrDefault = {
     .c_pshared = 0,
     .c_clockid = ClockId::Realtime,
 };
 
 static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const char* name) {
-    auto* cvp = new PthreadCond{};
+    auto* cvp = new (std::nothrow) PthreadCond{};
     if (cvp == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -94,7 +94,7 @@ int PS4_SYSV_ABI posix_pthread_cond_destroy(PthreadCondT* cond) {
 
 int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, u64 usec) {
     PthreadMutex* mp = *mutex;
-    if (int error = mp->IsOwned(g_curthread); error != 0) {
+    if (const int error = mp->IsOwned(g_curthread); error != 0) {
         return error;
     }
 
@@ -107,7 +107,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
      * set __has_user_waiters before unlocking mutex, this allows
      * us to check it without locking in pthread_cond_signal().
      */
-    has_user_waiters = 1;
+    has_user_waiters = true;
     curthread->will_sleep = true;
 
     int recurse;
@@ -145,7 +145,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     }
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
-    int error2 = mp->CvLock(recurse);
+    const int error2 = mp->CvLock(recurse);
     if (error == 0) {
         error = error2;
     }
@@ -222,8 +222,8 @@ int PthreadCond::Broadcast() {
     ba.count = 0;
 
     const auto drop_cb = [](Pthread* td, void* arg) {
-        BroadcastArg* ba = reinterpret_cast<BroadcastArg*>(arg);
-        Pthread* curthread = ba->curthread;
+        auto* ba2 = static_cast<BroadcastArg*>(arg);
+        Pthread* curthread = ba2->curthread;
         PthreadMutex* mp = td->mutex_obj;
 
         if (mp->m_owner == curthread) {
@@ -233,13 +233,13 @@ int PthreadCond::Broadcast() {
             curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
             mp->m_flags |= PthreadMutexFlags::Deferred;
         } else {
-            if (ba->count >= Pthread::MaxDeferWaiters) {
-                for (int i = 0; i < ba->count; i++) {
-                    ba->waddrs[i]->release();
+            if (ba2->count >= Pthread::MaxDeferWaiters) {
+                for (int i = 0; i < ba2->count; i++) {
+                    ba2->waddrs[i]->release();
                 }
-                ba->count = 0;
+                ba2->count = 0;
             }
-            ba->waddrs[ba->count++] = &td->wake_sema;
+            ba2->waddrs[ba2->count++] = &td->wake_sema;
         }
     };
 
@@ -251,7 +251,7 @@ int PthreadCond::Broadcast() {
     }
 
     SleepqDrop(sq, drop_cb, &ba);
-    has_user_waiters = 0;
+    has_user_waiters = false;
     SleepqUnlock(this);
 
     for (int i = 0; i < ba.count; i++) {
@@ -280,11 +280,11 @@ int PS4_SYSV_ABI posix_pthread_cond_broadcast(PthreadCondT* cond) {
 }
 
 int PS4_SYSV_ABI posix_pthread_condattr_init(PthreadCondAttrT* attr) {
-    PthreadCondAttr* pattr = new PthreadCondAttr{};
+    auto* pattr = new (std::nothrow) PthreadCondAttr{};
     if (pattr == nullptr) {
         return POSIX_ENOMEM;
     }
-    memcpy(pattr, &PhreadCondattrDefault, sizeof(PthreadCondAttr));
+    memcpy(pattr, &PthreadCondattrDefault, sizeof(PthreadCondAttr));
     *attr = pattr;
     return 0;
 }
@@ -302,7 +302,7 @@ int PS4_SYSV_ABI posix_pthread_condattr_getclock(const PthreadCondAttrT* attr, C
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     }
-    *clock_id = static_cast<ClockId>((*attr)->c_clockid);
+    *clock_id = (*attr)->c_clockid;
     return 0;
 }
 
