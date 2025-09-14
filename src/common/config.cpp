@@ -100,12 +100,6 @@ public:
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false) {
         if (is_game_specific) {
-            if (game_specific_value == std::nullopt) {
-                fmt::print("Attempted to save std::nullopt value to {}-{}, matching config entry "
-                           "may not be correctly set-up\n",
-                           header, key);
-                return;
-            }
             data[header][key] = game_specific_value.value_or(base_value);
             game_specific_value = std::nullopt;
         } else {
