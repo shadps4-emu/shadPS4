@@ -40,6 +40,7 @@
  * Command list:
  * - CAPABILITIES:
  *   - ENABLE_MEMORY_PATCH: enables PATCH_MEMORY command
+ *   - ENABLE_EMU_CONTROL: enables PAUSE, RESUME, STOP, TOGGLE_FULLSCREEN commands
  * - INPUT CMD:
  *   - RUN: start the emulator execution
  *   - START: start the game execution
@@ -53,7 +54,7 @@
  *   - STOP: stop and quit the emulator
  *   - TOGGLE_FULLSCREEN: enable / disable fullscreen
  * - OUTPUT CMD:
- *   - N/A
+ *   - PID(pid: number): send the current emulator pid (useful for handling restarts)
  **/
 
 void IPC::Init() {
@@ -68,7 +69,18 @@ void IPC::Init() {
         this->InputLoop();
     });
 
+    std::string currentPid;
+
+#ifdef _WIN32
+    currentPid = std::to_string(GetCurrentProcessId());
+#elif defined(__APPLE__) || defined(__linux__)
+    currentPid = std::to_string(getpid());
+#else
+#error "Unsupported architecture"
+#endif
+
     std::cerr << ";#IPC_ENABLED\n";
+    std::cerr << ";PID\n" << currentPid << "\n";
     std::cerr << ";ENABLE_MEMORY_PATCH\n";
     std::cerr << ";ENABLE_EMU_CONTROL\n";
     std::cerr << ";#IPC_END\n";
