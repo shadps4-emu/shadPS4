@@ -100,6 +100,12 @@ public:
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false) {
         if (is_game_specific) {
+            if (game_specific_value == std::nullopt) {
+                fmt::print("Attempted to save std::nullopt value to {}-{}, matching config entry "
+                           "may not be correctly set-up\n",
+                           header, key);
+                return;
+            }
             data[header][key] = game_specific_value.value_or(base_value);
             game_specific_value = std::nullopt;
         } else {
@@ -411,6 +417,9 @@ bool isLoggingEnabled() {
 }
 
 u32 vblankFreq() {
+    if (vblankFrequency.get() < 60) {
+        vblankFrequency = 60;
+    }
     return vblankFrequency.get();
 }
 
@@ -1029,7 +1038,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
     isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
                                            is_game_specific);
-    logEnabled.setTomlValue(data, "Debug", "logEnable", is_game_specific);
+    logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
@@ -1107,6 +1116,8 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
+        readbacksEnabled.set(false, is_game_specific);
+        readbackLinearImagesEnabled.set(false, is_game_specific);
         isNeo.set(false, is_game_specific);
         isDevKit.set(false, is_game_specific);
         isPSNSignedIn.set(false, is_game_specific);
@@ -1138,8 +1149,6 @@ void setDefaultValues(bool is_game_specific) {
     windowHeight.set(720, is_game_specific);
     isNullGpu.set(false, is_game_specific);
     shouldCopyGPUBuffers.set(false, is_game_specific);
-    readbacksEnabled.set(false, is_game_specific);
-    readbackLinearImagesEnabled.set(false, is_game_specific);
     shouldDumpShaders.set(false, is_game_specific);
     vblankFrequency.set(60, is_game_specific);
     isFullscreen.set(false, is_game_specific);

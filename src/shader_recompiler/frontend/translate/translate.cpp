@@ -171,6 +171,13 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
         }
+        if (runtime_info.fs_info.addr_flags.ancillary_ena) {
+            if (runtime_info.fs_info.en_flags.ancillary_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
         break;
     case LogicalStage::TessellationControl: {
         ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
@@ -460,7 +467,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
             result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
         }
         if (operand.output_modifier.clamp) {
-            result = ir.FPSaturate(value);
+            result = ir.FPSaturate(result);
         }
     }
 
@@ -490,7 +497,7 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
                 ir.FPMul(value_untyped, ir.Imm64(f64(operand.output_modifier.multiplier)));
         }
         if (operand.output_modifier.clamp) {
-            value_untyped = ir.FPSaturate(value_raw);
+            value_untyped = ir.FPSaturate(value_untyped);
         }
     }
 

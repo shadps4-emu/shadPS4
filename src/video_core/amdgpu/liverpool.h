@@ -338,7 +338,7 @@ struct Liverpool {
         GreaterThanZ = 2,
     };
 
-    union DepthBufferControl {
+    union DepthShaderControl {
         u32 raw;
         BitField<0, 1, u32> z_export_enable;
         BitField<1, 1, u32> stencil_test_val_export_enable;
@@ -1410,7 +1410,7 @@ struct Liverpool {
             DepthControl depth_control;
             INSERT_PADDING_WORDS(1);
             ColorControl color_control;
-            DepthBufferControl depth_buffer_control;
+            DepthShaderControl depth_shader_control;
             ClipperControl clipper_control;
             PolygonControl polygon_control;
             ViewportControl viewport_control;

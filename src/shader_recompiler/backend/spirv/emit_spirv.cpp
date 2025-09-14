@@ -305,19 +305,23 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             runtime_info.fs_info.addr_flags.persp_sample_ena) {
             ctx.AddCapability(spv::Capability::SampleRateShading);
         }
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::Geometry);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
     }
     if (stage == LogicalStage::Vertex || stage == LogicalStage::TessellationControl ||
         stage == LogicalStage::TessellationEval) {
-        if (info.has_layer_output) {
+        if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
             ctx.AddCapability(spv::Capability::ShaderLayer);
         }
-        if (info.has_viewport_index_output) {
+        if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
             ctx.AddCapability(spv::Capability::ShaderViewportIndex);
         }
-    } else if (stage == LogicalStage::Geometry && info.has_viewport_index_output) {
+    } else if (stage == LogicalStage::Geometry &&
+               info.stores.GetAny(IR::Attribute::ViewportIndex)) {
         ctx.AddCapability(spv::Capability::MultiViewport);
     }
     if (info.uses_dma) {

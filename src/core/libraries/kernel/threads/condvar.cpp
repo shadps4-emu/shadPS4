@@ -108,7 +108,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
      * us to check it without locking in pthread_cond_signal().
      */
     has_user_waiters = 1;
-    curthread->will_sleep = 1;
+    curthread->will_sleep = true;
 
     int recurse;
     mp->CvUnlock(&recurse);
@@ -118,7 +118,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
 
     int error = 0;
     for (;;) {
-        void(curthread->wake_sema.try_acquire());
+        curthread->ClearWake();
         SleepqUnlock(this);
 
         //_thr_cancel_enter2(curthread, 0);
@@ -198,7 +198,7 @@ int PthreadCond::Signal(Pthread* thread) {
             curthread->WakeAll();
         }
         curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
-        mp->m_flags |= PthreadMutexFlags::Defered;
+        mp->m_flags |= PthreadMutexFlags::Deferred;
     } else {
         waddr = &td->wake_sema;
     }
@@ -231,7 +231,7 @@ int PthreadCond::Broadcast() {
                 curthread->WakeAll();
             }
             curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
-            mp->m_flags |= PthreadMutexFlags::Defered;
+            mp->m_flags |= PthreadMutexFlags::Deferred;
         } else {
             if (ba->count >= Pthread::MaxDeferWaiters) {
                 for (int i = 0; i < ba->count; i++) {

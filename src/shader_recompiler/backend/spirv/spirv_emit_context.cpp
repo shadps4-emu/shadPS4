@@ -370,12 +370,17 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
-        if (info.stores.Get(IR::Attribute::Depth)) {
-            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
             front_facing =
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
+            Decorate(output_layer, spv::Decoration::Flat);
+        }
+        if (info.loads.Get(IR::Attribute::SampleIndex)) {
+            sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+            Decorate(sample_index, spv::Decoration::Flat);
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
@@ -560,11 +565,11 @@ void EmitContext::DefineVertexBlock() {
             DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
     }
     if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
-        output_layer = DefineVariable(S32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+        output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
     }
     if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
         output_viewport_index =
-            DefineVariable(S32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
+            DefineVariable(U32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
     }
 }
 
@@ -646,6 +651,13 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::Fragment: {
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.stores.Get(IR::Attribute::SampleMask)) {
+            sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
+                                         spv::StorageClass::Output);
+        }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
@@ -1080,36 +1092,26 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
     Name(func, name);
     AddLabel();
 
-    const auto raw_mantissa{
-        OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
-    const auto mantissa{OpConvertUToF(F32[1], raw_mantissa)};
-    const auto exponent{OpBitcast(
-        S32[1], OpBitFieldSExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U)))};
-
-    const auto is_exp_neg_one{OpIEqual(U1[1], exponent, ConstS32(-1))};
-    const auto is_exp_zero{OpIEqual(U1[1], exponent, ConstS32(0))};
-
-    const auto is_zero{OpIEqual(U1[1], value, ConstU32(0u))};
-    const auto is_nan{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_inf{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpIEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_denorm{
-        OpLogicalAnd(U1[1], is_exp_zero, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-
-    const auto denorm{OpFMul(F32[1], mantissa, ConstF32(1.f / (1 << 20)))};
-    const auto norm{OpLdexp(
-        F32[1],
-        OpFAdd(F32[1],
-               OpFMul(F32[1], mantissa, ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
-               ConstF32(1.f)),
-        exponent)};
-
-    const auto result{OpSelect(F32[1], is_zero, ConstF32(0.f),
-                               OpSelect(F32[1], is_nan, ConstF32(NAN),
-                                        OpSelect(F32[1], is_inf, ConstF32(INFINITY),
-                                                 OpSelect(F32[1], is_denorm, denorm, norm))))};
-
+    const Id exponent{OpBitFieldUExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U))};
+    const Id mantissa{OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
+    const Id mantissa_f{OpConvertUToF(F32[1], mantissa)};
+    const Id a{OpSelect(F32[1], OpINotEqual(U1[1], mantissa, u32_zero_value),
+                        OpFMul(F32[1], ConstF32(1.f / (1 << (14 + mantissa_bits))), mantissa_f),
+                        f32_zero_value)};
+    const Id b{OpBitcast(F32[1], OpBitwiseOr(U32[1], mantissa, ConstU32(0x7f800000U)))};
+    const Id exponent_c{OpISub(U32[1], exponent, ConstU32(15U))};
+    const Id scale_a{
+        OpFDiv(F32[1], ConstF32(1.f),
+               OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value,
+                                                        OpSNegate(U32[1], exponent_c))))};
+    const Id scale_b{OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value, exponent_c))};
+    const Id scale{
+        OpSelect(F32[1], OpSLessThan(U1[1], exponent_c, u32_zero_value), scale_a, scale_b)};
+    const Id c{OpFMul(F32[1], scale,
+                      OpFAdd(F32[1], ConstF32(1.f),
+                             OpFDiv(F32[1], mantissa_f, ConstF32(f32(1 << mantissa_bits)))))};
+    const Id result{OpSelect(F32[1], OpIEqual(U1[1], exponent, u32_zero_value), a,
+                             OpSelect(F32[1], OpIEqual(U1[1], exponent, ConstU32(31U)), b, c))};
     OpReturnValue(result);
     OpFunctionEnd();
     return func;

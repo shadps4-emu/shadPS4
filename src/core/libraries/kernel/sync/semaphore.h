@@ -87,10 +87,9 @@ public:
     template <class Rep, class Period>
     bool try_acquire_for(const std::chrono::duration<Rep, Period>& rel_time) {
 #ifdef _WIN64
-        const auto start_time = std::chrono::high_resolution_clock::now();
         auto rel_time_ms = std::chrono::ceil<std::chrono::milliseconds>(rel_time);
-
         do {
+            const auto start_time = std::chrono::high_resolution_clock::now();
             u64 timeout_ms = static_cast<u64>(rel_time_ms.count());
             u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
             if (res == WAIT_OBJECT_0) {
@@ -105,8 +104,8 @@ public:
 
         return false;
 #elif defined(__APPLE__)
-        const auto rel_time_ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time).count();
-        const auto timeout = dispatch_time(DISPATCH_TIME_NOW, rel_time_ns);
+        const auto rel_time_ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time);
+        const auto timeout = dispatch_time(DISPATCH_TIME_NOW, rel_time_ns.count());
         return dispatch_semaphore_wait(sem, timeout) == 0;
 #else
         return sem.try_acquire_for(rel_time);
@@ -115,37 +114,11 @@ public:
 
     template <class Clock, class Duration>
     bool try_acquire_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
-#ifdef _WIN64
-        const auto start_time = Clock::now();
-
-        auto rel_time = std::chrono::ceil<std::chrono::milliseconds>(abs_time - start_time);
-        do {
-            u64 timeout_ms = static_cast<u64>(rel_time.count());
-            u64 res = WaitForSingleObjectEx(sem, timeout_ms, true);
-            if (res == WAIT_OBJECT_0) {
-                return true;
-            } else if (res == WAIT_IO_COMPLETION) {
-                auto elapsed_time = Clock::now() - start_time;
-                rel_time -= std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_time);
-            } else {
-                return false;
-            }
-        } while (rel_time.count() > 0);
-
-        return false;
-#elif defined(__APPLE__)
-        auto abs_s = std::chrono::time_point_cast<std::chrono::seconds>(abs_time);
-        auto abs_ns = std::chrono::time_point_cast<std::chrono::nanoseconds>(abs_time) -
-                      std::chrono::time_point_cast<std::chrono::nanoseconds>(abs_s);
-        const timespec abs_timespec = {
-            .tv_sec = abs_s.time_since_epoch().count(),
-            .tv_nsec = abs_ns.count(),
-        };
-        const auto timeout = dispatch_walltime(&abs_timespec, 0);
-        return dispatch_semaphore_wait(sem, timeout) == 0;
-#else
-        return sem.try_acquire_until(abs_time);
-#endif
+        const auto current = Clock::now();
+        if (current >= abs_time) {
+            return try_acquire();
+        }
+        return try_acquire_for(abs_time - current);
     }
 
 private:

@@ -934,14 +934,25 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         }
     }();
 
-    const auto unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
-    // Query dimensions of image if needed for normalization.
-    // We can't use the image sharp because it could be bound to a different image later.
+    const bool is_msaa = view_type == AmdGpu::ImageType::Color2DMsaa ||
+                         view_type == AmdGpu::ImageType::Color2DMsaaArray;
+    const bool unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
+    const bool needs_dimentions = (!is_msaa && unnormalized) || (is_msaa && !unnormalized);
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
-                     : IR::Value{};
+        needs_dimentions ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
+                         : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
+        if (is_msaa) {
+            // For MSAA images preserve the unnormalized coord or manually unnormalize it
+            if (unnormalized) {
+                return ir.ConvertFToU(32, coord);
+            } else {
+                const auto dim =
+                    ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
+                return ir.ConvertFToU(32, ir.FPMul(coord, dim));
+            }
+        }
         if (unnormalized) {
             // Normalize the coordinate for sampling, dividing by its corresponding dimension.
             const auto dim =
@@ -958,12 +969,10 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 1;
             return get_coord(addr_reg - 1, 0);
         case AmdGpu::ImageType::Color1DArray: // x, slice
-            [[fallthrough]];
-        case AmdGpu::ImageType::Color2D: // x, y
+        case AmdGpu::ImageType::Color2D:      // x, y
+        case AmdGpu::ImageType::Color2DMsaa:  // x, y
             addr_reg = addr_reg + 2;
             return ir.CompositeConstruct(get_coord(addr_reg - 2, 0), get_coord(addr_reg - 1, 1));
-        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
-            [[fallthrough]];
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             addr_reg = addr_reg + 3;
             // Note we can use FixCubeCoords with fallthrough cases since it checks for image type.
@@ -986,6 +995,9 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     const IR::F32 lod_clamp = inst_info.has_lod_clamp ? get_addr_reg(addr_reg++) : IR::F32{};
 
     auto texel = [&] -> IR::Value {
+        if (is_msaa) {
+            return ir.ImageRead(handle, coords, ir.Imm32(0U), ir.Imm32(0U), inst_info);
+        }
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {
                 return ir.ImageGatherDref(handle, coords, offset, dref, inst_info);

@@ -319,6 +319,7 @@ private:
                              const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
 
     void ExportRenderTarget(const GcnInst& inst);
+    void ExportDepth(const GcnInst& inst);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);

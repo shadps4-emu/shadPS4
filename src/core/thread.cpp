@@ -4,7 +4,6 @@
 #include "common/alignment.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "thread.h"
-
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
@@ -12,18 +11,19 @@
 #include <csignal>
 #include <pthread.h>
 #include <unistd.h>
+#include <xmmintrin.h>
 #endif
 
 namespace Core {
+
+static constexpr u32 ORBIS_MXCSR = 0x9fc0;
+static constexpr u32 ORBIS_FPUCW = 0x037f;
 
 #ifdef _WIN64
 #define KGDT64_R3_DATA (0x28)
 #define KGDT64_R3_CODE (0x30)
 #define KGDT64_R3_CMTEB (0x50)
 #define RPL_MASK (0x03)
-
-#define INITIAL_FPUCW (0x037f)
-#define INITIAL_MXCSR_MASK (0xffbf)
 #define EFLAGS_INTERRUPT_MASK (0x200)
 
 void InitializeTeb(INITIAL_TEB* teb, const ::Libraries::Kernel::PthreadAttr* attr) {
@@ -48,11 +48,6 @@ void InitializeContext(CONTEXT* ctx, ThreadFunc func, void* arg,
     ctx->SegFs = KGDT64_R3_CMTEB | RPL_MASK;
 
     ctx->EFlags = 0x3000 | EFLAGS_INTERRUPT_MASK;
-    ctx->MxCsr = INITIAL_MXCSR;
-
-    ctx->FltSave.ControlWord = INITIAL_FPUCW;
-    ctx->FltSave.MxCsr = INITIAL_MXCSR;
-    ctx->FltSave.MxCsr_Mask = INITIAL_MXCSR_MASK;
 
     ctx->ContextFlags =
         CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT;
@@ -130,6 +125,9 @@ void NativeThread::Exit() {
 }
 
 void NativeThread::Initialize() {
+    // Set MXCSR and FPUCW registers to the values used by Orbis.
+    _mm_setcsr(ORBIS_MXCSR);
+    asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
 #if _WIN64
     tid = GetCurrentThreadId();
 #else
