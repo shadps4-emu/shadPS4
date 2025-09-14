@@ -2402,23 +2402,23 @@
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
-      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+      <translation>Abilita Accesso Diretto alla Memoria:\nConsente l'accesso arbitrario alla memoria dalla GPU a quella della CPU.</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+      <translation>Abilita la modalità Ps4 Pro:\nAggiunge il supporto per l'emulazione di PS4 Pro e della memoria della stessa modalità. Attualmente causa instabilità in un gran numero di giochi testati.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
-      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+      <translation>Abilita Modalità Console Devkit:\nAggiunge il supporto per la dimensione della memoria console Devkit.</translation>
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+      <translation>Imposta Connessione alla Rete come Abilitata:\nForza i giochi a rilevare una connessione di rete attiva. Le funzionalità online non sono ancora supportate.</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+      <translation>Imposta Connessione al PSN come Abilitata:\nForza i giochi a rilevare una connessione al PSN attiva. Le funzionalità PSN non sono ancora supportate.</translation>
     </message>
   </context>
   <context>
