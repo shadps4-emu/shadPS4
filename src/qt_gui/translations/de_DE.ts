@@ -562,15 +562,15 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Active Gamepad</source>
-      <translation type="unfinished">Active Gamepad</translation>
+      <translation>Aktives Gamepad</translation>
     </message>
     <message>
       <source>Gamepad ID</source>
-      <translation type="unfinished">Gamepad ID</translation>
+      <translation>Gamepad ID</translation>
     </message>
     <message>
       <source>Default Gamepad</source>
-      <translation type="unfinished">Default Gamepad</translation>
+      <translation>Standard-Gamepad</translation>
     </message>
     <message>
       <source>No default selected</source>
@@ -582,11 +582,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Set Active Gamepad as Default</source>
-      <translation type="unfinished">Set Active Gamepad as Default</translation>
+      <translation>Aktives Gamepad als Standard festlegen</translation>
     </message>
     <message>
       <source>Remove Default Gamepad</source>
-      <translation type="unfinished">Remove Default Gamepad</translation>
+      <translation>Standard-Gamepad entfernen</translation>
     </message>
     <message>
       <source>R1 and R2</source>
@@ -602,7 +602,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Active controller set as default</source>
-      <translation type="unfinished">Active controller set as default</translation>
+      <translation>Aktiver Controller als Standard festgelegt</translation>
     </message>
     <message>
       <source>Default Controller Removed</source>
@@ -610,7 +610,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Default controller setting removed</source>
-      <translation type="unfinished">Default controller setting removed</translation>
+      <translation>Standardeinstellungen für Controller entfernt</translation>
     </message>
     <message>
       <source>RED</source>
@@ -1101,7 +1101,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Anhalten/fortsetzen</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
@@ -1359,11 +1359,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <name>LogPresetsDialog</name>
     <message>
       <source>Log Filter Presets</source>
-      <translation>Logfilter-Vorlagen</translation>
+      <translation>Protokoll-Filter Vorlagen</translation>
     </message>
     <message>
       <source>Comment</source>
-      <translation type="unfinished">Comment</translation>
+      <translation>Kommentar</translation>
     </message>
     <message>
       <source>Filter</source>
@@ -1379,15 +1379,15 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Add a new preset after the selected row</source>
-      <translation type="unfinished">Add a new preset after the selected row</translation>
+      <translation>Eine neue Vorlage nach der ausgewählten Zeile hinzufügen</translation>
     </message>
     <message>
       <source>Remove selected presets</source>
-      <translation type="unfinished">Remove selected presets</translation>
+      <translation>Ausgewählte Vorlage entfernen</translation>
     </message>
     <message>
       <source>Load the selected preset</source>
-      <translation type="unfinished">Load the selected preset</translation>
+      <translation>Ausgewählte Vorlage laden</translation>
     </message>
   </context>
   <context>
@@ -2289,11 +2289,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation type="unfinished">DLC Folder</translation>
+      <translation>DLC-Pfad</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
-      <translation type="unfinished">Select the DLC folder</translation>
+      <translation>Wähle einen DLC-Ordner aus</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
@@ -2317,7 +2317,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable RCAS (sharpening)</source>
-      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+      <translation>RCAS aktivieren (Schärfe)</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
@@ -2381,7 +2381,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Miscellaneous</source>
-      <translation type="unfinished">Miscellaneous</translation>
+      <translation>Sonstiges</translation>
     </message>
     <message>
       <source>Frontend</source>
@@ -2389,7 +2389,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Experimental</source>
-      <translation type="unfinished">Experimental</translation>
+      <translation>Experimentel</translation>
     </message>
     <message>
       <source>Show Splash Screen When Launching Game</source>
@@ -2401,7 +2401,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode</source>
-      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+      <translation>PS4 Neo-Modus aktivieren</translation>
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
