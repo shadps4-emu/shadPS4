@@ -100,6 +100,12 @@ public:
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false) {
         if (is_game_specific) {
+            if (game_specific_value == std::nullopt) {
+                fmt::print("Attempted to save std::nullopt value to {}-{}, matching config entry "
+                           "may not be correctly set-up\n",
+                           header, key);
+                return;
+            }
             data[header][key] = game_specific_value.value_or(base_value);
             game_specific_value = std::nullopt;
         } else {
@@ -1110,6 +1116,8 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
+        readbacksEnabled.set(false, is_game_specific);
+        readbackLinearImagesEnabled.set(false, is_game_specific);
         isNeo.set(false, is_game_specific);
         isDevKit.set(false, is_game_specific);
         isPSNSignedIn.set(false, is_game_specific);
@@ -1141,8 +1149,6 @@ void setDefaultValues(bool is_game_specific) {
     windowHeight.set(720, is_game_specific);
     isNullGpu.set(false, is_game_specific);
     shouldCopyGPUBuffers.set(false, is_game_specific);
-    readbacksEnabled.set(false, is_game_specific);
-    readbackLinearImagesEnabled.set(false, is_game_specific);
     shouldDumpShaders.set(false, is_game_specific);
     vblankFrequency.set(60, is_game_specific);
     isFullscreen.set(false, is_game_specific);

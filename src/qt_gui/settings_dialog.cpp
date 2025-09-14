@@ -94,25 +94,18 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     ui->logFilterLineEdit->setClearButtonEnabled(true);
 
     if (game_specific) {
+        // Paths tab
         ui->tabWidgetSettings->setTabVisible(5, false);
         ui->chooseHomeTabComboBox->removeItem(5);
 
-        ui->label_Trophy->setVisible(false);
-        ui->trophyKeyLineEdit->setVisible(false);
-        ui->CompatgroupBox->setVisible(false);
-        ui->gameSizeCheckBox->setVisible(false);
-        ui->GUIBackgroundImageGroupBox->setVisible(false);
-        ui->GUIMusicGroupBox->setVisible(false);
-        ui->gameSizeCheckBox->setVisible(false);
-        ui->updaterGroupBox->setVisible(false);
-        ui->discordRPCCheckbox->setVisible(false);
-        ui->emulatorLanguageGroupBox->setVisible(false);
+        // Frontend tab
+        ui->tabWidgetSettings->setTabVisible(1, false);
+        ui->chooseHomeTabComboBox->removeItem(1);
+
     } else {
-        ui->dmaCheckBox->setVisible(false);
-        ui->devkitCheckBox->setVisible(false);
-        ui->neoCheckBox->setVisible(false);
-        ui->networkConnectedCheckBox->setVisible(false);
-        ui->psnSignInCheckBox->setVisible(false);
+        // Experimental tab
+        ui->tabWidgetSettings->setTabVisible(8, false);
+        ui->chooseHomeTabComboBox->removeItem(8);
     }
 
     std::filesystem::path config_file =
@@ -130,10 +123,15 @@ SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
     presentModeMap = {{tr("Mailbox (Vsync)"), "Mailbox"},
                       {tr("Fifo (Vsync)"), "Fifo"},
                       {tr("Immediate (No Vsync)"), "Immediate"}};
-    chooseHomeTabMap = {{tr("General"), "General"},   {tr("GUI"), "GUI"},
-                        {tr("Graphics"), "Graphics"}, {tr("User"), "User"},
-                        {tr("Input"), "Input"},       {tr("Paths"), "Paths"},
-                        {tr("Log"), "Log"},           {tr("Debug"), "Debug"}};
+    chooseHomeTabMap = {{tr("General"), "General"},
+                        {tr("Frontend"), "Frontend"},
+                        {tr("Graphics"), "Graphics"},
+                        {tr("User"), "User"},
+                        {tr("Input"), "Input"},
+                        {tr("Paths"), "Paths"},
+                        {tr("Log"), "Log"},
+                        {tr("Debug"), "Debug"},
+                        {tr("Experimental"), "Experimental"}};
     micMap = {{tr("None"), "None"}, {tr("Default Device"), "Default Device"}};
 
     if (m_physical_devices.empty()) {
@@ -646,6 +644,9 @@ void SettingsDialog::LoadValuesFromConfig() {
         ui->micComboBox->setCurrentIndex(0);
     }
 
+    ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
+    ui->readbackLinearImagesCheckBox->setChecked(
+        toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
     ui->dmaCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "directMemoryAccess", false));
     ui->neoCheckBox->setChecked(toml::find_or<bool>(data, "General", "isPS4Pro", false));
     ui->devkitCheckBox->setChecked(toml::find_or<bool>(data, "General", "isDevKit", false));
@@ -725,10 +726,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "GPU", "copyGPUBuffers", false));
     ui->collectShaderCheckBox->setChecked(
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
-    ui->readbacksCheckBox->setChecked(toml::find_or<bool>(data, "GPU", "readbacks", false));
     ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
-    ui->readbackLinearImagesCheckBox->setChecked(
-        toml::find_or<bool>(data, "GPU", "readbackLinearImages", false));
 
     std::string chooseHomeTab =
         toml::find_or<std::string>(data, "General", "chooseHomeTab", "General");
@@ -981,17 +979,15 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
 }
 
 void SettingsDialog::UpdateSettings(bool game_specific) {
-    // Entries that are only in the game-specific gui
-
-    if (game_specific) {
-        Config::setDirectMemoryAccess(ui->dmaCheckBox->isChecked(), true);
-        Config::setDevKitConsole(ui->devkitCheckBox->isChecked(), true);
-        Config::setNeoMode(ui->neoCheckBox->isChecked(), true);
-        Config::setConnectedToNetwork(ui->networkConnectedCheckBox->isChecked(), true);
-        Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), true);
-    }
-
     // Entries with game-specific settings, needs the game-specific arg
+    Config::setReadbacks(ui->readbacksCheckBox->isChecked(), game_specific);
+    Config::setReadbackLinearImages(ui->readbackLinearImagesCheckBox->isChecked(), game_specific);
+    Config::setDirectMemoryAccess(ui->dmaCheckBox->isChecked(), game_specific);
+    Config::setDevKitConsole(ui->devkitCheckBox->isChecked(), game_specific);
+    Config::setNeoMode(ui->neoCheckBox->isChecked(), game_specific);
+    Config::setConnectedToNetwork(ui->networkConnectedCheckBox->isChecked(), game_specific);
+    Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), game_specific);
+
     Config::setIsFullscreen(
         screenModeMap.value(ui->displayModeComboBox->currentText()) != "Windowed", game_specific);
     Config::setFullscreenMode(
@@ -1025,7 +1021,8 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setCursorHideTimeout(ui->hideCursorComboBox->currentIndex(), game_specific);
     Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1, game_specific);
     Config::setVolumeSlider(ui->horizontalVolumeSlider->value(), game_specific);
-    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()]);
+    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()],
+                        game_specific);
     Config::setWindowWidth(ui->widthSpinBox->value(), game_specific);
     Config::setWindowHeight(ui->heightSpinBox->value(), game_specific);
     Config::setVblankFreq(ui->vblankSpinBox->value(), game_specific);
@@ -1043,8 +1040,6 @@ void SettingsDialog::UpdateSettings(bool game_specific) {
     Config::setVkHostMarkersEnabled(ui->hostMarkersCheckBox->isChecked(), game_specific);
     Config::setVkGuestMarkersEnabled(ui->guestMarkersCheckBox->isChecked(), game_specific);
     Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked(), game_specific);
-    Config::setReadbacks(ui->readbacksCheckBox->isChecked(), game_specific);
-    Config::setReadbackLinearImages(ui->readbackLinearImagesCheckBox->isChecked(), game_specific);
     Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked(), game_specific);
     Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked(), game_specific);
     Config::setChooseHomeTab(
