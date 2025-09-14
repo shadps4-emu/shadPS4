@@ -207,8 +207,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Run the emulator with the resolved eboot path
-    Core::Emulator emulator;
-    emulator.Run(eboot_path, game_args);
+    Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
+    emulator->executableName = argv[0];
+    emulator->Run(eboot_path, game_args);
 
     return 0;
 }

@@ -19,9 +19,6 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
-#ifdef _WIN32
-#include <WinSock2.h>
-#endif
 #include "common/elf_info.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
@@ -44,6 +41,15 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
+
+#ifndef _WIN32
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -343,6 +349,85 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
 #ifdef ENABLE_QT_GUI
     UpdatePlayTime(id);
+#endif
+
+    std::quick_exit(0);
+}
+
+void Emulator::Restart(std::filesystem::path eboot_path,
+                       const std::vector<std::string>& guest_args) {
+    std::vector<std::string> args;
+
+    args.push_back("--game");
+    args.push_back(Common::FS::PathToUTF8String(eboot_path));
+
+    if (Core::FileSys::MntPoints::ignore_game_patches) {
+        args.push_back("--ignore-game-patch");
+    }
+
+    if (!MemoryPatcher::patchFile.empty()) {
+        args.push_back("--patch");
+        args.push_back(MemoryPatcher::patchFile);
+    }
+
+    if (guest_args.size() > 0) {
+        args.push_back("--");
+        for (const auto& arg : guest_args) {
+            args.push_back(arg);
+        }
+    }
+
+#ifdef _WIN32
+    std::string cmdline;
+    // Emulator executable
+    cmdline += "\"";
+    cmdline += executableName;
+    cmdline += "\"";
+    for (const auto& arg : args) {
+        cmdline += " \"";
+        cmdline += arg;
+        cmdline += "\"";
+    }
+    cmdline += "\0";
+
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    bool success = CreateProcessA(nullptr, cmdline.data(), nullptr, nullptr, TRUE, 0, nullptr,
+                                  nullptr, &si, &pi);
+
+    if (!success) {
+        LOG_ERROR(Common, "Failed to restart game: {}", GetLastError());
+        return;
+    }
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+#else
+    // Linux and macOS implementation
+    std::vector<char*> argv;
+
+    // Emulator executable
+    argv.push_back(const_cast<char*>(executableName));
+
+    for (const auto& arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv.push_back(nullptr);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Child process - execute the new instance
+        execvp(executableName, argv.data());
+        LOG_ERROR(Common, "Failed to restart game: execvp failed");
+        std::quick_exit(1);
+    }
+    if (pid > 0) {
+        LOG_INFO(Common, "Successfully started new instance with PID: {}", pid);
+    } else {
+        LOG_ERROR(Common, "Failed to restart game: fork failed");
+        return;
+    }
 #endif
 
     std::quick_exit(0);

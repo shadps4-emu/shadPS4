@@ -28,6 +28,14 @@ public:
     void Run(std::filesystem::path file, const std::vector<std::string> args = {});
     void UpdatePlayTime(const std::string& serial);
 
+    /**
+     * This will kill the current process and launch a new process with the same configuration
+     * (using CLI args) but replacing the eboot image and guest arguments
+     */
+    void Restart(std::filesystem::path eboot_path, const std::vector<std::string>& guest_args = {});
+
+    const char* executableName;
+
 private:
     void LoadSystemModules(const std::string& game_serial);
 
