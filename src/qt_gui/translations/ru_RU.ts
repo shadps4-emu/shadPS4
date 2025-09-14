@@ -1677,20 +1677,12 @@
       <translation>Язык эмулятора</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Эмулятор</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Вкладка по умолчанию при открытии настроек</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Показать размер игры в списке</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Показывать заставку</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1879,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Проверить обновления</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Настройки интерфейса</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2369,10 +2357,6 @@
       <translation>Частота Vblank</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Гц</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Частота Vblank:\nЧастота кадров, с которой обновляется эмулятор (60 Гц является базовым значением, независимо от того, работает игра в 30 или 60 fps). Изменение этого параметра может иметь негативные последствия, такие как увеличение скорости игры или нарушение критических функций игры, которые этого не ожидают!</translation>
     </message>
@@ -2385,16 +2369,56 @@
       <translation>Включить режим консоли разработчика</translation>
     </message>
     <message>
-      <source>Enable PS4 Pro Mode</source>
-      <translation>Включить режим PS4 Pro</translation>
-    </message>
-    <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
       <translation>Установить &quot;Авторизован в PSN&quot; на True</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
       <translation>Установить &quot;Сеть подключена&quot; на True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
     </message>
   </context>
   <context>
