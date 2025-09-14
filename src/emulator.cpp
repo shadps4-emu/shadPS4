@@ -6,6 +6,7 @@
 #include <set>
 #include <sstream>
 #include <fmt/core.h>
+#include <fmt/xchar.h>
 #include <hwinfo/hwinfo.h>
 
 #include "common/config.h"
@@ -376,6 +377,8 @@ void Emulator::Restart(std::filesystem::path eboot_path,
             args.push_back(arg);
         }
     }
+
+    LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
 
 #ifdef _WIN32
     std::string cmdline;

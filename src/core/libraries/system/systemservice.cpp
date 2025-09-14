@@ -1870,6 +1870,7 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser() {
 }
 
 int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) {
+    LOG_DEBUG(Lib_SystemService, "called");
     auto emu = Common::Singleton<Core::Emulator>::Instance();
     auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto hostPath = mnt->GetHostPath(std::string_view(path));
