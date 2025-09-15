@@ -2370,7 +2370,7 @@
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
-      <translation>Bruk emulering av PSN-pålogging</translation>
+      <translation>Bruk emulering av PSN-tilgang</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
@@ -2402,23 +2402,23 @@
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
-      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+      <translation>Bruk direkte minnetilgang:\nTar i bruk vilkårlig minnetilgang fra GPU-en til CPU-minne.</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation>Bruk PS4 Neo-modus:\nStøtte for emulering av PS4 Pro og økt minnestørrelse. Forårsaker for tiden ustabilitet i et stort antall testede spill.</translation>
+      <translation>Bruk PS4 Neo-modus:\nTar i bruk emulering av PS4 Pro-modus og økt minnestørrelse. Forårsaker for tiden ustabilitet i et stort antall testede spill.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
-      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+      <translation>Bruk utvikler-konsollmodus:\nTar i bruk økt minnekapasitet som i en utvikler-konsoll.</translation>
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+      <translation>Bruk emulering av nettverkstilgang:\nTvinger spill å oppdage nettverkstilgang. Faktisk funksjonalitet støttes ikke.</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+      <translation>Bruk emulering av PSN-tilgang:\nTvinger spill å oppdage PSN-tilgang. Faktisk funksjonalitet støttes ikke.</translation>
     </message>
   </context>
   <context>
