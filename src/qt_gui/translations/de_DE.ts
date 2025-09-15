@@ -1093,7 +1093,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Reload Button Mappings</source>
-      <translation type="unfinished">Reload Button Mappings</translation>
+      <translation>Tastenbelegung neu laden</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
@@ -1113,15 +1113,15 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Toggle Mouse to Joystick Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+      <translation>Schalte Maus zu Joystick-Emulation um</translation>
     </message>
     <message>
       <source>Toggle Mouse to Gyro Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+      <translation>Schalte Maus zu Gyro-Emulation um</translation>
     </message>
     <message>
       <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
-      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+      <translation>Tipp: Es können bis zu drei gleichzeitige Eingaben für ein Hotkey zugewiesen werden</translation>
     </message>
     <message>
       <source>Save</source>
@@ -1147,7 +1147,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Diese Eingabe kann nicht mehr als einmal verwendet werden. Doppelte Eingaben wurden für folgende Tasten gefunden:
 
 %1</translation>
     </message>
@@ -1338,7 +1338,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Diese Eingabe kann nicht mehr als einmal verwendet werden. Doppelte Eingaben wurden für folgende Tasten gefunden:
 
 %1</translation>
     </message>
@@ -1741,7 +1741,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Keine</translation>
     </message>
     <message>
       <source>Default Device</source>
@@ -2249,7 +2249,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>WARNUNG: Diese Funktionen sind experimentell und sollten nur aktiviert werden, wenn ein Spiel es voraussetzt oder man dazu aufgefordert wird. Bitte frag im shadPS4 Discord Server nach, falls Fragen sind.</translation>
     </message>
     <message>
       <source>Enable Background Controller Input</source>
@@ -2261,7 +2261,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Aktiviere Absturzdiagnose:\nErstellt eine .yaml-Datei mit Informationen über den Vulkan-Status zum Zeitpunkt des Absturzes.\nNützlich zum Debuggen von &apos;Device lost&apos;-Fehlern. Wenn dieser Punkt aktiviert wird, dann sollten auch Host UND Guest Debug Marker aktiviert werden.\nVulkan Validation Layers müssen aktiviert werden und Vulkan SDK wird benötigt.</translation>
     </message>
     <message>
       <source>Enable Logging</source>
@@ -2277,15 +2277,15 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
-      <translation type="unfinished">Mailbox (Vsync)</translation>
+      <translation>Mailbox (Vsync)</translation>
     </message>
     <message>
       <source>Fifo (Vsync)</source>
-      <translation type="unfinished">Fifo (Vsync)</translation>
+      <translation>FIFO (Vsync)</translation>
     </message>
     <message>
       <source>Immediate (No Vsync)</source>
-      <translation type="unfinished">Immediate (No Vsync)</translation>
+      <translation>Sofort (kein Vsync)</translation>
     </message>
     <message>
       <source>DLC Folder</source>
@@ -2337,11 +2337,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
-      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+      <translation>Mikrofon:\nKeine: Es wird kein Mikrofon verwendet.\nStandardgerät: Verwendet das vom System festgelegte Mikrofon.\nOder wähle manuell ein Mikrofon aus der Liste aus.</translation>
     </message>
     <message>
       <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
-      <translation type="unfinished">Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</translation>
+      <translation>Lautstärke:\nSetze für alle Spiele die Lautstärke fest. Der Einstellbereich geht von 0% - 500% und der Standardwert ist 100%.</translation>
     </message>
     <message>
       <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
@@ -2361,11 +2361,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>VBlank Frequenz:\nDie Bildrate, die der Emulator verwendet (60 Hz ist die Grundlage, ganz gleich, ob das Spiel mit 30 oder 60 FPS läuft). Dies zu ändern kann sich negativ auswirken, wie z.B. erhöhte Spielgeschwindigkeit oder fehlerhafte Spielfunktionen, die diese Änderung nicht erwarten.</translation>
     </message>
     <message>
       <source>Enable Direct Memory Access</source>
-      <translation type="unfinished">Enable Direct Memory Access</translation>
+      <translation>Aktiviere Direct Memory Access</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode</source>
@@ -2373,11 +2373,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Set &quot;PSN signed-in&quot; to True</source>
-      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+      <translation>Setze den PSN-Status als angemeldet</translation>
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+      <translation>Setze die Netzwerkverbindung als verbunden</translation>
     </message>
     <message>
       <source>Miscellaneous</source>
@@ -2385,7 +2385,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Frontend</source>
-      <translation type="unfinished">Frontend</translation>
+      <translation>Benutzeroberfläche</translation>
     </message>
     <message>
       <source>Experimental</source>
@@ -2393,11 +2393,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Show Splash Screen When Launching Game</source>
-      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+      <translation>Zeige beim Starten eines Spiels ein Startbild</translation>
     </message>
     <message>
       <source>General Frontend Settings</source>
-      <translation type="unfinished">General Frontend Settings</translation>
+      <translation>Allgemeine Einstellungen</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode</source>
@@ -2405,23 +2405,23 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
-      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+      <translation>Aktiviere Direct Memory Access:\nAktiviert die Möglichkeit der Grafikkarte, eigenständig auf den Prozessor-Speicher zuzugreifen.</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+      <translation>PS4 Neo-Modus aktivieren:\nAktiviert die PS4-Pro-Emulation und erhöht den Speicher. Sorgt aktuell für Instabilität bei einer Vielzahl von getesteten Spielen.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
-      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+      <translation>Devkit-Konsolen-Modus aktivieren:\nAktiviert den Devkit-Modus mit mehr Speicher.</translation>
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+      <translation>Setze die Netzwerkverbindung als verbunden:\nErzwingt Spiele die Erkennung einer aktiven Netzwerkverbindung. Online-Funktionen werden noch nicht unterstützt.</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+      <translation>Setze den PSN-Status als angemeldet:\nErzwingt Spiele die Erkennung einer Anmeldung beim PlayStation-Network (PSN). PSN-Funktionen werden noch nicht unterstützt.</translation>
     </message>
   </context>
   <context>
