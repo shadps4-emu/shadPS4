@@ -381,24 +381,24 @@
             </item>
            </layout>
           </item>
-          <item row="1" column="2">
+          <item row="1" column="0">
            <widget class="QGroupBox" name="GenAudioGroupBox">
             <property name="title">
-            </property>
              <string>Audio Device (general)</string>
-            <layout class="QVBoxLayout" name="verticalLayout_5">
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_8">
              <item>
               <widget class="QComboBox" name="GenAudioComboBox"/>
              </item>
             </layout>
            </widget>
           </item>
-          <item row="2" column="2">
+          <item row="2" column="0">
            <widget class="QGroupBox" name="DsSpeakerGroupBox">
             <property name="title">
              <string>Audio Device (DS4 speaker)</string>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_6">
+            <layout class="QVBoxLayout" name="verticalLayout_9">
              <item>
               <widget class="QComboBox" name="DsAudioComboBox"/>
              </item>
