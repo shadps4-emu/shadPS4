@@ -84,10 +84,10 @@ static std::vector<QString> m_physical_devices;
 
 SettingsDialog::SettingsDialog(std::shared_ptr<gui_settings> gui_settings,
                                std::shared_ptr<CompatibilityInfoClass> m_compat_info,
-                               QWidget* parent, std::string gsc_serial, bool is_game_running,
-                               bool is_game_specific)
+                               QWidget* parent, bool is_running, bool is_specific,
+                               std::string gsc_serial)
     : QDialog(parent), ui(new Ui::SettingsDialog), m_gui_settings(std::move(gui_settings)),
-      gs_serial(gsc_serial), is_game_running(is_game_running), is_game_specific(is_game_specific) {
+      is_game_running(is_running), is_game_specific(is_specific), gs_serial(gsc_serial) {
 
     ui->setupUi(this);
     ui->tabWidgetSettings->setUsesScrollButtons(false);
@@ -755,7 +755,7 @@ void SettingsDialog::LoadValuesFromConfig() {
         toml::find_or<bool>(data, "Debug", "CollectShader", false));
     ui->enableLoggingCheckBox->setChecked(toml::find_or<bool>(data, "Debug", "logEnabled", true));
 
-        ui->GenAudioComboBox->setCurrentText(QString::fromStdString(
+    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(
         toml::find_or<std::string>(data, "General", "mainOutputDevice", "")));
     ui->DsAudioComboBox->setCurrentText(QString::fromStdString(
         toml::find_or<std::string>(data, "General", "padSpkOutputDevice", "")));
@@ -1011,87 +1011,81 @@ bool SettingsDialog::eventFilter(QObject* obj, QEvent* event) {
     return QDialog::eventFilter(obj, event);
 }
 
-void SettingsDialog::UpdateSettings(bool game_specific) {
+void SettingsDialog::UpdateSettings(bool is_specific) {
     // Entries with game-specific settings, needs the game-specific arg
-    Config::setReadbacks(ui->readbacksCheckBox->isChecked(), game_specific);
-    Config::setReadbackLinearImages(ui->readbackLinearImagesCheckBox->isChecked(), game_specific);
-    Config::setDirectMemoryAccess(ui->dmaCheckBox->isChecked(), game_specific);
-    Config::setDevKitConsole(ui->devkitCheckBox->isChecked(), game_specific);
-    Config::setNeoMode(ui->neoCheckBox->isChecked(), game_specific);
-    Config::setConnectedToNetwork(ui->networkConnectedCheckBox->isChecked(), game_specific);
-    Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), game_specific);
+    Config::setReadbacks(ui->readbacksCheckBox->isChecked(), is_specific);
+    Config::setReadbackLinearImages(ui->readbackLinearImagesCheckBox->isChecked(), is_specific);
+    Config::setDirectMemoryAccess(ui->dmaCheckBox->isChecked(), is_specific);
+    Config::setDevKitConsole(ui->devkitCheckBox->isChecked(), is_specific);
+    Config::setNeoMode(ui->neoCheckBox->isChecked(), is_specific);
+    Config::setConnectedToNetwork(ui->networkConnectedCheckBox->isChecked(), is_specific);
+    Config::setPSNSignedIn(ui->psnSignInCheckBox->isChecked(), is_specific);
 
     Config::setIsFullscreen(
-        screenModeMap.value(ui->displayModeComboBox->currentText()) != "Windowed", is_game_specific);
+        screenModeMap.value(ui->displayModeComboBox->currentText()) != "Windowed", is_specific);
     Config::setFullscreenMode(
-        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString(), is_game_specific);
+        screenModeMap.value(ui->displayModeComboBox->currentText()).toStdString(), is_specific);
     Config::setPresentMode(
-        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString(), is_game_specific);
-    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked(), is_game_specific);
+        presentModeMap.value(ui->presentModeComboBox->currentText()).toStdString(), is_specific);
+    Config::setIsMotionControlsEnabled(ui->motionControlsCheckBox->isChecked(), is_specific);
     Config::setBackgroundControllerInput(ui->backgroundControllerCheckBox->isChecked(),
-                                         is_game_specific);
-    Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked(), is_game_specific);
-    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value(), is_game_specific);
+                                         is_specific);
+    Config::setisTrophyPopupDisabled(ui->disableTrophycheckBox->isChecked(), is_specific);
+    Config::setTrophyNotificationDuration(ui->popUpDurationSpinBox->value(), is_specific);
 
     if (ui->radioButton_Top->isChecked()) {
-        Config::setSideTrophy("top", is_game_specific);
+        Config::setSideTrophy("top", is_specific);
     } else if (ui->radioButton_Left->isChecked()) {
-        Config::setSideTrophy("left", is_game_specific);
+        Config::setSideTrophy("left", is_specific);
     } else if (ui->radioButton_Right->isChecked()) {
-        Config::setSideTrophy("right", is_game_specific);
+        Config::setSideTrophy("right", is_specific);
     } else if (ui->radioButton_Bottom->isChecked()) {
-        Config::setSideTrophy("bottom", is_game_specific);
+        Config::setSideTrophy("bottom", is_specific);
     }
 
-    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked(), is_game_specific);
-    Config::setAllowHDR(ui->enableHDRCheckBox->isChecked(), is_game_specific);
+    Config::setLoggingEnabled(ui->enableLoggingCheckBox->isChecked(), is_specific);
+    Config::setAllowHDR(ui->enableHDRCheckBox->isChecked(), is_specific);
     Config::setLogType(logTypeMap.value(ui->logTypeComboBox->currentText()).toStdString(),
-                       game_specific);
-    Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString(), game_specific);
-    Config::setLogFilter(ui->logFilterLineEdit->text().toStdString(), game_specific);
-    Config::setUserName(ui->userNameLineEdit->text().toStdString(), game_specific);
-    Config::setCursorState(ui->hideCursorComboBox->currentIndex(), game_specific);
-    Config::setCursorHideTimeout(ui->hideCursorComboBox->currentIndex(), game_specific);
-    Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1, game_specific);
-    Config::setVolumeSlider(ui->horizontalVolumeSlider->value(), game_specific);
-    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()],
-                        game_specific);
-    Config::setWindowWidth(ui->widthSpinBox->value(), game_specific);
-    Config::setWindowHeight(ui->heightSpinBox->value(), game_specific);
-    Config::setVblankFreq(ui->vblankSpinBox->value(), game_specific);
-    Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked(), game_specific);
-    Config::setNullGpu(ui->nullGpuCheckBox->isChecked(), game_specific);
-    Config::setFsrEnabled(ui->FSRCheckBox->isChecked(), game_specific);
-    Config::setRcasEnabled(ui->RCASCheckBox->isChecked(), game_specific);
-    Config::setRcasAttenuation(ui->RCASSlider->value(), game_specific);
-    Config::setShowSplash(ui->showSplashCheckBox->isChecked(), game_specific);
-    Config::setDebugDump(ui->debugDump->isChecked(), game_specific);
-    Config::setSeparateLogFilesEnabled(ui->separateLogFilesCheckbox->isChecked(), game_specific);
-    Config::setVkValidation(ui->vkValidationCheckBox->isChecked(), game_specific);
-    Config::setVkSyncValidation(ui->vkSyncValidationCheckBox->isChecked(), game_specific);
-    Config::setRdocEnabled(ui->rdocCheckBox->isChecked(), game_specific);
-    Config::setVkHostMarkersEnabled(ui->hostMarkersCheckBox->isChecked(), game_specific);
-    Config::setVkGuestMarkersEnabled(ui->guestMarkersCheckBox->isChecked(), game_specific);
-    Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked(), game_specific);
-    Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked(), game_specific);
-    Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked(), game_specific);
+                       is_specific);
+    Config::setMicDevice(ui->micComboBox->currentData().toString().toStdString(), is_specific);
+    Config::setLogFilter(ui->logFilterLineEdit->text().toStdString(), is_specific);
+    Config::setUserName(ui->userNameLineEdit->text().toStdString(), is_specific);
+    Config::setCursorState(ui->hideCursorComboBox->currentIndex(), is_specific);
+    Config::setCursorHideTimeout(ui->hideCursorComboBox->currentIndex(), is_specific);
+    Config::setGpuId(ui->graphicsAdapterBox->currentIndex() - 1, is_specific);
+    Config::setVolumeSlider(ui->horizontalVolumeSlider->value(), is_specific);
+    Config::setLanguage(languageIndexes[ui->consoleLanguageComboBox->currentIndex()], is_specific);
+    Config::setWindowWidth(ui->widthSpinBox->value(), is_specific);
+    Config::setWindowHeight(ui->heightSpinBox->value(), is_specific);
+    Config::setVblankFreq(ui->vblankSpinBox->value(), is_specific);
+    Config::setDumpShaders(ui->dumpShadersCheckBox->isChecked(), is_specific);
+    Config::setNullGpu(ui->nullGpuCheckBox->isChecked(), is_specific);
+    Config::setFsrEnabled(ui->FSRCheckBox->isChecked(), is_specific);
+    Config::setRcasEnabled(ui->RCASCheckBox->isChecked(), is_specific);
+    Config::setRcasAttenuation(ui->RCASSlider->value(), is_specific);
+    Config::setShowSplash(ui->showSplashCheckBox->isChecked(), is_specific);
+    Config::setDebugDump(ui->debugDump->isChecked(), is_specific);
+    Config::setSeparateLogFilesEnabled(ui->separateLogFilesCheckbox->isChecked(), is_specific);
+    Config::setVkValidation(ui->vkValidationCheckBox->isChecked(), is_specific);
+    Config::setVkSyncValidation(ui->vkSyncValidationCheckBox->isChecked(), is_specific);
+    Config::setRdocEnabled(ui->rdocCheckBox->isChecked(), is_specific);
+    Config::setVkHostMarkersEnabled(ui->hostMarkersCheckBox->isChecked(), is_specific);
+    Config::setVkGuestMarkersEnabled(ui->guestMarkersCheckBox->isChecked(), is_specific);
+    Config::setVkCrashDiagnosticEnabled(ui->crashDiagnosticsCheckBox->isChecked(), is_specific);
+    Config::setCollectShaderForDebug(ui->collectShaderCheckBox->isChecked(), is_specific);
+    Config::setCopyGPUCmdBuffers(ui->copyGPUBuffersCheckBox->isChecked(), is_specific);
     Config::setChooseHomeTab(
         chooseHomeTabMap.value(ui->chooseHomeTabComboBox->currentText()).toStdString(),
-        is_game_specific);
-    Config::setCompatibilityEnabled(ui->enableCompatibilityCheckBox->isChecked());
-    Config::setCheckCompatibilityOnStartup(ui->checkCompatibilityOnStartupCheckBox->isChecked());
-    m_gui_settings->SetValue(gui::gl_backgroundImageOpacity,
-                             std::clamp(ui->backgroundImageOpacitySlider->value(), 0, 100));
-    emit BackgroundOpacityChanged(ui->backgroundImageOpacitySlider->value());
-    m_gui_settings->SetValue(gui::gl_showBackgroundImage,
-                             ui->showBackgroundImageCheckBox->isChecked());
+        is_specific);
 
-    std::vector<Config::GameInstallDir> dirs_with_states;
-    for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
-        QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
-        QString path_string = item->text();
-        auto path = Common::FS::PathFromQString(path_string);
-        bool enabled = (item->checkState() == Qt::Checked);
+    // Entries with no game-specific settings
+    if (!is_specific) {
+        std::vector<Config::GameInstallDir> dirs_with_states;
+        for (int i = 0; i < ui->gameFoldersListWidget->count(); i++) {
+            QListWidgetItem* item = ui->gameFoldersListWidget->item(i);
+            QString path_string = item->text();
+            auto path = Common::FS::PathFromQString(path_string);
+            bool enabled = (item->checkState() == Qt::Checked);
 
             dirs_with_states.push_back({path, enabled});
         }
@@ -1198,7 +1192,7 @@ void SettingsDialog::SyncRealTimeWidgetstoConfig() {
 }
 
 void SettingsDialog::setDefaultValues() {
-    if (!game_specific) {
+    if (!is_game_specific) {
         m_gui_settings->SetValue(gui::gl_showBackgroundImage, true);
         m_gui_settings->SetValue(gui::gl_backgroundImageOpacity, 50);
         m_gui_settings->SetValue(gui::gl_playBackgroundMusic, false);
@@ -1212,48 +1206,6 @@ void SettingsDialog::setDefaultValues() {
         }
         m_gui_settings->SetValue(gui::gen_guiLanguage, "en_US");
     }
-}
-
-void SettingsDialog::pollSDLevents() {
-    SDL_Event event;
-    while (SdlEventWrapper::Wrapper::wrapperActive) {
-
-        if (!SDL_WaitEvent(&event)) {
-            return;
-        }
-
-        if (event.type == SDL_EVENT_QUIT) {
-            return;
-        }
-
-        SdlEventWrapper::Wrapper::GetInstance()->Wrapper::ProcessEvent(&event);
-    }
-}
-
-void SettingsDialog::onAudioDeviceChange() {
-    ui->GenAudioComboBox->clear();
-    ui->DsAudioComboBox->clear();
-
-    int deviceCount;
-    QStringList deviceList;
-    SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&deviceCount);
-
-    if (!devices)
-        QMessageBox::information(this, "test", QString::number(deviceCount));
-
-    for (int i = 0; i < deviceCount; i++) {
-        const char* name = SDL_GetAudioDeviceName(devices[i]);
-        std::string name_string = std::string(name);
-        deviceList.append(QString::fromStdString(name_string));
-    }
-
-    ui->GenAudioComboBox->addItem("Default Device");
-    ui->GenAudioComboBox->addItems(deviceList);
-    ui->GenAudioComboBox->setCurrentText(QString::fromStdString(Config::getMainOutputDevice()));
-
-    ui->DsAudioComboBox->addItem("Default Device");
-    ui->DsAudioComboBox->addItems(deviceList);
-    ui->DsAudioComboBox->setCurrentText(QString::fromStdString(Config::getPadSpkOutputDevice()));
 }
 
 void SettingsDialog::pollSDLevents() {

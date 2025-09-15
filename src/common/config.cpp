@@ -141,8 +141,6 @@ static ConfigEntry<bool> backgroundControllerInput(false);
 
 // Output
 static ConfigEntry<string> micDevice("Default Device");
-static std::string mainOutputDevice = "Default Device";
-static std::string padSpkOutputDevice = "Default Device";
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -609,8 +607,8 @@ void setPadSpkOutputDevice(std::string device) {
     padSpkOutputDevice = device;
 }
 
-void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
-    trophyNotificationDuration = newTrophyNotificationDuration;
+void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
+    trophyNotificationDuration.set(newTrophyNotificationDuration, is_game_specific);
 }
 
 void setLanguage(u32 language, bool is_game_specific) {
@@ -1026,7 +1024,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
     isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
-    
+
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
     isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
@@ -1072,61 +1070,56 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     std::vector<std::string> install_dirs;
     std::vector<bool> install_dirs_enabled;
 
-        // temporary structure for ordering
-        struct DirEntry {
-            string path_str;
-            bool enabled;
-        };
+    // temporary structure for ordering
+    struct DirEntry {
+        string path_str;
+        bool enabled;
+    };
 
-        std::vector<DirEntry> sorted_dirs;
-        for (const auto& dirInfo : settings_install_dirs) {
-            sorted_dirs.push_back(
-                {string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
-        }
-
-        // Sort directories alphabetically
-        std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
-            return std::lexicographical_compare(
-                a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
-                [](char a_char, char b_char) {
-                    return std::tolower(a_char) < std::tolower(b_char);
-                });
-        });
-
-        for (const auto& entry : sorted_dirs) {
-            install_dirs.push_back(entry.path_str);
-            install_dirs_enabled.push_back(entry.enabled);
-        }
-
-        // Non game-specific entries
-        data["General"]["enableDiscordRPC"] = enableDiscordRPC;
-        data["General"]["compatibilityEnabled"] = compatibilityData;
-        data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-        
-        // TODO: Fix to match 'setTomlValue' format and make game specific
-        data["Audio"]["mainOutputDevice"] = mainOutputDevice;
-        data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
-
-        data["GUI"]["installDirs"] = install_dirs;
-        data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
-        data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
-        data["GUI"]["loadGameSizeEnabled"] = load_game_size;
-        data["GUI"]["addonInstallDir"] =
-            string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-        data["Debug"]["ConfigVersion"] = config_version;
-        data["Keys"]["TrophyKey"] = trophyKey;
-
-        // Do not save these entries in the game-specific dialog since they are not in the GUI
-        data["General"]["defaultControllerID"] = defaultControllerID.base_value;
-        data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
-        data["Input"]["specialPadClass"] = specialPadClass.base_value;
-        data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-        data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
-        data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
-        data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
-        data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
-        data["Debug"]["FPSColor"] = isFpsColor.base_value;
+    std::vector<DirEntry> sorted_dirs;
+    for (const auto& dirInfo : settings_install_dirs) {
+        sorted_dirs.push_back({string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
     }
+
+    // Sort directories alphabetically
+    std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
+        return std::lexicographical_compare(
+            a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
+            [](char a_char, char b_char) { return std::tolower(a_char) < std::tolower(b_char); });
+    });
+
+    for (const auto& entry : sorted_dirs) {
+        install_dirs.push_back(entry.path_str);
+        install_dirs_enabled.push_back(entry.enabled);
+    }
+
+    // Non game-specific entries
+    data["General"]["enableDiscordRPC"] = enableDiscordRPC;
+    data["General"]["compatibilityEnabled"] = compatibilityData;
+    data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+
+    // TODO: Fix to match 'setTomlValue' format and make game specific
+    data["Audio"]["mainOutputDevice"] = mainOutputDevice;
+    data["Audio"]["padSpkOutputDevice"] = padSpkOutputDevice;
+
+    data["GUI"]["installDirs"] = install_dirs;
+    data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
+    data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
+    data["GUI"]["loadGameSizeEnabled"] = load_game_size;
+    data["GUI"]["addonInstallDir"] = string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+    data["Debug"]["ConfigVersion"] = config_version;
+    data["Keys"]["TrophyKey"] = trophyKey;
+
+    // Do not save these entries in the game-specific dialog since they are not in the GUI
+    data["General"]["defaultControllerID"] = defaultControllerID.base_value;
+    data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
+    data["Input"]["specialPadClass"] = specialPadClass.base_value;
+    data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
+    data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
+    data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
+    data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
+    data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
+    data["Debug"]["FPSColor"] = isFpsColor.base_value;
 
     // Sorting of TOML sections
     sortTomlSections(data);
