@@ -70,14 +70,15 @@ Emulator::Emulator() {
 
 Emulator::~Emulator() {}
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
+void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args,
+                   std::optional<std::filesystem::path> p_game_folder) {
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
 
     const auto eboot_name = file.filename().string();
 
-    auto game_folder = file.parent_path();
+    auto game_folder = p_game_folder.value_or(file.parent_path());
     if (const auto game_folder_name = game_folder.filename().string();
         game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
         // If an executable was launched from a separate update directory,
@@ -359,9 +360,15 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                        const std::vector<std::string>& guest_args) {
     std::vector<std::string> args;
 
+    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto game_path = mnt->GetHostPath("/app0");
+
     args.push_back("--log-append");
     args.push_back("--game");
     args.push_back(Common::FS::PathToUTF8String(eboot_path));
+
+    args.push_back("--override-root");
+    args.push_back(Common::FS::PathToUTF8String(game_path));
 
     if (Core::FileSys::MntPoints::ignore_game_patches) {
         args.push_back("--ignore-game-patch");
@@ -380,7 +387,6 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     }
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
-    Common::Log::Denitializer();
 
 #ifdef _WIN32
     std::string cmdline;
@@ -435,6 +441,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     }
 #endif
 
+    Common::Log::Denitializer();
     std::quick_exit(0);
 }
 

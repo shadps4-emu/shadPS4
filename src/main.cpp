@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
     bool has_game_argument = false;
     std::string game_path;
     std::vector<std::string> game_args{};
+    std::optional<std::filesystem::path> game_folder;
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -51,6 +52,10 @@ int main(int argc, char* argv[]) {
                     "state. Does not overwrite the config file.\n"
                     "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
                     "  --set-addon-folder <folder>   Sets the addon folder to the config.\n"
+                    "  --log-append                  Append log output to file instead of "
+                    "overwriting it.\n"
+                    "  --override-root <folder>      Override the game root folder. Default is the "
+                    "parent of game path\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -140,6 +145,20 @@ int main(int argc, char* argv[]) {
              exit(0);
          }},
         {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
+        {"--override-root",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --override-root\n";
+                 exit(1);
+             }
+             std::string folder_str{argv[i]};
+             std::filesystem::path folder{folder_str};
+             if (!std::filesystem::exists(folder) || !std::filesystem::is_directory(folder)) {
+                 std::cerr << "Error: Folder does not exist: " << folder_str << "\n";
+                 exit(1);
+             }
+             game_folder = folder;
+         }},
     };
 
     if (argc == 1) {
@@ -213,7 +232,7 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
-    emulator->Run(eboot_path, game_args);
+    emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;
 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <thread>
 
 #include "common/singleton.h"
@@ -25,7 +26,8 @@ public:
     Emulator();
     ~Emulator();
 
-    void Run(std::filesystem::path file, const std::vector<std::string> args = {});
+    void Run(std::filesystem::path file, const std::vector<std::string> args = {},
+             std::optional<std::filesystem::path> game_folder = {});
     void UpdatePlayTime(const std::string& serial);
 
     /**

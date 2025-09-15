@@ -147,6 +147,7 @@ public:
     }
 
     static void ResetInstance() {
+        initialization_in_progress_suppress_logging = true;
         instance.reset();
     }
 
