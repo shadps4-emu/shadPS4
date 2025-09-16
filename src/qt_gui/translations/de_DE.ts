@@ -1011,19 +1011,19 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Game-specific Settings...</source>
-      <translation type="unfinished">Game-specific Settings...</translation>
+      <translation>Individuelle Konfiguration</translation>
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation type="unfinished">Configure Game-specific Settings</translation>
+      <translation>Individuelle Konfiguration bearbeiten</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+      <translation>Erstelle individuelle Konfiguration aus den allgemeinen Einstellungen</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
-      <translation type="unfinished">Delete Game-specific Settings</translation>
+      <translation>Lösche Individuelle Konfiguration</translation>
     </message>
     <message>
       <source>Update Database</source>
@@ -1043,7 +1043,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Delete game-specific settings?</source>
-      <translation type="unfinished">Delete game-specific settings?</translation>
+      <translation>Individuelle Konfiguration löschen?</translation>
     </message>
   </context>
   <context>
@@ -1845,11 +1845,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Aktiviere Readbacks</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Aktiviere Readback Linear Images</translation>
     </message>
     <message>
       <source>Update</source>
@@ -2245,11 +2245,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable Background Controller Input</source>
-      <translation type="unfinished">Enable Background Controller Input</translation>
+      <translation>Erkenne die Controller-Eingabe im Hintergrund</translation>
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Erkenne die Controller-Eingabe im Hintergrund:\nErlaubt shadPS4, die Controller-Eingaben zu erkennen, wenn das Fenster nicht mehr im Fokus steht.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -2337,15 +2337,15 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
-      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+      <translation>Standard-Tab beim Öffnen der Einstellungen:\nWählen welcher Tab geöffnet werden soll, die Standardauswahl ist Allgemein.</translation>
     </message>
     <message>
       <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
-      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+      <translation>Zeige Spielgröße in der Liste:\nÄndert die Größe der Spiele in der Liste.</translation>
     </message>
     <message>
       <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
-      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+      <translation>Aktiviere Bewegungssteuerung:\nWenn aktiviert, dann wird die Bewegungssteuerung des Controllers verwendet, falls unterstützt wird.</translation>
     </message>
     <message>
       <source>Vblank Frequency</source>
@@ -2417,11 +2417,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+      <translation>Aktiviere Vulkan Validation Layers:\nAktiviert ein System, welches den Status des Vulkan-Renderers überprüft und Daten über den internen Zustand sammelt.\nDiese Funktion reduziert die Leistung und beeinflusst das Verhalten des Emulators.\nVulkan SDK wird benötigt.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+      <translation>Aktiviere Vulkan Synchronization Validation:\nAktiviert ein System, welches das Timing der Vulkan-Renderer Aufgaben überprüft.\nDiese Funktion reduziert die Leistung und beeinflusst das Verhalten des Emulators.\nVulkan SDK wird benötigt.</translation>
     </message>
   </context>
   <context>
