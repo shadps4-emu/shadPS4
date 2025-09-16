@@ -919,18 +919,6 @@
       <translation>Совместимость...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Обновить базу данных</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Посмотреть отчет</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Отправить отчёт</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Создание ярлыка</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Добавить в избранное</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Индивидуальная конфигурация...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Настроить индивидуальную конфигурацию</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Создать индивидуальную конфигурацию из глобальных настроек</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Удалить индивидуальную конфигурацию</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Обновить базу данных</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Посмотреть отчет</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Отправить отчёт</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Подтвердить удаление</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Удалить индивидуальную конфигурацию?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>Язык эмулятора</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Эмулятор</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Вкладка по умолчанию при открытии настроек</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Показать размер игры в списке</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Показывать заставку</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Проверить обновления</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Настройки интерфейса</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2345,12 +2357,68 @@
       <translation>Частота Vblank</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Гц</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Частота Vblank:\nЧастота кадров, с которой обновляется эмулятор (60 Гц является базовым значением, независимо от того, работает игра в 30 или 60 fps). Изменение этого параметра может иметь негативные последствия, такие как увеличение скорости игры или нарушение критических функций игры, которые этого не ожидают!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Включить прямой доступ к памяти</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Включить режим консоли Devkit</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Установить &quot;Авторизован в PSN&quot; на True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Установить &quot;Подключение к сети&quot; на True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Прочее</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Интерфейс</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Экспериментальное</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Показывать заставку при запуске игры</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Общие настройки интерфейса</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Включить режим PS4 Neo</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Включить прямой доступ к памяти:\nВключает произвольный доступ к памяти из графического процессора в память центрального процессора.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции и размера памяти PS4 Pro. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Включить режим консоли Devkit:\nДобавляет поддержку размера памяти консоли Devkit.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Установить "Подключение к сети" на True:\nЗаставляет игры определять активное сетевое подключение. Фактические онлайн-возможности пока не поддерживаются.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Установить "Авторизован в PSN" на True:\nЗаставляет игры определять активный вход в PSN. Фактические возможности PSN не поддерживаются.</translation>
     </message>
   </context>
   <context>

@@ -919,18 +919,6 @@
       <translation>Compatibilitat...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Actualitza la base de dades</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visualitza l'informe</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Envia un informe</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Crea una drecera</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Afegeix a preferits</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Configuració específica del joc...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Configuració específica del joc</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Crea una configuració específica del joc des de la configuració global</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Esborra la configuració específica del joc</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Actualitza la base de dades</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visualitza l'informe</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Envia un informe</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Confirma la supressió</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Vols esborrar la configuració específica del joc?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>Idioma de l'emulador</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulador</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Pestanya predeterminada en obrir la configuració</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Mostra la mida del joc a la llista</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Mostra missatge de benvinguda</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Comprova si hi ha actualitzacions</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Configuració de la interfície</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2345,12 +2357,68 @@
       <translation>Freqüència de Vblank</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Freqüència Vblank:\nLa taxa de fotogrames a la qual l'emulador es refresca (60 Hz és el valor base, quan el joc s'executa a 30 o 60 fps). Canviar aquest valor pot tenir efectes adversos, com augmentar la velocitat del joc, o trencar la funcionalitat del joc de forma no esperada!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Activa l'accés directe a memòria</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Activa el mode consola de desenvolupador</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Estableix l'inici de sessió de PSN a cert</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Estableix la connexió a xarxa com a certa</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Miscel·lània</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Mostra pantalla inicial en inicar el joc</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Configuració general del frontend</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Activa el mode PS4 Neo</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Activa l'accés directe a memòria:\nActiva l'accés arbitrari de memòria des de la targeta gràfica a la memòria del procesador.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Activa el mode Neo de PS4:\nAfegeix suport a l'emulació de PS4 Pro i la mida de memòria. Actualment causa inestabilitat en un gran nombre de jocs que s'han provat.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Activa el mode de consola de desenvolupament:\nAfegeix suport per la mida de memòria de la consola de desenvolupament.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Estableix la connexió a xarxa com a certa:\nForça els jocs a detectar una connexió a xarxa activa. Les funcions de connexió a xarxa no estan implementades actualment.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Estableix l'inici de sessió a PSN com a cert:\nForça els jocs a detectar un inici de sessió a PSN actiu. Les funcions de PSN no estan implementades actualment.</translation>
     </message>
   </context>
   <context>

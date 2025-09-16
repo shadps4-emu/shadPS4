@@ -558,71 +558,71 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>L1 and L2</source>
-      <translation type="unfinished">L1 and L2</translation>
+      <translation>L1 und L2</translation>
     </message>
     <message>
       <source>Active Gamepad</source>
-      <translation type="unfinished">Active Gamepad</translation>
+      <translation>Aktives Gamepad</translation>
     </message>
     <message>
       <source>Gamepad ID</source>
-      <translation type="unfinished">Gamepad ID</translation>
+      <translation>Gamepad ID</translation>
     </message>
     <message>
       <source>Default Gamepad</source>
-      <translation type="unfinished">Default Gamepad</translation>
+      <translation>Standard-Gamepad</translation>
     </message>
     <message>
       <source>No default selected</source>
-      <translation type="unfinished">No default selected</translation>
+      <translation>Kein Standard festgelegt</translation>
     </message>
     <message>
       <source>n/a</source>
-      <translation type="unfinished">n/a</translation>
+      <translation>n.v.</translation>
     </message>
     <message>
       <source>Set Active Gamepad as Default</source>
-      <translation type="unfinished">Set Active Gamepad as Default</translation>
+      <translation>Aktives Gamepad als Standard festlegen</translation>
     </message>
     <message>
       <source>Remove Default Gamepad</source>
-      <translation type="unfinished">Remove Default Gamepad</translation>
+      <translation>Standard-Gamepad entfernen</translation>
     </message>
     <message>
       <source>R1 and R2</source>
-      <translation type="unfinished">R1 and R2</translation>
+      <translation>R1 und R2</translation>
     </message>
     <message>
       <source>ID: </source>
-      <translation type="unfinished">ID: </translation>
+      <translation>ID:</translation>
     </message>
     <message>
       <source>Default Controller Selected</source>
-      <translation type="unfinished">Default Controller Selected</translation>
+      <translation>Standard-Controller ausgewählt</translation>
     </message>
     <message>
       <source>Active controller set as default</source>
-      <translation type="unfinished">Active controller set as default</translation>
+      <translation>Aktiver Controller als Standard festgelegt</translation>
     </message>
     <message>
       <source>Default Controller Removed</source>
-      <translation type="unfinished">Default Controller Removed</translation>
+      <translation>Standard-Controller entfernt</translation>
     </message>
     <message>
       <source>Default controller setting removed</source>
-      <translation type="unfinished">Default controller setting removed</translation>
+      <translation>Standardeinstellungen für Controller entfernt</translation>
     </message>
     <message>
       <source>RED</source>
-      <translation type="unfinished">RED</translation>
+      <translation>ROT</translation>
     </message>
     <message>
       <source>GREEN</source>
-      <translation type="unfinished">GREEN</translation>
+      <translation>GRÜN</translation>
     </message>
     <message>
       <source>BLUE</source>
-      <translation type="unfinished">BLUE</translation>
+      <translation>BLAU</translation>
     </message>
   </context>
   <context>
@@ -918,18 +918,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Kompatibilität...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Aktualisiere Datenbank</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Bericht ansehen</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Einen Bericht einreichen</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Verknüpfungserstellung</translation>
     </message>
@@ -1021,6 +1009,42 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Add to Favorites</source>
       <translation>Zu Favoriten hinzufügen</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Datenbank aktualisieren</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Bericht ansehen</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Einen Bericht erstellen</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Löschen bestätigen</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation type="unfinished">Delete game-specific settings?</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1049,87 +1073,87 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <name>Hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Hotkeys anpassen</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>Controller Hotkeys</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>FPS anzeigen</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>Nicht zugeordnet</translation>
     </message>
     <message>
       <source>Quit Emulation</source>
-      <translation type="unfinished">Quit Emulation</translation>
+      <translation>Emulator beenden</translation>
     </message>
     <message>
       <source>Reload Button Mappings</source>
-      <translation type="unfinished">Reload Button Mappings</translation>
+      <translation>Tastenbelegung neu laden</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>Vollbild umschalten</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>Anhalten/fortsetzen</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>Tastatur Hotkeys</translation>
     </message>
     <message>
       <source>Renderdoc Capture (for debugging only)</source>
-      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+      <translation>RenderDoc-Aufnahme (nur für Debugging erforderlich)</translation>
     </message>
     <message>
       <source>Toggle Mouse to Joystick Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+      <translation>Schalte Maus zu Joystick-Emulation um</translation>
     </message>
     <message>
       <source>Toggle Mouse to Gyro Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+      <translation>Schalte Maus zu Gyro-Emulation um</translation>
     </message>
     <message>
       <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
-      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+      <translation>Tipp: Es können bis zu drei gleichzeitige Eingaben für ein Hotkey zugewiesen werden</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>Speichern</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>Übernehmen</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>Abbrechen</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>Standardeinstellungen wiederherstellen</translation>
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>Speichern nicht möglich</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Diese Eingabe kann nicht mehr als einmal verwendet werden. Doppelte Eingaben wurden für folgende Tasten gefunden:
 
 %1</translation>
     </message>
     <message>
       <source>Waiting for inputs</source>
-      <translation type="unfinished">Waiting for inputs</translation>
+      <translation>Warte auf Eingabe</translation>
     </message>
   </context>
   <context>
@@ -1314,7 +1338,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>Diese Eingabe kann nicht mehr als einmal verwendet werden. Doppelte Eingaben wurden für folgende Tasten gefunden:
 
 %1</translation>
     </message>
@@ -1335,35 +1359,35 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <name>LogPresetsDialog</name>
     <message>
       <source>Log Filter Presets</source>
-      <translation type="unfinished">Log Filter Presets</translation>
+      <translation>Protokoll-Filter Vorlagen</translation>
     </message>
     <message>
       <source>Comment</source>
-      <translation type="unfinished">Comment</translation>
+      <translation>Kommentar</translation>
     </message>
     <message>
       <source>Filter</source>
-      <translation type="unfinished">Filter</translation>
+      <translation>Filter</translation>
     </message>
     <message>
       <source>Load</source>
-      <translation type="unfinished">Load</translation>
+      <translation>Laden</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>Schließen</translation>
     </message>
     <message>
       <source>Add a new preset after the selected row</source>
-      <translation type="unfinished">Add a new preset after the selected row</translation>
+      <translation>Eine neue Vorlage nach der ausgewählten Zeile hinzufügen</translation>
     </message>
     <message>
       <source>Remove selected presets</source>
-      <translation type="unfinished">Remove selected presets</translation>
+      <translation>Ausgewählte Vorlage entfernen</translation>
     </message>
     <message>
       <source>Load the selected preset</source>
-      <translation type="unfinished">Load the selected preset</translation>
+      <translation>Ausgewählte Vorlage laden</translation>
     </message>
   </context>
   <context>
@@ -1626,7 +1650,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>Hotkeys anpassen</translation>
     </message>
   </context>
   <context>
@@ -1652,20 +1676,12 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Emulatorsprache</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulator</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Standardregisterkarte beim Öffnen der Einstellungen</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Zeige Spielgröße in der Liste</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Startbildschirm anzeigen</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1721,15 +1737,15 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Mikrofon</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Keine</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Standardgerät</translation>
     </message>
     <message>
       <source>s</source>
@@ -1854,10 +1870,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     <message>
       <source>Check for Updates</source>
       <translation>Nach Updates suchen</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>GUI-Einstellungen</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2233,11 +2245,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Experimentelle Funktionen</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>WARNUNG: Diese Funktionen sind experimentell und sollten nur aktiviert werden, wenn ein Spiel es voraussetzt oder man dazu aufgefordert wird. Bitte frag im shadPS4 Discord Server nach, falls Fragen sind.</translation>
     </message>
     <message>
       <source>Enable Background Controller Input</source>
@@ -2249,15 +2261,15 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>Aktiviere Absturzdiagnose:\nErstellt eine .yaml-Datei mit Informationen über den Vulkan-Status zum Zeitpunkt des Absturzes.\nNützlich zum Debuggen von &apos;Device lost&apos;-Fehlern. Wenn dieser Punkt aktiviert wird, dann sollten auch Host UND Guest Debug Marker aktiviert werden.\nVulkan Validation Layers müssen aktiviert werden und Vulkan SDK wird benötigt.</translation>
     </message>
     <message>
       <source>Enable Logging</source>
-      <translation type="unfinished">Enable Logging</translation>
+      <translation>Protokollierung aktivieren</translation>
     </message>
     <message>
       <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
-      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+      <translation>Protokollierung aktivieren:\nAktiviert die Protokollierung.\nWenn Sie sich nicht sicher sind, dann ändern Sie diese Einstellung nicht!\nDiese Einstellung sollte AKTIVIERT sein, wenn Sie nach Hilfe fragen.</translation>
     </message>
     <message>
       <source>Present Mode</source>
@@ -2265,23 +2277,23 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
-      <translation type="unfinished">Mailbox (Vsync)</translation>
+      <translation>Mailbox (Vsync)</translation>
     </message>
     <message>
       <source>Fifo (Vsync)</source>
-      <translation type="unfinished">Fifo (Vsync)</translation>
+      <translation>FIFO (Vsync)</translation>
     </message>
     <message>
       <source>Immediate (No Vsync)</source>
-      <translation type="unfinished">Immediate (No Vsync)</translation>
+      <translation>Sofort (kein Vsync)</translation>
     </message>
     <message>
       <source>DLC Folder</source>
-      <translation type="unfinished">DLC Folder</translation>
+      <translation>DLC-Pfad</translation>
     </message>
     <message>
       <source>Select the DLC folder</source>
-      <translation type="unfinished">Select the DLC folder</translation>
+      <translation>Wähle einen DLC-Ordner aus</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
@@ -2289,23 +2301,23 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
-      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+      <translation>DLC-Pfad:\nDer Ordner, aus denen DLCs geladen werden können.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
-      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+      <translation>Durchsuchen:\nLege einen Ordner für DLCs fest.</translation>
     </message>
     <message>
       <source>FSR Settings</source>
-      <translation type="unfinished">FSR Settings</translation>
+      <translation>FSR Einstellungen</translation>
     </message>
     <message>
       <source>Enable FSR</source>
-      <translation type="unfinished">Enable FSR</translation>
+      <translation>FSR aktivieren</translation>
     </message>
     <message>
       <source>Enable RCAS (sharpening)</source>
-      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+      <translation>RCAS aktivieren (Schärfe)</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
@@ -2313,23 +2325,23 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Load Presets...</source>
-      <translation type="unfinished">Load Presets...</translation>
+      <translation>Vorlagen laden...</translation>
     </message>
     <message>
       <source>Log</source>
-      <translation type="unfinished">Log</translation>
+      <translation>Protokoll</translation>
     </message>
     <message>
       <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
-      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+      <translation>Protokollspeicherort öffnen:\nÖffne den Ordner, in dem die Protokolldatei gespeichert wird.</translation>
     </message>
     <message>
       <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
-      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+      <translation>Mikrofon:\nKeine: Es wird kein Mikrofon verwendet.\nStandardgerät: Verwendet das vom System festgelegte Mikrofon.\nOder wähle manuell ein Mikrofon aus der Liste aus.</translation>
     </message>
     <message>
       <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
-      <translation type="unfinished">Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</translation>
+      <translation>Lautstärke:\nSetze für alle Spiele die Lautstärke fest. Der Einstellbereich geht von 0% - 500% und der Standardwert ist 100%.</translation>
     </message>
     <message>
       <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
@@ -2345,15 +2357,71 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Vblank Frequency</source>
-      <translation type="unfinished">Vblank Frequency</translation>
-    </message>
-    <message>
-      <source>Hz</source>
-      <translation type="unfinished">Hz</translation>
+      <translation>VBlank Frequenz</translation>
     </message>
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>VBlank Frequenz:\nDie Bildrate, die der Emulator verwendet (60 Hz ist die Grundlage, ganz gleich, ob das Spiel mit 30 oder 60 FPS läuft). Dies zu ändern kann sich negativ auswirken, wie z.B. erhöhte Spielgeschwindigkeit oder fehlerhafte Spielfunktionen, die diese Änderung nicht erwarten.</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Aktiviere Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Devkit Konsolen-Modus aktivieren</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Setze den PSN-Status als angemeldet</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Setze die Netzwerkverbindung als verbunden</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Sonstiges</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Benutzeroberfläche</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Experimentel</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Zeige beim Starten eines Spiels ein Startbild</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Allgemeine Einstellungen</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>PS4 Neo-Modus aktivieren</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Aktiviere Direct Memory Access:\nAktiviert die Möglichkeit der Grafikkarte, eigenständig auf den Prozessor-Speicher zuzugreifen.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>PS4 Neo-Modus aktivieren:\nAktiviert die PS4-Pro-Emulation und erhöht den Speicher. Sorgt aktuell für Instabilität bei einer Vielzahl von getesteten Spielen.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Devkit-Konsolen-Modus aktivieren:\nAktiviert den Devkit-Modus mit mehr Speicher.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Setze die Netzwerkverbindung als verbunden:\nErzwingt Spiele die Erkennung einer aktiven Netzwerkverbindung. Online-Funktionen werden noch nicht unterstützt.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Setze den PSN-Status als angemeldet:\nErzwingt Spiele die Erkennung einer Anmeldung beim PlayStation-Network (PSN). PSN-Funktionen werden noch nicht unterstützt.</translation>
     </message>
   </context>
   <context>
