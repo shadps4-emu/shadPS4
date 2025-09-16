@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
+      <translation>shadPS4 - это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
@@ -2366,7 +2366,7 @@
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation>Установить &quot;Подключение к сети&quot; на True</translation>
+      <translation>Установить &quot;Сеть подключена&quot; на True</translation>
     </message>
     <message>
       <source>Miscellaneous</source>
@@ -2398,7 +2398,7 @@
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции и размера памяти PS4 Pro. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
+      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции PS4 Pro и размера памяти. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
