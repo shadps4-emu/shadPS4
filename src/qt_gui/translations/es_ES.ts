@@ -2246,7 +2246,7 @@
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation>Habilitar entradas de mando en segundo plano\nPermite que shadPS4 pueda detectar las pulsaciones del mando cuando la ventana de juego no esté en primer plano.</translation>
+      <translation>Habilitar entradas de mando en segundo plano:\nPermite que shadPS4 pueda detectar las pulsaciones del mando cuando la ventana de juego no esté en primer plano.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
