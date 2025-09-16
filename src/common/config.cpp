@@ -1078,14 +1078,17 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         std::vector<DirEntry> sorted_dirs;
         for (const auto& dirInfo : settings_install_dirs) {
-            sorted_dirs.push_back({string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
+            sorted_dirs.push_back(
+                {string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
         }
 
         // Sort directories alphabetically
         std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
             return std::lexicographical_compare(
                 a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
-                [](char a_char, char b_char) { return std::tolower(a_char) < std::tolower(b_char); });
+                [](char a_char, char b_char) {
+                    return std::tolower(a_char) < std::tolower(b_char);
+                });
         });
 
         for (const auto& entry : sorted_dirs) {
@@ -1101,7 +1104,8 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
         data["GUI"]["loadGameSizeEnabled"] = load_game_size;
-        data["GUI"]["addonInstallDir"] = string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+        data["GUI"]["addonInstallDir"] = 
+            string{fmt::UTF(settings_addon_install_dir.u8string()).data};
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 
