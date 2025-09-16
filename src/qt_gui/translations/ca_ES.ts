@@ -2402,23 +2402,23 @@
     </message>
     <message>
       <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
-      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+      <translation>Activa l'accés directe a memòria:\nActiva l'accés arbitrari de memòria des de la targeta gràfica a la memòria del procesador.</translation>
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+      <translation>Activa el mode Neo de PS4:\nAfegeix suport a l'emulació de PS4 Pro i la mida de memòria. Actualment causa inestabilitat en un gran nombre de jocs que s'han provat.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
-      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+      <translation>Activa el mode de consola de desenvolupament:\nAfegeix suport per la mida de memòria de la consola de desenvolupament.</translation>
     </message>
     <message>
       <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
-      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+      <translation>Estableix la connexió a xarxa com a certa:\nForça els jocs a detectar una connexió a xarxa activa. Les funcions de connexió a xarxa no estan implementades actualment.</translation>
     </message>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
-      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+      <translation>Estableix l'inici de sessió a PSN com a cert:\nForça els jocs a detectar un inici de sessió a PSN actiu. Les funcions de PSN no estan implementades actualment.</translation>
     </message>
   </context>
   <context>
