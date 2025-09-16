@@ -34,15 +34,15 @@
     </message>
     <message>
       <source>Serial: </source>
-      <translation>Serijski broj:</translation>
+      <translation>Serijski broj: </translation>
     </message>
     <message>
       <source>Version: </source>
-      <translation>Verzija:</translation>
+      <translation>Verzija: </translation>
     </message>
     <message>
       <source>Size: </source>
-      <translation>Veličina:</translation>
+      <translation>Veličina: </translation>
     </message>
     <message>
       <source>Select Cheat File:</source>
