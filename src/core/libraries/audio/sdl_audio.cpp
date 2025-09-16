@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <thread>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
-#include <common/config.h>
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
@@ -26,27 +27,36 @@ public:
         std::string port_name = port.type == OrbisAudioOutPort::PadSpk
                                     ? Config::getPadSpkOutputDevice()
                                     : Config::getMainOutputDevice();
-        u32 devId;
+        SDL_AudioDeviceID dev_id = 0;
 
         if (port_name == "None") {
             stream = nullptr;
             return;
         } else if (port_name == "Default Device") {
-            devId = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
+            dev_id = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
         } else {
             try {
-                devId = static_cast<u32>(std::stoul(port_name));
-                if (port_name != SDL_GetAudioDeviceName(devId)) {
-                    throw std::runtime_error("Invalid device ID");
+                SDL_AudioDeviceID* dev_array = SDL_GetAudioPlaybackDevices(nullptr);
+                for (; dev_array != 0;) {
+                    std::string name = static_cast<std::string>(SDL_GetAudioDeviceName(*dev_array));
+                    if (name == port_name) {
+                        dev_id = *dev_array;
+                        break;
+                    } else {
+                        dev_array++;
+                    }
+                }
+                if (dev_id == 0) {
+                    LOG_WARNING(Lib_AudioOut, "Audio device not found: {}", port_name);
                 }
             } catch (const std::exception& e) {
-                LOG_WARNING(Lib_AudioOut, "Invalid audio output device: {}", port_name);
-                devId = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
+                LOG_ERROR(Lib_AudioOut, "Invalid audio output device: {}", port_name);
+                return;
             }
         }
 
         // Open the audio stream
-        stream = SDL_OpenAudioDeviceStream(devId, &fmt, nullptr, nullptr);
+        stream = SDL_OpenAudioDeviceStream(dev_id, &fmt, nullptr, nullptr);
         if (stream == nullptr) {
             LOG_ERROR(Lib_AudioOut, "Failed to create SDL audio stream: {}", SDL_GetError());
             return;
