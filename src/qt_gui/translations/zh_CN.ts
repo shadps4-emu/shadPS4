@@ -2350,7 +2350,7 @@
     </message>
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>垂直同步频率：\n此为模拟器的帧率刷新频率（基准为60hz，无论游戏本身以30帧还是60帧运行）。修改此数值可能导致负面影响，例如游戏速度加快，或破坏游戏关键功能（因游戏本身未预设此数值可被修改）！</translation>
+      <translation>垂直同步频率：\n此为模拟器的帧率刷新频率（基准为60赫兹，无论游戏本身以30帧还是60帧运行）。修改此数值可能导致负面影响，例如游戏速度加快，或破坏游戏关键功能（因游戏本身未预设此数值可被修改）！</translation>
     </message>
     <message>
       <source>Enable Direct Memory Access</source>
