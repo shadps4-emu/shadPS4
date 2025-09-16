@@ -1104,7 +1104,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
         data["GUI"]["loadGameSizeEnabled"] = load_game_size;
-        data["GUI"]["addonInstallDir"] = 
+        data["GUI"]["addonInstallDir"] =
             string{fmt::UTF(settings_addon_install_dir.u8string()).data};
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
