@@ -2052,14 +2052,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Debug-Dump aktivieren:\nSpeichert Import-/Exportsymbole und Headerinformationen des aktuellen PS4-Programms in einem Verzeichnis.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan-Validierungsebenen aktivieren:\nAktiviert ein System, das den Zustand des Vulkan-Treibers validiert und Informationen über dessen internen Zustand protokolliert. Dies verringert die Leistung und kann möglicherweise das Verhalten der Emulation ändern.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan-Synchronisationsvalidierung aktivieren:\nAktiviert ein System, das die Zeitplanung der Rendering-Aufgaben von Vulkan validiert. Dies wird die Leistung verringern und kann möglicherweise das Verhalten der Emulation ändern.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>RenderDoc-Debugging aktivieren:\nWenn aktiviert, bietet der Emulator Kompatibilität mit Renderdoc zur Erfassung und Analyse des aktuell gerenderten Frames.</translation>
     </message>
@@ -2422,6 +2414,14 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Setze den PSN-Status als angemeldet:\nErzwingt Spiele die Erkennung einer Anmeldung beim PlayStation-Network (PSN). PSN-Funktionen werden noch nicht unterstützt.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
     </message>
   </context>
   <context>
