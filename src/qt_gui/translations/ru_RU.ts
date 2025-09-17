@@ -2414,11 +2414,11 @@
     </message>
     <message>
       <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+      <translation>Включить слои валидации Vulkan:\nВключает систему, которая проверяет состояние рендера Vulkan и логирует информацию о его внутреннем состоянии.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.\nДля этого вам нужен Vulkan SDK.</translation>
     </message>
     <message>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+      <translation>Включить валидацию синхронизации Vulkan:\nВключает систему, которая проверяет тайминг задач рендеринга Vulkan.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.\nДля этого вам нужен Vulkan SDK.</translation>
     </message>
   </context>
   <context>
