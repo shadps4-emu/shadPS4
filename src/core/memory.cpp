@@ -314,6 +314,10 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     // Certain games perform flexible mappings on loop to determine
     // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
+        LOG_ERROR(Kernel_Vmm,
+                  "Out of flexible memory, available flexible memory = {:#x}"
+                  " requested size = {:#x}",
+                  total_flexible_size - flexible_usage, size);
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
