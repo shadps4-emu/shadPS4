@@ -11,6 +11,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 
+#define SDL_INVALID_AUDIODEVICEID 0 // Defined in SDL_audio.h but not made a macro
 namespace Libraries::AudioOut {
 
 class SDLPortBackend : public PortBackend {
@@ -27,8 +28,7 @@ public:
         std::string port_name = port.type == OrbisAudioOutPort::PadSpk
                                     ? Config::getPadSpkOutputDevice()
                                     : Config::getMainOutputDevice();
-        SDL_AudioDeviceID dev_id = 0;
-
+        SDL_AudioDeviceID dev_id = SDL_INVALID_AUDIODEVICEID;
         if (port_name == "None") {
             stream = nullptr;
             return;
@@ -38,19 +38,21 @@ public:
             try {
                 SDL_AudioDeviceID* dev_array = SDL_GetAudioPlaybackDevices(nullptr);
                 for (; dev_array != 0;) {
-                    std::string name = static_cast<std::string>(SDL_GetAudioDeviceName(*dev_array));
-                    if (name == port_name) {
+                    std::string dev_name(SDL_GetAudioDeviceName(*dev_array));
+                    if (dev_name == port_name) {
                         dev_id = *dev_array;
                         break;
                     } else {
                         dev_array++;
                     }
                 }
-                if (dev_id == 0) {
+                if (dev_id == SDL_INVALID_AUDIODEVICEID) {
                     LOG_WARNING(Lib_AudioOut, "Audio device not found: {}", port_name);
+                    dev_id = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
                 }
             } catch (const std::exception& e) {
                 LOG_ERROR(Lib_AudioOut, "Invalid audio output device: {}", port_name);
+                stream = nullptr;
                 return;
             }
         }
