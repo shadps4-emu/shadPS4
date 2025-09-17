@@ -24,7 +24,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 </h1>
 
-|               Bloodborne by From Software                   |                     Hatsune Miku Project Diva F by SEGA                         |
+|               Bloodborne by From Software                   |                     Hatsune Miku Project Diva Future Tone by SEGA                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
 | ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
 
