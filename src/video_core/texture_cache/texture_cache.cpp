@@ -138,7 +138,8 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
                            image.info);
     {
         std::unique_lock lock(downloaded_images_mutex);
-        downloaded_images_queue.emplace(scheduler.CurrentTick(), image_addr, mapping.Data(), image_size);
+        downloaded_images_queue.emplace(scheduler.CurrentTick(), image_addr, mapping.Data(),
+                                        image_size);
         downloaded_images_cv.notify_one();
     }
 }
