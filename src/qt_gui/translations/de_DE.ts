@@ -2061,11 +2061,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Aktiviere Readbacks:\nAktiviert GPU-Speicher-Readbacks und -Writebacks.\nDies ist für manche Spiele erforderlich, damit sie richtig funktionieren.\nKann Stabilitäts- und/oder Leistungsprobleme verursachen.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Aktiviere Readback Linear Images:\nAktiviert das asynchrone Herunterladen von GPU-modifizierten linearen Bildern.\nKann Probleme in einigen Spielen beheben.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2265,7 +2265,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>Präsentationsmodus</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
@@ -2289,7 +2289,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>Präsentationsmodus:\nKonfiguriert, wie die Videoausgabe auf dem Bildschirm dargestellt werden soll.\n\nMailbox (Vsync): Die Frames werden mit der Aktualisierungsrate des Bildschirms synchronisiert. Neue Frames ersetzen alle ausstehenden Frames. Reduziert die Latenz, kann jedoch Frames überspringen, wenn es zu Verzögerungen kommt.\nFIFO (Vsync): Die Frames werden mit der Aktualisierungsrate des Bildschirms synchronisiert. Neue Frames werden hinter ausstehenden Frames in die Warteschlange gestellt. Stellt sicher, dass alle Frames angezeigt werden, kann jedoch die Latenz erhöhen.\nSofort (kein Vsync): Die Frames werden sofort auf dem Bildschirm angezeigt, sobald sie bereit sind. Kann zu Bildfehlern (Tearing) führen.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
@@ -2313,7 +2313,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>RCAS Dämpfung:</translation>
     </message>
     <message>
       <source>Load Presets...</source>
