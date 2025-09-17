@@ -919,18 +919,6 @@
       <translation>Kompatibilitet...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Uppdatera databasen</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visa rapport</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Skicka en rapport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Skapa genväg</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Lägg till i favoriter</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Spelspecifika inställningar...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Konfigurera spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Skapa spelspecifika inställningar från globala inställningar</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Ta bort spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Uppdatera databasen</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visa rapport</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Skicka in en rapport</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Bekräfta borttagning</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Ta bort spelspecifika inställningar?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>Emulatorspråk</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulator</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Standardflik när inställningar öppnas</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Visa spelstorlek i listan</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Visa startskärm</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Leta efter uppdateringar</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Gränssnittsinställningar</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2345,12 +2357,68 @@
       <translation>Vblank-frekvens</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank-frekvens:\nDen bildfrekvens som emulatorn uppdateras med (60 Hz är baslinjen, oavsett om spelet körs med 30 eller 60 bilder/s). Att ändra detta kan ha negativa effekter, såsom att öka spelhastigheten eller förstöra kritiska spelfunktioner som inte förväntar sig denna förändring!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Aktivera Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Aktivera Devkit-konsolläge</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Ställ in &quot;PSN signed-in&quot; till True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Ställ in &quot;Network Connected&quot; till True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Diverse</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Experimentell</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Visa startskärm när spel startas</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Allmänna frontend-inställningar</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Aktivera PS4 Neo-läge</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Aktivera direkt minnesåtkomst:\nAktiverar godtycklig minnesåtkomst från GPU till CPU-minne.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Aktivera PS4 Neo-läge:\nLägger till stöd för PS4 Pro-emulering och minnesstorlek. Orsakar för närvarande instabilitet i ett stort antal testade spel.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Aktivera Devkit-konsolläge:\nLägger till stöd för Devkit-konsollens minnesstorlek.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Ställ in Nätverk anslutet till Sant:\nTvingar spel att upptäcka en aktiv nätverksanslutning. Faktiska onlinefunktioner stöds ännu inte.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Ställ in PSN-inloggning till Sant:\nTvingar spel att upptäcka en aktiv PSN-inloggning. Faktiska PSN-funktioner stöds inte.</translation>
     </message>
   </context>
   <context>

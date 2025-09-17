@@ -27,7 +27,7 @@ static std::mutex RwlockStaticLock;
     }
 
 static int RwlockInit(PthreadRwlockT* rwlock, const PthreadRwlockAttrT* attr) {
-    PthreadRwlock* prwlock = new PthreadRwlock{};
+    auto* prwlock = new (std::nothrow) PthreadRwlock{};
     if (prwlock == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -213,7 +213,7 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_init(PthreadRwlockAttrT* rwlockattr) {
         return POSIX_EINVAL;
     }
 
-    PthreadRwlockAttrT prwlockattr = new PthreadRwlockAttr{};
+    auto prwlockattr = new (std::nothrow) PthreadRwlockAttr{};
     if (prwlockattr == nullptr) {
         return POSIX_ENOMEM;
     }

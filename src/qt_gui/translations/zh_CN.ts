@@ -615,15 +615,15 @@
     </message>
     <message>
       <source>RED</source>
-      <translation type="unfinished">RED</translation>
+      <translation>红</translation>
     </message>
     <message>
       <source>GREEN</source>
-      <translation type="unfinished">GREEN</translation>
+      <translation>绿</translation>
     </message>
     <message>
       <source>BLUE</source>
-      <translation type="unfinished">BLUE</translation>
+      <translation>蓝</translation>
     </message>
   </context>
   <context>
@@ -919,18 +919,6 @@
       <translation>兼容性...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>更新数据库</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>查看报告</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>提交报告</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>创建快捷方式</translation>
     </message>
@@ -1022,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>添加至收藏</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>游戏特定设置……</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>配置游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>从全局设置创建游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>删除游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>更新数据库</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>查看报告</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>提交报告</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>确认删除</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>删除游戏特定设置？</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1050,87 +1074,87 @@
     <name>Hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>自定义快捷键</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>控制器快捷键</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>显示FPS计数器</translation>
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>未映射</translation>
     </message>
     <message>
       <source>Quit Emulation</source>
-      <translation type="unfinished">Quit Emulation</translation>
+      <translation>退出模拟器</translation>
     </message>
     <message>
       <source>Reload Button Mappings</source>
-      <translation type="unfinished">Reload Button Mappings</translation>
+      <translation>重新加载按键映射</translation>
     </message>
     <message>
       <source>Toggle Fullscreen</source>
-      <translation type="unfinished">Toggle Fullscreen</translation>
+      <translation>全屏显示切换</translation>
     </message>
     <message>
       <source>Toggle Pause</source>
-      <translation type="unfinished">Toggle Pause</translation>
+      <translation>切换暂停</translation>
     </message>
     <message>
       <source>Keyboard Hotkeys</source>
-      <translation type="unfinished">Keyboard Hotkeys</translation>
+      <translation>键盘快捷键</translation>
     </message>
     <message>
       <source>Renderdoc Capture (for debugging only)</source>
-      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+      <translation>Renderdoc 捕获(仅供调试)</translation>
     </message>
     <message>
       <source>Toggle Mouse to Joystick Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+      <translation>切换鼠标模拟摇杆功能</translation>
     </message>
     <message>
       <source>Toggle Mouse to Gyro Emulation</source>
-      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+      <translation>切换鼠标模拟陀螺仪功能</translation>
     </message>
     <message>
       <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
-      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+      <translation>提示：每个热键最多可以同时分配三个输入</translation>
     </message>
     <message>
       <source>Save</source>
-      <translation type="unfinished">Save</translation>
+      <translation>保存</translation>
     </message>
     <message>
       <source>Apply</source>
-      <translation type="unfinished">Apply</translation>
+      <translation>应用</translation>
     </message>
     <message>
       <source>Cancel</source>
-      <translation type="unfinished">Cancel</translation>
+      <translation>取消</translation>
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation type="unfinished">Restore Defaults</translation>
+      <translation>恢复默认设置</translation>
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>无法保存</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
 
 %1</source>
-      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+      <translation>不能多次绑定任何同一输入。请重新映射以下按键的输入：
 
 %1</translation>
     </message>
     <message>
       <source>Waiting for inputs</source>
-      <translation type="unfinished">Waiting for inputs</translation>
+      <translation>正在等待输入</translation>
     </message>
   </context>
   <context>
@@ -1336,35 +1360,35 @@
     <name>LogPresetsDialog</name>
     <message>
       <source>Log Filter Presets</source>
-      <translation type="unfinished">Log Filter Presets</translation>
+      <translation>日志过滤器预设</translation>
     </message>
     <message>
       <source>Comment</source>
-      <translation type="unfinished">Comment</translation>
+      <translation>备注</translation>
     </message>
     <message>
       <source>Filter</source>
-      <translation type="unfinished">Filter</translation>
+      <translation>筛选</translation>
     </message>
     <message>
       <source>Load</source>
-      <translation type="unfinished">Load</translation>
+      <translation>加载</translation>
     </message>
     <message>
       <source>Close</source>
-      <translation type="unfinished">Close</translation>
+      <translation>关闭</translation>
     </message>
     <message>
       <source>Add a new preset after the selected row</source>
-      <translation type="unfinished">Add a new preset after the selected row</translation>
+      <translation>在所选行后添加新预设</translation>
     </message>
     <message>
       <source>Remove selected presets</source>
-      <translation type="unfinished">Remove selected presets</translation>
+      <translation>删除选中的预设</translation>
     </message>
     <message>
       <source>Load the selected preset</source>
-      <translation type="unfinished">Load the selected preset</translation>
+      <translation>加载选中的预设</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>模拟器语言</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>模拟器</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>打开设置时的默认选项卡</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>在列表中显示游戏大小</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>显示启动画面</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>检查更新</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>界面设置</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2310,47 +2322,103 @@
     </message>
     <message>
       <source>Load Presets...</source>
-      <translation type="unfinished">Load Presets...</translation>
+      <translation>加载预设……</translation>
     </message>
     <message>
       <source>Log</source>
-      <translation type="unfinished">Log</translation>
+      <translation>日志</translation>
     </message>
     <message>
       <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
-      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+      <translation>打开日志位置：\n打开保存日志文件的文件夹。</translation>
     </message>
     <message>
       <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
-      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+      <translation>麦克风：\n无：不使用麦克风。\n默认设备：将使用系统中定义的默认设备。\n或者手动从列表中选择要使用的麦克风。</translation>
     </message>
     <message>
       <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
-      <translation type="unfinished">Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</translation>
+      <translation>音量：\n调整全局游戏音量，从0-500%不等，默认100%。</translation>
     </message>
     <message>
       <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
-      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+      <translation>打开设置时的默认标签页：\n选择设置界面打开时默认显示的标签页，默认选项为“常规”。</translation>
     </message>
     <message>
       <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
-      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+      <translation>在列表中显示游戏大小：\n开启后，游戏列表将会显示每个游戏的安装容量。</translation>
     </message>
     <message>
       <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
-      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+      <translation>启用体感控制：\n启用后，若控制器支持，将使用其体感功能。</translation>
     </message>
     <message>
       <source>Vblank Frequency</source>
-      <translation type="unfinished">Vblank Frequency</translation>
-    </message>
-    <message>
-      <source>Hz</source>
-      <translation type="unfinished">Hz</translation>
+      <translation>垂直同步频率</translation>
     </message>
     <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+      <translation>垂直同步频率：\n此为模拟器的帧率刷新频率（基准为60hz，无论游戏本身以30帧还是60帧运行）。修改此数值可能导致负面影响，例如游戏速度加快，或破坏游戏关键功能（因游戏本身未预设此数值可被修改）！</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>启用直接内存访问</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>启用 Devkit 开发机模式</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>将“PSN登录状态”设为“已登录”</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>将“网络连接状态”设为“已连接”</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>其他</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>前端</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>实验性功能</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>启动游戏时显示启动画面</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>常规前端设置</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>启用 PS4 Pro 模式</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>启用直接内存访问 (DMA)：\n允许 GPU 直接访问 CPU 内存空间。（可实现高速数据传输，但可能带来稳定性风险）。</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>启用 PS4 Pro 模式：\n增加对 PS4 Pro 模拟及内存容量的支持。（注意：当前版本下，大量经测试的游戏会出现运行不稳定的情况！）。</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>启用Devkit开发机模式：\n增加对开发机内存容量的支持。</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>将“网络连接状态”设为“已连接”：\n强制让游戏检测到网络处于连接状态（注意：并不实际支持真实的在线联网功能）。</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>将“PSN登录状态”设为“已登录”：\n强制让游戏检测到PSN处于登录状态（注意：并不实际支持真实的PSN网络功能）。</translation>
     </message>
   </context>
   <context>

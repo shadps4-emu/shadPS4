@@ -29,7 +29,7 @@ PthreadAttr PthreadAttrDefault = {
     .prio = 0,
     .suspend = false,
     .flags = PthreadAttrFlags::ScopeSystem,
-    .stackaddr_attr = NULL,
+    .stackaddr_attr = nullptr,
     .stacksize_attr = ThrStackDefault,
     .guardsize_attr = 0,
     .cpusetsize = 0,
@@ -112,7 +112,7 @@ int PS4_SYSV_ABI posix_pthread_attr_getstacksize(const PthreadAttrT* attr, size_
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_init(PthreadAttrT* attr) {
-    PthreadAttrT pattr = new PthreadAttr{};
+    auto pattr = new (std::nothrow) PthreadAttr{};
     if (pattr == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -122,7 +122,7 @@ int PS4_SYSV_ABI posix_pthread_attr_init(PthreadAttrT* attr) {
 }
 
 int PS4_SYSV_ABI posix_pthread_attr_setschedpolicy(PthreadAttrT* attr, SchedPolicy policy) {
-    if (attr == NULL || *attr == NULL) {
+    if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
     } else if ((policy < SchedPolicy::Fifo) || (policy > SchedPolicy::RoundRobin)) {
         return POSIX_ENOTSUP;
@@ -216,7 +216,7 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
         return POSIX_EINVAL;
     }
     auto* thread_state = ThrState::Instance();
-    int ret = thread_state->FindThread(pthread, /*include dead*/ 0);
+    const int ret = thread_state->FindThread(pthread, /*include dead*/ false);
     if (ret != 0) {
         return ret;
     }
@@ -225,9 +225,7 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
         attr.flags |= PthreadAttrFlags::Detached;
     }
     pthread->lock.unlock();
-    if (ret == 0) {
-        memcpy(dst, &attr, sizeof(PthreadAttr));
-    }
+    memcpy(dst, &attr, sizeof(PthreadAttr));
     return ret;
 }
 

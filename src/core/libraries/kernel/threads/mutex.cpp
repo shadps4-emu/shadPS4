@@ -41,7 +41,7 @@ using CallocFun = void* (*)(size_t, size_t);
 
 static int MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, const char* name) {
     const PthreadMutexAttr* attr;
-    if (mutex_attr == NULL) {
+    if (mutex_attr == nullptr) {
         attr = &PthreadMutexattrDefault;
     } else {
         attr = mutex_attr;
@@ -52,7 +52,7 @@ static int MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
             return POSIX_EINVAL;
         }
     }
-    auto* pmutex = new PthreadMutex{};
+    auto* pmutex = new (std::nothrow) PthreadMutex{};
     if (pmutex == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -350,7 +350,7 @@ int PthreadMutex::IsOwned(Pthread* curthread) const {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(PthreadMutexAttrT* attr) {
-    PthreadMutexAttrT pattr = new PthreadMutexAttr{};
+    auto pattr = new (std::nothrow) PthreadMutexAttr{};
     if (pattr == nullptr) {
         return POSIX_ENOMEM;
     }

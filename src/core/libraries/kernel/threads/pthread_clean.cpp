@@ -16,7 +16,7 @@ void PS4_SYSV_ABI __pthread_cleanup_push_imp(PthreadCleanupFunc routine, void* a
 
 void PS4_SYSV_ABI posix_pthread_cleanup_push(PthreadCleanupFunc routine, void* arg) {
     Pthread* curthread = g_curthread;
-    PthreadCleanup* newbuf = new PthreadCleanup{};
+    auto* newbuf = new (std::nothrow) PthreadCleanup{};
     if (newbuf == nullptr) {
         return;
     }

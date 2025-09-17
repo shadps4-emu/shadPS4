@@ -919,18 +919,6 @@
       <translation>Kompatibilitet …</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Oppdater database</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Vis rapport</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Send inn en rapport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Snarvei opprettelse</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Legg til i favoritter</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Innstillinger for enkeltspill …</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Sett opp innstillinger for enkeltspill</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Lag innstillinger for enkeltspill fra globale innstillinger</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Slett innstillinger for enkeltspill</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Oppdater database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Vis rapport</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Send inn en rapport</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Bekreft sletting</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Slett innstillinger for enkeltspill?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>Emulatorspråk</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulator</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Standardfanen når innstillingene åpnes</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Vis spillstørrelse i lista</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Vis velkomstbilde</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Se etter oppdateringer</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Grensesnitt-innstillinger</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2345,12 +2357,68 @@
       <translation>Vblank-frekvens</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Vblank-frekvens:\nBildehastigheten som emulatoren oppdaterer ved, (60 hz er standard, enten om spillet kjøres med 30 eller 60 fps). Endring av dette kan ha negative effekter, som å øke hastigheten av spillet, eller ødelegge kritisk spillfunksjonalitet som ikke forventer at dette endres!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Bruk direkte minnetilgang</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Bruk utvikler-konsollmodus</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Bruk emulering av PSN-tilgang</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Bruk emulering av nettverkstilgang</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Diverse</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Grensesnitt</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Eksperimentell</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Vis velkomstbilde ved oppstart av spill</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Grensesnitt-innstillinger</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Bruk PS4 Neo-modus</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Bruk direkte minnetilgang:\nTar i bruk vilkårlig minnetilgang fra GPU-en til CPU-minne.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Bruk PS4 Neo-modus:\nTar i bruk emulering av PS4 Pro-modus og økt minnestørrelse. Forårsaker for tiden ustabilitet i et stort antall testede spill.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Bruk utvikler-konsollmodus:\nTar i bruk økt minnekapasitet som i en utvikler-konsoll.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Bruk emulering av nettverkstilgang:\nTvinger spill å oppdage nettverkstilgang. Faktisk funksjonalitet støttes ikke.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Bruk emulering av PSN-tilgang:\nTvinger spill å oppdage PSN-tilgang. Faktisk funksjonalitet støttes ikke.</translation>
     </message>
   </context>
   <context>

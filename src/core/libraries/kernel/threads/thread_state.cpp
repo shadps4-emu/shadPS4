@@ -37,7 +37,7 @@ void ThreadState::Collect(Pthread* curthread) {
         for (auto it = gc_list.begin(); it != gc_list.end();) {
             Pthread* td = *it;
             if (td->tid != TidTerminated) {
-                it++;
+                ++it;
                 continue;
             }
             FreeStack(&td->attr);
@@ -131,7 +131,7 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     }
 }
 
-int ThreadState::FindThread(Pthread* thread, bool include_dead) {
+int ThreadState::FindThread(Pthread* thread, const bool include_dead) {
     if (thread == nullptr) {
         return POSIX_EINVAL;
     }
