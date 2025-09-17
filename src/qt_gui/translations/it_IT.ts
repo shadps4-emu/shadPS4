@@ -919,18 +919,6 @@
       <translation>Compatibilità...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Aggiorna database</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visualizza rapporto</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Invia rapporto</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Creazione scorciatoia</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation>Aggiungi ai preferiti</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Impostazioni specifiche del gioco...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Configura Impostazioni Specifiche del Gioco</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Crea impostazioni specifiche per il gioco dalle Impostazioni Globali</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Cancella Impostazioni Specifiche del Gioco</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Aggiorna Database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visualizza Rapporto</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Invia Rapporto</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Conferma eliminazione</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Cancella Impostazioni Specifiche del Gioco?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>Lingua dell&apos;emulatore</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulatore</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Scheda predefinita all&apos;apertura delle impostazioni</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Mostra la dimensione del gioco nell&apos;elenco</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Mostra Schermata Iniziale</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Controlla aggiornamenti</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Impostazioni GUI</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2345,12 +2357,68 @@
       <translation>Frequenza Vblank</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation>Frequenza Vblank:\nIl frame rate col quale l'emulatore si aggiorna (60 Hz è l'impostazione predefinita, sia che il gioco giri a 30 o 60 fps). Cambiare questa impostazione potrebbe avere effetti avversi, come aumento della velocità del gioco o malfunzionamento di funzionalità critiche dei giochi che non prevedono questa modifica!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Abilita Accesso Diretto Alla Memoria</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Abilita Modalità Console Devkit</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Imposta &quot;accesso PSN&quot; come Abilitato</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Imposta &quot;Connessione di Rete&quot; come Abilitato</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Varie</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Interfaccia</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Sperimentale</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Mostra Schermata Iniziale quando si Avvia un Gioco</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Impostazioni Generali Interfaccia</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Abilita Modalità PS4 Pro</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Abilita Accesso Diretto alla Memoria:\nConsente l'accesso arbitrario alla memoria dalla GPU a quella della CPU.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Abilita la modalità Ps4 Pro:\nAggiunge il supporto per l'emulazione di PS4 Pro e della memoria della stessa modalità. Attualmente causa instabilità in un gran numero di giochi testati.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Abilita Modalità Console Devkit:\nAggiunge il supporto per la dimensione della memoria console Devkit.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Imposta Connessione alla Rete come Abilitata:\nForza i giochi a rilevare una connessione di rete attiva. Le funzionalità online non sono ancora supportate.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Imposta Connessione al PSN come Abilitata:\nForza i giochi a rilevare una connessione al PSN attiva. Le funzionalità PSN non sono ancora supportate.</translation>
     </message>
   </context>
   <context>

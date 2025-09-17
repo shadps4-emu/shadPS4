@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/polyfill_thread.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -22,9 +23,10 @@ static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-                           BufferCache& buffer_cache_, PageManager& page_manager_)
-    : instance{instance_}, scheduler{scheduler_}, buffer_cache{buffer_cache_},
-      page_manager{page_manager_}, blit_helper{instance, scheduler},
+                           AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
+                           PageManager& page_manager_)
+    : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
+      buffer_cache{buffer_cache_}, page_manager{page_manager_}, blit_helper{instance, scheduler},
       tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
@@ -51,6 +53,9 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
         std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                       DEFAULT_CRITICAL_GC_MEMORY));
     trigger_gc_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
+
+    downloaded_images_thread =
+        std::jthread([&](const std::stop_token& token) { DownloadedImagesThread(token); });
 }
 
 TextureCache::~TextureCache() = default;
@@ -131,12 +136,33 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     tile_manager.TileImage(image.image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            image.info);
-    scheduler.DeferOperation([this, image_addr, download = mapping.Data(), image_size] {
-        auto* memory = Core::Memory::Instance();
-        // Should we download directly to main memory or put contents into the buffer cache?
-        memory->TryWriteBacking(std::bit_cast<u8*>(image_addr), download, image_size);
-        buffer_cache.InvalidateMemory(image_addr, image_size, false);
-    });
+    {
+        std::unique_lock lock(downloaded_images_mutex);
+        downloaded_images_queue.emplace(scheduler.CurrentTick(), image_addr, mapping.Data(), image_size);
+        downloaded_images_cv.notify_one();
+    }
+}
+
+void TextureCache::DownloadedImagesThread(const std::stop_token& token) {
+    auto* memory = Core::Memory::Instance();
+    while (!token.stop_requested()) {
+        DownloadedImage image;
+        {
+            std::unique_lock lock{downloaded_images_mutex};
+            Common::CondvarWait(downloaded_images_cv, lock, token,
+                                [this] { return !downloaded_images_queue.empty(); });
+            if (token.stop_requested()) {
+                break;
+            }
+            image = downloaded_images_queue.front();
+            downloaded_images_queue.pop();
+        }
+
+        scheduler.GetMasterSemaphore()->Wait(image.tick);
+        memory->TryWriteBacking(std::bit_cast<u8*>(image.device_addr), image.download,
+                                image.download_size);
+        buffer_cache.InvalidateMemory(image.device_addr, image.download_size, false);
+    }
 }
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {

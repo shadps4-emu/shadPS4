@@ -919,18 +919,6 @@
       <translation>互換性...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>データベースを更新</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>レポートを表示</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>レポートを送信</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>ショートカットの作成</translation>
     </message>
@@ -1022,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>お気に入りへ追加</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>データベースを更新</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>レポートを見る</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>レポートを送信</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation type="unfinished">Confirm deletion</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>ゲーム固有の設定を削除しますか？</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1035,7 +1059,7 @@
     </message>
     <message>
       <source>Syntax</source>
-      <translation type="unfinished">Syntax</translation>
+      <translation>シンタックス</translation>
     </message>
     <message>
       <source>Special Bindings</source>
@@ -1050,15 +1074,15 @@
     <name>Hotkeys</name>
     <message>
       <source>Customize Hotkeys</source>
-      <translation type="unfinished">Customize Hotkeys</translation>
+      <translation>ホットキーのカスタマイズ</translation>
     </message>
     <message>
       <source>Controller Hotkeys</source>
-      <translation type="unfinished">Controller Hotkeys</translation>
+      <translation>コントローラーホットキー</translation>
     </message>
     <message>
       <source>Show FPS Counter</source>
-      <translation type="unfinished">Show FPS Counter</translation>
+      <translation>FPSカウンターを表示</translation>
     </message>
     <message>
       <source>unmapped</source>
@@ -1653,20 +1677,12 @@
       <translation>エミュレーターの言語</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>エミュレーター</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>設定を開くときのデフォルトタブ</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>ゲームサイズをリストに表示</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>スプラッシュ画面を表示する</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1855,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>更新を確認</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>GUI設定</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -2258,7 +2270,7 @@
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>表示モード</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
@@ -2282,7 +2294,7 @@
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>表示モード：\nビデオ出力が画面にどのように表示されるかを設定します。\n\nメールボックス：フレームは画面のリフレッシュレートと同期します。新規フレームは待機中のフレームを置き換えます。遅延は減少しますが、処理が遅れた場合にフレームがスキップされる可能性があります。\nFIFO: フレームは画面のリフレッシュレートに同期します。新規フレームは待機中のフレームの後ろにキューイングされます。全フレームの表示を保証しますが、遅延が増加する可能性があります。\n即時: フレームは準備完了次第、直ちに画面に表示されます。ティアリングが発生する可能性があります。</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
@@ -2306,7 +2318,7 @@
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>RCAS減衰率:</translation>
     </message>
     <message>
       <source>Load Presets...</source>
@@ -2345,12 +2357,68 @@
       <translation>Vblank周波数</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation>Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>ダイレクトメモリアクセスを有効にする</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>開発者コンソールモードを有効にする</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
     </message>
   </context>
   <context>
@@ -2361,11 +2429,11 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>ゲームを選択:</translation>
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>進捗度</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>

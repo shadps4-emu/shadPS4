@@ -26,7 +26,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
         TableNextColumn();
         Text("%" PRIXPTR, m.base);
         TableNextColumn();
-        Text("%llX", m.size);
+        Text("%" PRIX64, m.size);
         TableNextColumn();
         Text("%s", magic_enum::enum_name(m.type).data());
         TableNextColumn();
@@ -51,7 +51,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
     TableNextColumn();
     Text("%" PRIXPTR, m.base);
     TableNextColumn();
-    Text("%llX", m.size);
+    Text("%" PRIX64, m.size);
     TableNextColumn();
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());

@@ -10,7 +10,7 @@
 #ifdef _WIN64
 #include "common/ntapi.h"
 #else
-#include <signal.h>
+#include <csignal>
 #endif
 
 namespace Libraries::Kernel {

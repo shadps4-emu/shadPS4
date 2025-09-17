@@ -59,7 +59,7 @@ struct Mcontext {
     u64 mc_spare[6];
 };
 
-struct Stack {
+struct ExStack {
     void* ss_sp;
     std::size_t ss_size;
     int ss_flags;
@@ -75,7 +75,7 @@ struct Ucontext {
     int field1_0x10[12];
     struct Mcontext uc_mcontext;
     struct Ucontext* uc_link;
-    struct Stack uc_stack;
+    struct ExStack uc_stack;
     int uc_flags;
     int __spare[4];
     int field7_0x4f4[3];
