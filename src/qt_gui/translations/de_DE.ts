@@ -2423,6 +2423,14 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
       <translation>Aktiviere Vulkan Synchronization Validation:\nAktiviert ein System, welches das Timing der Vulkan-Renderer Aufgaben überprüft.\nDiese Funktion reduziert die Leistung und beeinflusst das Verhalten des Emulators.\nVulkan SDK wird benötigt.</translation>
     </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
