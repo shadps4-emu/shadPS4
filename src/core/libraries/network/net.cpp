@@ -802,8 +802,8 @@ u16 PS4_SYSV_ABI sceNetHtons(u16 host16) {
     return htons(host16);
 }
 
-#ifdef WIN32
-// there isn't a strlcpy function in windows so implement one
+#if defined(WIN32) || defined(__linux__)
+// there isn't a strlcpy function in windows/glibc so implement one
 u64 strlcpy(char* dst, const char* src, u64 size) {
     u64 src_len = strlen(src);
 
