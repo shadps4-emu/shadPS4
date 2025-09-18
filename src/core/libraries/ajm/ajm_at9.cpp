@@ -14,14 +14,13 @@ extern "C" {
 
 namespace Libraries::Ajm {
 
-struct RIFFChunkHeader {
-    char name[4];
+struct ChunkHeader {
+    u32 tag;
     u32 length;
 };
-static_assert(sizeof(RIFFChunkHeader) == 8);
+static_assert(sizeof(ChunkHeader) == 8);
 
 struct AudioFormat {
-    RIFFChunkHeader header;
     u16 fmt_type;
     u16 num_channels;
     u32 avg_sample_rate;
@@ -40,25 +39,21 @@ struct AudioFormat {
     u8 config_data[4];
     u32 reserved2;
 };
-static_assert(sizeof(AudioFormat) == 60);
+static_assert(sizeof(AudioFormat) == 52);
 
 struct SampleData {
-    RIFFChunkHeader header;
     u32 sample_length;
     u32 encoder_delay;
     u32 encoder_delay2;
 };
-static_assert(sizeof(SampleData) == 20);
+static_assert(sizeof(SampleData) == 12);
 
 struct RIFFHeader {
-    char riff[4];
+    u32 riff;
     u32 size;
-    char wave[4];
-    AudioFormat format;
-    SampleData samples;
-    RIFFChunkHeader data_header;
+    u32 wave;
 };
-static_assert(sizeof(RIFFHeader) == 100);
+static_assert(sizeof(RIFFHeader) == 12);
 
 AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags)
     : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {
@@ -98,22 +93,55 @@ void AjmAt9Decoder::GetInfo(void* out_info) const {
     info->next_frame_size = static_cast<Atrac9Handle*>(m_handle)->Config.FrameBytes;
 }
 
+u8 g_at9_guid[] = {0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D,
+                   0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C};
+
+void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& gapless) {
+    auto* header = reinterpret_cast<RIFFHeader*>(in_buf.data());
+    in_buf = in_buf.subspan(sizeof(RIFFHeader));
+
+    ASSERT(header->riff == 'FFIR');
+    ASSERT(header->wave == 'EVAW');
+
+    auto* chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
+    in_buf = in_buf.subspan(sizeof(ChunkHeader));
+    while (chunk->tag != 'atad') {
+        switch (chunk->tag) {
+        case ' tmf': {
+            ASSERT(chunk->length == sizeof(AudioFormat));
+            auto* fmt = reinterpret_cast<AudioFormat*>(in_buf.data());
+
+            ASSERT(fmt->fmt_type == 0xFFFE);
+            ASSERT(memcmp(fmt->guid, g_at9_guid, 16) == 0);
+            std::memcpy(m_config_data, fmt->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
+            break;
+        }
+        case 'tcaf': {
+            ASSERT(chunk->length == sizeof(SampleData));
+            auto* samples = reinterpret_cast<SampleData*>(in_buf.data());
+
+            gapless.init.total_samples = samples->sample_length;
+            gapless.init.skip_samples = samples->encoder_delay;
+            gapless.current.total_samples = gapless.init.total_samples;
+            gapless.current.skip_samples = gapless.init.skip_samples;
+            gapless.current.skipped_samples = 0;
+            break;
+        }
+        default:
+            break;
+        }
+        in_buf = in_buf.subspan(chunk->length);
+
+        chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
+        in_buf = in_buf.subspan(sizeof(ChunkHeader));
+    }
+}
+
 std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
                                                 AjmInstanceGapless& gapless) {
     if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
-        memcmp(in_buf.data(), "RIFF", 4) == 0) {
-        auto* header = reinterpret_cast<RIFFHeader*>(in_buf.data());
-        in_buf = in_buf.subspan(sizeof(RIFFHeader));
-
-        ASSERT(memcmp(header->wave, "WAVE", 4) == 0);
-        ASSERT(memcmp(header->format.header.name, "fmt ", 4) == 0);
-        ASSERT(memcmp(header->samples.header.name, "fact", 4) == 0);
-        ASSERT(memcmp(header->data_header.name, "data", 4) == 0);
-
-        std::memcpy(m_config_data, header->format.config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
-        gapless.init.total_samples = header->samples.sample_length;
-        gapless.init.skip_samples = header->samples.encoder_delay;
-
+        *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
+        ParseRIFFHeader(in_buf, gapless);
         Reset();
     }
 
