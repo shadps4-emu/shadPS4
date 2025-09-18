@@ -286,12 +286,9 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     std::scoped_lock lock{m_mutex};
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
-    int result = 0;
-    do {
-        result = ::connect(sock, &addr2, sizeof(sockaddr_in));
-        LOG_DEBUG(Lib_Net, "raw connect result = {}, errno = {}", result,
-                  result == -1 ? Common::GetLastErrorMsg() : "none");
-    } while (result == -1 && (errno == EINTR || errno == EINPROGRESS));
+    int result = ::connect(sock, &addr2, sizeof(sockaddr_in));
+    LOG_DEBUG(Lib_Net, "raw connect result = {}, errno = {}", result,
+              result == -1 ? Common::GetLastErrorMsg() : "none");
     return ConvertReturnErrorCode(result);
 }
 
@@ -526,7 +523,6 @@ int PosixSocket::GetSocketOptions(int level, int optname, void* optval, u32* opt
 
 int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
     std::scoped_lock lock{m_mutex};
-    LOG_DEBUG(Lib_Net, "called");
 
     sockaddr addr;
     convertOrbisNetSockaddrToPosix(name, &addr);

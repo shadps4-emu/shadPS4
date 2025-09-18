@@ -380,6 +380,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_ctl_codes.h
                  src/core/libraries/network/net_util.cpp
                  src/core/libraries/network/net_util.h
+                 src/core/libraries/network/net_epoll.cpp
+                 src/core/libraries/network/net_epoll.h
                  src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
@@ -1222,7 +1224,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore)
+    target_link_libraries(shadps4 PRIVATE mincore wepoll)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
