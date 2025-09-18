@@ -2053,14 +2053,6 @@
       <translation>Activa l'abocat de depuració:\nDesa els símbols d'importació i exportació i la informació de l'encapçalament del fitxer de programa de PS4 que s'està executant ara mateix.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activa les capes de validació de Vulkan:\nActiva un sistema que valida l'estat del renderitzador de Vulkan i registra informació sobre el seu ús intern.\nAixò redueix el rendiment i pot canviar el comportament de l'emulador.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activa la validació de sincronització de Vulkan:\nActiva un sistema que valida la sincronització de Vulkan en les tasques de renderització.\nAixò pot reduir el rendiment i pot canviar el comportament de l'emulació.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Activa la depuració RenderDoc:\nSi aquesta opció està activada, l'emulador tindrà compatibilitat amb RenderDoc per permetre capturar i analitzar els fotogrames renderitzats.</translation>
     </message>
@@ -2419,6 +2411,22 @@
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Estableix l'inici de sessió a PSN com a cert:\nForça els jocs a detectar un inici de sessió a PSN actiu. Les funcions de PSN no estan implementades actualment.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Activa les capes de validació de Vulkan:\nActiva un sistema que valida l'estat del renderitzador de Vulkan i registra informació sobre el seu ús intern.\nAixò redueix el rendiment i pot canviar el comportament de l'emulador.\nCal tenir el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Activa la validació de sincronització de Vulkan:\nActiva un sistema que valida la sincronització de Vulkan en les tasques de renderització.\nAixò pot reduir el rendiment i pot canviar el comportament de l'emulació.\nCal tenir el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

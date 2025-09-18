@@ -90,6 +90,11 @@ double getTrophyNotificationDuration();
 void setTrophyNotificationDuration(double newTrophyNotificationDuration,
                                    bool is_game_specific = false);
 int getCursorHideTimeout();
+void setCursorHideTimeout(int newcursorHideTimeout);
+std::string getMainOutputDevice();
+void setMainOutputDevice(std::string device);
+std::string getPadSpkOutputDevice();
+void setPadSpkOutputDevice(std::string device);
 std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
 void setMicDevice(std::string device, bool is_game_specific = false);

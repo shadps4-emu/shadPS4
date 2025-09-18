@@ -2053,14 +2053,6 @@
       <translation>Bruk feilsøkingsdumping:\nLagrer import- og eksport-symbolene og filoverskrifts-informasjonen til det nåværende kjørende PS4-programmet i en mappe.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Bruk Vulkan Validation Layers:\nAktiverer et system som bekrefter tilstanden til Vulkan-gjengiveren og loggfører informasjon om dens indre tilstand.\n Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Bruk Vulkan Synchronization Validation:\nEt system som bekrefter frekvens tiden av Vulkan-gjengivelseoppgaver.\nDette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Bruk RenderDoc feilsøking:\nHvis brukt, vil emulatoren gi kompatibilitet med RenderDoc for å tillate opptak og analyse av det nåværende gjengitte bildet.</translation>
     </message>
@@ -2419,6 +2411,22 @@
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Bruk emulering av PSN-tilgang:\nTvinger spill å oppdage PSN-tilgang. Faktisk funksjonalitet støttes ikke.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Bruk Vulkan Validation Layers:\nTar i bruk et system som bekrefter tilstanden til Vulkan-gjengiveren og loggfører informasjon om dens indre tilstand.\n Dette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.\nDu trenger Vulkan SDK for at dette skal fungere.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Bruk Vulkan Synchronization Validation:\nTar i bruk et system som bekrefter frekvens tiden av Vulkan-gjengivelseoppgaver.\nDette vil redusere ytelsen og sannsynligvis endre emulatorens atferd.\nDu trenger Vulkan SDK for at dette skal fungere.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation>Lydenhet (generelt)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation>Lydenhet (DS4-høyttaler)</translation>
     </message>
   </context>
   <context>

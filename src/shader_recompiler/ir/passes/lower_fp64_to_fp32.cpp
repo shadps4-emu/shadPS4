@@ -50,32 +50,6 @@ IR::Value F32ToPackedF64(IR::IREmitter& ir, const IR::Value& raw) {
 
 static IR::Opcode Replace(IR::Opcode op) {
     switch (op) {
-    case IR::Opcode::CompositeConstructF64x2:
-        return IR::Opcode::CompositeConstructF32x2;
-    case IR::Opcode::CompositeConstructF64x3:
-        return IR::Opcode::CompositeConstructF32x3;
-    case IR::Opcode::CompositeConstructF64x4:
-        return IR::Opcode::CompositeConstructF32x4;
-    case IR::Opcode::CompositeExtractF64x2:
-        return IR::Opcode::CompositeExtractF32x2;
-    case IR::Opcode::CompositeExtractF64x3:
-        return IR::Opcode::CompositeExtractF32x3;
-    case IR::Opcode::CompositeExtractF64x4:
-        return IR::Opcode::CompositeExtractF32x4;
-    case IR::Opcode::CompositeInsertF64x2:
-        return IR::Opcode::CompositeInsertF32x2;
-    case IR::Opcode::CompositeInsertF64x3:
-        return IR::Opcode::CompositeInsertF32x3;
-    case IR::Opcode::CompositeInsertF64x4:
-        return IR::Opcode::CompositeInsertF32x4;
-    case IR::Opcode::CompositeShuffleF64x2:
-        return IR::Opcode::CompositeShuffleF32x2;
-    case IR::Opcode::CompositeShuffleF64x3:
-        return IR::Opcode::CompositeShuffleF32x3;
-    case IR::Opcode::CompositeShuffleF64x4:
-        return IR::Opcode::CompositeShuffleF32x4;
-    case IR::Opcode::SelectF64:
-        return IR::Opcode::SelectF64;
     case IR::Opcode::FPAbs64:
         return IR::Opcode::FPAbs32;
     case IR::Opcode::FPAdd64:

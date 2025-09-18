@@ -2053,14 +2053,6 @@
       <translation>Abilita Pompaggio di Debug:\nSalva i simboli di importazione ed esportazione e le informazioni sull&apos;intestazione del file del programma PS4 attualmente in esecuzione in una directory.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Abilita Strati di Validazione Vulkan:\nAbilita un sistema che convalida lo stato del renderer Vulkan e registra informazioni sul suo stato interno. Ciò ridurrà le prestazioni e probabilmente cambierà il comportamento dell&apos;emulazione.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Abilita Validazione della Sincronizzazione Vulkan:\nAbilita un sistema che convalida il timing delle attività di rendering Vulkan. Ciò ridurrà le prestazioni e probabilmente cambierà il comportamento dell&apos;emulazione.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Abilita Debugging RenderDoc:\nSe abilitato, l&apos;emulatore fornirà compatibilità con Renderdoc per consentire la cattura e l&apos;analisi del frame attualmente reso.</translation>
     </message>
@@ -2419,6 +2411,22 @@
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Imposta Connessione al PSN come Abilitata:\nForza i giochi a rilevare una connessione al PSN attiva. Le funzionalità PSN non sono ancora supportate.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Abilita Livelli di Validazione Vulkan:\nAbilita un sistema che convalida lo stato del renderer Vulkan e registra le informazioni sul suo stato interno.\nQuesto ridurrà le prestazioni e probabilmente cambierà il comportamento dell'emulazione.\nHa bisogno dell'SDK Vulkan per funzionare.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Abilita Validazione della Sincronizzazione Vulkan:\nAbilita un sistema che convalida il timing delle attività di rendering Vulkan. Ciò ridurrà le prestazioni e probabilmente cambierà il comportamento dell' emulazione. Ha bisogno dell'SDK Vulkan per funzionare.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

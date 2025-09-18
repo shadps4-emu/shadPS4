@@ -11,7 +11,7 @@
     </message>
     <message>
       <source>shadPS4 is an experimental open-source emulator for the PlayStation 4.</source>
-      <translation>shadPS4 это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
+      <translation>shadPS4 - это экспериментальный эмулятор с открытым исходным кодом для PlayStation 4.</translation>
     </message>
     <message>
       <source>This software should not be used to play games you have not legally obtained.</source>
@@ -2053,14 +2053,6 @@
       <translation>Включить отладочные дампы:\nСохраняет символы импорта, экспорта и информацию о заголовке файла текущей исполняемой программы PS4 в папку.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Включить слои валидации Vulkan:\nВключает систему, которая проверяет состояние рендерера Vulkan и логирует информацию о его внутреннем состоянии. Это снизит производительность и, вероятно, изменит поведение эмуляции.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Включить валидацию синхронизации Vulkan:\nВключает систему, которая проверяет тайминг задач рендеринга Vulkan.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Включить отладку RenderDoc:\nЕсли включено, эмулятор обеспечит совместимость с RenderDoc, позволяя захватывать и анализировать текущие кадры во время рендеринга.</translation>
     </message>
@@ -2374,7 +2366,7 @@
     </message>
     <message>
       <source>Set &quot;Network Connected&quot; to True</source>
-      <translation>Установить &quot;Подключение к сети&quot; на True</translation>
+      <translation>Установить &quot;Сеть подключена&quot; на True</translation>
     </message>
     <message>
       <source>Miscellaneous</source>
@@ -2406,7 +2398,7 @@
     </message>
     <message>
       <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
-      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции и размера памяти PS4 Pro. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
+      <translation>Включить режим PS4 Neo:\nДобавляет поддержку эмуляции PS4 Pro и размера памяти. В настоящее время вызывает нестабильность во многих протестированных играх.</translation>
     </message>
     <message>
       <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
@@ -2419,6 +2411,22 @@
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Установить "Авторизован в PSN" на True:\nЗаставляет игры определять активный вход в PSN. Фактические возможности PSN не поддерживаются.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Включить слои валидации Vulkan:\nВключает систему, которая проверяет состояние рендера Vulkan и логирует информацию о его внутреннем состоянии.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.\nДля этого вам нужен Vulkan SDK.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Включить валидацию синхронизации Vulkan:\nВключает систему, которая проверяет тайминг задач рендеринга Vulkan.\nЭто снизит производительность и, вероятно, изменит поведение эмуляции.\nДля этого вам нужен Vulkan SDK.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

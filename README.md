@@ -24,13 +24,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 </h1>
 
-<p align="center">
-  <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/1.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/2.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/3.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/4.png" width="400">
-</p>
+|               Bloodborne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
+| :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
+| ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
+
+|                  Yakuza 0 by SEGA                     |                 DRIVECLUB™ by Evolution Studios                    |
+| :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![Yakuza screenshot](./documents/Screenshots/3.png) | ![DRIVECLUB screenshot](./documents/Screenshots/4.png) |
 
 # General information
 

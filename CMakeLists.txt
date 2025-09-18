@@ -203,7 +203,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "10")
+set(EMULATOR_VERSION_MINOR "11")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -215,7 +215,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/common/scm_rev.cpp.in" "${CMAKE_
 message("-- end git things, remote: ${GIT_REMOTE_NAME}, branch: ${GIT_BRANCH}, link: ${GIT_REMOTE_URL}")
 
 string(TOLOWER "${GIT_REMOTE_URL}" GIT_REMOTE_URL_LOWER)
-if(NOT GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" OR NOT GIT_BRANCH STREQUAL "main")
+if(NOT (GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" AND (GIT_BRANCH STREQUAL "main" OR "$ENV{GITHUB_REF}" MATCHES "refs/tags/")))
     message(STATUS "not main, disabling auto update")
     set(ENABLE_UPDATER OFF)
 endif()
@@ -380,6 +380,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_ctl_codes.h
                  src/core/libraries/network/net_util.cpp
                  src/core/libraries/network/net_util.h
+                 src/core/libraries/network/net_epoll.cpp
+                 src/core/libraries/network/net_epoll.h
                  src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
@@ -1222,7 +1224,7 @@ if (ENABLE_QT_GUI)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore)
+    target_link_libraries(shadps4 PRIVATE mincore wepoll)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:

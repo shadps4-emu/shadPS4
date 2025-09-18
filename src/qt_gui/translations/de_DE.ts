@@ -594,7 +594,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>ID: </source>
-      <translation>ID:</translation>
+      <translation>ID: </translation>
     </message>
     <message>
       <source>Default Controller Selected</source>
@@ -1011,19 +1011,19 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Game-specific Settings...</source>
-      <translation type="unfinished">Game-specific Settings...</translation>
+      <translation>Individuelle Konfiguration</translation>
     </message>
     <message>
       <source>Configure Game-specific Settings</source>
-      <translation type="unfinished">Configure Game-specific Settings</translation>
+      <translation>Individuelle Konfiguration bearbeiten</translation>
     </message>
     <message>
       <source>Create Game-specific Settings from Global Settings</source>
-      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+      <translation>Erstelle individuelle Konfiguration aus den allgemeinen Einstellungen</translation>
     </message>
     <message>
       <source>Delete Game-specific Settings</source>
-      <translation type="unfinished">Delete Game-specific Settings</translation>
+      <translation>Lösche Individuelle Konfiguration</translation>
     </message>
     <message>
       <source>Update Database</source>
@@ -1043,7 +1043,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Delete game-specific settings?</source>
-      <translation type="unfinished">Delete game-specific settings?</translation>
+      <translation>Individuelle Konfiguration löschen?</translation>
     </message>
   </context>
   <context>
@@ -1693,7 +1693,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Trophy Key</source>
-      <translation>Trophäenschlüssel</translation>
+      <translation>Trophäen-Schlüssel</translation>
     </message>
     <message>
       <source>Trophy</source>
@@ -1709,15 +1709,15 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Log Type</source>
-      <translation>Logtyp</translation>
+      <translation>Protokoll-Typ</translation>
     </message>
     <message>
       <source>Log Filter</source>
-      <translation>Log-Filter</translation>
+      <translation>Protokoll-Filter</translation>
     </message>
     <message>
       <source>Open Log Location</source>
-      <translation>Protokollspeicherort öffnen</translation>
+      <translation>Protokoll-Ordner öffnen</translation>
     </message>
     <message>
       <source>Input</source>
@@ -1729,11 +1729,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Hide Cursor</source>
-      <translation>Cursor ausblenden</translation>
+      <translation>Mauszeiger ausblenden</translation>
     </message>
     <message>
       <source>Hide Cursor Idle Timeout</source>
-      <translation>Inaktivitätszeitüberschreitung zum Ausblenden des Cursors</translation>
+      <translation>Zeit wann der Mauszeiger ausgeblendet werden soll</translation>
     </message>
     <message>
       <source>Microphone</source>
@@ -1753,7 +1753,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Controller</source>
-      <translation>Kontroller</translation>
+      <translation>Controller</translation>
     </message>
     <message>
       <source>Graphics</source>
@@ -1769,7 +1769,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Graphics Device</source>
-      <translation>Grafikgerät</translation>
+      <translation>Grafikkarte</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1789,7 +1789,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Paths</source>
-      <translation>Pfad</translation>
+      <translation>Pfade</translation>
     </message>
     <message>
       <source>Game Folders</source>
@@ -1845,11 +1845,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Aktiviere Readbacks</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Aktiviere Readback Linear Images</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1889,7 +1889,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Opacity</source>
-      <translation>Transparenz</translation>
+      <translation>Deckkraft</translation>
     </message>
     <message>
       <source>Play title music</source>
@@ -1905,7 +1905,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Display Compatibility Data</source>
-      <translation>Zeige Kompatibilitätsdaten</translation>
+      <translation>Kompatibilitätsdaten anzeigen</translation>
     </message>
     <message>
       <source>Update Compatibility Database</source>
@@ -1925,7 +1925,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Restore Defaults</source>
-      <translation>Werkseinstellungen wiederherstellen</translation>
+      <translation>Standardeinstellungen wiederherstellen</translation>
     </message>
     <message>
       <source>Close</source>
@@ -1945,7 +1945,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Show Splash Screen:\nShows the game&apos;s splash screen (a special image) while the game is starting.</source>
-      <translation>Startbildschirm anzeigen:\nZeigt beim Start einen speziellen Bildschirm (Splash) des Spiels an.</translation>
+      <translation>Startbildschirm anzeigen:\nZeigt beim Starten eines Spiels dessen Startbild an.</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence:\nDisplays the emulator icon and relevant information on your Discord profile.</source>
@@ -1965,7 +1965,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Log Filter:\nFilters the log to only print specific information.\nExamples: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\nLevels: Trace, Debug, Info, Warning, Error, Critical - in this order, a specific level silences all levels preceding it in the list and logs every level after it.</source>
-      <translation>Protokollfilter:\nFiltert das Protokoll so, dass nur bestimmte Informationen ausgegeben werden.\nBeispiele: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot; Ebenen: Trace, Debug, Info, Warning, Error, Critical - in dieser Reihenfolge, ein ausgewähltes Level blendet alle vorherigen Ebenen aus und zeigt alle nachfolgenden an.</translation>
+      <translation>Protokollfilter:\nFiltert das Protokoll so, dass nur bestimmte Informationen ausgegeben werden.\nBeispiele: &quot;Core:Trace&quot; &quot;Lib.Pad:Debug Common.Filesystem:Error&quot; &quot;*:Critical&quot;\n Ebenen: Trace, Debug, Info, Warning, Error, Critical - in dieser Reihenfolge, eine ausgewählte Ebene blendet alle vorherigen Ebenen aus und zeigt alle nachfolgenden an.</translation>
     </message>
     <message>
       <source>Update:\nRelease: Official versions released every month that may be very outdated, but are more reliable and tested.\nNightly: Development versions that have all the latest features and fixes, but may contain bugs and are less stable.</source>
@@ -1985,11 +1985,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Hide Cursor:\nChoose when the cursor will disappear:\nNever: You will always see the mouse.\nidle: Set a time for it to disappear after being idle.\nAlways: you will never see the mouse.</source>
-      <translation>Maus ausblenden:\nWählen Sie, wann der Cursor verschwinden soll:\nNie: Sie sehen die Maus immer.\nInaktiv: Legen Sie eine Zeit fest, nach der sie nach Inaktivität verschwindet.\nImmer: Sie sehen die Maus niemals.</translation>
+      <translation>Mauszeiger ausblenden:\nWähle wann der Mauszeiger verschwinden soll:\nNie: Der Mauszeiger ist immer sichtbar.\nBei Inaktivität: Der Mauszeiger verschwindet nach einer festgelegten Zeit bei nicht Nutzung.\nImmer: Der Mauszeiger ist nicht sichtbar.</translation>
     </message>
     <message>
       <source>Hide Idle Cursor Timeout:\nThe duration (seconds) after which the cursor that has been idle hides itself.</source>
-      <translation>Stellen Sie eine Zeit ein, nach der die Maus nach Inaktivität verschwinden soll.</translation>
+      <translation>Zeit wann der Mauszeiger ausgeblendet werden soll:\nStelle eine Zeit (in Sekunden) ein, nach der die Maus bei nicht Benutzung verschwinden soll.</translation>
     </message>
     <message>
       <source>Display Compatibility Data:\nDisplays game compatibility information in table view. Enable &quot;Update Compatibility On Startup&quot; to get up-to-date information.</source>
@@ -2005,11 +2005,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Never</source>
-      <translation>Niemals</translation>
+      <translation>Nie</translation>
     </message>
     <message>
       <source>Idle</source>
-      <translation>Im Leerlauf</translation>
+      <translation>Bei Inaktivität</translation>
     </message>
     <message>
       <source>Always</source>
@@ -2017,11 +2017,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Graphics Device:\nOn multiple GPU systems, select the GPU the emulator will use from the drop down list,\nor select &quot;Auto Select&quot; to automatically determine it.</source>
-      <translation>Grafikkarte:\nAuf Systemen mit mehreren GPUs wählen Sie aus einem Dropdown-Menü die GPU aus, die der Emulator verwenden wird,\noder wählen Sie &quot;Auto Select&quot;, um sie automatisch auszuwählen.</translation>
+      <translation>Grafikkarte:\nAuf Systemen mit mehreren Grafikkarten kann hier eine Grafikkarte ausgewählt werden, die der Emulator verwenden soll,\noder wählen Sie &quot;Auto Auswahl&quot;, um sie automatisch auszuwählen.</translation>
     </message>
     <message>
       <source>Width/Height:\nSets the size of the emulator window at launch, which can be resized during gameplay.\nThis is different from the in-game resolution.</source>
-      <translation>Auflösung:\nLegt die Größe des Emulator-Fensters während der Wiedergabe fest, die während der Wiedergabe geändert werden kann.\nDies unterscheidet sich von der tatsächlichen Spielauflösung.</translation>
+      <translation>Fenstergröße:\nLegt die Größe des Emulator-Fensters zum Starten fest und kann während des Spielens angepasst werden.\nDiese Einstellung ist unabhängig von der In-Game-Auflösung.</translation>
     </message>
     <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
@@ -2029,7 +2029,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Enable Null GPU:\nFor the sake of technical debugging, disables game rendering as if there were no graphics card.</source>
-      <translation>Virtuelle GPU aktivieren:\nFür das technische Debugging deaktiviert es die Spielanzeige, als ob keine Grafikkarte vorhanden wäre.</translation>
+      <translation>NULL GPU aktivieren:\nFür technisches Debugging wird sämtliches Rendering deaktiviert als wäre keine Grafikkarte vorhanden.</translation>
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
@@ -2052,14 +2052,6 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
       <translation>Debug-Dump aktivieren:\nSpeichert Import-/Exportsymbole und Headerinformationen des aktuellen PS4-Programms in einem Verzeichnis.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan-Validierungsebenen aktivieren:\nAktiviert ein System, das den Zustand des Vulkan-Treibers validiert und Informationen über dessen internen Zustand protokolliert. Dies verringert die Leistung und kann möglicherweise das Verhalten der Emulation ändern.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan-Synchronisationsvalidierung aktivieren:\nAktiviert ein System, das die Zeitplanung der Rendering-Aufgaben von Vulkan validiert. Dies wird die Leistung verringern und kann möglicherweise das Verhalten der Emulation ändern.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>RenderDoc-Debugging aktivieren:\nWenn aktiviert, bietet der Emulator Kompatibilität mit Renderdoc zur Erfassung und Analyse des aktuell gerenderten Frames.</translation>
     </message>
@@ -2069,11 +2061,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Aktiviere Readbacks:\nAktiviert GPU-Speicher-Readbacks und -Writebacks.\nDies ist für manche Spiele erforderlich, damit sie richtig funktionieren.\nKann Stabilitäts- und/oder Leistungsprobleme verursachen.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Aktiviere Readback Linear Images:\nAktiviert das asynchrone Herunterladen von GPU-modifizierten linearen Bildern.\nKann Probleme in einigen Spielen beheben.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2089,7 +2081,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation>Datenpfad speichern:\nDer Ordner, in dem Spieldaten gespeichert werden.</translation>
+      <translation>Speicherdaten-Pfad:\nDer Ordner, in den Speicherdaten gespeichert werden.</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -2129,7 +2121,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Auto Select</source>
-      <translation>Auto-Wählen</translation>
+      <translation>Auto Auswahl</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -2137,7 +2129,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Directory to save data</source>
-      <translation>Verzeichnis um Daten zu speichern</translation>
+      <translation>Verzeichnis für Speicherdaten</translation>
     </message>
     <message>
       <source>Video</source>
@@ -2165,7 +2157,7 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>W:</source>
-      <translation>W:</translation>
+      <translation>B:</translation>
     </message>
     <message>
       <source>H:</source>
@@ -2193,11 +2185,11 @@ Einzigartige Inputs können nicht öfters als einmal gebunden werden. Input-Dupl
     </message>
     <message>
       <source>Top</source>
-      <translation>Zuoberst</translation>
+      <translation>Oben</translation>
     </message>
     <message>
       <source>Bottom</source>
-      <translation>Zuunterst</translation>
+      <translation>Unten</translation>
     </message>
     <message>
       <source>Notification Duration</source>
@@ -2253,11 +2245,11 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Enable Background Controller Input</source>
-      <translation type="unfinished">Enable Background Controller Input</translation>
+      <translation>Erkenne die Controller-Eingabe im Hintergrund</translation>
     </message>
     <message>
       <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
-      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+      <translation>Erkenne die Controller-Eingabe im Hintergrund:\nErlaubt shadPS4, die Controller-Eingaben zu erkennen, wenn das Fenster nicht mehr im Fokus steht.</translation>
     </message>
     <message>
       <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
@@ -2273,7 +2265,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Present Mode</source>
-      <translation type="unfinished">Present Mode</translation>
+      <translation>Präsentationsmodus</translation>
     </message>
     <message>
       <source>Mailbox (Vsync)</source>
@@ -2297,7 +2289,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
-      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+      <translation>Präsentationsmodus:\nKonfiguriert, wie die Videoausgabe auf dem Bildschirm dargestellt werden soll.\n\nMailbox (Vsync): Die Frames werden mit der Aktualisierungsrate des Bildschirms synchronisiert. Neue Frames ersetzen alle ausstehenden Frames. Reduziert die Latenz, kann jedoch Frames überspringen, wenn es zu Verzögerungen kommt.\nFIFO (Vsync): Die Frames werden mit der Aktualisierungsrate des Bildschirms synchronisiert. Neue Frames werden hinter ausstehenden Frames in die Warteschlange gestellt. Stellt sicher, dass alle Frames angezeigt werden, kann jedoch die Latenz erhöhen.\nSofort (kein Vsync): Die Frames werden sofort auf dem Bildschirm angezeigt, sobald sie bereit sind. Kann zu Bildfehlern (Tearing) führen.</translation>
     </message>
     <message>
       <source>DLC Path:\nThe folder where game DLC loaded from.</source>
@@ -2321,7 +2313,7 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>RCAS Attenuation:</source>
-      <translation type="unfinished">RCAS Attenuation:</translation>
+      <translation>RCAS Dämpfung:</translation>
     </message>
     <message>
       <source>Load Presets...</source>
@@ -2345,15 +2337,15 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     </message>
     <message>
       <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
-      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+      <translation>Standard-Tab beim Öffnen der Einstellungen:\nWählen welcher Tab geöffnet werden soll, die Standardauswahl ist Allgemein.</translation>
     </message>
     <message>
       <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
-      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+      <translation>Zeige Spielgröße in der Liste:\nÄndert die Größe der Spiele in der Liste.</translation>
     </message>
     <message>
       <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
-      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+      <translation>Aktiviere Bewegungssteuerung:\nWenn aktiviert, dann wird die Bewegungssteuerung des Controllers verwendet, falls unterstützt wird.</translation>
     </message>
     <message>
       <source>Vblank Frequency</source>
@@ -2422,6 +2414,22 @@ Hinweis: Der Sound funktioniert nur in Qt-Versionen.</translation>
     <message>
       <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
       <translation>Setze den PSN-Status als angemeldet:\nErzwingt Spiele die Erkennung einer Anmeldung beim PlayStation-Network (PSN). PSN-Funktionen werden noch nicht unterstützt.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Aktiviere Vulkan Validation Layers:\nAktiviert ein System, welches den Status des Vulkan-Renderers überprüft und Daten über den internen Zustand sammelt.\nDiese Funktion reduziert die Leistung und beeinflusst das Verhalten des Emulators.\nVulkan SDK wird benötigt.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Aktiviere Vulkan Synchronization Validation:\nAktiviert ein System, welches das Timing der Vulkan-Renderer Aufgaben überprüft.\nDiese Funktion reduziert die Leistung und beeinflusst das Verhalten des Emulators.\nVulkan SDK wird benötigt.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>
