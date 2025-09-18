@@ -10,8 +10,6 @@ path = [
     "CMakePresets.json",
     ".github/FUNDING.yml",
     ".github/shadps4.png",
-    ".github/workflows/scripts/update_translation.sh",
-    ".github/workflows/update_translation.yml",
     ".gitmodules",
     "dist/MacOSBundleInfo.plist.in",
     "dist/net.shadps4.shadPS4.desktop",
@@ -77,7 +75,6 @@ path = [
     "src/images/game_settings.png",
     "src/shadps4.qrc",
     "src/shadps4.rc",
-    "src/qt_gui/translations/update_translation.sh",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "shadPS4 Emulator Project"
