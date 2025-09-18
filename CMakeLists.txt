@@ -1169,12 +1169,6 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
         target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
     endif()
 
-    # Add libbsd support for strlcpy and other BSD functions
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBBSD REQUIRED libbsd)
-    target_link_libraries(shadps4 PRIVATE ${LIBBSD_LIBRARIES})
-    target_include_directories(shadps4 PRIVATE ${LIBBSD_INCLUDE_DIRS})
-
     target_link_libraries(shadps4 PRIVATE uuid)
 endif()
 
