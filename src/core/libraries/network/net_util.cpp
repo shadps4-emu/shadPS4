@@ -398,5 +398,4 @@ int NetUtilInternal::ResolveHostname(const char* hostname, Libraries::Net::Orbis
     return ret;
 }
 
-
 } // namespace NetUtil

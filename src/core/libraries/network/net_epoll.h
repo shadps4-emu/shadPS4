@@ -29,7 +29,7 @@ using epoll_handle = int;
 
 struct Epoll {
     std::vector<std::pair<u32 /*netId*/, OrbisNetEpollEvent>> events{};
-    const char* name;
+    std::string name;
     epoll_handle epoll_fd;
     std::deque<u32> async_resolutions{};
 
@@ -39,7 +39,7 @@ struct Epoll {
 #else
         ASSERT(epoll_fd != -1);
 #endif
-        if (name == nullptr) {
+        if (name_ == nullptr) {
             name = "anon";
         }
     }

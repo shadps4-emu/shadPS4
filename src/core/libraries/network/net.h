@@ -427,7 +427,7 @@ int PS4_SYSV_ABI sceNetResolverConnectCreate();
 int PS4_SYSV_ABI sceNetResolverConnectDestroy();
 int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int poolid, int flags);
 int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid);
-int PS4_SYSV_ABI sceNetResolverGetError();
+int PS4_SYSV_ABI sceNetResolverGetError(OrbisNetId resolverid, s32* status);
 int PS4_SYSV_ABI sceNetResolverStartAton();
 int PS4_SYSV_ABI sceNetResolverStartAton6();
 int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* hostname,
