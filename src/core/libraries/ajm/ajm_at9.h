@@ -49,6 +49,8 @@ private:
         return output.Write(pcm_data.subspan(0, pcm_size));
     }
 
+    void ParseRIFFHeader(std::span<u8>& input, AjmInstanceGapless& gapless);
+
     const AjmFormatEncoding m_format;
     const AjmAt9CodecFlags m_flags;
     void* m_handle{};
