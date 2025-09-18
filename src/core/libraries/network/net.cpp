@@ -10,6 +10,10 @@
 #include <arpa/inet.h>
 #endif
 
+#ifdef __linux__
+#include <bsd/string.h>
+#endif
+
 #include <core/libraries/kernel/kernel.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
