@@ -2420,6 +2420,14 @@
       <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
       <translation>启用Vulkan同步验证功能：\n此功能将启用一个用于验证Vulkan渲染任务时序的系统。\n注意：这将显著降低性能，并可能改变模拟器行为！\n需要安装Vulkan SDK方可使用此功能。</translation>
     </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
+    </message>
   </context>
   <context>
     <name>TrophyViewer</name>
