@@ -51,11 +51,11 @@ struct Epoll {
     void Destroy() noexcept {
         events.clear();
 #ifdef _WIN32
-        epoll_fd = nullptr;
         epoll_close(epoll_fd);
+        epoll_fd = nullptr;
 #else
-        epoll_fd = -1;
         close(epoll_fd);
+        epoll_fd = -1;
 #endif
         name = "";
         destroyed = true;
