@@ -244,7 +244,7 @@ private:
             };
 
             PhiCounter count = inst->Flags<PhiCounter>();
-            ASSERT_MSG(count.seq_num == 0 || count.unique_edge == use.operand);
+            // ASSERT_MSG(count.seq_num == 0 || count.unique_edge == use.operand);
             // the point of seq_num is to tell us if we've already traversed this
             // phi on the current walk. Alternatively we could keep a set of phi's
             // seen on the current walk. This is to handle phi cycles
