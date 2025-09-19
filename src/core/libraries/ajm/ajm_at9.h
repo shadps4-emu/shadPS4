@@ -54,6 +54,8 @@ private:
 
     const AjmFormatEncoding m_format;
     const AjmAt9CodecFlags m_flags;
+
+    bool m_is_initialized{};
     void* m_handle{};
     u8 m_config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
     u32 m_superframe_bytes_remain{};

@@ -81,6 +81,7 @@ void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
     AjmAt9Decoder::Reset();
     m_pcm_buffer.resize(m_codec_info.frameSamples * m_codec_info.channels * GetPCMSize(m_format),
                         0);
+    m_is_initialized = true;
 }
 
 void AjmAt9Decoder::GetInfo(void* out_info) const {
@@ -142,6 +143,10 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
         *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
         ParseRIFFHeader(in_buf, gapless);
+    }
+
+    if (!m_is_initialized) {
+        return {0, 0};
     }
 
     int ret = 0;
