@@ -3,8 +3,8 @@
 
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <set>
+#include <sstream>
 #include <fmt/core.h>
 #include <hwinfo/hwinfo.h>
 
@@ -431,7 +431,7 @@ void Emulator::UpdatePlayTime(const std::string& serial) {
     }
 
     accumulated_seconds += total_seconds;
-    int hours   = accumulated_seconds / 3600;
+    int hours = accumulated_seconds / 3600;
     int minutes = (accumulated_seconds % 3600) / 60;
     int seconds = accumulated_seconds % 60;
 
