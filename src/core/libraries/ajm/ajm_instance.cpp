@@ -35,7 +35,8 @@ u8 GetPCMSize(AjmFormatEncoding format) {
     }
 }
 
-AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_flags(flags) {
+AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags)
+    : m_flags(flags), m_codec_type(codec_type) {
     switch (codec_type) {
     case AjmCodecType::At9Dec: {
         m_codec = std::make_unique<AjmAt9Decoder>(AjmFormatEncoding(flags.format),
@@ -52,6 +53,12 @@ AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_fl
     }
 }
 
+bool AjmInstance::CheckRiff(AjmJob& job) const {
+    return m_codec_type == AjmCodecType::At9Dec &&
+           True(AjmAt9CodecFlags(m_flags.codec) & AjmAt9CodecFlags::ParseRiffHeader) &&
+           *reinterpret_cast<u32*>(job.input.buffer.data()) == 'FFIR';
+}
+
 void AjmInstance::ExecuteJob(AjmJob& job) {
     const auto control_flags = job.flags.control_flags;
     if (True(control_flags & AjmJobControlFlags::Reset)) {
@@ -66,7 +73,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         LOG_TRACE(Lib_Ajm, "Initializing instance {}", job.instance_id);
         auto& params = job.input.init_params.value();
         m_codec->Initialize(&params, sizeof(params));
-        is_initialized = true;
+        m_is_initialized = true;
     }
     if (job.input.resample_parameters.has_value()) {
         LOG_ERROR(Lib_Ajm, "Unimplemented: resample parameters");
@@ -90,8 +97,13 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         }
     }
 
-    if (!is_initialized) {
-        return;
+    if (!m_is_initialized) {
+        if (CheckRiff(job)) {
+            m_is_initialized = true;
+        } else {
+            LOG_TRACE(Lib_Ajm, "Instance was not initialized");
+            return;
+        }
     }
 
     if (!job.input.buffer.empty() && !job.output.buffers.empty()) {
