@@ -117,6 +117,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             }
         }
 
+        auto total_decoded_samples = m_total_samples;
         if (m_gapless.IsEnd()) {
             in_buf = in_buf.subspan(in_buf.size());
             m_gapless.current.total_samples = m_gapless.init.total_samples;
@@ -130,7 +131,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         if (job.output.p_stream) {
             job.output.p_stream->input_consumed = in_size - in_buf.size();
             job.output.p_stream->output_written = out_size - out_buf.Size();
-            job.output.p_stream->total_decoded_samples = m_total_samples;
+            job.output.p_stream->total_decoded_samples = total_decoded_samples;
         }
     }
 
