@@ -9,6 +9,7 @@
 #include "libatrac9.h"
 
 #include <span>
+#include <vector>
 
 namespace Libraries::Ajm {
 

@@ -10,8 +10,6 @@ extern "C" {
 #include <libatrac9.h>
 }
 
-#include <vector>
-
 namespace Libraries::Ajm {
 
 struct ChunkHeader {
@@ -113,7 +111,9 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
 
             ASSERT(fmt->fmt_type == 0xFFFE);
             ASSERT(memcmp(fmt->guid, g_at9_guid, 16) == 0);
-            std::memcpy(m_config_data, fmt->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
+            AjmDecAt9InitializeParameters init_params = {};
+            std::memcpy(init_params.config_data, fmt->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
+            Initialize(&init_params, sizeof(init_params));
             break;
         }
         case 'tcaf': {
@@ -142,7 +142,6 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
         *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
         ParseRIFFHeader(in_buf, gapless);
-        Reset();
     }
 
     int ret = 0;
