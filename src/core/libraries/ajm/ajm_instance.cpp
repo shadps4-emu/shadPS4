@@ -53,19 +53,13 @@ AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags)
     }
 }
 
-bool AjmInstance::CheckRiff(AjmJob& job) const {
-    return m_codec_type == AjmCodecType::At9Dec &&
-           True(AjmAt9CodecFlags(m_flags.codec) & AjmAt9CodecFlags::ParseRiffHeader) &&
-           *reinterpret_cast<u32*>(job.input.buffer.data()) == 'FFIR';
-}
-
 void AjmInstance::ExecuteJob(AjmJob& job) {
     const auto control_flags = job.flags.control_flags;
     if (True(control_flags & AjmJobControlFlags::Reset)) {
         LOG_TRACE(Lib_Ajm, "Resetting instance {}", job.instance_id);
-        m_format = {};
-        m_gapless = {};
-        m_resample_parameters = {};
+        m_gapless.current.total_samples = m_gapless.init.total_samples;
+        m_gapless.current.skip_samples = m_gapless.init.skip_samples;
+        m_gapless.current.skipped_samples = 0;
         m_total_samples = 0;
         m_codec->Reset();
     }
@@ -73,7 +67,6 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         LOG_TRACE(Lib_Ajm, "Initializing instance {}", job.instance_id);
         auto& params = job.input.init_params.value();
         m_codec->Initialize(&params, sizeof(params));
-        m_is_initialized = true;
     }
     if (job.input.resample_parameters.has_value()) {
         LOG_ERROR(Lib_Ajm, "Unimplemented: resample parameters");
@@ -97,15 +90,6 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         }
     }
 
-    if (!m_is_initialized) {
-        if (CheckRiff(job)) {
-            m_is_initialized = true;
-        } else {
-            LOG_TRACE(Lib_Ajm, "Instance was not initialized");
-            return;
-        }
-    }
-
     if (!job.input.buffer.empty() && !job.output.buffers.empty()) {
         std::span<u8> in_buf(job.input.buffer);
         SparseOutputBuffer out_buf(job.output.buffers);
@@ -122,6 +106,9 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             }
 
             const auto [nframes, nsamples] = m_codec->ProcessData(in_buf, out_buf, m_gapless);
+            if (!nframes) {
+                break;
+            }
             frames_decoded += nframes;
             m_total_samples += nsamples;
 
@@ -134,6 +121,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             in_buf = in_buf.subspan(in_buf.size());
             m_gapless.current.total_samples = m_gapless.init.total_samples;
             m_gapless.current.skip_samples = m_gapless.init.skip_samples;
+            m_total_samples = 0;
             m_codec->Reset();
         }
         if (job.output.p_mframe) {

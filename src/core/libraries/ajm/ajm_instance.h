@@ -89,7 +89,6 @@ public:
 private:
     bool HasEnoughSpace(const SparseOutputBuffer& output) const;
     std::optional<u32> GetNumRemainingSamples() const;
-    bool CheckRiff(AjmJob& job) const;
 
     AjmInstanceFlags m_flags{};
     AjmSidebandFormat m_format{};
@@ -98,7 +97,6 @@ private:
     u32 m_total_samples{};
     AjmCodecType m_codec_type;
     std::unique_ptr<AjmCodec> m_codec;
-    bool m_is_initialized = false;
 };
 
 } // namespace Libraries::Ajm
