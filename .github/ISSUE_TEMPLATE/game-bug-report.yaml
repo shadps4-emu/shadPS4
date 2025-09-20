@@ -35,7 +35,7 @@ body:
           required: true
         - label: I have disabled all patches and cheats and the issue is still present.
           required: true
-        - label: I have all the required [system modules](https://github.com/shadps4-emu/shadPS4/wiki/I.-Quick-start-%5BUsers%5D#4-adding-modules) installed.
+        - label: I have all the required [system modules](https://github.com/shadps4-emu/shadPS4/wiki/I.-Quick-start-%5BUsers%5D#4-dumping-firmware-modules) installed.
           required: true
   - type: textarea
     id: desc

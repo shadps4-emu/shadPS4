@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
+#include <fstream>
 #include <set>
+#include <sstream>
 #include <fmt/core.h>
 #include <hwinfo/hwinfo.h>
 
@@ -389,74 +391,70 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
     }
 }
 
-#ifdef ENABLE_QT_GUI
 void Emulator::UpdatePlayTime(const std::string& serial) {
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    QString filePath = QString::fromStdString((user_dir / "play_time.txt").string());
+    const auto filePath = (user_dir / "play_time.txt").string();
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Text)) {
+    std::ifstream in(filePath);
+    if (!in && !std::ofstream(filePath)) {
         LOG_INFO(Loader, "Error opening play_time.txt");
         return;
     }
 
     auto end_time = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
-    int totalSeconds = duration.count();
+    int total_seconds = static_cast<int>(duration.count());
 
-    QTextStream in(&file);
-    QStringList lines;
-    QString content;
-    while (!in.atEnd()) {
-        content += in.readLine() + "\n";
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(in, line)) {
+        lines.push_back(line);
     }
-    file.close();
+    in.close();
 
-    QStringList existingLines = content.split('\n', Qt::SkipEmptyParts);
-    int accumulatedSeconds = 0;
+    int accumulated_seconds = 0;
     bool found = false;
 
-    for (const QString& line : existingLines) {
-        QStringList parts = line.split(' ');
-        if (parts.size() == 2 && parts[0] == QString::fromStdString(serial)) {
-            QStringList timeParts = parts[1].split(':');
-            if (timeParts.size() == 3) {
-                int hours = timeParts[0].toInt();
-                int minutes = timeParts[1].toInt();
-                int seconds = timeParts[2].toInt();
-                accumulatedSeconds = hours * 3600 + minutes * 60 + seconds;
+    for (const auto& l : lines) {
+        std::istringstream iss(l);
+        std::string s, time_str;
+        if (iss >> s >> time_str && s == serial) {
+            int h, m, s_;
+            char c1, c2;
+            std::istringstream ts(time_str);
+            if (ts >> h >> c1 >> m >> c2 >> s_ && c1 == ':' && c2 == ':') {
+                accumulated_seconds = h * 3600 + m * 60 + s_;
                 found = true;
                 break;
             }
         }
     }
-    accumulatedSeconds += totalSeconds;
-    int hours = accumulatedSeconds / 3600;
-    int minutes = (accumulatedSeconds % 3600) / 60;
-    int seconds = accumulatedSeconds % 60;
-    QString playTimeSaved = QString::number(hours) + ":" +
-                            QString::number(minutes).rightJustified(2, '0') + ":" +
-                            QString::number(seconds).rightJustified(2, '0');
 
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&file);
-        bool lineUpdated = false;
+    accumulated_seconds += total_seconds;
+    int hours = accumulated_seconds / 3600;
+    int minutes = (accumulated_seconds % 3600) / 60;
+    int seconds = accumulated_seconds % 60;
 
-        for (const QString& line : existingLines) {
-            if (line.startsWith(QString::fromStdString(serial))) {
-                out << QString::fromStdString(serial) + " " + playTimeSaved + "\n";
-                lineUpdated = true;
-            } else {
-                out << line << "\n";
-            }
-        }
+    std::string playTimeSaved = fmt::format("{:d}:{:02d}:{:02d}", hours, minutes, seconds);
 
-        if (!lineUpdated) {
-            out << QString::fromStdString(serial) + " " + playTimeSaved + "\n";
+    std::ofstream outfile(filePath, std::ios::trunc);
+    bool lineUpdated = false;
+    for (const auto& l : lines) {
+        std::istringstream iss(l);
+        std::string s;
+        if (iss >> s && s == serial) {
+            outfile << fmt::format("{} {}\n", serial, playTimeSaved);
+            lineUpdated = true;
+        } else {
+            outfile << l << "\n";
         }
     }
-    LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved.toStdString());
+
+    if (!lineUpdated) {
+        outfile << fmt::format("{} {}\n", serial, playTimeSaved);
+    }
+
+    LOG_INFO(Loader, "Playing time for {}: {}", serial, playTimeSaved);
 }
-#endif
 
 } // namespace Core
