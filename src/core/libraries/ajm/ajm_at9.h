@@ -37,8 +37,8 @@ struct AjmAt9Decoder final : AjmCodec {
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
     u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
-    std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmInstanceGapless& gapless) override;
+    std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                           AjmInstanceGapless& gapless) override;
 
 private:
     template <class T>

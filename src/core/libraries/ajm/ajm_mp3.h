@@ -71,8 +71,8 @@ public:
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
     u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
-    std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmInstanceGapless& gapless) override;
+    std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                           AjmInstanceGapless& gapless) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);

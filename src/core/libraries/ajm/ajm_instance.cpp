@@ -35,8 +35,7 @@ u8 GetPCMSize(AjmFormatEncoding format) {
     }
 }
 
-AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags)
-    : m_flags(flags), m_codec_type(codec_type) {
+AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_flags(flags) {
     switch (codec_type) {
     case AjmCodecType::At9Dec: {
         m_codec = std::make_unique<AjmAt9Decoder>(AjmFormatEncoding(flags.format),
@@ -53,15 +52,17 @@ AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags)
     }
 }
 
+void AjmInstance::Reset() {
+    m_total_samples = 0;
+    m_gapless.Reset();
+    m_codec->Reset();
+}
+
 void AjmInstance::ExecuteJob(AjmJob& job) {
     const auto control_flags = job.flags.control_flags;
     if (True(control_flags & AjmJobControlFlags::Reset)) {
         LOG_TRACE(Lib_Ajm, "Resetting instance {}", job.instance_id);
-        m_gapless.current.total_samples = m_gapless.init.total_samples;
-        m_gapless.current.skip_samples = m_gapless.init.skip_samples;
-        m_gapless.current.skipped_samples = 0;
-        m_total_samples = 0;
-        m_codec->Reset();
+        Reset();
     }
     if (job.input.init_params.has_value()) {
         LOG_TRACE(Lib_Ajm, "Initializing instance {}", job.instance_id);
@@ -78,15 +79,24 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
     }
     if (job.input.gapless_decode.has_value()) {
         auto& params = job.input.gapless_decode.value();
-        if (params.total_samples != 0) {
-            const auto max = std::max(params.total_samples, m_gapless.init.total_samples);
-            m_gapless.current.total_samples += max - m_gapless.init.total_samples;
-            m_gapless.init.total_samples = max;
+
+        const auto samples_processed =
+            m_gapless.init.total_samples - m_gapless.current.total_samples;
+        if ((params.total_samples != 0 || params.skip_samples == 0) &&
+            params.total_samples >= samples_processed) {
+            const auto sample_difference = s64(m_gapless.init.total_samples) - params.total_samples;
+
+            m_gapless.init.total_samples = params.total_samples;
+            m_gapless.current.total_samples -= sample_difference;
         }
-        if (params.skip_samples != 0) {
-            const auto max = std::max(params.skip_samples, m_gapless.init.skip_samples);
-            m_gapless.current.skip_samples += max - m_gapless.init.skip_samples;
-            m_gapless.init.skip_samples = max;
+
+        const auto samples_skipped = m_gapless.init.skip_samples - m_gapless.current.skip_samples;
+        if ((params.skip_samples != 0 || params.total_samples == 0) &&
+            params.skip_samples >= samples_skipped) {
+            const auto sample_difference = s32(m_gapless.init.skip_samples) - params.skip_samples;
+
+            m_gapless.init.skip_samples = params.skip_samples;
+            m_gapless.current.skip_samples -= sample_difference;
         }
     }
 
@@ -105,8 +115,13 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
                 }
             }
 
-            const auto [nframes, nsamples] = m_codec->ProcessData(in_buf, out_buf, m_gapless);
+            const auto [nframes, nsamples, reset] =
+                m_codec->ProcessData(in_buf, out_buf, m_gapless);
+            if (reset) {
+                m_total_samples = 0;
+            }
             if (!nframes) {
+                job.output.p_result->result = ORBIS_AJM_RESULT_NOT_INITIALIZED;
                 break;
             }
             frames_decoded += nframes;
@@ -117,13 +132,12 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             }
         }
 
-        auto total_decoded_samples = m_total_samples;
+        const auto total_decoded_samples = m_total_samples;
         if (m_gapless.IsEnd()) {
-            in_buf = in_buf.subspan(in_buf.size());
-            m_gapless.current.total_samples = m_gapless.init.total_samples;
-            m_gapless.current.skip_samples = m_gapless.init.skip_samples;
-            m_total_samples = 0;
-            m_codec->Reset();
+            if (m_flags.gapless_loop) {
+                m_gapless.Reset();
+                m_codec->Reset();
+            }
         }
         if (job.output.p_mframe) {
             job.output.p_mframe->num_frames = frames_decoded;

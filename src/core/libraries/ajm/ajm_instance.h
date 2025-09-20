@@ -65,6 +65,11 @@ struct AjmInstanceGapless {
     bool IsEnd() const {
         return init.total_samples != 0 && current.total_samples == 0;
     }
+
+    void Reset() {
+        current.total_samples = init.total_samples;
+        current.skip_samples = init.skip_samples;
+    }
 };
 
 class AjmCodec {
@@ -76,8 +81,8 @@ public:
     virtual void GetInfo(void* out_info) const = 0;
     virtual AjmSidebandFormat GetFormat() const = 0;
     virtual u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const = 0;
-    virtual std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                             AjmInstanceGapless& gapless) = 0;
+    virtual std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                                   AjmInstanceGapless& gapless) = 0;
 };
 
 class AjmInstance {
@@ -89,13 +94,13 @@ public:
 private:
     bool HasEnoughSpace(const SparseOutputBuffer& output) const;
     std::optional<u32> GetNumRemainingSamples() const;
+    void Reset();
 
     AjmInstanceFlags m_flags{};
     AjmSidebandFormat m_format{};
     AjmInstanceGapless m_gapless{};
     AjmSidebandResampleParameters m_resample_parameters{};
     u32 m_total_samples{};
-    AjmCodecType m_codec_type;
     std::unique_ptr<AjmCodec> m_codec;
 };
 
