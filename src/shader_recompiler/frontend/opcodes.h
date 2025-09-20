@@ -2244,8 +2244,6 @@ enum class InstEncoding : u32 {
     /// InstructionEncodingMask_1bit
     /// bits [31:31] - (0)
     VOP2 = 0x00000000u << 31,
-
-    ILLEGAL
 };
 
 enum class InstClass : u32 {
