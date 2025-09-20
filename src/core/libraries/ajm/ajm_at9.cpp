@@ -54,10 +54,7 @@ struct RIFFHeader {
 static_assert(sizeof(RIFFHeader) == 12);
 
 AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags)
-    : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {
-    ASSERT_MSG(m_handle, "Atrac9GetHandle failed");
-    AjmAt9Decoder::Reset();
-}
+    : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {}
 
 AjmAt9Decoder::~AjmAt9Decoder() {
     Atrac9ReleaseHandle(m_handle);
@@ -123,9 +120,7 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
 
             gapless.init.total_samples = samples->sample_length;
             gapless.init.skip_samples = samples->encoder_delay;
-            gapless.current.total_samples = gapless.init.total_samples;
-            gapless.current.skip_samples = gapless.init.skip_samples;
-            gapless.current.skipped_samples = 0;
+            gapless.Reset();
             break;
         }
         default:
@@ -138,15 +133,18 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
     }
 }
 
-std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                                AjmInstanceGapless& gapless) {
+std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
+                                                      SparseOutputBuffer& output,
+                                                      AjmInstanceGapless& gapless) {
+    bool is_reset = false;
     if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
         *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
         ParseRIFFHeader(in_buf, gapless);
+        is_reset = true;
     }
 
     if (!m_is_initialized) {
-        return {0, 0};
+        return {0, 0, is_reset};
     }
 
     int ret = 0;
@@ -213,7 +211,7 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
         m_num_frames = 0;
     }
 
-    return {1, samples_written};
+    return {1, m_codec_info.frameSamples, is_reset};
 }
 
 AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
