@@ -65,7 +65,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
 
     const auto user_key_str = Config::getTrophyKey();
     if (user_key_str.size() != 32) {
-        LOG_CRITICAL(Common_Filesystem, "Trophy decryption key is not specified");
+        LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
         return false;
     }
 
