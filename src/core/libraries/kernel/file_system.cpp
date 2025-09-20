@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ranges>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/error.h"
@@ -701,8 +702,13 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         // Socket functions handle errnos internally
         return file->socket->fstat(sb);
     }
+    case Core::FileSys::FileType::Epoll:
+    case Core::FileSys::FileType::Resolver: {
+        LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}", magic_enum::enum_name(file->type.load()));
+        break;
+    }
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("{}", u32(file->type.load()));
     }
     return ORBIS_OK;
 }
