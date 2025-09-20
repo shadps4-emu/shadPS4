@@ -27,6 +27,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
@@ -72,6 +73,10 @@ Emulator::~Emulator() {}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
+    if (waitForDebuggerBeforeRun) {
+        Debugger::WaitForDebuggerAttach();
+    }
+
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
@@ -370,13 +375,17 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     args.push_back("--override-root");
     args.push_back(Common::FS::PathToUTF8String(game_path));
 
-    if (Core::FileSys::MntPoints::ignore_game_patches) {
+    if (FileSys::MntPoints::ignore_game_patches) {
         args.push_back("--ignore-game-patch");
     }
 
     if (!MemoryPatcher::patchFile.empty()) {
         args.push_back("--patch");
         args.push_back(MemoryPatcher::patchFile);
+    }
+
+    if (waitForDebuggerBeforeRun) {
+        args.push_back("--wait-for-debugger");
     }
 
     if (guest_args.size() > 0) {
@@ -411,6 +420,8 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         LOG_ERROR(Common, "Failed to restart game: {}", GetLastError());
         return;
     }
+
+    LOG_INFO(Common, "Successfully started new instance with PID: {}", pi.dwProcessId);
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);

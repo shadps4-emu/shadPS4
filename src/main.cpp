@@ -35,6 +35,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> game_args{};
     std::optional<std::filesystem::path> game_folder;
 
+    bool waitForDebugger = false;
+
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
         {"-h",
@@ -56,6 +58,7 @@ int main(int argc, char* argv[]) {
                     "overwriting it.\n"
                     "  --override-root <folder>      Override the game root folder. Default is the "
                     "parent of game path\n"
+                    "  --wait-for-debugger           Wait for debugger to attach\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -159,6 +162,7 @@ int main(int argc, char* argv[]) {
              }
              game_folder = folder;
          }},
+        {"--wait-for-debugger", [&](int& i) { waitForDebugger = true; }},
     };
 
     if (argc == 1) {
@@ -232,6 +236,7 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;

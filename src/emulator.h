@@ -37,6 +37,7 @@ public:
     void Restart(std::filesystem::path eboot_path, const std::vector<std::string>& guest_args = {});
 
     const char* executableName;
+    bool waitForDebuggerBeforeRun{false};
 
 private:
     void LoadSystemModules(const std::string& game_serial);
