@@ -69,6 +69,7 @@ struct AjmInstanceGapless {
     void Reset() {
         current.total_samples = init.total_samples;
         current.skip_samples = init.skip_samples;
+        current.skipped_samples = 0;
     }
 };
 

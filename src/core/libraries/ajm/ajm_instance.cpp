@@ -82,21 +82,33 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
 
         const auto samples_processed =
             m_gapless.init.total_samples - m_gapless.current.total_samples;
-        if ((params.total_samples != 0 || params.skip_samples == 0) &&
-            params.total_samples >= samples_processed) {
-            const auto sample_difference = s64(m_gapless.init.total_samples) - params.total_samples;
+        if (params.total_samples != 0 || params.skip_samples == 0) {
+            if (params.total_samples >= samples_processed) {
+                const auto sample_difference =
+                    s64(m_gapless.init.total_samples) - params.total_samples;
 
-            m_gapless.init.total_samples = params.total_samples;
-            m_gapless.current.total_samples -= sample_difference;
+                m_gapless.init.total_samples = params.total_samples;
+                m_gapless.current.total_samples -= sample_difference;
+            } else {
+                LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_INVALID_PARAMETER");
+                job.output.p_result->result = ORBIS_AJM_RESULT_INVALID_PARAMETER;
+                return;
+            }
         }
 
         const auto samples_skipped = m_gapless.init.skip_samples - m_gapless.current.skip_samples;
-        if ((params.skip_samples != 0 || params.total_samples == 0) &&
-            params.skip_samples >= samples_skipped) {
-            const auto sample_difference = s32(m_gapless.init.skip_samples) - params.skip_samples;
+        if (params.skip_samples != 0 || params.total_samples == 0) {
+            if (params.skip_samples >= samples_skipped) {
+                const auto sample_difference =
+                    s32(m_gapless.init.skip_samples) - params.skip_samples;
 
-            m_gapless.init.skip_samples = params.skip_samples;
-            m_gapless.current.skip_samples -= sample_difference;
+                m_gapless.init.skip_samples = params.skip_samples;
+                m_gapless.current.skip_samples -= sample_difference;
+            } else {
+                LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_INVALID_PARAMETER");
+                job.output.p_result->result = ORBIS_AJM_RESULT_INVALID_PARAMETER;
+                return;
+            }
         }
     }
 
@@ -110,6 +122,8 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         while (!in_buf.empty() && !out_buf.IsEmpty() && !m_gapless.IsEnd()) {
             if (!HasEnoughSpace(out_buf)) {
                 if (job.output.p_mframe == nullptr || frames_decoded == 0) {
+                    LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM ({} < {})",
+                                out_buf.Size(), m_codec->GetNextFrameSize(m_gapless));
                     job.output.p_result->result = ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM;
                     break;
                 }
@@ -121,6 +135,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
                 m_total_samples = 0;
             }
             if (!nframes) {
+                LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_NOT_INITIALIZED");
                 job.output.p_result->result = ORBIS_AJM_RESULT_NOT_INITIALIZED;
                 break;
             }
@@ -133,11 +148,10 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
         }
 
         const auto total_decoded_samples = m_total_samples;
-        if (m_gapless.IsEnd()) {
-            if (m_flags.gapless_loop) {
-                m_gapless.Reset();
-                m_codec->Reset();
-            }
+        if (m_flags.gapless_loop && m_gapless.IsEnd()) {
+            in_buf = in_buf.subspan(in_buf.size());
+            m_gapless.Reset();
+            m_codec->Reset();
         }
         if (job.output.p_mframe) {
             job.output.p_mframe->num_frames = frames_decoded;

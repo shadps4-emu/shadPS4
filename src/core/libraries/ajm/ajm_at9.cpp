@@ -227,12 +227,13 @@ AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
 }
 
 u32 AjmAt9Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
-    const auto max_samples =
+    const auto skip_samples =
+        std::min<u32>(gapless.current.skip_samples, m_codec_info.frameSamples);
+    const auto samples =
         gapless.init.total_samples != 0
-            ? std::min(gapless.current.total_samples, u32(m_codec_info.frameSamples))
+            ? std::min<u32>(gapless.current.total_samples, m_codec_info.frameSamples - skip_samples)
             : m_codec_info.frameSamples;
-    const auto skip_samples = std::min(u32(gapless.current.skip_samples), max_samples);
-    return (max_samples - skip_samples) * m_codec_info.channels * GetPCMSize(m_format);
+    return samples * m_codec_info.channels * GetPCMSize(m_format);
 }
 
 } // namespace Libraries::Ajm
