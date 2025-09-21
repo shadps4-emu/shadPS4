@@ -41,8 +41,11 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
     if (Config::isDevKitConsole()) {
         const auto old_size = total_size;
+        total_size = SCE_KERNEL_TOTAL_MEM_DEV;
+        if (!is_neo) {
+            total_size -= 1280_MB;
+        }
         // Assuming 2gb is neo for now, will need to link it with sceKernelIsDevKit
-        total_size += is_neo ? 2_GB : 768_MB;
         LOG_WARNING(Kernel_Vmm,
                     "Config::isDevKitConsole is enabled! Added additional {:s} of direct memory.",
                     is_neo ? "2 GB" : "768 MB");
