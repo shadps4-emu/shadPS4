@@ -143,7 +143,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
                fmt::ptr(address));
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
-    if (vma.type != VMAType::Direct) {
+    if (vma.type != VMAType::Direct && vma.type != VMAType::Flexible) {
         return false;
     }
     u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
@@ -404,7 +404,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
         // Find a suitable physical address
         auto handle = fmem_map.begin();
-        while (handle != fmem_map.end() && !handle->second.is_free && handle->second.size < size) {
+        while (handle != fmem_map.end() && (!handle->second.is_free || handle->second.size < size)) {
             handle++;
         }
 
@@ -412,9 +412,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         const auto new_fmem_handle = CarveFmemArea(handle->second.base, size);
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = false;
-
-        // The actual physical address should be offset by total_direct_size
         phys_addr = new_fmem_area.base;
+        MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
@@ -576,10 +575,13 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
 
-        // Need to unmap from fmem_map
-        const auto new_fmem_handle = CarveFmemArea(phys_base, size);
+        // Address space unmap needs the physical_base from the start of the vma,
+        // so calculate the phys_base to unmap from here.
+        const auto unmap_phys_base = phys_base + start_in_vma;
+        const auto new_fmem_handle = CarveFmemArea(unmap_phys_base, size);
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = true;
+        MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.

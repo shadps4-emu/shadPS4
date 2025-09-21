@@ -96,7 +96,7 @@ struct FlexibleMemoryArea {
         return base + size;
     }
 
-    bool CanMergeWith(const DirectMemoryArea& next) const {
+    bool CanMergeWith(const FlexibleMemoryArea& next) const {
         if (base + size != next.base) {
             return false;
         }
