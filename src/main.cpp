@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "functional"
@@ -12,6 +12,7 @@
 #include "common/logging/backend.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
+#include "core/debugger.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
@@ -36,6 +37,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> game_folder;
 
     bool waitForDebugger = false;
+    std::optional<int> waitPid;
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -59,6 +61,7 @@ int main(int argc, char* argv[]) {
                     "  --override-root <folder>      Override the game root folder. Default is the "
                     "parent of game path\n"
                     "  --wait-for-debugger           Wait for debugger to attach\n"
+                    "  --wait-for-pid <pid>          Wait for process with specified PID to stop\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -163,7 +166,13 @@ int main(int argc, char* argv[]) {
              game_folder = folder;
          }},
         {"--wait-for-debugger", [&](int& i) { waitForDebugger = true; }},
-    };
+        {"--wait-for-pid", [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --wait-for-pid\n";
+                 exit(1);
+             }
+             waitPid = std::stoi(argv[i]);
+         }}};
 
     if (argc == 1) {
         int dummy = 0; // one does not simply pass 0 directly
@@ -231,6 +240,10 @@ int main(int argc, char* argv[]) {
             std::cerr << "Error: Game ID or file path not found: " << game_path << std::endl;
             return 1;
         }
+    }
+
+    if (waitPid.has_value()) {
+        Core::Debugger::WaitForPid(waitPid.value());
     }
 
     // Run the emulator with the resolved eboot path

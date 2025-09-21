@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ipc.h"
@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/debugger.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
 
@@ -69,15 +70,7 @@ void IPC::Init() {
         this->InputLoop();
     });
 
-    std::string currentPid;
-
-#ifdef _WIN32
-    currentPid = std::to_string(GetCurrentProcessId());
-#elif defined(__APPLE__) || defined(__linux__)
-    currentPid = std::to_string(getpid());
-#else
-#error "Unsupported architecture"
-#endif
+    std::string currentPid = std::to_string(Core::Debugger::GetCurrentPid());
 
     std::cerr << ";#IPC_ENABLED\n";
     std::cerr << ";PID\n" << currentPid << "\n";

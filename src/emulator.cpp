@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <set>
 #include <sstream>
 #include <fmt/core.h>
@@ -384,6 +385,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         args.push_back(MemoryPatcher::patchFile);
     }
 
+    args.push_back("--wait-for-pid");
+    args.push_back(std::to_string(Debugger::GetCurrentPid()));
+
     if (waitForDebuggerBeforeRun) {
         args.push_back("--wait-for-debugger");
     }
@@ -396,8 +400,10 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     }
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
+    Libraries::SaveData::Backup::StopThread();
+    Common::Log::Denitializer();
 
-#ifdef _WIN32
+#if defined(_WIN32)
     std::string cmdline;
     // Emulator executable
     cmdline += "\"";
@@ -417,16 +423,13 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                                   nullptr, &si, &pi);
 
     if (!success) {
-        LOG_ERROR(Common, "Failed to restart game: {}", GetLastError());
-        return;
+        std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
+        std::quick_exit(1);
     }
-
-    LOG_INFO(Common, "Successfully started new instance with PID: {}", pi.dwProcessId);
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-#else
-    // Linux and macOS implementation
+#elif defined(__APPLE__) || defined(__linux__)
     std::vector<char*> argv;
 
     // Emulator executable
@@ -441,18 +444,16 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     if (pid == 0) {
         // Child process - execute the new instance
         execvp(executableName, argv.data());
-        LOG_ERROR(Common, "Failed to restart game: execvp failed");
+        std::cerr << "Failed to restart game: execvp failed" << std::endl;
+        std::quick_exit(1);
+    } else if (pid < 0) {
+        std::cerr << "Failed to restart game: fork failed" << std::endl;
         std::quick_exit(1);
     }
-    if (pid > 0) {
-        LOG_INFO(Common, "Successfully started new instance with PID: {}", pid);
-    } else {
-        LOG_ERROR(Common, "Failed to restart game: fork failed");
-        return;
-    }
+#else
+#error "Unsupported platform"
 #endif
 
-    Common::Log::Denitializer();
     std::quick_exit(0);
 }
 
