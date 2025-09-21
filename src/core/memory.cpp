@@ -907,10 +907,15 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
         virtual_addr = min_search_address;
     }
 
-    // If the requested address is beyond the maximum our code can handle, throw an assert
+    // If the requested address is beyond the maximum our code can handle, handle gracefully
     auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
-    ASSERT_MSG(virtual_addr <= max_search_address, "Input address {:#x} is out of bounds",
-               virtual_addr);
+    
+    // Replace assertion with proper error handling for high memory addresses
+    if (virtual_addr > max_search_address) {
+        LOG_ERROR(Kernel_Vmm, "Input address {:#x} is out of bounds, max is {:#x}", 
+                 virtual_addr, max_search_address);
+        return -1;
+    }
 
     // Align up the virtual_addr first.
     virtual_addr = Common::AlignUp(virtual_addr, alignment);

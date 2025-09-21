@@ -170,9 +170,21 @@ public:
 
     bool IsValidAddress(const void* addr) const noexcept {
         const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
-        const auto end_it = std::prev(vma_map.end());
-        const VAddr end_addr = end_it->first + end_it->second.size;
-        return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
+        
+        // Check if address is within any of our defined memory regions
+        const VAddr system_managed_start = impl.SystemManagedVirtualBase();
+        const VAddr system_managed_end = system_managed_start + impl.SystemManagedVirtualSize();
+        
+        const VAddr system_reserved_start = impl.SystemReservedVirtualBase();
+        const VAddr system_reserved_end = system_reserved_start + impl.SystemReservedVirtualSize();
+        
+        const VAddr user_start = impl.UserVirtualBase();
+        const VAddr user_end = user_start + impl.UserVirtualSize();
+        
+        // Check if address is in any valid region
+        return (virtual_addr >= system_managed_start && virtual_addr < system_managed_end) ||
+            (virtual_addr >= system_reserved_start && virtual_addr < system_reserved_end) ||
+            (virtual_addr >= user_start && virtual_addr < user_end);
     }
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
