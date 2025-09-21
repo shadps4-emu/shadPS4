@@ -87,6 +87,26 @@ struct DirectMemoryArea {
     }
 };
 
+struct FlexibleMemoryArea {
+    PAddr base = 0;
+    u64 size = 0;
+    bool is_free = true;
+
+    PAddr GetEnd() const {
+        return base + size;
+    }
+
+    bool CanMergeWith(const DirectMemoryArea& next) const {
+        if (base + size != next.base) {
+            return false;
+        }
+        if (is_free != next.is_free) {
+            return false;
+        }
+        return true;
+    }
+};
+
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
@@ -130,6 +150,9 @@ struct VirtualMemoryArea {
 class MemoryManager {
     using DMemMap = std::map<PAddr, DirectMemoryArea>;
     using DMemHandle = DMemMap::iterator;
+
+    using FMemMap = std::map<PAddr, FlexibleMemoryArea>;
+    using FMemHandle = FMemMap::iterator;
 
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
     using VMAHandle = VMAMap::iterator;
@@ -238,6 +261,10 @@ private:
         return std::prev(dmem_map.upper_bound(target));
     }
 
+    FMemHandle FindFmemArea(PAddr target) {
+        return std::prev(fmem_map.upper_bound(target));
+    }
+
     template <typename Handle>
     Handle MergeAdjacent(auto& handle_map, Handle iter) {
         const auto next_vma = std::next(iter);
@@ -264,9 +291,13 @@ private:
 
     DMemHandle CarveDmemArea(PAddr addr, u64 size);
 
+    FMemHandle CarveFmemArea(PAddr addr, u64 size);
+
     VMAHandle Split(VMAHandle vma_handle, u64 offset_in_vma);
 
     DMemHandle Split(DMemHandle dmem_handle, u64 offset_in_area);
+
+    FMemHandle Split(FMemHandle fmem_handle, u64 offset_in_area);
 
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
@@ -275,6 +306,7 @@ private:
 private:
     AddressSpace impl;
     DMemMap dmem_map;
+    FMemMap fmem_map;
     VMAMap vma_map;
     std::mutex mutex;
     u64 total_direct_size{};

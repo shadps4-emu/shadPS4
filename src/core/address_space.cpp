@@ -579,9 +579,9 @@ void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VA
     // the entire allocation and remap the portions outside of the requested unmapping range.
     impl->Unmap(virtual_addr, size, has_backing && !readonly_file);
 
-    // TODO: Determine if any titles require partial unmapping support for flexible allocations.
+    // TODO: Determine if any titles require partial unmapping support for un-backed allocations.
     ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
-               "Partial unmapping of flexible allocations is not supported");
+               "Partial unmapping of un-backed allocations is not supported");
 
     if (start_in_vma != 0) {
         Map(virtual_addr, start_in_vma, 0, phys_base, is_exec);

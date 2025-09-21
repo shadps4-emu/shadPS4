@@ -66,6 +66,11 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     dmem_map.clear();
     dmem_map.emplace(0, DirectMemoryArea{0, total_direct_size});
 
+    // Insert an area that covers flexible memory physical block.
+    // Note that this should never be called after flexible memory allocations have been made.
+    fmem_map.clear();
+    fmem_map.emplace(total_direct_size, FlexibleMemoryArea{total_direct_size, total_flexible_size});
+
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
 }
@@ -393,8 +398,23 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     auto& new_vma = new_vma_handle->second;
 
     // If type is Flexible, we need to track how much flexible memory is used here.
+    // We also need to determine a reasonable physical base to perform this mapping at.
     if (type == VMAType::Flexible) {
         flexible_usage += size;
+
+        // Find a suitable physical address
+        auto handle = fmem_map.begin();
+        while (handle != fmem_map.end() && !handle->second.is_free && handle->second.size < size) {
+            handle++;
+        }
+
+        // We'll use the start of this area as the physical backing for this mapping.
+        const auto new_fmem_handle = CarveFmemArea(handle->second.base, size);
+        auto& new_fmem_area = new_fmem_handle->second;
+        new_fmem_area.is_free = false;
+
+        // The actual physical address should be offset by total_direct_size
+        phys_addr = new_fmem_area.base;
     }
 
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
@@ -545,7 +565,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto adjusted_size =
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
-    const bool has_backing = type == VMAType::Direct || type == VMAType::File;
+    const bool has_backing = type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::File;
     const auto prot = vma_base.prot;
     const bool readonly_file = prot == MemoryProt::CpuRead && type == VMAType::File;
 
@@ -555,6 +575,11 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
+
+        // Need to unmap from fmem_map
+        const auto new_fmem_handle = CarveFmemArea(phys_base, size);
+        auto& new_fmem_area = new_fmem_handle->second;
+        new_fmem_area.is_free = true;
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
@@ -724,7 +749,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     const auto& vma = it->second;
     info->start = vma.base;
     info->end = vma.base + vma.size;
-    info->offset = vma.phys_base;
+    info->offset = vma.type == VMAType::Flexible ? 0 : vma.phys_base;
     info->protection = static_cast<s32>(vma.prot);
     info->is_flexible = vma.type == VMAType::Flexible ? 1 : 0;
     info->is_direct = vma.type == VMAType::Direct ? 1 : 0;
@@ -1015,6 +1040,30 @@ MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, u64 size) {
     return dmem_handle;
 }
 
+MemoryManager::FMemHandle MemoryManager::CarveFmemArea(PAddr addr, u64 size) {
+    auto fmem_handle = FindFmemArea(addr);
+    ASSERT_MSG(addr <= fmem_handle->second.GetEnd(), "Physical address not in fmem_map");
+
+    const FlexibleMemoryArea& area = fmem_handle->second;
+    ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
+
+    const PAddr start_in_area = addr - area.base;
+    const PAddr end_in_vma = start_in_area + size;
+    ASSERT_MSG(end_in_vma <= area.size, "Mapping cannot fit inside free region: size = {:#x}",
+               size);
+
+    if (end_in_vma != area.size) {
+        // Split VMA at the end of the allocated region
+        Split(fmem_handle, end_in_vma);
+    }
+    if (start_in_area != 0) {
+        // Split VMA at the start of the allocated region
+        fmem_handle = Split(fmem_handle, start_in_area);
+    }
+
+    return fmem_handle;
+}
+
 MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_in_vma) {
     auto& old_vma = vma_handle->second;
     ASSERT(offset_in_vma < old_vma.size && offset_in_vma > 0);
@@ -1040,6 +1089,18 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, u64 offse
     new_area.size -= offset_in_area;
 
     return dmem_map.emplace_hint(std::next(dmem_handle), new_area.base, new_area);
+}
+
+MemoryManager::FMemHandle MemoryManager::Split(FMemHandle fmem_handle, u64 offset_in_area) {
+    auto& old_area = fmem_handle->second;
+    ASSERT(offset_in_area < old_area.size && offset_in_area > 0);
+
+    auto new_area = old_area;
+    old_area.size = offset_in_area;
+    new_area.base += offset_in_area;
+    new_area.size -= offset_in_area;
+
+    return fmem_map.emplace_hint(std::next(fmem_handle), new_area.base, new_area);
 }
 
 } // namespace Core
