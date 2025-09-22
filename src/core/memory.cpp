@@ -896,10 +896,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
         // Nothing needs to be done to free VMAs
         if (!it->second.IsFree()) {
             if (remaining_size < it->second.size) {
-                // We should split VMAs here, but this could cause trouble for Windows.
-                // Instead log a warning and name the whole VMA.
-                // it = CarveVMA(current_addr, remaining_size);
-                LOG_WARNING(Kernel_Vmm, "Trying to partially name a range");
+                it = CarveVMA(current_addr, remaining_size);
             }
             auto& vma = it->second;
             vma.name = name;
