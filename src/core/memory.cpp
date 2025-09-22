@@ -143,7 +143,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
                fmt::ptr(address));
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
-    if (HasPhysicalBacking(vma)) {
+    if (!HasPhysicalBacking(vma)) {
         return false;
     }
     u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
