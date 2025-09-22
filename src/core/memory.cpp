@@ -404,9 +404,12 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
         // Find a suitable physical address
         auto handle = fmem_map.begin();
-        while (handle != fmem_map.end() && (!handle->second.is_free || handle->second.size < size)) {
+        while (handle != fmem_map.end() &&
+               (!handle->second.is_free || handle->second.size < size)) {
             handle++;
         }
+
+        ASSERT_MSG(handle->second.is_free, "Out of flexible memory");
 
         // We'll use the start of this area as the physical backing for this mapping.
         const auto new_fmem_handle = CarveFmemArea(handle->second.base, size);
@@ -564,7 +567,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto adjusted_size =
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
-    const bool has_backing = type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::File;
+    const bool has_backing =
+        type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::File;
     const auto prot = vma_base.prot;
     const bool readonly_file = prot == MemoryProt::CpuRead && type == VMAType::File;
 
