@@ -38,19 +38,9 @@ MemoryManager::~MemoryManager() = default;
 void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
-    auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
+    auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
     if (Config::isDevKitConsole()) {
-        const auto old_size = total_size;
-        total_size = SCE_KERNEL_TOTAL_MEM_DEV;
-        if (!is_neo) {
-            total_size -= 1280_MB;
-        }
-        // Assuming 2gb is neo for now, will need to link it with sceKernelIsDevKit
-        LOG_WARNING(Kernel_Vmm,
-                    "Config::isDevKitConsole is enabled! Added additional {:s} of direct memory.",
-                    is_neo ? "2 GB" : "768 MB");
-        LOG_WARNING(Kernel_Vmm, "Old Direct Size: {:#x} -> New Direct Size: {:#x}", old_size,
-                    total_size);
+        total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
@@ -58,7 +48,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
-    total_flexible_size = flexible_size - SCE_FLEXIBLE_MEMORY_BASE;
+    total_flexible_size = flexible_size - ORBIS_FLEXIBLE_MEMORY_BASE;
     total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers direct memory physical block.
@@ -794,7 +784,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
         ASSERT_MSG(vma.phys_base <= dmem_it->second.GetEnd(), "vma.phys_base is not in dmem_map!");
         info->memory_type = dmem_it->second.memory_type;
     } else {
-        info->memory_type = ::Libraries::Kernel::SCE_KERNEL_WB_ONION;
+        info->memory_type = ::Libraries::Kernel::ORBIS_KERNEL_WB_ONION;
     }
 
     return ORBIS_OK;
