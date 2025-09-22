@@ -593,6 +593,11 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
 
+        // Now that there is a physical backing used for flexible memory,
+        // manually erase the contents before unmapping to prevent possible issues.
+        const auto unmap_hardware_address = impl.BackingBase() + phys_base + start_in_vma;
+        std::memset(unmap_hardware_address, 0, adjusted_size);
+
         // Address space unmap needs the physical_base from the start of the vma,
         // so calculate the phys_base to unmap from here.
         const auto unmap_phys_base = phys_base + start_in_vma;
