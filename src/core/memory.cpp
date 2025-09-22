@@ -301,10 +301,26 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
     new_vma.name = "anon";
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
-    new_vma.phys_base = 0;
+
+    // Find a suitable physical address
+    auto handle = dmem_map.begin();
+    while (handle != dmem_map.end() && (!handle->second.is_pooled || handle->second.size < size)) {
+        handle++;
+    }
+
+    ASSERT_MSG(handle->second.is_pooled, "Out of pooled memory");
+
+    // Use the start of this area as the physical backing for this mapping.
+    const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
+    auto& new_dmem_area = new_dmem_handle->second;
+    new_dmem_area.is_free = false;
+    new_dmem_area.is_pooled = false;
+    new_dmem_area.is_committed = true;
+    new_vma.phys_base = new_dmem_area.base;
+    MergeAdjacent(dmem_map, new_dmem_handle);
 
     // Perform the mapping
-    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
+    void* out_addr = impl.Map(mapped_addr, size, alignment, new_vma.phys_base, false);
     TRACK_ALLOC(out_addr, size, "VMEM");
 
     if (IsValidGpuMapping(mapped_addr, size)) {
@@ -531,9 +547,18 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
         // Track how much pooled memory is decommitted
         pool_budget += size;
+
+        // Re-pool the direct memory used by this mapping
+        const auto unmap_phys_base = phys_base + start_in_vma;
+        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, size);
+        auto& new_dmem_area = new_dmem_handle->second;
+        new_dmem_area.is_free = false;
+        new_dmem_area.is_pooled = true;
+        new_dmem_area.is_committed = false;
+        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
-    // Mark region as free and attempt to coalesce it with neighbours.
+    // Mark region as pool reserved and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, size);
     auto& vma = new_it->second;
     vma.type = VMAType::PoolReserved;
@@ -546,7 +571,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     if (type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
-                   is_exec, false, false);
+                   is_exec, true, false);
         TRACK_FREE(virtual_addr, "VMEM");
     }
 

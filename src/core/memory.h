@@ -67,6 +67,7 @@ struct DirectMemoryArea {
     u64 size = 0;
     s32 memory_type = 0;
     bool is_pooled = false;
+    bool is_committed = false;
     bool is_free = true;
 
     PAddr GetEnd() const {
@@ -80,7 +81,8 @@ struct DirectMemoryArea {
         if (memory_type != next.memory_type) {
             return false;
         }
-        if (is_free != next.is_free) {
+        if (is_free != next.is_free || is_pooled != next.is_pooled ||
+            is_committed != next.is_committed) {
             return false;
         }
         return true;
@@ -137,7 +139,7 @@ struct VirtualMemoryArea {
         if (base + size != next.base) {
             return false;
         }
-        if ((type == VMAType::Direct || type == VMAType::Flexible) &&
+        if ((type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::Pooled) &&
             phys_base + size != next.phys_base) {
             return false;
         }
@@ -287,7 +289,8 @@ private:
     }
 
     bool HasPhysicalBacking(VirtualMemoryArea vma) {
-        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible;
+        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
+               vma.type == VMAType::Pooled;
     }
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
