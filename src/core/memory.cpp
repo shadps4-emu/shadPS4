@@ -893,21 +893,18 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
     s64 remaining_size = aligned_size;
     auto current_addr = aligned_addr;
     while (remaining_size > 0) {
-        const auto start_in_vma = current_addr - it->second.base;
-        const auto size_in_vma = start_in_vma + aligned_size;
-        const auto size_to_rename = start_in_vma + size_in_vma > it->second.size
-                                        ? it->second.size - start_in_vma
-                                        : size_in_vma;
         // Nothing needs to be done to free VMAs
         if (!it->second.IsFree()) {
             if (remaining_size < it->second.size) {
-                it = CarveVMA(current_addr, size_to_rename);
+                // We should split VMAs here, but this could cause trouble for Windows.
+                // Instead log a warning and name the whole VMA.
+                LOG_WARNING(Kernel_Vmm, "Trying to partially name a range");
             }
             auto& vma = it->second;
             vma.name = name;
         }
-        remaining_size -= size_to_rename;
-        current_addr += size_to_rename;
+        remaining_size -= it->second.size;
+        current_addr += it->second.size;
         it = FindVMA(current_addr);
     }
 }
