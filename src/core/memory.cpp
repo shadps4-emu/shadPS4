@@ -578,7 +578,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         // Address space unmap needs the physical_base from the start of the vma,
         // so calculate the phys_base to unmap from here.
         const auto unmap_phys_base = phys_base + start_in_vma;
-        const auto new_fmem_handle = CarveFmemArea(unmap_phys_base, size);
+        const auto new_fmem_handle = CarveFmemArea(unmap_phys_base, adjusted_size);
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = true;
         MergeAdjacent(fmem_map, new_fmem_handle);
