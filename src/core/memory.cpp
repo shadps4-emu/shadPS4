@@ -143,7 +143,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
                fmt::ptr(address));
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
-    if (vma.type != VMAType::Direct && vma.type != VMAType::Flexible) {
+    if (HasPhysicalBacking(vma)) {
         return false;
     }
     u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
@@ -567,8 +567,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto adjusted_size =
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
-    const bool has_backing =
-        type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::File;
+    const bool has_backing = HasPhysicalBacking(vma_base) || type == VMAType::File;
     const auto prot = vma_base.prot;
     const bool readonly_file = prot == MemoryProt::CpuRead && type == VMAType::File;
 
@@ -1079,7 +1078,7 @@ MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_i
     new_vma.base += offset_in_vma;
     new_vma.size -= offset_in_vma;
 
-    if (new_vma.type == VMAType::Direct) {
+    if (HasPhysicalBacking(new_vma)) {
         new_vma.phys_base += offset_in_vma;
     }
     return vma_map.emplace_hint(std::next(vma_handle), new_vma.base, new_vma);

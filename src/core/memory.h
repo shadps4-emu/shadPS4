@@ -285,6 +285,10 @@ private:
         return iter;
     }
 
+    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible;
+    }
+
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
