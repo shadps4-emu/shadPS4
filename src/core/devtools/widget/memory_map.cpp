@@ -44,7 +44,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
         return false;
     }
     auto m = dmem.it->second;
-    if (m.is_free) {
+    if (m.dma_type == DMAType::Free) {
         ++dmem.it;
         return DrawLine();
     }
@@ -56,7 +56,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());
     TableNextColumn();
-    Text("%d", m.is_pooled);
+    Text("%d", m.dma_type == DMAType::Pooled || m.dma_type == DMAType::Committed);
     ++dmem.it;
     return true;
 }

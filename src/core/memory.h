@@ -50,6 +50,14 @@ enum class MemoryMapFlags : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
 
+enum class DMAType : u32 {
+    Free = 0,
+    Allocated = 1,
+    Mapped = 2,
+    Pooled = 3,
+    Committed = 4,
+};
+
 enum class VMAType : u32 {
     Free = 0,
     Reserved = 1,
@@ -66,9 +74,7 @@ struct DirectMemoryArea {
     PAddr base = 0;
     u64 size = 0;
     s32 memory_type = 0;
-    bool is_pooled = false;
-    bool is_committed = false;
-    bool is_free = true;
+    DMAType dma_type = DMAType::Free;
 
     PAddr GetEnd() const {
         return base + size;
@@ -81,8 +87,7 @@ struct DirectMemoryArea {
         if (memory_type != next.memory_type) {
             return false;
         }
-        if (is_free != next.is_free || is_pooled != next.is_pooled ||
-            is_committed != next.is_committed) {
+        if (dma_type != next.dma_type) {
             return false;
         }
         return true;
