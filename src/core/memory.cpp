@@ -302,7 +302,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
            (handle->second.dma_type != Core::DMAType::Pooled || handle->second.size < size)) {
         handle++;
     }
-    ASSERT_MSG(handle->second.dma_type == Core::DMAType::Pooled, "Out of pooled memory");
+    ASSERT_MSG(handle != dmem_map.end() && handle->second.dma_type == Core::DMAType::Pooled,
+               "No suitable physical memory areas to map");
 
     // Use the start of this area as the physical backing for this mapping.
     const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
