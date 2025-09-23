@@ -177,8 +177,10 @@ bool AvPlayerState::GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info) {
 bool AvPlayerState::Start() {
     std::shared_lock lock(m_source_mutex);
     if (m_current_state == AvState::Ready || m_current_state == AvState::Stop || Stop()) {
+        SetState(AvState::Starting);
         if (!m_up_source->Start()) {
             LOG_ERROR(Lib_AvPlayer, "Could not start playback.");
+            SetState(AvState::Error);
             return false;
         }
         SetState(AvState::Play);
