@@ -60,7 +60,8 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     // Note that this should never be called after flexible memory allocations have been made.
     const auto remaining_physical_space = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO - total_direct_size;
     fmem_map.clear();
-    fmem_map.emplace(total_direct_size, FlexibleMemoryArea{total_direct_size, remaining_physical_space});
+    fmem_map.emplace(total_direct_size,
+                     FlexibleMemoryArea{total_direct_size, remaining_physical_space});
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
@@ -417,7 +418,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
 
         // Some games will end up fragmenting the flexible address space.
-        ASSERT_MSG(handle != fmem_map.end() && handle->second.is_free, "No suitable physical memory areas to map");
+        ASSERT_MSG(handle != fmem_map.end() && handle->second.is_free,
+                   "No suitable physical memory areas to map");
 
         // We'll use the start of this area as the physical backing for this mapping.
         const auto new_fmem_handle = CarveFmemArea(handle->second.base, size);
