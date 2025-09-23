@@ -14,6 +14,7 @@
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
+#include "core/ipc/ipc.h"
 #ifdef ENABLE_QT_GUI
 #include <QtCore>
 #endif
@@ -403,6 +404,14 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     Libraries::SaveData::Backup::StopThread();
     Common::Log::Denitializer();
 
+    auto& ipc = IPC::Instance();
+
+    if (ipc.IsEnabled()) {
+        ipc.SendRestart(args);
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::minutes(1));
+        }
+    }
 #if defined(_WIN32)
     std::string cmdline;
     // Emulator executable

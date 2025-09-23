@@ -55,7 +55,7 @@
  *   - STOP: stop and quit the emulator
  *   - TOGGLE_FULLSCREEN: enable / disable fullscreen
  * - OUTPUT CMD:
- *   - PID(pid: number): send the current emulator pid (useful for handling restarts)
+ *   - RESTART(argn: number, argv: ...string): Request restart of the emulator, must call STOP
  **/
 
 void IPC::Init() {
@@ -70,10 +70,7 @@ void IPC::Init() {
         this->InputLoop();
     });
 
-    std::string currentPid = std::to_string(Core::Debugger::GetCurrentPid());
-
     std::cerr << ";#IPC_ENABLED\n";
-    std::cerr << ";PID\n" << currentPid << "\n";
     std::cerr << ";ENABLE_MEMORY_PATCH\n";
     std::cerr << ";ENABLE_EMU_CONTROL\n";
     std::cerr << ";#IPC_END\n";
@@ -84,6 +81,15 @@ void IPC::Init() {
         std::cerr << "IPC: Failed to acquire run semaphore, closing process.\n";
         exit(1);
     }
+}
+
+void IPC::SendRestart(const std::vector<std::string>& args) {
+    std::cerr << ";RESTART\n";
+    std::cerr << ";" << args.size() << "\n";
+    for (const auto& arg : args) {
+        std::cerr << ";" << arg << "\n";
+    }
+    std::cerr.flush();
 }
 
 void IPC::InputLoop() {
