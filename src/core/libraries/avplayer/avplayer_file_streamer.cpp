@@ -43,6 +43,10 @@ bool AvPlayerFileStreamer::Init(std::string_view path) {
     return true;
 }
 
+void AvPlayerFileStreamer::Reset() {
+    m_position = 0;
+}
+
 s32 AvPlayerFileStreamer::ReadPacket(void* opaque, u8* buffer, s32 size) {
     const auto self = reinterpret_cast<AvPlayerFileStreamer*>(opaque);
     if (self->m_position >= self->m_file_size) {

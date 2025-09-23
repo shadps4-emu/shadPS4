@@ -17,6 +17,7 @@ public:
     ~AvPlayerFileStreamer();
 
     bool Init(std::string_view path) override;
+    void Reset() override;
 
     AVIOContext* GetContext() override {
         return m_avio_context;

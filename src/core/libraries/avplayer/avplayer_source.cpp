@@ -31,7 +31,7 @@ AvPlayerSource::~AvPlayerSource() {
 }
 
 bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view path) {
-    m_memory_replacement = init_data.memory_replacement,
+    m_memory_replacement = init_data.memory_replacement;
     m_max_num_video_framebuffers =
         std::min(std::max(2, init_data.num_output_video_framebuffers), 16);
 
@@ -165,40 +165,14 @@ bool AvPlayerSource::EnableStream(u32 stream_index) {
         return false;
     }
     const auto stream = m_avformat_context->streams[stream_index];
-    const auto decoder = avcodec_find_decoder(stream->codecpar->codec_id);
-    if (decoder == nullptr) {
-        return false;
-    }
     switch (stream->codecpar->codec_type) {
     case AVMediaType::AVMEDIA_TYPE_VIDEO: {
         m_video_stream_index = stream_index;
-        m_video_codec_context =
-            AVCodecContextPtr(avcodec_alloc_context3(decoder), &ReleaseAVCodecContext);
-        if (avcodec_parameters_to_context(m_video_codec_context.get(), stream->codecpar) < 0) {
-            LOG_ERROR(Lib_AvPlayer, "Could not copy stream {} avcodec parameters to context.",
-                      stream_index);
-            return false;
-        }
-        if (avcodec_open2(m_video_codec_context.get(), decoder, nullptr) < 0) {
-            LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for video stream {}.", stream_index);
-            return false;
-        }
         LOG_INFO(Lib_AvPlayer, "Video stream {} enabled", stream_index);
         break;
     }
     case AVMediaType::AVMEDIA_TYPE_AUDIO: {
         m_audio_stream_index = stream_index;
-        m_audio_codec_context =
-            AVCodecContextPtr(avcodec_alloc_context3(decoder), &ReleaseAVCodecContext);
-        if (avcodec_parameters_to_context(m_audio_codec_context.get(), stream->codecpar) < 0) {
-            LOG_ERROR(Lib_AvPlayer, "Could not copy stream {} avcodec parameters to context.",
-                      stream_index);
-            return false;
-        }
-        if (avcodec_open2(m_audio_codec_context.get(), decoder, nullptr) < 0) {
-            LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for audio stream {}.", stream_index);
-            return false;
-        }
         LOG_INFO(Lib_AvPlayer, "Audio stream {} enabled", stream_index);
         break;
     }
@@ -221,11 +195,30 @@ std::optional<bool> AvPlayerSource::HasFrames(u32 num_frames) {
 bool AvPlayerSource::Start() {
     std::unique_lock lock(m_state_mutex);
 
-    if (m_audio_codec_context == nullptr && m_video_codec_context == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "Could not start playback. NULL context.");
+    if (!m_video_stream_index && !m_audio_stream_index) {
+        LOG_ERROR(Lib_AvPlayer, "Could not start playback. No streams.");
         return false;
     }
-    if (m_video_codec_context) {
+    if (m_video_stream_index) {
+        const auto stream = m_avformat_context->streams[m_video_stream_index.value()];
+        avformat_seek_file(m_avformat_context.get(), m_video_stream_index.value(), 0, 0,
+                           stream->duration, 0);
+        const auto decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+        if (decoder == nullptr) {
+            return false;
+        }
+        m_video_codec_context =
+            AVCodecContextPtr(avcodec_alloc_context3(decoder), &ReleaseAVCodecContext);
+        if (avcodec_parameters_to_context(m_video_codec_context.get(), stream->codecpar) < 0) {
+            LOG_ERROR(Lib_AvPlayer, "Could not copy stream {} avcodec parameters to context.",
+                      m_video_stream_index.value());
+            return false;
+        }
+        if (avcodec_open2(m_video_codec_context.get(), decoder, nullptr) < 0) {
+            LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for video stream {}.",
+                      m_video_stream_index.value());
+            return false;
+        }
         auto width = u32(m_video_codec_context->width);
         auto height = u32(m_video_codec_context->height);
         if (!m_use_vdec2) {
@@ -237,7 +230,26 @@ bool AvPlayerSource::Start() {
             m_video_buffers.Push(GuestBuffer(m_memory_replacement, 0x100, size, true));
         }
     }
-    if (m_audio_codec_context) {
+    if (m_audio_stream_index) {
+        const auto stream = m_avformat_context->streams[m_audio_stream_index.value()];
+        avformat_seek_file(m_avformat_context.get(), m_audio_stream_index.value(), 0, 0,
+                           stream->duration, 0);
+        const auto decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+        if (decoder == nullptr) {
+            return false;
+        }
+        m_audio_codec_context =
+            AVCodecContextPtr(avcodec_alloc_context3(decoder), &ReleaseAVCodecContext);
+        if (avcodec_parameters_to_context(m_audio_codec_context.get(), stream->codecpar) < 0) {
+            LOG_ERROR(Lib_AvPlayer, "Could not copy stream {} avcodec parameters to context.",
+                      m_audio_stream_index.value());
+            return false;
+        }
+        if (avcodec_open2(m_audio_codec_context.get(), decoder, nullptr) < 0) {
+            LOG_ERROR(Lib_AvPlayer, "Could not open avcodec for audio stream {}.",
+                      m_audio_stream_index.value());
+            return false;
+        }
         const auto num_channels = m_audio_codec_context->ch_layout.nb_channels;
         const auto align = num_channels * sizeof(u16);
         const auto size = num_channels * sizeof(u16) * 1024;
@@ -260,6 +272,10 @@ bool AvPlayerSource::Stop() {
         return false;
     }
 
+    if (m_up_data_streamer) {
+        m_up_data_streamer->Reset();
+    }
+
     m_video_decoder_thread.Stop();
     m_audio_decoder_thread.Stop();
     m_demuxer_thread.Stop();
@@ -273,6 +289,14 @@ bool AvPlayerSource::Stop() {
     m_video_packets.Clear();
     m_audio_frames.Clear();
     m_video_frames.Clear();
+
+    m_last_audio_ts.reset();
+    m_start_time.reset();
+    m_pause_time = {};
+    m_pause_duration = {};
+
+    m_is_paused = false;
+    m_is_eof = false;
 
     return true;
 }
