@@ -70,7 +70,7 @@ void Linker::Execute(const std::vector<std::string> args) {
     }
 
     // Configure the direct and flexible memory regions.
-    u64 fmem_size = SCE_FLEXIBLE_MEMORY_SIZE;
+    u64 fmem_size = ORBIS_FLEXIBLE_MEMORY_SIZE;
     bool use_extended_mem1 = true, use_extended_mem2 = true;
 
     const auto* proc_param = GetProcParam();
@@ -83,7 +83,7 @@ void Linker::Execute(const std::vector<std::string> args) {
             if (mem_param.size >=
                 offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
                 if (const auto* flexible_size = mem_param.flexible_memory_size) {
-                    fmem_size = *flexible_size + SCE_FLEXIBLE_MEMORY_BASE;
+                    fmem_size = *flexible_size + ORBIS_FLEXIBLE_MEMORY_BASE;
                 }
             }
         }

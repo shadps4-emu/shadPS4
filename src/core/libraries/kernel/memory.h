@@ -6,11 +6,14 @@
 #include "common/bit_field.h"
 #include "common/types.h"
 
-constexpr u64 SCE_KERNEL_TOTAL_MEM = 5248_MB;
-constexpr u64 SCE_KERNEL_TOTAL_MEM_PRO = 5888_MB;
+constexpr u64 ORBIS_KERNEL_TOTAL_MEM = 5248_MB;
+constexpr u64 ORBIS_KERNEL_TOTAL_MEM_PRO = 5888_MB;
+constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV = 6656_MB;
+// TODO: This value needs confirmation
+constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV_PRO = 7936_MB;
 
-constexpr u64 SCE_FLEXIBLE_MEMORY_BASE = 64_MB;
-constexpr u64 SCE_FLEXIBLE_MEMORY_SIZE = 512_MB;
+constexpr u64 ORBIS_FLEXIBLE_MEMORY_BASE = 64_MB;
+constexpr u64 ORBIS_FLEXIBLE_MEMORY_SIZE = 512_MB;
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -19,24 +22,24 @@ class SymbolsResolver;
 namespace Libraries::Kernel {
 
 enum MemoryTypes : u32 {
-    SCE_KERNEL_WB_ONION = 0,  // write - back mode (Onion bus)
-    SCE_KERNEL_WC_GARLIC = 3, // write - combining mode (Garlic bus)
-    SCE_KERNEL_WB_GARLIC = 10 // write - back mode (Garlic bus)
+    ORBIS_KERNEL_WB_ONION = 0,  // write - back mode (Onion bus)
+    ORBIS_KERNEL_WC_GARLIC = 3, // write - combining mode (Garlic bus)
+    ORBIS_KERNEL_WB_GARLIC = 10 // write - back mode (Garlic bus)
 };
 
 enum MemoryFlags : u32 {
-    SCE_KERNEL_MAP_FIXED = 0x0010, // Fixed
-    SCE_KERNEL_MAP_NO_OVERWRITE = 0x0080,
-    SCE_KERNEL_MAP_NO_COALESCE = 0x400000
+    ORBIS_KERNEL_MAP_FIXED = 0x0010, // Fixed
+    ORBIS_KERNEL_MAP_NO_OVERWRITE = 0x0080,
+    ORBIS_KERNEL_MAP_NO_COALESCE = 0x400000
 };
 
 enum MemoryProtection : u32 {
-    SCE_KERNEL_PROT_CPU_READ = 0x01,  // Permit reads from the CPU
-    SCE_KERNEL_PROT_CPU_RW = 0x02,    // Permit reads/writes from the CPU
-    SCE_KERNEL_PROT_CPU_WRITE = 0x02, // Permit reads/writes from the CPU (same)
-    SCE_KERNEL_PROT_GPU_READ = 0x10,  // Permit reads from the GPU
-    SCE_KERNEL_PROT_GPU_WRITE = 0x20, // Permit writes from the GPU
-    SCE_KERNEL_PROT_GPU_RW = 0x30     // Permit reads/writes from the GPU
+    ORBIS_KERNEL_PROT_CPU_READ = 0x01,  // Permit reads from the CPU
+    ORBIS_KERNEL_PROT_CPU_RW = 0x02,    // Permit reads/writes from the CPU
+    ORBIS_KERNEL_PROT_CPU_WRITE = 0x02, // Permit reads/writes from the CPU (same)
+    ORBIS_KERNEL_PROT_GPU_READ = 0x10,  // Permit reads from the GPU
+    ORBIS_KERNEL_PROT_GPU_WRITE = 0x20, // Permit writes from the GPU
+    ORBIS_KERNEL_PROT_GPU_RW = 0x30     // Permit reads/writes from the GPU
 };
 
 enum MemoryOpTypes : u32 {

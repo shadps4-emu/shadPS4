@@ -326,7 +326,7 @@ u32 PS4_SYSV_ABI sceKernelIsAddressSanitizerEnabled() {
 s32 PS4_SYSV_ABI sceKernelBatchMap(OrbisKernelBatchMapEntry* entries, s32 numEntries,
                                    s32* numEntriesOut) {
     return sceKernelBatchMap2(entries, numEntries, numEntriesOut,
-                              MemoryFlags::SCE_KERNEL_MAP_FIXED); // 0x10, 0x410?
+                              MemoryFlags::ORBIS_KERNEL_MAP_FIXED); // 0x10, 0x410?
 }
 
 s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEntries,

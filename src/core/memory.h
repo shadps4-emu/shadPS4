@@ -67,6 +67,7 @@ struct DirectMemoryArea {
     u64 size = 0;
     s32 memory_type = 0;
     bool is_pooled = false;
+    bool is_committed = false;
     bool is_free = true;
 
     PAddr GetEnd() const {
@@ -78,6 +79,27 @@ struct DirectMemoryArea {
             return false;
         }
         if (memory_type != next.memory_type) {
+            return false;
+        }
+        if (is_free != next.is_free || is_pooled != next.is_pooled ||
+            is_committed != next.is_committed) {
+            return false;
+        }
+        return true;
+    }
+};
+
+struct FlexibleMemoryArea {
+    PAddr base = 0;
+    u64 size = 0;
+    bool is_free = true;
+
+    PAddr GetEnd() const {
+        return base + size;
+    }
+
+    bool CanMergeWith(const FlexibleMemoryArea& next) const {
+        if (base + size != next.base) {
             return false;
         }
         if (is_free != next.is_free) {
@@ -117,7 +139,8 @@ struct VirtualMemoryArea {
         if (base + size != next.base) {
             return false;
         }
-        if (type == VMAType::Direct && phys_base + size != next.phys_base) {
+        if ((type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::Pooled) &&
+            phys_base + size != next.phys_base) {
             return false;
         }
         if (prot != next.prot || type != next.type) {
@@ -130,6 +153,9 @@ struct VirtualMemoryArea {
 class MemoryManager {
     using DMemMap = std::map<PAddr, DirectMemoryArea>;
     using DMemHandle = DMemMap::iterator;
+
+    using FMemMap = std::map<PAddr, FlexibleMemoryArea>;
+    using FMemHandle = FMemMap::iterator;
 
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
     using VMAHandle = VMAMap::iterator;
@@ -238,6 +264,10 @@ private:
         return std::prev(dmem_map.upper_bound(target));
     }
 
+    FMemHandle FindFmemArea(PAddr target) {
+        return std::prev(fmem_map.upper_bound(target));
+    }
+
     template <typename Handle>
     Handle MergeAdjacent(auto& handle_map, Handle iter) {
         const auto next_vma = std::next(iter);
@@ -258,15 +288,24 @@ private:
         return iter;
     }
 
+    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
+               vma.type == VMAType::Pooled;
+    }
+
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
     DMemHandle CarveDmemArea(PAddr addr, u64 size);
 
+    FMemHandle CarveFmemArea(PAddr addr, u64 size);
+
     VMAHandle Split(VMAHandle vma_handle, u64 offset_in_vma);
 
     DMemHandle Split(DMemHandle dmem_handle, u64 offset_in_area);
+
+    FMemHandle Split(FMemHandle fmem_handle, u64 offset_in_area);
 
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
@@ -275,6 +314,7 @@ private:
 private:
     AddressSpace impl;
     DMemMap dmem_map;
+    FMemMap fmem_map;
     VMAMap vma_map;
     std::mutex mutex;
     u64 total_direct_size{};

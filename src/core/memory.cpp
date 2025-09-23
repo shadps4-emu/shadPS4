@@ -38,16 +38,9 @@ MemoryManager::~MemoryManager() = default;
 void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
-    auto total_size = is_neo ? SCE_KERNEL_TOTAL_MEM_PRO : SCE_KERNEL_TOTAL_MEM;
+    auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
     if (Config::isDevKitConsole()) {
-        const auto old_size = total_size;
-        // Assuming 2gb is neo for now, will need to link it with sceKernelIsDevKit
-        total_size += is_neo ? 2_GB : 768_MB;
-        LOG_WARNING(Kernel_Vmm,
-                    "Config::isDevKitConsole is enabled! Added additional {:s} of direct memory.",
-                    is_neo ? "2 GB" : "768 MB");
-        LOG_WARNING(Kernel_Vmm, "Old Direct Size: {:#x} -> New Direct Size: {:#x}", old_size,
-                    total_size);
+        total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
@@ -55,13 +48,20 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
-    total_flexible_size = flexible_size - SCE_FLEXIBLE_MEMORY_BASE;
+    total_flexible_size = flexible_size - ORBIS_FLEXIBLE_MEMORY_BASE;
     total_direct_size = total_size - flexible_size;
 
-    // Insert an area that covers direct memory physical block.
+    // Insert an area that covers the direct memory physical address block.
     // Note that this should never be called after direct memory allocations have been made.
     dmem_map.clear();
     dmem_map.emplace(0, DirectMemoryArea{0, total_direct_size});
+
+    // Insert an area that covers the flexible memory physical address block.
+    // Note that this should never be called after flexible memory allocations have been made.
+    const auto remaining_physical_space = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO - total_direct_size;
+    fmem_map.clear();
+    fmem_map.emplace(total_direct_size,
+                     FlexibleMemoryArea{total_direct_size, remaining_physical_space});
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
@@ -135,7 +135,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_byt
                fmt::ptr(address));
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
     const auto& vma = FindVMA(virtual_addr)->second;
-    if (vma.type != VMAType::Direct) {
+    if (!HasPhysicalBacking(vma)) {
         return false;
     }
     u8* backing = impl.BackingBase() + vma.phys_base + (virtual_addr - vma.base);
@@ -293,10 +293,26 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
     new_vma.name = "anon";
     new_vma.type = Core::VMAType::Pooled;
     new_vma.is_exec = false;
-    new_vma.phys_base = 0;
+
+    // Find a suitable physical address
+    auto handle = dmem_map.begin();
+    while (handle != dmem_map.end() && (!handle->second.is_pooled || handle->second.size < size)) {
+        handle++;
+    }
+
+    ASSERT_MSG(handle->second.is_pooled, "Out of pooled memory");
+
+    // Use the start of this area as the physical backing for this mapping.
+    const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
+    auto& new_dmem_area = new_dmem_handle->second;
+    new_dmem_area.is_free = false;
+    new_dmem_area.is_pooled = false;
+    new_dmem_area.is_committed = true;
+    new_vma.phys_base = new_dmem_area.base;
+    MergeAdjacent(dmem_map, new_dmem_handle);
 
     // Perform the mapping
-    void* out_addr = impl.Map(mapped_addr, size, alignment, -1, false);
+    void* out_addr = impl.Map(mapped_addr, size, alignment, new_vma.phys_base, false);
     TRACK_ALLOC(out_addr, size, "VMEM");
 
     if (IsValidGpuMapping(mapped_addr, size)) {
@@ -390,8 +406,27 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     auto& new_vma = new_vma_handle->second;
 
     // If type is Flexible, we need to track how much flexible memory is used here.
+    // We also need to determine a reasonable physical base to perform this mapping at.
     if (type == VMAType::Flexible) {
         flexible_usage += size;
+
+        // Find a suitable physical address
+        auto handle = fmem_map.begin();
+        while (handle != fmem_map.end() &&
+               (!handle->second.is_free || handle->second.size < size)) {
+            handle++;
+        }
+
+        // Some games will end up fragmenting the flexible address space.
+        ASSERT_MSG(handle != fmem_map.end() && handle->second.is_free,
+                   "No suitable physical memory areas to map");
+
+        // We'll use the start of this area as the physical backing for this mapping.
+        const auto new_fmem_handle = CarveFmemArea(handle->second.base, size);
+        auto& new_fmem_area = new_fmem_handle->second;
+        new_fmem_area.is_free = false;
+        phys_addr = new_fmem_area.base;
+        MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
@@ -506,9 +541,18 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
         // Track how much pooled memory is decommitted
         pool_budget += size;
+
+        // Re-pool the direct memory used by this mapping
+        const auto unmap_phys_base = phys_base + start_in_vma;
+        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, size);
+        auto& new_dmem_area = new_dmem_handle->second;
+        new_dmem_area.is_free = false;
+        new_dmem_area.is_pooled = true;
+        new_dmem_area.is_committed = false;
+        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
-    // Mark region as free and attempt to coalesce it with neighbours.
+    // Mark region as pool reserved and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, size);
     auto& vma = new_it->second;
     vma.type = VMAType::PoolReserved;
@@ -521,7 +565,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     if (type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
-                   is_exec, false, false);
+                   is_exec, true, false);
         TRACK_FREE(virtual_addr, "VMEM");
     }
 
@@ -542,7 +586,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     const auto start_in_vma = virtual_addr - vma_base_addr;
     const auto adjusted_size =
         vma_base_size - start_in_vma < size ? vma_base_size - start_in_vma : size;
-    const bool has_backing = type == VMAType::Direct || type == VMAType::File;
+    const bool has_backing = HasPhysicalBacking(vma_base) || type == VMAType::File;
     const auto prot = vma_base.prot;
     const bool readonly_file = prot == MemoryProt::CpuRead && type == VMAType::File;
 
@@ -552,6 +596,19 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
+
+        // Now that there is a physical backing used for flexible memory,
+        // manually erase the contents before unmapping to prevent possible issues.
+        const auto unmap_hardware_address = impl.BackingBase() + phys_base + start_in_vma;
+        std::memset(unmap_hardware_address, 0, adjusted_size);
+
+        // Address space unmap needs the physical_base from the start of the vma,
+        // so calculate the phys_base to unmap from here.
+        const auto unmap_phys_base = phys_base + start_in_vma;
+        const auto new_fmem_handle = CarveFmemArea(unmap_phys_base, adjusted_size);
+        auto& new_fmem_area = new_fmem_handle->second;
+        new_fmem_area.is_free = true;
+        MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
@@ -721,7 +778,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     const auto& vma = it->second;
     info->start = vma.base;
     info->end = vma.base + vma.size;
-    info->offset = vma.phys_base;
+    info->offset = vma.type == VMAType::Flexible ? 0 : vma.phys_base;
     info->protection = static_cast<s32>(vma.prot);
     info->is_flexible = vma.type == VMAType::Flexible ? 1 : 0;
     info->is_direct = vma.type == VMAType::Direct ? 1 : 0;
@@ -736,7 +793,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
         ASSERT_MSG(vma.phys_base <= dmem_it->second.GetEnd(), "vma.phys_base is not in dmem_map!");
         info->memory_type = dmem_it->second.memory_type;
     } else {
-        info->memory_type = ::Libraries::Kernel::SCE_KERNEL_WB_ONION;
+        info->memory_type = ::Libraries::Kernel::ORBIS_KERNEL_WB_ONION;
     }
 
     return ORBIS_OK;
@@ -840,7 +897,6 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
             if (remaining_size < it->second.size) {
                 // We should split VMAs here, but this could cause trouble for Windows.
                 // Instead log a warning and name the whole VMA.
-                // it = CarveVMA(current_addr, remaining_size);
                 LOG_WARNING(Kernel_Vmm, "Trying to partially name a range");
             }
             auto& vma = it->second;
@@ -1012,6 +1068,30 @@ MemoryManager::DMemHandle MemoryManager::CarveDmemArea(PAddr addr, u64 size) {
     return dmem_handle;
 }
 
+MemoryManager::FMemHandle MemoryManager::CarveFmemArea(PAddr addr, u64 size) {
+    auto fmem_handle = FindFmemArea(addr);
+    ASSERT_MSG(addr <= fmem_handle->second.GetEnd(), "Physical address not in fmem_map");
+
+    const FlexibleMemoryArea& area = fmem_handle->second;
+    ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
+
+    const PAddr start_in_area = addr - area.base;
+    const PAddr end_in_vma = start_in_area + size;
+    ASSERT_MSG(end_in_vma <= area.size, "Mapping cannot fit inside free region: size = {:#x}",
+               size);
+
+    if (end_in_vma != area.size) {
+        // Split VMA at the end of the allocated region
+        Split(fmem_handle, end_in_vma);
+    }
+    if (start_in_area != 0) {
+        // Split VMA at the start of the allocated region
+        fmem_handle = Split(fmem_handle, start_in_area);
+    }
+
+    return fmem_handle;
+}
+
 MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_in_vma) {
     auto& old_vma = vma_handle->second;
     ASSERT(offset_in_vma < old_vma.size && offset_in_vma > 0);
@@ -1021,7 +1101,7 @@ MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_i
     new_vma.base += offset_in_vma;
     new_vma.size -= offset_in_vma;
 
-    if (new_vma.type == VMAType::Direct) {
+    if (HasPhysicalBacking(new_vma)) {
         new_vma.phys_base += offset_in_vma;
     }
     return vma_map.emplace_hint(std::next(vma_handle), new_vma.base, new_vma);
@@ -1037,6 +1117,18 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, u64 offse
     new_area.size -= offset_in_area;
 
     return dmem_map.emplace_hint(std::next(dmem_handle), new_area.base, new_area);
+}
+
+MemoryManager::FMemHandle MemoryManager::Split(FMemHandle fmem_handle, u64 offset_in_area) {
+    auto& old_area = fmem_handle->second;
+    ASSERT(offset_in_area < old_area.size && offset_in_area > 0);
+
+    auto new_area = old_area;
+    old_area.size = offset_in_area;
+    new_area.base += offset_in_area;
+    new_area.size -= offset_in_area;
+
+    return fmem_map.emplace_hint(std::next(fmem_handle), new_area.base, new_area);
 }
 
 } // namespace Core
