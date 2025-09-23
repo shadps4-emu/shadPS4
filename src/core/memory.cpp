@@ -154,7 +154,8 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, 
     auto mapping_end = mapping_start + size;
 
     // Find the first free, large enough dmem area in the range.
-    while (!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) {
+    while (dmem_area->second.dma_type != DMAType::Free ||
+           dmem_area->second.GetEnd() < mapping_end) {
         // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
         if (dmem_area == dmem_map.end()) {
@@ -174,8 +175,8 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, 
 
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(mapping_start, size)->second;
-    area.is_free = false;
-    area.is_pooled = true;
+    area.dma_type = DMAType::Pooled;
+    area.memory_type = 3;
 
     // Track how much dmem was allocated for pools.
     pool_budget += size;
@@ -195,7 +196,8 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     auto mapping_end = mapping_start + size;
 
     // Find the first free, large enough dmem area in the range.
-    while (!dmem_area->second.is_free || dmem_area->second.GetEnd() < mapping_end) {
+    while (dmem_area->second.dma_type != DMAType::Free ||
+           dmem_area->second.GetEnd() < mapping_end) {
         // The current dmem_area isn't suitable, move to the next one.
         dmem_area++;
         if (dmem_area == dmem_map.end()) {
@@ -216,7 +218,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(mapping_start, size)->second;
     area.memory_type = memory_type;
-    area.is_free = false;
+    area.dma_type = DMAType::Allocated;
     MergeAdjacent(dmem_map, dmem_area);
     return mapping_start;
 }
@@ -246,7 +248,7 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
 
     // Mark region as free and attempt to coalesce it with neighbours.
     auto& area = dmem_area->second;
-    area.is_free = true;
+    area.dma_type = DMAType::Free;
     area.memory_type = 0;
     MergeAdjacent(dmem_map, dmem_area);
 }
@@ -296,18 +298,17 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
 
     // Find a suitable physical address
     auto handle = dmem_map.begin();
-    while (handle != dmem_map.end() && (!handle->second.is_pooled || handle->second.size < size)) {
+    while (handle != dmem_map.end() &&
+           (handle->second.dma_type != Core::DMAType::Pooled || handle->second.size < size)) {
         handle++;
     }
-
-    ASSERT_MSG(handle->second.is_pooled, "Out of pooled memory");
+    ASSERT_MSG(handle != dmem_map.end() && handle->second.dma_type == Core::DMAType::Pooled,
+               "No suitable physical memory areas to map");
 
     // Use the start of this area as the physical backing for this mapping.
     const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
     auto& new_dmem_area = new_dmem_handle->second;
-    new_dmem_area.is_free = false;
-    new_dmem_area.is_pooled = false;
-    new_dmem_area.is_committed = true;
+    new_dmem_area.dma_type = DMAType::Committed;
     new_vma.phys_base = new_dmem_area.base;
     MergeAdjacent(dmem_map, new_dmem_handle);
 
@@ -339,24 +340,32 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
     // Validate the requested physical address range
     if (phys_addr != -1) {
+        if (total_direct_size < phys_addr + size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                      phys_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+
         u64 validated_size = 0;
         do {
             auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
             // If any requested dmem area is not allocated, return an error.
-            if (dmem_area.is_free) {
+            if (dmem_area.dma_type != DMAType::Allocated) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
             // Track how much we've validated.
             validated_size += dmem_area.size - (phys_addr + validated_size - dmem_area.base);
-        } while (validated_size < size && phys_addr + validated_size < GetTotalDirectSize());
-        // If the requested range goes outside the dmem map, return an error.
-        if (validated_size < size) {
-            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
-                      phys_addr);
-            return ORBIS_KERNEL_ERROR_ENOMEM;
-        }
+        } while (validated_size < size);
+
+        // Carve a new dmem area for this mapping
+        const auto new_dmem_handle = CarveDmemArea(phys_addr, size);
+        auto& new_dmem_area = new_dmem_handle->second;
+        new_dmem_area.dma_type = DMAType::Mapped;
+
+        // Coalesce direct memory areas if possible
+        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
     // Limit the minimum address to SystemManagedVirtualBase to prevent hardware-specific issues.
@@ -546,9 +555,9 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         const auto unmap_phys_base = phys_base + start_in_vma;
         const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, size);
         auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.is_free = false;
-        new_dmem_area.is_pooled = true;
-        new_dmem_area.is_committed = false;
+        new_dmem_area.dma_type = DMAType::Pooled;
+
+        // Coalesce with nearby direct memory areas.
         MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
@@ -609,6 +618,16 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = true;
         MergeAdjacent(fmem_map, new_fmem_handle);
+    }
+
+    if (type == VMAType::Direct) {
+        // Since we're unmapping the memory
+        // make sure the corresponding direct memory area is updated correctly.
+        const auto unmap_phys_base = phys_base + start_in_vma;
+        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, adjusted_size);
+        auto& new_dmem_area = new_dmem_handle->second;
+        new_dmem_area.dma_type = DMAType::Allocated;
+        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
@@ -803,12 +822,18 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
                                      ::Libraries::Kernel::OrbisQueryInfo* out_info) {
     std::scoped_lock lk{mutex};
 
+    if (addr >= total_direct_size) {
+        LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != --dmem_map.end() && dmem_area->second.is_free && find_next) {
+    while (dmem_area != --dmem_map.end() && dmem_area->second.dma_type == DMAType::Free &&
+           find_next) {
         dmem_area++;
     }
 
-    if (dmem_area->second.is_free || addr >= total_direct_size) {
+    if (dmem_area->second.dma_type == DMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -829,7 +854,7 @@ s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u6
     u64 max_size{};
 
     while (dmem_area != dmem_map.end()) {
-        if (!dmem_area->second.is_free) {
+        if (dmem_area->second.dma_type != DMAType::Free) {
             dmem_area++;
             continue;
         }
@@ -872,7 +897,7 @@ s32 MemoryManager::SetDirectMemoryType(s64 phys_addr, s32 memory_type) {
 
     auto& dmem_area = FindDmemArea(phys_addr)->second;
 
-    ASSERT_MSG(phys_addr <= dmem_area.GetEnd() && !dmem_area.is_free,
+    ASSERT_MSG(phys_addr <= dmem_area.GetEnd() && dmem_area.dma_type == DMAType::Mapped,
                "Direct memory area is not mapped");
 
     dmem_area.memory_type = memory_type;
@@ -914,7 +939,7 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
 
     auto dmem_area = FindDmemArea(addr);
 
-    if (addr > dmem_area->second.GetEnd() || dmem_area->second.is_free) {
+    if (addr > dmem_area->second.GetEnd() || dmem_area->second.dma_type == DMAType::Free) {
         LOG_ERROR(Core, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
@@ -1113,6 +1138,7 @@ MemoryManager::DMemHandle MemoryManager::Split(DMemHandle dmem_handle, u64 offse
 
     auto new_area = old_area;
     old_area.size = offset_in_area;
+    new_area.memory_type = old_area.memory_type;
     new_area.base += offset_in_area;
     new_area.size -= offset_in_area;
 
