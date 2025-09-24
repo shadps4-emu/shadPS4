@@ -979,6 +979,27 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     return ORBIS_OK;
 }
 
+s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats) {
+    // Run through dmem_map, determine how much physical memory is currently committed
+    constexpr u64 block_size = 64_KB;
+    u64 committed_size = 0;
+
+    auto dma_handle = dmem_map.begin();
+    while (dma_handle != dmem_map.end()) {
+        if (dma_handle->second.dma_type == DMAType::Committed) {
+            committed_size += dma_handle->second.size;
+        }
+        dma_handle++;
+    }
+
+    stats->allocated_flushed_blocks = committed_size / block_size;
+    stats->available_flushed_blocks = committed_size / block_size;
+    // TODO: Determine how "cached blocks" work
+    stats->allocated_cached_blocks = 0;
+    stats->available_cached_blocks = 0;
+    return ORBIS_OK;
+}
+
 void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
     if (rasterizer) {
         rasterizer->InvalidateMemory(addr, size);

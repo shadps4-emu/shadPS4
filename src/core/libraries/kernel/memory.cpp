@@ -555,6 +555,23 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
     return result;
 }
 
+s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStats* stats,
+                                                  u64 size) {
+    LOG_WARNING(Kernel_Vmm, "called");
+    auto* memory = Core::Memory::Instance();
+    OrbisKernelMemoryPoolBlockStats local_stats;
+    memory->GetMemoryPoolStats(&local_stats);
+
+    u64 size_to_copy = size < sizeof(OrbisKernelMemoryPoolBlockStats)
+                           ? size
+                           : sizeof(OrbisKernelMemoryPoolBlockStats);
+    // As of firmware 12.02, the kernel does not check if stats is null,
+    // this can cause crashes on real hardware, so have an assert for this case.
+    ASSERT_MSG(stats != nullptr || size == 0, "Block stats cannot be null");
+    std::memcpy(stats, &local_stats, size_to_copy);
+    return ORBIS_OK;
+}
+
 void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, s64 phys_addr) {
     LOG_INFO(
         Kernel_Vmm,
@@ -715,6 +732,7 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Vzl66WmfLvk", "libkernel", 1, "libkernel", sceKernelMemoryPoolCommit);
     LIB_FUNCTION("LXo1tpFqJGs", "libkernel", 1, "libkernel", sceKernelMemoryPoolDecommit);
     LIB_FUNCTION("YN878uKRBbE", "libkernel", 1, "libkernel", sceKernelMemoryPoolBatch);
+    LIB_FUNCTION("bvD+95Q6asU", "libkernel", 1, "libkernel", sceKernelMemoryPoolGetBlockStats);
 
     LIB_FUNCTION("BPE9s9vQQXo", "libkernel", 1, "libkernel", posix_mmap);
     LIB_FUNCTION("BPE9s9vQQXo", "libScePosix", 1, "libkernel", posix_mmap);
