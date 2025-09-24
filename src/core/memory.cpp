@@ -980,7 +980,7 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
 }
 
 s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats) {
-    // Run through dma_map, determine how much physical memory is currently committed
+    // Run through dmem_map, determine how much physical memory is currently committed
     constexpr u64 block_size = 64_KB;
     u64 committed_size = 0;
 
