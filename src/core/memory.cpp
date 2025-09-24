@@ -350,7 +350,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         do {
             auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
             // If any requested dmem area is not allocated, return an error.
-            if (dmem_area.dma_type != DMAType::Allocated) {
+            if (dmem_area.dma_type != DMAType::Allocated && dmem_area.dma_type != DMAType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
                 return ORBIS_KERNEL_ERROR_ENOMEM;
