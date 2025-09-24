@@ -258,6 +258,8 @@ public:
 
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
+    s32 GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats);
+
     void InvalidateMemory(VAddr addr, u64 size) const;
 
 private:

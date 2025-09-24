@@ -126,6 +126,13 @@ struct OrbisKernelMemoryPoolBatchEntry {
     };
 };
 
+struct OrbisKernelMemoryPoolBlockStats {
+    s32 available_flushed_blocks;
+    s32 available_cached_blocks;
+    s32 allocated_flushed_blocks;
+    s32 allocated_cached_blocks;
+};
+
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
 s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, s32 memoryType, s64* physAddrOut);
@@ -176,6 +183,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags);
 s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
                                           s32* num_processed, s32 flags);
+s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStats* stats, u64 size);
 
 s32 PS4_SYSV_ABI sceKernelMunmap(void* addr, u64 len);
 
