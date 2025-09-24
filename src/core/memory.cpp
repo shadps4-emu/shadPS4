@@ -218,7 +218,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     // Add the allocated region to the list and commit its pages.
     auto& area = CarveDmemArea(mapping_start, size)->second;
     area.memory_type = memory_type;
-    area.dma_type = DMAType::Allocated;
+    area.dma_type = DMAType::Direct;
     MergeAdjacent(dmem_map, dmem_area);
     return mapping_start;
 }
@@ -346,26 +346,16 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
-        u64 validated_size = 0;
-        do {
-            auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
+        auto dmem_area = FindDmemArea(phys_addr);
+        while (dmem_area != dmem_map.end() && dmem_area->second.base < phys_addr + size) {
             // If any requested dmem area is not allocated, return an error.
-            if (dmem_area.dma_type != DMAType::Allocated && dmem_area.dma_type != DMAType::Mapped) {
+            if (dmem_area->second.dma_type != DMAType::Direct) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
-            // Track how much we've validated.
-            validated_size += dmem_area.size - (phys_addr + validated_size - dmem_area.base);
-        } while (validated_size < size);
-
-        // Carve a new dmem area for this mapping
-        const auto new_dmem_handle = CarveDmemArea(phys_addr, size);
-        auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.dma_type = DMAType::Mapped;
-
-        // Coalesce direct memory areas if possible
-        MergeAdjacent(dmem_map, new_dmem_handle);
+            dmem_area++;
+        }
     }
 
     // Limit the minimum address to SystemManagedVirtualBase to prevent hardware-specific issues.
@@ -618,16 +608,6 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = true;
         MergeAdjacent(fmem_map, new_fmem_handle);
-    }
-
-    if (type == VMAType::Direct) {
-        // Since we're unmapping the memory
-        // make sure the corresponding direct memory area is updated correctly.
-        const auto unmap_phys_base = phys_base + start_in_vma;
-        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, adjusted_size);
-        auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.dma_type = DMAType::Allocated;
-        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
