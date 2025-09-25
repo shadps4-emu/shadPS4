@@ -230,7 +230,8 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     LOG_INFO(Lib_NpTrophy, "Handle {} destroyed", handle);
     return ORBIS_OK;
 }
-size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
+
+u64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
@@ -240,7 +241,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
 }
 
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                        void* buffer, size_t* size) {
+                                        void* buffer, u64* size) {
     ASSERT(size != nullptr);
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
@@ -251,7 +252,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
         LOG_ERROR(Lib_NpTrophy, "Failed to open trophy icon file: {}", icon_file.string());
         return ORBIS_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
     }
-    size_t icon_size = icon.GetSize();
+    u64 icon_size = icon.GetSize();
 
     if (buffer != nullptr) {
         ReadFile(icon, buffer, *size);
