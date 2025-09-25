@@ -254,6 +254,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
 
     if (buffer != nullptr) {
         ReadFile(icon, buffer, *size);
+    } else {
         *size = icon_size;
     }
     return ORBIS_OK;
