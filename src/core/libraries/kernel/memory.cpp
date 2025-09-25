@@ -215,8 +215,10 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
         sceKernelMapNamedDirectMemory(addr, len, prot, flags, phys_addr, alignment, "anon");
 
     if (ret == 0) {
+        // If the map call succeeds, set the direct memory type using the output address.
         auto* memory = Core::Memory::Instance();
-        memory->SetDirectMemoryType(phys_addr, type);
+        const auto in_addr = reinterpret_cast<VAddr>(*addr);
+        memory->SetDirectMemoryType(in_addr, len, type);
     }
     return ret;
 }
@@ -262,9 +264,20 @@ s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void**
 s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
              prot);
+    // Align addr and size to the nearest page boundary.
+    const VAddr in_addr = reinterpret_cast<VAddr>(addr);
+    auto aligned_addr = Common::AlignDown(in_addr, 16_KB);
+    auto aligned_size = Common::AlignUp(size + in_addr - aligned_addr, 16_KB);
+
+    if (aligned_size == 0) {
+        // Nothing to do.
+        return ORBIS_OK;
+    }
+
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
-    return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
+
+    return memory_manager->Protect(aligned_addr, aligned_size, protection_flags);
 }
 
 s32 PS4_SYSV_ABI posix_mprotect(const void* addr, u64 size, s32 prot) {
@@ -279,9 +292,24 @@ s32 PS4_SYSV_ABI posix_mprotect(const void* addr, u64 size, s32 prot) {
 s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s32 prot) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", fmt::ptr(addr), size,
              prot);
+    // Align addr and size to the nearest page boundary.
+    const VAddr in_addr = reinterpret_cast<VAddr>(addr);
+    auto aligned_addr = Common::AlignDown(in_addr, 16_KB);
+    auto aligned_size = Common::AlignUp(size + in_addr - aligned_addr, 16_KB);
+
+    if (aligned_size == 0) {
+        // Nothing to do.
+        return ORBIS_OK;
+    }
+
     Core::MemoryManager* memory_manager = Core::Memory::Instance();
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
-    return memory_manager->Protect(std::bit_cast<VAddr>(addr), size, protection_flags);
+
+    s32 result = memory_manager->Protect(aligned_addr, aligned_size, protection_flags);
+    if (result == 0) {
+        memory_manager->SetDirectMemoryType(aligned_addr, aligned_size, mtype);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, s32 flags, OrbisQueryInfo* query_info,

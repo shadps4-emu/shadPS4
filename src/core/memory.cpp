@@ -730,19 +730,15 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // Align addr and size to the nearest page boundary.
-    auto aligned_addr = Common::AlignDown(addr, 16_KB);
-    auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
-
-    // Protect all VMAs between aligned_addr and aligned_addr + aligned_size.
+    // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;
-    while (protected_bytes < aligned_size) {
-        ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(aligned_addr)),
-                   "Attempted to access invalid address {:#x}", aligned_addr);
-        auto it = FindVMA(aligned_addr + protected_bytes);
+    while (protected_bytes < size) {
+        ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
+                   "Attempted to access invalid address {:#x}", addr);
+        auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
-        auto result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
-                                   aligned_size - protected_bytes, prot);
+        auto result = ProtectBytes(addr + protected_bytes, vma_base,
+                                   size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
@@ -872,15 +868,46 @@ s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u6
     return ORBIS_OK;
 }
 
-s32 MemoryManager::SetDirectMemoryType(s64 phys_addr, s32 memory_type) {
+s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
     std::scoped_lock lk{mutex};
 
-    auto& dmem_area = FindDmemArea(phys_addr)->second;
+    // Search through all VMAs covered by the provided range.
+    // We aren't modifying these VMAs, so it's safe to iterate through them.
+    auto remaining_size = size;
+    auto vma_handle = FindVMA(addr);
+    while (vma_handle != vma_map.end() && vma_handle->second.base < addr + size) {
+        // Direct and Pooled mappings are the only ones with a memory type.
+        if (vma_handle->second.type == VMAType::Direct ||
+            vma_handle->second.type == VMAType::Pooled) {
+            // Calculate position in vma
+            const auto start_in_vma = addr - vma_handle->second.base;
+            const auto size_in_vma = vma_handle->second.size - start_in_vma;
+            auto phys_addr = vma_handle->second.phys_base + start_in_vma;
+            auto size_to_modify = remaining_size > size_in_vma ? size_in_vma : remaining_size;
 
-    ASSERT_MSG(phys_addr <= dmem_area.GetEnd() && dmem_area.dma_type == DMAType::Mapped,
-               "Direct memory area is not mapped");
+            // Loop through remaining dmem areas until the physical addresses represented
+            // are all adjusted.
+            DMemHandle dmem_handle = FindDmemArea(phys_addr);
+            while (dmem_handle != dmem_map.end() && size_in_vma >= size_to_modify &&
+                   size_to_modify > 0) {
+                const auto start_in_dma = phys_addr - dmem_handle->second.base;
+                const auto size_in_dma = dmem_handle->second.size - start_in_dma > size_to_modify
+                                             ? size_to_modify
+                                             : dmem_handle->second.size - start_in_dma;
+                dmem_handle = CarveDmemArea(phys_addr, size_in_dma);
+                auto& dmem_area = dmem_handle->second;
+                dmem_area.memory_type = memory_type;
+                size_to_modify -= dmem_area.size;
+                phys_addr += dmem_area.size;
 
-    dmem_area.memory_type = memory_type;
+                // Check if we can coalesce any dmem areas now that the types are different.
+                MergeAdjacent(dmem_map, dmem_handle);
+                dmem_handle = FindDmemArea(phys_addr);
+            }
+        }
+        remaining_size -= vma_handle->second.size;
+        vma_handle++;
+    }
 
     return ORBIS_OK;
 }
