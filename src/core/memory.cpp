@@ -83,7 +83,7 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     ++vma;
 
     // Keep adding to the size while there is contigious virtual address space.
-    while (vma->second.IsMapped() && clamped_size < size) {
+    while (vma != vma_map.end() && vma->second.IsMapped() && clamped_size < size) {
         clamped_size += vma->second.size;
         ++vma;
     }
@@ -763,10 +763,10 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     }
     auto it = FindVMA(query_addr);
 
-    while (it->second.type == VMAType::Free && flags == 1 && it != --vma_map.end()) {
+    while (it != vma_map.end() && it->second.type == VMAType::Free && flags == 1) {
         ++it;
     }
-    if (it->second.type == VMAType::Free) {
+    if (it == vma_map.end() || it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -805,12 +805,12 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
     }
 
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != --dmem_map.end() && dmem_area->second.dma_type == DMAType::Free &&
+    while (dmem_area != dmem_map.end() && dmem_area->second.dma_type == DMAType::Free &&
            find_next) {
         dmem_area++;
     }
 
-    if (dmem_area->second.dma_type == DMAType::Free) {
+    if (dmem_area == dmem_map.end() || dmem_area->second.dma_type == DMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
