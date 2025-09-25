@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -258,9 +258,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
                "Attempted to access invalid address {:#x}", virtual_addr);
     std::scoped_lock lk{mutex};
 
+    // Input addresses to PoolCommit are treated as fixed, and have a constant alignment.
     const u64 alignment = 64_KB;
-
-    // Input addresses to PoolCommit are treated as fixed.
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     auto& vma = FindVMA(mapped_addr)->second;
@@ -327,8 +326,6 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                              MemoryMapFlags flags, VMAType type, std::string_view name,
                              bool is_exec, PAddr phys_addr, u64 alignment) {
-    std::scoped_lock lk{mutex};
-
     // Certain games perform flexible mappings on loop to determine
     // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
@@ -338,6 +335,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                   total_flexible_size - flexible_usage, size);
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
+
+    std::scoped_lock lk{mutex};
 
     // Validate the requested physical address range
     if (phys_addr != -1) {
@@ -461,11 +460,11 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(mapped_addr)),
                "Attempted to access invalid address {:#x}", mapped_addr);
+
+    std::scoped_lock lk{mutex};
     const u64 size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
@@ -486,6 +485,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     }
 
     // Get the file to map
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(fd);
     if (file == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -914,6 +914,8 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
 }
 
 void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name) {
+    std::scoped_lock lk{mutex};
+
     // Sizes are aligned up to the nearest 16_KB
     auto aligned_size = Common::AlignUp(size, 16_KB);
     // Addresses are aligned down to the nearest 16_KB
@@ -943,28 +945,27 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
 
 s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {
-    std::scoped_lock lk{mutex};
-
-    auto dmem_area = FindDmemArea(addr);
-
-    if (addr > dmem_area->second.GetEnd() || dmem_area->second.dma_type == DMAType::Free) {
-        LOG_ERROR(Core, "Unable to find allocated direct memory region to check type!");
+    if (addr > total_direct_size) {
+        LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
-    const auto& area = dmem_area->second;
-    *directMemoryStartOut = reinterpret_cast<void*>(area.base);
-    *directMemoryEndOut = reinterpret_cast<void*>(area.GetEnd());
-    *directMemoryTypeOut = area.memory_type;
+    const auto& dmem_area = FindDmemArea(addr)->second;
+    if (dmem_area.dma_type == DMAType::Free) {
+        LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+
+    *directMemoryStartOut = reinterpret_cast<void*>(dmem_area.base);
+    *directMemoryEndOut = reinterpret_cast<void*>(dmem_area.GetEnd());
+    *directMemoryTypeOut = dmem_area.memory_type;
     return ORBIS_OK;
 }
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
                "Attempted to access invalid address {:#x}", addr);
-    auto vma_handle = FindVMA(addr);
-
-    const VirtualMemoryArea& vma = vma_handle->second;
+    const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -988,6 +989,8 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
 }
 
 s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats) {
+    std::scoped_lock lk{mutex};
+
     // Run through dmem_map, determine how much physical memory is currently committed
     constexpr u64 block_size = 64_KB;
     u64 committed_size = 0;
