@@ -246,13 +246,16 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
     auto icon_file = trophy_dir / "trophy00" / "Icons" / "ICON0.PNG";
 
     Common::FS::IOFile icon(icon_file, Common::FS::FileAccessMode::Read);
+    if (icon.IsOpen() == false) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy icon file: {}", icon_file.string());
+        return ORBIS_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
+    }
     size_t icon_size = icon.GetSize();
 
     if (buffer != nullptr) {
         ReadFile(icon, buffer, *size);
+        *size = icon_size;
     }
-
-    *size = icon_size;
     return ORBIS_OK;
 }
 
