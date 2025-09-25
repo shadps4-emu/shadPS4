@@ -738,8 +738,7 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
                    "Attempted to access invalid address {:#x}", addr);
         auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
-        auto result = ProtectBytes(addr + protected_bytes, vma_base,
-                                   size - protected_bytes, prot);
+        auto result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;

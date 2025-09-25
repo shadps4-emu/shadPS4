@@ -306,7 +306,7 @@ s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s3
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
 
     s32 result = memory_manager->Protect(aligned_addr, aligned_size, protection_flags);
-    if (result == 0) {
+    if (result == ORBIS_OK) {
         memory_manager->SetDirectMemoryType(aligned_addr, aligned_size, mtype);
     }
     return result;
