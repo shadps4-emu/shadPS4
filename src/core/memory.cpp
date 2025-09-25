@@ -253,7 +253,7 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
     MergeAdjacent(dmem_map, dmem_area);
 }
 
-s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
+s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
                "Attempted to access invalid address {:#x}", virtual_addr);
     std::scoped_lock lk{mutex};
@@ -309,6 +309,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
     const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
     auto& new_dmem_area = new_dmem_handle->second;
     new_dmem_area.dma_type = DMAType::Committed;
+    new_dmem_area.memory_type = mtype;
     new_vma.phys_base = new_dmem_area.base;
     MergeAdjacent(dmem_map, new_dmem_handle);
 

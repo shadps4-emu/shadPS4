@@ -509,7 +509,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
     const VAddr in_addr = reinterpret_cast<VAddr>(addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     auto* memory = Core::Memory::Instance();
-    return memory->PoolCommit(in_addr, len, mem_prot);
+    return memory->PoolCommit(in_addr, len, mem_prot, type);
 }
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
