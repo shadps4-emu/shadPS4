@@ -944,7 +944,7 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
 
 s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {
-    if (addr > total_direct_size) {
+    if (addr >= total_direct_size) {
         LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }

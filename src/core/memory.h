@@ -53,8 +53,8 @@ DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
 enum class DMAType : u32 {
     Free = 0,
     Direct = 1,
-    Pooled = 3,
-    Committed = 4,
+    Pooled = 2,
+    Committed = 3,
 };
 
 enum class VMAType : u32 {
