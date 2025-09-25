@@ -241,6 +241,7 @@ size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
 
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         void* buffer, size_t* size) {
+    ASSERT(size != nullptr);
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
     auto icon_file = trophy_dir / "trophy00" / "Icons" / "ICON0.PNG";
