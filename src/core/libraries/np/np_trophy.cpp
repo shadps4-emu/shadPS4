@@ -12,6 +12,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_trophy_error.h"
 #include "core/libraries/np/trophy_ui.h"
+#include "core/memory.h"
 
 namespace Libraries::Np::NpTrophy {
 
@@ -229,10 +230,29 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     LOG_INFO(Lib_NpTrophy, "Handle {} destroyed", handle);
     return ORBIS_OK;
 }
+size_t ReadFile(Common::FS::IOFile& file, void* buf, size_t nbytes) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = file.GetSize() - file.Tell();
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+
+    return file.ReadRaw<u8>(buf, nbytes);
+}
 
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         void* buffer, size_t* size) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+    const auto trophy_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto icon_file = trophy_dir / "trophy00" / "Icons" / "ICON0.PNG";
+
+    Common::FS::IOFile icon(icon_file, Common::FS::FileAccessMode::Read);
+    size_t icon_size = icon.GetSize();
+
+    if (buffer != nullptr) {
+        ReadFile(icon, buffer, *size);
+    }
+
+    *size = icon_size;
     return ORBIS_OK;
 }
 
