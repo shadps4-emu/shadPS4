@@ -73,7 +73,7 @@ Emulator::Emulator() {
 
 Emulator::~Emulator() {}
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args,
+void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
@@ -83,19 +83,24 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         file /= "eboot.bin";
     }
 
-    const auto eboot_name = file.filename().string();
-
-    auto game_folder = p_game_folder.value_or(file.parent_path());
-    if (const auto game_folder_name = game_folder.filename().string();
-        game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
-        // If an executable was launched from a separate update directory,
-        // use the base game directory as the game folder.
-        const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
-        const auto base_path = game_folder.parent_path() / base_name;
-        if (std::filesystem::is_directory(base_path)) {
-            game_folder = base_path;
+    std::filesystem::path game_folder;
+    if (p_game_folder.has_value()) {
+        game_folder = p_game_folder.value();
+    } else {
+        game_folder = file.parent_path();
+        if (const auto game_folder_name = game_folder.filename().string();
+            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
+            // If an executable was launched from a separate update directory,
+            // use the base game directory as the game folder.
+            const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
+            const auto base_path = game_folder.parent_path() / base_name;
+            if (std::filesystem::is_directory(base_path)) {
+                game_folder = base_path;
+            }
         }
     }
+
+    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -305,10 +310,11 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
+    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
+    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     std::filesystem::absolute(eboot_path).string());
+                     Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
         std::quick_exit(0);
     }
 
@@ -349,6 +355,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     }
 #endif
 
+    args.insert(args.begin(), eboot_name.generic_string());
     linker->Execute(args);
 
     window->InitTimers();
