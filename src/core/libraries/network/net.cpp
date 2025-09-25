@@ -779,7 +779,7 @@ int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
         return ORBIS_NET_ERROR_EBADF;
     }
 
-    LOG_INFO(Lib_Net, "called, epollid = {} ({})", epollid, file->epoll->name);
+    LOG_DEBUG(Lib_Net, "called, epollid = {} ({})", epollid, file->epoll->name);
 
     file->epoll->Destroy();
 
@@ -794,8 +794,8 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
         return ORBIS_NET_ERROR_EBADF;
     }
     auto epoll = file->epoll;
-    LOG_INFO(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
-             epoll->name, maxevents, timeout);
+    LOG_DEBUG(Lib_Net, "called, epollid = {} ({}), maxevents = {}, timeout = {}", epollid,
+              epoll->name, maxevents, timeout);
 
     int sockets_waited_on = (epoll->events.size() - epoll->async_resolutions.size()) > 0;
 
@@ -832,7 +832,7 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             return ORBIS_NET_ERROR_EINTERNAL;
         }
     } else if (result == 0) {
-        LOG_DEBUG(Lib_Net, "timed out");
+        LOG_TRACE(Lib_Net, "timed out");
     } else {
         for (; i < result; ++i) {
             const auto& current_event = native_events[i];
