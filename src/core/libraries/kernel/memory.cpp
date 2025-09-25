@@ -210,15 +210,43 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 fl
 
 s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 prot, s32 flags,
                                            s64 phys_addr, u64 alignment) {
-    LOG_INFO(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
-    const s32 ret =
-        sceKernelMapNamedDirectMemory(addr, len, prot, flags, phys_addr, alignment, "anon");
+    LOG_INFO(Kernel_Vmm,
+             "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
+             "directMemoryStart = {:#x}, alignment = {:#x}",
+             fmt::ptr(*addr), len, prot, flags, phys_addr, alignment);
+
+    if (len == 0 || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (!Common::Is16KBAligned(phys_addr)) {
+        LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (alignment != 0) {
+        if ((!std::has_single_bit(alignment) && !Common::Is16KBAligned(alignment))) {
+            LOG_ERROR(Kernel_Vmm, "Alignment value is invalid!");
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+    }
+
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+
+    auto* memory = Core::Memory::Instance();
+    const auto ret =
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
+                          true, phys_addr, alignment);
 
     if (ret == 0) {
         // If the map call succeeds, set the direct memory type using the output address.
         auto* memory = Core::Memory::Instance();
         const auto in_addr = reinterpret_cast<VAddr>(*addr);
         memory->SetDirectMemoryType(in_addr, len, type);
+        LOG_INFO(Kernel_Vmm, "out_addr = {:#x}", in_addr);
     }
     return ret;
 }
@@ -616,12 +644,11 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     auto* memory = Core::Memory::Instance();
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
-    const auto is_exec = True(mem_prot & Core::MemoryProt::CpuExec);
 
     s32 result = ORBIS_OK;
     if (fd == -1) {
         result = memory->MapMemory(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
-                                   Core::VMAType::Flexible, "anon", is_exec);
+                                   Core::VMAType::Flexible, "anon", false);
     } else {
         result = memory->MapFile(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
                                  fd, phys_addr);

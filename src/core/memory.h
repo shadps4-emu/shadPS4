@@ -52,9 +52,10 @@ DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
 
 enum class DMAType : u32 {
     Free = 0,
-    Direct = 1,
-    Pooled = 2,
-    Committed = 3,
+    Allocated = 1,
+    Mapped = 2,
+    Pooled = 3,
+    Committed = 4,
 };
 
 enum class VMAType : u32 {
@@ -225,7 +226,7 @@ public:
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
-                  bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
+                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
