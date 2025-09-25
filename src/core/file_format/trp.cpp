@@ -105,7 +105,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                 TrpEntry entry;
                 file.Read(entry);
                 std::string_view name(entry.entry_name);
-                if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
+                if (entry.flag == 0) { // PNG
                     if (!file.Seek(entry.entry_pos)) {
                         LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
                         return false;
