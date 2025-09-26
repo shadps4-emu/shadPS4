@@ -763,19 +763,12 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         return adjusted_size;
     }
 
-    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled) {
-        // On PS4, execute permissions are ignored when protecting direct memory.
-        prot &= ~MemoryProt::CpuExec;
-    }
-
     if (True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
         prot |= MemoryProt::CpuRead;
     }
 
-    // Change protection
-    vma_base.prot = prot;
-
+    
     // Set permissions
     Core::MemoryPermission perms{};
 
@@ -797,6 +790,15 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     if (True(prot & MemoryProt::GpuReadWrite)) {
         perms |= Core::MemoryPermission::ReadWrite;
     }
+
+    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled) {
+        // On PS4, execute permissions are hidden from direct memory mappings.
+        // Tests show that execute permissions still apply, so handle this after reading perms.
+        prot &= ~MemoryProt::CpuExec;
+    }
+
+    // Change protection
+    vma_base.prot = prot;
 
     impl.Protect(addr, size, perms);
 
