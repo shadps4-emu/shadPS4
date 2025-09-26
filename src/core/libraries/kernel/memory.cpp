@@ -159,19 +159,18 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
 }
 
 s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
-                                               s64 directMemoryStart, u64 alignment,
-                                               const char* name) {
+                                               s64 phys_addr, u64 alignment, const char* name) {
     LOG_INFO(Kernel_Vmm,
              "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
-             "directMemoryStart = {:#x}, alignment = {:#x}, name = '{}'",
-             fmt::ptr(*addr), len, prot, flags, directMemoryStart, alignment, name);
+             "phys_addr = {:#x}, alignment = {:#x}, name = '{}'",
+             fmt::ptr(*addr), len, prot, flags, phys_addr, alignment, name);
 
     if (len == 0 || !Common::Is16KBAligned(len)) {
         LOG_ERROR(Kernel_Vmm, "Map size is either zero or not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    if (!Common::Is16KBAligned(directMemoryStart)) {
+    if (!Common::Is16KBAligned(phys_addr)) {
         LOG_ERROR(Kernel_Vmm, "Start address is not 16KB aligned!");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -193,26 +192,24 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
     auto* memory = Core::Memory::Instance();
-    const auto ret =
-        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
-                          false, directMemoryStart, alignment);
+    const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
+                                       Core::VMAType::Direct, name, false, phys_addr, alignment);
 
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     return ret;
 }
 
-s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
-                                          s64 directMemoryStart, u64 alignment) {
-    LOG_INFO(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
-    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, directMemoryStart, alignment,
-                                         "anon");
+s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 flags, s64 phys_addr,
+                                          u64 alignment) {
+    LOG_TRACE(Kernel_Vmm, "called, redirected to sceKernelMapNamedDirectMemory");
+    return sceKernelMapNamedDirectMemory(addr, len, prot, flags, phys_addr, alignment, "anon");
 }
 
 s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 prot, s32 flags,
                                            s64 phys_addr, u64 alignment) {
     LOG_INFO(Kernel_Vmm,
              "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
-             "directMemoryStart = {:#x}, alignment = {:#x}",
+             "phys_addr = {:#x}, alignment = {:#x}",
              fmt::ptr(*addr), len, prot, flags, phys_addr, alignment);
 
     if (len == 0 || !Common::Is16KBAligned(len)) {
