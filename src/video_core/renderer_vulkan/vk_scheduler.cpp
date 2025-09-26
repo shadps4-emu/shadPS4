@@ -126,6 +126,8 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 #endif
 }
 
+std::mutex g_mutex_graphics_queue;
+
 void Scheduler::SubmitExecution(SubmitInfo& info) {
     std::scoped_lock lk{submit_mutex};
     const u64 signal_value = master_semaphore.NextTick();
@@ -170,8 +172,13 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     };
 
     ImGui::Core::TextureManager::Submit();
-    auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
-    ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
+
+    {
+        std::lock_guard lm(g_mutex_graphics_queue);
+
+        auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
+        ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
+    }
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
