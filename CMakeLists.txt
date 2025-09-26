@@ -600,6 +600,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_auth.h
             src/core/libraries/np/np_profile_dialog.cpp
             src/core/libraries/np/np_profile_dialog.h
+            src/core/libraries/np/np_sns_facebook_dialog.cpp
+            src/core/libraries/np/np_sns_facebook_dialog.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
