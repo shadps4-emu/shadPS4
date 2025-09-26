@@ -666,8 +666,8 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
         result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Flexible, "anon", false);
     } else {
-        result = memory->MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
-                                 fd, phys_addr);
+        result = memory->MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags, fd,
+                                 phys_addr);
     }
 
     if (result != ORBIS_OK) {
