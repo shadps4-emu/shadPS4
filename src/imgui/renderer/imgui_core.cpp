@@ -20,6 +20,12 @@
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
+namespace Vulkan {
+
+extern std::mutex g_mutex_device;
+
+}
+
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
 }
@@ -125,10 +131,14 @@ void OnSurfaceFormatChange(vk::Format surface_format) {
 }
 
 void Shutdown(const vk::Device& device) {
-    auto result = device.waitIdle();
-    if (result != vk::Result::eSuccess) {
-        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on shutdown: {}",
-                    vk::to_string(result));
+    {
+        std::lock_guard lm(::Vulkan::g_mutex_device);
+
+        auto result = device.waitIdle();
+        if (result != vk::Result::eSuccess) {
+            LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on shutdown: {}",
+                        vk::to_string(result));
+        }
     }
 
     TextureManager::StopWorker();

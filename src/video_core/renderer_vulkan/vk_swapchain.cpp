@@ -13,6 +13,8 @@
 
 namespace Vulkan {
 
+std::mutex g_mutex_device;
+
 static constexpr vk::SurfaceFormatKHR SURFACE_FORMAT_HDR = {
     .format = vk::Format::eA2B10G10R10UnormPack32,
     .colorSpace = vk::ColorSpaceKHR::eHdr10St2084EXT,
@@ -90,10 +92,14 @@ void Swapchain::SetHDR(bool hdr) {
         return;
     }
 
-    auto result = instance.GetDevice().waitIdle();
-    if (result != vk::Result::eSuccess) {
-        LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on mode change: {}",
-                    vk::to_string(result));
+    {
+        std::lock_guard lm(g_mutex_device);
+
+        auto result = instance.GetDevice().waitIdle();
+        if (result != vk::Result::eSuccess) {
+            LOG_WARNING(ImGui, "Failed to wait for Vulkan device idle on mode change: {}",
+                        vk::to_string(result));
+        }
     }
 
     needs_hdr = hdr;
