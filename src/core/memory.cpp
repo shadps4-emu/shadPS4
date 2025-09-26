@@ -738,7 +738,7 @@ s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
     return ORBIS_OK;
 }
 
-s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, u64 size, MemoryProt prot) {
+s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 size, MemoryProt prot) {
     const auto start_in_vma = addr - vma_base.base;
     const auto adjusted_size =
         vma_base.size - start_in_vma < size ? vma_base.size - start_in_vma : size;
