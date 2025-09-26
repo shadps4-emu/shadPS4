@@ -30,7 +30,8 @@ namespace Core {
 enum class MemoryProt : u32 {
     NoAccess = 0,
     CpuRead = 1,
-    CpuReadWrite = 2,
+    CpuWrite = 2,
+    CpuReadWrite = 3,
     CpuExec = 4,
     GpuRead = 16,
     GpuWrite = 32,

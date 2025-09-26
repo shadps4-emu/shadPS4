@@ -286,6 +286,11 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         pool_budget -= size;
     }
 
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
+    }
+
     // Carve out the new VMA representing this mapping
     const auto new_vma_handle = CarveVMA(mapped_addr, size);
     auto& new_vma = new_vma_handle->second;
@@ -465,8 +470,12 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
-    const bool is_exec = True(prot & MemoryProt::CpuExec);
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
+    }
 
+    const bool is_exec = True(prot & MemoryProt::CpuExec);
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = name;
@@ -528,6 +537,11 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto file = h->GetFile(fd);
     if (file == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
     }
 
     const auto handle = file->f.GetFileMapping();
@@ -746,6 +760,16 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     if (vma_base.type == VMAType::Free) {
         // On PS4, protecting freed memory does nothing.
         return adjusted_size;
+    }
+
+    if (vma_base.type == VMAType::Direct) {
+        // On PS4, execute permissions are ignored when protecting direct memory.
+        prot &= ~MemoryProt::CpuExec;
+    }
+
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
     }
 
     // Change protection
