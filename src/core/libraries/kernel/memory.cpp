@@ -537,11 +537,16 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+        LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
              fmt::ptr(addr), len, type, prot, flags);
 
     const VAddr in_addr = reinterpret_cast<VAddr>(addr);
-    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     auto* memory = Core::Memory::Instance();
     return memory->PoolCommit(in_addr, len, mem_prot, type);
 }

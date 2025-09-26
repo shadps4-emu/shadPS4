@@ -762,7 +762,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         return adjusted_size;
     }
 
-    if (vma_base.type == VMAType::Direct) {
+    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled) {
         // On PS4, execute permissions are ignored when protecting direct memory.
         prot &= ~MemoryProt::CpuExec;
     }
