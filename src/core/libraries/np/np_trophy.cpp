@@ -12,6 +12,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_trophy_error.h"
 #include "core/libraries/np/trophy_ui.h"
+#include "core/memory.h"
 
 namespace Libraries::Np::NpTrophy {
 
@@ -148,8 +149,8 @@ int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t user_id,
-                                          uint32_t service_label, uint64_t options) {
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, s32 user_id,
+                                          uint32_t service_label, u64 options) {
     ASSERT(options == 0ull);
     if (!context) {
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
@@ -230,9 +231,34 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     return ORBIS_OK;
 }
 
+u64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = file.GetSize() - file.Tell();
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+
+    return file.ReadRaw<u8>(buf, nbytes);
+}
+
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                        void* buffer, size_t* size) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+                                        void* buffer, u64* size) {
+    ASSERT(size != nullptr);
+    const auto trophy_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto icon_file = trophy_dir / "trophy00" / "Icons" / "ICON0.PNG";
+
+    Common::FS::IOFile icon(icon_file, Common::FS::FileAccessMode::Read);
+    if (!icon.IsOpen()) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy icon file: {}", icon_file.string());
+        return ORBIS_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
+    }
+    u64 icon_size = icon.GetSize();
+
+    if (buffer != nullptr) {
+        ReadFile(icon, buffer, *size);
+    } else {
+        *size = icon_size;
+    }
     return ORBIS_OK;
 }
 
@@ -329,7 +355,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
 }
 
 int PS4_SYSV_ABI sceNpTrophyGetGroupIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                         OrbisNpTrophyGroupId groupId, void* buffer, size_t* size) {
+                                         OrbisNpTrophyGroupId groupId, void* buffer, u64* size) {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -436,7 +462,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
 }
 
 int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                          OrbisNpTrophyId trophyId, void* buffer, size_t* size) {
+                                          OrbisNpTrophyId trophyId, void* buffer, u64* size) {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
