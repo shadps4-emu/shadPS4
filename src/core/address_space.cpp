@@ -297,17 +297,28 @@ struct AddressSpace::Impl {
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
 
-        if (read && write && execute) {
-            new_flags = PAGE_EXECUTE_READWRITE;
-        } else if (read && write) {
-            new_flags = PAGE_READWRITE;
-        } else if (read && !write) {
-            new_flags = PAGE_READONLY;
-        } else if (execute && !read && !write) {
-            new_flags = PAGE_EXECUTE;
-        } else if (!read && !write && !execute) {
-            new_flags = PAGE_NOACCESS;
+        // All cases involving execute permissions have separate permissions.
+        if (execute) {
+            // If there's some form of write protection requested, provide read-write permissions.
+            if (write) {
+                new_flags = PAGE_EXECUTE_READWRITE;
+            } else if (read && !write) {
+                new_flags = PAGE_EXECUTE_READ;
+            } else {
+                new_flags = PAGE_EXECUTE;
+            }
         } else {
+            if (write) {
+                new_flags = PAGE_READWRITE;
+            } else if (read && !write) {
+                new_flags = PAGE_READONLY;
+            } else {
+                new_flags = PAGE_NOACCESS;
+            }
+        }
+        
+        // If no flags are assigned, then something's gone wrong.
+        if (new_flags == 0) {
             LOG_CRITICAL(Common_Memory,
                          "Unsupported protection flag combination for address {:#x}, size {}, "
                          "read={}, write={}, execute={}",
@@ -327,7 +338,7 @@ struct AddressSpace::Impl {
             DWORD old_flags{};
             if (!VirtualProtectEx(process, LPVOID(range_addr), range_size, new_flags, &old_flags)) {
                 UNREACHABLE_MSG(
-                    "Failed to change virtual memory protection for address {:#x}, size {}",
+                    "Failed to change virtual memory protection for address {:#x}, size {:#x}",
                     range_addr, range_size);
             }
         }
