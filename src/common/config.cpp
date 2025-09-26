@@ -128,6 +128,7 @@ static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static bool checkCompatibilityOnStartup = false;
 static bool compatibilityData = false;
+static std::filesystem::path sys_modules_path = {};
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -201,6 +202,17 @@ static string config_version = Common::g_scm_rev;
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
+
+std::filesystem::path getSysModulesPath() {
+    if (sys_modules_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    }
+    return sys_modules_path;
+}
+
+void setSysModulesPath(const std::filesystem::path& path) {
+    sys_modules_path = path;
+}
 
 int getVolumeSlider() {
     return volumeSlider.get();
@@ -835,6 +847,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
+        sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
     }
 
     if (data.contains("Input")) {
@@ -1100,6 +1113,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["compatibilityEnabled"] = compatibilityData;
         data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+        data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
