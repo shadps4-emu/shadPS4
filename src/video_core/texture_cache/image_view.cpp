@@ -113,7 +113,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
 
     const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
-        .image = image.image,
+        .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
         .format = instance.GetSupportedFormat(format, image.format_features),
         .components = info.mapping,

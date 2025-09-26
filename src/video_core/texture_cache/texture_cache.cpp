@@ -74,15 +74,13 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
     info.UpdateSize();
 
     const ImageId null_id = slot_images.insert(instance, scheduler, info);
-    auto& img = slot_images[null_id];
-
-    const vk::Image& null_image = img.image;
-    Vulkan::SetObjectName(instance.GetDevice(), null_image,
+    auto& image = slot_images[null_id];
+    Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
                           fmt::format("Null Image ({})", vk::to_string(format)));
 
-    img.flags = ImageFlagBits::Empty;
-    img.track_addr = img.info.guest_address;
-    img.track_addr_end = img.info.guest_address + img.info.guest_size;
+    image.flags = ImageFlagBits::Empty;
+    image.track_addr = image.info.guest_address;
+    image.track_addr_end = image.info.guest_address + image.info.guest_size;
 
     null_images.emplace(format, null_id);
     return null_id;
@@ -124,7 +122,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal,
+    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
     {
@@ -564,8 +562,8 @@ ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo
     }
 
     const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, image_id);
-    image.image_view_infos.emplace_back(view_info);
-    image.image_view_ids.emplace_back(view_id);
+    image.backing->image_view_infos.emplace_back(view_info);
+    image.backing->image_view_ids.emplace_back(view_id);
     return slot_image_views[view_id];
 }
 
@@ -582,8 +580,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     return RegisterImageView(image_id, desc.view_info);
 }
 
-ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
-    const ImageId image_id = FindImage(desc);
+ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.render_target = 1u;
@@ -605,12 +602,10 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
     return RegisterImageView(image_id, desc.view_info);
 }
 
-ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
-    const ImageId image_id = FindImage(desc);
+ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
-    image.usage.stencil = image.info.props.has_stencil;
     UpdateImage(image_id);
 
     // Register meta data for this depth buffer
@@ -770,7 +765,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         .imageMemoryBarrierCount = static_cast<u32>(image_barriers.size()),
         .pImageMemoryBarriers = image_barriers.data(),
     });
-    cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+    cmdbuf.copyBufferToImage(buffer, image.GetImage(), vk::ImageLayout::eTransferDstOptimal, image_copy);
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,
@@ -1020,8 +1015,10 @@ void TextureCache::DeleteImage(ImageId image_id) {
     // Reclaim image and any image views it references.
     scheduler.DeferOperation([this, image_id] {
         Image& image = slot_images[image_id];
-        for (const ImageViewId image_view_id : image.image_view_ids) {
-            slot_image_views.erase(image_view_id);
+        for (auto& backing : image.backing_images) {
+            for (const ImageViewId image_view_id : backing.image_view_ids) {
+                slot_image_views.erase(image_view_id);
+            }
         }
         slot_images.erase(image_id);
     });

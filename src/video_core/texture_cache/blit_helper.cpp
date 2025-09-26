@@ -45,7 +45,7 @@ void BlitHelper::BlitColorToMsDepth(Image& source, Image& dest) {
     const vk::ImageViewUsageCreateInfo color_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
     const vk::ImageViewCreateInfo color_view_ci = {
         .pNext = &color_usage_ci,
-        .image = source.image,
+        .image = source.GetImage(),
         .viewType = vk::ImageViewType::e2D,
         .format = source.info.pixel_format,
         .subresourceRange{
@@ -64,7 +64,7 @@ void BlitHelper::BlitColorToMsDepth(Image& source, Image& dest) {
         .usage = vk::ImageUsageFlagBits::eDepthStencilAttachment};
     const vk::ImageViewCreateInfo depth_view_ci = {
         .pNext = &depth_usage_ci,
-        .image = dest.image,
+        .image = dest.GetImage(),
         .viewType = vk::ImageViewType::e2D,
         .format = dest.info.pixel_format,
         .subresourceRange{

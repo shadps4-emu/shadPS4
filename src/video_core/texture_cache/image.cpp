@@ -75,11 +75,6 @@ static vk::FormatFeatureFlags2 FormatFeatureFlags(const vk::ImageUsageFlags usag
     return feature_flags;
 }
 
-UniqueImage::UniqueImage() {}
-
-UniqueImage::UniqueImage(vk::Device device_, VmaAllocator allocator_)
-    : device{device_}, allocator{allocator_} {}
-
 UniqueImage::~UniqueImage() {
     if (image) {
         vmaDestroyImage(allocator, image, allocation);
@@ -87,6 +82,7 @@ UniqueImage::~UniqueImage() {
 }
 
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
+    this->image_ci = image_ci;
     if (image) {
         vmaDestroyImage(allocator, image, allocation);
     }
@@ -110,8 +106,7 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 
 Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
              const ImageInfo& info_)
-    : instance{&instance_}, scheduler{&scheduler_}, info{info_},
-      image{instance->GetDevice(), instance->GetAllocator()} {
+    : instance{&instance_}, scheduler{&scheduler_}, info{info_} {
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
@@ -130,20 +125,11 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 
     usage_flags = ImageUsageFlags(instance, info);
     format_features = FormatFeatureFlags(usage_flags);
-
-    switch (info.pixel_format) {
-    case vk::Format::eD16Unorm:
-    case vk::Format::eD32Sfloat:
-    case vk::Format::eX8D24UnormPack32:
+    if (info.props.is_depth) {
         aspect_mask = vk::ImageAspectFlagBits::eDepth;
-        break;
-    case vk::Format::eD16UnormS8Uint:
-    case vk::Format::eD24UnormS8Uint:
-    case vk::Format::eD32SfloatS8Uint:
-        aspect_mask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
-        break;
-    default:
-        break;
+        if (info.props.has_stencil) {
+            aspect_mask |= vk::ImageAspectFlagBits::eStencil;
+        }
     }
 
     constexpr auto tiling = vk::ImageTiling::eOptimal;
@@ -162,7 +148,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                   vk::to_string(supported_format), vk::to_string(format_info.type),
                   vk::to_string(format_info.flags), vk::to_string(format_info.usage));
     }
-    const auto supported_samples =
+    supported_samples =
         image_format_properties.result == vk::Result::eSuccess
             ? image_format_properties.value.imageFormatProperties.sampleCounts
             : vk::SampleCountFlagBits::e1;
@@ -184,22 +170,26 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    image.Create(image_ci);
+    backing = &backing_images.emplace_back(UniqueImage{instance->GetDevice(), instance->GetAllocator()});
+    backing->num_samples = info.num_samples;
+    backing->image.Create(image_ci);
 
-    Vulkan::SetObjectName(instance->GetDevice(), (vk::Image)image, "Image {}x{}x{} {} {:#x}:{:#x}",
+    Vulkan::SetObjectName(instance->GetDevice(), GetImage(), "Image {}x{}x{} {} {:#x}:{:#x}",
                           info.size.width, info.size.height, info.size.depth,
                           AmdGpu::NameOf(info.tile_mode), info.guest_address, info.guest_size);
 }
 
-boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
-    vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
-    vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range) {
+Image::~Image() = default;
+
+Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                                   vk::PipelineStageFlags2 dst_stage,
+                                   std::optional<SubresourceRange> subres_range) {
     const bool needs_partial_transition =
         subres_range &&
         (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
     const bool partially_transited = !subresource_states.empty();
 
-    boost::container::small_vector<vk::ImageMemoryBarrier2, 32> barriers{};
+    Barriers barriers;
     if (needs_partial_transition || partially_transited) {
         if (!partially_transited) {
             subresource_states.resize(info.resources.levels * info.resources.layers);
@@ -238,7 +228,7 @@ boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
                         .newLayout = dst_layout,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = image,
+                        .image = GetImage(),
                         .subresourceRange{
                             .aspectMask = aspect_mask,
                             .baseMipLevel = mip,
@@ -271,7 +261,7 @@ boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
             .newLayout = dst_layout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = image,
+            .image = GetImage(),
             .subresourceRange{
                 .aspectMask = aspect_mask,
                 .baseMipLevel = 0,
@@ -289,7 +279,7 @@ boost::container::small_vector<vk::ImageMemoryBarrier2, 32> Image::GetBarriers(
     return barriers;
 }
 
-void Image::Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+void Image::Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                     std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf /*= {}*/) {
     // Adjust pipieline stage
     const vk::PipelineStageFlags2 dst_pl_stage =
@@ -337,7 +327,7 @@ void Image::Upload(vk::Buffer buffer, u64 offset) {
     };
 
     const auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+    cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal, image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -381,8 +371,8 @@ void Image::CopyImage(Image& src_image) {
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.copyImage(src_image.image, src_image.last_state.layout, image, last_state.layout,
-                     image_copies);
+    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout,
+                     GetImage(), last_state.layout, image_copies);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -445,7 +435,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
         .pBufferMemoryBarriers = &pre_copy_barrier,
     });
 
-    cmdbuf.copyImageToBuffer(src_image.image, vk::ImageLayout::eTransferSrcOptimal, buffer,
+    cmdbuf.copyImageToBuffer(src_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, buffer,
                              buffer_copies);
 
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
@@ -458,7 +448,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
         copy.imageSubresource.aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
     }
 
-    cmdbuf.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, buffer_copies);
+    cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal, buffer_copies);
 }
 
 void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
@@ -491,13 +481,29 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
         },
         .extent = {mip_w, mip_h, mip_d},
     };
-    cmdbuf.copyImage(src_image.image, src_image.last_state.layout, image, last_state.layout,
+    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(), last_state.layout,
                      image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
-Image::~Image() = default;
+void Image::SwapBackingSamples(u32 new_samples) {
+    if (backing->num_samples == new_samples) {
+        return;
+    }
+    BackingImage* new_backing;
+    const auto it = std::ranges::find(backing_images, new_samples, &BackingImage::num_samples);
+    if (it == backing_images.end()) {
+        auto new_image_ci = backing->image.image_ci;
+        new_image_ci.samples = LiverpoolToVK::NumSamples(new_samples, supported_samples);
+
+        new_backing = &backing_images.emplace_back(UniqueImage{instance->GetDevice(), instance->GetAllocator()});
+        new_backing->num_samples = info.num_samples;
+        new_backing->image.Create(new_image_ci);
+    } else {
+        new_backing = std::addressof(*it);
+    }
+}
 
 } // namespace VideoCore

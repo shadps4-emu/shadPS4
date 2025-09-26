@@ -381,10 +381,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Second pass to mask out render targets not written by fragment shader
     for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
         const auto& col_buf = regs.color_buffers[cb];
-        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
-            continue;
-        }
-        if ((key.mrt_mask & (1u << cb)) == 0) {
+        if (col_buf && regs.color_target_mask.GetMask(cb) && (key.mrt_mask & (1u << cb)) == 0) {
             // Attachment is bound and mask allows writes but shader does not output to it.
             key.color_buffers[cb] = {};
         }

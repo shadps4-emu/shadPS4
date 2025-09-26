@@ -67,12 +67,14 @@ public:
     };
 
     struct RenderTargetDesc : public BaseDesc {
+        RenderTargetDesc() = default;
         RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
                          const AmdGpu::Liverpool::CbDbExtent& hint = {})
             : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
     };
 
     struct DepthTargetDesc : public BaseDesc {
+        DepthTargetDesc() = default;
         DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
                         const AmdGpu::Liverpool::DepthView& view,
                         const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
@@ -118,10 +120,10 @@ public:
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {

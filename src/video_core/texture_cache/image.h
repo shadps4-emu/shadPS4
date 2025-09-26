@@ -9,6 +9,7 @@
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 
+#include <deque>
 #include <optional>
 
 namespace Vulkan {
@@ -34,8 +35,9 @@ enum ImageFlagBits : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
 struct UniqueImage {
-    explicit UniqueImage();
-    explicit UniqueImage(vk::Device device, VmaAllocator allocator);
+    explicit UniqueImage() = default;
+    explicit UniqueImage(vk::Device device, VmaAllocator allocator)
+        : device{device}, allocator{allocator} {}
     ~UniqueImage();
 
     UniqueImage(const UniqueImage&) = delete;
@@ -44,11 +46,13 @@ struct UniqueImage {
     UniqueImage(UniqueImage&& other)
         : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
           allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
-          image{std::exchange(other.image, VK_NULL_HANDLE)} {}
+          image{std::exchange(other.image, VK_NULL_HANDLE)},
+          image_ci{std::move(other.image_ci)} {}
     UniqueImage& operator=(UniqueImage&& other) {
         image = std::exchange(other.image, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);
         allocation = std::exchange(other.allocation, VK_NULL_HANDLE);
+        image_ci = std::move(other.image_ci);
         return *this;
     }
 
@@ -58,11 +62,12 @@ struct UniqueImage {
         return image;
     }
 
-private:
-    vk::Device device;
-    VmaAllocator allocator;
-    VmaAllocation allocation;
+public:
+    vk::Device device{};
+    VmaAllocator allocator{};
+    VmaAllocation allocation{};
     vk::Image image{};
+    vk::ImageCreateInfo image_ci{};
 };
 
 constexpr Common::SlotId NULL_IMAGE_ID{0};
@@ -77,7 +82,7 @@ struct Image {
     Image(Image&&) = default;
     Image& operator=(Image&&) = default;
 
-    [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
+    bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
         const VAddr overlap_end = overlap_cpu_addr + overlap_size;
         const auto image_addr = info.guest_address;
         const auto image_end = info.guest_address + info.guest_size;
@@ -85,21 +90,35 @@ struct Image {
     }
 
     ImageViewId FindView(const ImageViewInfo& info) const {
-        const auto it = std::ranges::find(image_view_infos, info);
-        if (it == image_view_infos.end()) {
+        const auto& view_infos = backing->image_view_infos;
+        const auto it = std::ranges::find(view_infos, info);
+        if (it == view_infos.end()) {
             return {};
         }
-        return image_view_ids[std::distance(image_view_infos.begin(), it)];
+        return backing->image_view_ids[std::distance(view_infos.begin(), it)];
+    }
+
+    vk::Image GetImage() const {
+        return backing->image.image;
+    }
+
+    bool IsTracked() {
+        return track_addr != 0 && track_addr_end != 0;
+    }
+
+    bool SafeToDownload() const {
+        return True(flags & ImageFlagBits::GpuModified) && False(flags & (ImageFlagBits::Dirty));
     }
 
     void AssociateDepth(ImageId image_id) {
         depth_id = image_id;
     }
 
-    boost::container::small_vector<vk::ImageMemoryBarrier2, 32> GetBarriers(
-        vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
-        vk::PipelineStageFlags2 dst_stage, std::optional<SubresourceRange> subres_range);
-    void Transit(vk::ImageLayout dst_layout, vk::Flags<vk::AccessFlagBits2> dst_mask,
+    using Barriers = boost::container::small_vector<vk::ImageMemoryBarrier2, 32>;
+    Barriers GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                         vk::PipelineStageFlags2 dst_stage,
+                         std::optional<SubresourceRange> subres_range);
+    void Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                  std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
     void Upload(vk::Buffer buffer, u64 offset);
 
@@ -107,64 +126,55 @@ struct Image {
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
-    bool IsTracked() {
-        return track_addr != 0 && track_addr_end != 0;
-    }
+    void SwapBackingSamples(u32 new_samples);
 
-    bool SafeToDownload() const {
-        return True(flags & ImageFlagBits::GpuModified) &&
-               False(flags & (ImageFlagBits::GpuDirty | ImageFlagBits::CpuDirty));
-    }
-
+public:
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     ImageInfo info;
-    UniqueImage image;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
+    vk::SampleCountFlags supported_samples = vk::SampleCountFlagBits::e1;
     ImageFlagBits flags = ImageFlagBits::Dirty;
     VAddr track_addr = 0;
     VAddr track_addr_end = 0;
-    std::vector<ImageViewInfo> image_view_infos;
-    std::vector<ImageViewId> image_view_ids;
+    struct BackingImage {
+        UniqueImage image;
+        boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
+        boost::container::small_vector<ImageViewId, 4> image_view_ids;
+        u32 num_samples;
+    };
+    std::deque<BackingImage> backing_images;
+    BackingImage* backing{};
     ImageId depth_id{};
-    u64 lru_id{};
 
     // Resource state tracking
+    vk::ImageUsageFlags usage_flags;
+    vk::FormatFeatureFlags2 format_features;
+    struct State {
+        vk::PipelineStageFlags2 pl_stage = vk::PipelineStageFlagBits2::eAllCommands;
+        vk::AccessFlags2 access_mask = vk::AccessFlagBits2::eNone;
+        vk::ImageLayout layout = vk::ImageLayout::eUndefined;
+    };
+    State last_state{};
+    std::vector<State> subresource_states{};
+    boost::container::static_vector<u64, 16> mip_hashes{};
+    u64 lru_id{};
+    u64 tick_accessed_last{};
+    u64 hash{};
+
     struct {
         u32 texture : 1;
         u32 storage : 1;
         u32 render_target : 1;
         u32 depth_target : 1;
-        u32 stencil : 1;
         u32 vo_surface : 1;
     } usage{};
-    vk::ImageUsageFlags usage_flags;
-    vk::FormatFeatureFlags2 format_features;
-    struct State {
-        vk::Flags<vk::PipelineStageFlagBits2> pl_stage = vk::PipelineStageFlagBits2::eAllCommands;
-        vk::Flags<vk::AccessFlagBits2> access_mask = vk::AccessFlagBits2::eNone;
-        vk::ImageLayout layout = vk::ImageLayout::eUndefined;
-    };
-    State last_state{};
-    std::vector<State> subresource_states{};
-    boost::container::small_vector<u64, 14> mip_hashes{};
-    u64 tick_accessed_last{0};
-    u64 hash{0};
 
     struct {
-        union {
-            struct {
-                u32 is_bound : 1;      // the image is bound to a descriptor set
-                u32 is_target : 1;     // the image is bound as color/depth target
-                u32 needs_rebind : 1;  // the image needs to be rebound
-                u32 force_general : 1; // the image needs to be used in general layout
-            };
-            u32 raw{};
-        };
-
-        void Reset() {
-            raw = 0u;
-        }
+        u32 is_bound : 1;
+        u32 is_target : 1;
+        u32 needs_rebind : 1;
+        u32 force_general : 1;
     } binding{};
 };
 
