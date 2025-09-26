@@ -128,7 +128,7 @@ static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static bool checkCompatibilityOnStartup = false;
 static bool compatibilityData = false;
-std::filesystem::path sys_modules_path = {};
+static std::filesystem::path sys_modules_path = {};
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
