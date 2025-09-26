@@ -250,9 +250,9 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     if (ret == 0) {
         // If the map call succeeds, set the direct memory type using the output address.
         auto* memory = Core::Memory::Instance();
-        const auto in_addr = reinterpret_cast<VAddr>(*addr);
-        memory->SetDirectMemoryType(in_addr, len, type);
-        LOG_INFO(Kernel_Vmm, "out_addr = {:#x}", in_addr);
+        const auto out_addr = reinterpret_cast<VAddr>(*addr);
+        memory->SetDirectMemoryType(out_addr, len, type);
+        LOG_INFO(Kernel_Vmm, "out_addr = {:#x}", out_addr);
     }
     return ret;
 }
