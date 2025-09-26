@@ -187,9 +187,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+        LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
     const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
@@ -229,9 +234,14 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
         }
     }
 
-    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+        LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
+    const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
     const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
