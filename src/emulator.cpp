@@ -3,24 +3,24 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <set>
 #include <sstream>
 #include <fmt/core.h>
+#include <fmt/xchar.h>
 #include <hwinfo/hwinfo.h>
 
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
+#include "core/ipc/ipc.h"
 #ifdef ENABLE_QT_GUI
 #include <QtCore>
 #endif
 #include "common/assert.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
-#endif
-#ifdef _WIN32
-#include <WinSock2.h>
 #endif
 #include "common/elf_info.h"
 #include "common/memory_patcher.h"
@@ -29,6 +29,7 @@
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
 #include "common/singleton.h"
+#include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
@@ -44,6 +45,15 @@
 #include "core/memory.h"
 #include "emulator.h"
 #include "video_core/renderdoc.h"
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif
+
+#ifndef _WIN32
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -63,24 +73,34 @@ Emulator::Emulator() {
 
 Emulator::~Emulator() {}
 
-void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
+void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
+                   std::optional<std::filesystem::path> p_game_folder) {
+    if (waitForDebuggerBeforeRun) {
+        Debugger::WaitForDebuggerAttach();
+    }
+
     if (std::filesystem::is_directory(file)) {
         file /= "eboot.bin";
     }
 
-    const auto eboot_name = file.filename().string();
-
-    auto game_folder = file.parent_path();
-    if (const auto game_folder_name = game_folder.filename().string();
-        game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
-        // If an executable was launched from a separate update directory,
-        // use the base game directory as the game folder.
-        const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
-        const auto base_path = game_folder.parent_path() / base_name;
-        if (std::filesystem::is_directory(base_path)) {
-            game_folder = base_path;
+    std::filesystem::path game_folder;
+    if (p_game_folder.has_value()) {
+        game_folder = p_game_folder.value();
+    } else {
+        game_folder = file.parent_path();
+        if (const auto game_folder_name = game_folder.filename().string();
+            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
+            // If an executable was launched from a separate update directory,
+            // use the base game directory as the game folder.
+            const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
+            const auto base_path = game_folder.parent_path() / base_name;
+            if (std::filesystem::is_directory(base_path)) {
+                game_folder = base_path;
+            }
         }
     }
+
+    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -290,10 +310,11 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    const auto eboot_path = mnt->GetHostPath("/app0/" + eboot_name);
+    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
+    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     std::filesystem::absolute(eboot_path).string());
+                     Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
         std::quick_exit(0);
     }
 
@@ -334,6 +355,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     }
 #endif
 
+    args.insert(args.begin(), eboot_name.generic_string());
     linker->Execute(args);
 
     window->InitTimers();
@@ -343,6 +365,109 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
 #ifdef ENABLE_QT_GUI
     UpdatePlayTime(id);
+#endif
+
+    std::quick_exit(0);
+}
+
+void Emulator::Restart(std::filesystem::path eboot_path,
+                       const std::vector<std::string>& guest_args) {
+    std::vector<std::string> args;
+
+    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto game_path = mnt->GetHostPath("/app0");
+
+    args.push_back("--log-append");
+    args.push_back("--game");
+    args.push_back(Common::FS::PathToUTF8String(eboot_path));
+
+    args.push_back("--override-root");
+    args.push_back(Common::FS::PathToUTF8String(game_path));
+
+    if (FileSys::MntPoints::ignore_game_patches) {
+        args.push_back("--ignore-game-patch");
+    }
+
+    if (!MemoryPatcher::patchFile.empty()) {
+        args.push_back("--patch");
+        args.push_back(MemoryPatcher::patchFile);
+    }
+
+    args.push_back("--wait-for-pid");
+    args.push_back(std::to_string(Debugger::GetCurrentPid()));
+
+    if (waitForDebuggerBeforeRun) {
+        args.push_back("--wait-for-debugger");
+    }
+
+    if (guest_args.size() > 0) {
+        args.push_back("--");
+        for (const auto& arg : guest_args) {
+            args.push_back(arg);
+        }
+    }
+
+    LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
+    Libraries::SaveData::Backup::StopThread();
+    Common::Log::Denitializer();
+
+    auto& ipc = IPC::Instance();
+
+    if (ipc.IsEnabled()) {
+        ipc.SendRestart(args);
+        while (true) {
+            std::this_thread::sleep_for(std::chrono::minutes(1));
+        }
+    }
+#if defined(_WIN32)
+    std::string cmdline;
+    // Emulator executable
+    cmdline += "\"";
+    cmdline += executableName;
+    cmdline += "\"";
+    for (const auto& arg : args) {
+        cmdline += " \"";
+        cmdline += arg;
+        cmdline += "\"";
+    }
+    cmdline += "\0";
+
+    STARTUPINFOA si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    bool success = CreateProcessA(nullptr, cmdline.data(), nullptr, nullptr, TRUE, 0, nullptr,
+                                  nullptr, &si, &pi);
+
+    if (!success) {
+        std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
+        std::quick_exit(1);
+    }
+
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+#elif defined(__APPLE__) || defined(__linux__)
+    std::vector<char*> argv;
+
+    // Emulator executable
+    argv.push_back(const_cast<char*>(executableName));
+
+    for (const auto& arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
+    }
+    argv.push_back(nullptr);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        // Child process - execute the new instance
+        execvp(executableName, argv.data());
+        std::cerr << "Failed to restart game: execvp failed" << std::endl;
+        std::quick_exit(1);
+    } else if (pid < 0) {
+        std::cerr << "Failed to restart game: fork failed" << std::endl;
+        std::quick_exit(1);
+    }
+#else
+#error "Unsupported platform"
 #endif
 
     std::quick_exit(0);

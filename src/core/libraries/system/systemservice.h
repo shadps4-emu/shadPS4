@@ -501,7 +501,7 @@ int PS4_SYSV_ABI sceSystemServiceLaunchEventDetails();
 int PS4_SYSV_ABI sceSystemServiceLaunchTournamentList();
 int PS4_SYSV_ABI sceSystemServiceLaunchTournamentsTeamProfile();
 int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser();
-int PS4_SYSV_ABI sceSystemServiceLoadExec();
+int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]);
 int PS4_SYSV_ABI sceSystemServiceNavigateToAnotherApp();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBack();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBackWithValue();
