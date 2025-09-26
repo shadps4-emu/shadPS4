@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -83,7 +83,7 @@ u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
     ++vma;
 
     // Keep adding to the size while there is contigious virtual address space.
-    while (vma->second.IsMapped() && clamped_size < size) {
+    while (vma != vma_map.end() && vma->second.IsMapped() && clamped_size < size) {
         clamped_size += vma->second.size;
         ++vma;
     }
@@ -253,14 +253,13 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
     MergeAdjacent(dmem_map, dmem_area);
 }
 
-s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
+s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
                "Attempted to access invalid address {:#x}", virtual_addr);
     std::scoped_lock lk{mutex};
 
+    // Input addresses to PoolCommit are treated as fixed, and have a constant alignment.
     const u64 alignment = 64_KB;
-
-    // Input addresses to PoolCommit are treated as fixed.
     VAddr mapped_addr = Common::AlignUp(virtual_addr, alignment);
 
     auto& vma = FindVMA(mapped_addr)->second;
@@ -309,6 +308,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
     const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
     auto& new_dmem_area = new_dmem_handle->second;
     new_dmem_area.dma_type = DMAType::Committed;
+    new_dmem_area.memory_type = mtype;
     new_vma.phys_base = new_dmem_area.base;
     MergeAdjacent(dmem_map, new_dmem_handle);
 
@@ -325,9 +325,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot) {
 
 s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                              MemoryMapFlags flags, VMAType type, std::string_view name,
-                             bool is_exec, PAddr phys_addr, u64 alignment) {
-    std::scoped_lock lk{mutex};
-
+                             bool validate_dmem, PAddr phys_addr, u64 alignment) {
     // Certain games perform flexible mappings on loop to determine
     // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
@@ -338,6 +336,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
+    std::scoped_lock lk{mutex};
+
     // Validate the requested physical address range
     if (phys_addr != -1) {
         if (total_direct_size < phys_addr + size) {
@@ -346,26 +346,53 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
-        u64 validated_size = 0;
-        do {
-            auto dmem_area = FindDmemArea(phys_addr + validated_size)->second;
+        // Validate direct memory areas involved in this call.
+        auto dmem_area = FindDmemArea(phys_addr);
+        while (dmem_area != dmem_map.end() && dmem_area->second.base < phys_addr + size) {
             // If any requested dmem area is not allocated, return an error.
-            if (dmem_area.dma_type != DMAType::Allocated && dmem_area.dma_type != DMAType::Mapped) {
+            if (dmem_area->second.dma_type != DMAType::Allocated &&
+                dmem_area->second.dma_type != DMAType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
-            // Track how much we've validated.
-            validated_size += dmem_area.size - (phys_addr + validated_size - dmem_area.base);
-        } while (validated_size < size);
 
-        // Carve a new dmem area for this mapping
-        const auto new_dmem_handle = CarveDmemArea(phys_addr, size);
-        auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.dma_type = DMAType::Mapped;
+            // If we need to perform extra validation, then check for Mapped dmem areas too.
+            if (validate_dmem && dmem_area->second.dma_type == DMAType::Mapped) {
+                LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                          phys_addr);
+                return ORBIS_KERNEL_ERROR_EBUSY;
+            }
 
-        // Coalesce direct memory areas if possible
-        MergeAdjacent(dmem_map, new_dmem_handle);
+            dmem_area++;
+        }
+
+        // If the prior loop succeeds, we need to loop through again and carve out mapped dmas.
+        // This needs to be a separate loop to avoid modifying dmem map during failed calls.
+        auto phys_addr_to_search = phys_addr;
+        auto remaining_size = size;
+        dmem_area = FindDmemArea(phys_addr);
+        while (dmem_area != dmem_map.end() && remaining_size > 0) {
+            // Carve a new dmem area in place of this one with the appropriate type.
+            // Ensure the carved area only covers the current dmem area.
+            const auto start_phys_addr =
+                phys_addr > dmem_area->second.base ? phys_addr : dmem_area->second.base;
+            const auto offset_in_dma = start_phys_addr - dmem_area->second.base;
+            const auto size_in_dma = dmem_area->second.size - offset_in_dma > remaining_size
+                                         ? remaining_size
+                                         : dmem_area->second.size - offset_in_dma;
+            const auto dmem_handle = CarveDmemArea(start_phys_addr, size_in_dma);
+            auto& new_dmem_area = dmem_handle->second;
+            new_dmem_area.dma_type = DMAType::Mapped;
+
+            // Merge the new dmem_area with dmem_map
+            MergeAdjacent(dmem_map, dmem_handle);
+
+            // Get the next relevant dmem area.
+            phys_addr_to_search = phys_addr + size_in_dma;
+            remaining_size -= size_in_dma;
+            dmem_area = FindDmemArea(phys_addr_to_search);
+        }
     }
 
     // Limit the minimum address to SystemManagedVirtualBase to prevent hardware-specific issues.
@@ -438,6 +465,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         MergeAdjacent(fmem_map, new_fmem_handle);
     }
 
+    const bool is_exec = True(prot & MemoryProt::CpuExec);
+
     new_vma.disallow_merge = True(flags & MemoryMapFlags::NoCoalesce);
     new_vma.prot = prot;
     new_vma.name = name;
@@ -470,11 +499,11 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(mapped_addr)),
                "Attempted to access invalid address {:#x}", mapped_addr);
+
+    std::scoped_lock lk{mutex};
     const u64 size_aligned = Common::AlignUp(size, 16_KB);
 
     // Find first free area to map the file.
@@ -495,6 +524,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     }
 
     // Get the file to map
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(fd);
     if (file == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -603,6 +633,28 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         return adjusted_size;
     }
 
+    if (type == VMAType::Direct) {
+        // Unmap all direct memory areas covered by this unmap.
+        auto phys_addr = phys_base + start_in_vma;
+        auto remaining_size = adjusted_size;
+        DMemHandle dmem_handle = FindDmemArea(phys_addr);
+        while (dmem_handle != dmem_map.end() && remaining_size > 0) {
+            const auto start_in_dma = phys_base - dmem_handle->second.base;
+            const auto size_in_dma = dmem_handle->second.size - start_in_dma > remaining_size
+                                         ? remaining_size
+                                         : dmem_handle->second.size - start_in_dma;
+            dmem_handle = CarveDmemArea(phys_addr, size_in_dma);
+            auto& dmem_area = dmem_handle->second;
+            dmem_area.dma_type = DMAType::Allocated;
+            remaining_size -= dmem_area.size;
+            phys_addr += dmem_area.size;
+
+            // Check if we can coalesce any dmem areas.
+            MergeAdjacent(dmem_map, dmem_handle);
+            dmem_handle = FindDmemArea(phys_addr);
+        }
+    }
+
     if (type == VMAType::Flexible) {
         flexible_usage -= adjusted_size;
 
@@ -618,16 +670,6 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         auto& new_fmem_area = new_fmem_handle->second;
         new_fmem_area.is_free = true;
         MergeAdjacent(fmem_map, new_fmem_handle);
-    }
-
-    if (type == VMAType::Direct) {
-        // Since we're unmapping the memory
-        // make sure the corresponding direct memory area is updated correctly.
-        const auto unmap_phys_base = phys_base + start_in_vma;
-        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, adjusted_size);
-        auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.dma_type = DMAType::Allocated;
-        MergeAdjacent(dmem_map, new_dmem_handle);
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
@@ -750,19 +792,14 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // Align addr and size to the nearest page boundary.
-    auto aligned_addr = Common::AlignDown(addr, 16_KB);
-    auto aligned_size = Common::AlignUp(size + addr - aligned_addr, 16_KB);
-
-    // Protect all VMAs between aligned_addr and aligned_addr + aligned_size.
+    // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;
-    while (protected_bytes < aligned_size) {
-        ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(aligned_addr)),
-                   "Attempted to access invalid address {:#x}", aligned_addr);
-        auto it = FindVMA(aligned_addr + protected_bytes);
+    while (protected_bytes < size) {
+        ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
+                   "Attempted to access invalid address {:#x}", addr);
+        auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
-        auto result = ProtectBytes(aligned_addr + protected_bytes, vma_base,
-                                   aligned_size - protected_bytes, prot);
+        auto result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
             return result;
@@ -786,10 +823,10 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     }
     auto it = FindVMA(query_addr);
 
-    while (it->second.type == VMAType::Free && flags == 1 && it != --vma_map.end()) {
+    while (it != vma_map.end() && it->second.type == VMAType::Free && flags == 1) {
         ++it;
     }
-    if (it->second.type == VMAType::Free) {
+    if (it == vma_map.end() || it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -828,20 +865,28 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
     }
 
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != --dmem_map.end() && dmem_area->second.dma_type == DMAType::Free &&
+    while (dmem_area != dmem_map.end() && dmem_area->second.dma_type == DMAType::Free &&
            find_next) {
         dmem_area++;
     }
 
-    if (dmem_area->second.dma_type == DMAType::Free) {
+    if (dmem_area == dmem_map.end() || dmem_area->second.dma_type == DMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    const auto& area = dmem_area->second;
-    out_info->start = area.base;
-    out_info->end = area.GetEnd();
-    out_info->memoryType = area.memory_type;
+    out_info->start = dmem_area->second.base;
+    out_info->memoryType = dmem_area->second.memory_type;
+
+    // Loop through all sequential mapped or allocated dmem areas
+    // to determine the hardware accurate end.
+    while (dmem_area != dmem_map.end() && dmem_area->second.memory_type == out_info->memoryType &&
+           (dmem_area->second.dma_type == DMAType::Mapped ||
+            dmem_area->second.dma_type == DMAType::Allocated)) {
+        out_info->end = dmem_area->second.GetEnd();
+        dmem_area++;
+    }
+
     return ORBIS_OK;
 }
 
@@ -892,20 +937,53 @@ s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u6
     return ORBIS_OK;
 }
 
-s32 MemoryManager::SetDirectMemoryType(s64 phys_addr, s32 memory_type) {
+s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
     std::scoped_lock lk{mutex};
 
-    auto& dmem_area = FindDmemArea(phys_addr)->second;
+    // Search through all VMAs covered by the provided range.
+    // We aren't modifying these VMAs, so it's safe to iterate through them.
+    auto remaining_size = size;
+    auto vma_handle = FindVMA(addr);
+    while (vma_handle != vma_map.end() && vma_handle->second.base < addr + size) {
+        // Direct and Pooled mappings are the only ones with a memory type.
+        if (vma_handle->second.type == VMAType::Direct ||
+            vma_handle->second.type == VMAType::Pooled) {
+            // Calculate position in vma
+            const auto start_in_vma = addr - vma_handle->second.base;
+            const auto size_in_vma = vma_handle->second.size - start_in_vma;
+            auto phys_addr = vma_handle->second.phys_base + start_in_vma;
+            auto size_to_modify = remaining_size > size_in_vma ? size_in_vma : remaining_size;
 
-    ASSERT_MSG(phys_addr <= dmem_area.GetEnd() && dmem_area.dma_type == DMAType::Mapped,
-               "Direct memory area is not mapped");
+            // Loop through remaining dmem areas until the physical addresses represented
+            // are all adjusted.
+            DMemHandle dmem_handle = FindDmemArea(phys_addr);
+            while (dmem_handle != dmem_map.end() && size_in_vma >= size_to_modify &&
+                   size_to_modify > 0) {
+                const auto start_in_dma = phys_addr - dmem_handle->second.base;
+                const auto size_in_dma = dmem_handle->second.size - start_in_dma > size_to_modify
+                                             ? size_to_modify
+                                             : dmem_handle->second.size - start_in_dma;
+                dmem_handle = CarveDmemArea(phys_addr, size_in_dma);
+                auto& dmem_area = dmem_handle->second;
+                dmem_area.memory_type = memory_type;
+                size_to_modify -= dmem_area.size;
+                phys_addr += dmem_area.size;
 
-    dmem_area.memory_type = memory_type;
+                // Check if we can coalesce any dmem areas now that the types are different.
+                MergeAdjacent(dmem_map, dmem_handle);
+                dmem_handle = FindDmemArea(phys_addr);
+            }
+        }
+        remaining_size -= vma_handle->second.size;
+        vma_handle++;
+    }
 
     return ORBIS_OK;
 }
 
 void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name) {
+    std::scoped_lock lk{mutex};
+
     // Sizes are aligned up to the nearest 16_KB
     auto aligned_size = Common::AlignUp(size, 16_KB);
     // Addresses are aligned down to the nearest 16_KB
@@ -935,28 +1013,27 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
 
 s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
                                        void** directMemoryStartOut, void** directMemoryEndOut) {
-    std::scoped_lock lk{mutex};
-
-    auto dmem_area = FindDmemArea(addr);
-
-    if (addr > dmem_area->second.GetEnd() || dmem_area->second.dma_type == DMAType::Free) {
-        LOG_ERROR(Core, "Unable to find allocated direct memory region to check type!");
+    if (addr >= total_direct_size) {
+        LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
-    const auto& area = dmem_area->second;
-    *directMemoryStartOut = reinterpret_cast<void*>(area.base);
-    *directMemoryEndOut = reinterpret_cast<void*>(area.GetEnd());
-    *directMemoryTypeOut = area.memory_type;
+    const auto& dmem_area = FindDmemArea(addr)->second;
+    if (dmem_area.dma_type == DMAType::Free) {
+        LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
+        return ORBIS_KERNEL_ERROR_ENOENT;
+    }
+
+    *directMemoryStartOut = reinterpret_cast<void*>(dmem_area.base);
+    *directMemoryEndOut = reinterpret_cast<void*>(dmem_area.GetEnd());
+    *directMemoryTypeOut = dmem_area.memory_type;
     return ORBIS_OK;
 }
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(addr)),
                "Attempted to access invalid address {:#x}", addr);
-    auto vma_handle = FindVMA(addr);
-
-    const VirtualMemoryArea& vma = vma_handle->second;
+    const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -980,6 +1057,8 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
 }
 
 s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats) {
+    std::scoped_lock lk{mutex};
+
     // Run through dmem_map, determine how much physical memory is currently committed
     constexpr u64 block_size = 64_KB;
     u64 committed_size = 0;

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -137,10 +137,9 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize();
 s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, s32 memoryType, s64* physAddrOut);
 s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
-                                               s64 directMemoryStart, u64 alignment,
-                                               const char* name);
-s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 flags,
-                                          s64 directMemoryStart, u64 alignment);
+                                               s64 phys_addr, u64 alignment, const char* name);
+s32 PS4_SYSV_ABI sceKernelMapDirectMemory(void** addr, u64 len, s32 prot, s32 flags, s64 phys_addr,
+                                          u64 alignment);
 s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(u64 len, u64 alignment, s32 memoryType,
                                                    s64* physAddrOut);
 s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len);

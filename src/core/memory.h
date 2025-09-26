@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -222,11 +222,11 @@ public:
 
     void Free(PAddr phys_addr, u64 size);
 
-    s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot);
+    s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
-                  bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
+                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
@@ -254,7 +254,7 @@ public:
 
     s32 IsStack(VAddr addr, void** start, void** end);
 
-    s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
+    s32 SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type);
 
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
