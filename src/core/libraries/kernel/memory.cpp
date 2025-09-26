@@ -237,7 +237,7 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     if (True(mem_prot & Core::MemoryProt::CpuExec)) {
         LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
-        return ORBIS_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
