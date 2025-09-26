@@ -155,7 +155,12 @@ struct AddressSpace::Impl {
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
                 ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER,
+                                     PAGE_EXECUTE_READWRITE, nullptr, 0);
+                ASSERT_MSG(ptr, "{}", Common::GetLastErrorMsg());
+                DWORD resultvar;
+                bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             }
         } else {
             ptr =
@@ -316,7 +321,7 @@ struct AddressSpace::Impl {
                 new_flags = PAGE_NOACCESS;
             }
         }
-        
+
         // If no flags are assigned, then something's gone wrong.
         if (new_flags == 0) {
             LOG_CRITICAL(Common_Memory,
