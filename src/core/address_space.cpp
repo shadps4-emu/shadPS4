@@ -103,17 +103,18 @@ struct AddressSpace::Impl {
                         MemoryRegion{system_managed_addr, virtual_size, false});
 
         // Allocate backing file that represents the total physical memory.
-        backing_handle =
-            CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_WRITE | FILE_MAP_READ,
-                               PAGE_READWRITE, SEC_COMMIT, BackingSize, nullptr, nullptr, 0);
+        backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
+                                            PAGE_EXECUTE_READWRITE, SEC_COMMIT, BackingSize,
+                                            nullptr, nullptr, 0);
         ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
         // Allocate a virtual memory for the backing file map as placeholder
         backing_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, BackingSize,
                                                       MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                       PAGE_NOACCESS, nullptr, 0));
         // Map backing placeholder. This will commit the pages
-        void* const ret = MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
-                                         MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, nullptr, 0);
+        void* const ret =
+            MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
+                           MEM_REPLACE_PLACEHOLDER, PAGE_EXECUTE_READWRITE, nullptr, 0);
         ASSERT_MSG(ret == backing_base, "{}", Common::GetLastErrorMsg());
     }
 
