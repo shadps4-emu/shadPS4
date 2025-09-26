@@ -768,7 +768,6 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         prot |= MemoryProt::CpuRead;
     }
 
-    
     // Set permissions
     Core::MemoryPermission perms{};
 
