@@ -62,6 +62,10 @@ struct UniqueImage {
         return image;
     }
 
+    operator bool() const {
+        return image;
+    }
+
 public:
     vk::Device device{};
     VmaAllocator allocator{};
@@ -72,8 +76,11 @@ public:
 
 constexpr Common::SlotId NULL_IMAGE_ID{0};
 
+class BlitHelper;
+
 struct Image {
-    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, const ImageInfo& info);
+    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
+          BlitHelper& blit_helper, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;
@@ -126,11 +133,12 @@ struct Image {
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
-    void SwapBackingSamples(u32 new_samples);
+    void SwapBackingSamples(bool multisampled);
 
 public:
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
+    BlitHelper* blit_helper;
     ImageInfo info;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     vk::SampleCountFlags supported_samples = vk::SampleCountFlagBits::e1;
@@ -141,9 +149,9 @@ public:
         UniqueImage image;
         boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
         boost::container::small_vector<ImageViewId, 4> image_view_ids;
-        u32 num_samples;
+        bool multisampled;
     };
-    std::deque<BackingImage> backing_images;
+    std::array<BackingImage, 2> backing_images;
     BackingImage* backing{};
     ImageId depth_id{};
 

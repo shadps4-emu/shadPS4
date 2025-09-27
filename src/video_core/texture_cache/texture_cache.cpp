@@ -73,7 +73,7 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
     info.num_bits = 32;
     info.UpdateSize();
 
-    const ImageId null_id = slot_images.insert(instance, scheduler, info);
+    const ImageId null_id = slot_images.insert(instance, scheduler, blit_helper, info);
     auto& image = slot_images[null_id];
     Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
                           fmt::format("Null Image ({})", vk::to_string(format)));
@@ -267,7 +267,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     if (recreate) {
         auto new_info = requested_info;
         new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
-        const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
+        const auto new_image_id = slot_images.insert(instance, scheduler, blit_helper, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
@@ -288,7 +288,13 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
         } else if (cache_image.info.num_samples == 1 && new_info.props.is_depth &&
                    new_info.num_samples > 1) {
             // Perform a rendering pass to transfer the channels of source as samples in dest.
-            blit_helper.BlitColorToMsDepth(cache_image, new_image);
+            cache_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal,
+                                vk::AccessFlagBits2::eShaderRead, {});
+            new_image.Transit(vk::ImageLayout::eDepthAttachmentOptimal,
+                              vk::AccessFlagBits2::eDepthStencilAttachmentWrite, {});
+            blit_helper.ReinterpretColorAsMsDepth(new_info.size.width, new_info.size.height,
+                                                  new_info.num_samples, new_info.pixel_format,
+                                                  cache_image.GetImage(), new_image.GetImage());
         } else {
             LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
         }
@@ -416,7 +422,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-    const auto new_image_id = slot_images.insert(instance, scheduler, info);
+    const auto new_image_id = slot_images.insert(instance, scheduler, blit_helper, info);
     RegisterImage(new_image_id);
 
     auto& src_image = slot_images[image_id];
@@ -505,7 +511,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     }
     // Create and register a new image
     if (!image_id) {
-        image_id = slot_images.insert(instance, scheduler, info);
+        image_id = slot_images.insert(instance, scheduler, blit_helper, info);
         RegisterImage(image_id);
     }
 
@@ -630,7 +636,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc)
             info.guest_address = desc.info.stencil_addr;
             info.guest_size = desc.info.stencil_size;
             info.size = desc.info.size;
-            stencil_id = slot_images.insert(instance, scheduler, info);
+            stencil_id = slot_images.insert(instance, scheduler, blit_helper, info);
             RegisterImage(stencil_id);
         }
         Image& image = slot_images[stencil_id];
@@ -673,7 +679,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
     const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
-    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
+    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy;
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);

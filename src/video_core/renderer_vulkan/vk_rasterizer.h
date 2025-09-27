@@ -83,7 +83,7 @@ public:
     }
 
 private:
-    RenderState PrepareRenderState(u32 mrt_mask);
+    RenderState PrepareRenderState(const GraphicsPipeline* pipeline);
     void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
     void Resolve();
     void DepthStencilCopy(bool is_depth, bool is_stencil);

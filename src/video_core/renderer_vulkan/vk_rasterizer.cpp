@@ -107,7 +107,10 @@ bool Rasterizer::FilterDraw() {
     return true;
 }
 
-RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
+RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
+    const auto& key = pipeline->GetGraphicsKey();
+    const u32 mrt_mask = key.mrt_mask;
+
     // Prefetch color and depth buffers to handle possible overlaps with bound textures (e.g. mipgen)
     RenderState state;
     state.width = instance.GetMaxFramebufferWidth();
@@ -134,6 +137,9 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
+
+        // The pipeline may have changed the samples in case of unsupported MSAA configuration
+        image.SwapBackingSamples(key.color_samples[cb] > 1);
     }
 
     if ((regs.depth_control.depth_enable && regs.depth_buffer.DepthValid()) ||
@@ -146,6 +152,9 @@ RenderState Rasterizer::PrepareRenderState(u32 mrt_mask) {
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
+
+        // The pipeline may have changed the samples in case of unsupported MSAA configuration
+        image.SwapBackingSamples(key.depth_samples > 1);
     } else {
         db_desc.first = {};
     }
@@ -216,7 +225,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    auto state = PrepareRenderState(pipeline->GetMrtMask());
+    auto state = PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
         return;
     }
@@ -262,7 +271,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    auto state = PrepareRenderState(pipeline->GetMrtMask());
+    auto state = PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
         return;
     }
@@ -647,6 +656,11 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image->binding.force_general |= image_desc.is_written;
         }
         image->binding.is_bound = 1u;
+
+        // The pipeline may have changed the samples in case of unsupported MSAA configuration
+        const bool multisampled = desc.info.num_samples > 1;
+        ASSERT(image->backing->multisampled == multisampled || !image->binding.is_target);
+        image->SwapBackingSamples(multisampled);
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -876,7 +890,7 @@ void Rasterizer::Resolve() {
     mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
                        mrt1_range);
 
-    if (mrt0_image.backing->num_samples == 1) {
+    if (!mrt0_image.backing->multisampled) {
         // Vulkan does not allow resolve from a single sample image, so change it to a copy.
         // Note that resolving a single-sampled image doesn't really make sense, but a game might do
         // it.
@@ -1064,7 +1078,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline, const bool
 
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
-    dynamic_state.SetColorWriteMasks(pipeline.GetWriteMasks());
+    dynamic_state.SetColorWriteMasks(pipeline.GetGraphicsKey().write_masks);
     dynamic_state.SetAttachmentFeedbackLoopEnabled(attachment_feedback_loop);
 
     // Commit new dynamic state to the command buffer.

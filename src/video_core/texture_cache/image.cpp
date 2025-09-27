@@ -6,6 +6,7 @@
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
 
 #include <vk_mem_alloc.h>
@@ -83,9 +84,7 @@ UniqueImage::~UniqueImage() {
 
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     this->image_ci = image_ci;
-    if (image) {
-        vmaDestroyImage(allocator, image, allocation);
-    }
+    ASSERT(!image);
     const VmaAllocationCreateInfo alloc_info = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
         .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
@@ -105,8 +104,8 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 }
 
 Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-             const ImageInfo& info_)
-    : instance{&instance_}, scheduler{&scheduler_}, info{info_} {
+             BlitHelper& blit_helper_, const ImageInfo& info_)
+    : instance{&instance_}, scheduler{&scheduler_}, blit_helper{&blit_helper_}, info{info_} {
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
@@ -170,13 +169,18 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    backing = &backing_images.emplace_back(UniqueImage{instance->GetDevice(), instance->GetAllocator()});
-    backing->num_samples = info.num_samples;
+    const bool multisampled = info.num_samples > 1;
+    backing = &backing_images[multisampled];
+    backing->multisampled = multisampled;
+    backing->image = UniqueImage{instance->GetDevice(), instance->GetAllocator()};
     backing->image.Create(image_ci);
 
-    Vulkan::SetObjectName(instance->GetDevice(), GetImage(), "Image {}x{}x{} {} {:#x}:{:#x}",
+    Vulkan::SetObjectName(instance->GetDevice(), GetImage(),
+                          "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}",
                           info.size.width, info.size.height, info.size.depth,
-                          AmdGpu::NameOf(info.tile_mode), info.guest_address, info.guest_size);
+                          AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
+                          info.guest_address, info.guest_size, info.resources.layers,
+                          info.resources.levels, info.num_samples);
 }
 
 Image::~Image() = default;
@@ -488,22 +492,74 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
-void Image::SwapBackingSamples(u32 new_samples) {
-    if (backing->num_samples == new_samples) {
+void Image::SwapBackingSamples(bool multisampled) {
+    if (backing->multisampled == multisampled) {
         return;
     }
-    BackingImage* new_backing;
-    const auto it = std::ranges::find(backing_images, new_samples, &BackingImage::num_samples);
-    if (it == backing_images.end()) {
+    ASSERT(info.num_samples > 1 && !info.props.has_stencil);
+    BackingImage* new_backing = &backing_images[multisampled];
+    if (!new_backing->image) {
         auto new_image_ci = backing->image.image_ci;
-        new_image_ci.samples = LiverpoolToVK::NumSamples(new_samples, supported_samples);
-
-        new_backing = &backing_images.emplace_back(UniqueImage{instance->GetDevice(), instance->GetAllocator()});
-        new_backing->num_samples = info.num_samples;
+        new_image_ci.samples = vk::SampleCountFlagBits::e1;
+        new_backing->multisampled = false;
+        new_backing->image = UniqueImage{instance->GetDevice(), instance->GetAllocator()};
         new_backing->image.Create(new_image_ci);
-    } else {
-        new_backing = std::addressof(*it);
+
+        Vulkan::SetObjectName(instance->GetDevice(), new_backing->image.image,
+                              "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{} (backing)",
+                              info.size.width, info.size.height, info.size.depth,
+                              AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
+                              info.guest_address, info.guest_size, info.resources.layers,
+                              info.resources.levels, 1);
     }
+
+    scheduler->EndRendering();
+    ASSERT(info.resources.levels == 1 && info.resources.layers == 1);
+
+    // Transition current backing to shader read layout
+    auto barriers = GetBarriers(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                                vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
+
+    // Transition dest backing to color attachment layout, not caring of previous contents
+    const auto dst_stage = info.props.is_depth ? vk::PipelineStageFlagBits2::eLateFragmentTests
+                                               : vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+    const auto dst_access = info.props.is_depth ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
+                                                : vk::AccessFlagBits2::eColorAttachmentWrite;
+    const auto dst_layout = info.props.is_depth ? vk::ImageLayout::eDepthAttachmentOptimal
+                                                : vk::ImageLayout::eColorAttachmentOptimal;
+    barriers.push_back(vk::ImageMemoryBarrier2{
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eNone,
+        .dstStageMask = dst_stage,
+        .dstAccessMask = dst_access,
+        .oldLayout = vk::ImageLayout::eUndefined,
+        .newLayout = dst_layout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = new_backing->image,
+        .subresourceRange{
+            .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = info.resources.layers,
+        },
+    });
+    const auto cmdbuf = scheduler->CommandBuffer();
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
+        .pImageMemoryBarriers = barriers.data(),
+    });
+
+    // Copy between ms and non ms backing images
+    blit_helper->BlitNonMsImageMsImage(info.size.width, info.size.height, info.num_samples, info.pixel_format, info.props.is_depth,
+                                       !multisampled, backing->image, new_backing->image);
+
+    // Update current layout in tracker to new backings layout
+    last_state.layout = dst_layout;
+    last_state.access_mask = dst_access;
+    last_state.pl_stage = dst_stage;
+    backing = new_backing;
 }
 
 } // namespace VideoCore
