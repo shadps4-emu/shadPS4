@@ -8,6 +8,8 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
+#include <type_traits>
+#include <utility>
 
 namespace Vulkan {
 
@@ -152,14 +154,15 @@ vk::DescriptorSet DescriptorHeap::Commit(vk::DescriptorSetLayout set_layout) {
     ASSERT_MSG(result == vk::Result::eErrorOutOfPoolMemory ||
                    result == vk::Result::eErrorFragmentedPool,
                "Unexpected error during descriptor set allocation: {}", vk::to_string(result));
+
     pending_pools.emplace_back(curr_pool, master_semaphore->CurrentTick());
     if (const auto [pool, tick] = pending_pools.front(); master_semaphore->IsFree(tick)) {
         curr_pool = pool;
         pending_pools.pop_front();
 
-        const auto reset_result = device.resetDescriptorPool(curr_pool);
-        ASSERT_MSG(reset_result == vk::Result::eSuccess,
-                   "Unexpected error resetting descriptor pool: {}", vk::to_string(reset_result));
+        // Just call resetDescriptorPool. Some Vulkan-Hpp variants return vk::Result,
+        // others return void. Discarding the return value is portable.
+        device.resetDescriptorPool(curr_pool);
     } else {
         CreateDescriptorPool();
     }
