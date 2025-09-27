@@ -809,8 +809,8 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
 
     // Validate protection flags
     constexpr static MemoryProt valid_flags =
-        MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuReadWrite |
-        MemoryProt::CpuExec | MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
+        MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuWrite | MemoryProt::CpuExec |
+        MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
 
     MemoryProt invalid_flags = prot & ~valid_flags;
     if (invalid_flags != MemoryProt::NoAccess) {
