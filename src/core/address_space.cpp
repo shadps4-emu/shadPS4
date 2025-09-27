@@ -32,13 +32,34 @@ static constexpr size_t BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
 #ifdef _WIN32
 
 [[nodiscard]] constexpr u64 ToWindowsProt(Core::MemoryProt prot) {
-    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
-        True(prot & Core::MemoryProt::GpuReadWrite)) {
-        return PAGE_READWRITE;
-    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        return PAGE_READONLY;
+    const bool read =
+        True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead);
+    const bool write =
+        True(prot & Core::MemoryProt::CpuWrite) || True(prot & Core::MemoryProt::GpuWrite);
+    const bool execute = True(prot & Core::MemoryProt::CpuExec);
+
+    if (write && !read) {
+        // While write-only CPU mappings aren't possible, write-only GPU mappings are.
+        LOG_WARNING(Core, "Converting write-only mapping to read-write");
+    }
+
+    // All cases involving execute permissions have separate permissions.
+    if (execute) {
+        if (write) {
+            return PAGE_EXECUTE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_EXECUTE_READ;
+        } else {
+            return PAGE_EXECUTE;
+        }
     } else {
-        return PAGE_NOACCESS;
+        if (write) {
+            return PAGE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_READONLY;
+        } else {
+            return PAGE_NOACCESS;
+        }
     }
 }
 
@@ -302,6 +323,11 @@ struct AddressSpace::Impl {
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
 
+        if (write && !read) {
+            // While write-only CPU protection isn't possible, write-only GPU protection is.
+            LOG_WARNING(Core, "Converting write-only protection to read-write");
+        }
+
         // All cases involving execute permissions have separate permissions.
         if (execute) {
             // If there's some form of write protection requested, provide read-write permissions.
@@ -373,21 +399,34 @@ enum PosixPageProtection {
 };
 
 [[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
-    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
-        True(prot & Core::MemoryProt::GpuReadWrite)) {
-        if (True(prot & Core::MemoryProt::CpuExec)) {
+    const bool read =
+        True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead);
+    const bool write =
+        True(prot & Core::MemoryProt::CpuWrite) || True(prot & Core::MemoryProt::GpuWrite);
+    const bool execute = True(prot & Core::MemoryProt::CpuExec);
+
+    if (write && !read) {
+        // While write-only CPU mappings aren't possible, write-only GPU mappings are.
+        LOG_WARNING(Core, "Converting write-only mapping to read-write");
+    }
+
+    // All cases involving execute permissions have separate permissions.
+    if (execute) {
+        if (write) {
             return PAGE_EXECUTE_READWRITE;
-        } else {
-            return PAGE_READWRITE;
-        }
-    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        if (True(prot & Core::MemoryProt::CpuExec)) {
+        } else if (read && !write) {
             return PAGE_EXECUTE_READ;
         } else {
-            return PAGE_READONLY;
+            return PAGE_EXECUTE;
         }
     } else {
-        return PAGE_NOACCESS;
+        if (write) {
+            return PAGE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_READONLY;
+        } else {
+            return PAGE_NOACCESS;
+        }
     }
 }
 
