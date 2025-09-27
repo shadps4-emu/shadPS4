@@ -371,8 +371,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         return false;
     }
 
-    // Second pass to mask out render targets not written by fragment shader and fill remaining
-    // information
+    // Second pass to mask out render targets not written by shader and fill remaining info
     u8 color_samples = 0;
     bool all_color_samples_same = true;
     for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {

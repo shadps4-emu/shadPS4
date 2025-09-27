@@ -111,8 +111,7 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     const auto& key = pipeline->GetGraphicsKey();
     const u32 mrt_mask = key.mrt_mask;
 
-    // Prefetch color and depth buffers to handle possible overlaps with bound textures (e.g.
-    // mipgen)
+    // Prefetch render targets to handle overlaps with bound textures (e.g. mipgen)
     RenderState state;
     state.width = instance.GetMaxFramebufferWidth();
     state.height = instance.GetMaxFramebufferHeight();
@@ -765,7 +764,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         }
         auto* image = &texture_cache.GetImage(image_id);
         if (image->binding.needs_rebind) {
-            image_id = texture_cache.FindImage(desc);
+            image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
             image = &texture_cache.GetImage(image_id);
         }
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
