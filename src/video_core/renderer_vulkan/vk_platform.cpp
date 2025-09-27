@@ -86,6 +86,10 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
             UNREACHABLE();
         }
     } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
+        if (Config::isRdocEnabled()) {
+            LOG_ERROR(Render_Vulkan, "As of today RenderDoc and Wayland are incompatible!");
+        }
+
         const vk::WaylandSurfaceCreateInfoKHR wayland_ci = {
             .display = static_cast<wl_display*>(window_info.display_connection),
             .surface = static_cast<wl_surface*>(window_info.render_surface),
