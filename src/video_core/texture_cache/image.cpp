@@ -494,7 +494,7 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
 }
 
 void Image::SetBackingSamples(u32 num_samples) {
-    if (backing->num_samples == num_samples) {
+    if (!backing || backing->num_samples == num_samples) {
         return;
     }
     ASSERT_MSG(!info.props.is_depth, "Swapping samples is only valid for color images");
