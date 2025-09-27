@@ -313,21 +313,25 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                                            ImageId cache_image_id,
                                                            ImageId merged_image_id) {
     auto& tex_cache_image = slot_images[cache_image_id];
-    // We can assume it is safe to delete the image if it wasn't accessed in some number of frames.
     const bool safe_to_delete =
         scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
-    if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
-        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
-            image_info.num_bits * image_info.num_samples !=
-                tex_cache_image.info.num_bits * tex_cache_image.info.num_samples) {
-            // Very likely this kind of overlap is caused by allocation from a pool.
-            if (safe_to_delete) {
-                FreeImage(cache_image_id);
-            }
-            return {merged_image_id, -1, -1};
+    const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
+    const u32 rhs_block_size = tex_cache_image.info.num_bits * tex_cache_image.info.num_samples;
+    if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
+        lhs_block_size != rhs_block_size) {
+        // Very likely this kind of overlap is caused by allocation from a pool.
+        if (safe_to_delete) {
+            FreeImage(cache_image_id);
         }
+        return {merged_image_id, -1, -1};
+    }
 
+    // Ensure the backing samples match guest samples before doing any overlap resolution
+    tex_cache_image.SetBackingSamples(tex_cache_image.info.num_samples);
+
+    // Equal address
+    if (image_info.guest_address == tex_cache_image.info.guest_address) {
         if (const auto depth_image_id = ResolveDepthOverlap(image_info, binding, cache_image_id)) {
             return {depth_image_id, -1, -1};
         }

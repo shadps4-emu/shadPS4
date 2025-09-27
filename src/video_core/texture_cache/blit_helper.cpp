@@ -36,7 +36,14 @@ BlitHelper::BlitHelper(const Vulkan::Instance& instance_, Vulkan::Scheduler& sch
     CreatePipelineLayouts();
 }
 
-BlitHelper::~BlitHelper() = default;
+BlitHelper::~BlitHelper() {
+    const auto device = instance.GetDevice();
+    device.destroy(fs_tri_vertex);
+    device.destroy(fs_tri_layer_vertex);
+    device.destroy(color_to_ms_depth_frag);
+    device.destroy(src_msaa_copy_frag);
+    device.destroy(src_non_msaa_copy_frag);
+}
 
 void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples,
                                            vk::Format pixel_format, vk::Image source,
@@ -113,7 +120,7 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *single_texture_pl_layout, 0U,
                                 texture_write);
 
-    const MsPipelineKey key{num_samples, vk::Format::eUndefined, pixel_format, false};
+    const MsPipelineKey key{num_samples, pixel_format, false};
     auto it = std::ranges::find(color_to_ms_depth_pl, key, &MsPipeline::first);
     if (it == color_to_ms_depth_pl.end()) {
         CreateColorToMSDepthPipeline(key);
@@ -142,80 +149,65 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
     scheduler.GetDynamicState().Invalidate();
 }
 
-void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples,
-                                       vk::Format pixel_format, bool is_depth, bool src_msaa,
-                                       vk::Image source, vk::Image dest) {
-    const vk::ImageViewUsageCreateInfo non_ms_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
-    const vk::ImageViewCreateInfo non_ms_view_ci = {
-        .pNext = &non_ms_usage_ci,
+void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
+                                     vk::Format pixel_format, bool src_msaa, vk::Image source,
+                                     vk::Image dest) {
+    const vk::ImageViewUsageCreateInfo src_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
+    const vk::ImageViewCreateInfo src_view_ci = {
+        .pNext = &src_usage_ci,
         .image = source,
         .viewType = vk::ImageViewType::e2D,
         .format = pixel_format,
         .subresourceRange{
-            .aspectMask =
-                is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0U,
             .levelCount = 1U,
             .baseArrayLayer = 0U,
             .layerCount = 1U,
         },
     };
-    const auto [non_ms_view_result, non_ms_view] =
-        instance.GetDevice().createImageView(non_ms_view_ci);
-    ASSERT_MSG(non_ms_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
-               vk::to_string(non_ms_view_result));
+    const auto [src_view_result, src_view] = instance.GetDevice().createImageView(src_view_ci);
+    ASSERT_MSG(src_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
+               vk::to_string(src_view_result));
 
-    const vk::ImageViewUsageCreateInfo ms_usage_ci{
-        .usage = is_depth ? vk::ImageUsageFlagBits::eDepthStencilAttachment
-                          : vk::ImageUsageFlagBits::eColorAttachment};
-    const vk::ImageViewCreateInfo ms_view_ci = {
-        .pNext = &ms_usage_ci,
+    const vk::ImageViewUsageCreateInfo dst_usage_ci{.usage =
+                                                        vk::ImageUsageFlagBits::eColorAttachment};
+    const vk::ImageViewCreateInfo dst_view_ci = {
+        .pNext = &dst_usage_ci,
         .image = dest,
         .viewType = vk::ImageViewType::e2D,
         .format = pixel_format,
         .subresourceRange{
-            .aspectMask =
-                is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0U,
             .levelCount = 1U,
             .baseArrayLayer = 0U,
             .layerCount = 1U,
         },
     };
-    const auto [ms_view_result, ms_view] = instance.GetDevice().createImageView(ms_view_ci);
-    ASSERT_MSG(ms_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
-               vk::to_string(ms_view_result));
-    scheduler.DeferOperation([device = instance.GetDevice(), non_ms_view, ms_view] {
-        device.destroyImageView(non_ms_view);
-        device.destroyImageView(ms_view);
+    const auto [dst_view_result, dst_view] = instance.GetDevice().createImageView(dst_view_ci);
+    ASSERT_MSG(dst_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
+               vk::to_string(dst_view_result));
+    scheduler.DeferOperation([device = instance.GetDevice(), src_view, dst_view] {
+        device.destroyImageView(src_view);
+        device.destroyImageView(dst_view);
     });
 
     Vulkan::RenderState state{};
     state.width = width;
     state.height = height;
-    if (is_depth) {
-        state.has_depth = true;
-        state.depth_attachment = vk::RenderingAttachmentInfo{
-            .imageView = ms_view,
-            .imageLayout = vk::ImageLayout::eDepthAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eDontCare,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-            .clearValue = vk::ClearValue{.depthStencil = {.depth = 0.f}},
-        };
-    } else {
-        state.color_attachments[state.num_color_attachments++] = vk::RenderingAttachmentInfo{
-            .imageView = ms_view,
-            .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .loadOp = vk::AttachmentLoadOp::eDontCare,
-            .storeOp = vk::AttachmentStoreOp::eStore,
-        };
-    }
+    state.color_attachments[state.num_color_attachments++] = vk::RenderingAttachmentInfo{
+        .imageView = dst_view,
+        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .loadOp = vk::AttachmentLoadOp::eDontCare,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+    };
     scheduler.BeginRendering(state);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const vk::DescriptorImageInfo image_info = {
         .sampler = VK_NULL_HANDLE,
-        .imageView = non_ms_view,
+        .imageView = src_view,
         .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
     };
     const vk::WriteDescriptorSet texture_write = {
@@ -229,13 +221,11 @@ void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples,
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *single_texture_pl_layout, 0U,
                                 texture_write);
 
-    const auto color_format = is_depth ? vk::Format::eUndefined : pixel_format;
-    const auto depth_format = is_depth ? pixel_format : vk::Format::eUndefined;
-    const MsPipelineKey key{num_samples, color_format, depth_format, src_msaa};
-    auto it = std::ranges::find(non_ms_color_to_ms_color_pl, key, &MsPipeline::first);
-    if (it == non_ms_color_to_ms_color_pl.end()) {
-        CreateNonMsImageToMsImagePipeline(key);
-        it = --non_ms_color_to_ms_color_pl.end();
+    const MsPipelineKey key{num_samples, pixel_format, src_msaa};
+    auto it = std::ranges::find(ms_image_copy_pl, key, &MsPipeline::first);
+    if (it == ms_image_copy_pl.end()) {
+        CreateMsCopyPipeline(key);
+        it = --ms_image_copy_pl.end();
     }
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *it->second);
 
@@ -268,15 +258,10 @@ void BlitHelper::CreateShaders() {
         HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device, {"INSTANCE_AS_LAYER"});
     color_to_ms_depth_frag = Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG,
                                              vk::ShaderStageFlagBits::eFragment, device);
-    non_ms_color_to_ms_color_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
-                                                    vk::ShaderStageFlagBits::eFragment, device);
-    non_ms_depth_to_ms_depth_frag = Vulkan::Compile(
-        HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device, {"IS_DEPTH"});
-    ms_color_to_non_ms_color_frag = Vulkan::Compile(
-        HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device, {"SRC_MSAA"});
-    ms_depth_to_non_ms_depth_frag =
-        Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device,
-                        {"IS_DEPTH", "SRC_MSAA"});
+    src_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
+                                         vk::ShaderStageFlagBits::eFragment, device, {"SRC_MSAA"});
+    src_non_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
+                                             vk::ShaderStageFlagBits::eFragment, device);
 }
 
 void BlitHelper::CreatePipelineLayouts() {
@@ -343,7 +328,7 @@ void BlitHelper::CreateColorToMSDepthPipeline(const MsPipelineKey& key) {
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
         .colorAttachmentCount = 0U,
         .pColorAttachmentFormats = nullptr,
-        .depthAttachmentFormat = key.depth_format,
+        .depthAttachmentFormat = key.attachment_format,
         .stencilAttachmentFormat = vk::Format::eUndefined,
     };
 
@@ -376,19 +361,16 @@ void BlitHelper::CreateColorToMSDepthPipeline(const MsPipelineKey& key) {
     color_to_ms_depth_pl.emplace_back(key, std::move(pipeline));
 }
 
-void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
-    const bool is_depth = key.depth_format != vk::Format::eUndefined;
-    const bool is_color = key.color_format != vk::Format::eUndefined;
-
+void BlitHelper::CreateMsCopyPipeline(const MsPipelineKey& key) {
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = ToSampleCount(key.src_msaa ? 1 : key.num_samples),
+        .rasterizationSamples = ToSampleCount(key.num_samples),
     };
     const vk::PipelineDepthStencilStateCreateInfo depth_state = {
-        .depthTestEnable = is_depth,
-        .depthWriteEnable = is_depth,
+        .depthTestEnable = false,
+        .depthWriteEnable = false,
         .depthCompareOp = vk::CompareOp::eAlways,
     };
     const std::array dynamic_states = {vk::DynamicState::eViewportWithCount,
@@ -406,17 +388,14 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
     };
     shader_stages[1] = {
         .stage = vk::ShaderStageFlagBits::eFragment,
-        .module = key.src_msaa
-                      ? (is_color ? ms_color_to_non_ms_color_frag : ms_depth_to_non_ms_depth_frag)
-                  : is_color ? non_ms_color_to_ms_color_frag
-                             : non_ms_depth_to_ms_depth_frag,
+        .module = key.src_msaa ? src_msaa_copy_frag : src_non_msaa_copy_frag,
         .pName = "main",
     };
 
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
-        .colorAttachmentCount = is_color,
-        .pColorAttachmentFormats = &key.color_format,
-        .depthAttachmentFormat = key.depth_format,
+        .colorAttachmentCount = 1u,
+        .pColorAttachmentFormats = &key.attachment_format,
+        .depthAttachmentFormat = vk::Format::eUndefined,
         .stencilAttachmentFormat = vk::Format::eUndefined,
     };
 
@@ -429,7 +408,7 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
         .logicOpEnable = false,
         .logicOp = vk::LogicOp::eCopy,
-        .attachmentCount = is_color,
+        .attachmentCount = 1u,
         .pAttachments = &attachment,
     };
     const vk::PipelineViewportStateCreateInfo viewport_info{};
@@ -458,7 +437,7 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
     Vulkan::SetObjectName(instance.GetDevice(), *pipeline, "Non MS Image to MS Image {}",
                           key.num_samples);
 
-    non_ms_color_to_ms_color_pl.emplace_back(key, std::move(pipeline));
+    ms_image_copy_pl.emplace_back(key, std::move(pipeline));
 }
 
 } // namespace VideoCore

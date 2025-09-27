@@ -132,7 +132,7 @@ struct Image {
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
-    void SwapBackingSamples(bool multisampled);
+    void SetBackingSamples(u32 num_samples);
 
 public:
     const Vulkan::Instance* instance;
@@ -144,14 +144,6 @@ public:
     ImageFlagBits flags = ImageFlagBits::Dirty;
     VAddr track_addr = 0;
     VAddr track_addr_end = 0;
-    struct BackingImage {
-        UniqueImage image;
-        boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
-        boost::container::small_vector<ImageViewId, 4> image_view_ids;
-        bool multisampled;
-    };
-    std::array<BackingImage, 2> backing_images;
-    BackingImage* backing{};
     ImageId depth_id{};
 
     // Resource state tracking
@@ -162,8 +154,16 @@ public:
         vk::AccessFlags2 access_mask = vk::AccessFlagBits2::eNone;
         vk::ImageLayout layout = vk::ImageLayout::eUndefined;
     };
-    State last_state{};
-    std::vector<State> subresource_states{};
+    struct BackingImage {
+        UniqueImage image;
+        State state;
+        std::vector<State> subresource_states;
+        boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
+        boost::container::small_vector<ImageViewId, 4> image_view_ids;
+        u32 num_samples;
+    };
+    std::deque<BackingImage> backing_images;
+    BackingImage* backing{};
     boost::container::static_vector<u64, 16> mip_hashes{};
     u64 lru_id{};
     u64 tick_accessed_last{};

@@ -325,6 +325,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     const auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
+    const bool db_enabled = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid();
+
     key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
                                                   : Liverpool::DepthBuffer::ZFormat::Invalid;
     key.stencil_format = regs.depth_buffer.StencilValid()
@@ -339,9 +341,7 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.patch_control_points =
         regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
-    key.depth_samples = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid()
-                            ? regs.depth_buffer.NumSamples()
-                            : 1;
+    key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
     key.num_samples = key.depth_samples;
     key.cb_shader_mask = regs.color_shader_mask;
 
@@ -399,20 +399,17 @@ bool PipelineCache::RefreshGraphicsKey() {
         const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
         all_color_samples_same &= color_samples == prev_color_samples || prev_color_samples == 0;
         key.color_samples[cb] = color_samples;
-        key.num_samples = std::max(key.num_samples, key.color_samples[cb]);
+        key.num_samples = std::max(key.num_samples, color_samples);
     }
 
-    // Force all attachment samples to 1 to disable unsupported MSAA configuration
-    if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported()) {
-        key.color_samples.fill(1);
-        color_samples = 1;
-        key.num_samples = key.depth_samples;
-    }
-
-    // Force depth samples to 1 to disable unsupported MSAA configuration
-    if (key.depth_samples != color_samples && color_samples != 0 &&
-        !instance.IsMixedDepthSamplesSupported()) {
-        key.depth_samples = 1;
+    // Force all color samples to match depth samples to avoid unsupported MSAA configuration
+    if (color_samples != 0) {
+        if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported() ||
+            all_color_samples_same && db_enabled && color_samples != key.depth_samples &&
+                !instance.IsMixedDepthSamplesSupported()) {
+            key.color_samples.fill(key.depth_samples);
+            key.num_samples = key.depth_samples;
+        }
     }
 
     return true;

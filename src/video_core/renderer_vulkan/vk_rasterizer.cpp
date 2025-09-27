@@ -140,7 +140,7 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         image.binding.is_target = 1u;
 
         // The pipeline may have changed the samples in case of unsupported MSAA configuration
-        image.SwapBackingSamples(key.color_samples[cb] > 1);
+        image.SetBackingSamples(key.color_samples[cb]);
     }
 
     if ((regs.depth_control.depth_enable && regs.depth_buffer.DepthValid()) ||
@@ -154,8 +154,9 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
 
-        // The pipeline may have changed the samples in case of unsupported MSAA configuration
-        image.SwapBackingSamples(key.depth_samples > 1);
+        // The pipeline will always match color samples to depth samples to avoid needing a depth
+        // copy. This is because copying non-multisampled to multisampled stencil is basically
+        // impossible on NVIDIA
     } else {
         db_desc.first = {};
     }
@@ -205,7 +206,7 @@ void Rasterizer::EliminateFastClear() {
     ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
                                  col_buf.CmaskAddress()));
     image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
-    scheduler.CommandBuffer().clearColorImage(image.backing->image, image.last_state.layout,
+    scheduler.CommandBuffer().clearColorImage(image.backing->image, image.backing->state.layout,
                                               LiverpoolToVK::ColorBufferClearValue(col_buf).color,
                                               range);
     ScopeMarkerEnd();
@@ -659,9 +660,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         image->binding.is_bound = 1u;
 
         // The pipeline may have changed the samples in case of unsupported MSAA configuration
-        const bool multisampled = desc.info.num_samples > 1;
-        ASSERT(image->backing->multisampled == multisampled || !image->binding.is_target);
-        image->SwapBackingSamples(multisampled);
+        // Is feedback loop with MSAA images possible? Assert for it just in case
+        ASSERT(image->backing->num_samples == desc.info.num_samples || !image->binding.is_target);
+        image->SetBackingSamples(desc.info.num_samples);
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -719,7 +720,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image.usage.texture |= !is_storage;
 
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
-                                     image.last_state.layout);
+                                     image.backing->state.layout);
         }
 
         set_writes.push_back({
@@ -795,7 +796,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         state.num_layers = std::min<u32>(state.num_layers, image_view.info.range.extent.layers);
         state.color_attachments[cb] = {
             .imageView = *image_view.image_view,
-            .imageLayout = image->last_state.layout,
+            .imageLayout = image->backing->state.layout,
             .loadOp = is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
             .storeOp = vk::AttachmentStoreOp::eStore,
             .clearValue =
@@ -836,7 +837,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         if (state.has_depth) {
             state.depth_attachment = {
                 .imageView = *image_view.image_view,
-                .imageLayout = image.last_state.layout,
+                .imageLayout = image.backing->state.layout,
                 .loadOp =
                     is_depth_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
                 .storeOp = vk::AttachmentStoreOp::eStore,
@@ -846,7 +847,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         if (state.has_stencil) {
             state.stencil_attachment = {
                 .imageView = *image_view.image_view,
-                .imageLayout = image.last_state.layout,
+                .imageLayout = image.backing->state.layout,
                 .loadOp =
                     is_stencil_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
                 .storeOp = vk::AttachmentStoreOp::eStore,
@@ -891,7 +892,7 @@ void Rasterizer::Resolve() {
     mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
                        mrt1_range);
 
-    if (!mrt0_image.backing->multisampled) {
+    if (mrt0_image.backing->num_samples == 1) {
         // Vulkan does not allow resolve from a single sample image, so change it to a copy.
         // Note that resolving a single-sampled image doesn't really make sense, but a game might do
         // it.

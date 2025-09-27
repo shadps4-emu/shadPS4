@@ -168,9 +168,8 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    const bool multisampled = info.num_samples > 1;
-    backing = &backing_images[multisampled];
-    backing->multisampled = multisampled;
+    backing = &backing_images.emplace_back();
+    backing->num_samples = info.num_samples;
     backing->image = UniqueImage{instance->GetDevice(), instance->GetAllocator()};
     backing->image.Create(image_ci);
 
@@ -186,6 +185,9 @@ Image::~Image() = default;
 Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                                    vk::PipelineStageFlags2 dst_stage,
                                    std::optional<SubresourceRange> subres_range) {
+    auto& last_state = backing->state;
+    auto& subresource_states = backing->subresource_states;
+
     const bool needs_partial_transition =
         subres_range &&
         (subres_range->base != SubresourceBase{} || subres_range->extent != info.resources);
@@ -373,8 +375,8 @@ void Image::CopyImage(Image& src_image) {
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(),
-                     last_state.layout, image_copies);
+    cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
+                     backing->state.layout, image_copies);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -484,23 +486,27 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
         },
         .extent = {mip_w, mip_h, mip_d},
     };
-    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(),
-                     last_state.layout, image_copy);
+    cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
+                     backing->state.layout, image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
-void Image::SwapBackingSamples(bool multisampled) {
-    if (backing->multisampled == multisampled) {
+void Image::SetBackingSamples(u32 num_samples) {
+    if (backing->num_samples == num_samples) {
         return;
     }
-    ASSERT(info.num_samples > 1 && !info.props.has_stencil);
-    BackingImage* new_backing = &backing_images[multisampled];
-    if (!new_backing->image) {
+    ASSERT_MSG(!info.props.is_depth, "Swapping samples is only valid for color images");
+    BackingImage* new_backing;
+    auto it = std::ranges::find(backing_images, num_samples, &BackingImage::num_samples);
+    if (it == backing_images.end()) {
         auto new_image_ci = backing->image.image_ci;
-        new_image_ci.samples = vk::SampleCountFlagBits::e1;
-        new_backing->multisampled = false;
+        new_image_ci.samples =
+            LiverpoolToVK::NumSamples(num_samples, instance->GetColorSampleCounts());
+
+        new_backing = &backing_images.emplace_back();
+        new_backing->num_samples = num_samples;
         new_backing->image = UniqueImage{instance->GetDevice(), instance->GetAllocator()};
         new_backing->image.Create(new_image_ci);
 
@@ -510,6 +516,8 @@ void Image::SwapBackingSamples(bool multisampled) {
                               AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
                               info.guest_address, info.guest_size, info.resources.layers,
                               info.resources.levels, 1);
+    } else {
+        new_backing = std::addressof(*it);
     }
 
     scheduler->EndRendering();
@@ -521,12 +529,9 @@ void Image::SwapBackingSamples(bool multisampled) {
                     vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
 
     // Transition dest backing to color attachment layout, not caring of previous contents
-    const auto dst_stage = info.props.is_depth ? vk::PipelineStageFlagBits2::eLateFragmentTests
-                                               : vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-    const auto dst_access = info.props.is_depth ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                                                : vk::AccessFlagBits2::eColorAttachmentWrite;
-    const auto dst_layout = info.props.is_depth ? vk::ImageLayout::eDepthAttachmentOptimal
-                                                : vk::ImageLayout::eColorAttachmentOptimal;
+    constexpr auto dst_stage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+    constexpr auto dst_access = vk::AccessFlagBits2::eColorAttachmentWrite;
+    constexpr auto dst_layout = vk::ImageLayout::eColorAttachmentOptimal;
     barriers.push_back(vk::ImageMemoryBarrier2{
         .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
         .srcAccessMask = vk::AccessFlagBits2::eNone,
@@ -538,7 +543,7 @@ void Image::SwapBackingSamples(bool multisampled) {
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image = new_backing->image,
         .subresourceRange{
-            .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+            .aspectMask = aspect_mask,
             .baseMipLevel = 0,
             .levelCount = 1,
             .baseArrayLayer = 0,
@@ -552,14 +557,14 @@ void Image::SwapBackingSamples(bool multisampled) {
     });
 
     // Copy between ms and non ms backing images
-    blit_helper->BlitNonMsImageMsImage(info.size.width, info.size.height, info.num_samples,
-                                       info.pixel_format, info.props.is_depth, !multisampled,
-                                       backing->image, new_backing->image);
+    blit_helper->CopyBetweenMsImages(info.size.width, info.size.height, new_backing->num_samples,
+                                     info.pixel_format, backing->num_samples > 1, backing->image,
+                                     new_backing->image);
 
     // Update current layout in tracker to new backings layout
-    last_state.layout = dst_layout;
-    last_state.access_mask = dst_access;
-    last_state.pl_stage = dst_stage;
+    new_backing->state.layout = dst_layout;
+    new_backing->state.access_mask = dst_access;
+    new_backing->state.pl_stage = dst_stage;
     backing = new_backing;
 }
 

@@ -11,22 +11,13 @@ layout (binding = 0, set = 0) uniform texture2D in_tex;
 #endif
 
 layout (location = 0) in vec2 uv;
-
-#if !defined(IS_DEPTH)
 layout (location = 0) out vec4 out_color;
-#endif
 
 void main()
 {
 #if defined(SRC_MSAA)
-    ivec2 size = textureSize(in_tex);
+    out_color = texelFetch(in_tex, ivec2(gl_FragCoord.xy), gl_SampleID);
 #else
-    ivec2 size = textureSize(in_tex, 0);
-#endif
-    ivec2 coord = ivec2(uv * vec2(size));
-#if defined(IS_DEPTH)
-    gl_FragDepth = texelFetch(in_tex, coord, 0).x;
-#else
-    out_color = texelFetch(in_tex, coord, 0);
+    out_color = texelFetch(in_tex, ivec2(gl_FragCoord.xy), 0);
 #endif
 }
