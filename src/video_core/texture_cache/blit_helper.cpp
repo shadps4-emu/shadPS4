@@ -8,8 +8,8 @@
 #include "video_core/texture_cache/image.h"
 
 #include "video_core/host_shaders/color_to_ms_depth_frag.h"
-#include "video_core/host_shaders/ms_image_blit_frag.h"
 #include "video_core/host_shaders/fs_tri_vert.h"
+#include "video_core/host_shaders/ms_image_blit_frag.h"
 
 namespace VideoCore {
 
@@ -38,8 +38,9 @@ BlitHelper::BlitHelper(const Vulkan::Instance& instance_, Vulkan::Scheduler& sch
 
 BlitHelper::~BlitHelper() = default;
 
-void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples, vk::Format pixel_format,
-                                           vk::Image source, vk::Image dest) {
+void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples,
+                                           vk::Format pixel_format, vk::Image source,
+                                           vk::Image dest) {
     const vk::ImageViewUsageCreateInfo color_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
     const vk::ImageViewCreateInfo color_view_ci = {
         .pNext = &color_usage_ci,
@@ -141,8 +142,9 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
     scheduler.GetDynamicState().Invalidate();
 }
 
-void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples, vk::Format pixel_format,
-                                       bool is_depth, bool src_msaa, vk::Image source, vk::Image dest) {
+void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples,
+                                       vk::Format pixel_format, bool is_depth, bool src_msaa,
+                                       vk::Image source, vk::Image dest) {
     const vk::ImageViewUsageCreateInfo non_ms_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
     const vk::ImageViewCreateInfo non_ms_view_ci = {
         .pNext = &non_ms_usage_ci,
@@ -150,7 +152,8 @@ void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples, v
         .viewType = vk::ImageViewType::e2D,
         .format = pixel_format,
         .subresourceRange{
-            .aspectMask = is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
+            .aspectMask =
+                is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0U,
             .levelCount = 1U,
             .baseArrayLayer = 0U,
@@ -162,23 +165,24 @@ void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples, v
     ASSERT_MSG(non_ms_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(non_ms_view_result));
 
-    const vk::ImageViewUsageCreateInfo ms_usage_ci{.usage = is_depth ? vk::ImageUsageFlagBits::eDepthStencilAttachment
-                                                                     : vk::ImageUsageFlagBits::eColorAttachment};
+    const vk::ImageViewUsageCreateInfo ms_usage_ci{
+        .usage = is_depth ? vk::ImageUsageFlagBits::eDepthStencilAttachment
+                          : vk::ImageUsageFlagBits::eColorAttachment};
     const vk::ImageViewCreateInfo ms_view_ci = {
         .pNext = &ms_usage_ci,
         .image = dest,
         .viewType = vk::ImageViewType::e2D,
         .format = pixel_format,
         .subresourceRange{
-            .aspectMask = is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
+            .aspectMask =
+                is_depth ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0U,
             .levelCount = 1U,
             .baseArrayLayer = 0U,
             .layerCount = 1U,
         },
     };
-    const auto [ms_view_result, ms_view] =
-        instance.GetDevice().createImageView(ms_view_ci);
+    const auto [ms_view_result, ms_view] = instance.GetDevice().createImageView(ms_view_ci);
     ASSERT_MSG(ms_view_result == vk::Result::eSuccess, "Failed to create image view: {}",
                vk::to_string(ms_view_result));
     scheduler.DeferOperation([device = instance.GetDevice(), non_ms_view, ms_view] {
@@ -258,18 +262,21 @@ void BlitHelper::BlitNonMsImageMsImage(u32 width, u32 height, u32 num_samples, v
 
 void BlitHelper::CreateShaders() {
     const auto device = instance.GetDevice();
-    fs_tri_vertex = Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device);
-    fs_tri_layer_vertex = Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device, {"INSTANCE_AS_LAYER"});
-    color_to_ms_depth_frag =
-        Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG, vk::ShaderStageFlagBits::eFragment, device);
-    non_ms_color_to_ms_color_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment,
-                                                    device);
-    non_ms_depth_to_ms_depth_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment,
-                                                    device, {"IS_DEPTH"});
-    ms_color_to_non_ms_color_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment,
-                                                    device, {"SRC_MSAA"});
-    ms_depth_to_non_ms_depth_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment,
-                                                    device, {"IS_DEPTH", "SRC_MSAA"});
+    fs_tri_vertex =
+        Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device);
+    fs_tri_layer_vertex = Vulkan::Compile(
+        HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device, {"INSTANCE_AS_LAYER"});
+    color_to_ms_depth_frag = Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG,
+                                             vk::ShaderStageFlagBits::eFragment, device);
+    non_ms_color_to_ms_color_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
+                                                    vk::ShaderStageFlagBits::eFragment, device);
+    non_ms_depth_to_ms_depth_frag = Vulkan::Compile(
+        HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device, {"IS_DEPTH"});
+    ms_color_to_non_ms_color_frag = Vulkan::Compile(
+        HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device, {"SRC_MSAA"});
+    ms_depth_to_non_ms_depth_frag =
+        Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG, vk::ShaderStageFlagBits::eFragment, device,
+                        {"IS_DEPTH", "SRC_MSAA"});
 }
 
 void BlitHelper::CreatePipelineLayouts() {
@@ -399,8 +406,10 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
     };
     shader_stages[1] = {
         .stage = vk::ShaderStageFlagBits::eFragment,
-        .module = key.src_msaa ? (is_color ? ms_color_to_non_ms_color_frag : ms_depth_to_non_ms_depth_frag)
-                               : is_color ? non_ms_color_to_ms_color_frag : non_ms_depth_to_ms_depth_frag,
+        .module = key.src_msaa
+                      ? (is_color ? ms_color_to_non_ms_color_frag : ms_depth_to_non_ms_depth_frag)
+                  : is_color ? non_ms_color_to_ms_color_frag
+                             : non_ms_depth_to_ms_depth_frag,
         .pName = "main",
     };
 
@@ -414,7 +423,7 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
     const vk::PipelineColorBlendAttachmentState attachment = {
         .blendEnable = false,
         .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                      vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+                          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
     };
 
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
@@ -446,7 +455,8 @@ void BlitHelper::CreateNonMsImageToMsImagePipeline(const MsPipelineKey& key) {
         instance.GetDevice().createGraphicsPipelineUnique(VK_NULL_HANDLE, pipeline_info);
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
-    Vulkan::SetObjectName(instance.GetDevice(), *pipeline, "Non MS Image to MS Image {}", key.num_samples);
+    Vulkan::SetObjectName(instance.GetDevice(), *pipeline, "Non MS Image to MS Image {}",
+                          key.num_samples);
 
     non_ms_color_to_ms_color_pl.emplace_back(key, std::move(pipeline));
 }

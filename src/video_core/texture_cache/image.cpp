@@ -147,10 +147,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                   vk::to_string(supported_format), vk::to_string(format_info.type),
                   vk::to_string(format_info.flags), vk::to_string(format_info.usage));
     }
-    supported_samples =
-        image_format_properties.result == vk::Result::eSuccess
-            ? image_format_properties.value.imageFormatProperties.sampleCounts
-            : vk::SampleCountFlagBits::e1;
+    supported_samples = image_format_properties.result == vk::Result::eSuccess
+                            ? image_format_properties.value.imageFormatProperties.sampleCounts
+                            : vk::SampleCountFlagBits::e1;
 
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
@@ -176,11 +175,10 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     backing->image.Create(image_ci);
 
     Vulkan::SetObjectName(instance->GetDevice(), GetImage(),
-                          "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}",
-                          info.size.width, info.size.height, info.size.depth,
-                          AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
-                          info.guest_address, info.guest_size, info.resources.layers,
-                          info.resources.levels, info.num_samples);
+                          "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}", info.size.width,
+                          info.size.height, info.size.depth, AmdGpu::NameOf(info.tile_mode),
+                          vk::to_string(info.pixel_format), info.guest_address, info.guest_size,
+                          info.resources.layers, info.resources.levels, info.num_samples);
 }
 
 Image::~Image() = default;
@@ -375,8 +373,8 @@ void Image::CopyImage(Image& src_image) {
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout,
-                     GetImage(), last_state.layout, image_copies);
+    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(),
+                     last_state.layout, image_copies);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -452,7 +450,8 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
         copy.imageSubresource.aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil;
     }
 
-    cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal, buffer_copies);
+    cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                             buffer_copies);
 }
 
 void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
@@ -485,8 +484,8 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
         },
         .extent = {mip_w, mip_h, mip_d},
     };
-    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(), last_state.layout,
-                     image_copy);
+    cmdbuf.copyImage(src_image.GetImage(), src_image.last_state.layout, GetImage(),
+                     last_state.layout, image_copy);
 
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
@@ -517,8 +516,9 @@ void Image::SwapBackingSamples(bool multisampled) {
     ASSERT(info.resources.levels == 1 && info.resources.layers == 1);
 
     // Transition current backing to shader read layout
-    auto barriers = GetBarriers(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
-                                vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
+    auto barriers =
+        GetBarriers(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                    vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
 
     // Transition dest backing to color attachment layout, not caring of previous contents
     const auto dst_stage = info.props.is_depth ? vk::PipelineStageFlagBits2::eLateFragmentTests
@@ -552,8 +552,9 @@ void Image::SwapBackingSamples(bool multisampled) {
     });
 
     // Copy between ms and non ms backing images
-    blit_helper->BlitNonMsImageMsImage(info.size.width, info.size.height, info.num_samples, info.pixel_format, info.props.is_depth,
-                                       !multisampled, backing->image, new_backing->image);
+    blit_helper->BlitNonMsImageMsImage(info.size.width, info.size.height, info.num_samples,
+                                       info.pixel_format, info.props.is_depth, !multisampled,
+                                       backing->image, new_backing->image);
 
     // Update current layout in tracker to new backings layout
     last_state.layout = dst_layout;

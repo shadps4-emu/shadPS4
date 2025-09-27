@@ -126,7 +126,8 @@ private:
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 
-    using RenderTargetInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>;
+    using RenderTargetInfo =
+        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>;
     std::array<RenderTargetInfo, Liverpool::NumColorBuffers> cb_descs;
     std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc> db_desc;
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NumImages> image_infos;

@@ -111,7 +111,8 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     const auto& key = pipeline->GetGraphicsKey();
     const u32 mrt_mask = key.mrt_mask;
 
-    // Prefetch color and depth buffers to handle possible overlaps with bound textures (e.g. mipgen)
+    // Prefetch color and depth buffers to handle possible overlaps with bound textures (e.g.
+    // mipgen)
     RenderState state;
     state.width = instance.GetMaxFramebufferWidth();
     state.height = instance.GetMaxFramebufferHeight();
@@ -147,8 +148,8 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const auto& hint = liverpool->last_db_extent;
         auto& [image_id, desc] = db_desc;
-        std::construct_at(&desc, regs.depth_buffer, regs.depth_view,
-                                 regs.depth_control, htile_address, hint);
+        std::construct_at(&desc, regs.depth_buffer, regs.depth_view, regs.depth_control,
+                          htile_address, hint);
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
@@ -778,15 +779,15 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             ASSERT_MSG(!image->binding.force_general,
                        "Having image both as storage and render target is unsupported");
             image->Transit(instance.IsAttachmentFeedbackLoopLayoutSupported()
-                              ? vk::ImageLayout::eAttachmentFeedbackLoopOptimalEXT
-                              : vk::ImageLayout::eGeneral,
-                          vk::AccessFlagBits2::eColorAttachmentWrite, {});
+                               ? vk::ImageLayout::eAttachmentFeedbackLoopOptimalEXT
+                               : vk::ImageLayout::eGeneral,
+                           vk::AccessFlagBits2::eColorAttachmentWrite, {});
             attachment_feedback_loop = true;
         } else {
             image->Transit(vk::ImageLayout::eColorAttachmentOptimal,
-                          vk::AccessFlagBits2::eColorAttachmentWrite |
-                              vk::AccessFlagBits2::eColorAttachmentRead,
-                          desc.view_info.range);
+                           vk::AccessFlagBits2::eColorAttachmentWrite |
+                               vk::AccessFlagBits2::eColorAttachmentRead,
+                           desc.view_info.range);
         }
 
         state.width = std::min<u32>(state.width, std::max(image->info.size.width >> mip, 1u));
@@ -913,9 +914,9 @@ void Rasterizer::Resolve() {
             .dstOffset = {0, 0, 0},
             .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
         };
-        scheduler.CommandBuffer().copyImage(mrt0_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                                            mrt1_image.GetImage(), vk::ImageLayout::eTransferDstOptimal,
-                                            region);
+        scheduler.CommandBuffer().copyImage(
+            mrt0_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, mrt1_image.GetImage(),
+            vk::ImageLayout::eTransferDstOptimal, region);
     } else {
         vk::ImageResolve region = {
             .srcSubresource =
@@ -1001,8 +1002,8 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
         .extent = {write_image.info.size.width, write_image.info.size.height, 1},
     };
     scheduler.CommandBuffer().copyImage(read_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                                        write_image.GetImage(), vk::ImageLayout::eTransferDstOptimal,
-                                        region);
+                                        write_image.GetImage(),
+                                        vk::ImageLayout::eTransferDstOptimal, region);
 
     ScopeMarkerEnd();
 }

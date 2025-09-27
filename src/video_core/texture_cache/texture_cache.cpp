@@ -771,7 +771,8 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         .imageMemoryBarrierCount = static_cast<u32>(image_barriers.size()),
         .pImageMemoryBarriers = image_barriers.data(),
     });
-    cmdbuf.copyBufferToImage(buffer, image.GetImage(), vk::ImageLayout::eTransferDstOptimal, image_copy);
+    cmdbuf.copyBufferToImage(buffer, image.GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                             image_copy);
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,
         .bufferMemoryBarrierCount = 1,

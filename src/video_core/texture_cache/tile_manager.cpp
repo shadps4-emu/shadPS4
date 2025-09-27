@@ -185,8 +185,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
         .range = sizeof(params),
     };
 
-    u32 out_offset = info.guest_size;
-    const auto [out_buffer, out_allocation] = GetScratchBuffer(info.guest_size << 1);
+    const auto [out_buffer, out_allocation] = GetScratchBuffer(info.guest_size);
     scheduler.DeferOperation([this, out_buffer, out_allocation]() {
         vmaDestroyBuffer(instance.GetAllocator(), out_buffer, out_allocation);
     });
@@ -202,7 +201,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
 
     const vk::DescriptorBufferInfo linear_buffer_info{
         .buffer = out_buffer,
-        .offset = out_offset,
+        .offset = 0,
         .range = info.guest_size,
     };
 
@@ -236,7 +235,7 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
 
     const auto dim_x = (info.guest_size / (info.num_bits / 8)) / 64;
     cmdbuf.dispatch(dim_x, 1, 1);
-    return {out_buffer, out_offset};
+    return {out_buffer, 0};
 }
 
 void TileManager::TileImage(vk::Image in_image, std::span<vk::BufferImageCopy> buffer_copies,

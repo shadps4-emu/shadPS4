@@ -1015,7 +1015,8 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
         .pImageMemoryBarriers = barriers.data(),
     });
     auto& tile_manager = texture_cache.GetTileManager();
-    tile_manager.TileImage(image.GetImage(), buffer_copies, buffer.Handle(), buf_offset, image.info);
+    tile_manager.TileImage(image.GetImage(), buffer_copies, buffer.Handle(), buf_offset,
+                           image.info);
     cmdbuf = scheduler.CommandBuffer();
     cmdbuf.pipelineBarrier2(vk::DependencyInfo{
         .dependencyFlags = vk::DependencyFlagBits::eByRegion,

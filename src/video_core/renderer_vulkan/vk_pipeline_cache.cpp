@@ -339,7 +339,9 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.patch_control_points =
         regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
-    key.depth_samples = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid() ? regs.depth_buffer.NumSamples() : 1;
+    key.depth_samples = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid()
+                            ? regs.depth_buffer.NumSamples()
+                            : 1;
     key.num_samples = key.depth_samples;
     key.cb_shader_mask = regs.color_shader_mask;
 
@@ -369,7 +371,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         return false;
     }
 
-    // Second pass to mask out render targets not written by fragment shader and fill remaining information
+    // Second pass to mask out render targets not written by fragment shader and fill remaining
+    // information
     u8 color_samples = 0;
     bool all_color_samples_same = true;
     for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
@@ -402,11 +405,13 @@ bool PipelineCache::RefreshGraphicsKey() {
     // Force all attachment samples to 1 to disable unsupported MSAA configuration
     if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported()) {
         key.color_samples.fill(1);
-        key.num_samples = 1;
+        color_samples = 1;
+        key.num_samples = key.depth_samples;
     }
 
     // Force depth samples to 1 to disable unsupported MSAA configuration
-    if (key.depth_samples != key.num_samples && !instance.IsMixedDepthSamplesSupported()) {
+    if (key.depth_samples != color_samples && color_samples != 0 &&
+        !instance.IsMixedDepthSamplesSupported()) {
         key.depth_samples = 1;
     }
 

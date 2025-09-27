@@ -46,8 +46,7 @@ struct UniqueImage {
     UniqueImage(UniqueImage&& other)
         : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
           allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
-          image{std::exchange(other.image, VK_NULL_HANDLE)},
-          image_ci{std::move(other.image_ci)} {}
+          image{std::exchange(other.image, VK_NULL_HANDLE)}, image_ci{std::move(other.image_ci)} {}
     UniqueImage& operator=(UniqueImage&& other) {
         image = std::exchange(other.image, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);
@@ -79,8 +78,8 @@ constexpr Common::SlotId NULL_IMAGE_ID{0};
 class BlitHelper;
 
 struct Image {
-    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-          BlitHelper& blit_helper, const ImageInfo& info);
+    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, BlitHelper& blit_helper,
+          const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;

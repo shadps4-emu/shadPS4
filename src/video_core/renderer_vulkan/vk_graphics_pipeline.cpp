@@ -135,8 +135,8 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples =
-            LiverpoolToVK::NumSamples(key.num_samples, instance.GetColorSampleCounts() & instance.GetDepthSampleCounts()),
+        .rasterizationSamples = LiverpoolToVK::NumSamples(
+            key.num_samples, instance.GetColorSampleCounts() & instance.GetDepthSampleCounts()),
         .sampleShadingEnable =
             fs_info.addr_flags.persp_sample_ena || fs_info.addr_flags.linear_sample_ena,
     };
@@ -260,13 +260,15 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     std::array<vk::SampleCountFlagBits, Liverpool::NumColorBuffers> color_samples;
-    std::ranges::transform(key.color_samples, color_samples.begin(), [&instance] (u8 num_samples) {
-        return num_samples ? LiverpoolToVK::NumSamples(num_samples, instance.GetColorSampleCounts()) : vk::SampleCountFlagBits::e1;
+    std::ranges::transform(key.color_samples, color_samples.begin(), [&instance](u8 num_samples) {
+        return num_samples ? LiverpoolToVK::NumSamples(num_samples, instance.GetColorSampleCounts())
+                           : vk::SampleCountFlagBits::e1;
     });
     const vk::AttachmentSampleCountInfoAMD mixed_samples = {
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentSamples = color_samples.data(),
-        .depthStencilAttachmentSamples = LiverpoolToVK::NumSamples(key.depth_samples, instance.GetDepthSampleCounts()),
+        .depthStencilAttachmentSamples =
+            LiverpoolToVK::NumSamples(key.depth_samples, instance.GetDepthSampleCounts()),
     };
 
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {

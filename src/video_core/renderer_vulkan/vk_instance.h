@@ -407,8 +407,8 @@ public:
 
     /// Returns the sample count flags supported by depth buffer.
     vk::SampleCountFlags GetDepthSampleCounts() const {
-        return  properties.limits.framebufferDepthSampleCounts &
-                properties.limits.framebufferStencilSampleCounts;
+        return properties.limits.framebufferDepthSampleCounts &
+               properties.limits.framebufferStencilSampleCounts;
     }
 
     /// Returns whether disabling primitive restart is supported.
