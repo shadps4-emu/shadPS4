@@ -226,8 +226,6 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
 void MemoryManager::Free(PAddr phys_addr, u64 size) {
     std::scoped_lock lk{mutex};
 
-    auto dmem_area = CarveDmemArea(phys_addr, size);
-
     // Release any dmem mappings that reference this physical block.
     std::vector<std::pair<VAddr, u64>> remove_list;
     for (const auto& [addr, mapping] : vma_map) {
@@ -235,22 +233,46 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
             continue;
         }
         if (mapping.phys_base <= phys_addr && phys_addr < mapping.phys_base + mapping.size) {
-            auto vma_segment_start_addr = phys_addr - mapping.phys_base + addr;
-            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}",
-                     vma_segment_start_addr, size);
+            const auto vma_start_offset = phys_addr - mapping.phys_base;
+            const auto addr_in_vma = mapping.base + vma_start_offset;
+            const auto size_in_vma =
+                mapping.size - vma_start_offset > size ? size : mapping.size - vma_start_offset;
+
+            LOG_INFO(Kernel_Vmm, "Unmaping direct mapping {:#x} with size {:#x}", addr_in_vma,
+                     size_in_vma);
             // Unmaping might erase from vma_map. We can't do it here.
-            remove_list.emplace_back(vma_segment_start_addr, size);
+            remove_list.emplace_back(addr_in_vma, size_in_vma);
         }
     }
     for (const auto& [addr, size] : remove_list) {
         UnmapMemoryImpl(addr, size);
     }
 
-    // Mark region as free and attempt to coalesce it with neighbours.
-    auto& area = dmem_area->second;
-    area.dma_type = DMAType::Free;
-    area.memory_type = 0;
-    MergeAdjacent(dmem_map, dmem_area);
+    // Unmap all dmem areas within this area.
+    auto phys_addr_to_search = phys_addr;
+    auto remaining_size = size;
+    auto dmem_area = FindDmemArea(phys_addr);
+    while (dmem_area != dmem_map.end() && remaining_size > 0) {
+        // Carve a free dmem area in place of this one.
+        const auto start_phys_addr =
+            phys_addr > dmem_area->second.base ? phys_addr : dmem_area->second.base;
+        const auto offset_in_dma = start_phys_addr - dmem_area->second.base;
+        const auto size_in_dma = dmem_area->second.size - offset_in_dma > remaining_size
+                                     ? remaining_size
+                                     : dmem_area->second.size - offset_in_dma;
+        const auto dmem_handle = CarveDmemArea(start_phys_addr, size_in_dma);
+        auto& new_dmem_area = dmem_handle->second;
+        new_dmem_area.dma_type = DMAType::Free;
+        new_dmem_area.memory_type = 0;
+
+        // Merge the new dmem_area with dmem_map
+        MergeAdjacent(dmem_map, dmem_handle);
+
+        // Get the next relevant dmem area.
+        phys_addr_to_search = phys_addr + size_in_dma;
+        remaining_size -= size_in_dma;
+        dmem_area = FindDmemArea(phys_addr_to_search);
+    }
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
@@ -653,7 +675,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         auto remaining_size = adjusted_size;
         DMemHandle dmem_handle = FindDmemArea(phys_addr);
         while (dmem_handle != dmem_map.end() && remaining_size > 0) {
-            const auto start_in_dma = phys_base - dmem_handle->second.base;
+            const auto start_in_dma = phys_addr - dmem_handle->second.base;
             const auto size_in_dma = dmem_handle->second.size - start_in_dma > remaining_size
                                          ? remaining_size
                                          : dmem_handle->second.size - start_in_dma;
