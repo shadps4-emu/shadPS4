@@ -46,14 +46,14 @@ BlitHelper::~BlitHelper() {
 }
 
 void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples,
-                                           vk::Format pixel_format, vk::Image source,
-                                           vk::Image dest) {
+                                           vk::Format src_pixel_format, vk::Format dst_pixel_format,
+                                           vk::Image source, vk::Image dest) {
     const vk::ImageViewUsageCreateInfo color_usage_ci{.usage = vk::ImageUsageFlagBits::eSampled};
     const vk::ImageViewCreateInfo color_view_ci = {
         .pNext = &color_usage_ci,
         .image = source,
         .viewType = vk::ImageViewType::e2D,
-        .format = pixel_format,
+        .format = src_pixel_format,
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .baseMipLevel = 0U,
@@ -72,7 +72,7 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
         .pNext = &depth_usage_ci,
         .image = dest,
         .viewType = vk::ImageViewType::e2D,
-        .format = pixel_format,
+        .format = dst_pixel_format,
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eDepth,
             .baseMipLevel = 0U,
@@ -120,7 +120,7 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *single_texture_pl_layout, 0U,
                                 texture_write);
 
-    const MsPipelineKey key{num_samples, pixel_format, false};
+    const MsPipelineKey key{num_samples, dst_pixel_format, false};
     auto it = std::ranges::find(color_to_ms_depth_pl, key, &MsPipeline::first);
     if (it == color_to_ms_depth_pl.end()) {
         CreateColorToMSDepthPipeline(key);

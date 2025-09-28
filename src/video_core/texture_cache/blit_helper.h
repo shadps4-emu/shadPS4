@@ -26,7 +26,8 @@ public:
     explicit BlitHelper(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~BlitHelper();
 
-    void ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples, vk::Format pixel_format,
+    void ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples,
+                                   vk::Format src_pixel_format, vk::Format dst_pixel_format,
                                    vk::Image source, vk::Image dest);
 
     void CopyBetweenMsImages(u32 width, u32 height, u32 num_samples, vk::Format pixel_format,

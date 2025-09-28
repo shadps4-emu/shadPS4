@@ -292,9 +292,10 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
                                 vk::AccessFlagBits2::eShaderRead, {});
             new_image.Transit(vk::ImageLayout::eDepthAttachmentOptimal,
                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite, {});
-            blit_helper.ReinterpretColorAsMsDepth(new_info.size.width, new_info.size.height,
-                                                  new_info.num_samples, new_info.pixel_format,
-                                                  cache_image.GetImage(), new_image.GetImage());
+            blit_helper.ReinterpretColorAsMsDepth(
+                new_info.size.width, new_info.size.height, new_info.num_samples,
+                cache_image.info.pixel_format, new_info.pixel_format, cache_image.GetImage(),
+                new_image.GetImage());
         } else {
             LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
         }
