@@ -74,10 +74,10 @@ void PS4_SYSV_ABI posix_pthread_exit(void* status) {
                fmt::ptr(curthread));
 
     /* Flag this thread as exiting. */
-    curthread->cancelling = 1;
-    curthread->no_cancel = 1;
-    curthread->cancel_async = 0;
-    curthread->cancel_point = 0;
+    curthread->cancelling = true;
+    curthread->no_cancel = true;
+    curthread->cancel_async = false;
+    curthread->cancel_point = false;
 
     /* Save the return value: */
     curthread->ret = status;
@@ -107,7 +107,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     }
 
     auto* thread_state = ThrState::Instance();
-    if (int ret = thread_state->FindThread(pthread, 1); ret != 0) {
+    if (int ret = thread_state->FindThread(pthread, true); ret != 0) {
         return POSIX_ESRCH;
     }
 
@@ -127,9 +127,9 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     pthread->lock.unlock();
 
     const auto backout_join = [](void* arg) PS4_SYSV_ABI {
-        Pthread* pthread = (Pthread*)arg;
-        std::scoped_lock lk{pthread->lock};
-        pthread->joiner = nullptr;
+        auto* pthread2 = static_cast<Pthread*>(arg);
+        std::scoped_lock lk{pthread2->lock};
+        pthread2->joiner = nullptr;
     };
 
     PthreadCleanup cup{backout_join, pthread, 0};
@@ -137,7 +137,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
 
     //_thr_cancel_enter(curthread);
 
-    const int tid = pthread->tid;
+    const s32 tid = pthread->tid;
     while (pthread->tid.load() != TidTerminated) {
         //_thr_testcancel(curthread);
         ASSERT(abstime == nullptr);
@@ -165,7 +165,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
 }
 
 int PS4_SYSV_ABI posix_pthread_join(PthreadT pthread, void** thread_return) {
-    return JoinThread(pthread, thread_return, NULL);
+    return JoinThread(pthread, thread_return, nullptr);
 }
 
 int PS4_SYSV_ABI posix_pthread_timedjoin_np(PthreadT pthread, void** thread_return,
@@ -184,12 +184,12 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     }
 
     auto* thread_state = ThrState::Instance();
-    if (int ret = thread_state->FindThread(pthread, 1); ret != 0) {
+    if (int ret = thread_state->FindThread(pthread, true); ret != 0) {
         return ret;
     }
 
     /* Check if the thread is already detached or has a joiner. */
-    if (True(pthread->flags & ThreadFlags::Detached) || (pthread->joiner != NULL)) {
+    if (True(pthread->flags & ThreadFlags::Detached) || pthread->joiner != nullptr) {
         pthread->lock.unlock();
         return POSIX_EINVAL;
     }
@@ -201,7 +201,7 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
 }
 
 static void RunThread(void* arg) {
-    Pthread* curthread = (Pthread*)arg;
+    auto* curthread = static_cast<Pthread*>(arg);
     g_curthread = curthread;
     Common::SetCurrentThreadName(curthread->name.c_str());
     DebugState.AddCurrentThreadToGuestList();
@@ -244,7 +244,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     static int TidCounter = 1;
     new_thread->tid = ++TidCounter;
 
-    if (new_thread->attr.stackaddr_attr == 0) {
+    if (new_thread->attr.stackaddr_attr == nullptr) {
         /* Add additional stack space for HLE */
         static constexpr size_t AdditionalStack = 128_KB;
         new_thread->attr.stacksize_attr += AdditionalStack;
@@ -263,8 +263,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->magic = Pthread::ThrMagic;
     new_thread->start_routine = start_routine;
     new_thread->arg = arg;
-    new_thread->cancel_enable = 1;
-    new_thread->cancel_async = 0;
+    new_thread->cancel_enable = true;
+    new_thread->cancel_async = false;
 
     auto* memory = Core::Memory::Instance();
     if (name && memory->IsValidAddress(name)) {
@@ -365,15 +365,15 @@ int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
     }
 
     const auto once_cancel_handler = [](void* arg) PS4_SYSV_ABI {
-        PthreadOnce* once_control = (PthreadOnce*)arg;
+        auto* once_control2 = static_cast<PthreadOnce*>(arg);
         auto state = PthreadOnceState::InProgress;
-        if (once_control->state.compare_exchange_strong(state, PthreadOnceState::NeverDone,
-                                                        std::memory_order_release)) {
+        if (once_control2->state.compare_exchange_strong(state, PthreadOnceState::NeverDone,
+                                                         std::memory_order_release)) {
             return;
         }
 
-        once_control->state.store(PthreadOnceState::NeverDone, std::memory_order_release);
-        once_control->state.notify_all();
+        once_control2->state.store(PthreadOnceState::NeverDone, std::memory_order_release);
+        once_control2->state.notify_all();
     };
 
     PthreadCleanup cup{once_cancel_handler, once_control, 0};
@@ -430,7 +430,7 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
     }
     auto* thread_state = ThrState::Instance();
     /* Find the thread in the list of active threads. */
-    if (int ret = thread_state->RefAdd(pthread, /*include dead*/ 0); ret != 0) {
+    if (int ret = thread_state->RefAdd(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
     pthread->lock.lock();
@@ -450,7 +450,7 @@ int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy polic
     auto* thread_state = ThrState::Instance();
     if (pthread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ 0); ret != 0) {
+    } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
 
@@ -479,13 +479,12 @@ int PS4_SYSV_ABI scePthreadGetprio(PthreadT thread, int* priority) {
 
 int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     SchedParam param;
-
     param.sched_priority = prio;
 
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (int ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
+    } else if (const int ret = thread_state->FindThread(thread, /*include dead*/ false); ret != 0) {
         return ret;
     }
 
@@ -507,7 +506,7 @@ enum class PthreadCancelState : u32 {
 
 #define POSIX_PTHREAD_CANCELED ((void*)1)
 
-static inline void TestCancel(Pthread* curthread) {
+static inline void TestCancel(const Pthread* curthread) {
     if (curthread->ShouldCancel() && !curthread->InCritical()) [[unlikely]] {
         posix_pthread_exit(POSIX_PTHREAD_CANCELED);
     }
@@ -519,10 +518,10 @@ int PS4_SYSV_ABI posix_pthread_setcancelstate(PthreadCancelState state,
     int oldval = curthread->cancel_enable;
     switch (state) {
     case PthreadCancelState::Disable:
-        curthread->cancel_enable = 0;
+        curthread->cancel_enable = false;
         break;
     case PthreadCancelState::Enable:
-        curthread->cancel_enable = 1;
+        curthread->cancel_enable = true;
         TestCancel(curthread);
         break;
     default:
@@ -588,7 +587,8 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (auto ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
+    } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
+               ret != 0) {
         return ret;
     }
 
@@ -608,7 +608,8 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
     auto* thread_state = ThrState::Instance();
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (auto ret = thread_state->FindThread(thread, /*include dead*/ 0); ret != 0) {
+    } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
+               ret != 0) {
         return ret;
     }
 

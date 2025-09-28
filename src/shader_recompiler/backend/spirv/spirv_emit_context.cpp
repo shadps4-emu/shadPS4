@@ -122,7 +122,6 @@ void EmitContext::DefineArithmeticTypes() {
     S16 = Name(TypeSInt(16), "i16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
-        U16 = Name(TypeUInt(16), "u16_id");
     }
     if (info.uses_fp64) {
         F64[1] = Name(TypeFloat(64), "f64_id");

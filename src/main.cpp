@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "functional"
@@ -9,8 +9,10 @@
 
 #include <fmt/core.h>
 #include "common/config.h"
+#include "common/logging/backend.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
+#include "core/debugger.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
@@ -32,6 +34,10 @@ int main(int argc, char* argv[]) {
     bool has_game_argument = false;
     std::string game_path;
     std::vector<std::string> game_args{};
+    std::optional<std::filesystem::path> game_folder;
+
+    bool waitForDebugger = false;
+    std::optional<int> waitPid;
 
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
@@ -50,6 +56,12 @@ int main(int argc, char* argv[]) {
                     "state. Does not overwrite the config file.\n"
                     "  --add-game-folder <folder>    Adds a new game folder to the config.\n"
                     "  --set-addon-folder <folder>   Sets the addon folder to the config.\n"
+                    "  --log-append                  Append log output to file instead of "
+                    "overwriting it.\n"
+                    "  --override-root <folder>      Override the game root folder. Default is the "
+                    "parent of game path\n"
+                    "  --wait-for-debugger           Wait for debugger to attach\n"
+                    "  --wait-for-pid <pid>          Wait for process with specified PID to stop\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -119,7 +131,8 @@ int main(int argc, char* argv[]) {
              std::cout << "Game folder successfully saved.\n";
              exit(0);
          }},
-        {"--set-addon-folder", [&](int& i) {
+        {"--set-addon-folder",
+         [&](int& i) {
              if (++i >= argc) {
                  std::cerr << "Error: Missing argument for --add-addon-folder\n";
                  exit(1);
@@ -136,6 +149,29 @@ int main(int argc, char* argv[]) {
              Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
              std::cout << "Addon folder successfully saved.\n";
              exit(0);
+         }},
+        {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
+        {"--override-root",
+         [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --override-root\n";
+                 exit(1);
+             }
+             std::string folder_str{argv[i]};
+             std::filesystem::path folder{folder_str};
+             if (!std::filesystem::exists(folder) || !std::filesystem::is_directory(folder)) {
+                 std::cerr << "Error: Folder does not exist: " << folder_str << "\n";
+                 exit(1);
+             }
+             game_folder = folder;
+         }},
+        {"--wait-for-debugger", [&](int& i) { waitForDebugger = true; }},
+        {"--wait-for-pid", [&](int& i) {
+             if (++i >= argc) {
+                 std::cerr << "Error: Missing argument for --wait-for-pid\n";
+                 exit(1);
+             }
+             waitPid = std::stoi(argv[i]);
          }}};
 
     if (argc == 1) {
@@ -206,9 +242,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (waitPid.has_value()) {
+        Core::Debugger::WaitForPid(waitPid.value());
+    }
+
     // Run the emulator with the resolved eboot path
-    Core::Emulator emulator;
-    emulator.Run(eboot_path, game_args);
+    Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
+    emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
+    emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;
 }

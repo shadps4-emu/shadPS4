@@ -1671,20 +1671,12 @@
         <translation>Emulator Language</translation>
     </message>
     <message>
-        <source>Emulator</source>
-        <translation>Emulator</translation>
-    </message>
-    <message>
         <source>Default tab when opening settings</source>
         <translation>Default tab when opening settings</translation>
     </message>
     <message>
         <source>Show Game Size In List</source>
         <translation>Show Game Size In List</translation>
-    </message>
-    <message>
-        <source>Show Splash</source>
-        <translation>Show Splash</translation>
     </message>
     <message>
         <source>Enable Discord Rich Presence</source>
@@ -1875,10 +1867,6 @@
         <translation>Check for Updates</translation>
     </message>
     <message>
-        <source>GUI Settings</source>
-        <translation>GUI Settings</translation>
-    </message>
-    <message>
         <source>Title Music</source>
         <translation>Title Music</translation>
     </message>
@@ -2057,14 +2045,6 @@
     <message>
         <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
         <translation>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</translation>
-    </message>
-    <message>
-        <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-        <translation>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</translation>
-    </message>
-    <message>
-        <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-        <translation>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</translation>
     </message>
     <message>
         <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -2363,10 +2343,6 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Hz</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2379,15 +2355,71 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Enable PS4 Pro Mode</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Set &quot;PSN signed-in&quot; to True</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Set &quot;Network Connected&quot; to True</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Miscellaneous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Frontend</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Experimental</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Splash Screen When Launching Game</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General Frontend Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable PS4 Neo Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Audio Device (general)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Audio Device (DS4 speaker)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

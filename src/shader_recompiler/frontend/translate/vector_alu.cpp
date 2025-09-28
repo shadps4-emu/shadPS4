@@ -29,9 +29,9 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_MUL_F32:
         return V_MUL_F32(inst);
     case Opcode::V_MUL_I32_I24:
-        return V_MUL_I32_I24(inst);
+        return V_MUL_I32_I24(inst, true);
     case Opcode::V_MUL_U32_U24:
-        return V_MUL_I32_I24(inst);
+        return V_MUL_I32_I24(inst, false);
     case Opcode::V_MIN_LEGACY_F32:
         return V_MIN_F32(inst, true);
     case Opcode::V_MAX_LEGACY_F32:
@@ -459,9 +459,11 @@ void Translator::V_MUL_F32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.FPMul(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1])));
 }
 
-void Translator::V_MUL_I32_I24(const GcnInst& inst) {
-    const IR::U32 src0{ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), true)};
-    const IR::U32 src1{ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), true)};
+void Translator::V_MUL_I32_I24(const GcnInst& inst, bool is_signed) {
+    const IR::U32 src0{
+        ir.BitFieldExtract(GetSrc(inst.src[0]), ir.Imm32(0), ir.Imm32(24), is_signed)};
+    const IR::U32 src1{
+        ir.BitFieldExtract(GetSrc(inst.src[1]), ir.Imm32(0), ir.Imm32(24), is_signed)};
     SetDst(inst.dst[0], ir.IMul(src0, src1));
 }
 
@@ -740,14 +742,33 @@ void Translator::V_CVT_I32_F32(const GcnInst& inst) {
 
 void Translator::V_CVT_F16_F32(const GcnInst& inst) {
     const IR::F32 src0 = GetSrc<IR::F32>(inst.src[0]);
-    const IR::F16 src0fp16 = ir.FPConvert(16, src0);
-    SetDst(inst.dst[0], ir.UConvert(32, ir.BitCast<IR::U16>(src0fp16)));
+
+    IR::U32 src0fp16;
+    if (profile.support_float16) {
+        const IR::F16 converted = ir.FPConvert(16, src0);
+        src0fp16 = ir.UConvert(32, ir.BitCast<IR::U16>(converted));
+    } else {
+        const IR::U32 packed =
+            ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(src0, ir.Imm32(0.f)));
+        src0fp16 = ir.BitFieldExtract(packed, ir.Imm32(0U), ir.Imm32(16U));
+    }
+
+    SetDst(inst.dst[0], src0fp16);
 }
 
 void Translator::V_CVT_F32_F16(const GcnInst& inst) {
     const IR::U32 src0 = GetSrc(inst.src[0]);
-    const IR::U16 src0l = ir.UConvert(16, src0);
-    SetDst(inst.dst[0], ir.FPConvert(32, ir.BitCast<IR::F16>(src0l)));
+
+    IR::F32 src0l;
+    if (profile.support_float16) {
+        const IR::U16 converted = ir.UConvert(16, src0);
+        src0l = ir.FPConvert(32, ir.BitCast<IR::F16>(converted));
+    } else {
+        const IR::Value unpacked = ir.Unpack2x16(AmdGpu::NumberFormat::Float, src0);
+        src0l = IR::F32{ir.CompositeExtract(unpacked, 0)};
+    }
+
+    SetDst(inst.dst[0], src0l);
 }
 
 void Translator::V_CVT_RPI_I32_F32(const GcnInst& inst) {

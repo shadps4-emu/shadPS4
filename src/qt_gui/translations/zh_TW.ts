@@ -919,18 +919,6 @@
       <translation>相容性…</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>更新資料庫</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>檢視報告</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>提交報告</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>建立捷徑</translation>
     </message>
@@ -1021,6 +1009,42 @@
     <message>
       <source>Add to Favorites</source>
       <translation type="unfinished">Add to Favorites</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation type="unfinished">Update Database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation type="unfinished">View Report</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation type="unfinished">Submit a Report</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation type="unfinished">Confirm deletion</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation type="unfinished">Delete game-specific settings?</translation>
     </message>
   </context>
   <context>
@@ -1653,20 +1677,12 @@
       <translation>模擬器語言</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>模擬器</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>開啟設定時的預設選項頁面</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>在列表中顯示遊戲大小</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>顯示啟動畫面</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1857,10 +1873,6 @@
       <translation>檢查更新</translation>
     </message>
     <message>
-      <source>GUI Settings</source>
-      <translation>介面設定</translation>
-    </message>
-    <message>
       <source>Title Music</source>
       <translation>標題音樂</translation>
     </message>
@@ -2039,14 +2051,6 @@
     <message>
       <source>Enable Debug Dumping:\nSaves the import and export symbols and file header information of the currently running PS4 program to a directory.</source>
       <translation>啟用偵錯傾印：\n將目前執行的PS4程式的輸入和輸出符號以及檔案頭資訊儲存到目錄中。</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>啟用Vulkan驗證層：\n啟用一個系統來驗證Vulkan渲染器的狀態並記錄其內部狀態的資訊。這樣將會降低效能並可能改變模擬行為。</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>啟用Vulkan同步驗證：\n啟用一個系統來驗證Vulkan渲染工作的時間。\n這樣將會降低效能並可能改變模擬行為。</translation>
     </message>
     <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
@@ -2345,12 +2349,84 @@
       <translation type="unfinished">Vblank Frequency</translation>
     </message>
     <message>
-      <source>Hz</source>
-      <translation type="unfinished">Hz</translation>
-    </message>
-    <message>
       <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
       <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation type="unfinished">Enable Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation type="unfinished">Enable Devkit Console Mode</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

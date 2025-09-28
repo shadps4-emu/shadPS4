@@ -153,7 +153,7 @@ public:
     void V_SUB_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
-    void V_MUL_I32_I24(const GcnInst& inst);
+    void V_MUL_I32_I24(const GcnInst& inst, bool is_signed);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MAX_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN_I32(const GcnInst& inst);
