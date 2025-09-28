@@ -34,7 +34,7 @@ static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
     }
 
     if (True(option & OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */) &&
-        type != OrbisImeType::Number && type != OrbisImeType::BasicLatin) {
+        type != OrbisImeType::Default && type != OrbisImeType::BasicLatin) {
         return false;
     }
 
