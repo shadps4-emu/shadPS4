@@ -416,6 +416,7 @@ void Image::Download(std::span<const vk::BufferImageCopy> download_copies, vk::B
 void Image::CopyImage(Image& src_image) {
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
+    const u32 num_layers = std::min(src_info.resources.layers, info.resources.layers);
     ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
     const u32 width = src_info.size.width;
@@ -437,13 +438,13 @@ void Image::CopyImage(Image& src_image) {
                 .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = src_info.resources.layers,
+                .layerCount = num_layers,
             },
             .dstSubresource{
                 .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = info.resources.layers,
+                .layerCount = num_layers,
             },
             .extent = {mip_w, mip_h, mip_d},
         });
@@ -464,6 +465,7 @@ void Image::CopyImage(Image& src_image) {
 void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset) {
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
+    const u32 num_layers = std::min(src_info.resources.layers, info.resources.layers);
     ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
     SetBackingSamples(info.num_samples, false);
@@ -483,7 +485,7 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
                 .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = src_info.resources.layers,
+                .layerCount = num_layers,
             },
             .imageOffset = {0, 0, 0},
             .imageExtent = {mip_w, mip_h, mip_d},
@@ -585,20 +587,21 @@ void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_ra
                       mrt0_range);
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, mrt1_range);
 
+    const u32 num_layers = std::min(mrt0_range.extent.layers, mrt1_range.extent.layers);
     if (src_image.backing->num_samples == 1) {
         const vk::ImageCopy region = {
             .srcSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt0_range.base.layer,
-                .layerCount = mrt0_range.extent.layers,
+                .layerCount = num_layers,
             },
             .srcOffset = {0, 0, 0},
             .dstSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt1_range.base.layer,
-                .layerCount = mrt1_range.extent.layers,
+                .layerCount = num_layers,
             },
             .dstOffset = {0, 0, 0},
             .extent = {info.size.width, info.size.height, 1},
@@ -612,14 +615,14 @@ void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_ra
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt0_range.base.layer,
-                .layerCount = mrt0_range.extent.layers,
+                .layerCount = num_layers,
             },
             .srcOffset = {0, 0, 0},
             .dstSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt1_range.base.layer,
-                .layerCount = mrt1_range.extent.layers,
+                .layerCount = num_layers,
             },
             .dstOffset = {0, 0, 0},
             .extent = {info.size.width, info.size.height, 1},
