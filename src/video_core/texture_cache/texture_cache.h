@@ -164,15 +164,8 @@ public:
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        auto& view = slot_image_views[id];
-        // Maybe this is not needed.
-        Image& image = slot_images[view.image_id];
-        TouchImage(image);
-        return view;
+        return slot_image_views[id];
     }
-
-    /// Registers an image view for provided image
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Returns true if the specified address is a metadata surface.
     bool IsMeta(VAddr address) const {

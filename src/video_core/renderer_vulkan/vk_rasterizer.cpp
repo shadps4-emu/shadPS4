@@ -107,17 +107,9 @@ bool Rasterizer::FilterDraw() {
     return true;
 }
 
-RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
-    const auto& key = pipeline->GetGraphicsKey();
-    const u32 mrt_mask = key.mrt_mask;
-
+void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     // Prefetch render targets to handle overlaps with bound textures (e.g. mipgen)
-    RenderState state;
-    state.width = instance.GetMaxFramebufferWidth();
-    state.height = instance.GetMaxFramebufferHeight();
-    state.num_layers = std::numeric_limits<u32>::max();
-    state.num_color_attachments = std::bit_width(mrt_mask);
-
+    const auto& key = pipeline->GetGraphicsKey();
     const auto& regs = liverpool->regs;
     if (regs.color_control.degamma_enable) {
         LOG_WARNING(Render_Vulkan, "Color buffers require gamma correction");
@@ -125,23 +117,19 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
-    for (s32 cb = 0; cb < state.num_color_attachments; ++cb) {
+    for (s32 cb = 0; cb < std::bit_width(key.mrt_mask); ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         const auto& col_buf = regs.color_buffers[cb];
         const u32 target_mask = regs.color_target_mask.GetMask(cb);
-        if (skip_cb_binding || !col_buf || !target_mask || (mrt_mask & (1 << cb)) == 0) {
+        if (skip_cb_binding || !col_buf || !target_mask || (key.mrt_mask & (1 << cb)) == 0) {
             image_id = {};
             continue;
         }
         const auto& hint = liverpool->last_cb_extent[cb];
         std::construct_at(&desc, col_buf, hint);
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
-        texture_cache.UpdateImage(image_id);
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
-
-        // The pipeline may have changed the samples in case of unsupported MSAA configuration
-        image.SetBackingSamples(key.color_samples[cb]);
     }
 
     if ((regs.depth_control.depth_enable && regs.depth_buffer.DepthValid()) ||
@@ -154,15 +142,9 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
-
-        // The pipeline will always match color samples to depth samples to avoid needing a depth
-        // copy. This is because copying non-multisampled to multisampled stencil is basically
-        // impossible on NVIDIA
     } else {
         db_desc.first = {};
     }
-
-    return state;
 }
 
 [[nodiscard]] std::pair<u32, u32> GetDrawOffsets(
@@ -195,7 +177,7 @@ void Rasterizer::EliminateFastClear() {
     for (u32 slice = col_buf.view.slice_start; slice <= col_buf.view.slice_max; ++slice) {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
     }
-    auto& image = texture_cache.GetImage(image_view.image_id);
+    auto& image = texture_cache.GetImage(image_id);
     const auto clear_value = LiverpoolToVK::ColorBufferClearValue(col_buf);
 
     ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
@@ -219,18 +201,20 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
-    auto state = PrepareRenderState(pipeline);
+    PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
         return;
     }
+    const auto state = BeginRendering(pipeline);
 
     buffer_cache.BindVertexBuffers(*pipeline);
     if (is_indexed) {
         buffer_cache.BindIndexBuffer(index_offset);
     }
 
-    BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline, is_indexed);
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    UpdateDynamicState(pipeline, is_indexed);
+    scheduler.BeginRendering(state);
 
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
     const auto& fetch_shader = pipeline->GetFetchShader();
@@ -265,10 +249,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
-    auto state = PrepareRenderState(pipeline);
+    PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
         return;
     }
+    const auto state = BeginRendering(pipeline);
 
     buffer_cache.BindVertexBuffers(*pipeline);
     if (is_indexed) {
@@ -284,8 +269,9 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         std::tie(count_buffer, count_base) = buffer_cache.ObtainBuffer(count_address, 4, false);
     }
 
-    BeginRendering(*pipeline, state);
-    UpdateDynamicState(*pipeline, is_indexed);
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    UpdateDynamicState(pipeline, is_indexed);
+    scheduler.BeginRendering(state);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
@@ -337,6 +323,7 @@ void Rasterizer::DispatchDirect() {
     }
 
     scheduler.EndRendering();
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -360,9 +347,10 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
         return;
     }
 
-    scheduler.EndRendering();
-
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
+
+    scheduler.EndRendering();
+    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
@@ -406,7 +394,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
-    Shader::PushData push_data = MakeUserData(liverpool->regs);
+    push_data = MakeUserData(liverpool->regs);
     for (const auto* stage : pipeline->GetStages()) {
         if (!stage) {
             continue;
@@ -430,8 +418,6 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     fault_process_pending |= uses_dma;
-
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
     return true;
 }
@@ -650,11 +636,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image->binding.force_general |= image_desc.is_written;
         }
         image->binding.is_bound = 1u;
-
-        // Ensure image matches the shader interface in regards to multisampling
-        if (image->backing->num_samples > 1 != image->info.num_samples > 1) {
-            image->SetBackingSamples(image->info.num_samples);
-        }
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -747,9 +728,15 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     }
 }
 
-void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& state) {
+RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
     attachment_feedback_loop = false;
     const auto& regs = liverpool->regs;
+    const auto& key = pipeline->GetGraphicsKey();
+    RenderState state;
+    state.width = instance.GetMaxFramebufferWidth();
+    state.height = instance.GetMaxFramebufferHeight();
+    state.num_layers = std::numeric_limits<u32>::max();
+    state.num_color_attachments = std::bit_width(key.mrt_mask);
     for (auto cb = 0u; cb < state.num_color_attachments; ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         if (!image_id) {
@@ -760,6 +747,8 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
             image = &texture_cache.GetImage(image_id);
         }
+        texture_cache.UpdateImage(image_id);
+        image->SetBackingSamples(key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         const auto slice = image_view.info.range.base.layer;
         const auto mip = image_view.info.range.base.level;
@@ -854,7 +843,7 @@ void Rasterizer::BeginRendering(const GraphicsPipeline& pipeline, RenderState& s
         state.num_layers = 1;
     }
 
-    scheduler.BeginRendering(state);
+    return state;
 }
 
 void Rasterizer::Resolve() {
@@ -1005,18 +994,14 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     }
 }
 
-void Rasterizer::UpdateDynamicState(const GraphicsPipeline& pipeline, const bool is_indexed) const {
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) const {
     UpdateViewportScissorState();
     UpdateDepthStencilState();
     UpdatePrimitiveState(is_indexed);
     UpdateRasterizationState();
+    UpdateColorBlendingState(pipeline);
 
     auto& dynamic_state = scheduler.GetDynamicState();
-    dynamic_state.SetBlendConstants(liverpool->regs.blend_constants);
-    dynamic_state.SetColorWriteMasks(pipeline.GetGraphicsKey().write_masks);
-    dynamic_state.SetAttachmentFeedbackLoopEnabled(attachment_feedback_loop);
-
-    // Commit new dynamic state to the command buffer.
     dynamic_state.Commit(instance, scheduler.CommandBuffer());
 }
 
@@ -1233,6 +1218,14 @@ void Rasterizer::UpdateRasterizationState() const {
     const auto& regs = liverpool->regs;
     auto& dynamic_state = scheduler.GetDynamicState();
     dynamic_state.SetLineWidth(regs.line_control.Width());
+}
+
+void Rasterizer::UpdateColorBlendingState(const GraphicsPipeline* pipeline) const {
+    const auto& regs = liverpool->regs;
+    auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetBlendConstants(regs.blend_constants);
+    dynamic_state.SetColorWriteMasks(pipeline->GetGraphicsKey().write_masks);
+    dynamic_state.SetAttachmentFeedbackLoopEnabled(attachment_feedback_loop);
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {

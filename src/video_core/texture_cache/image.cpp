@@ -104,8 +104,10 @@ void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
 }
 
 Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
-             BlitHelper& blit_helper_, const ImageInfo& info_)
-    : instance{&instance_}, scheduler{&scheduler_}, blit_helper{&blit_helper_}, info{info_} {
+             BlitHelper& blit_helper_, Common::SlotVector<ImageView>& slot_image_views_,
+             const ImageInfo& info_)
+    : instance{&instance_}, scheduler{&scheduler_}, blit_helper{&blit_helper_},
+      slot_image_views{&slot_image_views_}, info{info_} {
     if (info.pixel_format == vk::Format::eUndefined) {
         return;
     }
@@ -181,6 +183,22 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
 }
 
 Image::~Image() = default;
+
+ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_samples) {
+    if (ensure_guest_samples && backing->num_samples > 1 != info.num_samples > 1) {
+        SetBackingSamples(info.num_samples);
+    }
+    const auto& view_infos = backing->image_view_infos;
+    const auto it = std::ranges::find(view_infos, view_info);
+    if (it != view_infos.end()) {
+        const auto view_id = backing->image_view_ids[std::distance(view_infos.begin(), it)];
+        return (*slot_image_views)[view_id];
+    }
+    const auto view_id = slot_image_views->insert(*instance, view_info, *this);
+    backing->image_view_infos.emplace_back(view_info);
+    backing->image_view_ids.emplace_back(view_id);
+    return (*slot_image_views)[view_id];
+}
 
 Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                                    vk::PipelineStageFlags2 dst_stage,
@@ -638,8 +656,7 @@ void Image::SetBackingSamples(u32 num_samples, bool copy_backing) {
     auto it = std::ranges::find(backing_images, num_samples, &BackingImage::num_samples);
     if (it == backing_images.end()) {
         auto new_image_ci = backing->image.image_ci;
-        new_image_ci.samples =
-            LiverpoolToVK::NumSamples(num_samples, instance->GetColorSampleCounts());
+        new_image_ci.samples = LiverpoolToVK::NumSamples(num_samples, supported_samples);
 
         new_backing = &backing_images.emplace_back();
         new_backing->num_samples = num_samples;

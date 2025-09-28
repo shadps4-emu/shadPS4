@@ -79,7 +79,7 @@ class BlitHelper;
 
 struct Image {
     Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, BlitHelper& blit_helper,
-          const ImageInfo& info);
+          Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;
@@ -93,15 +93,6 @@ struct Image {
         const auto image_addr = info.guest_address;
         const auto image_end = info.guest_address + info.guest_size;
         return image_addr < overlap_end && overlap_cpu_addr < image_end;
-    }
-
-    ImageViewId FindView(const ImageViewInfo& info) const {
-        const auto& view_infos = backing->image_view_infos;
-        const auto it = std::ranges::find(view_infos, info);
-        if (it == view_infos.end()) {
-            return {};
-        }
-        return backing->image_view_ids[std::distance(view_infos.begin(), it)];
     }
 
     vk::Image GetImage() const {
@@ -119,6 +110,8 @@ struct Image {
     void AssociateDepth(ImageId image_id) {
         depth_id = image_id;
     }
+
+    ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
     using Barriers = boost::container::small_vector<vk::ImageMemoryBarrier2, 32>;
     Barriers GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
@@ -144,6 +137,7 @@ public:
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
     BlitHelper* blit_helper;
+    Common::SlotVector<ImageView>* slot_image_views;
     ImageInfo info;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     vk::SampleCountFlags supported_samples = vk::SampleCountFlagBits::e1;

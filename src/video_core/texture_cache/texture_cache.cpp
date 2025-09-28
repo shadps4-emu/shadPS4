@@ -73,7 +73,8 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
     info.num_bits = 32;
     info.UpdateSize();
 
-    const ImageId null_id = slot_images.insert(instance, scheduler, blit_helper, info);
+    const ImageId null_id =
+        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     auto& image = slot_images[null_id];
     Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
                           fmt::format("Null Image ({})", vk::to_string(format)));
@@ -267,7 +268,8 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     if (recreate) {
         auto new_info = requested_info;
         new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
-        const auto new_image_id = slot_images.insert(instance, scheduler, blit_helper, new_info);
+        const auto new_image_id =
+            slot_images.insert(instance, scheduler, blit_helper, slot_image_views, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
@@ -427,7 +429,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-    const auto new_image_id = slot_images.insert(instance, scheduler, blit_helper, info);
+    const auto new_image_id =
+        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     RegisterImage(new_image_id);
 
     auto& src_image = slot_images[image_id];
@@ -516,7 +519,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     }
     // Create and register a new image
     if (!image_id) {
-        image_id = slot_images.insert(instance, scheduler, blit_helper, info);
+        image_id = slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
         RegisterImage(image_id);
     }
 
@@ -566,18 +569,6 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
-ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo& view_info) {
-    Image& image = slot_images[image_id];
-    if (const ImageViewId view_id = image.FindView(view_info); view_id) {
-        return slot_image_views[view_id];
-    }
-
-    const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, image_id);
-    image.backing->image_view_infos.emplace_back(view_info);
-    image.backing->image_view_ids.emplace_back(view_id);
-    return slot_image_views[view_id];
-}
-
 ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
@@ -588,7 +579,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
         }
     }
     UpdateImage(image_id);
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info);
 }
 
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc) {
@@ -610,7 +601,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc
         image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
     }
 
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info, false);
 }
 
 ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc) {
@@ -641,7 +632,8 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc)
             info.guest_address = desc.info.stencil_addr;
             info.guest_size = desc.info.stencil_size;
             info.size = desc.info.size;
-            stencil_id = slot_images.insert(instance, scheduler, blit_helper, info);
+            stencil_id =
+                slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
             RegisterImage(stencil_id);
         }
         Image& image = slot_images[stencil_id];
@@ -649,7 +641,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc)
         image.AssociateDepth(image_id);
     }
 
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info, false);
 }
 
 void TextureCache::RefreshImage(Image& image) {

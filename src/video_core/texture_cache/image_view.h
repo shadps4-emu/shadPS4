@@ -35,8 +35,7 @@ struct ImageViewInfo {
 struct Image;
 
 struct ImageView {
-    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
-              ImageId image_id);
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, const Image& image);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;
@@ -45,7 +44,6 @@ struct ImageView {
     ImageView(ImageView&&) = default;
     ImageView& operator=(ImageView&&) = default;
 
-    ImageId image_id;
     ImageViewInfo info;
     vk::UniqueImageView image_view;
 };

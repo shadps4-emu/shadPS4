@@ -320,22 +320,17 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
         .pImageMemoryBarriers = &pre_barrier,
     });
 
-    auto& image = texture_cache.GetImage(image_id);
-    image.SetBackingSamples(image.info.num_samples);
-    image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {});
-
-    const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
-    expected_ratio = static_cast<float>(image_size.width) / static_cast<float>(image_size.height);
     VideoCore::ImageViewInfo view_info{};
     view_info.format = GetFrameViewFormat(attribute.attrib.pixel_format);
     // Exclude alpha from output frame to avoid blending with UI.
     view_info.mapping.a = vk::ComponentSwizzle::eOne;
-    vk::ImageView image_view;
-    if (auto view = image.FindView(view_info)) {
-        image_view = *texture_cache.GetImageView(view).image_view;
-    } else {
-        image_view = *texture_cache.RegisterImageView(image_id, view_info).image_view;
-    }
+
+    auto& image = texture_cache.GetImage(image_id);
+    auto image_view = *image.FindView(view_info).image_view;
+    image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {});
+
+    const vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
+    expected_ratio = static_cast<float>(image_size.width) / static_cast<float>(image_size.height);
 
     image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
                                  fsr_settings, frame->is_hdr);
