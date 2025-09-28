@@ -651,7 +651,7 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc)
     return RegisterImageView(image_id, desc.view_info);
 }
 
-void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
+void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
@@ -683,7 +683,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
     const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
-    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy;
+    boost::container::small_vector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
@@ -703,7 +703,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
         const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
         const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
-        image_copy.push_back({
+        image_copies.push_back({
             .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
             .bufferImageHeight = mip_height,
@@ -718,21 +718,17 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         });
     }
 
-    if (image_copy.empty()) {
+    if (image_copies.empty()) {
         image.flags &= ~ImageFlagBits::Dirty;
         return;
     }
 
-    auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
-    sched_ptr->EndRendering();
-
-    const VAddr image_addr = image.info.guest_address;
-    const size_t image_size = image.info.guest_size;
-    const auto [in_buffer, in_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
+    const auto [in_buffer, in_offset] =
+        buffer_cache.ObtainBufferForImage(image.info.guest_address, image.info.guest_size);
     if (auto barrier = in_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
-        const auto cmdbuf = sched_ptr->CommandBuffer();
-        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        scheduler.EndRendering();
+        scheduler.CommandBuffer().pipelineBarrier2(vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers = &barrier.value(),
@@ -740,49 +736,12 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     }
 
     const auto [buffer, offset] =
-        !custom_scheduler ? tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info)
-                          : std::make_pair(in_buffer->Handle(), in_offset);
-    for (auto& copy : image_copy) {
+        tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info);
+    for (auto& copy : image_copies) {
         copy.bufferOffset += offset;
     }
 
-    const vk::BufferMemoryBarrier2 pre_barrier{
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
-        .buffer = buffer,
-        .offset = offset,
-        .size = image_size,
-    };
-    const vk::BufferMemoryBarrier2 post_barrier{
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .buffer = buffer,
-        .offset = offset,
-        .size = image_size,
-    };
-    const auto image_barriers =
-        image.GetBarriers(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
-                          vk::PipelineStageFlagBits2::eTransfer, {});
-    const auto cmdbuf = sched_ptr->CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-        .imageMemoryBarrierCount = static_cast<u32>(image_barriers.size()),
-        .pImageMemoryBarriers = image_barriers.data(),
-    });
-    cmdbuf.copyBufferToImage(buffer, image.GetImage(), vk::ImageLayout::eTransferDstOptimal,
-                             image_copy);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
-    });
-    image.flags &= ~ImageFlagBits::Dirty;
+    image.Upload(image_copies, buffer, offset);
 }
 
 vk::Sampler TextureCache::GetSampler(

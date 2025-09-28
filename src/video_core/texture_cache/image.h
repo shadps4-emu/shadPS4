@@ -126,11 +126,17 @@ struct Image {
                          std::optional<SubresourceRange> subres_range);
     void Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
                  std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
-    void Upload(vk::Buffer buffer, u64 offset);
+    void Upload(std::span<const vk::BufferImageCopy> upload_copies, vk::Buffer buffer, u64 offset);
+    void Download(std::span<const vk::BufferImageCopy> download_copies, vk::Buffer buffer,
+                  u64 offset, u64 download_size);
 
     void CopyImage(Image& src_image);
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
-    void CopyMip(const Image& src_image, u32 mip, u32 slice);
+    void CopyMip(Image& src_image, u32 mip, u32 slice);
+
+    void Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
+                 const VideoCore::SubresourceRange& mrt1_range);
+    void Clear(const vk::ClearValue& clear_value, const VideoCore::SubresourceRange& range);
 
     void SetBackingSamples(u32 num_samples, bool copy_backing = true);
 

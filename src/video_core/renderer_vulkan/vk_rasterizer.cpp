@@ -135,6 +135,7 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
         const auto& hint = liverpool->last_cb_extent[cb];
         std::construct_at(&desc, col_buf, hint);
         image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
+        texture_cache.UpdateImage(image_id);
         auto& image = texture_cache.GetImage(image_id);
         image.binding.is_target = 1u;
 
@@ -194,20 +195,11 @@ void Rasterizer::EliminateFastClear() {
         texture_cache.TouchMeta(col_buf.CmaskAddress(), slice, false);
     }
     auto& image = texture_cache.GetImage(image_view.image_id);
-    const vk::ImageSubresourceRange range = {
-        .aspectMask = vk::ImageAspectFlagBits::eColor,
-        .baseMipLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = col_buf.view.slice_start,
-        .layerCount = col_buf.view.slice_max - col_buf.view.slice_start + 1,
-    };
-    scheduler.EndRendering();
+    const auto clear_value = LiverpoolToVK::ColorBufferClearValue(col_buf);
+
     ScopeMarkerBegin(fmt::format("EliminateFastClear:MRT={:#x}:M={:#x}", col_buf.Address(),
                                  col_buf.CmaskAddress()));
-    image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
-    scheduler.CommandBuffer().clearColorImage(image.backing->image, image.backing->state.layout,
-                                              LiverpoolToVK::ColorBufferClearValue(col_buf).color,
-                                              range);
+    image.Clear(clear_value, desc.view_info.range);
     ScopeMarkerEnd();
 }
 
@@ -658,10 +650,10 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         }
         image->binding.is_bound = 1u;
 
-        // The pipeline may have changed the samples in case of unsupported MSAA configuration
-        // Is feedback loop with MSAA images possible? Assert for it just in case
-        ASSERT(image->backing->num_samples == desc.info.num_samples || !image->binding.is_target);
-        image->SetBackingSamples(desc.info.num_samples);
+        // Ensure image matches the shader interface in regards to multisampling
+        if (image->backing->num_samples > 1 != image->info.num_samples > 1) {
+            image->SetBackingSamples(image->info.num_samples);
+        }
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -885,68 +877,7 @@ void Rasterizer::Resolve() {
     ScopeMarkerBegin(fmt::format("Resolve:MRT0={:#x}:MRT1={:#x}",
                                  liverpool->regs.color_buffers[0].Address(),
                                  liverpool->regs.color_buffers[1].Address()));
-
-    mrt1_image.SetBackingSamples(1, false);
-
-    mrt0_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
-                       mrt0_range);
-    mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
-                       mrt1_range);
-
-    if (mrt0_image.backing->num_samples == 1) {
-        // Vulkan does not allow resolve from a single sample image, so change it to a copy.
-        // Note that resolving a single-sampled image doesn't really make sense, but a game might do
-        // it.
-        vk::ImageCopy region = {
-            .srcSubresource =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = mrt0_range.base.layer,
-                    .layerCount = mrt0_range.extent.layers,
-                },
-            .srcOffset = {0, 0, 0},
-            .dstSubresource =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = mrt1_range.base.layer,
-                    .layerCount = mrt1_range.extent.layers,
-                },
-            .dstOffset = {0, 0, 0},
-            .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
-        };
-        scheduler.CommandBuffer().copyImage(
-            mrt0_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, mrt1_image.GetImage(),
-            vk::ImageLayout::eTransferDstOptimal, region);
-    } else {
-        vk::ImageResolve region = {
-            .srcSubresource =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = mrt0_range.base.layer,
-                    .layerCount = mrt0_range.extent.layers,
-                },
-            .srcOffset = {0, 0, 0},
-            .dstSubresource =
-                {
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .mipLevel = 0,
-                    .baseArrayLayer = mrt1_range.base.layer,
-                    .layerCount = mrt1_range.extent.layers,
-                },
-            .dstOffset = {0, 0, 0},
-            .extent = {mrt1_image.info.size.width, mrt1_image.info.size.height, 1},
-        };
-        scheduler.CommandBuffer().resolveImage(
-            mrt0_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, mrt1_image.GetImage(),
-            vk::ImageLayout::eTransferDstOptimal, region);
-    }
-
-    mrt1_image.flags |= VideoCore::ImageFlagBits::GpuModified;
-    mrt1_image.flags &= ~VideoCore::ImageFlagBits::Dirty;
-
+    mrt1_image.Resolve(mrt0_image, mrt0_range, mrt1_range);
     ScopeMarkerEnd();
 }
 

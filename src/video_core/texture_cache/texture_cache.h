@@ -126,14 +126,15 @@ public:
     [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
+    void UpdateImage(ImageId image_id) {
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
-        RefreshImage(image, custom_scheduler);
+        RefreshImage(image);
     }
 
+    /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
                                                                BindingType binding,
                                                                ImageId cache_img_id,
@@ -147,7 +148,7 @@ public:
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
-    void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
+    void RefreshImage(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(
