@@ -527,7 +527,8 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         LOG_DEBUG(Lib_Ime, "extended->ext_keyboard_mode: {}", extended->ext_keyboard_mode);
     }
 
-    if (param->user_id < 1 || param->user_id > 4) { // Todo: check valid user IDs
+    if ((param->user_id < 1 || param->user_id > 4) &&
+        param->user_id != 254) { // Todo: check valid user IDs allow also 254 for use from anyone
         LOG_ERROR(Lib_Ime, "Invalid user_id: {}", static_cast<u32>(param->user_id));
         return Error::INVALID_USER_ID;
     }
