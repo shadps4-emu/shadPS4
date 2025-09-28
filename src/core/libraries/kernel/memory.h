@@ -11,6 +11,7 @@ constexpr u64 ORBIS_KERNEL_TOTAL_MEM_PRO = 5888_MB;
 constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV = 6656_MB;
 // TODO: This value needs confirmation
 constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV_PRO = 7936_MB;
+extern u64 total_memory_to_use;
 
 constexpr u64 ORBIS_FLEXIBLE_MEMORY_BASE = 64_MB;
 constexpr u64 ORBIS_FLEXIBLE_MEMORY_SIZE = 512_MB;

@@ -14,6 +14,8 @@
 
 namespace Core {
 
+u64 total_memory_to_use = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+
 MemoryManager::MemoryManager() {
     // Insert a virtual memory area that covers the entire area we manage.
     const VAddr system_managed_base = impl.SystemManagedVirtualBase();
@@ -55,6 +57,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
+    total_memory_to_use = total_size;
     total_flexible_size = flexible_size - ORBIS_FLEXIBLE_MEMORY_BASE;
     total_direct_size = total_size - flexible_size;
 
@@ -65,7 +68,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 
     // Insert an area that covers the flexible memory physical address block.
     // Note that this should never be called after flexible memory allocations have been made.
-    const auto remaining_physical_space = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO - total_direct_size;
+    const auto remaining_physical_space = total_memory_to_use - total_direct_size;
     fmem_map.clear();
     fmem_map.emplace(total_direct_size,
                      FlexibleMemoryArea{total_direct_size, remaining_physical_space});
