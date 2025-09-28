@@ -292,7 +292,7 @@ int getExtraDmemInMbytes() {
 }
 
 void setExtraDmemInMbytes(int value) {
-    extraDmemInMbytes.base_value = value;
+    extraDmemInMbytes.base_value = 0;
 }
 
 bool getIsFullscreen() {
@@ -839,7 +839,9 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
         isNeo.setFromToml(general, "isPS4Pro", is_game_specific);
         isDevKit.setFromToml(general, "isDevKit", is_game_specific);
-        extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
+        if (is_game_specific) { // do not get this value from the base config
+            extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
+        }
         isPSNSignedIn.setFromToml(general, "isPSNSignedIn", is_game_specific);
         isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
         trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
@@ -1042,7 +1044,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
     isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific);
     isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
-    extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
+    if (is_game_specific) {
+        extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
+    }
     isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
