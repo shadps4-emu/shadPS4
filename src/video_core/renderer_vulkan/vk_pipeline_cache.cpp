@@ -403,9 +403,9 @@ bool PipelineCache::RefreshGraphicsKey() {
 
     // Force all color samples to match depth samples to avoid unsupported MSAA configuration
     if (color_samples != 0) {
+        const bool depth_mismatch = db_enabled && color_samples != key.depth_samples;
         if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported() ||
-            all_color_samples_same && db_enabled && color_samples != key.depth_samples &&
-                !instance.IsMixedDepthSamplesSupported()) {
+            all_color_samples_same && depth_mismatch && !instance.IsMixedDepthSamplesSupported()) {
             key.color_samples.fill(key.depth_samples);
             key.num_samples = key.depth_samples;
         }

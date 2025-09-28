@@ -886,6 +886,8 @@ void Rasterizer::Resolve() {
                                  liverpool->regs.color_buffers[0].Address(),
                                  liverpool->regs.color_buffers[1].Address()));
 
+    mrt1_image.SetBackingSamples(1, false);
+
     mrt0_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
                        mrt0_range);
     mrt1_image.Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,

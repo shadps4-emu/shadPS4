@@ -493,7 +493,7 @@ void Image::CopyMip(const Image& src_image, u32 mip, u32 slice) {
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
-void Image::SetBackingSamples(u32 num_samples) {
+void Image::SetBackingSamples(u32 num_samples, bool copy_backing) {
     if (!backing || backing->num_samples == num_samples) {
         return;
     }
@@ -515,56 +515,59 @@ void Image::SetBackingSamples(u32 num_samples) {
                               info.size.width, info.size.height, info.size.depth,
                               AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
                               info.guest_address, info.guest_size, info.resources.layers,
-                              info.resources.levels, 1);
+                              info.resources.levels, num_samples);
     } else {
         new_backing = std::addressof(*it);
     }
 
-    scheduler->EndRendering();
-    ASSERT(info.resources.levels == 1 && info.resources.layers == 1);
+    if (copy_backing) {
+        scheduler->EndRendering();
+        ASSERT(info.resources.levels == 1 && info.resources.layers == 1);
 
-    // Transition current backing to shader read layout
-    auto barriers =
-        GetBarriers(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
-                    vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
+        // Transition current backing to shader read layout
+        auto barriers =
+            GetBarriers(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                        vk::PipelineStageFlagBits2::eFragmentShader, std::nullopt);
 
-    // Transition dest backing to color attachment layout, not caring of previous contents
-    constexpr auto dst_stage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-    constexpr auto dst_access = vk::AccessFlagBits2::eColorAttachmentWrite;
-    constexpr auto dst_layout = vk::ImageLayout::eColorAttachmentOptimal;
-    barriers.push_back(vk::ImageMemoryBarrier2{
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eNone,
-        .dstStageMask = dst_stage,
-        .dstAccessMask = dst_access,
-        .oldLayout = vk::ImageLayout::eUndefined,
-        .newLayout = dst_layout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = new_backing->image,
-        .subresourceRange{
-            .aspectMask = aspect_mask,
-            .baseMipLevel = 0,
-            .levelCount = 1,
-            .baseArrayLayer = 0,
-            .layerCount = info.resources.layers,
-        },
-    });
-    const auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
-        .pImageMemoryBarriers = barriers.data(),
-    });
+        // Transition dest backing to color attachment layout, not caring of previous contents
+        constexpr auto dst_stage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+        constexpr auto dst_access = vk::AccessFlagBits2::eColorAttachmentWrite;
+        constexpr auto dst_layout = vk::ImageLayout::eColorAttachmentOptimal;
+        barriers.push_back(vk::ImageMemoryBarrier2{
+            .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+            .srcAccessMask = vk::AccessFlagBits2::eNone,
+            .dstStageMask = dst_stage,
+            .dstAccessMask = dst_access,
+            .oldLayout = vk::ImageLayout::eUndefined,
+            .newLayout = dst_layout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = new_backing->image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = info.resources.layers,
+            },
+        });
+        const auto cmdbuf = scheduler->CommandBuffer();
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
+            .pImageMemoryBarriers = barriers.data(),
+        });
 
-    // Copy between ms and non ms backing images
-    blit_helper->CopyBetweenMsImages(info.size.width, info.size.height, new_backing->num_samples,
-                                     info.pixel_format, backing->num_samples > 1, backing->image,
-                                     new_backing->image);
+        // Copy between ms and non ms backing images
+        blit_helper->CopyBetweenMsImages(info.size.width, info.size.height, new_backing->num_samples,
+                                         info.pixel_format, backing->num_samples > 1, backing->image,
+                                         new_backing->image);
 
-    // Update current layout in tracker to new backings layout
-    new_backing->state.layout = dst_layout;
-    new_backing->state.access_mask = dst_access;
-    new_backing->state.pl_stage = dst_stage;
+        // Update current layout in tracker to new backings layout
+        new_backing->state.layout = dst_layout;
+        new_backing->state.access_mask = dst_access;
+        new_backing->state.pl_stage = dst_stage;
+    }
+
     backing = new_backing;
 }
 

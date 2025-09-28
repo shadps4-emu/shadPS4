@@ -132,7 +132,7 @@ struct Image {
     void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
     void CopyMip(const Image& src_image, u32 mip, u32 slice);
 
-    void SetBackingSamples(u32 num_samples);
+    void SetBackingSamples(u32 num_samples, bool copy_backing = true);
 
 public:
     const Vulkan::Instance* instance;
