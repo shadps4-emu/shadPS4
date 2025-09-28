@@ -21,11 +21,13 @@ static ImeDialogState g_ime_dlg_state{};
 static ImeDialogUi g_ime_dlg_ui;
 
 static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
+#if 0
+    // Reject if option contains any unsupported bits (unfinished should check for rest of the bits in ImeOption as well)
     if (False(~option & (OrbisImeOption::MULTILINE |
                          OrbisImeOption::NO_AUTO_CAPITALIZATION /* NoAutoCompletion */))) {
         return false;
     }
-
+#endif
     if (True(option & OrbisImeOption::MULTILINE) && type != OrbisImeType::Default &&
         type != OrbisImeType::BasicLatin) {
         return false;
