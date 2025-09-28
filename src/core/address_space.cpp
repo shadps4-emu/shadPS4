@@ -6,6 +6,7 @@
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/error.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
@@ -27,7 +28,7 @@ asm(".zerofill SYSTEM_RESERVED,SYSTEM_RESERVED,__SYSTEM_RESERVED,0x7C0004000");
 
 namespace Core {
 
-static constexpr size_t BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+static size_t BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
 
 #ifdef _WIN32
 
@@ -71,6 +72,7 @@ struct MemoryRegion {
 
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
+        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         MEM_ADDRESS_REQUIREMENTS req{};
         MEM_EXTENDED_PARAMETER param{};
@@ -432,6 +434,7 @@ enum PosixPageProtection {
 
 struct AddressSpace::Impl {
     Impl() {
+        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         system_managed_size = SystemManagedSize;
         system_reserved_size = SystemReservedSize;

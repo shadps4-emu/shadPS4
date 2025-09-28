@@ -42,6 +42,13 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     if (Config::isDevKitConsole()) {
         total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
+    s32 extra_dmem = Config::getExtraDmemInMbytes();
+    if (Config::getExtraDmemInMbytes() != 0) {
+        LOG_WARNING(Kernel_Vmm,
+                    "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",
+                    extra_dmem, total_size, total_size + extra_dmem * 1_MB);
+        total_size += extra_dmem * 1_MB;
+    }
     if (!use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
     }
@@ -58,7 +65,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 
     // Insert an area that covers the flexible memory physical address block.
     // Note that this should never be called after flexible memory allocations have been made.
-    const auto remaining_physical_space = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO - total_direct_size;
+    const auto remaining_physical_space = total_size - total_direct_size;
     fmem_map.clear();
     fmem_map.emplace(total_direct_size,
                      FlexibleMemoryArea{total_direct_size, remaining_physical_space});
