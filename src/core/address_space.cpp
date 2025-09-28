@@ -51,6 +51,7 @@ struct MemoryRegion {
 
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
+        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         MEM_ADDRESS_REQUIREMENTS req{};
         MEM_EXTENDED_PARAMETER param{};
