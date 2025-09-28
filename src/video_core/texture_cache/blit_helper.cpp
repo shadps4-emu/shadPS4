@@ -146,6 +146,7 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
 
     cmdbuf.draw(3, 1, 0, 0);
 
+    scheduler.EndRendering();
     scheduler.GetDynamicState().Invalidate();
 }
 
@@ -247,6 +248,7 @@ void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
 
     cmdbuf.draw(3, 1, 0, 0);
 
+    scheduler.EndRendering();
     scheduler.GetDynamicState().Invalidate();
 }
 
