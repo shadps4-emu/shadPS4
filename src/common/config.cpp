@@ -287,11 +287,11 @@ bool isDevKitConsole() {
     return isDevKit.get();
 }
 
-int GetExtraDmemInMbytes() {
+int getExtraDmemInMbytes() {
     return extraDmemInMbytes.get();
 }
 
-void SetExtraDmemInMbytes(int value) {
+void setExtraDmemInMbytes(int value) {
     extraDmemInMbytes.base_value = value;
 }
 
