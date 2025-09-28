@@ -125,10 +125,11 @@ RenderState Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
-    for (s32 cb = 0; cb < state.num_color_attachments && !skip_cb_binding; ++cb) {
+    for (s32 cb = 0; cb < state.num_color_attachments; ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         const auto& col_buf = regs.color_buffers[cb];
-        if (!col_buf || (mrt_mask & (1 << cb)) == 0 || !regs.color_target_mask.GetMask(cb)) {
+        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        if (skip_cb_binding || !col_buf || !target_mask || (mrt_mask & (1 << cb)) == 0) {
             image_id = {};
             continue;
         }
