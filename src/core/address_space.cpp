@@ -5,8 +5,8 @@
 #include <boost/icl/separate_interval_set.hpp>
 #include "common/alignment.h"
 #include "common/arch.h"
-#include "common/config.h"
 #include "common/assert.h"
+#include "common/config.h"
 #include "common/error.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
