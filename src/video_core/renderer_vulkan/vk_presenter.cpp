@@ -295,15 +295,10 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id,
                                        const Libraries::VideoOut::PixelFormat format, bool is_eop) {
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
+    draw_scheduler.EndRendering();
 
-    // EOP flips are triggered from GPU thread so use the drawing scheduler to record
-    // commands. Otherwise we are dealing with a CPU flip which could have arrived
-    // from any guest thread. Use a separate scheduler for that.
-    auto& scheduler = is_eop ? draw_scheduler : flip_scheduler;
-    scheduler.EndRendering();
-    const auto cmdbuf = scheduler.CommandBuffer();
-
-    bool vk_host_markers_enabled = Config::getVkHostMarkersEnabled();
+    const auto cmdbuf = draw_scheduler.CommandBuffer();
+    const bool vk_host_markers_enabled = Config::getVkHostMarkersEnabled();
     if (vk_host_markers_enabled) {
         const auto label = fmt::format("PrepareFrameInternal:{}", image_id.index);
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
@@ -336,14 +331,15 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id,
 
     if (image_id != VideoCore::NULL_IMAGE_ID) {
         auto& image = texture_cache.GetImage(image_id);
+        image.SetBackingSamples(1);
         vk::Extent2D image_size = {image.info.size.width, image.info.size.height};
         float ratio = (float)image_size.width / (float)image_size.height;
         if (ratio != expected_ratio) {
             expected_ratio = ratio;
         }
 
-        image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {},
-                      cmdbuf);
+        image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                      {});
 
         VideoCore::ImageViewInfo info{};
         info.format = GetFrameViewFormat(format);
@@ -425,10 +421,10 @@ Frame* Presenter::PrepareFrameInternal(VideoCore::ImageId image_id,
     }
 
     // Flush frame creation commands.
-    frame->ready_semaphore = scheduler.GetMasterSemaphore()->Handle();
-    frame->ready_tick = scheduler.CurrentTick();
+    frame->ready_semaphore = draw_scheduler.GetMasterSemaphore()->Handle();
+    frame->ready_tick = draw_scheduler.CurrentTick();
     SubmitInfo info{};
-    scheduler.Flush(info);
+    draw_scheduler.Flush(info);
     return frame;
 }
 

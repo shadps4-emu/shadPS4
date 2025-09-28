@@ -558,9 +558,9 @@ void Image::SetBackingSamples(u32 num_samples, bool copy_backing) {
         });
 
         // Copy between ms and non ms backing images
-        blit_helper->CopyBetweenMsImages(info.size.width, info.size.height, new_backing->num_samples,
-                                         info.pixel_format, backing->num_samples > 1, backing->image,
-                                         new_backing->image);
+        blit_helper->CopyBetweenMsImages(
+            info.size.width, info.size.height, new_backing->num_samples, info.pixel_format,
+            backing->num_samples > 1, backing->image, new_backing->image);
 
         // Update current layout in tracker to new backings layout
         new_backing->state.layout = dst_layout;
