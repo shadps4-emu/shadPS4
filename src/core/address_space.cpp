@@ -32,13 +32,34 @@ static constexpr size_t BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
 #ifdef _WIN32
 
 [[nodiscard]] constexpr u64 ToWindowsProt(Core::MemoryProt prot) {
-    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
-        True(prot & Core::MemoryProt::GpuReadWrite)) {
-        return PAGE_READWRITE;
-    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        return PAGE_READONLY;
+    const bool read =
+        True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead);
+    const bool write =
+        True(prot & Core::MemoryProt::CpuWrite) || True(prot & Core::MemoryProt::GpuWrite);
+    const bool execute = True(prot & Core::MemoryProt::CpuExec);
+
+    if (write && !read) {
+        // While write-only CPU mappings aren't possible, write-only GPU mappings are.
+        LOG_WARNING(Core, "Converting write-only mapping to read-write");
+    }
+
+    // All cases involving execute permissions have separate permissions.
+    if (execute) {
+        if (write) {
+            return PAGE_EXECUTE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_EXECUTE_READ;
+        } else {
+            return PAGE_EXECUTE;
+        }
     } else {
-        return PAGE_NOACCESS;
+        if (write) {
+            return PAGE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_READONLY;
+        } else {
+            return PAGE_NOACCESS;
+        }
     }
 }
 
@@ -155,7 +176,12 @@ struct AddressSpace::Impl {
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
                 ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER,
+                                     PAGE_EXECUTE_READWRITE, nullptr, 0);
+                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                DWORD resultvar;
+                bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             }
         } else {
             ptr =
@@ -297,17 +323,33 @@ struct AddressSpace::Impl {
     void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
         DWORD new_flags{};
 
-        if (read && write && execute) {
-            new_flags = PAGE_EXECUTE_READWRITE;
-        } else if (read && write) {
-            new_flags = PAGE_READWRITE;
-        } else if (read && !write) {
-            new_flags = PAGE_READONLY;
-        } else if (execute && !read && !write) {
-            new_flags = PAGE_EXECUTE;
-        } else if (!read && !write && !execute) {
-            new_flags = PAGE_NOACCESS;
+        if (write && !read) {
+            // While write-only CPU protection isn't possible, write-only GPU protection is.
+            LOG_WARNING(Core, "Converting write-only protection to read-write");
+        }
+
+        // All cases involving execute permissions have separate permissions.
+        if (execute) {
+            // If there's some form of write protection requested, provide read-write permissions.
+            if (write) {
+                new_flags = PAGE_EXECUTE_READWRITE;
+            } else if (read && !write) {
+                new_flags = PAGE_EXECUTE_READ;
+            } else {
+                new_flags = PAGE_EXECUTE;
+            }
         } else {
+            if (write) {
+                new_flags = PAGE_READWRITE;
+            } else if (read && !write) {
+                new_flags = PAGE_READONLY;
+            } else {
+                new_flags = PAGE_NOACCESS;
+            }
+        }
+
+        // If no flags are assigned, then something's gone wrong.
+        if (new_flags == 0) {
             LOG_CRITICAL(Common_Memory,
                          "Unsupported protection flag combination for address {:#x}, size {}, "
                          "read={}, write={}, execute={}",
@@ -327,7 +369,7 @@ struct AddressSpace::Impl {
             DWORD old_flags{};
             if (!VirtualProtectEx(process, LPVOID(range_addr), range_size, new_flags, &old_flags)) {
                 UNREACHABLE_MSG(
-                    "Failed to change virtual memory protection for address {:#x}, size {}",
+                    "Failed to change virtual memory protection for address {:#x}, size {:#x}",
                     range_addr, range_size);
             }
         }
@@ -357,21 +399,34 @@ enum PosixPageProtection {
 };
 
 [[nodiscard]] constexpr PosixPageProtection ToPosixProt(Core::MemoryProt prot) {
-    if (True(prot & Core::MemoryProt::CpuReadWrite) ||
-        True(prot & Core::MemoryProt::GpuReadWrite)) {
-        if (True(prot & Core::MemoryProt::CpuExec)) {
+    const bool read =
+        True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead);
+    const bool write =
+        True(prot & Core::MemoryProt::CpuWrite) || True(prot & Core::MemoryProt::GpuWrite);
+    const bool execute = True(prot & Core::MemoryProt::CpuExec);
+
+    if (write && !read) {
+        // While write-only CPU mappings aren't possible, write-only GPU mappings are.
+        LOG_WARNING(Core, "Converting write-only mapping to read-write");
+    }
+
+    // All cases involving execute permissions have separate permissions.
+    if (execute) {
+        if (write) {
             return PAGE_EXECUTE_READWRITE;
-        } else {
-            return PAGE_READWRITE;
-        }
-    } else if (True(prot & Core::MemoryProt::CpuRead) || True(prot & Core::MemoryProt::GpuRead)) {
-        if (True(prot & Core::MemoryProt::CpuExec)) {
+        } else if (read && !write) {
             return PAGE_EXECUTE_READ;
         } else {
-            return PAGE_READONLY;
+            return PAGE_EXECUTE;
         }
     } else {
-        return PAGE_NOACCESS;
+        if (write) {
+            return PAGE_READWRITE;
+        } else if (read && !write) {
+            return PAGE_READONLY;
+        } else {
+            return PAGE_NOACCESS;
+        }
     }
 }
 

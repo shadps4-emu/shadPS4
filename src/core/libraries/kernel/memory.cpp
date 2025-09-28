@@ -237,7 +237,7 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     if (True(mem_prot & Core::MemoryProt::CpuExec)) {
         LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
-        return ORBIS_KERNEL_ERROR_EACCES;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
@@ -537,11 +537,16 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
+    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
+    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+        LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
              fmt::ptr(addr), len, type, prot, flags);
 
     const VAddr in_addr = reinterpret_cast<VAddr>(addr);
-    const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     auto* memory = Core::Memory::Instance();
     return memory->PoolCommit(in_addr, len, mem_prot, type);
 }
@@ -651,13 +656,18 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
 
+    // mmap is less restrictive than other functions in regards to alignment
+    // To avoid potential issues, align address and size here.
+    const VAddr aligned_addr = Common::AlignDown(std::bit_cast<VAddr>(addr), 16_KB);
+    const u64 aligned_size = Common::AlignUp(len, 16_KB);
+
     s32 result = ORBIS_OK;
     if (fd == -1) {
-        result = memory->MapMemory(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
+        result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Flexible, "anon", false);
     } else {
-        result = memory->MapFile(&addr_out, std::bit_cast<VAddr>(addr), len, mem_prot, mem_flags,
-                                 fd, phys_addr);
+        result = memory->MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags, fd,
+                                 phys_addr);
     }
 
     if (result != ORBIS_OK) {
