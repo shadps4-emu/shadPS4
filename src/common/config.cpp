@@ -115,7 +115,7 @@ public:
 static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<bool> isNeo(false);
 static ConfigEntry<bool> isDevKit(false);
-static ConfigEntry<int> extraDmemInMbytes = 0;
+static ConfigEntry<int> extraDmemInMbytes(0);
 static ConfigEntry<bool> isPSNSignedIn(false);
 static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
