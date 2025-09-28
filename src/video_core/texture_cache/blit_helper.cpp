@@ -39,7 +39,6 @@ BlitHelper::BlitHelper(const Vulkan::Instance& instance_, Vulkan::Scheduler& sch
 BlitHelper::~BlitHelper() {
     const auto device = instance.GetDevice();
     device.destroy(fs_tri_vertex);
-    device.destroy(fs_tri_layer_vertex);
     device.destroy(color_to_ms_depth_frag);
     device.destroy(src_msaa_copy_frag);
     device.destroy(src_non_msaa_copy_frag);
@@ -256,8 +255,6 @@ void BlitHelper::CreateShaders() {
     const auto device = instance.GetDevice();
     fs_tri_vertex =
         Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device);
-    fs_tri_layer_vertex = Vulkan::Compile(
-        HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device, {"INSTANCE_AS_LAYER"});
     color_to_ms_depth_frag = Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG,
                                              vk::ShaderStageFlagBits::eFragment, device);
     src_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,

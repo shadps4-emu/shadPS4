@@ -53,7 +53,6 @@ private:
     vk::UniqueDescriptorSetLayout single_texture_descriptor_set_layout;
     vk::UniquePipelineLayout single_texture_pl_layout;
     vk::ShaderModule fs_tri_vertex;
-    vk::ShaderModule fs_tri_layer_vertex;
     vk::ShaderModule color_to_ms_depth_frag;
     vk::ShaderModule src_msaa_copy_frag;
     vk::ShaderModule src_non_msaa_copy_frag;
