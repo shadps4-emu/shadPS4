@@ -10,6 +10,7 @@
 namespace VideoCore {
 
 struct ImageInfo;
+struct Image;
 class StreamBuffer;
 
 class TileManager {
@@ -23,8 +24,8 @@ public:
                          StreamBuffer& stream_buffer);
     ~TileManager();
 
-    void TileImage(vk::Image in_image, std::span<vk::BufferImageCopy> buffer_copies,
-                   vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info);
+    void TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
+                   vk::Buffer out_buffer, u32 out_offset, u32 copy_size);
 
     Result DetileImage(vk::Buffer in_buffer, u32 in_offset, const ImageInfo& info);
 

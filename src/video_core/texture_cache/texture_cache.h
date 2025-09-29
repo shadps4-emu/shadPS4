@@ -67,12 +67,14 @@ public:
     };
 
     struct RenderTargetDesc : public BaseDesc {
+        RenderTargetDesc() = default;
         RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
                          const AmdGpu::Liverpool::CbDbExtent& hint = {})
             : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
     };
 
     struct DepthTargetDesc : public BaseDesc {
+        DepthTargetDesc() = default;
         DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
                         const AmdGpu::Liverpool::DepthView& view,
                         const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
@@ -118,20 +120,21 @@ public:
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
+    void UpdateImage(ImageId image_id) {
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
-        RefreshImage(image, custom_scheduler);
+        RefreshImage(image);
     }
 
+    /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
                                                                BindingType binding,
                                                                ImageId cache_img_id,
@@ -145,7 +148,7 @@ public:
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
-    void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
+    void RefreshImage(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(
@@ -161,15 +164,8 @@ public:
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        auto& view = slot_image_views[id];
-        // Maybe this is not needed.
-        Image& image = slot_images[view.image_id];
-        TouchImage(image);
-        return view;
+        return slot_image_views[id];
     }
-
-    /// Registers an image view for provided image
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Returns true if the specified address is a metadata surface.
     bool IsMeta(VAddr address) const {
