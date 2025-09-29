@@ -315,18 +315,15 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                                            BindingType binding,
                                                            ImageId cache_image_id,
                                                            ImageId merged_image_id) {
-    auto& tex_cache_image = slot_images[cache_image_id];
+    auto& cache_image = slot_images[cache_image_id];
     const bool safe_to_delete =
-        scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
-
-    // Ensure the backing samples match guest samples before doing any overlap resolution
-    tex_cache_image.SetBackingSamples(tex_cache_image.info.num_samples);
+        scheduler.CurrentTick() - cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
     // Equal address
-    if (image_info.guest_address == tex_cache_image.info.guest_address) {
+    if (image_info.guest_address == cache_image.info.guest_address) {
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
-        const u32 rhs_block_size = tex_cache_image.info.num_bits * tex_cache_image.info.num_samples;
-        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
+        const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
+        if (image_info.BlockDim() != cache_image.info.BlockDim() ||
             lhs_block_size != rhs_block_size) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
@@ -340,19 +337,19 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         }
 
         // Compressed view of uncompressed image with same block size.
-        if (image_info.props.is_block && !tex_cache_image.info.props.is_block) {
+        if (image_info.props.is_block && !cache_image.info.props.is_block) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
-        if (image_info.guest_size == tex_cache_image.info.guest_size &&
+        if (image_info.guest_size == cache_image.info.guest_size &&
             (image_info.type == AmdGpu::ImageType::Color3D ||
-             tex_cache_image.info.type == AmdGpu::ImageType::Color3D)) {
+             cache_image.info.type == AmdGpu::ImageType::Color3D)) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         // Size and resources are less than or equal, use image view.
-        if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
-            image_info.guest_size <= tex_cache_image.info.guest_size) {
+        if (image_info.pixel_format != cache_image.info.pixel_format ||
+            image_info.guest_size <= cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
@@ -361,14 +358,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         }
 
         // Size and resources are greater, expand the image.
-        if (image_info.type == tex_cache_image.info.type &&
-            image_info.resources > tex_cache_image.info.resources) {
+        if (image_info.type == cache_image.info.type &&
+            image_info.resources > cache_image.info.resources) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         // Size is greater but resources are not, because the tiling mode is different.
         // Likely the address is reused for a image with a different tiling mode.
-        if (image_info.tile_mode != tex_cache_image.info.tile_mode) {
+        if (image_info.tile_mode != cache_image.info.tile_mode) {
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
@@ -379,9 +376,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
-    if (image_info.guest_address > tex_cache_image.info.guest_address) {
-        if (auto mip = image_info.MipOf(tex_cache_image.info); mip >= 0) {
-            if (auto slice = image_info.SliceOf(tex_cache_image.info, mip); slice >= 0) {
+    if (image_info.guest_address > cache_image.info.guest_address) {
+        if (auto mip = image_info.MipOf(cache_image.info); mip >= 0) {
+            if (auto slice = image_info.SliceOf(cache_image.info, mip); slice >= 0) {
                 return {cache_image_id, mip, slice};
             }
         }
@@ -394,12 +391,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
-        if (auto mip = tex_cache_image.info.MipOf(image_info); mip >= 0) {
-            if (auto slice = tex_cache_image.info.SliceOf(image_info, mip); slice >= 0) {
+        if (auto mip = cache_image.info.MipOf(image_info); mip >= 0) {
+            if (auto slice = cache_image.info.SliceOf(image_info, mip); slice >= 0) {
                 // We have a larger image created and a separate one, representing a subres of it
                 // bound as render target. In this case we need to rebind render target.
-                if (tex_cache_image.binding.is_target) {
-                    tex_cache_image.binding.needs_rebind = 1u;
+                if (cache_image.binding.is_target) {
+                    cache_image.binding.needs_rebind = 1u;
                     if (merged_image_id) {
                         GetImage(merged_image_id).binding.is_target = 1u;
                     }
@@ -410,15 +407,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
                 // We need to have a larger, already allocated image to copy this one into
                 if (merged_image_id) {
-                    tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                            vk::AccessFlagBits2::eTransferRead, {});
-
-                    const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
-                    ASSERT(num_mips_to_copy == 1);
-
                     auto& merged_image = slot_images[merged_image_id];
-                    merged_image.CopyMip(tex_cache_image, mip, slice);
-
+                    merged_image.CopyMip(cache_image, mip, slice);
                     FreeImage(cache_image_id);
                 }
             }

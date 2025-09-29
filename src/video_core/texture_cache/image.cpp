@@ -539,11 +539,6 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 }
 
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
-    scheduler->EndRendering();
-    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
-
-    auto cmdbuf = scheduler->CommandBuffer();
-
     const auto mip_w = std::max(info.size.width >> mip, 1u);
     const auto mip_h = std::max(info.size.height >> mip, 1u);
     const auto mip_d = std::max(info.size.depth >> mip, 1u);
@@ -568,11 +563,17 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
         },
         .extent = {mip_w, mip_h, mip_d},
     };
+
+    SetBackingSamples(info.num_samples);
+    src_image.SetBackingSamples(src_info.num_samples);
+
+    scheduler->EndRendering();
+    Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
+    src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+
+    const auto cmdbuf = scheduler->CommandBuffer();
     cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
                      backing->state.layout, image_copy);
-
-    Transit(vk::ImageLayout::eGeneral,
-            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
