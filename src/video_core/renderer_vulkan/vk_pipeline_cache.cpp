@@ -325,6 +325,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     const auto& regs = liverpool->regs;
     auto& key = graphics_key;
 
+    const bool db_enabled = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid();
+
     key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
                                                   : Liverpool::DepthBuffer::ZFormat::Invalid;
     key.stencil_format = regs.depth_buffer.StencilValid()
@@ -339,17 +341,17 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.patch_control_points =
         regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
-    key.num_samples = regs.NumSamples();
+    key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
+    key.num_samples = key.depth_samples;
     key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
 
-    // First pass to fill render target information
+    // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < Liverpool::NumColorBuffers && !skip_cb_binding; ++cb) {
         const auto& col_buf = regs.color_buffers[cb];
-        const u32 target_mask = regs.color_target_mask.GetMask(cb);
-        if (!col_buf || !target_mask) {
+        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
             // No attachment bound or writing to it is disabled.
             continue;
         }
@@ -362,6 +364,26 @@ bool PipelineCache::RefreshGraphicsKey() {
             .export_format = regs.color_export_format.GetFormat(cb),
             .swizzle = col_buf.Swizzle(),
         };
+    }
+
+    // Compile and bind shader stages
+    if (!RefreshGraphicsStages()) {
+        return false;
+    }
+
+    // Second pass to mask out render targets not written by shader and fill remaining info
+    u8 color_samples = 0;
+    bool all_color_samples_same = true;
+    for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        if (!col_buf || !target_mask) {
+            continue;
+        }
+        if ((key.mrt_mask & (1u << cb)) == 0) {
+            key.color_buffers[cb] = {};
+            continue;
+        }
 
         // Fill color blending information
         if (regs.blend_control[cb].enable && !col_buf.info.blend_bypass) {
@@ -371,22 +393,21 @@ bool PipelineCache::RefreshGraphicsKey() {
         // Apply swizzle to target mask
         key.write_masks[cb] =
             vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
+
+        // Fill color samples
+        const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
+        all_color_samples_same &= color_samples == prev_color_samples || prev_color_samples == 0;
+        key.color_samples[cb] = color_samples;
+        key.num_samples = std::max(key.num_samples, color_samples);
     }
 
-    // Compile and bind shader stages
-    if (!RefreshGraphicsStages()) {
-        return false;
-    }
-
-    // Second pass to mask out render targets not written by fragment shader
-    for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
-        const auto& col_buf = regs.color_buffers[cb];
-        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
-            continue;
-        }
-        if ((key.mrt_mask & (1u << cb)) == 0) {
-            // Attachment is bound and mask allows writes but shader does not output to it.
-            key.color_buffers[cb] = {};
+    // Force all color samples to match depth samples to avoid unsupported MSAA configuration
+    if (color_samples != 0) {
+        const bool depth_mismatch = db_enabled && color_samples != key.depth_samples;
+        if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported() ||
+            all_color_samples_same && depth_mismatch && !instance.IsMixedDepthSamplesSupported()) {
+            key.color_samples.fill(key.depth_samples);
+            key.num_samples = key.depth_samples;
         }
     }
 

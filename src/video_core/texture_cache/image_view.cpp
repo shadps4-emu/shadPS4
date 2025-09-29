@@ -90,9 +90,9 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
     type = range.extent.layers > 1 ? AmdGpu::ImageType::Color2DArray : AmdGpu::ImageType::Color2D;
 }
 
-ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_, Image& image,
-                     ImageId image_id_)
-    : image_id{image_id_}, info{info_} {
+ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_,
+                     const Image& image)
+    : info{info_} {
     vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
@@ -113,7 +113,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
 
     const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
-        .image = image.image,
+        .image = image.GetImage(),
         .viewType = ConvertImageViewType(info.type),
         .format = instance.GetSupportedFormat(format, image.format_features),
         .components = info.mapping,

@@ -1485,26 +1485,6 @@ struct Liverpool {
             return nullptr;
         }
 
-        u32 NumSamples() const {
-            // It seems that the number of samples > 1 set in the AA config doesn't mean we're
-            // always rendering with MSAA, so we need to derive MS ratio from the CB and DB
-            // settings.
-            u32 num_samples = 1u;
-            if (color_control.mode != ColorControl::OperationMode::Disable) {
-                for (auto cb = 0u; cb < NumColorBuffers; ++cb) {
-                    const auto& col_buf = color_buffers[cb];
-                    if (!col_buf) {
-                        continue;
-                    }
-                    num_samples = std::max(num_samples, col_buf.NumSamples());
-                }
-            }
-            if (depth_buffer.DepthValid() || depth_buffer.StencilValid()) {
-                num_samples = std::max(num_samples, depth_buffer.NumSamples());
-            }
-            return num_samples;
-        }
-
         bool IsClipDisabled() const {
             return clipper_control.clip_disable || primitive_type == PrimitiveType::RectList;
         }

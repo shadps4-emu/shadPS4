@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <shared_mutex>
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -84,29 +83,29 @@ public:
     }
 
 private:
-    RenderState PrepareRenderState(u32 mrt_mask);
-    void BeginRendering(const GraphicsPipeline& pipeline, RenderState& state);
+    void PrepareRenderState(const GraphicsPipeline* pipeline);
+    RenderState BeginRendering(const GraphicsPipeline* pipeline);
     void Resolve();
     void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
 
-    void UpdateDynamicState(const GraphicsPipeline& pipeline, bool is_indexed) const;
+    void UpdateDynamicState(const GraphicsPipeline* pipeline, bool is_indexed) const;
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
     void UpdatePrimitiveState(bool is_indexed) const;
     void UpdateRasterizationState() const;
+    void UpdateColorBlendingState(const GraphicsPipeline* pipeline) const;
 
     bool FilterDraw();
 
     void BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                      Shader::PushData& push_data);
-
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
-
     bool BindResources(const Pipeline* pipeline);
+
     void ResetBindings() {
         for (auto& image_id : bound_images) {
-            texture_cache.GetImage(image_id).binding.Reset();
+            texture_cache.GetImage(image_id).binding = {};
         }
         bound_images.clear();
     }
@@ -128,16 +127,17 @@ private:
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 
-    boost::container::static_vector<
-        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>, 8>
-        cb_descs;
-    std::optional<std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc>> db_desc;
+    using RenderTargetInfo =
+        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>;
+    std::array<RenderTargetInfo, Liverpool::NumColorBuffers> cb_descs;
+    std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc> db_desc;
     boost::container::static_vector<vk::DescriptorImageInfo, Shader::NumImages> image_infos;
     boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NumBuffers> buffer_infos;
     boost::container::static_vector<VideoCore::ImageId, Shader::NumImages> bound_images;
 
     Pipeline::DescriptorWrites set_writes;
     Pipeline::BufferBarriers buffer_barriers;
+    Shader::PushData push_data;
 
     using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
     boost::container::static_vector<BufferBindingInfo, Shader::NumBuffers> buffer_bindings;

@@ -233,13 +233,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     }
 
     if (!is_eop) {
-        // Before processing the flip we need to ask GPU thread to flush command list as at this
-        // point VO surface is ready to be presented, and we will need have an actual state of
-        // Vulkan image at the time of frame presentation.
-        liverpool->SendCommand([=, this]() {
-            presenter->FlushDraw();
-            SubmitFlipInternal(port, index, flip_arg, is_eop);
-        });
+        // Non EOP flips can arrive from any thread so ask GPU thread to perform them
+        liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
     } else {
         SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
@@ -247,15 +242,14 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     return true;
 }
 
-void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
-                                        bool is_eop /*= false*/) {
+void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = presenter->PrepareBlankFrame(is_eop);
+        frame = presenter->PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left, is_eop);
+        frame = presenter->PrepareFrame(group, buffer.address_left);
     }
 
     std::scoped_lock lock{mutex};

@@ -301,7 +301,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
         }
-        if (runtime_info.fs_info.addr_flags.linear_sample_ena ||
+        if (info.loads.Get(IR::Attribute::SampleIndex) ||
+            runtime_info.fs_info.addr_flags.linear_sample_ena ||
             runtime_info.fs_info.addr_flags.persp_sample_ena) {
             ctx.AddCapability(spv::Capability::SampleRateShading);
         }
