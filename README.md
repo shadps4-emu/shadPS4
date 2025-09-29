@@ -24,9 +24,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 </h1>
 
-|               borne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
+|               Bloodborne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
-| ![borne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
+| ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
 
 |                  Yakuza 0 by SEGA                     |                 DRIVECLUB™ by Evolution Studios                    |
 | :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
