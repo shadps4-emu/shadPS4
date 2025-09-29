@@ -24,9 +24,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 </h1>
 
-|               Bloodborne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
+|               borne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
-| ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
+| ![borne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
 
 |                  Yakuza 0 by SEGA                     |                 DRIVECLUB™ by Evolution Studios                    |
 | :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
@@ -47,7 +47,7 @@ You can donate to the project via our [**Kofi page**](https://ko-fi.com/shadps4)
 > [!IMPORTANT]
 > shadPS4 is early in development, don't expect a flawless experience.
 
-Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=5sZgWyVflFM), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag), and many other games.
+Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=hwerpirJXbI), [**DRIVECLUB**](https://www.youtube.com/watch?v=dFgm2U4RKdI), [**Borderlands 3**](https://www.youtube.com/watch?v=7j4Vsx6WuaM), and many [**other games**](https://www.youtube.com/watch?v=ybhSW0cn1es).
 
 # Why
 
