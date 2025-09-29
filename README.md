@@ -47,7 +47,7 @@ You can donate to the project via our [**Kofi page**](https://ko-fi.com/shadps4)
 > [!IMPORTANT]
 > shadPS4 is early in development, don't expect a flawless experience.
 
-Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=hwerpirJXbI), [**DRIVECLUB**](https://www.youtube.com/watch?v=dFgm2U4RKdI), [**Borderlands 3**](https://www.youtube.com/watch?v=7j4Vsx6WuaM), and many [**other games**](https://www.youtube.com/watch?v=ybhSW0cn1es).
+Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=hwerpirJXbI), [**DRIVECLUB**](https://www.youtube.com/watch?v=-ZvhIGtYjtc), [**Borderlands 3**](https://www.youtube.com/watch?v=7j4Vsx6WuaM), and many [**other games**](https://www.youtube.com/watch?v=ybhSW0cn1es).
 
 # Why
 
