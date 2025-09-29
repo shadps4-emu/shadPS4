@@ -5,6 +5,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/tile_manager.h"
@@ -190,6 +191,8 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
         vmaDestroyBuffer(instance.GetAllocator(), out_buffer, out_allocation);
     });
 
+    scheduler.EndRendering();
+
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, false));
 
@@ -238,15 +241,14 @@ TileManager::Result TileManager::DetileImage(vk::Buffer in_buffer, u32 in_offset
     return {out_buffer, 0};
 }
 
-void TileManager::TileImage(vk::Image in_image, std::span<vk::BufferImageCopy> buffer_copies,
-                            vk::Buffer out_buffer, u32 out_offset, const ImageInfo& info) {
+void TileManager::TileImage(Image& in_image, std::span<vk::BufferImageCopy> buffer_copies,
+                            vk::Buffer out_buffer, u32 out_offset, u32 copy_size) {
+    const auto& info = in_image.info;
     if (!info.props.is_tiled) {
         for (auto& copy : buffer_copies) {
             copy.bufferOffset += out_offset;
         }
-        const auto cmdbuf = scheduler.CommandBuffer();
-        cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, out_buffer,
-                                 buffer_copies);
+        in_image.Download(buffer_copies, out_buffer, out_offset, copy_size);
         return;
     }
 
@@ -275,8 +277,8 @@ void TileManager::TileImage(vk::Image in_image, std::span<vk::BufferImageCopy> b
     });
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.copyImageToBuffer(in_image, vk::ImageLayout::eTransferSrcOptimal, temp_buffer,
-                             buffer_copies);
+    in_image.Download(buffer_copies, temp_buffer, 0, copy_size);
+
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, true));
 
     const vk::DescriptorBufferInfo tiled_buffer_info{

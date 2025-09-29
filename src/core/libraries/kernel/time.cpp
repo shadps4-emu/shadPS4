@@ -16,7 +16,7 @@
 #include <windows.h>
 #include "common/ntapi.h"
 #else
-#if __APPLE__
+#ifdef __APPLE__
 #include <date/tz.h>
 #endif
 #include <ctime>

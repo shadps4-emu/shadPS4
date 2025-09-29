@@ -471,7 +471,7 @@ void RemoveTexture(ImTextureID texture) {
     IM_ASSERT(texture != nullptr);
     VkData* bd = GetBackendData();
     const InitInfo& v = bd->init_info;
-    v.device.freeDescriptorSets(bd->descriptor_pool, {texture->descriptor_set});
+    CheckVkErr(v.device.freeDescriptorSets(bd->descriptor_pool, {texture->descriptor_set}));
     delete texture;
 }
 

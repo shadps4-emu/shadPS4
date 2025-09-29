@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <optional>
 #include "common/assert.h"
-#include "common/scope_exit.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"

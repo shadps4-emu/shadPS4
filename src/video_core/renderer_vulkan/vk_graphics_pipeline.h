@@ -41,7 +41,9 @@ struct GraphicsPipelineKey {
     std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
     Liverpool::ColorBufferMask cb_shader_mask;
     Liverpool::ColorControl::LogicOp logic_op;
-    u32 num_samples;
+    u8 num_samples;
+    u8 depth_samples;
+    std::array<u8, Liverpool::NumColorBuffers> color_samples;
     u32 mrt_mask;
     struct {
         Liverpool::DepthBuffer::ZFormat z_format : 2;
@@ -80,12 +82,8 @@ public:
         return fetch_shader;
     }
 
-    auto GetWriteMasks() const {
-        return key.write_masks;
-    }
-
-    u32 GetMrtMask() const {
-        return key.mrt_mask;
+    const GraphicsPipelineKey& GetGraphicsKey() const {
+        return key;
     }
 
     /// Gets the attributes and bindings for vertex inputs.

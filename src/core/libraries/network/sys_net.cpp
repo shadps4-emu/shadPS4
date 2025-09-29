@@ -4,6 +4,7 @@
 #include <common/assert.h>
 #include <common/logging/log.h>
 #include <core/libraries/kernel/kernel.h>
+#include <magic_enum/magic_enum.hpp>
 #include "common/error.h"
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
@@ -22,11 +23,13 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->Connect(addr, addrlen);
     if (returncode >= 0) {
         return returncode;
     }
-    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
+    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
+              (u32)*Libraries::Kernel::__Error());
     return -1;
 }
 
@@ -37,6 +40,7 @@ int PS4_SYSV_ABI sys_bind(OrbisNetId s, const OrbisNetSockaddr* addr, u32 addrle
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->Bind(addr, addrlen);
     if (returncode >= 0) {
         return returncode;
@@ -52,10 +56,11 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     auto new_sock = file->socket->Accept(addr, paddrlen);
     if (!new_sock) {
-        LOG_ERROR(Lib_Net, "error creating new socket for accepting: {:#x}",
-                  (u32)*Libraries::Kernel::__Error());
+        LOG_ERROR(Lib_Net, "s = {} ({}) returned error code creating new socket for accepting: {}",
+                  s, file->m_guest_name, (u32)*Libraries::Kernel::__Error());
         return -1;
     }
     auto fd = FDTable::Instance()->CreateHandle();
@@ -67,14 +72,13 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
 }
 
 int PS4_SYSV_ABI sys_getpeername(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
-    LOG_INFO(Lib_Net, "s = {}", s);
-
     auto file = FDTable::Instance()->GetSocket(s);
     if (!file) {
         *Libraries::Kernel::__Error() = ORBIS_NET_EBADF;
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->GetPeerName(addr, paddrlen);
     if (returncode >= 0) {
         return returncode;
@@ -90,6 +94,7 @@ int PS4_SYSV_ABI sys_getsockname(OrbisNetId s, OrbisNetSockaddr* addr, u32* padd
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->GetSocketAddress(addr, paddrlen);
     if (returncode >= 0) {
         return returncode;
@@ -105,8 +110,25 @@ int PS4_SYSV_ABI sys_getsockopt(OrbisNetId s, int level, int optname, void* optv
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto name = [&] -> std::string_view {
+        switch (level) {
+        case ORBIS_NET_SOL_SOCKET:
+            return NameOf((OrbisNetSocketSoOption)optname);
+        case ORBIS_NET_IPPROTO_IP:
+            return magic_enum::enum_name((OrbisNetSocketIpOption)optname);
+        case ORBIS_NET_IPPROTO_TCP:
+            return magic_enum::enum_name((OrbisNetSocketTcpOption)optname);
+        default:
+            return std::string_view{"unknown"};
+        }
+    }();
+    LOG_DEBUG(Lib_Net, "s = {} ({}), level = {}, optname = {}", s, file->m_guest_name,
+              NameOf((OrbisNetProtocol)level), name);
     int returncode = file->socket->GetSocketOptions(level, optname, optval, optlen);
     if (returncode >= 0) {
+        if (optname == ORBIS_NET_SO_ERROR) {
+            LOG_DEBUG(Lib_Net, "so_error = {}", *reinterpret_cast<s32*>(optval));
+        }
         return returncode;
     }
     LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
@@ -120,6 +142,7 @@ int PS4_SYSV_ABI sys_listen(OrbisNetId s, int backlog) {
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), backlog = {}", s, file->m_guest_name, backlog);
     int returncode = file->socket->Listen(backlog);
     if (returncode >= 0) {
         return returncode;
@@ -136,6 +159,20 @@ int PS4_SYSV_ABI sys_setsockopt(OrbisNetId s, int level, int optname, const void
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    auto name = [&] -> std::string_view {
+        switch (level) {
+        case ORBIS_NET_SOL_SOCKET:
+            return NameOf((OrbisNetSocketSoOption)optname);
+        case ORBIS_NET_IPPROTO_IP:
+            return magic_enum::enum_name((OrbisNetSocketIpOption)optname);
+        case ORBIS_NET_IPPROTO_TCP:
+            return magic_enum::enum_name((OrbisNetSocketTcpOption)optname);
+        default:
+            return std::string_view{"unknown"};
+        }
+    }();
+    LOG_DEBUG(Lib_Net, "s = {} ({}), level = {}, optname = {}", s, file->m_guest_name,
+              NameOf((OrbisNetProtocol)level), name);
     int returncode = file->socket->SetSocketOptions(level, optname, optval, optlen);
     if (returncode >= 0) {
         return returncode;
@@ -149,13 +186,10 @@ int PS4_SYSV_ABI sys_shutdown(OrbisNetId s, int how) {
 }
 
 int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protocol) {
-    if (name == nullptr) {
-        LOG_INFO(Lib_Net, "name = no-named family = {} type = {} protocol = {}", family, type,
-                 protocol);
-    } else {
-        LOG_INFO(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(name),
-                 family, type, protocol);
-    }
+    auto sname = name ? name : "anon";
+    LOG_INFO(Lib_Net, "name = {} family = {} type = {} protocol = {}", std::string(sname),
+             magic_enum::enum_name((OrbisNetFamily)family),
+             magic_enum::enum_name((OrbisNetSocketType)type), protocol);
     SocketPtr socket;
     switch (type) {
     case ORBIS_NET_SOCK_STREAM:
@@ -185,7 +219,7 @@ int PS4_SYSV_ABI sys_socketex(const char* name, int family, int type, int protoc
     sock->is_opened = true;
     sock->type = Core::FileSys::FileType::Socket;
     sock->socket = socket;
-    sock->m_guest_name = name ? name : "anon_sock";
+    sock->m_guest_name = sname;
     return fd;
 }
 
@@ -298,6 +332,7 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->Close();
     if (returncode >= 0) {
         return returncode;
@@ -318,6 +353,7 @@ int PS4_SYSV_ABI sys_sendto(OrbisNetId s, const void* buf, u64 len, int flags,
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), len = {}, flags = {:#x}", s, file->m_guest_name, len, flags);
     int returncode = file->socket->SendPacket(buf, len, flags, addr, addrlen);
     if (returncode >= 0) {
         return returncode;
@@ -354,11 +390,13 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
         LOG_ERROR(Lib_Net, "socket id is invalid = {}", s);
         return -1;
     }
+    LOG_DEBUG(Lib_Net, "s = {} ({}), len = {}, flags = {:#x}", s, file->m_guest_name, len, flags);
     int returncode = file->socket->ReceivePacket(buf, len, flags, addr, paddrlen);
     if (returncode >= 0) {
         return returncode;
     }
-    LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());
+    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
+              (u32)*Libraries::Kernel::__Error());
     return -1;
 }
 

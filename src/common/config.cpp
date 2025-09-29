@@ -115,6 +115,7 @@ public:
 static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<bool> isNeo(false);
 static ConfigEntry<bool> isDevKit(false);
+static ConfigEntry<int> extraDmemInMbytes(0);
 static ConfigEntry<bool> isPSNSignedIn(false);
 static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
@@ -128,6 +129,7 @@ static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static bool checkCompatibilityOnStartup = false;
 static bool compatibilityData = false;
+static std::filesystem::path sys_modules_path = {};
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -136,9 +138,13 @@ static ConfigEntry<bool> useSpecialPad(false);
 static ConfigEntry<int> specialPadClass(1);
 static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
-static ConfigEntry<string> micDevice("Default Device");
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
+
+// Audio
+static ConfigEntry<string> micDevice("Default Device");
+static ConfigEntry<string> mainOutputDevice("Default Device");
+static ConfigEntry<string> padSpkOutputDevice("Default Device");
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -197,6 +203,17 @@ static string config_version = Common::g_scm_rev;
 // These two entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
+
+std::filesystem::path getSysModulesPath() {
+    if (sys_modules_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    }
+    return sys_modules_path;
+}
+
+void setSysModulesPath(const std::filesystem::path& path) {
+    sys_modules_path = path;
+}
 
 int getVolumeSlider() {
     return volumeSlider.get();
@@ -270,6 +287,14 @@ bool isDevKitConsole() {
     return isDevKit.get();
 }
 
+int getExtraDmemInMbytes() {
+    return extraDmemInMbytes.get();
+}
+
+void setExtraDmemInMbytes(int value) {
+    extraDmemInMbytes.base_value = 0;
+}
+
 bool getIsFullscreen() {
     return isFullscreen.get();
 }
@@ -300,6 +325,14 @@ int getCursorHideTimeout() {
 
 string getMicDevice() {
     return micDevice.get();
+}
+
+std::string getMainOutputDevice() {
+    return mainOutputDevice.get();
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice.get();
 }
 
 double getTrophyNotificationDuration() {
@@ -581,8 +614,16 @@ void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific) {
     cursorHideTimeout.set(newcursorHideTimeout, is_game_specific);
 }
 
-void setMicDevice(string device, bool is_game_specific) {
+void setMicDevice(std::string device, bool is_game_specific) {
     micDevice.set(device, is_game_specific);
+}
+
+void setMainOutputDevice(std::string device, bool is_game_specific) {
+    mainOutputDevice.set(device, is_game_specific);
+}
+
+void setPadSpkOutputDevice(std::string device, bool is_game_specific) {
+    padSpkOutputDevice.set(device, is_game_specific);
 }
 
 void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
@@ -798,6 +839,9 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
         isNeo.setFromToml(general, "isPS4Pro", is_game_specific);
         isDevKit.setFromToml(general, "isDevKit", is_game_specific);
+        if (is_game_specific) { // do not get this value from the base config
+            extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
+        }
         isPSNSignedIn.setFromToml(general, "isPSNSignedIn", is_game_specific);
         isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
         trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
@@ -815,6 +859,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         chooseHomeTab.setFromToml(general, "chooseHomeTab", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
+        sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
     }
 
     if (data.contains("Input")) {
@@ -826,8 +871,15 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        micDevice.setFromToml(input, "micDevice", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+    }
+
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
+        mainOutputDevice.setFromToml(audio, "mainOutputDevice", is_game_specific);
+        padSpkOutputDevice.setFromToml(audio, "padSpkOutputDevice", is_game_specific);
     }
 
     if (data.contains("GPU")) {
@@ -992,6 +1044,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
     isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific);
     isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
+    if (is_game_specific) {
+        extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
+    }
     isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
@@ -999,9 +1054,12 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
     isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
                                          is_game_specific);
-    micDevice.setTomlValue(data, "Input", "micDevice", is_game_specific);
     backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
                                            is_game_specific);
+
+    micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
+    mainOutputDevice.setTomlValue(data, "Audio", "mainOutputDevice", is_game_specific);
+    padSpkOutputDevice.setTomlValue(data, "Audio", "padSpkOutputDevice", is_game_specific);
 
     windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
     windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
@@ -1032,13 +1090,12 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
     isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
                                            is_game_specific);
-    logEnabled.setTomlValue(data, "Debug", "logEnable", is_game_specific);
+    logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
-    // All other entries
     if (!is_game_specific) {
-        std::vector<string> install_dirs;
+        std::vector<std::string> install_dirs;
         std::vector<bool> install_dirs_enabled;
 
         // temporary structure for ordering
@@ -1071,29 +1128,25 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["compatibilityEnabled"] = compatibilityData;
         data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
+        data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
         data["GUI"]["loadGameSizeEnabled"] = load_game_size;
         data["GUI"]["addonInstallDir"] =
             string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
         data["General"]["defaultControllerID"] = defaultControllerID.base_value;
-
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
         data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-
         data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
-
         data["Vulkan"]["validation_gpu"] = vkValidationGpu.base_value;
-
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
     }
 
@@ -1110,11 +1163,14 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
+        readbacksEnabled.set(false, is_game_specific);
+        readbackLinearImagesEnabled.set(false, is_game_specific);
         isNeo.set(false, is_game_specific);
         isDevKit.set(false, is_game_specific);
         isPSNSignedIn.set(false, is_game_specific);
         isConnectedToNetwork.set(false, is_game_specific);
         directMemoryAccessEnabled.set(false, is_game_specific);
+        extraDmemInMbytes.set(0, is_game_specific);
     }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
@@ -1133,16 +1189,16 @@ void setDefaultValues(bool is_game_specific) {
     cursorState.set(HideCursorState::Idle, is_game_specific);
     cursorHideTimeout.set(5, is_game_specific);
     isMotionControlsEnabled.set(true, is_game_specific);
-    micDevice.set("Default Device", is_game_specific);
     backgroundControllerInput.set(false, is_game_specific);
+
+    // GS - Audio
+    micDevice.set("Default Device", is_game_specific);
 
     // GS - GPU
     windowWidth.set(1280, is_game_specific);
     windowHeight.set(720, is_game_specific);
     isNullGpu.set(false, is_game_specific);
     shouldCopyGPUBuffers.set(false, is_game_specific);
-    readbacksEnabled.set(false, is_game_specific);
-    readbackLinearImagesEnabled.set(false, is_game_specific);
     shouldDumpShaders.set(false, is_game_specific);
     vblankFrequency.set(60, is_game_specific);
     isFullscreen.set(false, is_game_specific);
@@ -1184,10 +1240,13 @@ void setDefaultValues(bool is_game_specific) {
         useSpecialPad.base_value = false;
         specialPadClass.base_value = 1;
         useUnifiedInputConfig.base_value = true;
-        overrideControllerColor = false;
         controllerCustomColorRGB[0] = 0;
         controllerCustomColorRGB[1] = 0;
         controllerCustomColorRGB[2] = 255;
+
+        // TODO: Change to be game specific
+        mainOutputDevice = "Default Device";
+        padSpkOutputDevice = "Default Device";
 
         // GPU
         shouldPatchShaders.base_value = false;

@@ -145,7 +145,8 @@ void Translator::ExportDepth(const GcnInst& inst) {
         }
     } else {
         // Components are float32 into separate VGPRS
-        u32 mask = MaskFromExportFormat(exp.en, runtime_info.fs_info.z_export_format);
+        u32 mask = MaskFromExportFormat(exp.en & runtime_info.fs_info.mrtz_mask,
+                                        runtime_info.fs_info.z_export_format);
         for (u32 i = 0; i < 4; i++, mask >>= 1) {
             if ((mask & 1) == 0) {
                 continue;

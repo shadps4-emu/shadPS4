@@ -338,7 +338,7 @@ struct Liverpool {
         GreaterThanZ = 2,
     };
 
-    union DepthBufferControl {
+    union DepthShaderControl {
         u32 raw;
         BitField<0, 1, u32> z_export_enable;
         BitField<1, 1, u32> stencil_test_val_export_enable;
@@ -1410,7 +1410,7 @@ struct Liverpool {
             DepthControl depth_control;
             INSERT_PADDING_WORDS(1);
             ColorControl color_control;
-            DepthBufferControl depth_buffer_control;
+            DepthShaderControl depth_shader_control;
             ClipperControl clipper_control;
             PolygonControl polygon_control;
             ViewportControl viewport_control;
@@ -1483,26 +1483,6 @@ struct Liverpool {
                 return &ls_program;
             }
             return nullptr;
-        }
-
-        u32 NumSamples() const {
-            // It seems that the number of samples > 1 set in the AA config doesn't mean we're
-            // always rendering with MSAA, so we need to derive MS ratio from the CB and DB
-            // settings.
-            u32 num_samples = 1u;
-            if (color_control.mode != ColorControl::OperationMode::Disable) {
-                for (auto cb = 0u; cb < NumColorBuffers; ++cb) {
-                    const auto& col_buf = color_buffers[cb];
-                    if (!col_buf) {
-                        continue;
-                    }
-                    num_samples = std::max(num_samples, col_buf.NumSamples());
-                }
-            }
-            if (depth_buffer.DepthValid() || depth_buffer.StencilValid()) {
-                num_samples = std::max(num_samples, depth_buffer.NumSamples());
-            }
-            return num_samples;
         }
 
         bool IsClipDisabled() const {

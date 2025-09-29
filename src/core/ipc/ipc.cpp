@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ipc.h"
@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/debugger.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
 
@@ -40,6 +41,7 @@
  * Command list:
  * - CAPABILITIES:
  *   - ENABLE_MEMORY_PATCH: enables PATCH_MEMORY command
+ *   - ENABLE_EMU_CONTROL: enables PAUSE, RESUME, STOP, TOGGLE_FULLSCREEN commands
  * - INPUT CMD:
  *   - RUN: start the emulator execution
  *   - START: start the game execution
@@ -53,7 +55,7 @@
  *   - STOP: stop and quit the emulator
  *   - TOGGLE_FULLSCREEN: enable / disable fullscreen
  * - OUTPUT CMD:
- *   - N/A
+ *   - RESTART(argn: number, argv: ...string): Request restart of the emulator, must call STOP
  **/
 
 void IPC::Init() {
@@ -79,6 +81,15 @@ void IPC::Init() {
         std::cerr << "IPC: Failed to acquire run semaphore, closing process.\n";
         exit(1);
     }
+}
+
+void IPC::SendRestart(const std::vector<std::string>& args) {
+    std::cerr << ";RESTART\n";
+    std::cerr << ";" << args.size() << "\n";
+    for (const auto& arg : args) {
+        std::cerr << ";" << arg << "\n";
+    }
+    std::cerr.flush();
 }
 
 void IPC::InputLoop() {

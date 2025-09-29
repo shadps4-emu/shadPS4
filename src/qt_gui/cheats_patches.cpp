@@ -767,7 +767,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
     QDir dir = patchesDir.filePath(repository);
 
     QStringList xmlFiles = dir.entryList(QStringList() << "*.xml", QDir::Files);
-    QSet<QString> appVersionsSet;
+    QStringList incompatMessages;
 
     foreach (const QString& xmlFile, xmlFiles) {
         QFile file(dir.filePath(xmlFile));
@@ -778,6 +778,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
         }
 
         QXmlStreamReader xmlReader(&file);
+        QSet<QString> appVersionsSet;
         bool foundMatchingID = false;
 
         while (!xmlReader.atEnd() && !xmlReader.hasError()) {
@@ -804,39 +805,33 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
                                  QString(tr("XML ERROR:") + "\n%1").arg(xmlReader.errorString()));
         }
 
-        if (foundMatchingID) {
-            QStringList incompatibleVersions;
-            bool hasMatchingVersion = false;
+        if (!foundMatchingID) {
+            continue;
+        }
 
-            foreach (const QString& appVer, appVersionsSet) {
-                if (appVer != m_gameVersion) {
-                    incompatibleVersions.append(appVer);
-                } else {
-                    hasMatchingVersion = true;
-                }
-            }
-
-            if (!incompatibleVersions.isEmpty() ||
-                (hasMatchingVersion && incompatibleVersions.isEmpty())) {
-                QString message;
-
-                if (!incompatibleVersions.isEmpty()) {
-                    QString versionsList = incompatibleVersions.join(", ");
-                    message += QString(tr("The game is in version: %1")).arg(m_gameVersion) + "\n" +
-                               QString(tr("The downloaded patch only works on version: %1"))
-                                   .arg(versionsList);
-
-                    if (hasMatchingVersion) {
-                        message += QString(", %1").arg(m_gameVersion);
-                    }
-                    message += QString("\n" + tr("You may need to update your game."));
-                }
-
-                if (!message.isEmpty()) {
-                    QMessageBox::information(this, tr("Incompatibility Notice"), message);
-                }
+        for (const QString& appVer : appVersionsSet) {
+            if (appVer == QLatin1String("mask") || appVer == m_gameVersion) {
+                return;
             }
         }
+
+        if (!appVersionsSet.isEmpty()) {
+            QStringList versionsList;
+            for (const QString& v : appVersionsSet) {
+                versionsList << v;
+            }
+            QString versions = versionsList.join(", ");
+            QString message =
+                QString(tr("The game is in version: %1")).arg(m_gameVersion) + "\n" +
+                QString(tr("The downloaded patch only works on version: %1")).arg(versions) +
+                QString("\n" + tr("You may need to update your game."));
+            incompatMessages << message;
+        }
+    }
+
+    if (!incompatMessages.isEmpty()) {
+        QString finalMsg = incompatMessages.join("\n\n---\n\n");
+        QMessageBox::information(this, tr("Incompatibility Notice"), finalMsg);
     }
 }
 

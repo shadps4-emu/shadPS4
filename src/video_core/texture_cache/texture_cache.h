@@ -17,6 +17,10 @@
 #include "video_core/texture_cache/sampler.h"
 #include "video_core/texture_cache/tile_manager.h"
 
+namespace AmdGpu {
+struct Liverpool;
+}
+
 namespace VideoCore {
 
 class BufferCache;
@@ -63,12 +67,14 @@ public:
     };
 
     struct RenderTargetDesc : public BaseDesc {
+        RenderTargetDesc() = default;
         RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
                          const AmdGpu::Liverpool::CbDbExtent& hint = {})
             : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
     };
 
     struct DepthTargetDesc : public BaseDesc {
+        DepthTargetDesc() = default;
         DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
                         const AmdGpu::Liverpool::DepthView& view,
                         const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
@@ -85,7 +91,7 @@ public:
 
 public:
     TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                 BufferCache& buffer_cache, PageManager& tracker);
+                 AmdGpu::Liverpool* liverpool, BufferCache& buffer_cache, PageManager& tracker);
     ~TextureCache();
 
     TileManager& GetTileManager() noexcept {
@@ -114,20 +120,21 @@ public:
     [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(BaseDesc& desc);
+    [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const BaseDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
-    void UpdateImage(ImageId image_id, Vulkan::Scheduler* custom_scheduler = nullptr) {
+    void UpdateImage(ImageId image_id) {
         std::scoped_lock lock{mutex};
         Image& image = slot_images[image_id];
         TrackImage(image_id);
         TouchImage(image);
-        RefreshImage(image, custom_scheduler);
+        RefreshImage(image);
     }
 
+    /// Resolves overlap between existing cache image and pending merged image
     [[nodiscard]] std::tuple<ImageId, int, int> ResolveOverlap(const ImageInfo& info,
                                                                BindingType binding,
                                                                ImageId cache_img_id,
@@ -141,7 +148,7 @@ public:
     [[nodiscard]] ImageId ExpandImage(const ImageInfo& info, ImageId image_id);
 
     /// Reuploads image contents.
-    void RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler = nullptr);
+    void RefreshImage(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(
@@ -157,15 +164,8 @@ public:
 
     /// Retrieves the image view with the specified id.
     [[nodiscard]] ImageView& GetImageView(ImageId id) {
-        auto& view = slot_image_views[id];
-        // Maybe this is not needed.
-        Image& image = slot_images[view.image_id];
-        TouchImage(image);
-        return view;
+        return slot_image_views[id];
     }
-
-    /// Registers an image view for provided image
-    ImageView& RegisterImageView(ImageId image_id, const ImageViewInfo& view_info);
 
     /// Returns true if the specified address is a metadata surface.
     bool IsMeta(VAddr address) const {
@@ -272,6 +272,9 @@ private:
     /// Copies image memory back to CPU.
     void DownloadImageMemory(ImageId image_id);
 
+    /// Thread function for copying downloaded images out to CPU memory.
+    void DownloadedImagesThread(const std::stop_token& token);
+
     /// Create an image from the given parameters
     [[nodiscard]] ImageId InsertImage(const ImageInfo& info, VAddr cpu_addr);
 
@@ -308,6 +311,7 @@ private:
 private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
+    AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
     PageManager& tracker;
     BlitHelper blit_helper;
@@ -325,6 +329,17 @@ private:
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
+
+    struct DownloadedImage {
+        u64 tick;
+        VAddr device_addr;
+        void* download;
+        size_t download_size;
+    };
+    std::queue<DownloadedImage> downloaded_images_queue;
+    std::mutex downloaded_images_mutex;
+    std::condition_variable_any downloaded_images_cv;
+    std::jthread downloaded_images_thread;
 
     struct MetaDataInfo {
         enum class Type {

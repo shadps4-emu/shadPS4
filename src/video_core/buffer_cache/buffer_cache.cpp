@@ -984,44 +984,8 @@ bool BufferCache::SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, 
     if (copy_size == 0) {
         return false;
     }
-    scheduler.EndRendering();
-    const vk::BufferMemoryBarrier2 pre_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .buffer = buffer.Handle(),
-        .offset = buf_offset,
-        .size = copy_size,
-    };
-    const vk::BufferMemoryBarrier2 post_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead,
-        .buffer = buffer.Handle(),
-        .offset = buf_offset,
-        .size = copy_size,
-    };
-    auto barriers =
-        image.GetBarriers(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead,
-                          vk::PipelineStageFlagBits2::eTransfer, {});
-    auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-        .imageMemoryBarrierCount = static_cast<u32>(barriers.size()),
-        .pImageMemoryBarriers = barriers.data(),
-    });
     auto& tile_manager = texture_cache.GetTileManager();
-    tile_manager.TileImage(image.image, buffer_copies, buffer.Handle(), buf_offset, image.info);
-    cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
-    });
+    tile_manager.TileImage(image, buffer_copies, buffer.Handle(), buf_offset, copy_size);
     return true;
 }
 

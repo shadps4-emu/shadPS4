@@ -403,12 +403,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::UnpackSint2_10_10_10:
         return FoldInverseFunc(inst, IR::Opcode::PackSint2_10_10_10);
     case IR::Opcode::SelectU1:
-    case IR::Opcode::SelectU8:
-    case IR::Opcode::SelectU16:
     case IR::Opcode::SelectU32:
-    case IR::Opcode::SelectU64:
     case IR::Opcode::SelectF32:
-    case IR::Opcode::SelectF64:
         return FoldSelect(inst);
     case IR::Opcode::FPNeg32:
         FoldWhenAllImmediates(inst, [](f32 a) { return -a; });
@@ -563,15 +559,6 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::CompositeExtractF32x4:
         return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF32x4,
                                     IR::Opcode::CompositeInsertF32x4);
-    case IR::Opcode::CompositeExtractF16x2:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x2,
-                                    IR::Opcode::CompositeInsertF16x2);
-    case IR::Opcode::CompositeExtractF16x3:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x3,
-                                    IR::Opcode::CompositeInsertF16x3);
-    case IR::Opcode::CompositeExtractF16x4:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x4,
-                                    IR::Opcode::CompositeInsertF16x4);
     case IR::Opcode::ConvertF32F16:
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <optional>
 #include <vector>
 #include "common/types.h"
 #include "shader_recompiler/info.h"

@@ -3,9 +3,12 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
+#include "emulator.h"
 
 namespace Libraries::SystemService {
 
@@ -1866,8 +1869,18 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSystemServiceLoadExec() {
-    LOG_ERROR(Lib_SystemService, "(STUBBED) called");
+int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) {
+    LOG_DEBUG(Lib_SystemService, "called");
+    auto emu = Common::Singleton<Core::Emulator>::Instance();
+    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto hostPath = mnt->GetHostPath(std::string_view(path));
+    std::vector<std::string> args;
+    if (argv != nullptr) {
+        for (const char** ptr = argv; *ptr != nullptr; ptr++) {
+            args.push_back(std::string(*ptr));
+        }
+    }
+    emu->Restart(hostPath, args);
     return ORBIS_OK;
 }
 
