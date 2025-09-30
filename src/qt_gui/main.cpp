@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> game_folder;
 
     bool waitForDebugger = false;
+    bool load_game_specific_config = true;
     std::optional<int> waitPid;
 
     // Map of argument strings to lambda functions
@@ -68,6 +69,10 @@ int main(int argc, char* argv[]) {
                     "parent of game path\n"
                     "  --wait-for-debugger           Wait for debugger to attach\n"
                     "  --wait-for-pid <pid>          Wait for process with specified PID to stop\n"
+                    "  --config-clean                Run the emulator with the default config "
+                    "values, ignores the config file(s) entirely.\n"
+                    "  --config-global               Run the emulator with the base config file "
+                    "only, ignores game specific configs.\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -142,6 +147,12 @@ int main(int argc, char* argv[]) {
              exit(0);
          }},
         {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
+        {"--config-clean",
+         [&](int& i) {
+             Config::setDefaultValues(/*is_game_specific*/ false);
+             load_game_specific_config = false;
+         }},
+        {"--config-global", [&](int& i) { load_game_specific_config = false; }},
         {"--override-root",
          [&](int& i) {
              if (++i >= argc) {
@@ -246,6 +257,7 @@ int main(int argc, char* argv[]) {
         }
 
         // Run the emulator with the resolved game path
+        emulator->load_game_specific_config = load_game_specific_config;
         emulator->Run(game_file_path.string(), game_args, game_folder);
         if (!show_gui) {
             return 0; // Exit after running the emulator without showing the GUI
