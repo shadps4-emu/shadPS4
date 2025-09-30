@@ -413,10 +413,56 @@ void Image::Download(std::span<const vk::BufferImageCopy> download_copies, vk::B
     });
 }
 
+static std::pair<u32, u32> SanitizeCopyLayers(const ImageInfo& src_info, const ImageInfo& dst_info,
+                                              const u32 depth) {
+    const auto vk_src_type = ConvertImageType(src_info.type);
+    const auto vk_dst_type = ConvertImageType(dst_info.type);
+
+    u32 src_layers = src_info.resources.layers;
+    u32 dst_layers = dst_info.resources.layers;
+
+    // 3D images can only use 1 layer.
+    if (vk_src_type == vk::ImageType::e3D && src_layers != 1) {
+        LOG_WARNING(Render_Vulkan, "Coercing copy 3D source layers {} to 1.", src_layers);
+        src_layers = 1;
+    }
+    if (vk_dst_type == vk::ImageType::e3D && dst_layers != 1) {
+        LOG_WARNING(Render_Vulkan, "Coercing copy 3D destination layers {} to 1.", dst_layers);
+        dst_layers = 1;
+    }
+
+    // If the image type is equal, layer count must match. Take the minimum of both.
+    if (vk_src_type == vk_dst_type) {
+        if (src_layers != dst_layers) {
+            LOG_WARNING(Render_Vulkan,
+                        "Coercing copy source layers {} and destination layers {} to minimum.",
+                        src_layers, dst_layers);
+            src_layers = dst_layers = std::min(src_layers, dst_layers);
+        }
+    } else {
+        // For 2D <-> 3D copies, 2D layer count must equal 3D depth.
+        if (vk_src_type == vk::ImageType::e2D && vk_dst_type == vk::ImageType::e3D &&
+            src_layers != depth) {
+            LOG_WARNING(Render_Vulkan,
+                        "Coercing copy 2D source layers {} to 3D destination depth {}", src_layers,
+                        depth);
+            src_layers = depth;
+        }
+        if (vk_src_type == vk::ImageType::e3D && vk_dst_type == vk::ImageType::e2D &&
+            dst_layers != depth) {
+            LOG_WARNING(Render_Vulkan,
+                        "Coercing copy 2D destination layers {} to 3D source depth {}", dst_layers,
+                        depth);
+            dst_layers = depth;
+        }
+    }
+
+    return std::make_pair(src_layers, dst_layers);
+}
+
 void Image::CopyImage(Image& src_image) {
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
-    const u32 num_layers = std::min(src_info.resources.layers, info.resources.layers);
     ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
 
     const u32 width = src_info.size.width;
@@ -432,19 +478,20 @@ void Image::CopyImage(Image& src_image) {
         const auto mip_w = std::max(width >> mip, 1u);
         const auto mip_h = std::max(height >> mip, 1u);
         const auto mip_d = std::max(depth >> mip, 1u);
+        const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
 
         image_copies.emplace_back(vk::ImageCopy{
             .srcSubresource{
                 .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = num_layers,
+                .layerCount = src_layers,
             },
             .dstSubresource{
                 .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
                 .mipLevel = mip,
                 .baseArrayLayer = 0,
-                .layerCount = num_layers,
+                .layerCount = dst_layers,
             },
             .extent = {mip_w, mip_h, mip_d},
         });
@@ -541,27 +588,28 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 }
 
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
+    const auto& src_info = src_image.info;
+
     const auto mip_w = std::max(info.size.width >> mip, 1u);
     const auto mip_h = std::max(info.size.height >> mip, 1u);
     const auto mip_d = std::max(info.size.depth >> mip, 1u);
+    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
 
-    const auto& src_info = src_image.info;
     ASSERT(mip_w == src_info.size.width);
     ASSERT(mip_h == src_info.size.height);
 
-    const u32 num_layers = std::min(src_info.resources.layers, info.resources.layers);
     const vk::ImageCopy image_copy{
         .srcSubresource{
             .aspectMask = src_image.aspect_mask,
             .mipLevel = 0,
             .baseArrayLayer = 0,
-            .layerCount = num_layers,
+            .layerCount = src_layers,
         },
         .dstSubresource{
             .aspectMask = src_image.aspect_mask,
             .mipLevel = mip,
             .baseArrayLayer = slice,
-            .layerCount = num_layers,
+            .layerCount = dst_layers,
         },
         .extent = {mip_w, mip_h, mip_d},
     };
@@ -587,21 +635,21 @@ void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_ra
                       mrt0_range);
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, mrt1_range);
 
-    const u32 num_layers = std::min(mrt0_range.extent.layers, mrt1_range.extent.layers);
+    const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_image.info, info, 1);
     if (src_image.backing->num_samples == 1) {
         const vk::ImageCopy region = {
             .srcSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt0_range.base.layer,
-                .layerCount = num_layers,
+                .layerCount = src_layers,
             },
             .srcOffset = {0, 0, 0},
             .dstSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt1_range.base.layer,
-                .layerCount = num_layers,
+                .layerCount = dst_layers,
             },
             .dstOffset = {0, 0, 0},
             .extent = {info.size.width, info.size.height, 1},
@@ -615,14 +663,14 @@ void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_ra
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt0_range.base.layer,
-                .layerCount = num_layers,
+                .layerCount = src_layers,
             },
             .srcOffset = {0, 0, 0},
             .dstSubresource{
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .mipLevel = 0,
                 .baseArrayLayer = mrt1_range.base.layer,
-                .layerCount = num_layers,
+                .layerCount = dst_layers,
             },
             .dstOffset = {0, 0, 0},
             .extent = {info.size.width, info.size.height, 1},
