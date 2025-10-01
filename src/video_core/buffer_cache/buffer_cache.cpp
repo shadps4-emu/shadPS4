@@ -365,6 +365,16 @@ void BufferCache::InlineData(VAddr address, const void* value, u32 num_bytes, bo
 }
 
 void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {
+    if (!dst_gds && !IsRegionGpuModified(dst, num_bytes)) {
+        if (!src_gds && !IsRegionGpuModified(src, num_bytes) &&
+            !texture_cache.FindImageFromRange(src, num_bytes)) {
+            // Both buffers were not transferred to GPU yet. Can safely copy in host memory.
+            memcpy(std::bit_cast<void*>(dst), std::bit_cast<void*>(src), num_bytes);
+            return;
+        }
+        // Without a readback there's nothing we can do with this
+        // Fallback to creating dst buffer on GPU to at least have this data there
+    }
     texture_cache.InvalidateMemoryFromGPU(dst, num_bytes);
     auto& src_buffer = [&] -> const Buffer& {
         if (src_gds) {
