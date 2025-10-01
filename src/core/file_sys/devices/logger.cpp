@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "core/file_sys/devices/logger.h"
 #include "core/libraries/kernel/file_system.h"
-#include "logger.h"
 
 namespace Core::Devices {
 

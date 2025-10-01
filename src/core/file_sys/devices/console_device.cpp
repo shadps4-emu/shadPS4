@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "console_device.h"
+#include "core/file_sys/devices/console_device.h"
 
 namespace Core::Devices {
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "deci_tty6_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
 
 namespace Core::Devices {
 

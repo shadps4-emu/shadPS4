@@ -3,7 +3,7 @@
 
 #pragma once
 #include <memory>
-#include "base_device.h"
+#include "core/file_sys/devices/base_device.h"
 
 namespace Core::Devices {
 
@@ -28,6 +28,7 @@ public:
     s32 ftruncate(s64 length) override;
     s64 getdents(void* buf, u32 nbytes, s64* basep) override;
     s64 pwrite(const void* buf, u64 nbytes, s64 offset) override;
+
 private:
     struct GetRandomArgs {
         s32 result;

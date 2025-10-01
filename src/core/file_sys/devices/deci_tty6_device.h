@@ -3,7 +3,7 @@
 
 #pragma once
 #include <memory>
-#include "base_device.h"
+#include "core/file_sys/devices/base_device.h"
 
 namespace Core::Devices {
 
