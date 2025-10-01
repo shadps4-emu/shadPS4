@@ -541,6 +541,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         const auto& [buffer_id, vsharp, size] = buffer_bindings[i];
         const auto& desc = stage.buffers[i];
         const bool is_storage = desc.IsStorage(vsharp, pipeline_cache.GetProfile());
+        const u32 alignment =
+            is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
         // Buffer is not from the cache, either a special buffer or unbound.
         if (!buffer_id) {
             if (desc.buffer_type == Shader::BufferType::GdsBuffer) {
@@ -549,8 +551,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
                 const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
-                const u64 offset = vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size,
-                                                  instance.UniformMinAlignment());
+                const u64 offset =
+                    vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size, alignment);
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::BdaPagetable) {
                 const auto* bda_buffer = buffer_cache.GetBdaPageTableBuffer();
@@ -562,8 +564,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 auto& lds_buffer = buffer_cache.GetUtilityBuffer(VideoCore::MemoryUsage::Stream);
                 const auto& cs_program = liverpool->GetCsRegs();
                 const auto lds_size = cs_program.SharedMemSize() * cs_program.NumWorkgroups();
-                const auto [data, offset] =
-                    lds_buffer.Map(lds_size, instance.StorageMinAlignment());
+                const auto [data, offset] = lds_buffer.Map(lds_size, alignment);
                 std::memset(data, 0, lds_size);
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
             } else if (instance.IsNullDescriptorSupported()) {
@@ -575,8 +576,6 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
         } else {
             const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
                 vsharp.base_address, size, desc.is_written, desc.is_formatted, buffer_id);
-            const u32 alignment =
-                is_storage ? instance.StorageMinAlignment() : instance.UniformMinAlignment();
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
