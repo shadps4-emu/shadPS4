@@ -10,8 +10,7 @@ namespace Core::Devices {
 
 std::shared_ptr<BaseDevice> RandomDevice::Create(u32 handle, const char*, s32, u16) {
     std::srand(std::time(nullptr));
-    return std::shared_ptr<BaseDevice>(
-        reinterpret_cast<Devices::BaseDevice*>(new RandomDevice(handle)));
+    return std::static_pointer_cast<BaseDevice>(std::make_shared<RandomDevice>(handle));
 }
 
 s32 RandomDevice::ioctl(u64 cmd, Common::VaCtx* args) {

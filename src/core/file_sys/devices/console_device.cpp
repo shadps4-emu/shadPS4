@@ -7,8 +7,7 @@
 namespace Core::Devices {
 
 std::shared_ptr<BaseDevice> ConsoleDevice::Create(u32 handle, const char*, s32, u16) {
-    return std::shared_ptr<BaseDevice>(
-        reinterpret_cast<Devices::BaseDevice*>(new ConsoleDevice(handle)));
+    return std::static_pointer_cast<BaseDevice>(std::make_shared<ConsoleDevice>(handle));
 }
 
 s32 ConsoleDevice::ioctl(u64 cmd, Common::VaCtx* args) {
