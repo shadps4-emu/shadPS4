@@ -9,6 +9,13 @@
 
 namespace Config {
 
+enum class ConfigMode {
+    Default,
+    Global,
+    Clean,
+};
+void setConfigMode(ConfigMode mode);
+
 struct GameInstallDir {
     std::filesystem::path path;
     bool enabled;
