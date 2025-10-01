@@ -32,7 +32,7 @@ public:
 private:
     struct GetRandomArgs {
         s32 result;
-        u8 buf[16];
+        s8 buf[64];
     };
 };
 
