@@ -8,7 +8,7 @@
 
 namespace Core::Devices {
 
-std::shared_ptr<BaseDevice> RngDevice::Create(u32 handle, const char*, int, u16) {
+std::shared_ptr<BaseDevice> RngDevice::Create(u32 handle, const char*, s32, u16) {
     std::srand(std::time(nullptr));
     return std::shared_ptr<BaseDevice>(
         reinterpret_cast<Devices::BaseDevice*>(new RngDevice(handle)));
@@ -30,58 +30,58 @@ s32 RngDevice::ioctl(u64 cmd, Common::VaCtx* args) {
     return 0;
 }
 
-s64 RngDevice::write(const void* buf, size_t nbytes) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::write(const void* buf, u64 nbytes) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-size_t RngDevice::writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-size_t RngDevice::readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-s64 RngDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-s64 RngDevice::lseek(s64 offset, int whence) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::lseek(s64 offset, s32 whence) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-s64 RngDevice::read(void* buf, size_t nbytes) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::read(void* buf, u64 nbytes) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-int RngDevice::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s32 RngDevice::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
 s32 RngDevice::fsync() {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-int RngDevice::ftruncate(s64 length) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s32 RngDevice::ftruncate(s64 length) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-int RngDevice::getdents(void* buf, u32 nbytes, s64* basep) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::getdents(void* buf, u32 nbytes, s64* basep) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
-s64 RngDevice::pwrite(const void* buf, size_t nbytes, u64 offset) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s64 RngDevice::pwrite(const void* buf, u64 nbytes, s64 offset) {
+    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
