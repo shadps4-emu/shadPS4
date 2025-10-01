@@ -14,10 +14,18 @@ std::shared_ptr<BaseDevice> RngDevice::Create(u32 handle, const char*, int, u16)
         reinterpret_cast<Devices::BaseDevice*>(new RngDevice(handle)));
 }
 
-int RngDevice::ioctl(u64 cmd, Common::VaCtx* args) {
-    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+s32 RngDevice::ioctl(u64 cmd, Common::VaCtx* args) {
+    LOG_INFO(Kernel_Pthread, "called, cmd = {:#x}", cmd);
+    // Both commands are for generating a random number
     if (cmd == 0x40445301 || cmd == 0x40445302) {
-        
+        auto& data = *vaArgPtr<GetRandomArgs>(&args->va_list);
+        data.result = 0;
+        for (u64 i = 0; i < 16; i++) {
+            data.buf[i] = std::rand();
+        }
+    } else {
+        // ENOIOCTL
+        return -3;
     }
     return 0;
 }
@@ -43,15 +51,13 @@ s64 RngDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt
 }
 
 s64 RngDevice::lseek(s64 offset, int whence) {
+    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
     return 0;
 }
 
 s64 RngDevice::read(void* buf, size_t nbytes) {
-    auto rbuf = static_cast<char*>(buf);
-    for (size_t i = 0; i < nbytes; i++) {
-        rbuf[i] = std::rand() & 0xFF;
-    }
-    return nbytes;
+    LOG_ERROR(Kernel_Pthread, "(STUBBED) called");
+    return 0;
 }
 
 int RngDevice::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
