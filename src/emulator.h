@@ -38,7 +38,6 @@ public:
 
     const char* executableName;
     bool waitForDebuggerBeforeRun{false};
-    bool load_game_specific_config{false};
 
 private:
     void LoadSystemModules(const std::string& game_serial);

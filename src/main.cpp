@@ -37,7 +37,6 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> game_folder;
 
     bool waitForDebugger = false;
-    bool load_game_specific_config = true;
     std::optional<int> waitPid;
 
     // Map of argument strings to lambda functions
@@ -156,12 +155,8 @@ int main(int argc, char* argv[]) {
              exit(0);
          }},
         {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
-        {"--config-clean",
-         [&](int& i) {
-             Config::setDefaultValues(/*is_game_specific*/ false);
-             load_game_specific_config = false;
-         }},
-        {"--config-global", [&](int& i) { load_game_specific_config = false; }},
+        {"--config-clean", [&](int& i) { Config::setConfigMode(Config::ConfigMode::Clean); }},
+        {"--config-global", [&](int& i) { Config::setConfigMode(Config::ConfigMode::Global); }},
         {"--override-root",
          [&](int& i) {
              if (++i >= argc) {
@@ -260,7 +255,6 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
-    emulator->load_game_specific_config = load_game_specific_config;
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;
