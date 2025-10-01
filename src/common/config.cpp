@@ -8,6 +8,7 @@
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
+#include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/formatter.h"
 #include "common/path_util.h"
@@ -74,18 +75,34 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
 namespace Config {
 
+ConfigMode config_mode = ConfigMode::Default;
+
+void setConfigMode(ConfigMode mode) {
+    config_mode = mode;
+}
+
 template <typename T>
 class ConfigEntry {
 public:
+    const T default_value;
     T base_value;
     optional<T> game_specific_value;
-    ConfigEntry(const T& t = T()) : base_value(t), game_specific_value(nullopt) {}
+    ConfigEntry(const T& t = T()) : default_value(t), base_value(t), game_specific_value(nullopt) {}
     ConfigEntry operator=(const T& t) {
         base_value = t;
         return *this;
     }
     const T get() const {
-        return game_specific_value.has_value() ? *game_specific_value : base_value;
+        switch (config_mode) {
+        case ConfigMode::Default:
+            return game_specific_value.value_or(base_value);
+        case ConfigMode::Global:
+            return base_value;
+        case ConfigMode::Clean:
+            return default_value;
+        default:
+            UNREACHABLE();
+        }
     }
     void setFromToml(const toml::value& v, const std::string& key, bool is_game_specific = false) {
         if (is_game_specific) {

@@ -342,16 +342,10 @@ bool AvPlayerSource::GetVideoData(AvPlayerFrameInfoEx& video_info) {
 
     const auto& new_frame = m_video_frames.Front();
     if (m_state.GetSyncMode() == AvPlayerAvSyncMode::Default) {
-        if (m_audio_codec_context != nullptr) {
-            // Sync with the audio
-            auto avdiff = s64(new_frame.info.timestamp) - s64(m_last_audio_ts.value_or(0));
-            if (avdiff > 69) {
-                // VIDEO_AHEAD, wait
+        if (m_audio_stream_index) {
+            if (new_frame.info.timestamp > m_last_audio_ts.value_or(0)) {
                 return false;
             }
-            // These will remain unimplemented for now:
-            // avdiff < -28 = VIDEO_BEHIND, ??? skip frames ???
-            // -2 < avdiff < 0 = WAIT_FOR_SYNC, ??? loop until synced ???
         } else {
             // Sync with the internal timer since audio is not available
             const auto current_time = CurrentTime();

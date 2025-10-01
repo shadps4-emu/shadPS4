@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "base_device.h"
+#include "core/file_sys/devices/base_device.h"
 
 #include <mutex>
 #include <string>
@@ -23,14 +23,14 @@ public:
 
     ~Logger() override;
 
-    s64 write(const void* buf, size_t nbytes) override;
-    size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
-    s64 pwrite(const void* buf, size_t nbytes, u64 offset) override;
+    s64 write(const void* buf, u64 nbytes) override;
+    s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) override;
+    s64 pwrite(const void* buf, u64 nbytes, s64 offset) override;
 
     s32 fsync() override;
 
 private:
-    void log(const char* buf, size_t nbytes);
+    void log(const char* buf, u64 nbytes);
     void log_flush();
 };
 

@@ -165,6 +165,9 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 }
 
 void VideoOutDriver::Flip(const Request& req) {
+    // Update HDR status before presenting.
+    presenter->SetHDR(req.port->is_hdr);
+
     // Present the frame.
     presenter->Present(req.frame);
 

@@ -111,6 +111,8 @@ public:
     }
 
     void RelocateAnyImports(Module* m) {
+        std::scoped_lock lk{mutex};
+
         Relocate(m);
         const auto exports = m->GetExportModules();
         for (auto& export_mod : exports) {
