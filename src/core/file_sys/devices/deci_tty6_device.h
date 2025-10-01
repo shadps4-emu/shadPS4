@@ -7,7 +7,7 @@
 
 namespace Core::Devices {
 
-class DeciTty6Device final : BaseDevice {
+class DeciTty6Device final : public BaseDevice {
     u32 handle;
 
 public:

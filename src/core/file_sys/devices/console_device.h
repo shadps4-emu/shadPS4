@@ -7,7 +7,7 @@
 
 namespace Core::Devices {
 
-class ConsoleDevice final : BaseDevice {
+class ConsoleDevice final : public BaseDevice {
     u32 handle;
 
 public:

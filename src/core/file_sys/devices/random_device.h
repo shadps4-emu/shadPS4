@@ -7,7 +7,7 @@
 
 namespace Core::Devices {
 
-class RandomDevice final : BaseDevice {
+class RandomDevice final : public BaseDevice {
     u32 handle;
 
 public:
