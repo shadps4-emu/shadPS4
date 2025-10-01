@@ -7,14 +7,14 @@
 
 namespace Core::Devices {
 
-class DeciTty6Device final : public BaseDevice {
+class RngDevice final : public BaseDevice {
     u32 handle;
 
 public:
     static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, s32, u16);
-    explicit DeciTty6Device(u32 handle) : handle(handle) {}
+    explicit RngDevice(u32 handle) : handle(handle) {}
 
-    ~DeciTty6Device() override = default;
+    ~RngDevice() override = default;
 
     s32 ioctl(u64 cmd, Common::VaCtx* args) override;
     s64 write(const void* buf, u64 nbytes) override;
@@ -28,6 +28,12 @@ public:
     s32 ftruncate(s64 length) override;
     s64 getdents(void* buf, u32 nbytes, s64* basep) override;
     s64 pwrite(const void* buf, u64 nbytes, s64 offset) override;
+
+private:
+    struct GetRandomArgs {
+        s32 result;
+        s8 buf[64];
+    };
 };
 
 } // namespace Core::Devices
