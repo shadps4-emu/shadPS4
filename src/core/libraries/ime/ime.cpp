@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <queue>
 #include <algorithm>
 #include <array>
 #include <string>
 #include <string_view>
+#include <queue>
 #include "common/logging/log.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_error.h"
@@ -181,11 +181,13 @@ public:
         }
 
         constexpr std::size_t kMaxOrbisLength = ORBIS_IME_MAX_TEXT_LENGTH;
-        const std::size_t effective_length = std::min<std::size_t>(requested_length, kMaxOrbisLength);
+        const std::size_t effective_length =
+            std::min<std::size_t>(requested_length, kMaxOrbisLength);
 
         std::array<char, ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> utf8_buffer{};
         std::string preview;
-        if (g_ime_state.ConvertOrbisToUTF8(text, effective_length, utf8_buffer.data(), utf8_buffer.size())) {
+        if (g_ime_state.ConvertOrbisToUTF8(text, effective_length, utf8_buffer.data(),
+                                           utf8_buffer.size())) {
             std::string_view utf8_view{utf8_buffer.data()};
             constexpr std::size_t kPreviewLength = 64;
             preview = std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
@@ -196,8 +198,7 @@ public:
             preview = "<conversion failed>";
         }
 
-        LOG_DEBUG(Lib_Ime,
-                  "ImeHandler::SetText game feedback length={} (effective={}) preview={}",
+        LOG_DEBUG(Lib_Ime, "ImeHandler::SetText game feedback length={} (effective={}) preview={}",
                   length, effective_length, preview);
 
         g_ime_state.SetText(text, static_cast<u32>(effective_length));
@@ -210,8 +211,7 @@ public:
             return Error::INVALID_ADDRESS;
         }
 
-        LOG_DEBUG(Lib_Ime,
-                  "ImeHandler::SetCaret game feedback index={} pos=({}, {}) height={}",
+        LOG_DEBUG(Lib_Ime, "ImeHandler::SetCaret game feedback index={} pos=({}, {}) height={}",
                   caret->index, caret->x, caret->y, caret->height);
 
         g_ime_state.SetCaret(caret->index);
@@ -626,7 +626,8 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         LOG_DEBUG(Lib_Ime, "extended->ext_keyboard_mode: {}", extended->ext_keyboard_mode);
     }
 
-    if (param->user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) { // Todo: check valid user IDs
+    if (param->user_id ==
+        Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) { // Todo: check valid user IDs
         LOG_ERROR(Lib_Ime, "Invalid user_id: {}", static_cast<u32>(param->user_id));
         return Error::INVALID_USER_ID;
     }

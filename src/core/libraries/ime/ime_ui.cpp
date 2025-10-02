@@ -74,8 +74,8 @@ void ImeState::SendEvent(OrbisImeEvent* event) {
     std::unique_lock<std::mutex> lock{queue_mutex};
     event_queue.push(*event);
 
-    LOG_DEBUG(Lib_Ime, "ImeState queued event_id={} ({}) queue_size={}",
-              static_cast<u32>(event_id), event_name_cstr, event_queue.size());
+    LOG_DEBUG(Lib_Ime, "ImeState queued event_id={} ({}) queue_size={}", static_cast<u32>(event_id),
+              event_name_cstr, event_queue.size());
 }
 
 void ImeState::SendEnterEvent() {
@@ -106,24 +106,28 @@ void ImeState::SetText(const char16_t* text, u32 length) {
         requested_length = std::char_traits<char16_t>::length(text);
     }
 
-    const std::size_t buffer_capacity = max_text_length != 0 ? max_text_length : ORBIS_IME_MAX_TEXT_LENGTH;
+    const std::size_t buffer_capacity =
+        max_text_length != 0 ? max_text_length : ORBIS_IME_MAX_TEXT_LENGTH;
     const std::size_t effective_length = std::min<std::size_t>(requested_length, buffer_capacity);
 
     if (text_buffer && buffer_capacity > 0) {
         const std::size_t copy_length = std::min<std::size_t>(effective_length, buffer_capacity);
         std::copy_n(text, copy_length, text_buffer);
-        const std::size_t terminator_index = copy_length < buffer_capacity ? copy_length : buffer_capacity - 1;
+        const std::size_t terminator_index =
+            copy_length < buffer_capacity ? copy_length : buffer_capacity - 1;
         text_buffer[terminator_index] = u'\0';
     }
 
-    if (!ConvertOrbisToUTF8(text, effective_length, current_text.begin(), current_text.capacity())) {
+    if (!ConvertOrbisToUTF8(text, effective_length, current_text.begin(),
+                            current_text.capacity())) {
         LOG_ERROR(Lib_Ime, "ImeState::SetText failed to convert updated text to UTF-8");
         return;
     }
 
     const auto utf8_view = current_text.to_view();
     constexpr std::size_t kPreviewLength = 64;
-    std::string preview = std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
+    std::string preview =
+        std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
     if (utf8_view.size() > kPreviewLength) {
         preview += "...";
     }
@@ -133,7 +137,8 @@ void ImeState::SetText(const char16_t* text, u32 length) {
 }
 
 void ImeState::SetCaret(u32 position) {
-    LOG_DEBUG(Lib_Ime, "ImeState::SetCaret stored game feedback caret_index={} current_text_length={}",
+    LOG_DEBUG(Lib_Ime,
+              "ImeState::SetCaret stored game feedback caret_index={} current_text_length={}",
               position, current_text.size());
 }
 
@@ -322,7 +327,8 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         event.param.caret_move = caretDirection;
 
         const auto caret_direction_name = magic_enum::enum_name(caretDirection);
-        const char* caret_direction_cstr = caret_direction_name.empty() ? "Unknown" : caret_direction_name.data();
+        const char* caret_direction_cstr =
+            caret_direction_name.empty() ? "Unknown" : caret_direction_name.data();
         LOG_DEBUG(Lib_Ime, "ImeUi enqueuing UpdateCaret: caret_pos={} direction={} ({})",
                   data->CursorPos, static_cast<u32>(caretDirection), caret_direction_cstr);
 
