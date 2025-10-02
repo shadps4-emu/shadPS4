@@ -24,6 +24,7 @@ class ImeState {
 
     void* work_buffer{};
     char16_t* text_buffer{};
+    u32 max_text_length = 0;
 
     OrbisImeParamExtended extended_param{};
     bool has_extended = false;

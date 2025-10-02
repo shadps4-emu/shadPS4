@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <array>
+#include <string>
+#include <string_view>
 #include <queue>
 #include "common/logging/log.h"
 #include "core/libraries/ime/ime.h"
@@ -20,11 +24,23 @@ public:
     ImeHandler(const OrbisImeKeyboardParam* param,
                Libraries::UserService::OrbisUserServiceUserId userId)
         : m_user_id(userId) {
-        LOG_INFO(Lib_Ime, "Creating ImeHandler for keyboard (user {})", userId);
+        LOG_DEBUG(Lib_Ime, "Creating ImeHandler for keyboard (user {})", userId);
+        LOG_DEBUG(Lib_Ime, "Keyboard constructor received param_ptr={:p}",
+                  static_cast<const void*>(param));
+        if (!param) {
+            LOG_ERROR(Lib_Ime, "ImeHandler keyboard constructor received null param");
+            return;
+        }
         Init(param, false);
     }
     ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
-        LOG_INFO(Lib_Ime, "Creating ImeHandler for IME");
+        LOG_DEBUG(Lib_Ime, "Creating ImeHandler for IME");
+        LOG_DEBUG(Lib_Ime, "IME constructor received param_ptr={:p} extended_ptr={:p}",
+                  static_cast<const void*>(param), static_cast<const void*>(extended));
+        if (!param) {
+            LOG_ERROR(Lib_Ime, "ImeHandler IME constructor received null param");
+            return;
+        }
         if (extended) {
             m_extended = *extended;
             m_has_extended = true;
@@ -34,34 +50,54 @@ public:
     ~ImeHandler() = default;
 
     void Init(const void* param, bool ime_mode) {
+        LOG_DEBUG(Lib_Ime, "ImeHandler::Init begin (ime_mode={}, param_ptr={:p})", ime_mode, param);
+
         if (ime_mode) {
+            LOG_DEBUG(Lib_Ime, "Copying OrbisImeParam from guest");
             m_param.ime = *(OrbisImeParam*)param;
         } else {
+            LOG_DEBUG(Lib_Ime, "Copying OrbisImeKeyboardParam from guest");
             m_param.key = *(OrbisImeKeyboardParam*)param;
         }
         m_ime_mode = ime_mode;
+        LOG_DEBUG(Lib_Ime, "Ime mode flag set to {}", ime_mode);
 
         // Open an event to let the game know the IME has started
         OrbisImeEvent openEvent{};
         openEvent.id = (ime_mode ? OrbisImeEventId::Open : OrbisImeEventId::KeyboardOpen);
+        LOG_DEBUG(Lib_Ime, "Prepared initial event with id {}", static_cast<u32>(openEvent.id));
 
         if (ime_mode) {
-            LOG_INFO(Lib_Ime, "calling sceImeGetPanelSize");
+            LOG_DEBUG(Lib_Ime, "calling sceImeGetPanelSize");
             Error e = sceImeGetPanelSize(&m_param.ime, &openEvent.param.rect.width,
                                          &openEvent.param.rect.height);
             if (e != Error::OK) {
                 LOG_ERROR(Lib_Ime, "sceImeGetPanelSize returned 0x{:X}", static_cast<u32>(e));
+            } else {
+                LOG_DEBUG(Lib_Ime, "Panel size width={} height={}", openEvent.param.rect.width,
+                          openEvent.param.rect.height);
             }
 
             openEvent.param.rect.x = m_param.ime.posx;
             openEvent.param.rect.y = m_param.ime.posy;
+            LOG_DEBUG(Lib_Ime, "Panel position set to ({}, {})", openEvent.param.rect.x,
+                      openEvent.param.rect.y);
         } else {
+            LOG_DEBUG(Lib_Ime, "Initializing keyboard handler for user {}", m_user_id);
 
             // Report the real PS4 user ID, and mark “no physical keyboard” so games know
             openEvent.param.resource_id_array.user_id = m_user_id;
-            for (auto& rid : openEvent.param.resource_id_array.resource_id)
+            for (auto& rid : openEvent.param.resource_id_array.resource_id) {
                 rid = -1;
-            Execute(nullptr, &openEvent, /*use_param_handler=*/true);
+            }
+            LOG_DEBUG(Lib_Ime, "Reporting virtual keyboard resource ids initialized to -1");
+            LOG_DEBUG(Lib_Ime, "Dispatching initial keyboard event to handler 0x{:X} (arg={:p})",
+                      static_cast<u64>(reinterpret_cast<uintptr_t>(m_param.key.handler)),
+                      static_cast<const void*>(m_param.key.arg));
+            // The guest handler expects PS4 address space; skip dispatch until we provide a proper
+            // translation.
+            LOG_WARNING(Lib_Ime, "Skipping initial keyboard event dispatch (guest handler requires "
+                                 "guest-accessible payload)");
         }
 
         // Are we supposed to call the event handler on init with
@@ -71,9 +107,13 @@ public:
         }*/
 
         if (ime_mode) {
+            LOG_DEBUG(Lib_Ime, "Creating IME state and UI instances");
             g_ime_state = ImeState(&m_param.ime, m_has_extended ? &m_extended : nullptr);
             g_ime_ui = ImeUi(&g_ime_state, &m_param.ime, m_has_extended ? &m_extended : nullptr);
+            LOG_DEBUG(Lib_Ime, "ImeState and ImeUi initialized");
         }
+
+        LOG_DEBUG(Lib_Ime, "ImeHandler::Init complete");
     }
 
     Error Update(OrbisImeEventHandler handler) {
@@ -87,6 +127,13 @@ public:
         while (!g_ime_state.event_queue.empty()) {
             OrbisImeEvent event = g_ime_state.event_queue.front();
             g_ime_state.event_queue.pop();
+
+            const auto event_id = event.id;
+            const auto event_name = magic_enum::enum_name(event_id);
+            const char* event_name_cstr = event_name.empty() ? "Unknown" : event_name.data();
+            LOG_DEBUG(Lib_Ime, "ImeHandler::Update dispatching event_id={} ({}) remaining_queue={}",
+                      static_cast<u32>(event_id), event_name_cstr, g_ime_state.event_queue.size());
+
             Execute(handler, &event, false);
         }
 
@@ -94,6 +141,17 @@ public:
     }
 
     void Execute(OrbisImeEventHandler handler, OrbisImeEvent* event, bool use_param_handler) {
+        const auto param_arg = m_ime_mode ? static_cast<const void*>(m_param.ime.arg)
+                                          : static_cast<const void*>(m_param.key.arg);
+        const OrbisImeEventHandler target_handler =
+            use_param_handler ? (m_ime_mode ? m_param.ime.handler : m_param.key.handler) : handler;
+        LOG_DEBUG(Lib_Ime,
+                  "Execute (ime_mode={}, use_param_handler={}, target_handler=0x{:X}, "
+                  "param_arg={:p}, event={:p}, event_id={})",
+                  m_ime_mode, use_param_handler,
+                  static_cast<u64>(reinterpret_cast<uintptr_t>(target_handler)), param_arg,
+                  static_cast<const void*>(event), event ? static_cast<int>(event->id) : -1);
+
         if (m_ime_mode) {
             OrbisImeParam param = m_param.ime;
             if (use_param_handler) {
@@ -112,11 +170,50 @@ public:
     }
 
     Error SetText(const char16_t* text, u32 length) {
-        g_ime_state.SetText(text, length);
+        if (!text) {
+            LOG_WARNING(Lib_Ime, "ImeHandler::SetText received null text pointer");
+            return Error::INVALID_ADDRESS;
+        }
+
+        std::size_t requested_length = length;
+        if (requested_length == 0) {
+            requested_length = std::char_traits<char16_t>::length(text);
+        }
+
+        constexpr std::size_t kMaxOrbisLength = ORBIS_IME_MAX_TEXT_LENGTH;
+        const std::size_t effective_length =
+            std::min<std::size_t>(requested_length, kMaxOrbisLength);
+
+        std::array<char, ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> utf8_buffer{};
+        std::string preview;
+        if (g_ime_state.ConvertOrbisToUTF8(text, effective_length, utf8_buffer.data(),
+                                           utf8_buffer.size())) {
+            std::string_view utf8_view{utf8_buffer.data()};
+            constexpr std::size_t kPreviewLength = 64;
+            preview = std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
+            if (utf8_view.size() > kPreviewLength) {
+                preview += "...";
+            }
+        } else {
+            preview = "<conversion failed>";
+        }
+
+        LOG_DEBUG(Lib_Ime, "ImeHandler::SetText game feedback length={} (effective={}) preview={}",
+                  length, effective_length, preview);
+
+        g_ime_state.SetText(text, static_cast<u32>(effective_length));
         return Error::OK;
     }
 
     Error SetCaret(const OrbisImeCaret* caret) {
+        if (!caret) {
+            LOG_WARNING(Lib_Ime, "ImeHandler::SetCaret received null caret pointer");
+            return Error::INVALID_ADDRESS;
+        }
+
+        LOG_DEBUG(Lib_Ime, "ImeHandler::SetCaret game feedback index={} pos=({}, {}) height={}",
+                  caret->index, caret->x, caret->y, caret->height);
+
         g_ime_state.SetCaret(caret->index);
         return Error::OK;
     }
@@ -166,14 +263,14 @@ int PS4_SYSV_ABI sceImeCheckUpdateTextInfo() {
 }
 
 Error PS4_SYSV_ABI sceImeClose() {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_DEBUG(Lib_Ime, "called");
 
     if (!g_ime_handler) {
         LOG_ERROR(Lib_Ime, "No IME handler is open");
         return Error::NOT_OPENED;
     }
 
-    g_ime_handler.release();
+    g_ime_handler.reset();
     if (g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
         return Error::INTERNAL;
@@ -181,7 +278,7 @@ Error PS4_SYSV_ABI sceImeClose() {
     g_ime_ui = ImeUi();
     g_ime_state = ImeState();
 
-    LOG_INFO(Lib_Ime, "IME closed successfully");
+    LOG_DEBUG(Lib_Ime, "IME closed successfully");
     return Error::OK;
 }
 
@@ -251,7 +348,7 @@ int PS4_SYSV_ABI sceImeGetPanelPositionAndForm() {
 }
 
 Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height) {
-    LOG_INFO(Lib_Ime, "sceImeGetPanelSize called");
+    LOG_DEBUG(Lib_Ime, "sceImeGetPanelSize called");
 
     if (!param) {
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
@@ -304,12 +401,12 @@ Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u3
         return Error::INVALID_TYPE;
     }
 
-    LOG_INFO(Lib_Ime, "IME panel size: width={}, height={}", *width, *height);
+    LOG_DEBUG(Lib_Ime, "IME panel size: width={}, height={}", *width, *height);
     return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId) {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_DEBUG(Lib_Ime, "called");
 
     if (!g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "No keyboard handler is open");
@@ -328,7 +425,7 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
         return Error::INTERNAL;
     }
 
-    LOG_INFO(Lib_Ime, "Keyboard handler closed successfully for user ID: {}", userId);
+    LOG_DEBUG(Lib_Ime, "Keyboard handler closed successfully for user ID: {}", userId);
     return Error::OK;
 }
 
@@ -339,7 +436,7 @@ int PS4_SYSV_ABI sceImeKeyboardGetInfo() {
 Error PS4_SYSV_ABI
 sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userId,
                             OrbisImeKeyboardResourceIdArray* resourceIdArray) {
-    LOG_INFO(Lib_Ime, "(partial) called");
+    LOG_DEBUG(Lib_Ime, "(partial) called");
 
     if (!resourceIdArray) {
         LOG_ERROR(Lib_Ime, "Invalid resourceIdArray: NULL");
@@ -370,7 +467,7 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
     for (u32& id : resourceIdArray->resource_id) {
         id = 0;
     }
-    LOG_INFO(Lib_Ime, "No USB keyboard connected (simulated)");
+    LOG_DEBUG(Lib_Ime, "No USB keyboard connected (simulated)");
     return Error::CONNECTION_FAILED;
 
     // For future reference, if we had a real keyboard handler
@@ -379,7 +476,7 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
 
 Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
                                       const OrbisImeKeyboardParam* param) {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_DEBUG(Lib_Ime, "called");
     if (!param) {
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
         return Error::INVALID_ADDRESS;
@@ -393,7 +490,8 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
     LOG_DEBUG(Lib_Ime, "  userId: {}", static_cast<u32>(userId));
     LOG_DEBUG(Lib_Ime, "  param->option: {:032b}", static_cast<u32>(param->option));
     LOG_DEBUG(Lib_Ime, "  param->arg: {}", param->arg);
-    LOG_DEBUG(Lib_Ime, "  param->handler: {}", reinterpret_cast<const void*>(param->handler));
+    LOG_DEBUG(Lib_Ime, "  param->handler: 0x{:X}",
+              static_cast<u64>(reinterpret_cast<uintptr_t>(param->handler)));
 
     // seems like arg is optional, need to check if it is used in the handler
     // Todo: check if arg is used in the handler, temporarily disabled
@@ -442,7 +540,7 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         LOG_ERROR(Lib_Ime, "Failed to create keyboard handler");
         return Error::INTERNAL; // or Error::NO_MEMORY;
     }
-    LOG_INFO(Lib_Ime, "Keyboard handler created successfully for user ID: {}", userId);
+    LOG_DEBUG(Lib_Ime, "Keyboard handler created successfully for user ID: {}", userId);
     return Error::OK;
 }
 
@@ -462,7 +560,7 @@ int PS4_SYSV_ABI sceImeKeyboardUpdate() {
 }
 
 Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExtended* extended) {
-    LOG_INFO(Lib_Ime, "called");
+    LOG_DEBUG(Lib_Ime, "called");
 
     if (!param) {
         LOG_ERROR(Lib_Ime, "Invalid param: NULL");
@@ -488,11 +586,12 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
                   static_cast<u32>(param->vertical_alignment));
         LOG_DEBUG(Lib_Ime, "param->work: {:p}", param->work);
         LOG_DEBUG(Lib_Ime, "param->arg: {:p}", param->arg);
-        LOG_DEBUG(Lib_Ime, "param->handler: {:p}", reinterpret_cast<void*>(param->handler));
+        LOG_DEBUG(Lib_Ime, "  param->handler: 0x{:X}",
+                  static_cast<u64>(reinterpret_cast<uintptr_t>(param->handler)));
     }
 
     if (!extended) {
-        LOG_INFO(Lib_Ime, "Not used extended: NULL");
+        LOG_DEBUG(Lib_Ime, "Not used extended: NULL");
     } else {
         LOG_DEBUG(Lib_Ime, "extended->option: {:032b}", static_cast<u32>(extended->option));
         LOG_DEBUG(Lib_Ime, "extended->color_base: {{{},{},{},{}}}", extended->color_base.r,
@@ -527,7 +626,8 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         LOG_DEBUG(Lib_Ime, "extended->ext_keyboard_mode: {}", extended->ext_keyboard_mode);
     }
 
-    if (param->user_id < 1 || param->user_id > 4) { // Todo: check valid user IDs
+    if (param->user_id ==
+        Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) { // Todo: check valid user IDs
         LOG_ERROR(Lib_Ime, "Invalid user_id: {}", static_cast<u32>(param->user_id));
         return Error::INVALID_USER_ID;
     }
@@ -643,7 +743,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         return Error::NO_MEMORY; // or Error::INTERNAL
     }
 
-    LOG_INFO(Lib_Ime, "IME handler created successfully");
+    LOG_DEBUG(Lib_Ime, "IME handler created successfully");
     return Error::OK;
 }
 
@@ -653,7 +753,7 @@ int PS4_SYSV_ABI sceImeOpenInternal() {
 }
 
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
-    LOG_INFO(Lib_Ime, "sceImeParamInit called");
+    LOG_DEBUG(Lib_Ime, "sceImeParamInit called");
 
     if (!param) {
         return;
@@ -685,9 +785,11 @@ Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
     LOG_TRACE(Lib_Ime, "called");
 
     if (!g_ime_handler) {
+        LOG_ERROR(Lib_Ime, "IME handler not opened");
         return Error::NOT_OPENED;
     }
     if (!text) {
+        LOG_ERROR(Lib_Ime, "Invalid text pointer: NULL");
         return Error::INVALID_ADDRESS;
     }
 
@@ -709,7 +811,8 @@ Error PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
     }
 
     if (!g_ime_handler && !g_keyboard_handler) {
-        return Error::NOT_OPENED;
+        LOG_TRACE(Lib_Ime, "sceImeUpdate called with no active handler");
+        return Error::OK;
     }
 
     return Error::OK;

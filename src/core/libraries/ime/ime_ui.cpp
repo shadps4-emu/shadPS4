@@ -4,6 +4,12 @@
 #include "ime_ui.h"
 #include "imgui/imgui_std.h"
 
+#include <algorithm>
+#include <string>
+#include <string_view>
+
+#include "common/logging/log.h"
+
 namespace Libraries::Ime {
 
 using namespace ImGui;
@@ -17,58 +23,124 @@ ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* exte
 
     work_buffer = param->work;
     text_buffer = param->inputTextBuffer;
+    max_text_length = param->maxTextLength;
 
     if (extended) {
         extended_param = *extended;
         has_extended = true;
     }
 
-    std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
-    if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
-                            ORBIS_IME_MAX_TEXT_LENGTH * 4)) {
-        LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
+    if (text_buffer) {
+        const std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
+        if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
+                                ORBIS_IME_MAX_TEXT_LENGTH * 4)) {
+            LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
+        }
     }
 }
 
 ImeState::ImeState(ImeState&& other) noexcept
     : work_buffer(other.work_buffer), text_buffer(other.text_buffer),
-      current_text(std::move(other.current_text)), event_queue(std::move(other.event_queue)) {
+      max_text_length(other.max_text_length), current_text(std::move(other.current_text)),
+      event_queue(std::move(other.event_queue)) {
     other.text_buffer = nullptr;
+    other.max_text_length = 0;
 }
 
 ImeState& ImeState::operator=(ImeState&& other) noexcept {
     if (this != &other) {
         work_buffer = other.work_buffer;
         text_buffer = other.text_buffer;
+        max_text_length = other.max_text_length;
         current_text = std::move(other.current_text);
         event_queue = std::move(other.event_queue);
 
         other.text_buffer = nullptr;
+        other.max_text_length = 0;
     }
     return *this;
 }
 
 void ImeState::SendEvent(OrbisImeEvent* event) {
+    if (!event) {
+        LOG_WARNING(Lib_Ime, "ImeState::SendEvent called with null event");
+        return;
+    }
+
+    const auto event_id = event->id;
+    const auto event_name = magic_enum::enum_name(event_id);
+    const char* event_name_cstr = event_name.empty() ? "Unknown" : event_name.data();
+
     std::unique_lock<std::mutex> lock{queue_mutex};
     event_queue.push(*event);
+
+    LOG_DEBUG(Lib_Ime, "ImeState queued event_id={} ({}) queue_size={}", static_cast<u32>(event_id),
+              event_name_cstr, event_queue.size());
 }
 
 void ImeState::SendEnterEvent() {
+    LOG_DEBUG(Lib_Ime, "ImeState::SendEnterEvent triggered");
+
     OrbisImeEvent enterEvent{};
     enterEvent.id = OrbisImeEventId::PressEnter;
     SendEvent(&enterEvent);
 }
 
 void ImeState::SendCloseEvent() {
+    LOG_DEBUG(Lib_Ime, "ImeState::SendCloseEvent triggered (work_buffer={:p})", work_buffer);
+
     OrbisImeEvent closeEvent{};
     closeEvent.id = OrbisImeEventId::PressClose;
     closeEvent.param.text.str = reinterpret_cast<char16_t*>(work_buffer);
     SendEvent(&closeEvent);
 }
 
-void ImeState::SetText(const char16_t* text, u32 length) {}
+void ImeState::SetText(const char16_t* text, u32 length) {
+    if (!text) {
+        LOG_WARNING(Lib_Ime, "ImeState::SetText received null text pointer");
+        return;
+    }
 
-void ImeState::SetCaret(u32 position) {}
+    std::size_t requested_length = length;
+    if (requested_length == 0) {
+        requested_length = std::char_traits<char16_t>::length(text);
+    }
+
+    const std::size_t buffer_capacity =
+        max_text_length != 0 ? max_text_length : ORBIS_IME_MAX_TEXT_LENGTH;
+    const std::size_t effective_length = std::min<std::size_t>(requested_length, buffer_capacity);
+
+    if (text_buffer && buffer_capacity > 0) {
+        const std::size_t copy_length = std::min<std::size_t>(effective_length, buffer_capacity);
+        std::copy_n(text, copy_length, text_buffer);
+        const std::size_t terminator_index =
+            copy_length < buffer_capacity ? copy_length : buffer_capacity - 1;
+        text_buffer[terminator_index] = u'\0';
+    }
+
+    if (!ConvertOrbisToUTF8(text, effective_length, current_text.begin(),
+                            current_text.capacity())) {
+        LOG_ERROR(Lib_Ime, "ImeState::SetText failed to convert updated text to UTF-8");
+        return;
+    }
+
+    const auto utf8_view = current_text.to_view();
+    constexpr std::size_t kPreviewLength = 64;
+    std::string preview =
+        std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
+    if (utf8_view.size() > kPreviewLength) {
+        preview += "...";
+    }
+
+    LOG_DEBUG(Lib_Ime, "ImeState::SetText stored game feedback length={} preview={}",
+              effective_length, preview);
+}
+
+void ImeState::SetCaret(u32 position) {
+    LOG_DEBUG(Lib_Ime,
+              "ImeState::SetCaret stored game feedback caret_index={} current_text_length={}",
+              position, current_text.size());
+}
 
 bool ImeState::ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len,
                                   char* utf8_text, std::size_t utf8_text_len) {
@@ -227,6 +299,14 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         event.id = OrbisImeEventId::UpdateText;
         event.param.text = eventParam;
 
+        constexpr std::size_t kPreviewLength = 64;
+        std::string preview = currentText.substr(0, kPreviewLength);
+        if (currentText.size() > kPreviewLength) {
+            preview += "...";
+        }
+        LOG_DEBUG(Lib_Ime, "ImeUi enqueuing UpdateText: caret_index={} length={} preview={}",
+                  eventParam.caret_index, data->BufTextLen, preview);
+
         lastText = currentText;
         ui->state->SendEvent(&event);
     }
@@ -245,6 +325,12 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         OrbisImeEvent event{};
         event.id = OrbisImeEventId::UpdateCaret;
         event.param.caret_move = caretDirection;
+
+        const auto caret_direction_name = magic_enum::enum_name(caretDirection);
+        const char* caret_direction_cstr =
+            caret_direction_name.empty() ? "Unknown" : caret_direction_name.data();
+        LOG_DEBUG(Lib_Ime, "ImeUi enqueuing UpdateCaret: caret_pos={} direction={} ({})",
+                  data->CursorPos, static_cast<u32>(caretDirection), caret_direction_cstr);
 
         lastCaretPos = data->CursorPos;
         ui->state->SendEvent(&event);
