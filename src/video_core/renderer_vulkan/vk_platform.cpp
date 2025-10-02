@@ -131,8 +131,7 @@ static auto GetLayerExtensions(std::vector<const char*>&& extensions,
         const auto [layer_properties_result, layer_extensions] =
             vk::enumerateInstanceExtensionProperties(std::string(layer_name));
         if (layer_properties_result != vk::Result::eSuccess) {
-            LOG_ERROR(Render_Vulkan, "Failed to query extension properties of {}: {}",
-                      layer_name,
+            LOG_ERROR(Render_Vulkan, "Failed to query extension properties of {}: {}", layer_name,
                       vk::to_string(layer_properties_result));
         }
         auto found = false;
