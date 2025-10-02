@@ -62,6 +62,10 @@ int main(int argc, char* argv[]) {
                     "parent of game path\n"
                     "  --wait-for-debugger           Wait for debugger to attach\n"
                     "  --wait-for-pid <pid>          Wait for process with specified PID to stop\n"
+                    "  --config-clean                Run the emulator with the default config "
+                    "values, ignores the config file(s) entirely.\n"
+                    "  --config-global               Run the emulator with the base config file "
+                    "only, ignores game specific configs.\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -151,6 +155,8 @@ int main(int argc, char* argv[]) {
              exit(0);
          }},
         {"--log-append", [&](int& i) { Common::Log::SetAppend(); }},
+        {"--config-clean", [&](int& i) { Config::setConfigMode(Config::ConfigMode::Clean); }},
+        {"--config-global", [&](int& i) { Config::setConfigMode(Config::ConfigMode::Global); }},
         {"--override-root",
          [&](int& i) {
              if (++i >= argc) {
@@ -249,7 +255,6 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
-    emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;

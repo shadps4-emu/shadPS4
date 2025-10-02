@@ -429,16 +429,17 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
         return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
 
-    if (mode->colorimetry != OrbisVideoOutColorimetry::Any) {
-        auto& game_info = Common::ElfInfo::Instance();
-        if (mode->colorimetry == OrbisVideoOutColorimetry::Bt2020PQ &&
-            game_info.GetPSFAttributes().support_hdr) {
-            port->is_mode_changing = true;
-            presenter->SetHDR(true);
-            port->is_mode_changing = false;
-        } else {
-            return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    switch (mode->colorimetry) {
+    case OrbisVideoOutColorimetry::Any:
+        port->is_hdr = false;
+        break;
+    case OrbisVideoOutColorimetry::Bt2020PQ:
+        if (Common::ElfInfo::Instance().GetPSFAttributes().support_hdr) {
+            port->is_hdr = true;
         }
+        break;
+    default:
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
     }
 
     return ORBIS_OK;
