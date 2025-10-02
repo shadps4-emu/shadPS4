@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <queue>
+#include <algorithm>
+#include <array>
+#include <string>
+#include <string_view>
 #include "common/logging/log.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_error.h"
@@ -123,6 +127,13 @@ public:
         while (!g_ime_state.event_queue.empty()) {
             OrbisImeEvent event = g_ime_state.event_queue.front();
             g_ime_state.event_queue.pop();
+
+            const auto event_id = event.id;
+            const auto event_name = magic_enum::enum_name(event_id);
+            const char* event_name_cstr = event_name.empty() ? "Unknown" : event_name.data();
+            LOG_DEBUG(Lib_Ime, "ImeHandler::Update dispatching event_id={} ({}) remaining_queue={}",
+                      static_cast<u32>(event_id), event_name_cstr, g_ime_state.event_queue.size());
+
             Execute(handler, &event, false);
         }
 
@@ -159,11 +170,50 @@ public:
     }
 
     Error SetText(const char16_t* text, u32 length) {
-        g_ime_state.SetText(text, length);
+        if (!text) {
+            LOG_WARNING(Lib_Ime, "ImeHandler::SetText received null text pointer");
+            return Error::INVALID_ADDRESS;
+        }
+
+        std::size_t requested_length = length;
+        if (requested_length == 0) {
+            requested_length = std::char_traits<char16_t>::length(text);
+        }
+
+        constexpr std::size_t kMaxOrbisLength = ORBIS_IME_MAX_TEXT_LENGTH;
+        const std::size_t effective_length = std::min<std::size_t>(requested_length, kMaxOrbisLength);
+
+        std::array<char, ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> utf8_buffer{};
+        std::string preview;
+        if (g_ime_state.ConvertOrbisToUTF8(text, effective_length, utf8_buffer.data(), utf8_buffer.size())) {
+            std::string_view utf8_view{utf8_buffer.data()};
+            constexpr std::size_t kPreviewLength = 64;
+            preview = std::string{utf8_view.substr(0, std::min(kPreviewLength, utf8_view.size()))};
+            if (utf8_view.size() > kPreviewLength) {
+                preview += "...";
+            }
+        } else {
+            preview = "<conversion failed>";
+        }
+
+        LOG_DEBUG(Lib_Ime,
+                  "ImeHandler::SetText game feedback length={} (effective={}) preview={}",
+                  length, effective_length, preview);
+
+        g_ime_state.SetText(text, static_cast<u32>(effective_length));
         return Error::OK;
     }
 
     Error SetCaret(const OrbisImeCaret* caret) {
+        if (!caret) {
+            LOG_WARNING(Lib_Ime, "ImeHandler::SetCaret received null caret pointer");
+            return Error::INVALID_ADDRESS;
+        }
+
+        LOG_DEBUG(Lib_Ime,
+                  "ImeHandler::SetCaret game feedback index={} pos=({}, {}) height={}",
+                  caret->index, caret->x, caret->y, caret->height);
+
         g_ime_state.SetCaret(caret->index);
         return Error::OK;
     }
@@ -220,7 +270,7 @@ Error PS4_SYSV_ABI sceImeClose() {
         return Error::NOT_OPENED;
     }
 
-    g_ime_handler.release();
+    g_ime_handler.reset();
     if (g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
         return Error::INTERNAL;
@@ -576,7 +626,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         LOG_DEBUG(Lib_Ime, "extended->ext_keyboard_mode: {}", extended->ext_keyboard_mode);
     }
 
-    if (param->user_id < 1 || param->user_id > 4) { // Todo: check valid user IDs
+    if (param->user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) { // Todo: check valid user IDs
         LOG_ERROR(Lib_Ime, "Invalid user_id: {}", static_cast<u32>(param->user_id));
         return Error::INVALID_USER_ID;
     }
@@ -734,9 +784,11 @@ Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
     LOG_TRACE(Lib_Ime, "called");
 
     if (!g_ime_handler) {
+        LOG_ERROR(Lib_Ime, "IME handler not opened");
         return Error::NOT_OPENED;
     }
     if (!text) {
+        LOG_ERROR(Lib_Ime, "Invalid text pointer: NULL");
         return Error::INVALID_ADDRESS;
     }
 
@@ -758,7 +810,8 @@ Error PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
     }
 
     if (!g_ime_handler && !g_keyboard_handler) {
-        return Error::NOT_OPENED;
+        LOG_TRACE(Lib_Ime, "sceImeUpdate called with no active handler");
+        return Error::OK;
     }
 
     return Error::OK;
