@@ -123,6 +123,37 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
     return surface;
 }
 
+static auto GetLayerExtensions(std::vector<const char*>&& extensions,
+                               const std::vector<const char*>& layers) {
+    auto all_missing_vk_settings = true;
+
+    for (const auto& layer_name : layers) {
+        const auto [layer_properties_result, layer_extensions] =
+            vk::enumerateInstanceExtensionProperties(std::string(layer_name));
+        if (layer_properties_result != vk::Result::eSuccess) {
+            LOG_ERROR(Render_Vulkan, "Failed to query extension properties of {}: {}",
+                      layer_name,
+                      vk::to_string(layer_properties_result));
+        }
+        auto found = false;
+        for (const auto& extension : layer_extensions) {
+            if (extension.extensionName == std::string_view(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME)) {
+                found = true;
+                all_missing_vk_settings = false;
+            }
+        }
+        if (!found) {
+            LOG_ERROR(Render_Vulkan, "Settings for layer {} not available.", layer_name);
+        }
+    }
+
+    if (!all_missing_vk_settings) {
+        extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
 std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window_type,
                                                bool enable_debug_utils) {
     const auto [properties_result, properties] = vk::enumerateInstanceExtensionProperties();
@@ -135,7 +166,6 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     // Add the windowing system specific extension
     std::vector<const char*> extensions;
     extensions.reserve(7);
-    extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
 
     switch (window_type) {
     case Frontend::WindowSystemType::Headless:
@@ -258,7 +288,8 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
                VK_VERSION_MAJOR(TargetVulkanApiVersion), VK_VERSION_MINOR(TargetVulkanApiVersion),
                VK_VERSION_MAJOR(available_version), VK_VERSION_MINOR(available_version));
 
-    const auto extensions = GetInstanceExtensions(window_type, true);
+    const auto layers = GetInstanceLayers(enable_validation, enable_crash_diagnostic);
+    const auto extensions = GetLayerExtensions(GetInstanceExtensions(window_type, true), layers);
 
     const vk::ApplicationInfo application_info = {
         .pApplicationName = "shadPS4",
@@ -267,8 +298,6 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion = available_version,
     };
-
-    const auto layers = GetInstanceLayers(enable_validation, enable_crash_diagnostic);
 
     const std::string extensions_string = fmt::format("{}", fmt::join(extensions, ", "));
     const std::string layers_string = fmt::format("{}", fmt::join(layers, ", "));
