@@ -1141,16 +1141,18 @@ void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
 }
 
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
-    // If the requested address is below the mapped range, start search from the lowest address
+    // Calculate the minimum and maximum addresses present in our address space.
     auto min_search_address = impl.SystemManagedVirtualBase();
+    auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
+
+    // If the requested address is below the mapped range, start search from the lowest address
     if (virtual_addr < min_search_address) {
         virtual_addr = min_search_address;
     }
 
     // If the requested address is beyond the maximum our code can handle, throw an assert
-    auto max_search_address = impl.UserVirtualBase() + impl.UserVirtualSize();
-    ASSERT_MSG(virtual_addr <= max_search_address, "Input address {:#x} is out of bounds",
-               virtual_addr);
+    ASSERT_MSG(IsValidAddress(reinterpret_cast<void*>(virtual_addr)),
+               "Input address {:#x} is out of bounds", virtual_addr);
 
     // Align up the virtual_addr first.
     virtual_addr = Common::AlignUp(virtual_addr, alignment);
@@ -1160,6 +1162,9 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     if (it->second.IsFree() && it->second.Contains(virtual_addr, size)) {
         return virtual_addr;
     }
+
+    // If we didn't hit the return above, then we know the current VMA isn't suitable
+    it++;
 
     // Search for the first free VMA that fits our mapping.
     while (it != vma_map.end()) {

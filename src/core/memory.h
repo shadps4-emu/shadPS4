@@ -301,7 +301,7 @@ private:
                vma.type == VMAType::Pooled;
     }
 
-    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
+    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
