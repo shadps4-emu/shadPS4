@@ -80,6 +80,7 @@ struct AddressSpace::Impl {
         VAddr next_addr = SYSTEM_MANAGED_MIN;
         MEMORY_BASIC_INFORMATION info{};
         while (next_addr <= USER_MAX) {
+            LOG_INFO(Core, "Querying information for address {:#x}", next_addr);
             ASSERT_MSG(VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info)),
                        "Failed to query memory information for address {:#x}", next_addr);
 
