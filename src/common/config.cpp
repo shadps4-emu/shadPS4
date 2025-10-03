@@ -1236,7 +1236,7 @@ void setDefaultValues(bool is_game_specific) {
     // GS - Vulkan
     gpuId.set(-1, is_game_specific);
     vkValidation.set(false, is_game_specific);
-    vkValidationCore.set(false, is_game_specific);
+    vkValidationCore.set(true, is_game_specific);
     vkValidationSync.set(false, is_game_specific);
     vkValidationGpu.set(false, is_game_specific);
     vkCrashDiagnostic.set(false, is_game_specific);
