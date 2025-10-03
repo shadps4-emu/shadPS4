@@ -61,7 +61,7 @@ private:
  */
 class FileBackend {
 public:
-    explicit FileBackend(const std::filesystem::path& filename)
+    explicit FileBackend(const std::filesystem::path& filename, bool should_append = false)
         : file{filename, should_append ? FS::FileAccessMode::Append : FS::FileAccessMode::Create,
                FS::FileType::TextFile} {}
 
