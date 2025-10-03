@@ -26,7 +26,8 @@ MemoryManager::MemoryManager() {
     // Log initialization.
     const auto last_valid_vma = --vma_map.end();
     LOG_INFO(Kernel_Vmm, "Virtual memory space initialized");
-    LOG_INFO(Kernel_Vmm, "Minimum address = {:#x}, maximum address = {:#x}", vma_map.begin()->first, last_valid_vma->second.base + last_valid_vma->second.size);
+    LOG_INFO(Kernel_Vmm, "Minimum address = {:#x}, maximum address = {:#x}", vma_map.begin()->first,
+             last_valid_vma->second.base + last_valid_vma->second.size);
 }
 
 MemoryManager::~MemoryManager() = default;
