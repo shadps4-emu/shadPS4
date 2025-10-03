@@ -1156,7 +1156,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     }
 
     // If the requested address is beyond the maximum our code can handle, throw an assert
-    ASSERT_MSG(IsValidMapping(virtual_addr, size), "Input address {:#x} is out of bounds",
+    ASSERT_MSG(IsValidMapping(virtual_addr, 0), "Input address {:#x} is out of bounds",
                virtual_addr);
 
     // Align up the virtual_addr first.
