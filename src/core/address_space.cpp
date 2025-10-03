@@ -105,6 +105,7 @@ struct AddressSpace::Impl {
 
         // Reserve all detected free regions.
         for (auto region : regions) {
+            LOG_INFO(Core, "Mapping region {:#x} - {:#x}", region.second.base, region.second.base + region.second.size);
             auto addr = static_cast<u8*>(VirtualAlloc2(
                 process, reinterpret_cast<PVOID>(region.second.base), region.second.size,
                 MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, NULL, 0));
@@ -122,6 +123,8 @@ struct AddressSpace::Impl {
         user_base = reinterpret_cast<u8*>(USER_MIN);
         user_size = UserSize;
 
+        LOG_INFO(Core, "Virtual address space initialized");
+
         // Increase BackingSize to account for config options.
         BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
 
@@ -129,16 +132,20 @@ struct AddressSpace::Impl {
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
                                             PAGE_EXECUTE_READWRITE, SEC_COMMIT, BackingSize,
                                             nullptr, nullptr, 0);
+        LOG_INFO(Core, "Backing file mapped");
         ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
         // Allocate a virtual memory for the backing file map as placeholder
         backing_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, BackingSize,
                                                       MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                       PAGE_NOACCESS, nullptr, 0));
+        ASSERT_MSG(backing_base, "{}", Common::GetLastErrorMsg());
+        LOG_INFO(Core, "Backing file virtual memory mapped");
         // Map backing placeholder. This will commit the pages
         void* const ret =
             MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
                            MEM_REPLACE_PLACEHOLDER, PAGE_EXECUTE_READWRITE, nullptr, 0);
         ASSERT_MSG(ret == backing_base, "{}", Common::GetLastErrorMsg());
+        LOG_INFO(Core, "Address space initialized");
     }
 
     ~Impl() {
