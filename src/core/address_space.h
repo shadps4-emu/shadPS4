@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <boost/icl/separate_interval_set.hpp>
 #include <memory>
+#include <boost/icl/separate_interval_set.hpp>
 #include "common/arch.h"
 #include "common/enum.h"
 #include "common/types.h"
