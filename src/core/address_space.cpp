@@ -72,44 +72,52 @@ struct MemoryRegion {
 
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
-        // Allocate virtual address placeholder for our address space.
-        MEM_ADDRESS_REQUIREMENTS req{};
-        MEM_EXTENDED_PARAMETER param{};
-        req.LowestStartingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN);
-        // The ending address must align to page boundary - 1
-        // https://stackoverflow.com/questions/54223343/virtualalloc2-with-memextendedparameteraddressrequirements-always-produces-error
-        req.HighestEndingAddress = reinterpret_cast<PVOID>(USER_MIN + UserSize - 1);
-        req.Alignment = 0;
-        param.Type = MemExtendedParameterAddressRequirements;
-        param.Pointer = &req;
+        // Determine the system's page alignment
+        SYSTEM_INFO sys_info{};
+        GetSystemInfo(&sys_info);
+        u64 alignment = sys_info.dwAllocationGranularity;
 
-        // Typically, lower parts of system managed area is already reserved in windows.
-        // If reservation fails attempt again by reducing the area size a little bit.
-        // System managed is about 31GB in size so also cap the number of times we can reduce it
-        // to a reasonable amount.
-        static constexpr size_t ReductionOnFail = 1_GB;
-        static constexpr size_t MaxReductions = 10;
+        // Determine the free address ranges we can access.
+        VAddr next_addr = SYSTEM_MANAGED_MIN;
+        MEMORY_BASIC_INFORMATION info{};
+        while (next_addr <= USER_MAX) {
+            u64 result = VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info));
 
-        size_t virtual_size = SystemManagedSize + SystemReservedSize + UserSize;
-        for (u32 i = 0; i < MaxReductions; i++) {
-            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size,
-                                                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-                                                          PAGE_NOACCESS, &param, 1));
-            if (virtual_base) {
-                break;
+            // Ensure logic uses values aligned to bage boundaries.
+            next_addr = reinterpret_cast<VAddr>(info.BaseAddress) + info.RegionSize;
+            next_addr = Common::AlignUp(next_addr, alignment);
+
+            // Prevent size from going past USER_MAX
+            u64 size = info.RegionSize;
+            if (next_addr > USER_MAX) {
+                size -= (next_addr - USER_MAX);
             }
-            virtual_size -= ReductionOnFail;
+            size = Common::AlignDown(size, alignment);
+
+            // Check for free memory areas
+            // Restrict region size to avoid overly fragmenting the virtual memory space.
+            if (info.State == MEM_FREE && info.RegionSize > 0x1000000) {
+                VAddr addr = Common::AlignUp(reinterpret_cast<VAddr>(info.BaseAddress), alignment);
+                regions.emplace(addr, MemoryRegion{addr, size, false});
+            }
         }
-        ASSERT_MSG(virtual_base, "Unable to reserve virtual address space: {}",
-                   Common::GetLastErrorMsg());
+
+        // Reserve all detected free regions.
+        for (auto region : regions) {
+            auto addr = static_cast<u8*>(VirtualAlloc2(
+                process, reinterpret_cast<PVOID>(region.second.base), region.second.size,
+                MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, NULL, 0));
+            // All marked regions should reserve fine since they're free.
+            ASSERT_MSG(addr, "Unable to reserve virtual address space: {}",
+                       Common::GetLastErrorMsg());
+        }
 
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
-        system_managed_base = virtual_base;
-        system_managed_size = system_reserved_base - virtual_base;
+        system_managed_base = reinterpret_cast<u8*>(SYSTEM_MANAGED_MIN);
+        system_managed_size = SystemManagedSize;
         user_base = reinterpret_cast<u8*>(USER_MIN);
-        user_size = virtual_base + virtual_size - user_base;
+        user_size = UserSize;
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
                  fmt::ptr(system_managed_base),
@@ -120,10 +128,8 @@ struct AddressSpace::Impl {
         LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
                  fmt::ptr(user_base + user_size - 1));
 
-        // Initializer placeholder tracker
-        const uintptr_t system_managed_addr = reinterpret_cast<uintptr_t>(system_managed_base);
-        regions.emplace(system_managed_addr,
-                        MemoryRegion{system_managed_addr, virtual_size, false});
+        // Increase BackingSize to account for config options.
+        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
 
         // Allocate backing file that represents the total physical memory.
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
