@@ -674,9 +674,9 @@ boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
 #else
     // On Linux and Mac, the memory space is fully represented by the three major regions
     boost::icl::interval_set<VAddr> reserved_regions;
-    reserved_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
-    reserved_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
-    reserved_regions.insert({user_addr, user_addr + user_size});
+    reserved_regions.insert({system_managed_base, system_managed_base + system_managed_size});
+    reserved_regions.insert({system_reserved_base, system_reserved_base + system_reserved_size});
+    reserved_regions.insert({user_base, user_base + user_size});
     return reserved_regions;
 #endif
 }
