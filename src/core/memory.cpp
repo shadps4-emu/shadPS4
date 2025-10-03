@@ -15,19 +15,16 @@
 namespace Core {
 
 MemoryManager::MemoryManager() {
+    LOG_INFO(Kernel_Vmm, "Virtual memory space initialized with regions:");
+
     // Construct vma_map using the regions reserved by the address space
     auto regions = impl.GetUsableRegions();
     u64 total_usable_space = 0;
     for (auto region : regions) {
         vma_map.emplace(region.lower(),
                         VirtualMemoryArea{region.lower(), region.upper() - region.lower()});
+        LOG_INFO(Kernel_Vmm, "{:#x} - {:#x}", region.lower(), region.upper());
     }
-
-    // Log initialization.
-    const auto last_valid_vma = --vma_map.end();
-    LOG_INFO(Kernel_Vmm, "Virtual memory space initialized");
-    LOG_INFO(Kernel_Vmm, "Minimum address = {:#x}, maximum address = {:#x}", vma_map.begin()->first,
-             last_valid_vma->second.base + last_valid_vma->second.size);
 }
 
 MemoryManager::~MemoryManager() = default;
