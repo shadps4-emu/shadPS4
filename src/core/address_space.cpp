@@ -113,10 +113,10 @@ struct AddressSpace::Impl {
 
         // Set these constants to ensure code relying on them works.
         // These do not fully encapsulate the state of the address space.
+        system_managed_base = reinterpret_cast<u8*>(regions.begin()->first);
+        system_managed_size = SystemManagedSize - (regions.begin()->first - SYSTEM_MANAGED_MIN);
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
-        system_managed_base = reinterpret_cast<u8*>(SYSTEM_MANAGED_MIN);
-        system_managed_size = SystemManagedSize;
         user_base = reinterpret_cast<u8*>(USER_MIN);
         user_size = UserSize;
 
