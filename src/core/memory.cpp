@@ -133,8 +133,8 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u32 num_bytes) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
-    ASSERT_MSG(IsValidMapping(virtual_addr, num_bytes), "Attempted to access invalid address {}",
-               virtual_addr);
+    ASSERT_MSG(IsValidMapping(virtual_addr, num_bytes),
+               "Attempted to access invalid address {:#x}", virtual_addr);
     const auto& vma = FindVMA(virtual_addr)->second;
     if (!HasPhysicalBacking(vma)) {
         return false;
@@ -1153,7 +1153,7 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     }
 
     // If the requested address is beyond the maximum our code can handle, throw an assert
-    ASSERT_MSG(IsValidMapping(virtual_addr, 0), "Input address {:#x} is out of bounds",
+    ASSERT_MSG(IsValidMapping(virtual_addr), "Input address {:#x} is out of bounds",
                virtual_addr);
 
     // Align up the virtual_addr first.
