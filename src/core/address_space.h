@@ -31,7 +31,7 @@ constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
 #endif
 constexpr VAddr USER_MIN = 0x1000000000ULL;
-constexpr VAddr USER_MAX = 0x4FFFFFFFFFFFULL;
+constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
 
 static constexpr u64 SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
 static constexpr u64 SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
