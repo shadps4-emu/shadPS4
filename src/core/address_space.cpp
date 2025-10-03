@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
-#include <boost/icl/separate_interval_set.hpp>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -112,21 +111,14 @@ struct AddressSpace::Impl {
                        Common::GetLastErrorMsg());
         }
 
+        // Set these constants to ensure code relying on them works.
+        // These do not fully encapsulate the state of the address space.
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
         system_managed_base = reinterpret_cast<u8*>(SYSTEM_MANAGED_MIN);
         system_managed_size = SystemManagedSize;
         user_base = reinterpret_cast<u8*>(USER_MIN);
         user_size = UserSize;
-
-        LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
-                 fmt::ptr(system_managed_base),
-                 fmt::ptr(system_managed_base + system_managed_size - 1));
-        LOG_INFO(Kernel_Vmm, "System reserved virtual memory region: {} - {}",
-                 fmt::ptr(system_reserved_base),
-                 fmt::ptr(system_reserved_base + system_reserved_size - 1));
-        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
-                 fmt::ptr(user_base + user_size - 1));
 
         // Increase BackingSize to account for config options.
         BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
@@ -381,6 +373,14 @@ struct AddressSpace::Impl {
                     range_addr, range_size);
             }
         }
+    }
+
+    boost::icl::interval_set<VAddr> GetUsableRegions() {
+        boost::icl::interval_set<VAddr> reserved_regions;
+        for (auto region : regions) {
+            reserved_regions.insert({region.second.base, region.second.base + region.second.size});
+        }
+        return reserved_regions;
     }
 
     HANDLE process{};
@@ -665,6 +665,20 @@ void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission per
     const bool write = True(perms & MemoryPermission::Write);
     const bool execute = True(perms & MemoryPermission::Execute);
     return impl->Protect(virtual_addr, size, read, write, execute);
+}
+
+boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
+#ifdef _WIN32
+    // On Windows, we need to obtain the accessible intervals from the implementation's regions.
+    return impl->GetUsableRegions();
+#else
+    // On Linux and Mac, the memory space is fully represented by the three major regions
+    boost::icl::interval_set<VAddr> reserved_regions;
+    reserved_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
+    reserved_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
+    reserved_regions.insert({user_addr, user_addr + user_size});
+    return reserved_regions;
+#endif
 }
 
 } // namespace Core

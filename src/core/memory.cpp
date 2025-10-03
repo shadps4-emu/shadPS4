@@ -15,22 +15,18 @@
 namespace Core {
 
 MemoryManager::MemoryManager() {
-    // Insert a virtual memory area that covers the entire area we manage.
-    const VAddr system_managed_base = impl.SystemManagedVirtualBase();
-    const u64 system_managed_size = impl.SystemManagedVirtualSize();
-    const VAddr system_reserved_base = impl.SystemReservedVirtualBase();
-    const u64 system_reserved_size = impl.SystemReservedVirtualSize();
-    const VAddr user_base = impl.UserVirtualBase();
-    const u64 user_size = impl.UserVirtualSize();
-    vma_map.emplace(system_managed_base,
-                    VirtualMemoryArea{system_managed_base, system_managed_size});
-    vma_map.emplace(system_reserved_base,
-                    VirtualMemoryArea{system_reserved_base, system_reserved_size});
-    vma_map.emplace(user_base, VirtualMemoryArea{user_base, user_size});
+    // Construct vma_map using the regions reserved by the address space
+    auto regions = impl.GetUsableRegions();
+    u64 total_usable_space = 0;
+    for (auto region : regions) {
+        vma_map.emplace(region.lower(),
+                        VirtualMemoryArea{region.lower(), region.upper() - region.lower()});
+    }
 
     // Log initialization.
-    LOG_INFO(Kernel_Vmm, "Usable memory address space: {}_GB",
-             (system_managed_size + system_reserved_size + user_size) >> 30);
+    const auto last_valid_vma = --vma_map.end();
+    LOG_INFO(Kernel_Vmm, "Virtual memory space initialized");
+    LOG_INFO(Kernel_Vmm, "Minimum address = {:#x}, maximum address = {:#x}", vma_map.begin()->first, last_valid_vma->second.base + last_valid_vma->second.size);
 }
 
 MemoryManager::~MemoryManager() = default;

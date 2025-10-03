@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <boost/icl/separate_interval_set.hpp>
 #include <memory>
 #include "common/arch.h"
 #include "common/enum.h"
@@ -99,6 +100,9 @@ public:
                PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
+
+    // Returns an interval set containing all usable regions.
+    boost::icl::interval_set<VAddr> GetUsableRegions();
 
 private:
     struct Impl;
