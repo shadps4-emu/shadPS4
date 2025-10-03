@@ -99,6 +99,15 @@ auto output_array = std::array{
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
 
+    ControllerOutput(HOTKEY_FULLSCREEN),
+    ControllerOutput(HOTKEY_PAUSE),
+    ControllerOutput(HOTKEY_SIMPLE_FPS),
+    ControllerOutput(HOTKEY_QUIT),
+    ControllerOutput(HOTKEY_RELOAD_INPUTS),
+    ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK),
+    ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
+    ControllerOutput(HOTKEY_RENDERDOC),
+
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
 };
 
@@ -207,8 +216,9 @@ InputBinding GetBindingFromString(std::string& line) {
 }
 
 void ParseInputConfig(const std::string game_id = "") {
-    std::string config_type = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
-    const auto config_file = Config::GetFoolproofKbmConfigFile(config_type);
+    std::string game_id_or_default = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
+    const auto config_file = Config::GetFoolproofInputConfigFile(game_id_or_default);
+    const auto global_config_file = Config::GetFoolproofInputConfigFile("global");
 
     // we reset these here so in case the user fucks up or doesn't include some of these,
     // we can fall back to default
@@ -227,9 +237,10 @@ void ParseInputConfig(const std::string game_id = "") {
 
     int lineCount = 0;
 
-    std::ifstream file(config_file);
+    std::ifstream config_stream(config_file);
+    std::ifstream global_config_stream(global_config_file);
     std::string line = "";
-    while (std::getline(file, line)) {
+    auto ProcessLine = [&]() -> void {
         lineCount++;
 
         // Strip the ; and whitespace
@@ -237,7 +248,7 @@ void ParseInputConfig(const std::string game_id = "") {
                                   [](unsigned char c) { return std::isspace(c); }),
                    line.end());
         if (line.empty()) {
-            continue;
+            return;
         }
 
         // Truncate lines starting at #
@@ -246,7 +257,7 @@ void ParseInputConfig(const std::string game_id = "") {
             line = line.substr(0, comment_pos);
         }
         if (line.empty()) {
-            continue;
+            return;
         }
 
         // Split the line by '='
@@ -254,7 +265,7 @@ void ParseInputConfig(const std::string game_id = "") {
         if (equal_pos == std::string::npos) {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
-            continue;
+            return;
         }
 
         std::string output_string = line.substr(0, equal_pos);
@@ -283,7 +294,7 @@ void ParseInputConfig(const std::string game_id = "") {
                 LOG_WARNING(Input, "Invalid argument for mouse-to-joystick binding");
                 SetMouseToJoystick(0);
             }
-            continue;
+            return;
         } else if (output_string == "key_toggle") {
             if (comma_pos != std::string::npos) {
                 // handle key-to-key toggling (separate list?)
@@ -293,18 +304,18 @@ void ParseInputConfig(const std::string game_id = "") {
                                 "Syntax error: Please provide exactly 2 keys: "
                                 "first is the toggler, the second is the key to toggle: {}",
                                 line);
-                    continue;
+                    return;
                 }
                 ControllerOutput* toggle_out =
                     &*std::ranges::find(output_array, ControllerOutput(KEY_TOGGLE));
                 BindingConnection toggle_connection = BindingConnection(
                     InputBinding(toggle_keys.keys[0]), toggle_out, 0, toggle_keys.keys[1]);
                 connections.insert(connections.end(), toggle_connection);
-                continue;
+                return;
             }
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
-            continue;
+            return;
         } else if (output_string == "mouse_movement_params") {
             std::stringstream ss(input_string);
             char comma; // To hold the comma separators between the floats
@@ -313,10 +324,10 @@ void ParseInputConfig(const std::string game_id = "") {
             // Check for invalid input (in case there's an unexpected format)
             if (ss.fail()) {
                 LOG_WARNING(Input, "Failed to parse mouse movement parameters from line: {}", line);
-                continue;
+                return;
             }
             SetMouseParams(mouse_deadzone_offset, mouse_speed, mouse_speed_offset);
-            continue;
+            return;
         } else if (output_string == "analog_deadzone") {
             std::stringstream ss(input_string);
             std::string device, inner_deadzone_str, outer_deadzone_str;
@@ -324,7 +335,7 @@ void ParseInputConfig(const std::string game_id = "") {
             if (!std::getline(ss, device, ',') || !std::getline(ss, inner_deadzone_str, ',') ||
                 !std::getline(ss, outer_deadzone_str)) {
                 LOG_WARNING(Input, "Malformed deadzone config at line {}: \"{}\"", lineCount, line);
-                continue;
+                return;
             }
 
             auto inner_deadzone = parseInt(inner_deadzone_str);
@@ -332,7 +343,7 @@ void ParseInputConfig(const std::string game_id = "") {
 
             if (!inner_deadzone || !outer_deadzone) {
                 LOG_WARNING(Input, "Invalid deadzone values at line {}: \"{}\"", lineCount, line);
-                continue;
+                return;
             }
 
             std::pair<int, int> deadzone = {*inner_deadzone, *outer_deadzone};
@@ -352,7 +363,7 @@ void ParseInputConfig(const std::string game_id = "") {
                 LOG_WARNING(Input, "Invalid axis name at line {}: \"{}\", skipping line.",
                             lineCount, line);
             }
-            continue;
+            return;
         } else if (output_string == "override_controller_color") {
             std::stringstream ss(input_string);
             std::string enable, r_s, g_s, b_s;
@@ -361,7 +372,7 @@ void ParseInputConfig(const std::string game_id = "") {
                 !std::getline(ss, g_s, ',') || !std::getline(ss, b_s)) {
                 LOG_WARNING(Input, "Malformed controller color config at line {}: \"{}\"",
                             lineCount, line);
-                continue;
+                return;
             }
             r = parseInt(r_s);
             g = parseInt(g_s);
@@ -369,13 +380,13 @@ void ParseInputConfig(const std::string game_id = "") {
             if (!r || !g || !b) {
                 LOG_WARNING(Input, "Invalid RGB values at line {}: \"{}\", skipping line.",
                             lineCount, line);
-                continue;
+                return;
             }
             Config::SetOverrideControllerColor(enable == "true");
             Config::SetControllerCustomColor(*r, *g, *b);
             LOG_DEBUG(Input, "Parsed color settings: {} {} {} {}",
                       enable == "true" ? "override" : "no override", *r, *b, *g);
-            continue;
+            return;
         }
 
         // normal cases
@@ -386,7 +397,7 @@ void ParseInputConfig(const std::string game_id = "") {
         if (binding.IsEmpty()) {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
-            continue;
+            return;
         }
         if (button_it != string_to_cbutton_map.end()) {
             connection = BindingConnection(
@@ -405,11 +416,17 @@ void ParseInputConfig(const std::string game_id = "") {
         } else {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
-            continue;
+            return;
         }
         LOG_DEBUG(Input, "Succesfully parsed line {}", lineCount);
+    };
+    while (std::getline(global_config_stream, line)) {
+        ProcessLine();
     }
-    file.close();
+    while (std::getline(config_stream, line)) {
+        ProcessLine();
+    }
+    config_stream.close();
     std::sort(connections.begin(), connections.end());
     for (auto& c : connections) {
         LOG_DEBUG(Input, "Binding: {} : {}", c.output->ToString(), c.binding.ToString());
@@ -485,11 +502,16 @@ void ControllerOutput::ResetUpdate() {
     *new_param = 0; // bruh
 }
 void ControllerOutput::AddUpdate(InputEvent event) {
-    if (button == KEY_TOGGLE) {
+    switch (button) {
+    case KEY_TOGGLE:
         if (event.active) {
             ToggleKeyInList(event.input);
         }
-    } else if (button != SDL_GAMEPAD_BUTTON_INVALID) {
+        return;
+    default:
+        break;
+    }
+    if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         if (event.input.type == InputType::Axis) {
             bool temp = event.axis_value * (positive_axis ? 1 : -1) > 0x40;
             new_button_state |= event.active && event.axis_value * (positive_axis ? 1 : -1) > 0x40;
@@ -505,6 +527,14 @@ void ControllerOutput::AddUpdate(InputEvent event) {
     }
 }
 void ControllerOutput::FinalizeUpdate() {
+    auto PushSDLEvent = [&](u32 event_type) {
+        if (new_button_state) {
+            SDL_Event e;
+            SDL_memset(&e, 0, sizeof(e));
+            e.type = event_type;
+            SDL_PushEvent(&e);
+        }
+    };
     state_changed = old_button_state != new_button_state || old_param != *new_param;
     if (!state_changed) {
         return;
@@ -531,10 +561,33 @@ void ControllerOutput::FinalizeUpdate() {
         case RIGHTJOYSTICK_HALFMODE:
             rightjoystick_halfmode = new_button_state;
             break;
-        // KEY_TOGGLE isn't handled here anymore, as this function doesn't have the necessary data
-        // to do it, and it would be inconvenient to force it here, when AddUpdate does the job just
-        // fine, and a toggle doesn't have to checked against every input that's bound to it, it's
-        // enough that one is pressed
+        case HOTKEY_FULLSCREEN:
+            PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);
+            break;
+        case HOTKEY_PAUSE:
+            PushSDLEvent(SDL_EVENT_TOGGLE_PAUSE);
+            break;
+        case HOTKEY_SIMPLE_FPS:
+            PushSDLEvent(SDL_EVENT_TOGGLE_SIMPLE_FPS);
+            break;
+        case HOTKEY_RELOAD_INPUTS:
+            PushSDLEvent(SDL_EVENT_RELOAD_INPUTS);
+            break;
+        case HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_JOYSTICK);
+            break;
+        case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
+            break;
+        case HOTKEY_RENDERDOC:
+            PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            break;
+        case HOTKEY_QUIT:
+            PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
+            break;
+        case KEY_TOGGLE:
+            // noop
+            break;
         case MOUSE_GYRO_ROLL_MODE:
             SetMouseGyroRollMode(new_button_state);
             break;
@@ -549,8 +602,8 @@ void ControllerOutput::FinalizeUpdate() {
                 *value = 0;
             } else {
                 *value = (*value >= 0 ? 1 : -1) *
-                         std::clamp((int)((128.0 * (std::abs(*value) - deadzone.first)) /
-                                          (float)(deadzone.second - deadzone.first)),
+                         std::clamp(static_cast<s32>((128.0 * (std::abs(*value) - deadzone.first)) /
+                                                     (float)(deadzone.second - deadzone.first)),
                                     0, 128);
             }
         };

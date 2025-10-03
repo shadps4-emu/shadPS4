@@ -89,6 +89,11 @@ public:
         return features.depthBounds;
     }
 
+    /// Returns true if 16-bit floats are supported in shaders
+    bool IsShaderFloat16Supported() const {
+        return vk12_features.shaderFloat16;
+    }
+
     /// Returns true if 64-bit floats are supported in shaders
     bool IsShaderFloat64Supported() const {
         return features.shaderFloat64;
@@ -107,6 +112,16 @@ public:
     /// Returns true if 8-bit ints are supported in shaders
     bool IsShaderInt8Supported() const {
         return vk12_features.shaderInt8;
+    }
+
+    /// Returns true if VK_KHR_maintenance8 is supported
+    bool IsMaintenance8Supported() const {
+        return maintenance_8;
+    }
+
+    /// Returns true if VK_EXT_attachment_feedback_loop_layout is supported
+    bool IsAttachmentFeedbackLoopLayoutSupported() const {
+        return attachment_feedback_loop;
     }
 
     /// Returns true when VK_EXT_custom_border_color is supported
@@ -134,7 +149,7 @@ public:
         return depth_range_unrestricted;
     }
 
-    /// Returns true when the extendedDynamicState3ColorWriteMask feature of
+    /// Returns true when the extendedDynamicState3ColorWriteMask feature o
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
         return dynamic_state_3 && dynamic_state_3_features.extendedDynamicState3ColorWriteMask;
@@ -224,6 +239,17 @@ public:
                workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
     }
 
+    /// Returns true if VK_NV_framebuffer_mixed_samples or
+    /// VK_AMD_mixed_attachment_samples is supported
+    bool IsMixedDepthSamplesSupported() const {
+        return nv_framebuffer_mixed_samples || amd_mixed_attachment_samples;
+    }
+
+    /// Returns true if VK_AMD_mixed_attachment_samples is supported
+    bool IsMixedAnySamplesSupported() const {
+        return amd_mixed_attachment_samples;
+    }
+
     /// Returns true when geometry shaders are supported by the device
     bool IsGeometryStageSupported() const {
         return features.geometryShader;
@@ -282,6 +308,11 @@ public:
     /// Returns the device name.
     std::string_view GetModelName() const {
         return properties.deviceName;
+    }
+
+    /// Returns if the device is an integrated GPU.
+    bool IsIntegrated() const {
+        return properties.deviceType == vk::PhysicalDeviceType::eIntegratedGpu;
     }
 
     /// Returns the pipeline cache unique identifier
@@ -369,10 +400,14 @@ public:
         return properties.limits.maxFramebufferHeight;
     }
 
-    /// Returns the sample count flags supported by framebuffers.
-    vk::SampleCountFlags GetFramebufferSampleCounts() const {
-        return properties.limits.framebufferColorSampleCounts &
-               properties.limits.framebufferDepthSampleCounts &
+    /// Returns the sample count flags supported by color buffers.
+    vk::SampleCountFlags GetColorSampleCounts() const {
+        return properties.limits.framebufferColorSampleCounts;
+    }
+
+    /// Returns the sample count flags supported by depth buffer.
+    vk::SampleCountFlags GetDepthSampleCounts() const {
+        return properties.limits.framebufferDepthSampleCounts &
                properties.limits.framebufferStencilSampleCounts;
     }
 
@@ -386,6 +421,19 @@ public:
         return features.logicOp;
     }
 
+    /// Returns whether the device can report memory usage.
+    bool CanReportMemoryUsage() const {
+        return supports_memory_budget;
+    }
+
+    /// Returns the amount of memory used.
+    [[nodiscard]] u64 GetDeviceMemoryUsage() const;
+
+    /// Returns the total memory budget available to the device.
+    [[nodiscard]] u64 GetTotalMemoryBudget() const {
+        return total_memory_budget;
+    }
+
     /// Determines if a format is supported for a set of feature flags.
     [[nodiscard]] bool IsFormatSupported(vk::Format format, vk::FormatFeatureFlags2 flags) const;
 
@@ -396,8 +444,9 @@ private:
     /// Creates the VMA allocator handle
     void CreateAllocator();
 
-    /// Collects telemetry information from the device.
+    /// Collects various information from the device.
     void CollectDeviceParameters();
+    void CollectPhysicalMemoryInfo();
     void CollectToolingInfo() const;
 
     /// Gets the supported feature flags for a format.
@@ -436,8 +485,8 @@ private:
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
     bool depth_clip_enable{};
-    bool depth_range_unrestricted{};
     bool dynamic_state_3{};
+    bool depth_range_unrestricted{};
     bool vertex_input_dynamic_state{};
     bool robustness2{};
     bool list_restart{};
@@ -447,9 +496,16 @@ private:
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
+    bool nv_framebuffer_mixed_samples{};
+    bool amd_mixed_attachment_samples{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};
+    bool maintenance_8{};
+    bool attachment_feedback_loop{};
+    bool supports_memory_budget{};
+    u64 total_memory_budget{};
+    std::vector<size_t> valid_heaps;
 };
 
 } // namespace Vulkan

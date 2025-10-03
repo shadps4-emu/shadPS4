@@ -454,14 +454,6 @@
       <translation>Använd konfigurationer per spel</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Handlingsknappar</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Färgjustering</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>omappad</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -592,6 +556,74 @@
     <message>
       <source>Move analog stick</source>
       <translation>Rör analog spak</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 och L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Aktiv gamepad</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>Gamepad-id</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Gamepad (standard)</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Ingen standard vald</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>inte tillgänglig</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Ställ in aktiv gamepad som standard</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Ta bort gamepad som standard</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 och R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Standardkontroller vald</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Aktiv kontroller inställd som standard</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Standardkontroller borttagen</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Inställning för standardkontroller borttagen</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>RÖD</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>GRÖN</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>BLÅ</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>Kompatibilitet...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Uppdatera databasen</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visa rapport</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Skicka en rapport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Skapa genväg</translation>
     </message>
@@ -990,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>Lägg till i favoriter</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Spelspecifika inställningar...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Konfigurera spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Skapa spelspecifika inställningar från globala inställningar</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Ta bort spelspecifika inställningar</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Uppdatera databasen</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visa rapport</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Skicka in en rapport</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Bekräfta borttagning</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Ta bort spelspecifika inställningar?</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Tangentbindningar</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Snabbtangenter för kontroller</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Visa bildfrekvensräknare</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>omappad</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Avsluta emulering</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Uppdatera knappmappningar</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Växla helskärm</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Växla paus</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Tangentbordsgenvägar</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Renderdoc-fångst (endast för felsökning)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Växla mus- till styrspaksemulering</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Växla mus- till gyroemulering</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Tips: Upp till tre samtidiga inmatningar kan tilldelas för varje snabbtangent</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Spara</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Tillämpa</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Avbryt</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Återställ till standard</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>Kunde inte spara</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>Det går inte att binda samma unika inmatning mer än en gång. Dubbletter av inmatningar mappas till följande knappar:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Väntar på inmatningar</translation>
     </message>
   </context>
   <context>
@@ -1069,14 +1212,6 @@
       <translation>Använd konfiguration per-spel</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Textredigerare</translation>
     </message>
@@ -1085,28 +1220,12 @@
       <translation>Hjälp</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Mus till styrspak</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*tryck F7 i spelet för att aktivera</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1235,6 +1354,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Pekplatta höger</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Förval för loggfilter</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Kommentar</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Läs in</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Stäng</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Lägg till ett nytt förval efter markerad rad</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Ta bort markerade förval</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Läs in markerade förvalet</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Visa etiketter under ikoner</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Anpassa snabbtangenter</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>Emulatorspråk</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulator</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Standardflik när inställningar öppnas</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Visa spelstorlek i listan</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Visa startskärm</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1623,10 +1773,6 @@
       <translation>Grafikenhet</translation>
     </message>
     <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank Divider</translation>
-    </message>
-    <message>
       <source>Advanced</source>
       <translation>Avancerat</translation>
     </message>
@@ -1700,11 +1846,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Aktivera återläsning</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Aktivera återläsning av linjära bilder</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1725,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Leta efter uppdateringar</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Gränssnittsinställningar</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1883,10 +2025,6 @@
       <translation>Bredd/Höjd:\nStäller in storleken för emulatorfönstret vid uppstart, som kan storleksändras under spelning.\nDetta är inte det samma som spelupplösningen.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider:\nBildfrekvensen som emulatorn uppdaterar vid multipliceras med detta tal. Ändra detta kan ha inverkan på saker, såsom ökad spelhastighet eller göra sönder kritisk spelfunktionalitet, som inte förväntar sig denna ändring!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Aktivera Shaders Dumping:\nFör teknisk felsökning, sparar spelets shaders till en mapp när de renderas.</translation>
     </message>
@@ -1915,14 +2053,6 @@
       <translation>Aktivera felsökningsdumpning:\nSparar import och export av symboler och fil-header-information för aktuellt körande PS4-program till en katalog.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivera Vulkan Validation Layers:\nAktiverar ett system som validerar tillståndet för Vulkan renderer och loggar information om dess interna tillstånd.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivera Vulkan Synchronization Validation:\nAktiverar ett system som validerar timing för Vulkan rendering tasks.\nDetta kommer minska prestandan och antagligen ändra beteendet för emuleringen.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Aktivera RenderDoc-felsökning:\nOm aktiverad kommer emulatorn att tillhandahålla kompatibilitet med Renderdoc för att tillåta fångst och analys för aktuell renderad bildruta.</translation>
     </message>
@@ -1931,16 +2061,12 @@
       <translation>Samla shaders:\nDu behöver aktivera detta för att redigera shaders med felsökningsmenyn (Ctrl + F10)</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Krashdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-tillståndet vid tid för kraschen.\nAnvändbart för felsökning av &apos;Device lost&apos;-fel. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för Värd OCH Gäst.\nFungerar inte på Intel GPUer.\nDu behöver aktivera Vulkan Validation Layers och Vulkan SDK för att detta ska fungera.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Aktivera återläsning:\nAktivera återläsning och återskrivning av GPU-minnet.\nDetta krävs för att vissa spel ska fungera korrekt.\nKan orsaka stabilitets- och/eller prestandaproblem.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Aktivera återläsning av linjära bilder:\nAktiverar asynkron nedladdning av GPU-modifierade linjära bilder.\nKan lösa problem i vissa spel.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2107,16 +2233,200 @@
       <translation> * Versionen av Vulkan stöds inte</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation>100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Experimentella funktioner</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>VARNING: Dessa funktioner är experimentella och bör inte aktiveras om du inte har blivit tillsagd att göra det eller om ett spel kräver det. Fråga i shadPS4s Discord-server om du har några frågor.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Aktivera bakgrundsinmatning från handkontroll</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Aktivera bakgrundsinmatning från handkontroll:\nTillåt shadPS4 att upptäcka inmatningar från handkontrollen när spelfönstret inte är aktivt.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Kraschdiagnostik:\nSkapar en .yaml-fil med information om Vulkan-status vid kraschen.\nAnvändbart för felsökning av felmeddelanden om att enheten har förlorats. Om du har aktiverat detta bör du aktivera felsökningsmarkörer för både värd och gäst.\nDu måste ha Vulkan Validation Layers aktiverat och Vulkan SDK för att detta ska fungera.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Aktivera loggning</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Aktivera loggning:\nAktiverar loggning.\nÄndra inte detta om du inte vet vad du gör!\nNär du ber om hjälp, se till att denna inställning är AKTIVERAD.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Nuvarande läge</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Omedelbar (Ingen Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Mapp för nedladdningsbart innehåll (DLC)</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Välj DLC-mappen</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Nuvarande läge:\nKonfigurerar hur videoutgången ska visas på skärmen.\n\nMailbox: Bildrutorna synkroniseras med skärmens uppdateringsfrekvens. Nya bildrutor ersätter alla väntande bildrutor. Minskar fördröjningen men kan hoppa över bildrutor om det uppstår fördröjning.\nFifo: Bildrutorna synkroniseras med skärmens uppdateringsfrekvens. Nya bildrutor placeras i kö bakom väntande bildrutor. Säkerställer att alla bildrutor visas men kan öka fördröjningen.\nOmedelbar: Bildrutorna visas omedelbart på skärmen när de är klara. Kan resultera i tearing.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>DLC-sökväg:\nMappen där spelens DLC läses in från.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Bläddra:\nBläddra efter en mapp att ställa in som DLC-sökvägen.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>FSR-inställningar</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Aktivera FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Aktivera RCAS (uppskärpning)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>RCAS-dämpning:</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation>Läs in förval...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Logg</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Öppna loggplatsen:\nÖppna mappen där loggfilen är sparad.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Mikrofon:\nIngen: Använder inte mikrofonen.\nStandardenhet: Använder den standardenhet som är definierad i systemet.\nEller välj manuellt vilken mikrofon som ska användas från listan.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volym:\nJustera volymen för spel på global nivå, intervallet går från 0 till 500% med standardvärdet 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Standardflik vid öppning av inställningar:\nVälj vilken flik som ska öppnas, standard är Allmänt.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Visa spelstorlek i listan:\nSpelets storlek visas i listan.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Aktivera rörelsekontroller:\nNär denna funktion är aktiverad används kontrollens rörelsekontroll om den stöds.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Vblank-frekvens</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Vblank-frekvens:\nDen bildfrekvens som emulatorn uppdateras med (60 Hz är baslinjen, oavsett om spelet körs med 30 eller 60 bilder/s). Att ändra detta kan ha negativa effekter, såsom att öka spelhastigheten eller förstöra kritiska spelfunktioner som inte förväntar sig denna förändring!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Aktivera Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Aktivera Devkit-konsolläge</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Ställ in &quot;PSN signed-in&quot; till True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Ställ in &quot;Network Connected&quot; till True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Diverse</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Experimentell</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Visa startskärm när spel startas</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Allmänna frontend-inställningar</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Aktivera PS4 Neo-läge</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Aktivera direkt minnesåtkomst:\nAktiverar godtycklig minnesåtkomst från GPU till CPU-minne.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Aktivera PS4 Neo-läge:\nLägger till stöd för PS4 Pro-emulering och minnesstorlek. Orsakar för närvarande instabilitet i ett stort antal testade spel.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Aktivera Devkit-konsolläge:\nLägger till stöd för Devkit-konsollens minnesstorlek.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Ställ in Nätverk anslutet till Sant:\nTvingar spel att upptäcka en aktiv nätverksanslutning. Faktiska onlinefunktioner stöds ännu inte.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Ställ in PSN-inloggning till Sant:\nTvingar spel att upptäcka en aktiv PSN-inloggning. Faktiska PSN-funktioner stöds inte.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Aktivera Vulkan-valideringslager:\nAktiverar ett system som validerar tillståndet för Vulkan-renderaren och loggar information om dess interna status.\nDetta minskar prestandan och kan förändra emuleringens beteende.\nDu behöver Vulkan SDK för att detta ska fungera.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Aktivera Vulkan-synkroniseringsvalidering:\nAktiverar ett system som validerar tidpunkten för Vulkan-renderinguppgifter.\nDetta minskar prestandan och kan förändra emuleringens beteende.\nDu behöver Vulkan SDK för att detta ska fungera.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

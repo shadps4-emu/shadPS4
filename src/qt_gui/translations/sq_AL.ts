@@ -454,14 +454,6 @@
       <translation>Përdor konfigurime të veçanta për secilën lojë</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Butonat kryesore</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Rregullimi i Ngjyrave</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>pacaktuar</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -592,6 +556,74 @@
     <message>
       <source>Move analog stick</source>
       <translation>Lëviz levën</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 dhe L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Doreza Aktive</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID-ja e Dorezës</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Doreza e Paracaktuar</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Asnjë paracaktim i përzgjedhur</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Përcakto Dorezën Aktive si të Paracaktuar</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Hiq Dorezën e Paracaktuar</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 dhe R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Doreza e Paracaktuar u Përzgjodh</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Doreza aktive është vendosur si paracaktim</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Doreza e Paracaktuar u Hoq</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Cilësimi i dorezës të paracaktuar u hoq</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation type="unfinished">RED</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation type="unfinished">GREEN</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation type="unfinished">BLUE</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>Përputhshmëria...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Përditëso bazën e të dhënave</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Shiko raportin</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Paraqit një raport</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Krijimi i shkurtores</translation>
     </message>
@@ -990,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>Shto në të Preferuarat</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation type="unfinished">Update Database</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation type="unfinished">View Report</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation type="unfinished">Submit a Report</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation type="unfinished">Confirm deletion</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation type="unfinished">Delete game-specific settings?</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Caktimet e Tasteve</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation type="unfinished">Customize Hotkeys</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation type="unfinished">Controller Hotkeys</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation type="unfinished">Show FPS Counter</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation type="unfinished">Quit Emulation</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation type="unfinished">Toggle Fullscreen</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation type="unfinished">Renderdoc Capture (for debugging only)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation type="unfinished">Save</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation type="unfinished">Apply</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation type="unfinished">Restore Defaults</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation type="unfinished">Unable to Save</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation type="unfinished">Waiting for inputs</translation>
     </message>
   </context>
   <context>
@@ -1069,14 +1212,6 @@
       <translation>Përdor konfigurime për secilën lojë</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Redaktuesi i Tekstit</translation>
     </message>
@@ -1085,28 +1220,12 @@
       <translation>Ndihmë</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Miu në Levë</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>*shtyp F7 gjatë lojës për ta aktivizuar</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1235,6 +1354,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Paneli me Prekje Djathtas</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation type="unfinished">Log Filter Presets</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation type="unfinished">Comment</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation type="unfinished">Filter</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation type="unfinished">Load</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation type="unfinished">Close</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation type="unfinished">Add a new preset after the selected row</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation type="unfinished">Remove selected presets</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation type="unfinished">Load the selected preset</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Shfaq Etiketat Poshtë Ikonave</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizo Shkurtoret</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>Gjuha e Emulatorit</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulatori</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Skeda e paracaktuar kur hapen cilësimet</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Shfaq madhësinë e lojës në listë</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Shfaq Pamjen e nisjes</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1588,15 +1738,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Mikrofoni</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Asnjë</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Pajisja e Paracaktuar</translation>
     </message>
     <message>
       <source>s</source>
@@ -1621,10 +1771,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Pajisja e Grafikës</translation>
-    </message>
-    <message>
-      <source>Vblank Divider</source>
-      <translation>Ndarës Vblank</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1700,11 +1846,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Aktivo Rikthimet e Leximit (Readbacks)</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Aktivo Rikthimin e Leximit për Imazhet Lineare</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1725,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Kontrollo për përditësime</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Cilësimet e GUI-së</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1883,10 +2025,6 @@
       <translation>Gjerësia/Lartësia:\nPërcakton madhësinë e dritares së emulatorit në nisje, e cila mund të rregullohet gjatë lojës.\nKjo është ndryshe nga rezolucioni në lojë.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Ndarësi Vblank:\nFrekuenca pamore me të cilën rifreskohet emulatori shumëzohet me këtë numër. Ndryshimi i këtij mund të ketë efekte të këqija, si rritja e shpejtësisë së lojës ose prishja e punimit thelbësor të lojës që nuk e pret këtë ndryshim!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Aktivizo zbrazjen e shader-ave:\nPër qëllime të korrigjimit teknik, ruan shader-at e lojës në një dosje ndërsa ato pasqyrohen.</translation>
     </message>
@@ -1915,14 +2053,6 @@
       <translation>Aktivizo zbrazjen për korrigjim:\nRuan simbolet e importit dhe eksportit dhe informacionin e kreut të skedarit për aplikacionin PS4 që po ekzekutohet në një dosje.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivizo shtresat e vlefshmërisë Vulkan:\nAktivizon një sistem që vërteton gjendjen e pasqyruesit Vulkan dhe regjistron informacionin në lidhje me gjendjen e tij të brendshme.\nKjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Aktivizo vërtetimin e sinkronizimit Vulkan:\nAktivizon një sistem që vërteton kohën e detyrave të pasqyrimit Vulkan.\nKjo do të ul performancën dhe ndoshta do të ndryshojë sjelljen e emulimit.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Aktivizo korrigjimin RenderDoc:\nNëse aktivizohet, emulatori do të ofrojë pajtueshmëri me Renderdoc për të lejuar kapjen dhe analizën e pamjes të pasqyruar në moment.</translation>
     </message>
@@ -1931,16 +2061,12 @@
       <translation>Mblidh Shader-at:\nDuhet ta aktivizosh këtë për të redaktuar shader-at me menynë e korrigjimit (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnoza e rënies:\nKrijon një skedar .yaml me informacion rreth gjendjes së Vulkan-it në momentin e rënies.\nE dobishme për zgjidhjen e gabimeve &apos;Device lost&apos;. Nëse e ke aktivizuar këtë, duhet të aktivizosh Shënjuesit e korrigjimit të host-it DHE të guest-it.\nNuk punon me GPU-t Intel.\nDuhet të kesh aktivizuar Shtresat e Vlefshmërisë Vulkan dhe Vulkan SDK që kjo të punojë.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Aktivo Rikthimet e Leximit (Readbacks):\nAktivizo rikthimet dhe rishkrimet e kujtesës së GPU-së.\nKjo është e domosdoshme për funksionimin e duhur në disa lojëra.\nMund të shkaktojë probleme qëndrueshmërie dhe/ose performance.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Aktivo Rikthimin e Leximit për Imazhet Lineare:\nAktivizon shkarkimin asinkron të imazheve lineare të modifikuara nga GPU-ja.\nMund të rregullojë probleme në disa lojëra.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2107,16 +2233,200 @@
       <translation> * Version i pambështetur i Vulkan</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation type="unfinished">100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Veçori Eksperimentale</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>PARALAJMËRIM: Këto veçori janë eksperimentale dhe nuk duhet të aktivizohen, përveç nëse të është kërkuar të bësh kështu ose nëse një lojë e kërkon. Nëse ke ndonjë pyetje, pyet në serverin Discord të shadPS4.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Aktivo Hyrjen e Dorezës në Sfond</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Aktivo Hyrjen e Dorezës në Sfond:\nLejo shadPS4 të zbulojë hyrjet e kontrolluesit edhe kur dritarja e lojës nuk është e përqendruar.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation type="unfinished">Enable Logging</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation type="unfinished">Present Mode</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation type="unfinished">Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation type="unfinished">Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation type="unfinished">Immediate (No Vsync)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation type="unfinished">DLC Folder</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation type="unfinished">Select the DLC folder</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation type="unfinished">Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation type="unfinished">FSR Settings</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation type="unfinished">Enable FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation type="unfinished">Enable RCAS (sharpening)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation type="unfinished">RCAS Attenuation:</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation type="unfinished">Load Presets...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation type="unfinished">Log</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation type="unfinished">Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation type="unfinished">Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation type="unfinished">Vblank Frequency</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation type="unfinished">Enable Direct Memory Access</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation type="unfinished">Enable Devkit Console Mode</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

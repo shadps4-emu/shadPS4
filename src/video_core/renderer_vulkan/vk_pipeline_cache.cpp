@@ -23,61 +23,69 @@ extern std::unique_ptr<Vulkan::Presenter> presenter;
 namespace Vulkan {
 
 using Shader::LogicalStage;
+using Shader::Output;
 using Shader::Stage;
-using Shader::VsOutput;
 
 constexpr static auto SpirvVersion1_6 = 0x00010600U;
 
 constexpr static std::array DescriptorHeapSizes = {
-    vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 8192},
-    vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1024},
+    vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 512},
+    vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 8192},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
+    vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 1024},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
 
-void GatherVertexOutputs(Shader::VertexRuntimeInfo& info,
-                         const AmdGpu::Liverpool::VsOutputControl& ctl) {
-    const auto add_output = [&](VsOutput x, VsOutput y, VsOutput z, VsOutput w) {
-        if (x != VsOutput::None || y != VsOutput::None || z != VsOutput::None ||
-            w != VsOutput::None) {
-            info.outputs[info.num_outputs++] = Shader::VsOutputMap{x, y, z, w};
-        }
-    };
-    // VS_OUT_MISC_VEC
-    add_output(ctl.use_vtx_point_size ? VsOutput::PointSprite : VsOutput::None,
-               ctl.use_vtx_edge_flag
-                   ? VsOutput::EdgeFlag
-                   : (ctl.use_vtx_gs_cut_flag ? VsOutput::GsCutFlag : VsOutput::None),
-               ctl.use_vtx_kill_flag
-                   ? VsOutput::KillFlag
-                   : (ctl.use_vtx_render_target_idx ? VsOutput::GsMrtIndex : VsOutput::None),
-               ctl.use_vtx_viewport_idx ? VsOutput::GsVpIndex : VsOutput::None);
-    // VS_OUT_CCDIST0
-    add_output(ctl.IsClipDistEnabled(0)
-                   ? VsOutput::ClipDist0
-                   : (ctl.IsCullDistEnabled(0) ? VsOutput::CullDist0 : VsOutput::None),
-               ctl.IsClipDistEnabled(1)
-                   ? VsOutput::ClipDist1
-                   : (ctl.IsCullDistEnabled(1) ? VsOutput::CullDist1 : VsOutput::None),
-               ctl.IsClipDistEnabled(2)
-                   ? VsOutput::ClipDist2
-                   : (ctl.IsCullDistEnabled(2) ? VsOutput::CullDist2 : VsOutput::None),
-               ctl.IsClipDistEnabled(3)
-                   ? VsOutput::ClipDist3
-                   : (ctl.IsCullDistEnabled(3) ? VsOutput::CullDist3 : VsOutput::None));
-    // VS_OUT_CCDIST1
-    add_output(ctl.IsClipDistEnabled(4)
-                   ? VsOutput::ClipDist4
-                   : (ctl.IsCullDistEnabled(4) ? VsOutput::CullDist4 : VsOutput::None),
-               ctl.IsClipDistEnabled(5)
-                   ? VsOutput::ClipDist5
-                   : (ctl.IsCullDistEnabled(5) ? VsOutput::CullDist5 : VsOutput::None),
-               ctl.IsClipDistEnabled(6)
-                   ? VsOutput::ClipDist6
-                   : (ctl.IsCullDistEnabled(6) ? VsOutput::CullDist6 : VsOutput::None),
-               ctl.IsClipDistEnabled(7)
-                   ? VsOutput::ClipDist7
-                   : (ctl.IsCullDistEnabled(7) ? VsOutput::CullDist7 : VsOutput::None));
+static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs,
+                      const AmdGpu::Liverpool::VsOutputControl& ctl) {
+    u32 num_outputs = 0;
+
+    if (ctl.vs_out_misc_enable) {
+        auto& misc_vec = outputs[num_outputs++];
+        misc_vec[0] = ctl.use_vtx_point_size ? Output::PointSize : Output::None;
+        misc_vec[1] = ctl.use_vtx_edge_flag
+                          ? Output::EdgeFlag
+                          : (ctl.use_vtx_gs_cut_flag ? Output::GsCutFlag : Output::None);
+        misc_vec[2] =
+            ctl.use_vtx_kill_flag
+                ? Output::KillFlag
+                : (ctl.use_vtx_render_target_idx ? Output::RenderTargetIndex : Output::None);
+        misc_vec[3] = ctl.use_vtx_viewport_idx ? Output::ViewportIndex : Output::None;
+    }
+
+    if (ctl.vs_out_ccdist0_enable) {
+        auto& ccdist0 = outputs[num_outputs++];
+        ccdist0[0] = ctl.IsClipDistEnabled(0)
+                         ? Output::ClipDist0
+                         : (ctl.IsCullDistEnabled(0) ? Output::CullDist0 : Output::None);
+        ccdist0[1] = ctl.IsClipDistEnabled(1)
+                         ? Output::ClipDist1
+                         : (ctl.IsCullDistEnabled(1) ? Output::CullDist1 : Output::None);
+        ccdist0[2] = ctl.IsClipDistEnabled(2)
+                         ? Output::ClipDist2
+                         : (ctl.IsCullDistEnabled(2) ? Output::CullDist2 : Output::None);
+        ccdist0[3] = ctl.IsClipDistEnabled(3)
+                         ? Output::ClipDist3
+                         : (ctl.IsCullDistEnabled(3) ? Output::CullDist3 : Output::None);
+    }
+
+    if (ctl.vs_out_ccdist1_enable) {
+        auto& ccdist1 = outputs[num_outputs++];
+        ccdist1[0] = ctl.IsClipDistEnabled(4)
+                         ? Output::ClipDist4
+                         : (ctl.IsCullDistEnabled(4) ? Output::CullDist4 : Output::None);
+        ccdist1[1] = ctl.IsClipDistEnabled(5)
+                         ? Output::ClipDist5
+                         : (ctl.IsCullDistEnabled(5) ? Output::CullDist5 : Output::None);
+        ccdist1[2] = ctl.IsClipDistEnabled(6)
+                         ? Output::ClipDist6
+                         : (ctl.IsCullDistEnabled(6) ? Output::CullDist6 : Output::None);
+        ccdist1[3] = ctl.IsClipDistEnabled(7)
+                         ? Output::ClipDist7
+                         : (ctl.IsCullDistEnabled(7) ? Output::CullDist7 : Output::None);
+    }
+
+    return num_outputs;
 }
 
 const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalStage l_stage) {
@@ -105,6 +113,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.hs_info.num_input_control_points = regs.ls_hs_config.hs_input_control_points.Value();
         info.hs_info.num_threads = regs.ls_hs_config.hs_output_control_points.Value();
         info.hs_info.tess_type = regs.tess_config.type;
+        info.hs_info.offchip_lds_enable = regs.hs_program.settings.rsrc2_hs.oc_lds_en.Value();
 
         // We need to initialize most hs_info fields after finding the V# with tess constants
         break;
@@ -116,12 +125,15 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     }
     case Stage::Vertex: {
         BuildCommon(regs.vs_program);
-        GatherVertexOutputs(info.vs_info, regs.vs_output_control);
         info.vs_info.step_rate_0 = regs.vgt_instance_step_rate_0;
         info.vs_info.step_rate_1 = regs.vgt_instance_step_rate_1;
+        info.vs_info.num_outputs = MapOutputs(info.vs_info.outputs, regs.vs_output_control);
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
             regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+        info.vs_info.tess_emulated_primitive =
+            regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
+            regs.primitive_type == AmdGpu::PrimitiveType::QuadList;
         info.vs_info.clip_disable = regs.IsClipDisabled();
         if (l_stage == LogicalStage::TessellationEval) {
             info.vs_info.tess_type = regs.tess_config.type;
@@ -133,6 +145,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     case Stage::Geometry: {
         BuildCommon(regs.gs_program);
         auto& gs_info = info.gs_info;
+        gs_info.num_outputs = MapOutputs(gs_info.outputs, regs.vs_output_control);
         gs_info.output_vertices = regs.vgt_gs_max_vert_out;
         gs_info.num_invocations =
             regs.vgt_gs_instance_cnt.IsEnabled() ? regs.vgt_gs_instance_cnt.count : 1;
@@ -154,17 +167,28 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         BuildCommon(regs.ps_program);
         info.fs_info.en_flags = regs.ps_input_ena;
         info.fs_info.addr_flags = regs.ps_input_addr;
-        const auto& ps_inputs = regs.ps_inputs;
         info.fs_info.num_inputs = regs.num_interp;
+        info.fs_info.z_export_format = regs.z_export_format;
+        u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
+                                       regs.depth_shader_control.stencil_test_val_export_enable;
+        info.fs_info.mrtz_mask = regs.depth_shader_control.z_export_enable |
+                                 (stencil_ref_export_enable << 1) |
+                                 (regs.depth_shader_control.mask_export_enable << 2) |
+                                 (regs.depth_shader_control.coverage_to_mask_enable << 3);
         const auto& cb0_blend = regs.blend_control[0];
-        info.fs_info.dual_source_blending =
-            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
-            LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
-        if (cb0_blend.separate_alpha_blend) {
-            info.fs_info.dual_source_blending |=
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
-                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
+        if (cb0_blend.enable) {
+            info.fs_info.dual_source_blending =
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_dst_factor) ||
+                LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.color_src_factor);
+            if (cb0_blend.separate_alpha_blend) {
+                info.fs_info.dual_source_blending |=
+                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_dst_factor) ||
+                    LiverpoolToVK::IsDualSourceBlendFactor(cb0_blend.alpha_src_factor);
+            }
+        } else {
+            info.fs_info.dual_source_blending = false;
         }
+        const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs[i] = {
                 .param_index = u8(ps_inputs[i].input_offset.Value()),
@@ -206,6 +230,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_int8 = instance.IsShaderInt8Supported(),
         .support_int16 = instance.IsShaderInt16Supported(),
         .support_int64 = instance.IsShaderInt64Supported(),
+        .support_float16 = instance.IsShaderFloat16Supported(),
         .support_float64 = instance.IsShaderFloat64Supported(),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
@@ -234,6 +259,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .needs_lds_barriers = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary ||
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
+        .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk,
         // When binding a UBO, we calculate its size considering the offset in the larger buffer
         // cache underlying resource. In some cases, it may produce sizes exceeding the system
         // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
@@ -256,6 +282,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
+        const auto pipeline_hash = std::hash<GraphicsPipelineKey>{}(graphics_key);
+        LOG_INFO(Render_Vulkan, "Compiling graphics pipeline {:#x}", pipeline_hash);
+
         it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, profile,
                                                         graphics_key, *pipeline_cache, infos,
                                                         runtime_infos, fetch_shader, modules);
@@ -277,6 +306,9 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
+        const auto pipeline_hash = std::hash<ComputePipelineKey>{}(compute_key);
+        LOG_INFO(Render_Vulkan, "Compiling compute pipeline {:#x}", pipeline_hash);
+
         it.value() =
             std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
                                               *pipeline_cache, compute_key, *infos[0], modules[0]);
@@ -290,9 +322,10 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
 
 bool PipelineCache::RefreshGraphicsKey() {
     std::memset(&graphics_key, 0, sizeof(GraphicsPipelineKey));
-
-    auto& regs = liverpool->regs;
+    const auto& regs = liverpool->regs;
     auto& key = graphics_key;
+
+    const bool db_enabled = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid();
 
     key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
                                                   : Liverpool::DepthBuffer::ZFormat::Invalid;
@@ -305,65 +338,89 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.provoking_vtx_last = regs.polygon_control.provoking_vtx_last;
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
+    key.patch_control_points =
+        regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
     key.logic_op = regs.color_control.rop3;
-    key.num_samples = regs.NumSamples();
+    key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
+    key.num_samples = key.depth_samples;
+    key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =
         regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
 
-    // `RenderingInfo` is assumed to be initialized with a contiguous array of valid color
-    // attachments. This might be not a case as HW color buffers can be bound in an arbitrary
-    // order. We need to do some arrays compaction at this stage
-    key.num_color_attachments = 0;
-    key.color_buffers.fill({});
-    key.blend_controls.fill({});
-    key.write_masks.fill({});
-    key.vertex_buffer_formats.fill(vk::Format::eUndefined);
-
-    key.patch_control_points = 0;
-    if (regs.stage_enable.hs_en.Value()) {
-        key.patch_control_points = regs.ls_hs_config.hs_input_control_points.Value();
-    }
-
-    // First pass of bindings check to idenitfy formats and swizzles and pass them to rhe shader
-    // recompiler.
-    for (auto cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
-        auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf) {
-            // No attachment bound and no incremented index.
+    // First pass to fill render target information needed by shader recompiler
+    for (s32 cb = 0; cb < Liverpool::NumColorBuffers && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
+            // No attachment bound or writing to it is disabled.
             continue;
         }
 
-        const auto remapped_cb = key.num_color_attachments++;
-        if (!regs.color_target_mask.GetMask(cb)) {
-            // Bound to null handle, skip over this attachment index.
-            continue;
-        }
-
-        // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
-        // need a bias applied to round correctly; detect and set the flag for that here.
-        const auto needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk &&
-                                       (col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Unorm ||
-                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Snorm ||
-                                        col_buf.GetNumberFmt() == AmdGpu::NumberFormat::Srgb) &&
-                                       (col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8 ||
-                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8 ||
-                                        col_buf.GetDataFmt() == AmdGpu::DataFormat::Format8_8_8_8);
-
-        key.color_buffers[remapped_cb] = Shader::PsColorBuffer{
+        // Fill color target information
+        key.color_buffers[cb] = Shader::PsColorBuffer{
             .data_format = col_buf.GetDataFmt(),
             .num_format = col_buf.GetNumberFmt(),
             .num_conversion = col_buf.GetNumberConversion(),
             .export_format = regs.color_export_format.GetFormat(cb),
-            .needs_unorm_fixup = needs_unorm_fixup,
             .swizzle = col_buf.Swizzle(),
         };
     }
 
+    // Compile and bind shader stages
+    if (!RefreshGraphicsStages()) {
+        return false;
+    }
+
+    // Second pass to mask out render targets not written by shader and fill remaining info
+    u8 color_samples = 0;
+    bool all_color_samples_same = true;
+    for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
+        const auto& col_buf = regs.color_buffers[cb];
+        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        if (!col_buf || !target_mask) {
+            continue;
+        }
+        if ((key.mrt_mask & (1u << cb)) == 0) {
+            key.color_buffers[cb] = {};
+            continue;
+        }
+
+        // Fill color blending information
+        if (regs.blend_control[cb].enable && !col_buf.info.blend_bypass) {
+            key.blend_controls[cb] = regs.blend_control[cb];
+        }
+
+        // Apply swizzle to target mask
+        key.write_masks[cb] =
+            vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
+
+        // Fill color samples
+        const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
+        all_color_samples_same &= color_samples == prev_color_samples || prev_color_samples == 0;
+        key.color_samples[cb] = color_samples;
+        key.num_samples = std::max(key.num_samples, color_samples);
+    }
+
+    // Force all color samples to match depth samples to avoid unsupported MSAA configuration
+    if (color_samples != 0) {
+        const bool depth_mismatch = db_enabled && color_samples != key.depth_samples;
+        if (!all_color_samples_same && !instance.IsMixedAnySamplesSupported() ||
+            all_color_samples_same && depth_mismatch && !instance.IsMixedDepthSamplesSupported()) {
+            key.color_samples.fill(key.depth_samples);
+            key.num_samples = key.depth_samples;
+        }
+    }
+
+    return true;
+}
+
+bool PipelineCache::RefreshGraphicsStages() {
+    const auto& regs = liverpool->regs;
+    auto& key = graphics_key;
     fetch_shader = std::nullopt;
 
     Shader::Backend::Bindings binding{};
-    const auto& TryBindStage = [&](Shader::Stage stage_in, Shader::LogicalStage stage_out) -> bool {
+    const auto bind_stage = [&](Shader::Stage stage_in, Shader::LogicalStage stage_out) -> bool {
         const auto stage_in_idx = static_cast<u32>(stage_in);
         const auto stage_out_idx = static_cast<u32>(stage_out);
         if (!regs.stage_enable.IsStageEnabled(stage_in_idx)) {
@@ -398,51 +455,49 @@ bool PipelineCache::RefreshGraphicsKey() {
         return true;
     };
 
-    const auto& IsGsFeaturesSupported = [&]() -> bool {
-        // These checks are temporary until all functionality is implemented.
-        return !regs.vgt_gs_mode.onchip && !regs.vgt_strmout_config.raw;
-    };
-
     infos.fill(nullptr);
-    TryBindStage(Stage::Fragment, LogicalStage::Fragment);
+    bind_stage(Stage::Fragment, LogicalStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
-    case Liverpool::ShaderStageEnable::VgtStages::EsGs: {
-        if (!instance.IsGeometryStageSupported() || !IsGsFeaturesSupported()) {
+    case Liverpool::ShaderStageEnable::VgtStages::EsGs:
+        if (!instance.IsGeometryStageSupported()) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");
             return false;
         }
-        if (!TryBindStage(Stage::Export, LogicalStage::Vertex)) {
+        if (regs.vgt_gs_mode.onchip || regs.vgt_strmout_config.raw) {
+            LOG_WARNING(Render_Vulkan, "Geometry shader features unsupported, skipping");
             return false;
         }
-        if (!TryBindStage(Stage::Geometry, LogicalStage::Geometry)) {
+        if (!bind_stage(Stage::Export, LogicalStage::Vertex)) {
+            return false;
+        }
+        if (!bind_stage(Stage::Geometry, LogicalStage::Geometry)) {
             return false;
         }
         break;
-    }
-    case Liverpool::ShaderStageEnable::VgtStages::LsHs: {
+    case Liverpool::ShaderStageEnable::VgtStages::LsHs:
         if (!instance.IsTessellationSupported() ||
             (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
              !instance.IsTessellationIsolinesSupported())) {
             return false;
         }
-        if (!TryBindStage(Stage::Hull, LogicalStage::TessellationControl)) {
+        if (!bind_stage(Stage::Hull, LogicalStage::TessellationControl)) {
             return false;
         }
-        if (!TryBindStage(Stage::Vertex, LogicalStage::TessellationEval)) {
+        if (!bind_stage(Stage::Vertex, LogicalStage::TessellationEval)) {
             return false;
         }
-        if (!TryBindStage(Stage::Local, LogicalStage::Vertex)) {
+        if (!bind_stage(Stage::Local, LogicalStage::Vertex)) {
             return false;
         }
         break;
-    }
-    default: {
-        TryBindStage(Stage::Vertex, LogicalStage::Vertex);
+    default:
+        bind_stage(Stage::Vertex, LogicalStage::Vertex);
         break;
-    }
     }
 
     const auto* vs_info = infos[static_cast<u32>(Shader::LogicalStage::Vertex)];
@@ -456,30 +511,6 @@ bool PipelineCache::RefreshGraphicsKey() {
             key.vertex_buffer_formats[vertex_binding++] =
                 Vulkan::LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt());
         }
-    }
-
-    // Second pass to fill remain CB pipeline key data
-    for (auto cb = 0u, remapped_cb = 0u; cb < Liverpool::NumColorBuffers; ++cb) {
-        auto const& col_buf = regs.color_buffers[cb];
-        if (skip_cb_binding || !col_buf) {
-            // No attachment bound and no incremented index.
-            continue;
-        }
-
-        if (!regs.color_target_mask.GetMask(cb) || (key.mrt_mask & (1u << cb)) == 0) {
-            // Attachment is masked out by either color_target_mask or shader mrt_mask. In the case
-            // of the latter we need to change format to undefined, and either way we need to
-            // increment the index for the null attachment binding.
-            key.color_buffers[remapped_cb++] = {};
-            continue;
-        }
-
-        key.blend_controls[remapped_cb] = regs.blend_control[cb];
-        key.blend_controls[remapped_cb].enable.Assign(key.blend_controls[remapped_cb].enable &&
-                                                      !col_buf.info.blend_bypass);
-        key.write_masks[remapped_cb] = vk::ColorComponentFlags{regs.color_target_mask.GetMask(cb)};
-        key.cb_shader_mask.SetMask(remapped_cb, regs.color_shader_mask.GetMask(cb));
-        ++remapped_cb;
     }
 
     return true;

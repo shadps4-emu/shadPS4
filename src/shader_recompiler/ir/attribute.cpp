@@ -104,10 +104,10 @@ std::string NameOf(Attribute attribute) {
         return "ClipDistanace";
     case Attribute::CullDistance:
         return "CullDistance";
-    case Attribute::RenderTargetId:
-        return "RenderTargetId";
-    case Attribute::ViewportId:
-        return "ViewportId";
+    case Attribute::RenderTargetIndex:
+        return "RenderTargetIndex";
+    case Attribute::ViewportIndex:
+        return "ViewportIndex";
     case Attribute::VertexId:
         return "VertexId";
     case Attribute::PrimitiveId:
@@ -153,7 +153,19 @@ std::string NameOf(Attribute attribute) {
     case Attribute::TessellationEvaluationPointV:
         return "TessellationEvaluationPointV";
     case Attribute::PackedHullInvocationInfo:
+        return "OffChipLdsBase";
+    case Attribute::OffChipLdsBase:
         return "PackedHullInvocationInfo";
+    case Attribute::TessFactorsBufferBase:
+        return "TessFactorsBufferBase";
+    case Attribute::PointSize:
+        return "PointSize";
+    case Attribute::StencilRef:
+        return "StencilRef";
+    case Attribute::SampleMask:
+        return "SampleMask";
+    case Attribute::PackedAncillary:
+        return "PackedAncillary";
     default:
         break;
     }

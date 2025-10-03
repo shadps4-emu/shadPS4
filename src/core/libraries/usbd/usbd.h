@@ -27,7 +27,7 @@ using SceUsbdDeviceDescriptor = libusb_device_descriptor;
 using SceUsbdConfigDescriptor = libusb_config_descriptor;
 using SceUsbdTransfer = libusb_transfer;
 using SceUsbdControlSetup = libusb_control_setup;
-using SceUsbdTransferCallback = void (*)(SceUsbdTransfer* transfer);
+using SceUsbdTransferCallback = void PS4_SYSV_ABI (*)(SceUsbdTransfer* transfer);
 
 enum class SceUsbdSpeed : u32 {
     UNKNOWN = 0,

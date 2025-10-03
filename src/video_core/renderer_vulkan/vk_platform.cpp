@@ -86,6 +86,11 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
             UNREACHABLE();
         }
     } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
+        if (Config::isRdocEnabled()) {
+            LOG_ERROR(Render_Vulkan,
+                      "RenderDoc is not compatible with Wayland, use an X11 window instead.");
+        }
+
         const vk::WaylandSurfaceCreateInfoKHR wayland_ci = {
             .display = static_cast<wl_display*>(window_info.display_connection),
             .surface = static_cast<wl_surface*>(window_info.render_surface),
@@ -226,8 +231,7 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
                                   bool enable_crash_diagnostic) {
     LOG_INFO(Render_Vulkan, "Creating vulkan instance");
 
-#ifdef __APPLE__
-#ifndef ENABLE_QT_GUI
+#if defined(__APPLE__) && !defined(ENABLE_QT_GUI)
     // Initialize the environment with the path to the MoltenVK ICD, so that the loader will
     // find it.
     static const auto icd_path = [] {
@@ -238,17 +242,8 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     }();
     setenv("VK_DRIVER_FILES", icd_path.c_str(), true);
 #endif
-    // If the Vulkan loader exists in /usr/local/lib, give it priority. The Vulkan SDK
-    // installs it here by default, but it is not in the default library search path.
-    // The loader has a clause to check for it, but at a lower priority than the bundled
-    // libMoltenVK.dylib, so we need to handle it ourselves to give it priority.
-    static const std::string usr_local_path = "/usr/local/lib/libvulkan.dylib";
-    static vk::detail::DynamicLoader dl = std::filesystem::exists(usr_local_path)
-                                              ? vk::detail::DynamicLoader(usr_local_path)
-                                              : vk::detail::DynamicLoader();
-#else
+
     static vk::detail::DynamicLoader dl;
-#endif
     VULKAN_HPP_DEFAULT_DISPATCHER.init(
         dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr"));
 

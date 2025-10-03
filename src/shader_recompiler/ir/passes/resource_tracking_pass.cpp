@@ -6,6 +6,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reinterpret.h"
 #include "video_core/amdgpu/resource.h"
@@ -139,6 +140,9 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
     case IR::Opcode::BufferAtomicUMax64:
     case IR::Opcode::BufferAtomicUMin64:
         return IR::Type::U64;
+    case IR::Opcode::BufferAtomicFMax32:
+    case IR::Opcode::BufferAtomicFMin32:
+        return IR::Type::F32;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32:
         // Formatted buffer loads can use a variety of types.
@@ -542,7 +546,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
 
     // Patch image instruction if image is FMask.
-    if (image.IsFmask()) {
+    if (AmdGpu::IsFmask(image.GetDataFmt())) {
         ASSERT_MSG(!is_written, "FMask storage instructions are not supported");
 
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
@@ -737,22 +741,25 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
                                  : buffer.GetDataFmt();
     const u32 shift = BufferAddressShift(inst, data_format);
     const u32 mask = (1 << shift) - 1;
+    const IR::U32 soffset = IR::GetBufferSOffsetArg(&inst);
 
     // If address calculation is of the form "index * const_stride + offset" with offset constant
     // and both const_stride and offset are divisible with the element size, apply shift directly.
-    if (inst_info.index_enable && !inst_info.offset_enable && !buffer.swizzle_enable &&
-        !buffer.add_tid_enable && (stride & mask) == 0 && (inst_offset & mask) == 0) {
-        // buffer_offset = index * (const_stride >> shift) + (inst_offset >> shift)
-        const IR::U32 index = IR::U32{inst.Arg(1)};
-        return ir.IAdd(ir.IMul(index, ir.Imm32(stride >> shift)), ir.Imm32(inst_offset >> shift));
+    if (inst_info.index_enable && !inst_info.voffset_enable && soffset.IsImmediate() &&
+        !buffer.swizzle_enable && !buffer.add_tid_enable && (stride & mask) == 0) {
+        const u32 total_offset = soffset.U32() + inst_offset;
+        if ((total_offset & mask) == 0) {
+            // buffer_offset = index * (const_stride >> shift) + (offset >> shift)
+            const IR::U32 index = IR::GetBufferIndexArg(&inst);
+            return ir.IAdd(ir.IMul(index, ir.Imm32(stride >> shift)),
+                           ir.Imm32(total_offset >> shift));
+        }
     }
 
     // index = (inst_idxen ? vgpr_index : 0) + (const_add_tid_enable ? thread_id[5:0] : 0)
     IR::U32 index = ir.Imm32(0U);
     if (inst_info.index_enable) {
-        const IR::U32 vgpr_index{inst_info.offset_enable
-                                     ? IR::U32{ir.CompositeExtract(inst.Arg(1), 0)}
-                                     : IR::U32{inst.Arg(1)}};
+        const IR::U32 vgpr_index = IR::GetBufferIndexArg(&inst);
         index = ir.IAdd(index, vgpr_index);
     }
     if (buffer.add_tid_enable) {
@@ -763,11 +770,10 @@ IR::U32 CalculateBufferAddress(IR::IREmitter& ir, const IR::Inst& inst, const In
     }
     // offset = (inst_offen ? vgpr_offset : 0) + inst_offset
     IR::U32 offset = ir.Imm32(inst_offset);
-    if (inst_info.offset_enable) {
-        const IR::U32 vgpr_offset = inst_info.index_enable
-                                        ? IR::U32{ir.CompositeExtract(inst.Arg(1), 1)}
-                                        : IR::U32{inst.Arg(1)};
-        offset = ir.IAdd(offset, vgpr_offset);
+    offset = ir.IAdd(offset, soffset);
+    if (inst_info.voffset_enable) {
+        const IR::U32 voffset = IR::GetBufferVOffsetArg(&inst);
+        offset = ir.IAdd(offset, voffset);
     }
     const IR::U32 const_stride = ir.Imm32(stride);
     IR::U32 buffer_offset;
@@ -812,7 +818,8 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    inst.SetArg(1, CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
+    inst.SetArg(IR::LoadBufferArgs::Address,
+                CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
 
 IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR::Value& x,
@@ -830,8 +837,8 @@ IR::Value FixCubeCoords(IR::IREmitter& ir, const AmdGpu::Image& image, const IR:
 void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
                           const ImageResource& image_res, const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
-    const auto sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
-    auto sampler = sampler_res.GetSharp(info);
+    const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
+    const auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
@@ -927,14 +934,25 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         }
     }();
 
-    const auto unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
-    // Query dimensions of image if needed for normalization.
-    // We can't use the image sharp because it could be bound to a different image later.
+    const bool is_msaa = view_type == AmdGpu::ImageType::Color2DMsaa ||
+                         view_type == AmdGpu::ImageType::Color2DMsaaArray;
+    const bool unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
+    const bool needs_dimentions = (!is_msaa && unnormalized) || (is_msaa && !unnormalized);
     const auto dimensions =
-        unnormalized ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
-                     : IR::Value{};
+        needs_dimentions ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
+                         : IR::Value{};
     const auto get_coord = [&](u32 coord_idx, u32 dim_idx) -> IR::Value {
         const auto coord = get_addr_reg(coord_idx);
+        if (is_msaa) {
+            // For MSAA images preserve the unnormalized coord or manually unnormalize it
+            if (unnormalized) {
+                return ir.ConvertFToU(32, coord);
+            } else {
+                const auto dim =
+                    ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
+                return ir.ConvertFToU(32, ir.FPMul(coord, dim));
+            }
+        }
         if (unnormalized) {
             // Normalize the coordinate for sampling, dividing by its corresponding dimension.
             const auto dim =
@@ -951,12 +969,10 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
             addr_reg = addr_reg + 1;
             return get_coord(addr_reg - 1, 0);
         case AmdGpu::ImageType::Color1DArray: // x, slice
-            [[fallthrough]];
-        case AmdGpu::ImageType::Color2D: // x, y
+        case AmdGpu::ImageType::Color2D:      // x, y
+        case AmdGpu::ImageType::Color2DMsaa:  // x, y
             addr_reg = addr_reg + 2;
             return ir.CompositeConstruct(get_coord(addr_reg - 2, 0), get_coord(addr_reg - 1, 1));
-        case AmdGpu::ImageType::Color2DMsaa: // x, y, frag
-            [[fallthrough]];
         case AmdGpu::ImageType::Color2DArray: // x, y, slice
             addr_reg = addr_reg + 3;
             // Note we can use FixCubeCoords with fallthrough cases since it checks for image type.
@@ -979,6 +995,9 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
     const IR::F32 lod_clamp = inst_info.has_lod_clamp ? get_addr_reg(addr_reg++) : IR::F32{};
 
     auto texel = [&] -> IR::Value {
+        if (is_msaa) {
+            return ir.ImageRead(handle, coords, ir.Imm32(0U), ir.Imm32(0U), inst_info);
+        }
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {
                 return ir.ImageGatherDref(handle, coords, offset, dref, inst_info);
@@ -1001,7 +1020,10 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
         return ir.ImageSampleImplicitLod(handle, coords, bias, offset, inst_info);
     }();
 
-    const auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+    auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
+    if (sampler.force_degamma && image.GetNumberFmt() != AmdGpu::NumberFormat::Srgb) {
+        converted = ApplyForceDegamma(ir, texel);
+    }
     inst.ReplaceUsesWith(converted);
 }
 

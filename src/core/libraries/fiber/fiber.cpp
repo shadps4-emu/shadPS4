@@ -546,30 +546,28 @@ s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_o
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberInitialize);
-    LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber", 1, 1,
+    LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", sceFiberInitialize);
+    LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber",
                  sceFiberInitializeImpl); // _sceFiberInitializeWithInternalOptionImpl
-    LIB_FUNCTION("asjUJJ+aa8s", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberOptParamInitialize);
-    LIB_FUNCTION("JeNX5F-NzQU", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberFinalize);
+    LIB_FUNCTION("asjUJJ+aa8s", "libSceFiber", 1, "libSceFiber", sceFiberOptParamInitialize);
+    LIB_FUNCTION("JeNX5F-NzQU", "libSceFiber", 1, "libSceFiber", sceFiberFinalize);
 
-    LIB_FUNCTION("a0LLrZWac0M", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberRun);
-    LIB_FUNCTION("PFT2S-tJ7Uk", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberSwitch);
-    LIB_FUNCTION("p+zLIOg27zU", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberGetSelf);
-    LIB_FUNCTION("B0ZX2hx9DMw", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberReturnToThread);
+    LIB_FUNCTION("a0LLrZWac0M", "libSceFiber", 1, "libSceFiber", sceFiberRun);
+    LIB_FUNCTION("PFT2S-tJ7Uk", "libSceFiber", 1, "libSceFiber", sceFiberSwitch);
+    LIB_FUNCTION("p+zLIOg27zU", "libSceFiber", 1, "libSceFiber", sceFiberGetSelf);
+    LIB_FUNCTION("B0ZX2hx9DMw", "libSceFiber", 1, "libSceFiber", sceFiberReturnToThread);
 
-    LIB_FUNCTION("avfGJ94g36Q", "libSceFiber", 1, "libSceFiber", 1, 1,
+    LIB_FUNCTION("avfGJ94g36Q", "libSceFiber", 1, "libSceFiber",
                  sceFiberRunImpl); // _sceFiberAttachContextAndRun
-    LIB_FUNCTION("ZqhZFuzKT6U", "libSceFiber", 1, "libSceFiber", 1, 1,
+    LIB_FUNCTION("ZqhZFuzKT6U", "libSceFiber", 1, "libSceFiber",
                  sceFiberSwitchImpl); // _sceFiberAttachContextAndSwitch
 
-    LIB_FUNCTION("uq2Y5BFz0PE", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberGetInfo);
-    LIB_FUNCTION("Lcqty+QNWFc", "libSceFiber", 1, "libSceFiber", 1, 1,
-                 sceFiberStartContextSizeCheck);
-    LIB_FUNCTION("Kj4nXMpnM8Y", "libSceFiber", 1, "libSceFiber", 1, 1,
-                 sceFiberStopContextSizeCheck);
-    LIB_FUNCTION("JzyT91ucGDc", "libSceFiber", 1, "libSceFiber", 1, 1, sceFiberRename);
+    LIB_FUNCTION("uq2Y5BFz0PE", "libSceFiber", 1, "libSceFiber", sceFiberGetInfo);
+    LIB_FUNCTION("Lcqty+QNWFc", "libSceFiber", 1, "libSceFiber", sceFiberStartContextSizeCheck);
+    LIB_FUNCTION("Kj4nXMpnM8Y", "libSceFiber", 1, "libSceFiber", sceFiberStopContextSizeCheck);
+    LIB_FUNCTION("JzyT91ucGDc", "libSceFiber", 1, "libSceFiber", sceFiberRename);
 
-    LIB_FUNCTION("0dy4JtMUcMQ", "libSceFiber", 1, "libSceFiber", 1, 1,
+    LIB_FUNCTION("0dy4JtMUcMQ", "libSceFiber", 1, "libSceFiber",
                  sceFiberGetThreadFramePointerAddress);
 }
 

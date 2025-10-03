@@ -149,10 +149,11 @@ public:
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
     void V_ADD_F32(const GcnInst& inst);
+    void V_ADD_F64(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
-    void V_MUL_I32_I24(const GcnInst& inst);
+    void V_MUL_I32_I24(const GcnInst& inst, bool is_signed);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MAX_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN_I32(const GcnInst& inst);
@@ -317,13 +318,8 @@ private:
     IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
                              const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
 
-    void ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
-                        const PsColorBuffer& color_buffer);
-    void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-    void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-
+    void ExportRenderTarget(const GcnInst& inst);
+    void ExportDepth(const GcnInst& inst);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);

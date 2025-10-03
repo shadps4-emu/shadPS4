@@ -13,6 +13,7 @@ struct Profile {
     bool support_int8{};
     bool support_int16{};
     bool support_int64{};
+    bool support_float16{};
     bool support_float64{};
     bool support_fp32_denorm_preserve{};
     bool support_fp32_denorm_flush{};
@@ -35,6 +36,7 @@ struct Profile {
     bool needs_manual_interpolation{};
     bool needs_lds_barriers{};
     bool needs_buffer_offsets{};
+    bool needs_unorm_fixup{};
     u64 max_ubo_size{};
     u32 max_viewport_width{};
     u32 max_viewport_height{};

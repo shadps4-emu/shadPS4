@@ -435,7 +435,7 @@
     </message>
     <message>
       <source>Left Deadzone</source>
-      <translation type="unfinished">Left Deadzone</translation>
+      <translation>左デッドゾーン</translation>
     </message>
     <message>
       <source>Left Stick</source>
@@ -451,15 +451,7 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
+      <translation>ゲームごとの設定を使用する</translation>
     </message>
     <message>
       <source>Face Buttons</source>
@@ -471,7 +463,7 @@
     </message>
     <message>
       <source>Right Deadzone</source>
-      <translation type="unfinished">Right Deadzone</translation>
+      <translation>右デッドゾーン</translation>
     </message>
     <message>
       <source>Right Stick</source>
@@ -479,31 +471,19 @@
     </message>
     <message>
       <source>Color Adjustment</source>
-      <translation type="unfinished">Color Adjustment</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
+      <translation>色調整</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
-      <translation type="unfinished">Override Lightbar Color</translation>
+      <translation>ライトバーの色の上書き</translation>
     </message>
     <message>
       <source>Override Color</source>
-      <translation type="unfinished">Override Color</translation>
+      <translation>色を変更</translation>
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>保存できませんでした</translation>
     </message>
     <message>
       <source>Cannot bind axis values more than once</source>
@@ -527,55 +507,39 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
-    </message>
-    <message>
-      <source>L1</source>
-      <translation type="unfinished">L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation type="unfinished">R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation type="unfinished">L2</translation>
+      <translation>マッピングなし</translation>
     </message>
     <message>
       <source>Options</source>
-      <translation type="unfinished">Options</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation type="unfinished">R2</translation>
+      <translation>OPTIONS</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>左タッチパッド</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>タッチパッド中央</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>右タッチパッド</translation>
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>△</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>▢</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>◯</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>✕</translation>
     </message>
     <message>
       <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
@@ -587,11 +551,79 @@
     </message>
     <message>
       <source>Press a button</source>
-      <translation type="unfinished">Press a button</translation>
+      <translation>ボタンを押してください</translation>
     </message>
     <message>
       <source>Move analog stick</source>
-      <translation type="unfinished">Move analog stick</translation>
+      <translation>アナログスティックを動かす</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1とL2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>アクティブなゲームパッド</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ゲームパッド ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>デフォルトのゲームパッド</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation type="unfinished">No default selected</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>なし</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>アクティブなゲームパッドをデフォルトに設定</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>デフォルトのゲームパッドを削除</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 と R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation type="unfinished">Default Controller Selected</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation type="unfinished">Active controller set as default</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation type="unfinished">Default Controller Removed</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation type="unfinished">Default controller setting removed</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>赤</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>緑</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>青</translation>
     </message>
   </context>
   <context>
@@ -626,7 +658,7 @@
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
+      <translation>ヘルプ</translation>
     </message>
     <message>
       <source>Do you want to reset your custom default config to the original default config?</source>
@@ -778,7 +810,7 @@
     </message>
     <message>
       <source>Favorite</source>
-      <translation type="unfinished">Favorite</translation>
+      <translation>お気に入り</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>互換性...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>データベースを更新</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>レポートを表示</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>レポートを送信</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>ショートカットの作成</translation>
     </message>
@@ -956,7 +976,7 @@
     </message>
     <message>
       <source>No log file found for this game!</source>
-      <translation type="unfinished">No log file found for this game!</translation>
+      <translation>このゲームのログファイルが見つかりませんでした！</translation>
     </message>
     <message>
       <source>Failed to convert icon.</source>
@@ -968,7 +988,7 @@
     </message>
     <message>
       <source>This game has no saved trophies to delete!</source>
-      <translation type="unfinished">This game has no saved trophies to delete!</translation>
+      <translation>このゲームには削除できるトロフィーが保存されていません！</translation>
     </message>
     <message>
       <source>Save Data</source>
@@ -984,18 +1004,54 @@
     </message>
     <message>
       <source>Remove from Favorites</source>
-      <translation type="unfinished">Remove from Favorites</translation>
+      <translation>お気に入りから削除</translation>
     </message>
     <message>
       <source>Add to Favorites</source>
-      <translation type="unfinished">Add to Favorites</translation>
+      <translation>お気に入りへ追加</translation>
+    </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation type="unfinished">Game-specific Settings...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation type="unfinished">Configure Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation type="unfinished">Create Game-specific Settings from Global Settings</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation type="unfinished">Delete Game-specific Settings</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>データベースを更新</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>レポートを見る</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>レポートを送信</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation type="unfinished">Confirm deletion</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>ゲーム固有の設定を削除しますか？</translation>
     </message>
   </context>
   <context>
     <name>HelpDialog</name>
     <message>
       <source>Quickstart</source>
-      <translation type="unfinished">Quickstart</translation>
+      <translation>クイックスタート</translation>
     </message>
     <message>
       <source>FAQ</source>
@@ -1003,7 +1059,7 @@
     </message>
     <message>
       <source>Syntax</source>
-      <translation type="unfinished">Syntax</translation>
+      <translation>シンタックス</translation>
     </message>
     <message>
       <source>Special Bindings</source>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation type="unfinished">Keybindings</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>ホットキーのカスタマイズ</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>コントローラーホットキー</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>FPSカウンターを表示</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation type="unfinished">unmapped</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>エミュレーションを終了</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation type="unfinished">Reload Button Mappings</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>全画面表示の切り替え</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation type="unfinished">Toggle Pause</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation type="unfinished">Keyboard Hotkeys</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Renderdocキャプチャ（デバッグ用）</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Joystick Emulation</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation type="unfinished">Toggle Mouse to Gyro Emulation</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation type="unfinished">Tip: Up to three simultaneous inputs can be assigned for each hotkey</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>適用</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>キャンセル</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>デフォルトに戻す</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>保存できませんでした</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation type="unfinished">Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>入力待機中</translation>
     </message>
   </context>
   <context>
@@ -1030,7 +1173,7 @@
     </message>
     <message>
       <source>unmapped</source>
-      <translation type="unfinished">unmapped</translation>
+      <translation>マッピングなし</translation>
     </message>
     <message>
       <source>Left</source>
@@ -1066,35 +1209,15 @@
     </message>
     <message>
       <source>Use per-game configs</source>
-      <translation type="unfinished">Use per-game configs</translation>
-    </message>
-    <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
+      <translation>ゲームごとの設定を使用する</translation>
     </message>
     <message>
       <source>Text Editor</source>
-      <translation type="unfinished">Text Editor</translation>
+      <translation>テキストエディター</translation>
     </message>
     <message>
       <source>Help</source>
-      <translation type="unfinished">Help</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
+      <translation>ヘルプ</translation>
     </message>
     <message>
       <source>Mouse to Joystick</source>
@@ -1102,11 +1225,7 @@
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
-      <translation type="unfinished">*press F7 ingame to activate</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
+      <translation>*ゲーム中にF7を押して有効化</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1126,19 +1245,19 @@
     </message>
     <message>
       <source>Triangle</source>
-      <translation type="unfinished">Triangle</translation>
+      <translation>△</translation>
     </message>
     <message>
       <source>Square</source>
-      <translation type="unfinished">Square</translation>
+      <translation>▢</translation>
     </message>
     <message>
       <source>Circle</source>
-      <translation type="unfinished">Circle</translation>
+      <translation>◯</translation>
     </message>
     <message>
       <source>Cross</source>
-      <translation type="unfinished">Cross</translation>
+      <translation>✕</translation>
     </message>
     <message>
       <source>Right Analog Halfmode</source>
@@ -1150,7 +1269,7 @@
     </message>
     <message>
       <source>Right Stick</source>
-      <translation type="unfinished">Right Stick</translation>
+      <translation>右スティック</translation>
     </message>
     <message>
       <source>Speed Offset (def 0.125):</source>
@@ -1186,11 +1305,11 @@
     </message>
     <message>
       <source>Unable to Save</source>
-      <translation type="unfinished">Unable to Save</translation>
+      <translation>保存できませんでした</translation>
     </message>
     <message>
       <source>Press a key</source>
-      <translation type="unfinished">Press a key</translation>
+      <translation>キーを押してください</translation>
     </message>
     <message>
       <source>Cannot set mapping</source>
@@ -1226,15 +1345,50 @@
     </message>
     <message>
       <source>Touchpad Left</source>
-      <translation type="unfinished">Touchpad Left</translation>
+      <translation>タッチパッド左</translation>
     </message>
     <message>
       <source>Touchpad Center</source>
-      <translation type="unfinished">Touchpad Center</translation>
+      <translation>タッチパッド中央</translation>
     </message>
     <message>
       <source>Touchpad Right</source>
-      <translation type="unfinished">Touchpad Right</translation>
+      <translation>タッチパッド右</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation type="unfinished">Log Filter Presets</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>コメント</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>フィルター</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>ロード</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>閉じる</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation type="unfinished">Add a new preset after the selected row</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation type="unfinished">Remove selected presets</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation type="unfinished">Load the selected preset</translation>
     </message>
   </context>
   <context>
@@ -1329,11 +1483,11 @@
     </message>
     <message>
       <source>Trophy Viewer</source>
-      <translation type="unfinished">Trophy Viewer</translation>
+      <translation>トロフィービューアー</translation>
     </message>
     <message>
       <source>No games found. Please add your games to your library first.</source>
-      <translation type="unfinished">No games found. Please add your games to your library first.</translation>
+      <translation>ゲームが見つかりませんでした。まずライブラリにゲームを追加してください。</translation>
     </message>
     <message>
       <source>Search...</source>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>アイコンの下にラベルを表示</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>ホットキーのカスタマイズ</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>エミュレーターの言語</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>エミュレーター</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>設定を開くときのデフォルトタブ</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>ゲームサイズをリストに表示</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>スプラッシュ画面を表示する</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1588,19 +1738,19 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>マイク</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>なし</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>デフォルトデバイス</translation>
     </message>
     <message>
       <source>s</source>
-      <translation type="unfinished">s</translation>
+      <translation>s</translation>
     </message>
     <message>
       <source>Controller</source>
@@ -1621,10 +1771,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>グラフィックスデバイス</translation>
-    </message>
-    <message>
-      <source>Vblank Divider</source>
-      <translation>Vblankディバイダー</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1680,7 +1826,7 @@
     </message>
     <message>
       <source>Enable Crash Diagnostics</source>
-      <translation type="unfinished">Enable Crash Diagnostics</translation>
+      <translation>クラッシュ診断の有効化</translation>
     </message>
     <message>
       <source>Collect Shaders</source>
@@ -1727,12 +1873,8 @@
       <translation>更新を確認</translation>
     </message>
     <message>
-      <source>GUI Settings</source>
-      <translation>GUI設定</translation>
-    </message>
-    <message>
       <source>Title Music</source>
-      <translation type="unfinished">Title Music</translation>
+      <translation>タイトル音楽</translation>
     </message>
     <message>
       <source>Disable Trophy Notification</source>
@@ -1740,11 +1882,11 @@
     </message>
     <message>
       <source>Background Image</source>
-      <translation type="unfinished">Background Image</translation>
+      <translation>背景画像</translation>
     </message>
     <message>
       <source>Show Background Image</source>
-      <translation type="unfinished">Show Background Image</translation>
+      <translation>背景画像を表示</translation>
     </message>
     <message>
       <source>Opacity</source>
@@ -1832,7 +1974,7 @@
     </message>
     <message>
       <source>Background Image:\nControl the opacity of the game background image.</source>
-      <translation type="unfinished">Background Image:\nControl the opacity of the game background image.</translation>
+      <translation>背景画像:\nゲーム背景画像の不透明度を制御します。</translation>
     </message>
     <message>
       <source>Play Title Music:\nIf a game supports it, enable playing special music when selecting the game in the GUI.</source>
@@ -1883,10 +2025,6 @@
       <translation>幅/高さ:\n起動時にエミュレーターウィンドウのサイズを設定します。ゲーム中でもサイズを変更することができます。\nこれはゲーム内の解像度とは異なります。</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblankディバイダー:\nエミュレーターが更新されるフレームレートにこの数を掛けます。これを変更すると、ゲームの速度が上がったり、想定外の変更がある場合、ゲームの重要な機能が壊れる可能性があります!</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>シェーダーダンプを有効にする:\n技術的なデバッグの目的で、レンダリング中にゲームのシェーダーをフォルダーに保存します。</translation>
     </message>
@@ -1896,7 +2034,7 @@
     </message>
     <message>
       <source>Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</source>
-      <translation type="unfinished">Enable HDR:\nEnables HDR in games that support it.\nYour monitor must have support for the BT2020 PQ color space and the RGB10A2 swapchain format.</translation>
+      <translation>HDRを有効にする：\n対応ゲームでHDRを有効にします。\nお使いのモニターはBT2020 PQカラースペースとRGB10A2スワップチェーン形式に対応している必要があります。</translation>
     </message>
     <message>
       <source>Game Folders:\nThe list of folders to check for installed games.</source>
@@ -1915,24 +2053,12 @@
       <translation>デバッグダンプを有効にする:\n現在実行中のPS4プログラムのインポートおよびエクスポートシンボルとファイルヘッダー情報をディレクトリに保存します。</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkanバリデーションレイヤーを有効にする:\nVulkanのレンダリングステータスを検証し、内部状態に関する情報をログに記録するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Vulkan同期バリデーションを有効にする:\nVulkanのレンダリングタスクのタイミングを検証するシステムを有効にします。これによりパフォーマンスが低下し、エミュレーションの動作が変わる可能性があります。</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>RenderDocデバッグを有効にする:\n有効にすると、エミュレーターはRenderdocとの互換性を提供し、現在レンダリング中のフレームのキャプチャと分析を可能にします。</translation>
     </message>
     <message>
       <source>Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</source>
-      <translation type="unfinished">Collect Shaders:\nYou need this enabled to edit shaders with the debug menu (Ctrl + F10).</translation>
-    </message>
-    <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+      <translation>シェーダーを収集する:\nデバッグメニュー(Ctrl + F10)でシェーダーを編集するには、これを有効にする必要があります。</translation>
     </message>
     <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
@@ -1956,7 +2082,7 @@
     </message>
     <message>
       <source>Save Data Path:\nThe folder where game save data will be saved.</source>
-      <translation type="unfinished">Save Data Path:\nThe folder where game save data will be saved.</translation>
+      <translation>セーブデータパス:\nゲームのセーブデータを保存するフォルダです。</translation>
     </message>
     <message>
       <source>Browse:\nBrowse for a folder to set as the save data path.</source>
@@ -1980,7 +2106,7 @@
     </message>
     <message>
       <source>Save Data Path</source>
-      <translation type="unfinished">Save Data Path</translation>
+      <translation>セーブデータパス</translation>
     </message>
     <message>
       <source>Browse</source>
@@ -1996,7 +2122,7 @@
     </message>
     <message>
       <source>Auto Select</source>
-      <translation type="unfinished">Auto Select</translation>
+      <translation>自動選択</translation>
     </message>
     <message>
       <source>Directory to install games</source>
@@ -2040,15 +2166,15 @@
     </message>
     <message>
       <source>Separate Log Files</source>
-      <translation type="unfinished">Separate Log Files</translation>
+      <translation>ログファイルを分離する</translation>
     </message>
     <message>
       <source>Separate Log Files:\nWrites a separate logfile for each game.</source>
-      <translation type="unfinished">Separate Log Files:\nWrites a separate logfile for each game.</translation>
+      <translation>ログファイルを分離:\nゲームごとに別のログファイルに書き込みます。</translation>
     </message>
     <message>
       <source>Trophy Notification Position</source>
-      <translation type="unfinished">Trophy Notification Position</translation>
+      <translation>トロフィー通知の位置</translation>
     </message>
     <message>
       <source>Left</source>
@@ -2060,11 +2186,11 @@
     </message>
     <message>
       <source>Top</source>
-      <translation type="unfinished">Top</translation>
+      <translation>上</translation>
     </message>
     <message>
       <source>Bottom</source>
-      <translation type="unfinished">Bottom</translation>
+      <translation>下</translation>
     </message>
     <message>
       <source>Notification Duration</source>
@@ -2072,7 +2198,7 @@
     </message>
     <message>
       <source>Portable User Folder</source>
-      <translation type="unfinished">Portable User Folder</translation>
+      <translation>ポータブルユーザーフォルダー</translation>
     </message>
     <message>
       <source>Create Portable User Folder from Common User Folder</source>
@@ -2084,7 +2210,7 @@
     </message>
     <message>
       <source>Cannot create portable user folder</source>
-      <translation type="unfinished">Cannot create portable user folder</translation>
+      <translation>ポータブルユーザーフォルダを作成できません。</translation>
     </message>
     <message>
       <source>%1 already exists</source>
@@ -2092,11 +2218,11 @@
     </message>
     <message>
       <source>Portable user folder created</source>
-      <translation type="unfinished">Portable user folder created</translation>
+      <translation>ポータブルユーザーフォルダが作成されました</translation>
     </message>
     <message>
       <source>%1 successfully created.</source>
-      <translation type="unfinished">%1 successfully created.</translation>
+      <translation>%1 は正常に作成されました。</translation>
     </message>
     <message>
       <source>Open the custom trophy images/sounds folder:\nYou can add custom images to the trophies and an audio.\nAdd the files to custom_trophy with the following names:\ntrophy.wav OR trophy.mp3, bronze.png, gold.png, platinum.png, silver.png\nNote: The sound will only work in QT versions.</source>
@@ -2107,16 +2233,200 @@
       <translation> * サポートされていないVulkanバージョン</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation type="unfinished">100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>試験的な機能</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>警告: これらの機能は実験的なものであり、指示された場合やゲームが必要な場合を除き、有効にすべきではありません。 質問がある場合は、shadPS4 Discordサーバーに問い合わせてください。</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation type="unfinished">Enable Background Controller Input</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation type="unfinished">Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>ログの有効化</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation type="unfinished">Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>表示モード</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Mailbox (Vsync)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Vsync)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediate (Vsyncなし)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>DLC フォルダー</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation type="unfinished">Select the DLC folder</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>表示モード：\nビデオ出力が画面にどのように表示されるかを設定します。\n\nメールボックス：フレームは画面のリフレッシュレートと同期します。新規フレームは待機中のフレームを置き換えます。遅延は減少しますが、処理が遅れた場合にフレームがスキップされる可能性があります。\nFIFO: フレームは画面のリフレッシュレートに同期します。新規フレームは待機中のフレームの後ろにキューイングされます。全フレームの表示を保証しますが、遅延が増加する可能性があります。\n即時: フレームは準備完了次第、直ちに画面に表示されます。ティアリングが発生する可能性があります。</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation type="unfinished">DLC Path:\nThe folder where game DLC loaded from.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation type="unfinished">Browse:\nBrowse for a folder to set as the DLC path.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>FSR設定</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>FSRを有効化</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>RCASを有効化 (シャープニング)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>RCAS減衰率:</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation type="unfinished">Load Presets...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>ログ</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation type="unfinished">Open Log Location:\nOpen the folder where the log file is saved.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation type="unfinished">Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>ボリューム:\nグローバルレベルでゲームのボリュームを調整します。範囲は0〜500%で、デフォルトは100%です。</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation type="unfinished">Default tab when opening settings:\nChoose which tab will open, the default is General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation type="unfinished">Show Game Size In List:\nThere is the size of the game in the list.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>モーションコントロールを有効にする：\n有効にすると、コントローラーのモーションコントロールがサポートされている場合に使用されます。</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Vblank周波数</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation type="unfinished">Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>ダイレクトメモリアクセスを有効にする</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>開発者コンソールモードを有効にする</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation type="unfinished">Set &quot;PSN signed-in&quot; to True</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation type="unfinished">Set &quot;Network Connected&quot; to True</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>
@@ -2127,11 +2437,11 @@
     </message>
     <message>
       <source>Select Game:</source>
-      <translation type="unfinished">Select Game:</translation>
+      <translation>ゲームを選択:</translation>
     </message>
     <message>
       <source>Progress</source>
-      <translation type="unfinished">Progress</translation>
+      <translation>進捗度</translation>
     </message>
     <message>
       <source>Show Earned Trophies</source>

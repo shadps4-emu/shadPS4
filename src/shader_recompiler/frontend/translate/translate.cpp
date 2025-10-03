@@ -171,6 +171,13 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                 ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
             }
         }
+        if (runtime_info.fs_info.addr_flags.ancillary_ena) {
+            if (runtime_info.fs_info.en_flags.ancillary_ena) {
+                ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::PackedAncillary));
+            } else {
+                ir.SetVectorReg(dst_vreg++, ir.Imm32(0));
+            }
+        }
         break;
     case LogicalStage::TessellationControl: {
         ir.SetVectorReg(IR::VectorReg::V0, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
@@ -179,6 +186,14 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         // [8:12]: output control point id
         ir.SetVectorReg(IR::VectorReg::V1,
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
+
+        if (runtime_info.hs_info.offchip_lds_enable) {
+            // No off-chip tessellation has been observed yet. If this survives dead code elim,
+            // revisit
+            ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
+        }
+        ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::TessFactorsBufferBase));
+
         break;
     }
     case LogicalStage::TessellationEval:
@@ -367,7 +382,7 @@ T Translator::GetSrc64(const InstOperand& operand) {
         const auto value_lo = ir.GetScalarReg(IR::ScalarReg(operand.code));
         const auto value_hi = ir.GetScalarReg(IR::ScalarReg(operand.code + 1));
         if constexpr (is_float) {
-            UNREACHABLE();
+            value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
             value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
@@ -452,7 +467,7 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
             result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
         }
         if (operand.output_modifier.clamp) {
-            result = ir.FPSaturate(value);
+            result = ir.FPSaturate(result);
         }
     }
 
@@ -482,7 +497,7 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
                 ir.FPMul(value_untyped, ir.Imm64(f64(operand.output_modifier.multiplier)));
         }
         if (operand.output_modifier.clamp) {
-            value_untyped = ir.FPSaturate(value_raw);
+            value_untyped = ir.FPSaturate(value_untyped);
         }
     }
 
@@ -553,7 +568,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
         IR::VectorReg dst_reg{attrib.dest_vgpr};
 
         // Read the V# of the attribute to figure out component number and type.
-        const auto buffer = info.ReadUdReg<AmdGpu::Buffer>(attrib.sgpr_base, attrib.dword_offset);
+        const auto buffer = attrib.GetSharp(info);
         const auto values =
             ir.CompositeConstruct(ir.GetAttribute(attr, 0), ir.GetAttribute(attr, 1),
                                   ir.GetAttribute(attr, 2), ir.GetAttribute(attr, 3));

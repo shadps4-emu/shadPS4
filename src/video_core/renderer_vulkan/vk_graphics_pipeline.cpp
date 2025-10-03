@@ -111,8 +111,8 @@ GraphicsPipeline::GraphicsPipeline(
 
     vk::StructureChain raster_chain = {
         vk::PipelineRasterizationStateCreateInfo{
-            .depthClampEnable = key.depth_clamp_enable ||
-                                (!key.depth_clip_enable && !instance.IsDepthClipEnableSupported()),
+            .depthClampEnable = key.depth_clamp_enable &&
+                                (!key.depth_clip_enable || instance.IsDepthClipEnableSupported()),
             .rasterizerDiscardEnable = false,
             .polygonMode = LiverpoolToVK::PolygonMode(key.polygon_mode),
             .lineWidth = 1.0f,
@@ -135,8 +135,8 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples =
-            LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
+        .rasterizationSamples = LiverpoolToVK::NumSamples(
+            key.num_samples, instance.GetColorSampleCounts() & instance.GetDepthSampleCounts()),
         .sampleShadingEnable =
             fs_info.addr_flags.persp_sample_ena || fs_info.addr_flags.linear_sample_ena,
     };
@@ -259,7 +259,20 @@ GraphicsPipeline::GraphicsPipeline(
         color_formats[i] = color_format;
     }
 
+    std::array<vk::SampleCountFlagBits, Liverpool::NumColorBuffers> color_samples;
+    std::ranges::transform(key.color_samples, color_samples.begin(), [&instance](u8 num_samples) {
+        return num_samples ? LiverpoolToVK::NumSamples(num_samples, instance.GetColorSampleCounts())
+                           : vk::SampleCountFlagBits::e1;
+    });
+    const vk::AttachmentSampleCountInfoAMD mixed_samples = {
+        .colorAttachmentCount = key.num_color_attachments,
+        .pColorAttachmentSamples = color_samples.data(),
+        .depthStencilAttachmentSamples =
+            LiverpoolToVK::NumSamples(key.depth_samples, instance.GetDepthSampleCounts()),
+    };
+
     const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
+        .pNext = instance.IsMixedDepthSamplesSupported() ? &mixed_samples : nullptr,
         .colorAttachmentCount = key.num_color_attachments,
         .pColorAttachmentFormats = color_formats.data(),
         .depthAttachmentFormat = key.z_format != Liverpool::DepthBuffer::ZFormat::Invalid
@@ -274,23 +287,40 @@ GraphicsPipeline::GraphicsPipeline(
     std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
     for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
+
         const auto src_color = LiverpoolToVK::BlendFactor(control.color_src_factor);
         const auto dst_color = LiverpoolToVK::BlendFactor(control.color_dst_factor);
         const auto color_blend = LiverpoolToVK::BlendOp(control.color_func);
+
+        const auto src_alpha = control.separate_alpha_blend
+                                   ? LiverpoolToVK::BlendFactor(control.alpha_src_factor)
+                                   : src_color;
+        const auto dst_alpha = control.separate_alpha_blend
+                                   ? LiverpoolToVK::BlendFactor(control.alpha_dst_factor)
+                                   : dst_color;
+        const auto alpha_blend =
+            control.separate_alpha_blend ? LiverpoolToVK::BlendOp(control.alpha_func) : color_blend;
+
+        const auto color_scaled_min_max =
+            (color_blend == vk::BlendOp::eMin || color_blend == vk::BlendOp::eMax) &&
+            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne);
+        const auto alpha_scaled_min_max =
+            (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) &&
+            (src_alpha != vk::BlendFactor::eOne || dst_alpha != vk::BlendFactor::eOne);
+        if (color_scaled_min_max || alpha_scaled_min_max) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Unimplemented use of min/max blend op with blend factor not equal to one.");
+        }
+
         attachments[i] = vk::PipelineColorBlendAttachmentState{
             .blendEnable = control.enable,
             .srcColorBlendFactor = src_color,
             .dstColorBlendFactor = dst_color,
             .colorBlendOp = color_blend,
-            .srcAlphaBlendFactor = control.separate_alpha_blend
-                                       ? LiverpoolToVK::BlendFactor(control.alpha_src_factor)
-                                       : src_color,
-            .dstAlphaBlendFactor = control.separate_alpha_blend
-                                       ? LiverpoolToVK::BlendFactor(control.alpha_dst_factor)
-                                       : dst_color,
-            .alphaBlendOp = control.separate_alpha_blend
-                                ? LiverpoolToVK::BlendOp(control.alpha_func)
-                                : color_blend,
+            .srcAlphaBlendFactor = src_alpha,
+            .dstAlphaBlendFactor = dst_alpha,
+            .alphaBlendOp = alpha_blend,
             .colorWriteMask =
                 instance.IsDynamicColorWriteMaskSupported()
                     ? vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
@@ -368,7 +398,7 @@ void GraphicsPipeline::GetVertexInputs(
     const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
     for (const auto& attrib : fetch_shader->attributes) {
         const auto step_rate = attrib.GetStepRate();
-        const auto& buffer = attrib.GetSharp(vs_info);
+        const auto buffer = attrib.GetSharp(vs_info);
         attributes.push_back(Attribute{
             .location = attrib.semantic,
             .binding = attrib.semantic,

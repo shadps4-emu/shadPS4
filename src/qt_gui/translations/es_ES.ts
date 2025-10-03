@@ -454,14 +454,6 @@
       <translation>Usar configuraciones por juego</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Botones de acción</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Calibración de color</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>V:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>A:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>sin vincular</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Opciones</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -592,6 +556,74 @@
     <message>
       <source>Move analog stick</source>
       <translation>Mueve el stick analógico</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 y L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Mando Activo</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID del Mando</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Mando por Defecto</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>Por defecto no seleccionado</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Establecer Mando Activo como Predeterminado</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Eliminar Mando por Defecto</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 y R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Mando por Defecto Seleccionado</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>Mando activo establecido por defecto</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Mando por Defecto Eliminado</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>Configuración del mando por defecto eliminada</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>ROJO</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>VERDE</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>AZUL</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>Compatibilidad...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Actualizar base de datos</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Ver informe</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Enviar un informe</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Acceso directo creado</translation>
     </message>
@@ -990,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>Añadir a favoritos</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Configuración específica del juego...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Cambia la configuración específica del juego</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Crear configuración para el juego a partir de la global</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Eliminar configuración específica del juego</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Actualizar base de datos</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Ver informe</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Enviar un informe</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Confirmar eliminación</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>¿Eliminar la configuración específica del juego?</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Asignación de Teclas</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar atajos</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Atajos de mando</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostrar contador de FPS</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sin asignar</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Salir de la emulación</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Recargar asignaciones de botones</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Alternar pantalla completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Alternar pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Atajos de teclado</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Captura de Renderdoc (solo para depuración)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Alternar emulación de ratón a joystick</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Alternar emulación de ratón a giroscopio</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Consejo: se pueden asignar hasta tres botones para cada atajo</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Guardar</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancelar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaurar valores predeterminados</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No se ha podido guardar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No se puede asignar un control único más de una vez. Hay botones duplicados asignados a los siguientes botones:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Esperando pulsación de entrada</translation>
     </message>
   </context>
   <context>
@@ -1069,14 +1212,6 @@
       <translation>Usar configuraciones por juego</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Editor de Texto</translation>
     </message>
@@ -1085,28 +1220,12 @@
       <translation>Ayuda</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Ratón a Joystick</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>* presiona F7 en el juego para activar</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1235,6 +1354,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Derecha del Touchpad</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Preajustes de filtros de registro</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Comentario</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Filtro</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Cargar</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Cerrar</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Añade un preajuste nuevo después de la fila seleccionada</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Eliminar preajustes seleccionados</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Carga el preajuste seleccionado</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostrar etiquetas debajo de los iconos</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalizar Atajos</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>Idioma del emulador</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulador</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Pestaña predeterminada al abrir la configuración</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Mostrar Tamaño del Juego en la Lista</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Mostrar Pantalla de Bienvenida</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1588,15 +1738,15 @@
     </message>
     <message>
       <source>Microphone</source>
-      <translation type="unfinished">Microphone</translation>
+      <translation>Micrófono</translation>
     </message>
     <message>
       <source>None</source>
-      <translation type="unfinished">None</translation>
+      <translation>Ninguno</translation>
     </message>
     <message>
       <source>Default Device</source>
-      <translation type="unfinished">Default Device</translation>
+      <translation>Dispositivo por Defecto</translation>
     </message>
     <message>
       <source>s</source>
@@ -1621,10 +1771,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Dispositivo Gráfico</translation>
-    </message>
-    <message>
-      <source>Vblank Divider</source>
-      <translation>Divisor de Vblank</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1700,11 +1846,11 @@
     </message>
     <message>
       <source>Enable Readbacks</source>
-      <translation type="unfinished">Enable Readbacks</translation>
+      <translation>Habilitar Retrolectura</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images</source>
-      <translation type="unfinished">Enable Readback Linear Images</translation>
+      <translation>Habilitar Retrolectura de Imágenes Lineales</translation>
     </message>
     <message>
       <source>Update</source>
@@ -1725,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Buscar Actualizaciones</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Configuraciones de la Interfaz</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1883,10 +2025,6 @@
       <translation>Anchura/Altura:\nEstablece el tamaño de la ventana del emulador al iniciar, que se puede redimensionar durante el juego.\nEsto es diferente de la resolución en el juego.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Divisor de Vblank:\nLa tasa de cuadros a la que se refresca el emulador se multiplica por este número. Cambiar esto puede tener efectos adversos, como aumentar la velocidad del juego, o romper la funcionalidad crítica del juego que no espera que esto cambie.</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Habilitar la Volcadura de Shaders:\nPor el bien de la depuración técnica, guarda las sombras del juego en una carpeta mientras se renderizan.</translation>
     </message>
@@ -1915,14 +2053,6 @@
       <translation>Habilitar la Volcadura de Depuración:\nGuarda los símbolos de importación y exportación y la información del encabezado del archivo del programa de PS4 que se está ejecutando actualmente en un directorio.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Habilitar Capas de Validación de Vulkan:\nHabilita un sistema que valida el estado del renderizador de Vulkan y registra información sobre su estado interno. Esto reducirá el rendimiento y probablemente cambiará el comportamiento de la emulación.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Habilitar Validación de Sincronización de Vulkan:\nHabilita un sistema que valida el tiempo de las tareas de renderizado de Vulkan. Esto reducirá el rendimiento y probablemente cambiará el comportamiento de la emulación.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Habilitar Depuración de RenderDoc:\nSi se habilita, el emulador proporcionará compatibilidad con Renderdoc para permitir la captura y análisis del fotograma actualmente renderizado.</translation>
     </message>
@@ -1931,16 +2061,12 @@
       <translation>Recopilar Shaders:\nNecesitas esto habilitado para editar shaders con el menú de depuración (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnóstico de cuelgues:\nCrea un archivo .yaml con información sobre el estado de Vulkan en el momento del cuelgue.\nÚtil para depurar errores de tipo &apos;Dispositivo perdido&apos; . Con esto activado, deberías habilitar los marcadores de depuración de Host E Invitado.\nNo funciona en GPUs de Intel.\nNecesitas activar las Capas de Validación de Vulkan y el SDK de Vulkan para que funcione.</translation>
-    </message>
-    <message>
       <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
-      <translation type="unfinished">Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</translation>
+      <translation>Habilitar Retrolectura:\nHabilita la lectura y escritura de memoria desde y hacia la GPU.\nNecesario para el correcto funcionamiento de algunos juegos.\nPuede afectar el rendimiento o causar inestabilidad.</translation>
     </message>
     <message>
       <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
-      <translation type="unfinished">Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</translation>
+      <translation>Habilitar Retrolectura de Imágenes Lineales:\nPermite la descarga asíncrona de imágenes lineales modificadas por la GPU.\nPuede corregir errores gráficos en ciertos juegos.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2107,16 +2233,200 @@
       <translation> * Versión de Vulkan no soportada</translation>
     </message>
     <message>
-      <source>100%</source>
-      <translation type="unfinished">100%</translation>
-    </message>
-    <message>
       <source>Experimental Features</source>
-      <translation type="unfinished">Experimental Features</translation>
+      <translation>Características experimentales</translation>
     </message>
     <message>
       <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
-      <translation type="unfinished">WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</translation>
+      <translation>ADVERTENCIA: Estas funciones son experimentales y no deben activarse a menos que se te haya indicado o que un juego lo requiera específicamente. Si tienes dudas, por favor consulta en el servidor de Discord de shadPS4.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Habilitar entradas de mando en segundo plano</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Habilitar entradas de mando en segundo plano:\nPermite que shadPS4 pueda detectar las pulsaciones del mando cuando la ventana de juego no esté en primer plano.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Diagnóstico de fallos:\nCrea un archivo .yaml con información sobre el estado de Vulkan en el momento del cuelgue.\nÚtil para depurar errores de tipo &apos;Dispositivo perdido&apos;. Si activas esta opción, deberías habilitar los marcadores de depuración de host Y TAMBIÉN de invitado.\nNecesitas activar las capas de validación de Vulkan y el SDK de Vulkan para que funcione.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Habilitar registros</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Habilitar registros:\nActiva los registros.\n¡Si no sabes lo que haces, no cambies esta opción!\nSi vas a pedir ayuda, asegúrate de ACTIVAR esta opción.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Modo de presentación</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>«Mailbox» (con sincronía vertical)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>FIFO (con sincronía vertical)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Inmediata (sin sincronía vertical)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Carpeta de DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Seleccionar carpeta de DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Modo de presentación:\nConfigura la presentación de la salida de vídeo en tu pantalla.\n\n«Mailbox»: los fotogramas se sincronizarán con la frecuencia de actualización de tu pantalla. Los fotogramas nuevos sustituirán a cualquier fotograma que esté pendiente de mostrar. Reducirá la latencia, pero podría omitir fotogramas si el renderizado se retrasa.\nFIFO: los fotogramas se sincronizarán con la frecuencia de actualización de tu pantalla. Los fotogramas nuevos se mostrarán después de los fotogramas que queden pendientes. Garantizará que se muestren todos los fotogramas, pero podría aumentar la latencia.\nInmediata: los fotogramas se mostrarán en pantalla en cuanto estén listos. Podría provocar fragmentación en la imagen.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Ruta de DLC:\nLa carpeta donde se cargarán los DLC de los juegos.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Buscar:\nBusque una carpeta para establecer como ruta de DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>Configuración de FSR</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Habilitar FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Habilitar RCAS (realzado)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>Atenuación del RCAS:</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation>Cargar preajustes...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Registro</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Abrir ubicación del registro:\nAbre la carpeta donde se guarda el archivo de registro.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Micrófono:\nNinguno: no utiliza el micrófono.\nDispositivo por defecto: utilizará el dispositivo que esté definido por defecto en el sistema.\nTambién puedes elegir a mano el micrófono que quieras usar.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volumen:\nAjusta el volumen de todos los juegos de forma global, en un rango de 0 a 500 %, siendo 100 % el valor predeterminado.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Pestaña predeterminada al abrir la configuración:\nSelecciona qué pestaña se mostrará al abrir, la pestaña predeterminada es General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Mostrar tamaño del juego en la lista:\nMuestra el tamaño del juego en la lista.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Habilitar controles de movimiento:\nAl activar esta opción, se utilizarán los controles de movimiento del mando (si el juego es compatible).</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Frecuencia de Vblanks</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Frecuencia de Vblanks:\nIndica la velocidad de fotogramas con la que se actualizará la imagen del emulador (60 Hz es la línea de base, aunque el juego se muestre a 30 o 60 FPS). ¡Cambiar esta opción puede provocar efectos adversos, como aumentar la velocidad del juego o romper funciones críticas del juego que no esperan cambios en este valor!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Habilitar acceso directo a memoria (DMA)</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Habilitar modo kit de desarrollo</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Cambia la opción «Inicio de sesión en PSN» a verdadero</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Cambia la opción «Conexión a red» a verdadero</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation type="unfinished">Miscellaneous</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation type="unfinished">Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation type="unfinished">Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation type="unfinished">Show Splash Screen When Launching Game</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation type="unfinished">General Frontend Settings</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation type="unfinished">Enable PS4 Neo Mode</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation type="unfinished">Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation type="unfinished">Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation type="unfinished">Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation type="unfinished">Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation type="unfinished">Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation type="unfinished">Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

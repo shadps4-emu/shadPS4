@@ -24,13 +24,13 @@ SPDX-License-Identifier: GPL-2.0-or-later
         <img src="https://img.shields.io/github/stars/shadps4-emu/shadPS4" width="120">
 </h1>
 
-<p align="center">
-  <a href="https://shadps4.net/">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/1.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/2.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/3.png" width="400">
-  <img src="https://github.com/shadps4-emu/shadPS4/blob/main/documents/Screenshots/4.png" width="400">
-</p>
+|               Bloodborne by From Software                   |                     Hatsune Miku Project DIVA Future Tone by SEGA                         |
+| :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
+| ![Bloodborne screenshot](./documents/Screenshots/1.png) | ![Project DIVA screenshot](./documents/Screenshots/2.png) |
+
+|                  Yakuza 0 by SEGA                     |                 DRIVECLUB™ by Evolution Studios                    |
+| :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![Yakuza screenshot](./documents/Screenshots/3.png) | ![DRIVECLUB screenshot](./documents/Screenshots/4.png) |
 
 # General information
 
@@ -40,18 +40,18 @@ If you encounter problems or have doubts, do not hesitate to look at the [**Quic
 To verify that a game works, you can look at [**shadPS4 Game Compatibility**](https://github.com/shadps4-compatibility/shadps4-game-compatibility).\
 To discuss shadPS4 development, suggest ideas or to ask for help, join our [**Discord server**](https://discord.gg/bFJxfftGW6).\
 To get the latest news, go to our [**X (Twitter)**](https://x.com/shadps4) or our [**website**](https://shadps4.net/).\
-For those who'd like to donate to the project, we now have a [**Kofi page**](https://ko-fi.com/shadps4)!
+You can donate to the project via our [**Kofi page**](https://ko-fi.com/shadps4).
 
 # Status
 
 > [!IMPORTANT]
 > shadPS4 is early in development, don't expect a flawless experience.
 
-Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=wC6s0avpQRE), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag) and many other games.
+Currently, the emulator can successfully run games like [**Bloodborne**](https://www.youtube.com/watch?v=5sZgWyVflFM), [**Dark Souls Remastered**](https://www.youtube.com/watch?v=-3PA-Xwszts), [**Red Dead Redemption**](https://www.youtube.com/watch?v=Al7yz_5nLag), and many other games.
 
 # Why
 
-This project began as a fun project. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
+This project began for fun. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
 
 # Building
 
@@ -124,7 +124,7 @@ Keyboard and mouse inputs can be customized in the settings menu by clicking the
 
 # Firmware files
 
-shadPS4 can load some PlayStation 4 firmware files, these must be dumped from your legally owned PlayStation 4 console.
+shadPS4 can load some PlayStation 4 firmware files.
 The following firmware modules are supported and must be placed in shadPS4's `sys_modules` folder.
 
 <div align="center">
@@ -133,12 +133,12 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 |-------------------------|-------------------------|-------------------------|-------------------------|  
 | libSceCesCs.sprx        | libSceFont.sprx         | libSceFontFt.sprx       | libSceFreeTypeOt.sprx   |
 | libSceJson.sprx         | libSceJson2.sprx        | libSceLibcInternal.sprx | libSceNgs2.sprx         |  
-| libSceRtc.sprx          | libSceUlt.sprx          |                         |                         |
+| libSceUlt.sprx          |                         |                         |                         |
 
 </div>
 
 > [!Caution]
-> The above modules are required to run the games properly and must be extracted from your PlayStation 4.
+> The above modules are required to run the games properly and must be dumped from your legally owned PlayStation 4 console.
 
 
 

@@ -16,7 +16,7 @@ static constexpr size_t RoundUp(size_t size) {
 }
 
 int ThreadState::CreateStack(PthreadAttr* attr) {
-    if ((attr->stackaddr_attr) != NULL) {
+    if ((attr->stackaddr_attr) != nullptr) {
         attr->guardsize_attr = 0;
         attr->flags |= PthreadAttrFlags::StackUser;
         return 0;
@@ -32,7 +32,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     size_t stacksize = RoundUp(attr->stacksize_attr);
     size_t guardsize = RoundUp(attr->guardsize_attr);
 
-    attr->stackaddr_attr = NULL;
+    attr->stackaddr_attr = nullptr;
     attr->flags &= ~PthreadAttrFlags::StackUser;
 
     /*
@@ -69,7 +69,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     }
 
     /* A cached stack was found.  Release the lock. */
-    if (attr->stackaddr_attr != NULL) {
+    if (attr->stackaddr_attr != nullptr) {
         thread_list_lock.unlock();
         return 0;
     }
@@ -122,8 +122,8 @@ void ThreadState::FreeStack(PthreadAttr* attr) {
         return;
     }
 
-    char* stack_base = (char*)attr->stackaddr_attr;
-    Stack* spare_stack = (Stack*)(stack_base + attr->stacksize_attr - sizeof(Stack));
+    auto* stack_base = static_cast<char*>(attr->stackaddr_attr);
+    auto* spare_stack = reinterpret_cast<Stack*>(stack_base + attr->stacksize_attr - sizeof(Stack));
     spare_stack->stacksize = RoundUp(attr->stacksize_attr);
     spare_stack->guardsize = RoundUp(attr->guardsize_attr);
     spare_stack->stackaddr = attr->stackaddr_attr;

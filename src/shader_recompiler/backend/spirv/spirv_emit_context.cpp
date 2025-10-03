@@ -122,7 +122,6 @@ void EmitContext::DefineArithmeticTypes() {
     S16 = Name(TypeSInt(16), "i16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
-        U16 = Name(TypeUInt(16), "u16_id");
     }
     if (info.uses_fp64) {
         F64[1] = Name(TypeFloat(64), "f64_id");
@@ -370,12 +369,17 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
-        if (info.stores.Get(IR::Attribute::Depth)) {
-            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
             front_facing =
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
+            Decorate(output_layer, spv::Decoration::Flat);
+        }
+        if (info.loads.Get(IR::Attribute::SampleIndex)) {
+            sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+            Decorate(sample_index, spv::Decoration::Flat);
         }
         if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
             if (profile.supports_amd_shader_explicit_vertex_parameter) {
@@ -539,24 +543,40 @@ void EmitContext::DefineInputs() {
     }
 }
 
+void EmitContext::DefineVertexBlock() {
+    const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value,
+                                 f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value};
+    output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+    if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
+    }
+    if (info.stores.GetAny(IR::Attribute::CullDistance)) {
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
+                                        initializer);
+    }
+    if (info.stores.GetAny(IR::Attribute::PointSize)) {
+        output_point_size =
+            DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
+        output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+        output_viewport_index =
+            DefineVariable(U32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
+    }
+}
+
 void EmitContext::DefineOutputs() {
     switch (l_stage) {
     case LogicalStage::Vertex: {
-        // No point in defining builtin outputs (i.e. position) unless next stage is fragment?
-        // Might cause problems linking with tcs
-
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
-        if (stage == Stage::Local) {
+        DefineVertexBlock();
+        if (stage == Shader::Stage::Local) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
@@ -615,17 +635,7 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::TessellationEval: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
+        DefineVertexBlock();
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -640,6 +650,13 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::Fragment: {
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.stores.Get(IR::Attribute::SampleMask)) {
+            sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
+                                         spv::StorageClass::Output);
+        }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
@@ -660,13 +677,14 @@ void EmitContext::DefineOutputs() {
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
-        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,
-                   "Dual source blending enabled, there must be exactly two MRT exports");
+        // Dual source blending allows at most 2 render targets, one for each source.
+        // Fewer targets are allowed but the missing blending source values will be undefined.
+        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
+                   "Dual source blending enabled, there must be at most two MRT exports");
         break;
     }
     case LogicalStage::Geometry: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-
+        DefineVertexBlock();
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
             Name(id, fmt::format("out_attr{}", attr_id));
@@ -1073,36 +1091,26 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
     Name(func, name);
     AddLabel();
 
-    const auto raw_mantissa{
-        OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
-    const auto mantissa{OpConvertUToF(F32[1], raw_mantissa)};
-    const auto exponent{OpBitcast(
-        S32[1], OpBitFieldSExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U)))};
-
-    const auto is_exp_neg_one{OpIEqual(U1[1], exponent, ConstS32(-1))};
-    const auto is_exp_zero{OpIEqual(U1[1], exponent, ConstS32(0))};
-
-    const auto is_zero{OpIEqual(U1[1], value, ConstU32(0u))};
-    const auto is_nan{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_inf{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpIEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_denorm{
-        OpLogicalAnd(U1[1], is_exp_zero, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-
-    const auto denorm{OpFMul(F32[1], mantissa, ConstF32(1.f / (1 << 20)))};
-    const auto norm{OpLdexp(
-        F32[1],
-        OpFAdd(F32[1],
-               OpFMul(F32[1], mantissa, ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
-               ConstF32(1.f)),
-        exponent)};
-
-    const auto result{OpSelect(F32[1], is_zero, ConstF32(0.f),
-                               OpSelect(F32[1], is_nan, ConstF32(NAN),
-                                        OpSelect(F32[1], is_inf, ConstF32(INFINITY),
-                                                 OpSelect(F32[1], is_denorm, denorm, norm))))};
-
+    const Id exponent{OpBitFieldUExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U))};
+    const Id mantissa{OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
+    const Id mantissa_f{OpConvertUToF(F32[1], mantissa)};
+    const Id a{OpSelect(F32[1], OpINotEqual(U1[1], mantissa, u32_zero_value),
+                        OpFMul(F32[1], ConstF32(1.f / (1 << (14 + mantissa_bits))), mantissa_f),
+                        f32_zero_value)};
+    const Id b{OpBitcast(F32[1], OpBitwiseOr(U32[1], mantissa, ConstU32(0x7f800000U)))};
+    const Id exponent_c{OpISub(U32[1], exponent, ConstU32(15U))};
+    const Id scale_a{
+        OpFDiv(F32[1], ConstF32(1.f),
+               OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value,
+                                                        OpSNegate(U32[1], exponent_c))))};
+    const Id scale_b{OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value, exponent_c))};
+    const Id scale{
+        OpSelect(F32[1], OpSLessThan(U1[1], exponent_c, u32_zero_value), scale_a, scale_b)};
+    const Id c{OpFMul(F32[1], scale,
+                      OpFAdd(F32[1], ConstF32(1.f),
+                             OpFDiv(F32[1], mantissa_f, ConstF32(f32(1 << mantissa_bits)))))};
+    const Id result{OpSelect(F32[1], OpIEqual(U1[1], exponent, u32_zero_value), a,
+                             OpSelect(F32[1], OpIEqual(U1[1], exponent, ConstU32(31U)), b, c))};
     OpReturnValue(result);
     OpFunctionEnd();
     return func;

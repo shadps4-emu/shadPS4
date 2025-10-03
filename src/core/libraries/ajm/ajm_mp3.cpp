@@ -138,8 +138,9 @@ void AjmMp3Decoder::GetInfo(void* out_info) const {
     }
 }
 
-std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                                AjmInstanceGapless& gapless) {
+std::tuple<u32, u32, bool> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf,
+                                                      SparseOutputBuffer& output,
+                                                      AjmInstanceGapless& gapless) {
     AVPacket* pkt = av_packet_alloc();
 
     if ((!m_header.has_value() || m_frame_samples == 0) && in_buf.size() >= 4) {
@@ -155,7 +156,7 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
     in_buf = in_buf.subspan(ret);
 
     u32 frames_decoded = 0;
-    u32 samples_written = 0;
+    u32 samples_decoded = 0;
 
     if (pkt->size) {
         // Send the packet with the compressed data to the decoder
@@ -176,6 +177,7 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
                 UNREACHABLE_MSG("Error during decoding");
             }
             frame = ConvertAudioFrame(frame);
+            samples_decoded += u32(frame->nb_samples);
 
             frames_decoded += 1;
             u32 skip_samples = 0;
@@ -205,7 +207,6 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
             }
 
             const auto samples = pcm_written / m_codec_context->ch_layout.nb_channels;
-            samples_written += samples;
             gapless.current.skipped_samples += frame->nb_samples - samples;
             if (gapless.init.total_samples != 0) {
                 gapless.current.total_samples -= samples;
@@ -217,7 +218,7 @@ std::tuple<u32, u32> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
 
     av_packet_free(&pkt);
 
-    return {frames_decoded, samples_written};
+    return {frames_decoded, samples_decoded, false};
 }
 
 u32 AjmMp3Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {

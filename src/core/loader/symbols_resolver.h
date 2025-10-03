@@ -7,6 +7,7 @@
 #include <span>
 #include <string>
 #include <vector>
+#include "common/assert.h"
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -31,8 +32,6 @@ struct SymbolResolver {
     std::string library;
     u16 library_version;
     std::string module;
-    u8 module_version_major;
-    u8 module_version_minor;
     SymbolType type;
 };
 
@@ -68,6 +67,8 @@ public:
             return "Tls";
         case SymbolType::NoType:
             return "NoType";
+        default:
+            UNREACHABLE();
         }
     }
 

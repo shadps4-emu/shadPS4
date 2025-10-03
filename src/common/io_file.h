@@ -223,13 +223,13 @@ public:
         IOFile out(path, FileAccessMode::Create);
         return out.Write(data);
     }
+    std::FILE* file = nullptr;
 
 private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
 
-    std::FILE* file = nullptr;
     uintptr_t file_mapping = 0;
 };
 

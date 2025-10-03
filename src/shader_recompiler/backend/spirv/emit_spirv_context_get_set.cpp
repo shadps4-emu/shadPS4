@@ -3,7 +3,6 @@
 
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/logging/log.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_bounds.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -14,85 +13,11 @@
 #include <magic_enum/magic_enum.hpp>
 
 namespace Shader::Backend::SPIRV {
-namespace {
 
-Id VsOutputAttrPointer(EmitContext& ctx, VsOutput output) {
-    switch (output) {
-    case VsOutput::ClipDist0:
-    case VsOutput::ClipDist1:
-    case VsOutput::ClipDist2:
-    case VsOutput::ClipDist3:
-    case VsOutput::ClipDist4:
-    case VsOutput::ClipDist5:
-    case VsOutput::ClipDist6:
-    case VsOutput::ClipDist7: {
-        const u32 index = u32(output) - u32(VsOutput::ClipDist0);
-        const Id clip_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.clip_distances), "Clip distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, clip_num);
-    }
-    case VsOutput::CullDist0:
-    case VsOutput::CullDist1:
-    case VsOutput::CullDist2:
-    case VsOutput::CullDist3:
-    case VsOutput::CullDist4:
-    case VsOutput::CullDist5:
-    case VsOutput::CullDist6:
-    case VsOutput::CullDist7: {
-        const u32 index = u32(output) - u32(VsOutput::CullDist0);
-        const Id cull_num{ctx.ConstU32(index)};
-        ASSERT_MSG(Sirit::ValidId(ctx.cull_distances), "Cull distance used but not defined");
-        return ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, cull_num);
-    }
-    default:
-        UNREACHABLE_MSG("Vertex output {}", u32(output));
-    }
-}
+using PointerType = EmitContext::PointerType;
+using PointerSize = EmitContext::PointerSize;
 
-Id OutputAttrPointer(EmitContext& ctx, IR::Attribute attr, u32 element) {
-    if (IR::IsParam(attr)) {
-        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
-        if (ctx.stage == Stage::Local) {
-            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
-            return ctx.OpAccessChain(component_ptr, ctx.output_attr_array, ctx.ConstU32(attr_index),
-                                     ctx.ConstU32(element));
-        } else {
-            const auto& info{ctx.output_params.at(attr_index)};
-            ASSERT(info.num_components > 0);
-            if (info.num_components == 1) {
-                return info.id;
-            } else {
-                return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
-            }
-        }
-    }
-    if (IR::IsMrt(attr)) {
-        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
-        const auto& info{ctx.frag_outputs.at(index)};
-        if (info.num_components == 1) {
-            return info.id;
-        } else {
-            return ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element));
-        }
-    }
-    switch (attr) {
-    case IR::Attribute::Position0: {
-        return ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element));
-    }
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3: {
-        const u32 index = u32(attr) - u32(IR::Attribute::Position1);
-        return VsOutputAttrPointer(ctx, ctx.runtime_info.vs_info.outputs[index][element]);
-    }
-    case IR::Attribute::Depth:
-        return ctx.frag_depth;
-    default:
-        UNREACHABLE_MSG("Write attribute {}", attr);
-    }
-}
-
-std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
+static std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr) {
     if (IR::IsParam(attr)) {
         const u32 index{u32(attr) - u32(IR::Attribute::Param0)};
         const auto& info{ctx.output_params.at(index)};
@@ -105,19 +30,20 @@ std::pair<Id, bool> OutputAttrComponentType(EmitContext& ctx, IR::Attribute attr
     }
     switch (attr) {
     case IR::Attribute::Position0:
-    case IR::Attribute::Position1:
-    case IR::Attribute::Position2:
-    case IR::Attribute::Position3:
+    case IR::Attribute::ClipDistance:
+    case IR::Attribute::CullDistance:
     case IR::Attribute::Depth:
+    case IR::Attribute::PointSize:
         return {ctx.F32[1], false};
+    case IR::Attribute::RenderTargetIndex:
+    case IR::Attribute::ViewportIndex:
+    case IR::Attribute::SampleMask:
+    case IR::Attribute::StencilRef:
+        return {ctx.U32[1], true};
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }
 }
-} // Anonymous namespace
-
-using PointerType = EmitContext::PointerType;
-using PointerSize = EmitContext::PointerSize;
 
 Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
     const u32 index = ctx.binding.user_data + ctx.info.ud_mask.Index(reg);
@@ -239,6 +165,10 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
     case IR::Attribute::IsFrontFace:
         return ctx.OpSelect(ctx.U32[1], ctx.OpLoad(ctx.U1[1], ctx.front_facing), ctx.u32_one_value,
                             ctx.u32_zero_value);
+    case IR::Attribute::SampleIndex:
+        return ctx.OpLoad(ctx.U32[1], ctx.sample_index);
+    case IR::Attribute::RenderTargetIndex:
+        return ctx.OpLoad(ctx.U32[1], ctx.output_layer);
     case IR::Attribute::PrimitiveId:
         return ctx.OpLoad(ctx.U32[1], ctx.primitive_id);
     case IR::Attribute::InvocationId:
@@ -270,16 +200,62 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
 }
 
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 element) {
-    if (attr == IR::Attribute::Position1) {
-        LOG_WARNING(Render_Vulkan, "Ignoring pos1 export");
-        return;
+    const auto op_store = [&](Id pointer) {
+        const auto [component_type, is_integer] = OutputAttrComponentType(ctx, attr);
+        if (is_integer) {
+            ctx.OpStore(pointer, ctx.OpBitcast(component_type, value));
+        } else {
+            ctx.OpStore(pointer, value);
+        }
+    };
+    if (IR::IsParam(attr)) {
+        const u32 attr_index{u32(attr) - u32(IR::Attribute::Param0)};
+        if (ctx.stage == Stage::Local) {
+            const auto component_ptr = ctx.TypePointer(spv::StorageClass::Output, ctx.F32[1]);
+            return op_store(ctx.OpAccessChain(component_ptr, ctx.output_attr_array,
+                                              ctx.ConstU32(attr_index), ctx.ConstU32(element)));
+        } else {
+            const auto& info{ctx.output_params.at(attr_index)};
+            ASSERT(info.num_components > 0);
+            if (info.num_components == 1) {
+                return op_store(info.id);
+            } else {
+                return op_store(
+                    ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element)));
+            }
+        }
     }
-    const Id pointer{OutputAttrPointer(ctx, attr, element)};
-    const auto component_type{OutputAttrComponentType(ctx, attr)};
-    if (component_type.second) {
-        ctx.OpStore(pointer, ctx.OpBitcast(component_type.first, value));
-    } else {
-        ctx.OpStore(pointer, value);
+    if (IR::IsMrt(attr)) {
+        const u32 index{u32(attr) - u32(IR::Attribute::RenderTarget0)};
+        const auto& info{ctx.frag_outputs.at(index)};
+        if (info.num_components == 1) {
+            return op_store(info.id);
+        } else {
+            return op_store(ctx.OpAccessChain(info.pointer_type, info.id, ctx.ConstU32(element)));
+        }
+    }
+    switch (attr) {
+    case IR::Attribute::Position0:
+        return op_store(
+            ctx.OpAccessChain(ctx.output_f32, ctx.output_position, ctx.ConstU32(element)));
+    case IR::Attribute::ClipDistance:
+        return op_store(
+            ctx.OpAccessChain(ctx.output_f32, ctx.clip_distances, ctx.ConstU32(element)));
+    case IR::Attribute::CullDistance:
+        return op_store(
+            ctx.OpAccessChain(ctx.output_f32, ctx.cull_distances, ctx.ConstU32(element)));
+    case IR::Attribute::PointSize:
+        return op_store(ctx.output_point_size);
+    case IR::Attribute::RenderTargetIndex:
+        return op_store(ctx.output_layer);
+    case IR::Attribute::ViewportIndex:
+        return op_store(ctx.output_viewport_index);
+    case IR::Attribute::Depth:
+        return op_store(ctx.frag_depth);
+    case IR::Attribute::SampleMask:
+        return op_store(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value));
+    default:
+        UNREACHABLE_MSG("Write attribute {}", attr);
     }
 }
 

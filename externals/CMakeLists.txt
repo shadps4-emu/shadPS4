@@ -216,6 +216,10 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+# hwinfo
+set(HWINFO_STATIC ON)
+add_subdirectory(hwinfo)
+
 # Apple-only dependencies
 if (APPLE)
     # date
@@ -233,4 +237,9 @@ if (APPLE)
     if (NOT TARGET epoll-shim)
         add_subdirectory(epoll-shim)
     endif()
+endif()
+
+#windows only
+if (WIN32)
+add_subdirectory(ext-wepoll)
 endif()

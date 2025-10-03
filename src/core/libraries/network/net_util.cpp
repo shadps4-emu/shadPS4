@@ -36,6 +36,11 @@ typedef int net_socket;
 #include <mutex>
 #include <vector>
 #include <string.h>
+#include "common/assert.h"
+#include "common/logging/log.h"
+#include "core/libraries/error_codes.h"
+#include "net.h"
+#include "net_error.h"
 #include "net_util.h"
 
 namespace NetUtil {
@@ -320,6 +325,77 @@ bool NetUtilInternal::RetrieveNetmask() {
         netmask = netmaskStr;
     }
     return success;
+}
+
+const std::string& NetUtilInternal::GetIp() const {
+    return ip;
+}
+
+bool NetUtilInternal::RetrieveIp() {
+    std::scoped_lock lock{m_mutex};
+
+    auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+        return false;
+    }
+
+    sockaddr_in sa{};
+    socklen_t sa_len{sizeof(sa)};
+    sa.sin_family = AF_INET;
+    sa.sin_addr.s_addr = inet_addr("1.1.1.1");
+    sa.sin_port = htons(80);
+
+#ifdef _WIN32
+#define close closesocket
+#endif
+
+    if (connect(sockfd, (sockaddr*)&sa, sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    if (getsockname(sockfd, (struct sockaddr*)&sa, &sa_len) == -1) {
+        close(sockfd);
+        return false;
+    }
+
+    char netmaskStr[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &sa.sin_addr, netmaskStr, INET_ADDRSTRLEN);
+    ip = netmaskStr;
+
+    close(sockfd);
+
+#ifdef _WIN32
+#undef close
+#endif
+
+    return true;
+}
+
+int NetUtilInternal::ResolveHostname(const char* hostname, Libraries::Net::OrbisNetInAddr* addr) {
+    const addrinfo hints = {
+        .ai_flags = AI_V4MAPPED | AI_ADDRCONFIG,
+        .ai_family = AF_INET,
+    };
+
+    addrinfo* info = nullptr;
+    auto gai_result = getaddrinfo(hostname, nullptr, &hints, &info);
+
+    auto ret = ORBIS_OK;
+    if (gai_result != 0) {
+        // handle more errors
+        LOG_ERROR(Lib_Net, "address resolution for {} failed: {}", hostname, gai_result);
+        ret = ORBIS_NET_ERETURN;
+    } else {
+        ASSERT(info && info->ai_addr);
+        in_addr resolved_addr = ((sockaddr_in*)info->ai_addr)->sin_addr;
+        LOG_DEBUG(Lib_Net, "resolved address for {}: {}", hostname, inet_ntoa(resolved_addr));
+        addr->inaddr_addr = resolved_addr.s_addr;
+    }
+
+    freeaddrinfo(info);
+
+    return ret;
 }
 
 } // namespace NetUtil

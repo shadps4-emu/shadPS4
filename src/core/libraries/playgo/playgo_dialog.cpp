@@ -59,19 +59,18 @@ Status PS4_SYSV_ABI scePlayGoDialogUpdateStatus() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("fbigNQiZpm0", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("fbigNQiZpm0", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogClose);
-    LIB_FUNCTION("wx9TDplJKB4", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("wx9TDplJKB4", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogGetResult);
-    LIB_FUNCTION("NOAMxY2EGS0", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("NOAMxY2EGS0", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogGetStatus);
-    LIB_FUNCTION("fECamTJKpsM", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("fECamTJKpsM", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogInitialize);
-    LIB_FUNCTION("kHd72ukqbxw", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
-                 scePlayGoDialogOpen);
-    LIB_FUNCTION("okgIGdr5Iz0", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("kHd72ukqbxw", "libScePlayGoDialog", 1, "libScePlayGoDialog", scePlayGoDialogOpen);
+    LIB_FUNCTION("okgIGdr5Iz0", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogTerminate);
-    LIB_FUNCTION("Yb60K7BST48", "libScePlayGoDialog", 1, "libScePlayGoDialog", 1, 1,
+    LIB_FUNCTION("Yb60K7BST48", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogUpdateStatus);
 };
 

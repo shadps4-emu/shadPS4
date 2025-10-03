@@ -23,7 +23,7 @@ struct ImageViewInfo {
     ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
                   AmdGpu::Liverpool::DepthView view, AmdGpu::Liverpool::DepthControl ctl);
 
-    vk::ImageViewType type = vk::ImageViewType::e2D;
+    AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
     SubresourceRange range;
     vk::ComponentMapping mapping{};
@@ -35,8 +35,7 @@ struct ImageViewInfo {
 struct Image;
 
 struct ImageView {
-    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
-              ImageId image_id);
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, const Image& image);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;
@@ -45,9 +44,7 @@ struct ImageView {
     ImageView(ImageView&&) = default;
     ImageView& operator=(ImageView&&) = default;
 
-    ImageId image_id{};
-    Extent3D size{0, 0, 0};
-    ImageViewInfo info{};
+    ImageViewInfo info;
     vk::UniqueImageView image_view;
 };
 

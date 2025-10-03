@@ -23,20 +23,12 @@ Id ExtractS8(EmitContext& ctx, Id value) {
 }
 } // Anonymous namespace
 
-Id EmitConvertS16F16(EmitContext& ctx, Id value) {
-    return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
-}
-
 Id EmitConvertS16F32(EmitContext& ctx, Id value) {
     return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
 }
 
 Id EmitConvertS16F64(EmitContext& ctx, Id value) {
     return ctx.OpSConvert(ctx.U32[1], ctx.OpConvertFToS(ctx.U16, value));
-}
-
-Id EmitConvertS32F16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertFToS(ctx.U32[1], value);
 }
 
 Id EmitConvertS32F32(EmitContext& ctx, Id value) {
@@ -47,20 +39,12 @@ Id EmitConvertS32F64(EmitContext& ctx, Id value) {
     return ctx.OpConvertFToS(ctx.U32[1], value);
 }
 
-Id EmitConvertS64F16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertFToS(ctx.U64, value);
-}
-
 Id EmitConvertS64F32(EmitContext& ctx, Id value) {
     return ctx.OpConvertFToS(ctx.U64, value);
 }
 
 Id EmitConvertS64F64(EmitContext& ctx, Id value) {
     return ctx.OpConvertFToS(ctx.U64, value);
-}
-
-Id EmitConvertU16F16(EmitContext& ctx, Id value) {
-    return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
 }
 
 Id EmitConvertU16F32(EmitContext& ctx, Id value) {
@@ -71,20 +55,12 @@ Id EmitConvertU16F64(EmitContext& ctx, Id value) {
     return ctx.OpUConvert(ctx.U32[1], ctx.OpConvertFToU(ctx.U16, value));
 }
 
-Id EmitConvertU32F16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertFToU(ctx.U32[1], value);
-}
-
 Id EmitConvertU32F32(EmitContext& ctx, Id value) {
     return ctx.OpConvertFToU(ctx.U32[1], value);
 }
 
 Id EmitConvertU32F64(EmitContext& ctx, Id value) {
     return ctx.OpConvertFToU(ctx.U32[1], value);
-}
-
-Id EmitConvertU64F16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertFToU(ctx.U64, value);
 }
 
 Id EmitConvertU64F32(EmitContext& ctx, Id value) {
@@ -117,38 +93,6 @@ Id EmitConvertF32F64(EmitContext& ctx, Id value) {
 
 Id EmitConvertF64F32(EmitContext& ctx, Id value) {
     return ctx.OpFConvert(ctx.F64[1], value);
-}
-
-Id EmitConvertF16S8(EmitContext& ctx, Id value) {
-    return ctx.OpConvertSToF(ctx.F16[1], ExtractS8(ctx, value));
-}
-
-Id EmitConvertF16S16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertSToF(ctx.F16[1], ExtractS16(ctx, value));
-}
-
-Id EmitConvertF16S32(EmitContext& ctx, Id value) {
-    return ctx.OpConvertSToF(ctx.F16[1], value);
-}
-
-Id EmitConvertF16S64(EmitContext& ctx, Id value) {
-    return ctx.OpConvertSToF(ctx.F16[1], value);
-}
-
-Id EmitConvertF16U8(EmitContext& ctx, Id value) {
-    return ctx.OpConvertUToF(ctx.F16[1], ExtractU8(ctx, value));
-}
-
-Id EmitConvertF16U16(EmitContext& ctx, Id value) {
-    return ctx.OpConvertUToF(ctx.F16[1], ExtractU16(ctx, value));
-}
-
-Id EmitConvertF16U32(EmitContext& ctx, Id value) {
-    return ctx.OpConvertUToF(ctx.F16[1], value);
-}
-
-Id EmitConvertF16U64(EmitContext& ctx, Id value) {
-    return ctx.OpConvertUToF(ctx.F16[1], value);
 }
 
 Id EmitConvertF32S8(EmitContext& ctx, Id value) {

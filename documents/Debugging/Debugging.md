@@ -12,6 +12,13 @@ This document covers information about debugging, troubleshooting and reporting 
 This section will guide you through setting up tools for debugging the emulator. This list will likely expand as more tools and platforms receive consistent setups.
 
 <details>
+<summary>Linux</summary>
+
+RenderDoc doesn't work with Wayland, so to use it you have to run the emulator with `SDL_VIDEODRIVER=x11` set.
+
+</details>
+
+<details>
 <summary>Windows and Visual Studio</summary>
 
 Make sure you have the project set up for building on Windows with Visual Studio and CMake: [Build shadPS4 for Windows

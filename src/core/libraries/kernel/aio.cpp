@@ -317,23 +317,23 @@ void RegisterAio(Core::Loader::SymbolsResolver* sym) {
     id_state = (int*)malloc(sizeof(int) * MAX_QUEUE);
     memset(id_state, 0, sizeof(sizeof(int) * MAX_QUEUE));
 
-    LIB_FUNCTION("fR521KIGgb8", "libkernel", 1, "libkernel", 1, 1, sceKernelAioCancelRequest);
-    LIB_FUNCTION("3Lca1XBrQdY", "libkernel", 1, "libkernel", 1, 1, sceKernelAioCancelRequests);
-    LIB_FUNCTION("5TgME6AYty4", "libkernel", 1, "libkernel", 1, 1, sceKernelAioDeleteRequest);
-    LIB_FUNCTION("Ft3EtsZzAoY", "libkernel", 1, "libkernel", 1, 1, sceKernelAioDeleteRequests);
-    LIB_FUNCTION("vYU8P9Td2Zo", "libkernel", 1, "libkernel", 1, 1, sceKernelAioInitializeImpl);
-    LIB_FUNCTION("nu4a0-arQis", "libkernel", 1, "libkernel", 1, 1, sceKernelAioInitializeParam);
-    LIB_FUNCTION("2pOuoWoCxdk", "libkernel", 1, "libkernel", 1, 1, sceKernelAioPollRequest);
-    LIB_FUNCTION("o7O4z3jwKzo", "libkernel", 1, "libkernel", 1, 1, sceKernelAioPollRequests);
-    LIB_FUNCTION("9WK-vhNXimw", "libkernel", 1, "libkernel", 1, 1, sceKernelAioSetParam);
-    LIB_FUNCTION("HgX7+AORI58", "libkernel", 1, "libkernel", 1, 1, sceKernelAioSubmitReadCommands);
-    LIB_FUNCTION("lXT0m3P-vs4", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("fR521KIGgb8", "libkernel", 1, "libkernel", sceKernelAioCancelRequest);
+    LIB_FUNCTION("3Lca1XBrQdY", "libkernel", 1, "libkernel", sceKernelAioCancelRequests);
+    LIB_FUNCTION("5TgME6AYty4", "libkernel", 1, "libkernel", sceKernelAioDeleteRequest);
+    LIB_FUNCTION("Ft3EtsZzAoY", "libkernel", 1, "libkernel", sceKernelAioDeleteRequests);
+    LIB_FUNCTION("vYU8P9Td2Zo", "libkernel", 1, "libkernel", sceKernelAioInitializeImpl);
+    LIB_FUNCTION("nu4a0-arQis", "libkernel", 1, "libkernel", sceKernelAioInitializeParam);
+    LIB_FUNCTION("2pOuoWoCxdk", "libkernel", 1, "libkernel", sceKernelAioPollRequest);
+    LIB_FUNCTION("o7O4z3jwKzo", "libkernel", 1, "libkernel", sceKernelAioPollRequests);
+    LIB_FUNCTION("9WK-vhNXimw", "libkernel", 1, "libkernel", sceKernelAioSetParam);
+    LIB_FUNCTION("HgX7+AORI58", "libkernel", 1, "libkernel", sceKernelAioSubmitReadCommands);
+    LIB_FUNCTION("lXT0m3P-vs4", "libkernel", 1, "libkernel",
                  sceKernelAioSubmitReadCommandsMultiple);
-    LIB_FUNCTION("XQ8C8y+de+E", "libkernel", 1, "libkernel", 1, 1, sceKernelAioSubmitWriteCommands);
-    LIB_FUNCTION("xT3Cpz0yh6Y", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("XQ8C8y+de+E", "libkernel", 1, "libkernel", sceKernelAioSubmitWriteCommands);
+    LIB_FUNCTION("xT3Cpz0yh6Y", "libkernel", 1, "libkernel",
                  sceKernelAioSubmitWriteCommandsMultiple);
-    LIB_FUNCTION("KOF-oJbQVvc", "libkernel", 1, "libkernel", 1, 1, sceKernelAioWaitRequest);
-    LIB_FUNCTION("lgK+oIWkJyA", "libkernel", 1, "libkernel", 1, 1, sceKernelAioWaitRequests);
+    LIB_FUNCTION("KOF-oJbQVvc", "libkernel", 1, "libkernel", sceKernelAioWaitRequest);
+    LIB_FUNCTION("lgK+oIWkJyA", "libkernel", 1, "libkernel", sceKernelAioWaitRequests);
 }
 
 } // namespace Libraries::Kernel

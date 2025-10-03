@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -13,11 +13,13 @@
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
+#include "ipc/ipc.h"
 
 namespace Core {
 
@@ -53,7 +55,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
 
-void Linker::Execute(const std::vector<std::string> args) {
+void Linker::Execute(const std::vector<std::string>& args) {
     if (Config::debugDump()) {
         DebugDump();
     }
@@ -68,7 +70,7 @@ void Linker::Execute(const std::vector<std::string> args) {
     }
 
     // Configure the direct and flexible memory regions.
-    u64 fmem_size = SCE_FLEXIBLE_MEMORY_SIZE;
+    u64 fmem_size = ORBIS_FLEXIBLE_MEMORY_SIZE;
     bool use_extended_mem1 = true, use_extended_mem2 = true;
 
     const auto* proc_param = GetProcParam();
@@ -81,7 +83,7 @@ void Linker::Execute(const std::vector<std::string> args) {
             if (mem_param.size >=
                 offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
                 if (const auto* flexible_size = mem_param.flexible_memory_size) {
-                    fmem_size = *flexible_size + SCE_FLEXIBLE_MEMORY_BASE;
+                    fmem_size = *flexible_size + ORBIS_FLEXIBLE_MEMORY_BASE;
                 }
             }
         }
@@ -113,8 +115,12 @@ void Linker::Execute(const std::vector<std::string> args) {
                                                                  0, "SceKernelInternalMemory");
     ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
 
-    main_thread.Run([this, module, args](std::stop_token) {
+    main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
+        if (auto& ipc = IPC::Instance()) {
+            ipc.WaitForStart();
+        }
+
         LoadSharedLibraries();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
@@ -130,13 +136,13 @@ void Linker::Execute(const std::vector<std::string> args) {
         ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
 
         // Start main module.
-        EntryParams params{};
+        EntryParams& params = Libraries::Kernel::entry_params;
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
-            params.argc = args.size() + 1;
-            for (int i = 0; i < args.size() && i < 32; i++) {
-                params.argv[i + 1] = args[i].c_str();
+            params.argc = args.size();
+            for (int i = 0; i < args.size() && i < 33; i++) {
+                params.argv[i] = args[i].c_str();
             }
         }
         params.entry_addr = module->GetEntryAddress();
@@ -327,8 +333,6 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
     sr.library = library->name;
     sr.library_version = library->version;
     sr.module = module->name;
-    sr.module_version_major = module->version_major;
-    sr.module_version_minor = module->version_minor;
     sr.type = sym_type;
 
     const auto* record = m_hle_symbols.FindSymbol(sr);
