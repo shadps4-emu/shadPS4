@@ -21,9 +21,10 @@ void TcbDtor(Core::Tcb* oldtls);
 ThreadState::ThreadState() {
     // Reserve memory for maximum amount of threads allowed.
     auto* memory = Core::Memory::Instance();
+    auto& impl = memory->GetAddressSpace();
     static constexpr u32 ThrHeapSize = Common::AlignUp(sizeof(Pthread) * MaxThreads, 16_KB);
     void* heap_addr{};
-    const int ret = memory->MapMemory(&heap_addr, Core::SYSTEM_RESERVED_MIN, ThrHeapSize,
+    const int ret = memory->MapMemory(&heap_addr, impl.SystemReservedVirtualBase(), ThrHeapSize,
                                       Core::MemoryProt::CpuReadWrite, Core::MemoryMapFlags::NoFlags,
                                       Core::VMAType::File, "ThrHeap");
     ASSERT_MSG(ret == 0, "Unable to allocate thread heap memory {}", ret);

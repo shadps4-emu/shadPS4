@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <boost/icl/separate_interval_set.hpp>
 #include "common/arch.h"
 #include "common/enum.h"
 #include "common/types.h"
@@ -19,22 +20,6 @@ enum class MemoryPermission : u32 {
     ReadWriteExecute = Read | Write | Execute,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
-
-constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
-constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
-constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
-// Can only comfortably reserve the first 0x7C0000000 of system reserved space.
-constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
-#else
-constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
-#endif
-constexpr VAddr USER_MIN = 0x1000000000ULL;
-constexpr VAddr USER_MAX = 0xFBFFFFFFFFULL;
-
-static constexpr size_t SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
-static constexpr size_t SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
-static constexpr size_t UserSize = 1ULL << 40;
 
 /**
  * Represents the user virtual address space backed by a dmem memory block
@@ -99,6 +84,9 @@ public:
                PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file);
 
     void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
+
+    // Returns an interval set containing all usable regions.
+    boost::icl::interval_set<VAddr> GetUsableRegions();
 
 private:
     struct Impl;
