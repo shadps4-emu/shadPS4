@@ -41,7 +41,12 @@ constexpr VAddr USER_MIN = 0x7000000000ULL;
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
 constexpr VAddr USER_MIN = 0x1000000000ULL;
 #endif
+#if defined(__linux__)
+// Linux maps the shadPS4 executable around here, so limit the user maximum
+constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
+#else
 constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
+#endif
 
 // Constants for the sizes of the ranges in address space.
 static constexpr u64 SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
