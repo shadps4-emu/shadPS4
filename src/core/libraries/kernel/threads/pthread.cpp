@@ -267,7 +267,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->cancel_async = false;
 
     auto* memory = Core::Memory::Instance();
-    if (name && memory->IsValidAddress(name)) {
+    if (name && memory->IsValidMapping(reinterpret_cast<VAddr>(name))) {
         new_thread->name = name;
     } else {
         new_thread->name = fmt::format("Thread{}", new_thread->tid.load());

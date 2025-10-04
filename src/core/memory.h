@@ -200,11 +200,40 @@ public:
         return virtual_addr + size < max_gpu_address;
     }
 
-    bool IsValidAddress(const void* addr) const noexcept {
-        const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
+    bool IsValidMapping(const VAddr virtual_addr, const u64 size = 0) {
         const auto end_it = std::prev(vma_map.end());
         const VAddr end_addr = end_it->first + end_it->second.size;
-        return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
+
+        // If the address fails boundary checks, return early.
+        if (virtual_addr < vma_map.begin()->first || virtual_addr >= end_addr) {
+            return false;
+        }
+
+        // If size is zero and boundary checks succeed, then skip more robust checking
+        if (size == 0) {
+            return true;
+        }
+
+        // Now make sure the full address range is contained in vma_map.
+        auto vma_handle = FindVMA(virtual_addr);
+        auto addr_to_check = virtual_addr;
+        s64 size_to_validate = size;
+        while (vma_handle != vma_map.end() && size_to_validate > 0) {
+            const auto offset_in_vma = addr_to_check - vma_handle->second.base;
+            const auto size_in_vma = vma_handle->second.size - offset_in_vma;
+            size_to_validate -= size_in_vma;
+            addr_to_check += size_in_vma;
+            vma_handle++;
+
+            // Make sure there isn't any gap here
+            if (size_to_validate > 0 && vma_handle != vma_map.end() &&
+                addr_to_check != vma_handle->second.base) {
+                return false;
+            }
+        }
+
+        // If we reach this point and size to validate is not positive, then this mapping is valid.
+        return size_to_validate <= 0;
     }
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
@@ -301,7 +330,7 @@ private:
                vma.type == VMAType::Pooled;
     }
 
-    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
+    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 

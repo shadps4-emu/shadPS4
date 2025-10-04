@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
-#include <boost/icl/separate_interval_set.hpp>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -24,11 +23,38 @@
 // Reserve space for the system address space using a zerofill section.
 asm(".zerofill SYSTEM_MANAGED,SYSTEM_MANAGED,__SYSTEM_MANAGED,0x7FFBFC000");
 asm(".zerofill SYSTEM_RESERVED,SYSTEM_RESERVED,__SYSTEM_RESERVED,0x7C0004000");
+asm(".zerofill USER_AREA,USER_AREA,__USER_AREA,0x5F9000000000");
 #endif
 
 namespace Core {
 
-static size_t BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+// Constants used for mapping address space.
+constexpr VAddr SYSTEM_MANAGED_MIN = 0x400000ULL;
+constexpr VAddr SYSTEM_MANAGED_MAX = 0x7FFFFBFFFULL;
+constexpr VAddr SYSTEM_RESERVED_MIN = 0x7FFFFC000ULL;
+#if defined(__APPLE__) && defined(ARCH_X86_64)
+// Commpage ranges from 0xFC0000000 - 0xFFFFFFFFF, so decrease the system reserved maximum.
+constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
+// GPU-reserved memory ranges from 0x1000000000 - 0x6FFFFFFFFF, so increase the user minimum.
+constexpr VAddr USER_MIN = 0x7000000000ULL;
+#else
+constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
+constexpr VAddr USER_MIN = 0x1000000000ULL;
+#endif
+#if defined(__linux__)
+// Linux maps the shadPS4 executable around here, so limit the user maximum
+constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
+#else
+constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
+#endif
+
+// Constants for the sizes of the ranges in address space.
+static constexpr u64 SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
+static constexpr u64 SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
+static constexpr u64 UserSize = USER_MAX - USER_MIN + 1;
+
+// Required backing file size for mapping physical address space.
+static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
 
 #ifdef _WIN32
 
@@ -72,68 +98,95 @@ struct MemoryRegion {
 
 struct AddressSpace::Impl {
     Impl() : process{GetCurrentProcess()} {
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
-        // Allocate virtual address placeholder for our address space.
-        MEM_ADDRESS_REQUIREMENTS req{};
-        MEM_EXTENDED_PARAMETER param{};
-        req.LowestStartingAddress = reinterpret_cast<PVOID>(SYSTEM_MANAGED_MIN);
-        // The ending address must align to page boundary - 1
-        // https://stackoverflow.com/questions/54223343/virtualalloc2-with-memextendedparameteraddressrequirements-always-produces-error
-        req.HighestEndingAddress = reinterpret_cast<PVOID>(USER_MIN + UserSize - 1);
-        req.Alignment = 0;
-        param.Type = MemExtendedParameterAddressRequirements;
-        param.Pointer = &req;
+        // Determine the system's page alignment
+        SYSTEM_INFO sys_info{};
+        GetSystemInfo(&sys_info);
+        u64 alignment = sys_info.dwAllocationGranularity;
 
-        // Typically, lower parts of system managed area is already reserved in windows.
-        // If reservation fails attempt again by reducing the area size a little bit.
-        // System managed is about 31GB in size so also cap the number of times we can reduce it
-        // to a reasonable amount.
-        static constexpr size_t ReductionOnFail = 1_GB;
-        static constexpr size_t MaxReductions = 10;
+        // Determine the host OS build number
+        // Retrieve module handle for ntdll
+        auto ntdll_handle = GetModuleHandleW(L"ntdll.dll");
+        ASSERT_MSG(ntdll_handle, "Failed to retrieve ntdll handle");
 
-        size_t virtual_size = SystemManagedSize + SystemReservedSize + UserSize;
-        for (u32 i = 0; i < MaxReductions; i++) {
-            virtual_base = static_cast<u8*>(VirtualAlloc2(process, NULL, virtual_size,
-                                                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-                                                          PAGE_NOACCESS, &param, 1));
-            if (virtual_base) {
-                break;
-            }
-            virtual_size -= ReductionOnFail;
+        // Get the RtlGetVersion function
+        s64(WINAPI * RtlGetVersion)(LPOSVERSIONINFOW);
+        *(FARPROC*)&RtlGetVersion = GetProcAddress(ntdll_handle, "RtlGetVersion");
+        ASSERT_MSG(RtlGetVersion, "failed to retrieve function pointer for RtlGetVersion");
+
+        // Call RtlGetVersion
+        RTL_OSVERSIONINFOW os_version_info{};
+        RtlGetVersion(&os_version_info);
+
+        u64 supported_user_max = USER_MAX;
+        static constexpr s32 Windows11BuildNumber = 22000;
+        if (os_version_info.dwBuildNumber < Windows11BuildNumber) {
+            // Windows 10 has an issue with VirtualAlloc2 on higher addresses.
+            // To prevent regressions, limit the maximum address we reserve for this platform.
+            supported_user_max = 0x11000000000ULL;
+            LOG_WARNING(Core, "Windows 10 detected, reducing user max to {:#x} to avoid problems",
+                        supported_user_max);
         }
-        ASSERT_MSG(virtual_base, "Unable to reserve virtual address space: {}",
-                   Common::GetLastErrorMsg());
 
+        // Determine the free address ranges we can access.
+        VAddr next_addr = SYSTEM_MANAGED_MIN;
+        MEMORY_BASIC_INFORMATION info{};
+        while (next_addr <= supported_user_max) {
+            ASSERT_MSG(VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info)),
+                       "Failed to query memory information for address {:#x}", next_addr);
+
+            // Ensure logic uses values aligned to bage boundaries.
+            next_addr = reinterpret_cast<VAddr>(info.BaseAddress) + info.RegionSize;
+            next_addr = Common::AlignUp(next_addr, alignment);
+
+            // Prevent size from going past supported_user_max
+            u64 size = info.RegionSize;
+            if (next_addr > supported_user_max) {
+                size -= (next_addr - supported_user_max);
+            }
+            size = Common::AlignDown(size, alignment);
+
+            // Check for free memory areas
+            // Restrict region size to avoid overly fragmenting the virtual memory space.
+            if (info.State == MEM_FREE && info.RegionSize > 0x1000000) {
+                VAddr addr = Common::AlignUp(reinterpret_cast<VAddr>(info.BaseAddress), alignment);
+                regions.emplace(addr, MemoryRegion{addr, size, false});
+            }
+        }
+
+        // Reserve all detected free regions.
+        for (auto region : regions) {
+            auto addr = static_cast<u8*>(VirtualAlloc2(
+                process, reinterpret_cast<PVOID>(region.second.base), region.second.size,
+                MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, NULL, 0));
+            // All marked regions should reserve fine since they're free.
+            ASSERT_MSG(addr, "Unable to reserve virtual address space: {}",
+                       Common::GetLastErrorMsg());
+        }
+
+        // Set these constants to ensure code relying on them works.
+        // These do not fully encapsulate the state of the address space.
+        system_managed_base = reinterpret_cast<u8*>(regions.begin()->first);
+        system_managed_size = SystemManagedSize - (regions.begin()->first - SYSTEM_MANAGED_MIN);
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
-        system_managed_base = virtual_base;
-        system_managed_size = system_reserved_base - virtual_base;
         user_base = reinterpret_cast<u8*>(USER_MIN);
-        user_size = virtual_base + virtual_size - user_base;
+        user_size = supported_user_max - USER_MIN - 1;
 
-        LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
-                 fmt::ptr(system_managed_base),
-                 fmt::ptr(system_managed_base + system_managed_size - 1));
-        LOG_INFO(Kernel_Vmm, "System reserved virtual memory region: {} - {}",
-                 fmt::ptr(system_reserved_base),
-                 fmt::ptr(system_reserved_base + system_reserved_size - 1));
-        LOG_INFO(Kernel_Vmm, "User virtual memory region: {} - {}", fmt::ptr(user_base),
-                 fmt::ptr(user_base + user_size - 1));
-
-        // Initializer placeholder tracker
-        const uintptr_t system_managed_addr = reinterpret_cast<uintptr_t>(system_managed_base);
-        regions.emplace(system_managed_addr,
-                        MemoryRegion{system_managed_addr, virtual_size, false});
+        // Increase BackingSize to account for config options.
+        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
 
         // Allocate backing file that represents the total physical memory.
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
                                             PAGE_EXECUTE_READWRITE, SEC_COMMIT, BackingSize,
                                             nullptr, nullptr, 0);
+
         ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
         // Allocate a virtual memory for the backing file map as placeholder
         backing_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, BackingSize,
                                                       MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
                                                       PAGE_NOACCESS, nullptr, 0));
+        ASSERT_MSG(backing_base, "{}", Common::GetLastErrorMsg());
+
         // Map backing placeholder. This will commit the pages
         void* const ret =
             MapViewOfFile3(backing_handle, process, backing_base, 0, BackingSize,
@@ -377,6 +430,14 @@ struct AddressSpace::Impl {
         }
     }
 
+    boost::icl::interval_set<VAddr> GetUsableRegions() {
+        boost::icl::interval_set<VAddr> reserved_regions;
+        for (auto region : regions) {
+            reserved_regions.insert({region.second.base, region.second.base + region.second.size});
+        }
+        return reserved_regions;
+    }
+
     HANDLE process{};
     HANDLE backing_handle{};
     u8* backing_base{};
@@ -441,36 +502,33 @@ struct AddressSpace::Impl {
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
-        constexpr int base_map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
 #if defined(__APPLE__) && defined(ARCH_X86_64)
-        // On ARM64 Macs under Rosetta 2, we run into limitations due to the commpage from
-        // 0xFC0000000 - 0xFFFFFFFFF and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF.
-        // We can allocate the system managed region, as well as system reserved if reduced in size
-        // slightly, but we cannot map the user region where we want, so we must let the OS put it
-        // wherever possible and hope the game won't rely on its location.
-        system_managed_base = reinterpret_cast<u8*>(
-            mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), system_managed_size, protection_flags,
-                 base_map_flags | MAP_FIXED, -1, 0));
-        system_reserved_base = reinterpret_cast<u8*>(
-            mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN), system_reserved_size,
-                 protection_flags, base_map_flags | MAP_FIXED, -1, 0));
-        // Cannot guarantee enough space for these areas at the desired addresses, so not MAP_FIXED.
-        user_base = reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(USER_MIN), user_size,
-                                               protection_flags, base_map_flags, -1, 0));
+        // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
+        // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. Because this creates gaps
+        // in the available virtual memory region, we map memory space using three distinct parts.
+        system_managed_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
+                                       system_managed_size, protection_flags, map_flags, -1, 0));
+        system_reserved_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN),
+                                       system_reserved_size, protection_flags, map_flags, -1, 0));
+        user_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
 #if defined(ARCH_X86_64)
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
-                                       protection_flags, base_map_flags | MAP_FIXED, -1, 0));
+                                       protection_flags, map_flags, -1, 0));
         system_managed_base = virtual_base;
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
 #else
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
-        const auto virtual_base = reinterpret_cast<u8*>(
-            mmap(nullptr, virtual_size, protection_flags, base_map_flags, -1, 0));
+        const auto virtual_base =
+            reinterpret_cast<u8*>(mmap(nullptr, virtual_size, protection_flags, map_flags, -1, 0));
         system_managed_base = virtual_base;
         system_reserved_base = virtual_base + SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN;
         user_base = virtual_base + USER_MIN - SYSTEM_MANAGED_MIN;
@@ -659,6 +717,24 @@ void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission per
     const bool write = True(perms & MemoryPermission::Write);
     const bool execute = True(perms & MemoryPermission::Execute);
     return impl->Protect(virtual_addr, size, read, write, execute);
+}
+
+boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
+#ifdef _WIN32
+    // On Windows, we need to obtain the accessible intervals from the implementation's regions.
+    return impl->GetUsableRegions();
+#else
+    // On Linux and Mac, the memory space is fully represented by the three major regions
+    boost::icl::interval_set<VAddr> reserved_regions;
+    VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
+    VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_reserved_base);
+    VAddr user_addr = reinterpret_cast<VAddr>(user_base);
+
+    reserved_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
+    reserved_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
+    reserved_regions.insert({user_addr, user_addr + user_size});
+    return reserved_regions;
+#endif
 }
 
 } // namespace Core
