@@ -1003,8 +1003,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
 void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
-    std::vector<string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                         "Debug",   "Keys",  "GUI", "Settings"};
+    std::vector<string> section_order = {"General", "Input", "Audio", "GPU",     "Vulkan",
+                                         "Debug",   "Keys",  "GUI",   "Settings"};
 
     for (const auto& section : section_order) {
         if (data.contains(section)) {
