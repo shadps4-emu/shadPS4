@@ -98,10 +98,34 @@ struct AddressSpace::Impl {
         GetSystemInfo(&sys_info);
         u64 alignment = sys_info.dwAllocationGranularity;
 
+        // Determine the host OS build number
+        // Retrieve module handle for ntdll
+        auto ntdll_handle = GetModuleHandle("ntdll.dll");
+        ASSERT_MSG(ntdll_handle, "Failed to retrieve ntdll handle");
+
+        // Get the RtlGetVersion function
+        s64(WINAPI * RtlGetVersion)(LPOSVERSIONINFOW);
+        *(FARPROC*)&RtlGetVersion = GetProcAddress(ntdll_handle, "RtlGetVersion");
+        ASSERT_MSG(RtlGetVersion, "failed to retrieve function pointer for RtlGetVersion");
+
+        // Call RtlGetVersion
+        RTL_OSVERSIONINFOW os_version_info{};
+        RtlGetVersion(&os_version_info);
+
+        u64 supported_user_max = USER_MAX;
+        static constexpr s32 Windows11BuildNumber = 22000;
+        if (os_version_info.dwBuildNumber < Windows11BuildNumber) {
+            // Windows 10 has an issue with VirtualAlloc2 on higher addresses.
+            // To prevent regressions, limit the maximum address we reserve for this platform.
+            supported_user_max = 0x11000000000ULL;
+            LOG_WARNING(Core, "Windows 10 detected, reducing user max to {:#x} to avoid problems",
+                        supported_user_max);
+        }
+
         // Determine the free address ranges we can access.
         VAddr next_addr = SYSTEM_MANAGED_MIN;
         MEMORY_BASIC_INFORMATION info{};
-        while (next_addr <= USER_MAX) {
+        while (next_addr <= supported_user_max) {
             ASSERT_MSG(VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info)),
                        "Failed to query memory information for address {:#x}", next_addr);
 
@@ -109,10 +133,10 @@ struct AddressSpace::Impl {
             next_addr = reinterpret_cast<VAddr>(info.BaseAddress) + info.RegionSize;
             next_addr = Common::AlignUp(next_addr, alignment);
 
-            // Prevent size from going past USER_MAX
+            // Prevent size from going past supported_user_max
             u64 size = info.RegionSize;
-            if (next_addr > USER_MAX) {
-                size -= (next_addr - USER_MAX);
+            if (next_addr > supported_user_max) {
+                size -= (next_addr - supported_user_max);
             }
             size = Common::AlignDown(size, alignment);
 
@@ -141,7 +165,7 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
         user_base = reinterpret_cast<u8*>(USER_MIN);
-        user_size = UserSize;
+        user_size = supported_user_max - USER_MIN - 1;
 
         // Increase BackingSize to account for config options.
         BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
