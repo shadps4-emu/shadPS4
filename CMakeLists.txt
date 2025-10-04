@@ -1266,6 +1266,13 @@ if (WIN32)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
     endif()
+
+    # Change base image address
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /BASE:0x700000000000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
+    endif()
 endif()
 
 if (WIN32)
