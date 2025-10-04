@@ -17,6 +17,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/memory.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
@@ -70,7 +71,12 @@ static bool send_init_packet{true}; // initialize HW state before first game's s
 static int sdk_version{0};
 
 static u32 asc_next_offs_dw[Liverpool::NumComputeRings];
-static constexpr VAddr tessellation_factors_ring_addr = Core::SYSTEM_RESERVED_MAX - 0xFFFFFFF;
+
+// We need to get an instance of our address space to derive a proper ring address here.
+auto* memory = Core::Memory::Instance();
+auto& address_space = memory->GetAddressSpace();
+static VAddr tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
+                                              address_space.SystemReservedVirtualSize() - 0xFFFFFFF;
 static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {

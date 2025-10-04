@@ -21,24 +21,6 @@ enum class MemoryPermission : u32 {
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
 
-constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
-constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
-constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
-// Commpage ranges from 0xFC0000000 - 0xFFFFFFFFF, so decrease the system reserved maximum.
-constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
-// GPU-reserved memory ranges from 0x1000000000 - 0x6FFFFFFFFF, so increase the user minimum.
-constexpr VAddr USER_MIN = 0x7000000000ULL;
-#else
-constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
-constexpr VAddr USER_MIN = 0x1000000000ULL;
-#endif
-constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
-
-static constexpr u64 SystemManagedSize = SYSTEM_MANAGED_MAX - SYSTEM_MANAGED_MIN + 1;
-static constexpr u64 SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_MIN + 1;
-static constexpr u64 UserSize = USER_MAX - USER_MIN + 1;
-
 /**
  * Represents the user virtual address space backed by a dmem memory block
  */
