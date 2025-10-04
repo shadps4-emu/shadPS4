@@ -100,7 +100,7 @@ struct AddressSpace::Impl {
 
         // Determine the host OS build number
         // Retrieve module handle for ntdll
-        auto ntdll_handle = GetModuleHandle("ntdll.dll");
+        auto ntdll_handle = GetModuleHandleW(L"ntdll.dll");
         ASSERT_MSG(ntdll_handle, "Failed to retrieve ntdll handle");
 
         // Get the RtlGetVersion function
