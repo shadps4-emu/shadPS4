@@ -999,10 +999,10 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
 }
 
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
-    auto* memory = Core::Memory::Instance();
-    auto& address_space = memory->GetAddressSpace();
     LOG_TRACE(Lib_GnmDriver, "called");
     if (tessellation_factors_ring_addr == -1) {
+        auto* memory = Core::Memory::Instance();
+        auto& address_space = memory->GetAddressSpace();
         tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
                                          address_space.SystemReservedVirtualSize() - 0xFFFFFFF;
     }
