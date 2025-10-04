@@ -575,6 +575,9 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
+        download_images.emplace(image_id);
+    }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
 

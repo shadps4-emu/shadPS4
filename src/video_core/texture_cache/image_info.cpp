@@ -72,9 +72,15 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     meta_info.fmask_addr = buffer.info.compression ? buffer.FmaskAddress() : 0;
 
     guest_address = buffer.Address();
-    const auto color_slice_sz = buffer.GetColorSliceSize();
-    guest_size = color_slice_sz * buffer.NumSlices();
-    mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+    if (props.is_tiled) {
+        guest_size = buffer.GetColorSliceSize() * resources.layers;
+        mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+    } else {
+        std::tie(std::ignore, std::ignore, guest_size) =
+            ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
+        guest_size *= resources.layers;
+        mips_layout.emplace_back(guest_size, pitch, size.height, 0);
+    }
     alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && buffer.info.alt_tile_mode;
 }
 
@@ -102,9 +108,15 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     stencil_size = pitch * size.height * sizeof(u8);
 
     guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
-    const auto depth_slice_sz = buffer.GetDepthSliceSize();
-    guest_size = depth_slice_sz * num_slices;
-    mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+    if (props.is_tiled) {
+        guest_size = buffer.GetDepthSliceSize() * resources.layers;
+        mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+    } else {
+        std::tie(std::ignore, std::ignore, guest_size) =
+            ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
+        guest_size *= resources.layers;
+        mips_layout.emplace_back(guest_size, pitch, size.height, 0);
+    }
 }
 
 ImageInfo::ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept {
@@ -164,7 +176,6 @@ void ImageInfo::UpdateSize() {
         }
 
         switch (array_mode) {
-        case AmdGpu::ArrayMode::ArrayLinearGeneral:
         case AmdGpu::ArrayMode::ArrayLinearAligned: {
             std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
                 ImageSizeLinearAligned(mip_w, mip_h, num_bits, num_samples);
