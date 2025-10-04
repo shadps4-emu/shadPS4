@@ -29,9 +29,9 @@ asm(".zerofill USER_AREA,USER_AREA,__USER_AREA,0x5F9000000000");
 namespace Core {
 
 // Constants used for mapping address space.
-constexpr VAddr SYSTEM_MANAGED_MIN = 0x00000400000ULL;
-constexpr VAddr SYSTEM_MANAGED_MAX = 0x07FFFFBFFFULL;
-constexpr VAddr SYSTEM_RESERVED_MIN = 0x07FFFFC000ULL;
+constexpr VAddr SYSTEM_MANAGED_MIN = 0x400000ULL;
+constexpr VAddr SYSTEM_MANAGED_MAX = 0x7FFFFBFFFULL;
+constexpr VAddr SYSTEM_RESERVED_MIN = 0x7FFFFC000ULL;
 #if defined(__APPLE__) && defined(ARCH_X86_64)
 // Commpage ranges from 0xFC0000000 - 0xFFFFFFFFF, so decrease the system reserved maximum.
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
