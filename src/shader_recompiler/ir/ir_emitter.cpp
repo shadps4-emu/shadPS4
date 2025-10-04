@@ -5,6 +5,7 @@
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
+#include "ir_emitter.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -255,8 +256,8 @@ void IREmitter::SetM0(const U32& value) {
     Inst(Opcode::SetM0, value);
 }
 
-F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, IR::Value index) {
-    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), index);
+F32 IREmitter::GetAttribute(IR::Attribute attribute, u32 comp, u32 index) {
+    return Inst<F32>(Opcode::GetAttribute, attribute, Imm32(comp), Imm32(index));
 }
 
 U32 IREmitter::GetAttributeU32(IR::Attribute attribute, u32 comp) {
@@ -660,6 +661,18 @@ U32 IREmitter::WriteLane(const U32& value, const U32& write_value, const U32& la
     return Inst<U32>(Opcode::WriteLane, value, write_value, lane);
 }
 
+Value IREmitter::Ballot(const U1& bit) {
+    return Inst(Opcode::Ballot, bit);
+}
+
+U32 IREmitter::BallotFindLsb(const Value& mask) {
+    return Inst<U32>(Opcode::BallotFindLsb, mask);
+}
+
+U1 IREmitter::GroupAny(const U1& bit) {
+    return Inst<U1>(Opcode::GroupAny, bit);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());
@@ -695,14 +708,10 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2) {
         return Inst(Opcode::CompositeConstructU32x2, e1, e2);
     case Type::U32x2:
         return Inst(Opcode::CompositeConstructU32x2x2, e1, e2);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x2, e1, e2);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x2, e1, e2);
     case Type::F32x2:
         return Inst(Opcode::CompositeConstructF32x2x2, e1, e2);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x2, e1, e2);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -715,12 +724,8 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     switch (e1.Type()) {
     case Type::U32:
         return Inst(Opcode::CompositeConstructU32x3, e1, e2, e3);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x3, e1, e2, e3);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x3, e1, e2, e3);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x3, e1, e2, e3);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -735,12 +740,8 @@ Value IREmitter::CompositeConstruct(const Value& e1, const Value& e2, const Valu
     switch (e1.Type()) {
     case Type::U32:
         return Inst(Opcode::CompositeConstructU32x4, e1, e2, e3, e4);
-    case Type::F16:
-        return Inst(Opcode::CompositeConstructF16x4, e1, e2, e3, e4);
     case Type::F32:
         return Inst(Opcode::CompositeConstructF32x4, e1, e2, e3, e4);
-    case Type::F64:
-        return Inst(Opcode::CompositeConstructF64x4, e1, e2, e3, e4);
     default:
         ThrowInvalidType(e1.Type());
     }
@@ -774,24 +775,12 @@ Value IREmitter::CompositeExtract(const Value& vector, size_t element) {
         return read(Opcode::CompositeExtractU32x3, 3);
     case Type::U32x4:
         return read(Opcode::CompositeExtractU32x4, 4);
-    case Type::F16x2:
-        return read(Opcode::CompositeExtractF16x2, 2);
-    case Type::F16x3:
-        return read(Opcode::CompositeExtractF16x3, 3);
-    case Type::F16x4:
-        return read(Opcode::CompositeExtractF16x4, 4);
     case Type::F32x2:
         return read(Opcode::CompositeExtractF32x2, 2);
     case Type::F32x3:
         return read(Opcode::CompositeExtractF32x3, 3);
     case Type::F32x4:
         return read(Opcode::CompositeExtractF32x4, 4);
-    case Type::F64x2:
-        return read(Opcode::CompositeExtractF64x2, 2);
-    case Type::F64x3:
-        return read(Opcode::CompositeExtractF64x3, 3);
-    case Type::F64x4:
-        return read(Opcode::CompositeExtractF64x4, 4);
     default:
         ThrowInvalidType(vector.Type());
     }
@@ -811,24 +800,12 @@ Value IREmitter::CompositeInsert(const Value& vector, const Value& object, size_
         return insert(Opcode::CompositeInsertU32x3, 3);
     case Type::U32x4:
         return insert(Opcode::CompositeInsertU32x4, 4);
-    case Type::F16x2:
-        return insert(Opcode::CompositeInsertF16x2, 2);
-    case Type::F16x3:
-        return insert(Opcode::CompositeInsertF16x3, 3);
-    case Type::F16x4:
-        return insert(Opcode::CompositeInsertF16x4, 4);
     case Type::F32x2:
         return insert(Opcode::CompositeInsertF32x2, 2);
     case Type::F32x3:
         return insert(Opcode::CompositeInsertF32x3, 3);
     case Type::F32x4:
         return insert(Opcode::CompositeInsertF32x4, 4);
-    case Type::F64x2:
-        return insert(Opcode::CompositeInsertF64x2, 2);
-    case Type::F64x3:
-        return insert(Opcode::CompositeInsertF64x3, 3);
-    case Type::F64x4:
-        return insert(Opcode::CompositeInsertF64x4, 4);
     default:
         ThrowInvalidType(vector.Type());
     }
@@ -849,12 +826,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x2);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x2);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x2);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x2);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -875,12 +848,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x3);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x3);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x3);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x3);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -903,12 +872,8 @@ Value IREmitter::CompositeShuffle(const Value& vector1, const Value& vector2, si
     switch (vector1.Type()) {
     case Type::U32x4:
         return shuffle(Opcode::CompositeShuffleU32x4);
-    case Type::F16x4:
-        return shuffle(Opcode::CompositeShuffleF16x4);
     case Type::F32x4:
         return shuffle(Opcode::CompositeShuffleF32x4);
-    case Type::F64x4:
-        return shuffle(Opcode::CompositeShuffleF64x4);
     default:
         ThrowInvalidType(vector1.Type());
     }
@@ -921,18 +886,10 @@ Value IREmitter::Select(const U1& condition, const Value& true_value, const Valu
     switch (true_value.Type()) {
     case Type::U1:
         return Inst(Opcode::SelectU1, condition, true_value, false_value);
-    case Type::U8:
-        return Inst(Opcode::SelectU8, condition, true_value, false_value);
-    case Type::U16:
-        return Inst(Opcode::SelectU16, condition, true_value, false_value);
     case Type::U32:
         return Inst(Opcode::SelectU32, condition, true_value, false_value);
-    case Type::U64:
-        return Inst(Opcode::SelectU64, condition, true_value, false_value);
     case Type::F32:
         return Inst(Opcode::SelectF32, condition, true_value, false_value);
-    case Type::F64:
-        return Inst(Opcode::SelectF64, condition, true_value, false_value);
     default:
         UNREACHABLE_MSG("Invalid type {}", true_value.Type());
     }
@@ -1159,6 +1116,10 @@ F32 IREmitter::FPLdexp(const F32& value, const U32& exp) {
 
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
+}
+
+F32 IREmitter::FPPow(const F32& x, const F32& y) {
+    return Inst<F32>(Opcode::FPPow, x, y);
 }
 
 F32F64 IREmitter::FPRecip(const F32F64& value) {
@@ -1971,6 +1932,24 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
     throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
+U8U16U32U64 IR::IREmitter::SConvert(size_t result_bitsize, const U8U16U32U64& value) {
+    switch (result_bitsize) {
+    case 32:
+        switch (value.Type()) {
+        case Type::U8:
+            return Inst<U32>(Opcode::ConvertS32S8, value);
+        case Type::U16:
+            return Inst<U32>(Opcode::ConvertS32S16, value);
+        default:
+            break;
+        }
+    default:
+        break;
+    }
+    throw NotImplementedException("Signed Conversion from {} to {} bits", value.Type(),
+                                  result_bitsize);
+}
+
 F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
     switch (result_bitsize) {
     case 16:
@@ -2079,11 +2058,11 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
-Value IREmitter::ImageSampleRaw(const Value& handle, const Value& address1, const Value& address2,
-                                const Value& address3, const Value& address4,
-                                const Value& inline_sampler, TextureInstInfo info) {
-    return Inst(Opcode::ImageSampleRaw, Flags{info}, handle, address1, address2, address3, address4,
-                inline_sampler);
+Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                const Value& address1, const Value& address2, const Value& address3,
+                                const Value& address4, TextureInstInfo info) {
+    return Inst(Opcode::ImageSampleRaw, Flags{info}, image_handle, sampler_handle, address1,
+                address2, address3, address4);
 }
 
 Value IREmitter::ImageSampleImplicitLod(const Value& handle, const Value& coords, const F32& bias,

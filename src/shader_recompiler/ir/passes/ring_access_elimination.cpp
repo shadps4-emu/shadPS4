@@ -4,6 +4,8 @@
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
+#include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/recompiler.h"
@@ -33,12 +35,9 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 bool is_composite = opcode == IR::Opcode::WriteSharedU64;
                 u32 num_components = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
 
-                u32 offset = 0;
-                const auto* addr = inst.Arg(0).InstRecursive();
-                if (addr->GetOpcode() == IR::Opcode::IAdd32) {
-                    ASSERT(addr->Arg(1).IsImmediate());
-                    offset = addr->Arg(1).U32();
-                }
+                ASSERT(inst.Arg(0).IsImmediate());
+
+                u32 offset = inst.Arg(0).U32();
                 IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
                                               : inst.Arg(1).Resolve();
                 for (s32 i = 0; i < num_components; i++) {
@@ -115,10 +114,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                     break;
                 }
 
-                const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
-                const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
-                const auto bucket = offset.Resolve().U32() / 256u;
+                const auto vertex_id = (info.index_enable ? IR::GetBufferIndexArg(&inst)
+                                                          : IR::GetBufferVOffsetArg(&inst))
+                                           .U32() >>
+                                       2;
+                const auto soffset = IR::GetBufferSOffsetArg(&inst);
+                const auto bucket = soffset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
                                                : IR::Attribute::Param0 + (bucket / 4 - 1);
                 const auto comp = bucket % 4;
@@ -145,11 +146,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 ASSERT(it != info.gs_copy_data.attr_map.cend());
                 const auto& [attr, comp] = it->second;
 
-                inst.ReplaceOpcode(IR::Opcode::SetAttribute);
-                inst.ClearArgs();
-                inst.SetArg(0, IR::Value{attr});
-                inst.SetArg(1, data);
-                inst.SetArg(2, ir.Imm32(comp));
+                inst.Invalidate();
+                if (IsPosition(attr)) {
+                    ExportPosition(ir, runtime_info.gs_info, attr, comp, data);
+                } else {
+                    ir.SetAttribute(attr, data, comp);
+                }
                 break;
             }
             default:

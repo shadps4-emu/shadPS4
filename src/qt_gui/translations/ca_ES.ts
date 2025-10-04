@@ -454,14 +454,6 @@
       <translation>Fes servir configuracions per cada joc</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>Botons d'acció</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>Ajust del color</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>R:</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>G:</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>B:</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>sense assignar</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>Opcions</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -592,6 +556,74 @@
     <message>
       <source>Move analog stick</source>
       <translation>Mou la palanca</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1 i L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>Controlador actiu</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>ID del controlador</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>Controlador per defecte</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>No hi ha cap seleccionat per defecte</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>n/a</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>Estableix el controlador actual per defecte</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>Elimina el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 i R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID: </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>Seleccionat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>El controlador actiu per defecte</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>Eliminat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>S'ha eliminat el controlador per defecte</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>VERMELL</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>VERD</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>BLAU</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>Compatibilitat...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>Actualitza la base de dades</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>Visualitza l'informe</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>Envia un informe</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>Crea una drecera</translation>
     </message>
@@ -990,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>Afegeix a preferits</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>Configuració específica del joc...</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>Configuració específica del joc</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>Crea una configuració específica del joc des de la configuració global</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>Esborra la configuració específica del joc</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>Actualitza la base de dades</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>Visualitza l'informe</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>Envia un informe</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>Confirma la supressió</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>Vols esborrar la configuració específica del joc?</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>Dreceres de teclat</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>Dreceres del controlador</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>Mostra el comptador de fotogrames per segon</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>sense assignar</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>Tanca l'emulació</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>Recarrega les assignacions de botons</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>Commuta pantalla completa</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>Commuta la pausa</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>Dreceres de teclat</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Captura Renderdoc (per motius de depuració)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>Alterna el ratolí com a emulador del joystick</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>Alterna el ratolí com a emulador de giroscopi</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>Ajuda: Fins a 3 entrades simultànies poden ser assignades per cada drecera de teclat</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Desa</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>Aplicar</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>Cancel·lar</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>Restaura els valors per defecte</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>No s'ha pogut desar</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>No es pot assignar una entrada més d'una vegada. S'han assignat de manera duplicada pels següents botons:
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>Esperant per alguna entrada</translation>
     </message>
   </context>
   <context>
@@ -1069,14 +1212,6 @@
       <translation>Fes servir configuracions per cada joc</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>Editor de text</translation>
     </message>
@@ -1085,28 +1220,12 @@
       <translation>Ajuda</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>Ratolí a palanca</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>Pressiona F7 durant el joc per activar</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1235,6 +1354,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>Touchpad dreta</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>Filtre de registre predeterminat</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>Comentari</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>Filtre</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>Carregar</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>Tanca</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>Afegeix una nova configuració preseleccionada després de la fila seleccionada</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>Elimina les configuracions predeterminades seleccionades</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>Carrega la configuració predeterminada seleccionada</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>Mostra les etiquetes sota les icones</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>Personalitza les dreceres de teclat</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>Idioma de l'emulador</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>Emulador</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>Pestanya predeterminada en obrir la configuració</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>Mostra la mida del joc a la llista</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>Mostra missatge de benvinguda</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1587,6 +1737,18 @@
       <translation>Temps d'espera per ocultar el ratolí</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>Micròfon</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>Cap</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>Dispositiu per defecte</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>s</translation>
     </message>
@@ -1609,10 +1771,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>Dispositiu de gràfics</translation>
-    </message>
-    <message>
-      <source>Vblank Divider</source>
-      <translation>Divisor Vblank</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1687,6 +1845,14 @@
       <translation>Marcadors de depuració</translation>
     </message>
     <message>
+      <source>Enable Readbacks</source>
+      <translation>Activar Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>Activa imatges lineals de Readback</translation>
+    </message>
+    <message>
       <source>Update</source>
       <translation>Actualitza</translation>
     </message>
@@ -1705,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>Comprova si hi ha actualitzacions</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>Configuració de la interfície</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1863,10 +2025,6 @@
       <translation>Amplada/Alçada:\nEstableix les mides de la finestra de l'emulador quan s'inicia, durant el joc es pot canviar la mida.\nAixò és diferent que la resolució del joc.</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Divisor Vblank:\nLa taxa de fotogrames a la qual s'actualitza l'emulador és multiplicada per aquest valor. Canviar aquest valor pot tenir reaccions adverses, com incrementar la velocitat del joc, o trencar alguna funcionalitat crítica del joc que no s'espera aquest canvi.</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>Activa els abocats de shaders:\nPer la millora de la depuració tècnica, desa els shaders del joc en una carpeta mentre es renderitzen.</translation>
     </message>
@@ -1895,14 +2053,6 @@
       <translation>Activa l'abocat de depuració:\nDesa els símbols d'importació i exportació i la informació de l'encapçalament del fitxer de programa de PS4 que s'està executant ara mateix.</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activa les capes de validació de Vulkan:\nActiva un sistema que valida l'estat del renderitzador de Vulkan i registra informació sobre el seu ús intern.\nAixò redueix el rendiment i pot canviar el comportament de l'emulador.</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>Activa la validació de sincronització de Vulkan:\nActiva un sistema que valida la sincronització de Vulkan en les tasques de renderització.\nAixò pot reduir el rendiment i pot canviar el comportament de l'emulació.</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>Activa la depuració RenderDoc:\nSi aquesta opció està activada, l'emulador tindrà compatibilitat amb RenderDoc per permetre capturar i analitzar els fotogrames renderitzats.</translation>
     </message>
@@ -1911,8 +2061,12 @@
       <translation>Recopilar shaders:\nHas de tenir activada aquesta opció per editar els shaders amb el menú de depurador (Ctrl + F10).</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nNo funciona en les targetes gràfiques de Intel.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>Actica Readbacks:\nActiva readbacks i writebacks a la memòria de la targeta gràfica.\nAixò és necessari pel funcionament correcte en alguns jocs.\nPot causar inestabilitat i/o errors de rendiment.</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>Activa imatges lineals de Readback:\nActiva la descàrrega asíncrona d'imatges lineals modificades de la targeta gràfica:\nPot corregir errors en alguns jocs.</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2077,6 +2231,202 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> Versió de Vulkan no suportada</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>Funcions experimentals</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>AVÍS: Aquestes funcions son experimentals i no haurien de ser activades a no ser que t'ho demanin, o que el joc ho necessiti. Pregunta en el Discord de shadPS4 si tens dubtes.</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>Activa l'entrada del controlador en segon pla</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>Activa l'entrada del controlador en segon pla:\nPermet a shadPS4 per detectar l'entrada del controlador quan la finestra del joc ja no té el focus.</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>Diagnòstiques de fallides:\nCrea un fitxer .yaml amb informació sobre l'estat de Vulkan en el moment de fer fallida.\nÉs útil per depurar errors del tipus 'Dispositiu perdut'. Si aquesta opció està activada, caldria activar els marcadors de depuració de convidat.\nCal activar la validació de capes de Vulkan i el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>Habilita el registre</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>Habilita el registre:\nHabilita el registre.\nNo canviïs aquesta opció si no saps que estàs fent!\nSi demanes ajuda, assegura't que aquesta opció està ACTIVADA.</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>Mode presentació</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>Bústia de correu (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>Fifo (Sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>Immediat (Sense sincronització vertical)</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>Carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>Selecciona la carpeta DLC</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>Mode Presentació:\nConfigura com es presenta la sortida de vídeo a la teva pantalla.\n\nBústia de correu: Sincronitza els fotogrames amb la taxa de refresc de la teva pantalla. Els nous fotogrames reemplacen qualsevol fotograma pendent. Redueix la latència però pot provocar salts de fotogrames si es queden enrere.\nFifo: Els fotogrames es sincronitzen amb la taxa de refresc de la teva pantalla. Els nous fotogrames es posaran en cua darrere els fotogrames pendents. Assegura mostrar tots els fotogrames però augmenta la latència.\nImmediat: Els fotogrames es presenten immediatament a la teva pantalla quan estan disponibles. Pot provocar errors gràfics.</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>Ruta DLC:\nLa carpeta des d'on es carrega el contingut DLC.</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>Navegador:\nCerca una carpeta per establir com a ruta DLC.</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>Configuració FSR</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>Activa el FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>Activa RCAS (esmolat)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>Afeblir RCAS:</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation>Carrega els valors predeterminats...</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>Registre</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>Obre la ubicació del registre:\nObre la carpeta en la qual es desa el fitxer de registre.</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>Micròfon:\nCap: No fa servir el micròfon.\nDispositiu per defecte: Farà servir el dispositiu definit pel sistema operatiu.\nO selecciona manualment el micròfon de la llista.</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>Volum:\nAjusta el volum per jocs globalment, el rang va del 0-500% amb 100% com a valor per defecte.</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>Pestanya per defecte en obrir la configuració:\nSelecciona quina pestanya es veurà primer, per defecte és la pestanya General.</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>Mostra la mida del joc a la Llista:\nHi ha la mida del joc a la llista.</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>Activa els controls de moviment:\nQuan està activat, farà servir els controls de moviment del controlador si en té.</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>Freqüència de Vblank</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>Freqüència Vblank:\nLa taxa de fotogrames a la qual l'emulador es refresca (60 Hz és el valor base, quan el joc s'executa a 30 o 60 fps). Canviar aquest valor pot tenir efectes adversos, com augmentar la velocitat del joc, o trencar la funcionalitat del joc de forma no esperada!</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>Activa l'accés directe a memòria</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>Activa el mode consola de desenvolupador</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>Estableix l'inici de sessió de PSN a cert</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>Estableix la connexió a xarxa com a certa</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>Miscel·lània</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>Frontend</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>Experimental</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>Mostra pantalla inicial en inicar el joc</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>Configuració general del frontend</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>Activa el mode PS4 Neo</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>Activa l'accés directe a memòria:\nActiva l'accés arbitrari de memòria des de la targeta gràfica a la memòria del procesador.</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>Activa el mode Neo de PS4:\nAfegeix suport a l'emulació de PS4 Pro i la mida de memòria. Actualment causa inestabilitat en un gran nombre de jocs que s'han provat.</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>Activa el mode de consola de desenvolupament:\nAfegeix suport per la mida de memòria de la consola de desenvolupament.</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>Estableix la connexió a xarxa com a certa:\nForça els jocs a detectar una connexió a xarxa activa. Les funcions de connexió a xarxa no estan implementades actualment.</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>Estableix l'inici de sessió a PSN com a cert:\nForça els jocs a detectar un inici de sessió a PSN actiu. Les funcions de PSN no estan implementades actualment.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Activa les capes de validació de Vulkan:\nActiva un sistema que valida l'estat del renderitzador de Vulkan i registra informació sobre el seu ús intern.\nAixò redueix el rendiment i pot canviar el comportament de l'emulador.\nCal tenir el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>Activa la validació de sincronització de Vulkan:\nActiva un sistema que valida la sincronització de Vulkan en les tasques de renderització.\nAixò pot reduir el rendiment i pot canviar el comportament de l'emulació.\nCal tenir el SDK de Vulkan perquè funcioni.</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

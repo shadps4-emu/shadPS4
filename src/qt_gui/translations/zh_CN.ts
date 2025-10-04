@@ -454,14 +454,6 @@
       <translation>使用每个游戏的配置</translation>
     </message>
     <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
-    </message>
-    <message>
       <source>Face Buttons</source>
       <translation>功能键（动作键）</translation>
     </message>
@@ -480,18 +472,6 @@
     <message>
       <source>Color Adjustment</source>
       <translation>颜色调整</translation>
-    </message>
-    <message>
-      <source>R:</source>
-      <translation>红：</translation>
-    </message>
-    <message>
-      <source>G:</source>
-      <translation>绿：</translation>
-    </message>
-    <message>
-      <source>B:</source>
-      <translation>蓝：</translation>
     </message>
     <message>
       <source>Override Lightbar Color</source>
@@ -530,24 +510,8 @@
       <translation>未映射</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Options</source>
       <translation>选项</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
     </message>
     <message>
       <source>Touchpad Left</source>
@@ -592,6 +556,74 @@
     <message>
       <source>Move analog stick</source>
       <translation>移动模拟摇杆</translation>
+    </message>
+    <message>
+      <source>L1 and L2</source>
+      <translation>L1和L2</translation>
+    </message>
+    <message>
+      <source>Active Gamepad</source>
+      <translation>主手柄</translation>
+    </message>
+    <message>
+      <source>Gamepad ID</source>
+      <translation>手柄 ID</translation>
+    </message>
+    <message>
+      <source>Default Gamepad</source>
+      <translation>默认手柄</translation>
+    </message>
+    <message>
+      <source>No default selected</source>
+      <translation>没有选择默认项</translation>
+    </message>
+    <message>
+      <source>n/a</source>
+      <translation>不可用</translation>
+    </message>
+    <message>
+      <source>Set Active Gamepad as Default</source>
+      <translation>设置主手柄为默认值</translation>
+    </message>
+    <message>
+      <source>Remove Default Gamepad</source>
+      <translation>移除默认手柄</translation>
+    </message>
+    <message>
+      <source>R1 and R2</source>
+      <translation>R1 和 R2</translation>
+    </message>
+    <message>
+      <source>ID: </source>
+      <translation>ID:  </translation>
+    </message>
+    <message>
+      <source>Default Controller Selected</source>
+      <translation>已选中默认控制器</translation>
+    </message>
+    <message>
+      <source>Active controller set as default</source>
+      <translation>主控制器设置为默认</translation>
+    </message>
+    <message>
+      <source>Default Controller Removed</source>
+      <translation>默认控制器已移除</translation>
+    </message>
+    <message>
+      <source>Default controller setting removed</source>
+      <translation>默认控制器设置已删除</translation>
+    </message>
+    <message>
+      <source>RED</source>
+      <translation>红</translation>
+    </message>
+    <message>
+      <source>GREEN</source>
+      <translation>绿</translation>
+    </message>
+    <message>
+      <source>BLUE</source>
+      <translation>蓝</translation>
     </message>
   </context>
   <context>
@@ -887,18 +919,6 @@
       <translation>兼容性...</translation>
     </message>
     <message>
-      <source>Update database</source>
-      <translation>更新数据库</translation>
-    </message>
-    <message>
-      <source>View report</source>
-      <translation>查看报告</translation>
-    </message>
-    <message>
-      <source>Submit a report</source>
-      <translation>提交报告</translation>
-    </message>
-    <message>
       <source>Shortcut creation</source>
       <translation>创建快捷方式</translation>
     </message>
@@ -990,6 +1010,42 @@
       <source>Add to Favorites</source>
       <translation>添加至收藏</translation>
     </message>
+    <message>
+      <source>Game-specific Settings...</source>
+      <translation>游戏特定设置……</translation>
+    </message>
+    <message>
+      <source>Configure Game-specific Settings</source>
+      <translation>配置游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Create Game-specific Settings from Global Settings</source>
+      <translation>从全局设置创建游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Delete Game-specific Settings</source>
+      <translation>删除游戏特定设置</translation>
+    </message>
+    <message>
+      <source>Update Database</source>
+      <translation>更新数据库</translation>
+    </message>
+    <message>
+      <source>View Report</source>
+      <translation>查看报告</translation>
+    </message>
+    <message>
+      <source>Submit a Report</source>
+      <translation>提交报告</translation>
+    </message>
+    <message>
+      <source>Confirm deletion</source>
+      <translation>确认删除</translation>
+    </message>
+    <message>
+      <source>Delete game-specific settings?</source>
+      <translation>删除游戏特定设置？</translation>
+    </message>
   </context>
   <context>
     <name>HelpDialog</name>
@@ -1012,6 +1068,93 @@
     <message>
       <source>Keybindings</source>
       <translation>按键绑定</translation>
+    </message>
+  </context>
+  <context>
+    <name>Hotkeys</name>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>自定义快捷键</translation>
+    </message>
+    <message>
+      <source>Controller Hotkeys</source>
+      <translation>控制器快捷键</translation>
+    </message>
+    <message>
+      <source>Show FPS Counter</source>
+      <translation>显示FPS计数器</translation>
+    </message>
+    <message>
+      <source>unmapped</source>
+      <translation>未映射</translation>
+    </message>
+    <message>
+      <source>Quit Emulation</source>
+      <translation>退出模拟器</translation>
+    </message>
+    <message>
+      <source>Reload Button Mappings</source>
+      <translation>重新加载按键映射</translation>
+    </message>
+    <message>
+      <source>Toggle Fullscreen</source>
+      <translation>全屏显示切换</translation>
+    </message>
+    <message>
+      <source>Toggle Pause</source>
+      <translation>切换暂停</translation>
+    </message>
+    <message>
+      <source>Keyboard Hotkeys</source>
+      <translation>键盘快捷键</translation>
+    </message>
+    <message>
+      <source>Renderdoc Capture (for debugging only)</source>
+      <translation>Renderdoc 捕获(仅供调试)</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Joystick Emulation</source>
+      <translation>切换鼠标模拟摇杆功能</translation>
+    </message>
+    <message>
+      <source>Toggle Mouse to Gyro Emulation</source>
+      <translation>切换鼠标模拟陀螺仪功能</translation>
+    </message>
+    <message>
+      <source>Tip: Up to three simultaneous inputs can be assigned for each hotkey</source>
+      <translation>提示：每个热键最多可以同时分配三个输入</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>保存</translation>
+    </message>
+    <message>
+      <source>Apply</source>
+      <translation>应用</translation>
+    </message>
+    <message>
+      <source>Cancel</source>
+      <translation>取消</translation>
+    </message>
+    <message>
+      <source>Restore Defaults</source>
+      <translation>恢复默认设置</translation>
+    </message>
+    <message>
+      <source>Unable to Save</source>
+      <translation>无法保存</translation>
+    </message>
+    <message>
+      <source>Cannot bind any unique input more than once. Duplicate inputs mapped to the following buttons:
+
+%1</source>
+      <translation>不能多次绑定任何同一输入。请重新映射以下按键的输入：
+
+%1</translation>
+    </message>
+    <message>
+      <source>Waiting for inputs</source>
+      <translation>正在等待输入</translation>
     </message>
   </context>
   <context>
@@ -1069,14 +1212,6 @@
       <translation>每个游戏使用单独的配置</translation>
     </message>
     <message>
-      <source>L1</source>
-      <translation>L1</translation>
-    </message>
-    <message>
-      <source>L2</source>
-      <translation>L2</translation>
-    </message>
-    <message>
       <source>Text Editor</source>
       <translation>文本编辑器</translation>
     </message>
@@ -1085,28 +1220,12 @@
       <translation>帮助</translation>
     </message>
     <message>
-      <source>R1</source>
-      <translation>R1</translation>
-    </message>
-    <message>
-      <source>R2</source>
-      <translation>R2</translation>
-    </message>
-    <message>
-      <source>L3</source>
-      <translation>L3</translation>
-    </message>
-    <message>
       <source>Mouse to Joystick</source>
       <translation>鼠标控制摇杆</translation>
     </message>
     <message>
       <source>*press F7 ingame to activate</source>
       <translation>* 按 F7 键激活</translation>
-    </message>
-    <message>
-      <source>R3</source>
-      <translation>R3</translation>
     </message>
     <message>
       <source>Options</source>
@@ -1235,6 +1354,41 @@
     <message>
       <source>Touchpad Right</source>
       <translation>触摸板右侧</translation>
+    </message>
+  </context>
+  <context>
+    <name>LogPresetsDialog</name>
+    <message>
+      <source>Log Filter Presets</source>
+      <translation>日志过滤器预设</translation>
+    </message>
+    <message>
+      <source>Comment</source>
+      <translation>备注</translation>
+    </message>
+    <message>
+      <source>Filter</source>
+      <translation>筛选</translation>
+    </message>
+    <message>
+      <source>Load</source>
+      <translation>加载</translation>
+    </message>
+    <message>
+      <source>Close</source>
+      <translation>关闭</translation>
+    </message>
+    <message>
+      <source>Add a new preset after the selected row</source>
+      <translation>在所选行后添加新预设</translation>
+    </message>
+    <message>
+      <source>Remove selected presets</source>
+      <translation>删除选中的预设</translation>
+    </message>
+    <message>
+      <source>Load the selected preset</source>
+      <translation>加载选中的预设</translation>
     </message>
   </context>
   <context>
@@ -1495,6 +1649,10 @@
       <source>Show Labels Under Icons</source>
       <translation>显示图标下的标签</translation>
     </message>
+    <message>
+      <source>Customize Hotkeys</source>
+      <translation>自定义快捷键</translation>
+    </message>
   </context>
   <context>
     <name>SettingsDialog</name>
@@ -1519,20 +1677,12 @@
       <translation>模拟器语言</translation>
     </message>
     <message>
-      <source>Emulator</source>
-      <translation>模拟器</translation>
-    </message>
-    <message>
       <source>Default tab when opening settings</source>
       <translation>打开设置时的默认选项卡</translation>
     </message>
     <message>
       <source>Show Game Size In List</source>
       <translation>在列表中显示游戏大小</translation>
-    </message>
-    <message>
-      <source>Show Splash</source>
-      <translation>显示启动画面</translation>
     </message>
     <message>
       <source>Enable Discord Rich Presence</source>
@@ -1587,6 +1737,18 @@
       <translation>光标隐藏闲置时长</translation>
     </message>
     <message>
+      <source>Microphone</source>
+      <translation>麦克风</translation>
+    </message>
+    <message>
+      <source>None</source>
+      <translation>无</translation>
+    </message>
+    <message>
+      <source>Default Device</source>
+      <translation>默认设备</translation>
+    </message>
+    <message>
       <source>s</source>
       <translation>秒</translation>
     </message>
@@ -1609,10 +1771,6 @@
     <message>
       <source>Graphics Device</source>
       <translation>图形设备</translation>
-    </message>
-    <message>
-      <source>Vblank Divider</source>
-      <translation>Vblank Divider</translation>
     </message>
     <message>
       <source>Advanced</source>
@@ -1687,6 +1845,14 @@
       <translation>Geust 调试标记</translation>
     </message>
     <message>
+      <source>Enable Readbacks</source>
+      <translation>启用Readbacks</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images</source>
+      <translation>启用Readback线性图像</translation>
+    </message>
+    <message>
       <source>Update</source>
       <translation>更新</translation>
     </message>
@@ -1705,10 +1871,6 @@
     <message>
       <source>Check for Updates</source>
       <translation>检查更新</translation>
-    </message>
-    <message>
-      <source>GUI Settings</source>
-      <translation>界面设置</translation>
     </message>
     <message>
       <source>Title Music</source>
@@ -1863,10 +2025,6 @@
       <translation>宽度/高度：\n设置启动游戏时的窗口大小，游戏过程中可以调整。\n这与游戏内的分辨率不同。</translation>
     </message>
     <message>
-      <source>Vblank Divider:\nThe frame rate at which the emulator refreshes at is multiplied by this number. Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
-      <translation>Vblank Divider：\n模拟器刷新的帧率会乘以此数字。改变此项可能会导致游戏速度加快，或破坏游戏中不期望此变化的关键功能！</translation>
-    </message>
-    <message>
       <source>Enable Shaders Dumping:\nFor the sake of technical debugging, saves the games shaders to a folder as they render.</source>
       <translation>启用着色器转储：\n用于技术调试，在渲染期间将游戏着色器保存到文件夹中。</translation>
     </message>
@@ -1895,14 +2053,6 @@
       <translation>启用调试转储：\n将当前正在运行的 PS4 程序的导入和导出符号及文件头信息保存到目录中。</translation>
     </message>
     <message>
-      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>启用 Vulkan 验证层：\n启用一个系统来验证 Vulkan 渲染器的状态并记录其内部状态的信息。\n这将降低性能并可能改变模拟的行为。</translation>
-    </message>
-    <message>
-      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.</source>
-      <translation>启用 Vulkan 同步验证：\n启用一个系统来验证 Vulkan 渲染任务的时间。\n这将降低性能并可能改变模拟的行为。</translation>
-    </message>
-    <message>
       <source>Enable RenderDoc Debugging:\nIf enabled, the emulator will provide compatibility with Renderdoc to allow capture and analysis of the currently rendered frame.</source>
       <translation>启用 RenderDoc 调试:\n启用后模拟器将提供与 Renderdoc 的兼容性，允许在渲染过程中捕获和分析当前渲染的帧。</translation>
     </message>
@@ -1911,8 +2061,12 @@
       <translation>收集着色器：\n您需要启用此功能才能使用调试菜单（Ctrl + F10）编辑着色器。</translation>
     </message>
     <message>
-      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nDoes not work on Intel GPUs.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
-      <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层并安装 Vulkan SDK 才能使用此功能。</translation>
+      <source>Enable Readbacks:\nEnable GPU memory readbacks and writebacks.\nThis is required for proper behavior in some games.\nMight cause stability and/or performance issues.</source>
+      <translation>启用Readbacks：\n启用 GPU 内存回读和回写功能。\n这是某些游戏中恰当运行所必需的。\n可能会导致稳定性以及性能问题。</translation>
+    </message>
+    <message>
+      <source>Enable Readback Linear Images:\nEnables async downloading of GPU modified linear images.\nMight fix issues in some games.</source>
+      <translation>启用Readback线性图像：\n启用异步下载GPU修改的线性图像。\n可能会修复一些游戏中的问题。</translation>
     </message>
     <message>
       <source>Copy GPU Buffers:\nGets around race conditions involving GPU submits.\nMay or may not help with PM4 type 0 crashes.</source>
@@ -2077,6 +2231,202 @@
     <message>
       <source> * Unsupported Vulkan Version</source>
       <translation> * 不支持的 Vulkan 版本</translation>
+    </message>
+    <message>
+      <source>Experimental Features</source>
+      <translation>实验性功能</translation>
+    </message>
+    <message>
+      <source>WARNING: These features are experimental and should not be enabled unless you were told to, or a game requires it. Please ask in the shadPS4 Discord server if you have any questions.</source>
+      <translation>警告：这些功能是实验性的，除非您被告知或者游戏需要的话，否则不应启用。 如果您有任何疑问，请在 shadPS4 Discord 服务器上提问。</translation>
+    </message>
+    <message>
+      <source>Enable Background Controller Input</source>
+      <translation>启用后台控制器输入</translation>
+    </message>
+    <message>
+      <source>Enable Controller Background Input:\nAllow shadPS4 to detect controller inputs when the game window is not in focus.</source>
+      <translation>启用控制器后台输入:\n允许ShadPS4在游戏窗口未焦点时检测控制器输入。</translation>
+    </message>
+    <message>
+      <source>Crash Diagnostics:\nCreates a .yaml file with info about the Vulkan state at the time of crashing.\nUseful for debugging &apos;Device lost&apos; errors. If you have this enabled, you should enable Host AND Guest Debug Markers.\nYou need Vulkan Validation Layers enabled and the Vulkan SDK for this to work.</source>
+      <translation>崩溃诊断：\n创建一个包含崩溃时 Vulkan 状态的 .yaml 文件。\n对于调试“Device lost”错误很有用。如果您启用了此功能，您应该同时启用 Host 和 Guest 调试标记。\n此功能在 Intel 显卡上不可用。\n您需要启用 Vulkan 验证层和 Vulkan SDK 才能使用此功能。</translation>
+    </message>
+    <message>
+      <source>Enable Logging</source>
+      <translation>启用日志记录</translation>
+    </message>
+    <message>
+      <source>Enable Logging:\nEnables logging.\nDo not change this if you do not know what you&apos;re doing!\nWhen asking for help, make sure this setting is ENABLED.</source>
+      <translation>启用日志记录：\n开启日志记录功能。\n若不了解相关操作，请勿修改此设置！\n寻求帮助时，请确保此项设置处于启用状态。</translation>
+    </message>
+    <message>
+      <source>Present Mode</source>
+      <translation>呈现模式</translation>
+    </message>
+    <message>
+      <source>Mailbox (Vsync)</source>
+      <translation>信箱（垂直同步）</translation>
+    </message>
+    <message>
+      <source>Fifo (Vsync)</source>
+      <translation>先进先出（垂直同步）</translation>
+    </message>
+    <message>
+      <source>Immediate (No Vsync)</source>
+      <translation>即时（关闭垂直同步）</translation>
+    </message>
+    <message>
+      <source>DLC Folder</source>
+      <translation>DLC 文件夹</translation>
+    </message>
+    <message>
+      <source>Select the DLC folder</source>
+      <translation>选择 DLC 文件夹</translation>
+    </message>
+    <message>
+      <source>Present Mode:\nConfigures how video output will be presented to your screen.\n\nMailbox: Frames synchronize with your screen&apos;s refresh rate. New frames will replace any pending frames. Reduces latency but may skip frames if running behind.\nFifo: Frames synchronize with your screen&apos;s refresh rate. New frames will be queued behind pending frames. Ensures all frames are presented but may increase latency.\nImmediate: Frames immediately present to your screen when ready. May result in tearing.</source>
+      <translation>呈现模式：\n配置视频输出到屏幕的显示方式。\n\n信箱模式：帧画面与屏幕刷新率同步。新帧将替换所有待处理帧，可降低延迟但落后时可能跳帧。\n先进先出：帧画面与屏幕刷新率同步。新帧将排列在待处理帧之后，确保所有帧都被呈现但可能增加延迟。\n即时模式：帧画面准备就绪后立即显示于屏幕，可能导致画面撕裂。</translation>
+    </message>
+    <message>
+      <source>DLC Path:\nThe folder where game DLC loaded from.</source>
+      <translation>DLC 路径：\n游戏DLC 加载的文件夹。</translation>
+    </message>
+    <message>
+      <source>Browse:\nBrowse for a folder to set as the DLC path.</source>
+      <translation>浏览：\n选择一个目录保存游戏存档数据。</translation>
+    </message>
+    <message>
+      <source>FSR Settings</source>
+      <translation>FSR设置</translation>
+    </message>
+    <message>
+      <source>Enable FSR</source>
+      <translation>启用 FSR</translation>
+    </message>
+    <message>
+      <source>Enable RCAS (sharpening)</source>
+      <translation>启用 RCAS(锐化)</translation>
+    </message>
+    <message>
+      <source>RCAS Attenuation:</source>
+      <translation>RCAS范围：</translation>
+    </message>
+    <message>
+      <source>Load Presets...</source>
+      <translation>加载预设……</translation>
+    </message>
+    <message>
+      <source>Log</source>
+      <translation>日志</translation>
+    </message>
+    <message>
+      <source>Open Log Location:\nOpen the folder where the log file is saved.</source>
+      <translation>打开日志位置：\n打开保存日志文件的文件夹。</translation>
+    </message>
+    <message>
+      <source>Microphone:\nNone: Does not use the microphone.\nDefault Device: Will use the default device defined in the system.\nOr manually choose the microphone to be used from the list.</source>
+      <translation>麦克风：\n无：不使用麦克风。\n默认设备：将使用系统中定义的默认设备。\n或者手动从列表中选择要使用的麦克风。</translation>
+    </message>
+    <message>
+      <source>Volume:\nAdjust volume for games on a global level, range goes from 0-500% with the default being 100%.</source>
+      <translation>音量：\n调整全局游戏音量，从0-500%不等，默认100%。</translation>
+    </message>
+    <message>
+      <source>Default tab when opening settings:\nChoose which tab will open, the default is General.</source>
+      <translation>打开设置时的默认标签页：\n选择设置界面打开时默认显示的标签页，默认选项为“常规”。</translation>
+    </message>
+    <message>
+      <source>Show Game Size In List:\nThere is the size of the game in the list.</source>
+      <translation>在列表中显示游戏大小：\n开启后，游戏列表将会显示每个游戏的安装容量。</translation>
+    </message>
+    <message>
+      <source>Enable Motion Controls:\nWhen enabled it will use the controller&apos;s motion control if supported.</source>
+      <translation>启用体感控制：\n启用后，若控制器支持，将使用其体感功能。</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency</source>
+      <translation>垂直同步频率</translation>
+    </message>
+    <message>
+      <source>Vblank Frequency:\nThe frame rate at which the emulator refreshes at (60hz is the baseline, whether the game runs at 30 or 60fps). Changing this may have adverse effects, such as increasing the game speed, or breaking critical game functionality that does not expect this to change!</source>
+      <translation>垂直同步频率：\n此为模拟器的帧率刷新频率（基准为60赫兹，无论游戏本身以30帧还是60帧运行）。修改此数值可能导致负面影响，例如游戏速度加快，或破坏游戏关键功能（因游戏本身未预设此数值可被修改）！</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access</source>
+      <translation>启用直接内存访问</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode</source>
+      <translation>启用 Devkit 开发机模式</translation>
+    </message>
+    <message>
+      <source>Set &quot;PSN signed-in&quot; to True</source>
+      <translation>将“PSN登录状态”设为“已登录”</translation>
+    </message>
+    <message>
+      <source>Set &quot;Network Connected&quot; to True</source>
+      <translation>将“网络连接状态”设为“已连接”</translation>
+    </message>
+    <message>
+      <source>Miscellaneous</source>
+      <translation>其他</translation>
+    </message>
+    <message>
+      <source>Frontend</source>
+      <translation>前端</translation>
+    </message>
+    <message>
+      <source>Experimental</source>
+      <translation>实验性功能</translation>
+    </message>
+    <message>
+      <source>Show Splash Screen When Launching Game</source>
+      <translation>启动游戏时显示启动画面</translation>
+    </message>
+    <message>
+      <source>General Frontend Settings</source>
+      <translation>常规前端设置</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode</source>
+      <translation>启用 PS4 Pro 模式</translation>
+    </message>
+    <message>
+      <source>Enable Direct Memory Access:\nEnables arbitrary memory access from the GPU to CPU memory.</source>
+      <translation>启用直接内存访问 (DMA)：\n允许 GPU 直接访问 CPU 内存空间。（可实现高速数据传输，但可能带来稳定性风险）。</translation>
+    </message>
+    <message>
+      <source>Enable PS4 Neo Mode:\nAdds support for PS4 Pro emulation and memory size. Currently causes instability in a large number of tested games.</source>
+      <translation>启用 PS4 Pro 模式：\n增加对 PS4 Pro 模拟及内存容量的支持。（注意：当前版本下，大量经测试的游戏会出现运行不稳定的情况！）。</translation>
+    </message>
+    <message>
+      <source>Enable Devkit Console Mode:\nAdds support for Devkit console memory size.</source>
+      <translation>启用Devkit开发机模式：\n增加对开发机内存容量的支持。</translation>
+    </message>
+    <message>
+      <source>Set Network Connected to True:\nForces games to detect an active network connection. Actual online capabilities are not yet supported.</source>
+      <translation>将“网络连接状态”设为“已连接”：\n强制让游戏检测到网络处于连接状态（注意：并不实际支持真实的在线联网功能）。</translation>
+    </message>
+    <message>
+      <source>Set PSN Signed-in to True:\nForces games to detect an active PSN sign-in. Actual PSN capabilities are not supported.</source>
+      <translation>将“PSN登录状态”设为“已登录”：\n强制让游戏检测到PSN处于登录状态（注意：并不实际支持真实的PSN网络功能）。</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Validation Layers:\nEnables a system that validates the state of the Vulkan renderer and logs information about its internal state.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>启用Vulkan验证层：\n此功能将启用一个用于验证Vulkan渲染器状态并记录其内部状态信息的系统。\n注意：这将严重降低性能，并极有可能改变模拟器行为！\n需要安装Vulkan SDK方可使用此功能。</translation>
+    </message>
+    <message>
+      <source>Enable Vulkan Synchronization Validation:\nEnables a system that validates the timing of Vulkan rendering tasks.\nThis will reduce performance and likely change the behavior of emulation.\nYou need the Vulkan SDK for this to work.</source>
+      <translation>启用Vulkan同步验证功能：\n此功能将启用一个用于验证Vulkan渲染任务时序的系统。\n注意：这将显著降低性能，并可能改变模拟器行为！\n需要安装Vulkan SDK方可使用此功能。</translation>
+    </message>
+    <message>
+      <source>Audio Device (general)</source>
+      <translation type="unfinished">Audio Device (general)</translation>
+    </message>
+    <message>
+      <source>Audio Device (DS4 speaker)</source>
+      <translation type="unfinished">Audio Device (DS4 speaker)</translation>
     </message>
   </context>
   <context>

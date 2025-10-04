@@ -241,7 +241,8 @@ spv::ExecutionMode ExecutionMode(AmdGpu::TessellationPartitioning spacing) {
     UNREACHABLE_MSG("Tessellation spacing {}", spacing);
 }
 
-void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ctx) {
+void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeInfo& runtime_info,
+                       EmitContext& ctx) {
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
     ctx.AddCapability(spv::Capability::ImageQuery);
@@ -293,12 +294,36 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (stage == LogicalStage::Geometry) {
         ctx.AddCapability(spv::Capability::Geometry);
     }
-    if (info.stage == Stage::Fragment && profile.needs_manual_interpolation) {
-        ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
-        ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+    if (info.stage == Stage::Fragment) {
+        if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
+        } else if (profile.supports_fragment_shader_barycentric) {
+            ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
+            ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+        }
+        if (info.loads.Get(IR::Attribute::SampleIndex) ||
+            runtime_info.fs_info.addr_flags.linear_sample_ena ||
+            runtime_info.fs_info.addr_flags.persp_sample_ena) {
+            ctx.AddCapability(spv::Capability::SampleRateShading);
+        }
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::Geometry);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
+    }
+    if (stage == LogicalStage::Vertex || stage == LogicalStage::TessellationControl ||
+        stage == LogicalStage::TessellationEval) {
+        if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::ShaderLayer);
+        }
+        if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+            ctx.AddCapability(spv::Capability::ShaderViewportIndex);
+        }
+    } else if (stage == LogicalStage::Geometry &&
+               info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+        ctx.AddCapability(spv::Capability::MultiViewport);
     }
     if (info.uses_dma) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
@@ -435,7 +460,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program.info, ctx, main);
-    SetupCapabilities(program.info, profile, ctx);
+    SetupCapabilities(program.info, profile, runtime_info, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
     binding.user_data += program.info.ud_mask.NumRegs();

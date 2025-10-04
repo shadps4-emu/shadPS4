@@ -9,6 +9,7 @@
 #include "libatrac9.h"
 
 #include <span>
+#include <vector>
 
 namespace Libraries::Ajm {
 
@@ -36,8 +37,8 @@ struct AjmAt9Decoder final : AjmCodec {
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
     u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
-    std::tuple<u32, u32> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                     AjmInstanceGapless& gapless) override;
+    std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                           AjmInstanceGapless& gapless) override;
 
 private:
     template <class T>
@@ -49,8 +50,12 @@ private:
         return output.Write(pcm_data.subspan(0, pcm_size));
     }
 
+    void ParseRIFFHeader(std::span<u8>& input, AjmInstanceGapless& gapless);
+
     const AjmFormatEncoding m_format;
     const AjmAt9CodecFlags m_flags;
+
+    bool m_is_initialized{};
     void* m_handle{};
     u8 m_config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
     u32 m_superframe_bytes_remain{};

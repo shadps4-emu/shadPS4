@@ -200,22 +200,24 @@ void CheckUpdate::setupUI(const QString& downloadUrl, const QString& latestDate,
 
     QString updateChannel = m_gui_settings->GetValue(gui::gen_updateChannel).toString();
 
-    QString updateText = QString("<p><b>" + tr("Update Channel") + ": </b>" + updateChannel +
-                                 "<br>"
-                                 "<table><tr>"
-                                 "<td><b>" +
-                                 tr("Current Version") +
-                                 ":</b></td>"
-                                 "<td>%1</td>"
-                                 "<td>(%2)</td>"
-                                 "</tr><tr>"
-                                 "<td><b>" +
-                                 tr("Latest Version") +
-                                 ":</b></td>"
-                                 "<td>%3</td>"
-                                 "<td>(%4)</td>"
-                                 "</tr></table></p>")
-                             .arg(currentRev.left(7), currentDate, latestRev.left(7), latestDate);
+    QString updateText =
+        QString("<p><b>" + tr("Update Channel") + ": </b>" + updateChannel +
+                "<br>"
+                "<table><tr>"
+                "<td><b>" +
+                tr("Current Version") +
+                ":</b></td>"
+                "<td>%1</td>"
+                "<td>(%2)</td>"
+                "</tr><tr>"
+                "<td><b>" +
+                tr("Latest Version") +
+                ":</b></td>"
+                "<td>%3</td>"
+                "<td>(%4)</td>"
+                "</tr></table></p>")
+            .arg(updateChannel == "Nightly" ? currentRev.left(7) : currentRev.left(8), currentDate,
+                 updateChannel == "Nightly" ? latestRev.left(7) : latestRev.left(8), latestDate);
 
     QLabel* updateLabel = new QLabel(updateText, this);
     layout->addWidget(updateLabel);

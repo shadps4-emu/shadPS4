@@ -27,7 +27,7 @@ using SceUsbdDeviceDescriptor = libusb_device_descriptor;
 using SceUsbdConfigDescriptor = libusb_config_descriptor;
 using SceUsbdTransfer = libusb_transfer;
 using SceUsbdControlSetup = libusb_control_setup;
-using SceUsbdTransferCallback = void (*)(SceUsbdTransfer* transfer);
+using SceUsbdTransferCallback = void PS4_SYSV_ABI (*)(SceUsbdTransfer* transfer);
 
 enum class SceUsbdSpeed : u32 {
     UNKNOWN = 0,
@@ -150,5 +150,5 @@ int PS4_SYSV_ABI Func_97F056BAD90AADE7();
 int PS4_SYSV_ABI Func_C55104A33B35B264();
 int PS4_SYSV_ABI Func_D56B43060720B1E0();
 
-void RegisterlibSceUsbd(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Usbd

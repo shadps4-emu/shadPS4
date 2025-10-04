@@ -6,10 +6,31 @@
 #ifdef _WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
+#include <afunix.h>
 #include <iphlpapi.h>
+#include <mstcpip.h>
 #include <winsock2.h>
 typedef SOCKET net_socket;
 typedef int socklen_t;
+#ifndef LPFN_WSASENDMSG
+typedef INT(PASCAL* LPFN_WSASENDMSG)(SOCKET s, LPWSAMSG lpMsg, DWORD dwFlags,
+                                     LPDWORD lpNumberOfBytesSent, LPWSAOVERLAPPED lpOverlapped,
+                                     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+#endif
+#ifndef WSAID_WSASENDMSG
+static const GUID WSAID_WSASENDMSG = {
+    0xa441e712, 0x754f, 0x43ca, {0x84, 0xa7, 0x0d, 0xee, 0x44, 0xcf, 0x60, 0x6d}};
+#endif
+#ifndef LPFN_WSARECVMSG
+typedef INT(PASCAL* LPFN_WSARECVMSG)(SOCKET s, LPWSAMSG lpMsg, LPDWORD lpdwNumberOfBytesRecvd,
+                                     LPWSAOVERLAPPED lpOverlapped,
+                                     LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
+#endif
+
+#ifndef WSAID_WSARECVMSG
+static const GUID WSAID_WSARECVMSG = {
+    0xf689d7c8, 0x6f1f, 0x436b, {0x8a, 0x53, 0xe5, 0x4f, 0xe3, 0x51, 0xc3, 0x22}};
+#endif
 #else
 #include <cerrno>
 #include <arpa/inet.h>
@@ -26,6 +47,10 @@ typedef int net_socket;
 #include <mutex>
 #include "net.h"
 
+namespace Libraries::Kernel {
+struct OrbisKernelStat;
+}
+
 namespace Libraries::Net {
 
 struct Socket;
@@ -39,23 +64,31 @@ struct OrbisNetLinger {
 struct Socket {
     explicit Socket(int domain, int type, int protocol) {}
     virtual ~Socket() = default;
+    virtual bool IsValid() const = 0;
     virtual int Close() = 0;
     virtual int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) = 0;
     virtual int GetSocketOptions(int level, int optname, void* optval, u32* optlen) = 0;
     virtual int Bind(const OrbisNetSockaddr* addr, u32 addrlen) = 0;
     virtual int Listen(int backlog) = 0;
+    virtual int SendMessage(const OrbisNetMsghdr* msg, int flags) = 0;
     virtual int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                            u32 tolen) = 0;
     virtual SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) = 0;
+    virtual int ReceiveMessage(OrbisNetMsghdr* msg, int flags) = 0;
     virtual int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                               u32* fromlen) = 0;
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) = 0;
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) = 0;
+    virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) = 0;
+    virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) = 0;
+    virtual std::optional<net_socket> Native() = 0;
     std::mutex m_mutex;
+    std::mutex receive_mutex;
 };
 
 struct PosixSocket : public Socket {
     net_socket sock;
+    int sockopt_so_connecttimeo = 0;
     int sockopt_so_reuseport = 0;
     int sockopt_so_onesbcast = 0;
     int sockopt_so_usecrypto = 0;
@@ -70,51 +103,79 @@ struct PosixSocket : public Socket {
         socket_type = type;
     }
     explicit PosixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+    bool IsValid() const override;
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
     int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
     int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return sock;
+    }
 };
 
 struct P2PSocket : public Socket {
     explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
+    bool IsValid() const override {
+        return true;
+    }
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
     int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
     int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
     int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                    u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
     int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
     SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
     int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
     int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
-};
-
-class NetInternal {
-public:
-    explicit NetInternal() = default;
-    ~NetInternal() = default;
-    SocketPtr FindSocket(int sockid) {
-        std::scoped_lock lock{m_mutex};
-        const auto it = socks.find(sockid);
-        if (it != socks.end()) {
-            return it->second;
-        }
-        return 0;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return {};
     }
-
-public:
-    std::mutex m_mutex;
-    typedef std::map<int, SocketPtr> NetSockets;
-    NetSockets socks;
-    int next_sock_id = 0;
 };
+
+struct UnixSocket : public Socket {
+    net_socket sock;
+    int socket_type;
+    explicit UnixSocket(int domain, int type, int protocol)
+        : Socket(domain, type, protocol), sock(socket(domain, type, protocol)) {
+        socket_type = type;
+    }
+    explicit UnixSocket(net_socket sock) : Socket(0, 0, 0), sock(sock) {}
+    bool IsValid() const override;
+    int Close() override;
+    int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
+    int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
+    int Bind(const OrbisNetSockaddr* addr, u32 addrlen) override;
+    int Listen(int backlog) override;
+    int SendMessage(const OrbisNetMsghdr* msg, int flags) override;
+    int SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
+                   u32 tolen) override;
+    int ReceiveMessage(OrbisNetMsghdr* msg, int flags) override;
+    int ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) override;
+    SocketPtr Accept(OrbisNetSockaddr* addr, u32* addrlen) override;
+    int Connect(const OrbisNetSockaddr* addr, u32 namelen) override;
+    int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) override;
+    int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
+    std::optional<net_socket> Native() override {
+        return sock;
+    }
+};
+
 } // namespace Libraries::Net

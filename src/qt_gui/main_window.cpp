@@ -20,6 +20,8 @@
 #include "common/string_util.h"
 #include "control_settings.h"
 #include "game_install_dialog.h"
+#include "hotkeys.h"
+#include "input/input_handler.h"
 #include "kbm_gui.h"
 #include "main_window.h"
 #include "settings_dialog.h"
@@ -405,7 +407,8 @@ void MainWindow::CreateConnects() {
             &MainWindow::StartGame);
 
     connect(ui->configureAct, &QAction::triggered, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, this);
+        auto settingsDialog =
+            new SettingsDialog(m_gui_settings, m_compat_info, this, isGameRunning);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -439,7 +442,8 @@ void MainWindow::CreateConnects() {
     });
 
     connect(ui->settingsButton, &QPushButton::clicked, this, [this]() {
-        auto settingsDialog = new SettingsDialog(m_gui_settings, m_compat_info, this);
+        auto settingsDialog =
+            new SettingsDialog(m_gui_settings, m_compat_info, this, isGameRunning);
 
         connect(settingsDialog, &SettingsDialog::LanguageChanged, this,
                 &MainWindow::OnLanguageChanged);
@@ -493,6 +497,11 @@ void MainWindow::CreateConnects() {
     connect(ui->aboutAct, &QAction::triggered, this, [this]() {
         auto aboutDialog = new AboutDialog(m_gui_settings, this);
         aboutDialog->exec();
+    });
+
+    connect(ui->configureHotkeys, &QAction::triggered, this, [this]() {
+        auto hotkeyDialog = new Hotkeys(isGameRunning, this);
+        hotkeyDialog->exec();
     });
 
     connect(ui->setIconSizeTinyAct, &QAction::triggered, this, [this]() {
@@ -1216,12 +1225,12 @@ void MainWindow::StartEmulator(std::filesystem::path path) {
     isGameRunning = true;
 #ifdef __APPLE__
     // SDL on macOS requires main thread.
-    Core::Emulator emulator;
-    emulator.Run(path);
+    Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
+    emulator->Run(path);
 #else
     std::thread emulator_thread([=] {
-        Core::Emulator emulator;
-        emulator.Run(path);
+        Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
+        emulator->Run(path);
     });
     emulator_thread.detach();
 #endif

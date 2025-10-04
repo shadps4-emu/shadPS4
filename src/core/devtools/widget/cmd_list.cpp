@@ -293,7 +293,7 @@ void ParseColorControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("ROP3");
         TableSetColumnIndex(1);
-        Text("%X", reg.rop3.Value());
+        Text("%X", static_cast<u32>(reg.rop3.Value()));
 
         if (begin_table) {
             EndTable();
@@ -790,7 +790,7 @@ void ParseZInfo(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("TILE_MODE_INDEX");
         TableSetColumnIndex(1);
-        Text("%X", reg.tile_mode_index.Value());
+        Text("%X", static_cast<u32>(reg.tile_mode_index.Value()));
 
         TableNextRow();
         TableSetColumnIndex(0);

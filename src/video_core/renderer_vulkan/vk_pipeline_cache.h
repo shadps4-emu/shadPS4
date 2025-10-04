@@ -74,6 +74,7 @@ public:
 
 private:
     bool RefreshGraphicsKey();
+    bool RefreshGraphicsStages();
     bool RefreshComputeKey();
 
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,

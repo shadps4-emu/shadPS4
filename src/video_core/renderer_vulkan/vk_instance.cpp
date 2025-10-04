@@ -7,6 +7,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/types.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -155,6 +156,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                VK_VERSION_MAJOR(properties.apiVersion), VK_VERSION_MINOR(properties.apiVersion));
 
     CreateDevice();
+    CollectPhysicalMemoryInfo();
     CollectToolingInfo();
 
     // Check and log format support details.
@@ -248,8 +250,19 @@ bool Instance::CreateDevice() {
     // Required
     ASSERT(add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
     ASSERT(add_extension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME));
+    ASSERT(add_extension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME));
 
     // Optional
+    maintenance_8 = add_extension(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
+    attachment_feedback_loop = add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_EXTENSION_NAME);
+    if (attachment_feedback_loop) {
+        attachment_feedback_loop =
+            add_extension(VK_EXT_ATTACHMENT_FEEDBACK_LOOP_DYNAMIC_STATE_EXTENSION_NAME);
+        if (!attachment_feedback_loop) {
+            // We want both extensions so remove the first if the second isn't available
+            enabled_extensions.pop_back();
+        }
+    }
     depth_range_unrestricted = add_extension(VK_EXT_DEPTH_RANGE_UNRESTRICTED_EXTENSION_NAME);
     dynamic_state_3 = add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME);
     if (dynamic_state_3) {
@@ -269,14 +282,23 @@ bool Instance::CreateDevice() {
     }
     custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
     depth_clip_control = add_extension(VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
+    depth_clip_enable = add_extension(VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
     vertex_input_dynamic_state = add_extension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     list_restart = add_extension(VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME);
-    fragment_shader_barycentric = add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    amd_shader_explicit_vertex_parameter =
+        add_extension(VK_AMD_SHADER_EXPLICIT_VERTEX_PARAMETER_EXTENSION_NAME);
+    if (!amd_shader_explicit_vertex_parameter) {
+        fragment_shader_barycentric =
+            add_extension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    }
     legacy_vertex_attributes = add_extension(VK_EXT_LEGACY_VERTEX_ATTRIBUTES_EXTENSION_NAME);
+    provoking_vertex = add_extension(VK_EXT_PROVOKING_VERTEX_EXTENSION_NAME);
     shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
     image_load_store_lod = add_extension(VK_AMD_SHADER_IMAGE_LOAD_STORE_LOD_EXTENSION_NAME);
     amd_gcn_shader = add_extension(VK_AMD_GCN_SHADER_EXTENSION_NAME);
     amd_shader_trinary_minmax = add_extension(VK_AMD_SHADER_TRINARY_MINMAX_EXTENSION_NAME);
+    nv_framebuffer_mixed_samples = add_extension(VK_NV_FRAMEBUFFER_MIXED_SAMPLES_EXTENSION_NAME);
+    amd_mixed_attachment_samples = add_extension(VK_AMD_MIXED_ATTACHMENT_SAMPLES_EXTENSION_NAME);
     shader_atomic_float2 = add_extension(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME);
     if (shader_atomic_float2) {
         shader_atomic_float2_features =
@@ -310,6 +332,8 @@ bool Instance::CreateDevice() {
         portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     }
 #endif
+
+    supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
@@ -361,9 +385,11 @@ bool Instance::CreateDevice() {
                 .dualSrcBlend = features.dualSrcBlend,
                 .logicOp = features.logicOp,
                 .multiDrawIndirect = features.multiDrawIndirect,
+                .depthClamp = features.depthClamp,
                 .depthBiasClamp = features.depthBiasClamp,
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
+                .wideLines = features.wideLines,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
@@ -397,6 +423,7 @@ bool Instance::CreateDevice() {
             .hostQueryReset = vk12_features.hostQueryReset,
             .timelineSemaphore = vk12_features.timelineSemaphore,
             .bufferDeviceAddress = vk12_features.bufferDeviceAddress,
+            .shaderOutputLayer = vk12_features.shaderOutputLayer,
         },
         vk::PhysicalDeviceVulkan13Features{
             .robustImageAccess = vk13_features.robustImageAccess,
@@ -417,6 +444,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceDepthClipControlFeaturesEXT{
             .depthClipControl = true,
         },
+        vk::PhysicalDeviceDepthClipEnableFeaturesEXT{
+            .depthClipEnable = true,
+        },
         vk::PhysicalDeviceRobustness2FeaturesEXT{
             .robustBufferAccess2 = robustness2_features.robustBufferAccess2,
             .robustImageAccess2 = robustness2_features.robustImageAccess2,
@@ -435,6 +465,21 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT{
             .legacyVertexAttributes = true,
+        },
+        vk::PhysicalDeviceProvokingVertexFeaturesEXT{
+            .provokingVertexLast = true,
+        },
+        vk::PhysicalDeviceVertexAttributeDivisorFeatures{
+            .vertexAttributeInstanceRateDivisor = true,
+        },
+        vk::PhysicalDeviceMaintenance8FeaturesKHR{
+            .maintenance8 = true,
+        },
+        vk::PhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT{
+            .attachmentFeedbackLoopLayout = true,
+        },
+        vk::PhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT{
+            .attachmentFeedbackLoopDynamicState = true,
         },
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
             .shaderBufferFloat32AtomicMinMax =
@@ -483,6 +528,9 @@ bool Instance::CreateDevice() {
     if (!depth_clip_control) {
         device_chain.unlink<vk::PhysicalDeviceDepthClipControlFeaturesEXT>();
     }
+    if (!depth_clip_enable) {
+        device_chain.unlink<vk::PhysicalDeviceDepthClipEnableFeaturesEXT>();
+    }
     if (!robustness2) {
         device_chain.unlink<vk::PhysicalDeviceRobustness2FeaturesEXT>();
     }
@@ -497,6 +545,16 @@ bool Instance::CreateDevice() {
     }
     if (!legacy_vertex_attributes) {
         device_chain.unlink<vk::PhysicalDeviceLegacyVertexAttributesFeaturesEXT>();
+    }
+    if (!provoking_vertex) {
+        device_chain.unlink<vk::PhysicalDeviceProvokingVertexFeaturesEXT>();
+    }
+    if (!maintenance_8) {
+        device_chain.unlink<vk::PhysicalDeviceMaintenance8FeaturesKHR>();
+    }
+    if (!attachment_feedback_loop) {
+        device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT>();
+        device_chain.unlink<vk::PhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT>();
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
@@ -592,9 +650,53 @@ void Instance::CollectDeviceParameters() {
 
     LOG_INFO(Render_Vulkan, "GPU_Vendor: {}", vendor_name);
     LOG_INFO(Render_Vulkan, "GPU_Model: {}", model_name);
+    LOG_INFO(Render_Vulkan, "GPU_Integrated: {}", IsIntegrated() ? "Yes" : "No");
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Driver: {}", driver_name);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Version: {}", api_version);
     LOG_INFO(Render_Vulkan, "GPU_Vulkan_Extensions: {}", extensions);
+}
+
+void Instance::CollectPhysicalMemoryInfo() {
+    vk::PhysicalDeviceMemoryBudgetPropertiesEXT budget{};
+    vk::PhysicalDeviceMemoryProperties2 props = {
+        .pNext = supports_memory_budget ? &budget : nullptr,
+    };
+    physical_device.getMemoryProperties2(&props);
+    const auto& memory_props = props.memoryProperties;
+    const size_t num_props = memory_props.memoryHeapCount;
+    total_memory_budget = 0;
+    u64 device_initial_usage = 0;
+    u64 local_memory = 0;
+    for (size_t i = 0; i < num_props; ++i) {
+        const bool is_device_local =
+            (memory_props.memoryHeaps[i].flags & vk::MemoryHeapFlagBits::eDeviceLocal) !=
+            vk::MemoryHeapFlags{};
+        if (!IsIntegrated() && !is_device_local) {
+            // Ignore non-device local memory on discrete GPUs.
+            continue;
+        }
+        valid_heaps.push_back(i);
+        if (is_device_local) {
+            local_memory += memory_props.memoryHeaps[i].size;
+        }
+        if (supports_memory_budget) {
+            device_initial_usage += budget.heapUsage[i];
+            total_memory_budget += budget.heapBudget[i];
+            continue;
+        }
+        // If memory budget is not supported, use the size of the heap as the budget.
+        total_memory_budget += memory_props.memoryHeaps[i].size;
+    }
+    if (!IsIntegrated()) {
+        // We reserve some memory for the system.
+        const u64 system_memory = std::min<u64>(total_memory_budget / 8, 1_GB);
+        total_memory_budget -= system_memory;
+        return;
+    }
+    // Leave at least 8 GB for the system on integrated GPUs.
+    const s64 available_memory = static_cast<s64>(total_memory_budget - device_initial_usage);
+    total_memory_budget =
+        static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(local_memory)));
 }
 
 void Instance::CollectToolingInfo() const {
@@ -614,6 +716,20 @@ void Instance::CollectToolingInfo() const {
         const std::string_view name = tool.name;
         LOG_INFO(Render_Vulkan, "Attached debugging tool: {}", name);
     }
+}
+
+u64 Instance::GetDeviceMemoryUsage() const {
+    vk::PhysicalDeviceMemoryBudgetPropertiesEXT memory_budget_props{};
+    vk::PhysicalDeviceMemoryProperties2 props = {
+        .pNext = &memory_budget_props,
+    };
+    physical_device.getMemoryProperties2(&props);
+
+    u64 total_usage = 0;
+    for (const size_t heap : valid_heaps) {
+        total_usage += memory_budget_props.heapUsage[heap];
+    }
+    return total_usage;
 }
 
 vk::FormatFeatureFlags2 Instance::GetFormatFeatureFlags(vk::Format format) const {
@@ -644,6 +760,12 @@ vk::Format Instance::GetSupportedFormat(const vk::Format format,
             if (IsFormatSupported(vk::Format::eD32SfloatS8Uint, flags)) {
                 return vk::Format::eD32SfloatS8Uint;
             }
+            break;
+        case vk::Format::eR8Srgb:
+            if (IsFormatSupported(vk::Format::eR8Unorm, flags)) {
+                return vk::Format::eR8Unorm;
+            }
+            break;
         default:
             break;
         }

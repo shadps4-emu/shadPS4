@@ -103,6 +103,18 @@
 	path = externals/MoltenVK/cereal
 	url = https://github.com/USCiLab/cereal
 	shallow = true
-[submodule "externals/libusb"]
-	path = externals/libusb
-	url = https://github.com/libusb/libusb-cmake.git
+[submodule "externals/ext-libusb"]
+	path = externals/ext-libusb
+	url = https://github.com/shadps4-emu/ext-libusb.git
+[submodule "externals/epoll-shim"]
+	path = externals/epoll-shim
+	url = https://github.com/jiixyj/epoll-shim.git
+[submodule "externals/hwinfo"]
+	path = externals/hwinfo
+	url = https://github.com/shadps4-emu/ext-hwinfo
+	shallow = true
+[submodule "externals/ext-wepoll"]
+	path = externals/ext-wepoll
+	url = https://github.com/shadps4-emu/ext-wepoll.git
+	shallow = true
+    branch = dist

@@ -83,15 +83,13 @@ GameListFrame::GameListFrame(std::shared_ptr<gui_settings> gui_settings,
     connect(this, &QTableWidget::customContextMenuRequested, this, [=, this](const QPoint& pos) {
         int changedFavorite = m_gui_context_menus.RequestGameMenu(
             pos, m_game_info->m_games, m_compat_info, m_gui_settings, this, true);
-        if (changedFavorite) {
-            last_favorite = m_game_info->m_games[this->currentRow()].serial;
-            PopulateGameList(false);
-        }
+        PopulateGameList(false);
     });
 
     connect(this, &QTableWidget::cellClicked, this, [=, this](int row, int column) {
         if (column == 2 && m_game_info->m_games[row].compatibility.issue_number != "") {
-            auto url_issues = "https://github.com/shadps4-emu/shadps4-game-compatibility/issues/";
+            auto url_issues =
+                "https://github.com/shadps4-compatibility/shadps4-game-compatibility/issues/";
             QDesktopServices::openUrl(
                 QUrl(url_issues + m_game_info->m_games[row].compatibility.issue_number));
         } else if (column == 10) {
@@ -145,6 +143,12 @@ void GameListFrame::PopulateGameList(bool isInitialPopulation) {
 
     for (int i = 0; i < m_game_info->m_games.size(); i++) {
         SetTableItem(i, 1, QString::fromStdString(m_game_info->m_games[i].name));
+        if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                    (m_game_info->m_games[i].serial + ".toml"))) {
+            QTableWidgetItem* name_item = item(i, 1);
+            name_item->setIcon(QIcon(":images/game_settings.png"));
+        }
+
         SetTableItem(i, 3, QString::fromStdString(m_game_info->m_games[i].serial));
         SetRegionFlag(i, 4, QString::fromStdString(m_game_info->m_games[i].region));
         SetTableItem(i, 5, QString::fromStdString(m_game_info->m_games[i].fw));

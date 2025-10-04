@@ -17,6 +17,7 @@ namespace VideoCore {
 
 class Image;
 class ImageView;
+struct ImageInfo;
 
 class BlitHelper {
     static constexpr size_t MaxMsPipelines = 6;
@@ -25,20 +26,26 @@ public:
     explicit BlitHelper(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler);
     ~BlitHelper();
 
-    void BlitColorToMsDepth(Image& source, Image& dest);
+    void ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_samples,
+                                   vk::Format src_pixel_format, vk::Format dst_pixel_format,
+                                   vk::Image source, vk::Image dest);
+
+    void CopyBetweenMsImages(u32 width, u32 height, u32 num_samples, vk::Format pixel_format,
+                             bool src_msaa, vk::Image source, vk::Image dest);
 
 private:
     void CreateShaders();
     void CreatePipelineLayouts();
 
-    struct DepthPipelineKey {
+    struct MsPipelineKey {
         u32 num_samples;
-        vk::Format depth_format;
+        vk::Format attachment_format;
+        bool src_msaa;
 
-        auto operator<=>(const DepthPipelineKey&) const noexcept = default;
+        auto operator<=>(const MsPipelineKey&) const noexcept = default;
     };
-    vk::Pipeline GetDepthToMsPipeline(const DepthPipelineKey& key);
-    void CreateColorToMSDepthPipeline(const DepthPipelineKey& key);
+    void CreateColorToMSDepthPipeline(const MsPipelineKey& key);
+    void CreateMsCopyPipeline(const MsPipelineKey& key);
 
 private:
     const Vulkan::Instance& instance;
@@ -47,9 +54,12 @@ private:
     vk::UniquePipelineLayout single_texture_pl_layout;
     vk::ShaderModule fs_tri_vertex;
     vk::ShaderModule color_to_ms_depth_frag;
+    vk::ShaderModule src_msaa_copy_frag;
+    vk::ShaderModule src_non_msaa_copy_frag;
 
-    using DepthPipeline = std::pair<DepthPipelineKey, vk::UniquePipeline>;
-    std::vector<DepthPipeline> color_to_ms_depth_pl{};
+    using MsPipeline = std::pair<MsPipelineKey, vk::UniquePipeline>;
+    std::vector<MsPipeline> color_to_ms_depth_pl;
+    std::vector<MsPipeline> ms_image_copy_pl;
 };
 
 } // namespace VideoCore

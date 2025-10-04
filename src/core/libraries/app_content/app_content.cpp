@@ -57,24 +57,62 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            OrbisAppContentMountPoint* mount_point) {
     LOG_INFO(Lib_AppContent, "called");
 
-    const auto& mount_dir = Config::getAddonInstallDir() / title_id / entitlement_label->data;
+    const auto& addon_path = Config::getAddonInstallDir() / title_id;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    for (int i = 0; i < addcont_count; i++) {
+    // Determine which loaded additional content this entitlement label is for.
+    s32 i = 0;
+    while (i < addcont_count) {
         if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
-                    ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
-            continue;
+                    ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) == 0) {
+            snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", i);
+            break;
         }
-        if (addcont_info[i].status != OrbisAppContentAddcontDownloadStatus::Installed) {
-            return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
-        }
-
-        snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", i);
-        mnt->Mount(mount_dir, mount_point->data);
-        return ORBIS_OK;
+        ++i;
     }
 
-    return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
+    if (i == addcont_count) {
+        // None of the loaded additional content match the entitlement label requested.
+        return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
+    }
+
+    // Find which directory corresponds to this entitlement
+    for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
+        if (!entry.is_directory()) {
+            continue;
+        }
+
+        // Open the param.sfo in this folder
+        PSF* dlc_params = new PSF();
+        const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
+        if (!std::filesystem::exists(param_sfo_path)) {
+            // This folder doesn't have a param.sfo
+            continue;
+        }
+        dlc_params->Open(param_sfo_path);
+
+        // Validate the available params
+        auto category = dlc_params->GetString("CATEGORY");
+        auto content_id = dlc_params->GetString("CONTENT_ID");
+        if (!category.has_value() || strncmp(category.value().data(), "ac", 2) != 0 ||
+            !content_id.has_value() ||
+            content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+            // This folder fails the error checks performed in sceAppContentInitialize.
+            continue;
+        }
+
+        auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+        if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
+            // We've located the correct folder.
+            mnt->Mount(entry.path(), mount_point->data);
+            return ORBIS_OK;
+        }
+    }
+
+    // Hitting this shouldn't be possible, as it would mean the entitlement was loaded,
+    // but the folder it was loaded from doesn't exist.
+    UNREACHABLE_MSG("Folder for loaded entitlement label {} doesn't exist.",
+                    entitlement_label->data);
 }
 
 int PS4_SYSV_ABI sceAppContentAddcontShrink() {
@@ -215,7 +253,7 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
 int PS4_SYSV_ABI sceAppContentGetEntitlementKey(
     u32 service_label, const OrbisNpUnifiedEntitlementLabel* entitlement_label,
     OrbisAppContentGetEntitlementKey* key) {
-    LOG_ERROR(Lib_AppContent, "called");
+    LOG_INFO(Lib_AppContent, "called");
 
     if (entitlement_label == nullptr || key == nullptr) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
@@ -257,10 +295,50 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
     for (const auto& entry : std::filesystem::directory_iterator(addon_path)) {
         if (entry.is_directory()) {
-            auto entitlement_label = entry.path().filename().string();
-            auto& info = addcont_info[addcont_count++];
-            info.status = OrbisAppContentAddcontDownloadStatus::Installed;
-            entitlement_label.copy(info.entitlement_label, sizeof(info.entitlement_label));
+            // Look for a param.sfo in the additional content directory.
+            const auto& param_sfo_path = entry.path() / "sce_sys/param.sfo";
+            if (!std::filesystem::exists(param_sfo_path)) {
+                LOG_WARNING(Lib_AppContent, "Additonal content folder {} has no param.sfo",
+                            entry.path().filename().string());
+                continue;
+            }
+
+            // Open the param.sfo, make sure it's actually for additional content.
+            PSF* dlc_params = new PSF();
+            dlc_params->Open(param_sfo_path);
+
+            auto category = dlc_params->GetString("CATEGORY");
+            if (category.has_value() && strncmp(category.value().data(), "ac", 2) == 0) {
+                // We've located additional content. Find the entitlement id from the content id.
+                auto content_id = dlc_params->GetString("CONTENT_ID");
+                if (!content_id.has_value()) {
+                    LOG_WARNING(Lib_AppContent,
+                                "Additonal content {} param.sfo is missing CONTENT_ID",
+                                entry.path().filename().string());
+                    continue;
+                }
+
+                // content id's have consistent formatting, so this will always work.
+                // They follow the format UPXXXX-CUSAXXXXX_XX-entitlement
+                if (content_id.value().length() <= ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET) {
+                    LOG_WARNING(Lib_AppContent,
+                                "Additonal content {} param.sfo has malformed CONTENT_ID",
+                                entry.path().filename().string());
+                    continue;
+                }
+                auto entitlement_id =
+                    content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
+                LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
+
+                // Save the additional content info in addcont_info.
+                auto& info = addcont_info[addcont_count++];
+                entitlement_id.copy(info.entitlement_label, entitlement_id.length());
+                info.status = OrbisAppContentAddcontDownloadStatus::Installed;
+            } else {
+                LOG_WARNING(Lib_AppContent, "Additonal content folder {} is not additional content",
+                            entry.path().filename().string());
+                continue;
+            }
         }
     }
 
@@ -369,81 +447,81 @@ int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAppContent(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("AS45QoYHjc4", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1, _Z5dummyv);
-    LIB_FUNCTION("ZiATpP9gEkA", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("AS45QoYHjc4", "libSceAppContent", 1, "libSceAppContentUtil", _Z5dummyv);
+    LIB_FUNCTION("ZiATpP9gEkA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontDelete);
-    LIB_FUNCTION("7gxh+5QubhY", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("7gxh+5QubhY", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontEnqueueDownload);
-    LIB_FUNCTION("TVM-aYIsG9k", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("TVM-aYIsG9k", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontEnqueueDownloadSp);
-    LIB_FUNCTION("VANhIWcqYak", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("VANhIWcqYak", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontMount);
-    LIB_FUNCTION("D3H+cjfzzFY", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("D3H+cjfzzFY", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontShrink);
-    LIB_FUNCTION("3rHWaV-1KC4", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("3rHWaV-1KC4", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontUnmount);
-    LIB_FUNCTION("99b82IKXpH4", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("99b82IKXpH4", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAppParamGetInt);
-    LIB_FUNCTION("+OlXCu8qxUk", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("+OlXCu8qxUk", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAppParamGetString);
-    LIB_FUNCTION("gpGZDB4ZlrI", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("gpGZDB4ZlrI", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownload0Expand);
-    LIB_FUNCTION("S5eMvWnbbXg", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("S5eMvWnbbXg", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownload0Shrink);
-    LIB_FUNCTION("B5gVeVurdUA", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("B5gVeVurdUA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownload1Expand);
-    LIB_FUNCTION("kUeYucqnb7o", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("kUeYucqnb7o", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownload1Shrink);
-    LIB_FUNCTION("CN7EbEV7MFU", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("CN7EbEV7MFU", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownloadDataFormat);
-    LIB_FUNCTION("Gl6w5i0JokY", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("Gl6w5i0JokY", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentDownloadDataGetAvailableSpaceKb);
-    LIB_FUNCTION("5bvvbUSiFs4", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("5bvvbUSiFs4", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentGetAddcontDownloadProgress);
-    LIB_FUNCTION("m47juOmH0VE", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("m47juOmH0VE", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentGetAddcontInfo);
-    LIB_FUNCTION("xnd8BJzAxmk", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("xnd8BJzAxmk", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentGetAddcontInfoList);
-    LIB_FUNCTION("XTWR0UXvcgs", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("XTWR0UXvcgs", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentGetEntitlementKey);
-    LIB_FUNCTION("74-1x3lyZK8", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("74-1x3lyZK8", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentGetRegion);
-    LIB_FUNCTION("R9lA82OraNs", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("R9lA82OraNs", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentInitialize);
-    LIB_FUNCTION("bVtF7v2uqT0", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("bVtF7v2uqT0", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentRequestPatchInstall);
-    LIB_FUNCTION("9Gq5rOkWzNU", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("9Gq5rOkWzNU", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentSmallSharedDataFormat);
-    LIB_FUNCTION("xhb-r8etmAA", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("xhb-r8etmAA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentSmallSharedDataGetAvailableSpaceKb);
-    LIB_FUNCTION("QuApZnMo9MM", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("QuApZnMo9MM", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentSmallSharedDataMount);
-    LIB_FUNCTION("EqMtBHWu-5M", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("EqMtBHWu-5M", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentSmallSharedDataUnmount);
-    LIB_FUNCTION("a5N7lAG0y2Q", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("a5N7lAG0y2Q", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentTemporaryDataFormat);
-    LIB_FUNCTION("SaKib2Ug0yI", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("SaKib2Ug0yI", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentTemporaryDataGetAvailableSpaceKb);
-    LIB_FUNCTION("7bOLX66Iz-U", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("7bOLX66Iz-U", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentTemporaryDataMount);
-    LIB_FUNCTION("buYbeLOGWmA", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("buYbeLOGWmA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentTemporaryDataMount2);
-    LIB_FUNCTION("bcolXMmp6qQ", "libSceAppContent", 1, "libSceAppContentUtil", 1, 1,
+    LIB_FUNCTION("bcolXMmp6qQ", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentTemporaryDataUnmount);
-    LIB_FUNCTION("xmhnAoxN3Wk", "libSceAppContentPft", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("xmhnAoxN3Wk", "libSceAppContentPft", 1, "libSceAppContent",
                  sceAppContentGetPftFlag);
-    LIB_FUNCTION("xZo2-418Wdo", "libSceAppContentBundle", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("xZo2-418Wdo", "libSceAppContentBundle", 1, "libSceAppContent",
                  Func_C59A36FF8D7C59DA);
-    LIB_FUNCTION("kJmjt81mXKQ", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("kJmjt81mXKQ", "libSceAppContentIro", 1, "libSceAppContent",
                  sceAppContentAddcontEnqueueDownloadByEntitlementId);
-    LIB_FUNCTION("efX3lrPwdKA", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("efX3lrPwdKA", "libSceAppContentIro", 1, "libSceAppContent",
                  sceAppContentAddcontMountByEntitlementId);
-    LIB_FUNCTION("z9hgjLd1SGA", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("z9hgjLd1SGA", "libSceAppContentIro", 1, "libSceAppContent",
                  sceAppContentGetAddcontInfoByEntitlementId);
-    LIB_FUNCTION("3wUaDTGmjcQ", "libSceAppContentIro", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("3wUaDTGmjcQ", "libSceAppContentIro", 1, "libSceAppContent",
                  sceAppContentGetAddcontInfoListByIroTag);
-    LIB_FUNCTION("TCqT7kPuGx0", "libSceAppContentSc", 1, "libSceAppContent", 1, 1,
+    LIB_FUNCTION("TCqT7kPuGx0", "libSceAppContentSc", 1, "libSceAppContent",
                  sceAppContentGetDownloadedStoreCountry);
 };
 

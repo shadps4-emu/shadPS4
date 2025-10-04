@@ -42,6 +42,7 @@ constexpr int ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_NONE = 0;
 constexpr int ORBIS_APP_CONTENT_TEMPORARY_DATA_OPTION_FORMAT = (1 << 0);
 constexpr int ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE = 17;
 constexpr int ORBIS_APP_CONTENT_ENTITLEMENT_KEY_SIZE = 16;
+constexpr int ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET = 20;
 constexpr int ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE = 2500;
 
 enum class OrbisAppContentAddcontDownloadStatus : u32 {
@@ -119,5 +120,5 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoByEntitlementId();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoListByIroTag();
 int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry();
 
-void RegisterlibSceAppContent(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::AppContent

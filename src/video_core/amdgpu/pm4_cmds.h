@@ -5,8 +5,10 @@
 
 #include <cstring>
 #include "common/bit_field.h"
-#include "common/rdtsc.h"
 #include "common/types.h"
+#include "common/uint128.h"
+#include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/kernel/time.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
@@ -343,6 +345,16 @@ static u64 GetGpuClock64() {
     return static_cast<u64>(ticks);
 }
 
+static u64 GetGpuPerfCounter() {
+    const auto cpu_freq = Libraries::Kernel::sceKernelGetTscFrequency();
+    const auto gpu_freq = Libraries::GnmDriver::sceGnmGetGpuCoreClockFrequency();
+
+    const auto cpu_cycles = Libraries::Kernel::sceKernelReadTsc();
+    const auto gpu_cycles = Common::MultiplyAndDivide64(cpu_cycles, gpu_freq, cpu_freq);
+
+    return gpu_cycles;
+}
+
 // VGT_EVENT_INITIATOR.EVENT_TYPE
 enum class EventType : u32 {
     SampleStreamoutStats1 = 1,
@@ -415,6 +427,13 @@ struct PM4CmdEventWrite {
         BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
     };
     u32 address[];
+
+    template <typename T>
+    T Address() const {
+        ASSERT(event_index.Value() >= EventIndex::ZpassDone &&
+               event_index.Value() <= EventIndex::SampleStreamoutStatSx);
+        return std::bit_cast<T>((u64(address[1]) << 32u) | u64(address[0]));
+    }
 };
 
 struct PM4CmdEventWriteEop {
@@ -466,7 +485,7 @@ struct PM4CmdEventWriteEop {
             break;
         }
         case DataSelect::PerfCounter: {
-            write_mem(address, Common::FencedRDTSC(), sizeof(u64));
+            write_mem(address, GetGpuPerfCounter(), sizeof(u64));
             break;
         }
         default: {
@@ -699,7 +718,7 @@ struct PM4CmdWaitRegMem {
 struct PM4CmdWriteData {
     PM4Type3Header header;
     union {
-        BitField<8, 11, u32> dst_sel;
+        BitField<8, 4, u32> dst_sel;
         BitField<16, 1, u32> wr_one_addr;
         BitField<20, 1, u32> wr_confirm;
         BitField<30, 1, u32> engine_sel;
@@ -930,7 +949,7 @@ struct PM4CmdReleaseMem {
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            *Address<u64>() = GetGpuPerfCounter();
             break;
         }
         default: {

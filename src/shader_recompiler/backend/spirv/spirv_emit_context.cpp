@@ -117,10 +117,11 @@ void EmitContext::DefineArithmeticTypes() {
     void_id = Name(TypeVoid(), "void_id");
     U1[1] = Name(TypeBool(), "bool_id");
     U8 = Name(TypeUInt(8), "u8_id");
+    S8 = Name(TypeSInt(8), "i8_id");
     U16 = Name(TypeUInt(16), "u16_id");
+    S16 = Name(TypeSInt(16), "i16_id");
     if (info.uses_fp16) {
         F16[1] = Name(TypeFloat(16), "f16_id");
-        U16 = Name(TypeUInt(16), "u16_id");
     }
     if (info.uses_fp64) {
         F64[1] = Name(TypeFloat(64), "f64_id");
@@ -196,14 +197,15 @@ const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
 }
 
 EmitContext::SpirvAttribute EmitContext::GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id,
-                                                          u32 num_components, bool output) {
+                                                          u32 num_components, bool output,
+                                                          bool loaded, bool array) {
     switch (GetNumberClass(fmt)) {
     case AmdGpu::NumberClass::Float:
-        return {id, output ? output_f32 : input_f32, F32[1], num_components, false};
+        return {id, output ? output_f32 : input_f32, F32[1], num_components, false, loaded, array};
     case AmdGpu::NumberClass::Uint:
-        return {id, output ? output_u32 : input_u32, U32[1], num_components, true};
+        return {id, output ? output_u32 : input_u32, U32[1], num_components, true, loaded, array};
     case AmdGpu::NumberClass::Sint:
-        return {id, output ? output_s32 : input_s32, S32[1], num_components, true};
+        return {id, output ? output_s32 : input_s32, S32[1], num_components, true, loaded, array};
     default:
         break;
     }
@@ -298,33 +300,24 @@ void EmitContext::DefineBufferProperties() {
     }
 }
 
-void EmitContext::DefineInterpolatedAttribs() {
-    if (!profile.needs_manual_interpolation) {
+void EmitContext::DefineAmdPerVertexAttribs() {
+    if (!profile.supports_amd_shader_explicit_vertex_parameter) {
         return;
     }
-    // Iterate all input attributes, load them and manually interpolate.
     for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
         const auto& input = runtime_info.fs_info.inputs[i];
-        auto& params = input_params[i];
-        if (input.is_flat || params.is_loaded) {
+        if (input.IsDefault() || info.fs_interpolation[i].primary != Qualifier::PerVertex) {
             continue;
         }
-        const Id p_array{OpLoad(TypeArray(F32[4], ConstU32(3U)), params.id)};
-        const Id p0{OpCompositeExtract(F32[4], p_array, 0U)};
-        const Id p1{OpCompositeExtract(F32[4], p_array, 1U)};
-        const Id p2{OpCompositeExtract(F32[4], p_array, 2U)};
-        const Id p10{OpFSub(F32[4], p1, p0)};
-        const Id p20{OpFSub(F32[4], p2, p0)};
-        const Id bary_coord{OpLoad(F32[3], IsLinear(info.interp_qualifiers[i])
-                                               ? bary_coord_linear_id
-                                               : bary_coord_persp_id)};
-        const Id bary_coord_y{OpCompositeExtract(F32[1], bary_coord, 1)};
-        const Id bary_coord_z{OpCompositeExtract(F32[1], bary_coord, 2)};
-        const Id p10_y{OpVectorTimesScalar(F32[4], p10, bary_coord_y)};
-        const Id p20_z{OpVectorTimesScalar(F32[4], p20, bary_coord_z)};
-        params.id = OpFAdd(F32[4], p0, OpFAdd(F32[4], p10_y, p20_z));
-        Name(params.id, fmt::format("fs_in_attr{}", i));
-        params.is_loaded = true;
+        auto& param = input_params[i];
+        const Id pointer = param.id;
+        param.id_array[0] =
+            OpInterpolateAtVertexAMD(F32[param.num_components], pointer, ConstU32(0U));
+        param.id_array[1] =
+            OpInterpolateAtVertexAMD(F32[param.num_components], pointer, ConstU32(1U));
+        param.id_array[2] =
+            OpInterpolateAtVertexAMD(F32[param.num_components], pointer, ConstU32(2U));
+        param.is_loaded = true;
     }
 }
 
@@ -340,21 +333,6 @@ void EmitContext::DefineWorkgroupIndex() {
         OpIAdd(U32[1], OpIAdd(U32[1], workgroup_x, OpIMul(U32[1], workgroup_y, num_workgroups_x)),
                OpIMul(U32[1], workgroup_z, OpIMul(U32[1], num_workgroups_x, num_workgroups_y)));
     Name(workgroup_index_id, "workgroup_index");
-}
-
-Id MakeDefaultValue(EmitContext& ctx, u32 default_value) {
-    switch (default_value) {
-    case 0:
-        return ctx.ConstF32(0.f, 0.f, 0.f, 0.f);
-    case 1:
-        return ctx.ConstF32(0.f, 0.f, 0.f, 1.f);
-    case 2:
-        return ctx.ConstF32(1.f, 1.f, 1.f, 0.f);
-    case 3:
-        return ctx.ConstF32(1.f, 1.f, 1.f, 1.f);
-    default:
-        UNREACHABLE();
-    }
 }
 
 void EmitContext::DefineInputs() {
@@ -377,35 +355,13 @@ void EmitContext::DefineInputs() {
             ASSERT(attrib.semantic < IR::NumParams);
             const auto sharp = attrib.GetSharp(info);
             const Id type{GetAttributeType(*this, sharp.GetNumberFmt())[4]};
-            if (attrib.UsesStepRates()) {
-                const u32 rate_idx =
-                    attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::OverStepRate0 ? 0
-                                                                                                : 1;
-                const u32 num_components = AmdGpu::NumComponents(sharp.GetDataFmt());
-                const auto buffer =
-                    std::ranges::find_if(info.buffers, [&attrib](const auto& buffer) {
-                        return buffer.instance_attrib == attrib.semantic;
-                    });
-                // Note that we pass index rather than Id
-                input_params[attrib.semantic] = SpirvAttribute{
-                    .id = {rate_idx},
-                    .pointer_type = input_u32,
-                    .component_type = U32[1],
-                    .num_components = std::min<u16>(attrib.num_elements, num_components),
-                    .is_integer = true,
-                    .is_loaded = false,
-                    .buffer_handle = int(buffer - info.buffers.begin()),
-                };
+            Id id{DefineInput(type, attrib.semantic)};
+            if (attrib.GetStepRate() != Gcn::VertexAttribute::InstanceIdType::None) {
+                Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
             } else {
-                Id id{DefineInput(type, attrib.semantic)};
-                if (attrib.GetStepRate() == Gcn::VertexAttribute::InstanceIdType::Plain) {
-                    Name(id, fmt::format("vs_instance_attr{}", attrib.semantic));
-                } else {
-                    Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
-                }
-                input_params[attrib.semantic] =
-                    GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
+                Name(id, fmt::format("vs_in_attr{}", attrib.semantic));
             }
+            input_params[attrib.semantic] = GetAttributeInfo(sharp.GetNumberFmt(), id, 4, false);
         }
         break;
     }
@@ -413,56 +369,87 @@ void EmitContext::DefineInputs() {
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
-        if (info.stores.Get(IR::Attribute::Depth)) {
-            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
-        }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
             front_facing =
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
         }
-        if (profile.needs_manual_interpolation) {
-            if (info.has_perspective_interp) {
-                bary_coord_persp_id =
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Input);
+            Decorate(output_layer, spv::Decoration::Flat);
+        }
+        if (info.loads.Get(IR::Attribute::SampleIndex)) {
+            sample_index = DefineVariable(U32[1], spv::BuiltIn::SampleId, spv::StorageClass::Input);
+            Decorate(sample_index, spv::Decoration::Flat);
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmooth)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_smooth = DefineVariable(F32[2], spv::BuiltIn::BaryCoordSmoothAMD,
+                                                   spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_smooth =
                     DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
             }
-            if (info.has_linear_interp) {
-                bary_coord_linear_id = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
-                                                      spv::StorageClass::Input);
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothCentroid)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_smooth_centroid = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordSmoothCentroidAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_smooth_centroid =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+                // Decorate(bary_coord_smooth_centroid, spv::Decoration::Centroid);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordSmoothSample)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_smooth_sample = DefineVariable(
+                    F32[2], spv::BuiltIn::BaryCoordSmoothSampleAMD, spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_smooth_sample =
+                    DefineVariable(F32[3], spv::BuiltIn::BaryCoordKHR, spv::StorageClass::Input);
+                // Decorate(bary_coord_smooth_sample, spv::Decoration::Sample);
+            }
+        }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordNoPersp)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_nopersp = DefineVariable(F32[2], spv::BuiltIn::BaryCoordNoPerspAMD,
+                                                    spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
+                                                    spv::StorageClass::Input);
             }
         }
         for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
             if (input.IsDefault()) {
-                input_params[i] = {
-                    .id = MakeDefaultValue(*this, input.default_value),
-                    .pointer_type = input_f32,
-                    .component_type = F32[1],
-                    .num_components = 4,
-                    .is_integer = false,
-                    .is_loaded = true,
-                };
                 continue;
             }
-            const IR::Attribute param{IR::Attribute::Param0 + i};
+            const IR::Attribute param = IR::Attribute::Param0 + i;
             const u32 num_components = info.loads.NumComponents(param);
-            const Id type{F32[num_components]};
-            Id attr_id{};
-            if (profile.needs_manual_interpolation && !input.is_flat) {
-                attr_id = DefineInput(TypeArray(type, ConstU32(3U)), input.param_index);
-                Decorate(attr_id, spv::Decoration::PerVertexKHR);
-                Name(attr_id, fmt::format("fs_in_attr{}_p", i));
-            } else {
-                attr_id = DefineInput(type, input.param_index);
-                Name(attr_id, fmt::format("fs_in_attr{}", i));
-
-                if (input.is_flat) {
-                    Decorate(attr_id, spv::Decoration::Flat);
-                } else if (IsLinear(info.interp_qualifiers[i])) {
-                    Decorate(attr_id, spv::Decoration::NoPerspective);
+            const auto [primary, auxiliary] = info.fs_interpolation[i];
+            const Id type = F32[num_components];
+            const Id attr_id = [&] {
+                if (primary == Qualifier::PerVertex &&
+                    profile.supports_fragment_shader_barycentric) {
+                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), input.param_index),
+                                fmt::format("fs_in_attr{}_p", i));
                 }
+                return Name(DefineInput(type, input.param_index), fmt::format("fs_in_attr{}", i));
+            }();
+            if (primary == Qualifier::PerVertex) {
+                Decorate(attr_id, profile.supports_amd_shader_explicit_vertex_parameter
+                                      ? spv::Decoration::ExplicitInterpAMD
+                                      : spv::Decoration::PerVertexKHR);
+            } else if (primary != Qualifier::Smooth) {
+                Decorate(attr_id, primary == Qualifier::Flat ? spv::Decoration::Flat
+                                                             : spv::Decoration::NoPerspective);
             }
-            input_params[i] =
-                GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components, false);
+            if (auxiliary != Qualifier::None) {
+                Decorate(attr_id, auxiliary == Qualifier::Centroid ? spv::Decoration::Centroid
+                                                                   : spv::Decoration::Sample);
+            }
+            input_params[i] = GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components,
+                                               false, false, primary == Qualifier::PerVertex);
         }
         break;
     case LogicalStage::Compute:
@@ -483,17 +470,16 @@ void EmitContext::DefineInputs() {
     case LogicalStage::Geometry: {
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
         const auto gl_per_vertex =
-            Name(TypeStruct(TypeVector(F32[1], 4), F32[1], TypeArray(F32[1], ConstU32(1u))),
-                 "gl_PerVertex");
+            Name(TypeStruct(F32[4], F32[1], TypeArray(F32[1], ConstU32(1u))), "gl_PerVertex");
         MemberName(gl_per_vertex, 0, "gl_Position");
         MemberName(gl_per_vertex, 1, "gl_PointSize");
         MemberName(gl_per_vertex, 2, "gl_ClipDistance");
         MemberDecorate(gl_per_vertex, 0, spv::Decoration::BuiltIn,
-                       static_cast<std::uint32_t>(spv::BuiltIn::Position));
+                       static_cast<u32>(spv::BuiltIn::Position));
         MemberDecorate(gl_per_vertex, 1, spv::Decoration::BuiltIn,
-                       static_cast<std::uint32_t>(spv::BuiltIn::PointSize));
+                       static_cast<u32>(spv::BuiltIn::PointSize));
         MemberDecorate(gl_per_vertex, 2, spv::Decoration::BuiltIn,
-                       static_cast<std::uint32_t>(spv::BuiltIn::ClipDistance));
+                       static_cast<u32>(spv::BuiltIn::ClipDistance));
         Decorate(gl_per_vertex, spv::Decoration::Block);
         const auto num_verts_in = NumVertices(runtime_info.gs_info.in_primitive);
         const auto vertices_in = TypeArray(gl_per_vertex, ConstU32(num_verts_in));
@@ -505,7 +491,8 @@ void EmitContext::DefineInputs() {
             const Id type{TypeArray(F32[4], ConstU32(num_verts_in))};
             const Id id{DefineInput(type, param_id)};
             Name(id, fmt::format("gs_in_attr{}", param_id));
-            input_params[param_id] = {id, input_f32, F32[1], 4};
+            input_params[param_id] =
+                GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, false, false, true);
         }
         break;
     }
@@ -556,24 +543,40 @@ void EmitContext::DefineInputs() {
     }
 }
 
+void EmitContext::DefineVertexBlock() {
+    const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value,
+                                 f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value};
+    output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
+    if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
+    }
+    if (info.stores.GetAny(IR::Attribute::CullDistance)) {
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        cull_distances = DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output,
+                                        initializer);
+    }
+    if (info.stores.GetAny(IR::Attribute::PointSize)) {
+        output_point_size =
+            DefineVariable(F32[1], spv::BuiltIn::PointSize, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
+        output_layer = DefineVariable(U32[1], spv::BuiltIn::Layer, spv::StorageClass::Output);
+    }
+    if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+        output_viewport_index =
+            DefineVariable(U32[1], spv::BuiltIn::ViewportIndex, spv::StorageClass::Output);
+    }
+}
+
 void EmitContext::DefineOutputs() {
     switch (l_stage) {
     case LogicalStage::Vertex: {
-        // No point in defining builtin outputs (i.e. position) unless next stage is fragment?
-        // Might cause problems linking with tcs
-
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
-        if (stage == Shader::Stage::Local && runtime_info.ls_info.links_with_tcs) {
+        DefineVertexBlock();
+        if (stage == Shader::Stage::Local) {
             const u32 num_attrs = Common::AlignUp(runtime_info.ls_info.ls_stride, 16) >> 4;
             if (num_attrs > 0) {
                 const Id type{TypeArray(F32[4], ConstU32(num_attrs))};
@@ -632,17 +635,7 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::TessellationEval: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-        const bool has_extra_pos_stores = info.stores.Get(IR::Attribute::Position1) ||
-                                          info.stores.Get(IR::Attribute::Position2) ||
-                                          info.stores.Get(IR::Attribute::Position3);
-        if (has_extra_pos_stores) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            clip_distances =
-                DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output);
-            cull_distances =
-                DefineVariable(type, spv::BuiltIn::CullDistance, spv::StorageClass::Output);
-        }
+        DefineVertexBlock();
         for (u32 i = 0; i < IR::NumParams; i++) {
             const IR::Attribute param{IR::Attribute::Param0 + i};
             if (!info.stores.GetAny(param)) {
@@ -657,6 +650,13 @@ void EmitContext::DefineOutputs() {
         break;
     }
     case LogicalStage::Fragment: {
+        if (info.stores.Get(IR::Attribute::Depth)) {
+            frag_depth = DefineVariable(F32[1], spv::BuiltIn::FragDepth, spv::StorageClass::Output);
+        }
+        if (info.stores.Get(IR::Attribute::SampleMask)) {
+            sample_mask = DefineVariable(TypeArray(U32[1], u32_one_value), spv::BuiltIn::SampleMask,
+                                         spv::StorageClass::Output);
+        }
         u32 num_render_targets = 0;
         for (u32 i = 0; i < IR::NumRenderTargets; i++) {
             const IR::Attribute mrt{IR::Attribute::RenderTarget0 + i};
@@ -677,17 +677,18 @@ void EmitContext::DefineOutputs() {
             frag_outputs[i] = GetAttributeInfo(num_format, id, num_components, true);
             ++num_render_targets;
         }
-        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets == 2,
-                   "Dual source blending enabled, there must be exactly two MRT exports");
+        // Dual source blending allows at most 2 render targets, one for each source.
+        // Fewer targets are allowed but the missing blending source values will be undefined.
+        ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
+                   "Dual source blending enabled, there must be at most two MRT exports");
         break;
     }
     case LogicalStage::Geometry: {
-        output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-
+        DefineVertexBlock();
         for (u32 attr_id = 0; attr_id < info.gs_copy_data.num_attrs; attr_id++) {
             const Id id{DefineOutput(F32[4], attr_id)};
             Name(id, fmt::format("out_attr{}", attr_id));
-            output_params[attr_id] = {id, output_f32, F32[1], 4u};
+            output_params[attr_id] = GetAttributeInfo(AmdGpu::NumberFormat::Float, id, 4, true);
         }
         break;
     }
@@ -700,12 +701,10 @@ void EmitContext::DefineOutputs() {
 
 void EmitContext::DefinePushDataBlock() {
     // Create push constants block for instance steps rates
-    const Id struct_type{Name(TypeStruct(U32[1], U32[1], F32[1], F32[1], F32[1], F32[1], U32[4],
-                                         U32[4], U32[4], U32[4], U32[4], U32[4], U32[2]),
+    const Id struct_type{Name(TypeStruct(F32[1], F32[1], F32[1], F32[1], U32[4], U32[4], U32[4],
+                                         U32[4], U32[4], U32[4], U32[2]),
                               "AuxData")};
     Decorate(struct_type, spv::Decoration::Block);
-    MemberName(struct_type, PushData::Step0Index, "sr0");
-    MemberName(struct_type, PushData::Step1Index, "sr1");
     MemberName(struct_type, PushData::XOffsetIndex, "xoffset");
     MemberName(struct_type, PushData::YOffsetIndex, "yoffset");
     MemberName(struct_type, PushData::XScaleIndex, "xscale");
@@ -717,19 +716,17 @@ void EmitContext::DefinePushDataBlock() {
     MemberName(struct_type, PushData::BufOffsetIndex + 0, "buf_offsets0");
     MemberName(struct_type, PushData::BufOffsetIndex + 1, "buf_offsets1");
     MemberName(struct_type, PushData::BufOffsetIndex + 2, "buf_offsets2");
-    MemberDecorate(struct_type, PushData::Step0Index, spv::Decoration::Offset, 0U);
-    MemberDecorate(struct_type, PushData::Step1Index, spv::Decoration::Offset, 4U);
-    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 8U);
-    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 12U);
-    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 16U);
-    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 20U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 24U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 40U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 56U);
-    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 72U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 88U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 104U);
-    MemberDecorate(struct_type, PushData::BufOffsetIndex + 2, spv::Decoration::Offset, 120U);
+    MemberDecorate(struct_type, PushData::XOffsetIndex, spv::Decoration::Offset, 0U);
+    MemberDecorate(struct_type, PushData::YOffsetIndex, spv::Decoration::Offset, 4U);
+    MemberDecorate(struct_type, PushData::XScaleIndex, spv::Decoration::Offset, 8U);
+    MemberDecorate(struct_type, PushData::YScaleIndex, spv::Decoration::Offset, 12U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 0, spv::Decoration::Offset, 16U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 1, spv::Decoration::Offset, 32U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 2, spv::Decoration::Offset, 48U);
+    MemberDecorate(struct_type, PushData::UdRegsIndex + 3, spv::Decoration::Offset, 64U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 0, spv::Decoration::Offset, 80U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 1, spv::Decoration::Offset, 96U);
+    MemberDecorate(struct_type, PushData::BufOffsetIndex + 2, spv::Decoration::Offset, 112U);
     push_data_block = DefineVar(struct_type, spv::StorageClass::PushConstant);
     Name(push_data_block, "push_data");
     interfaces.push_back(push_data_block);
@@ -763,19 +760,19 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
         Decorate(id, spv::Decoration::NonWritable);
     }
     switch (buffer_type) {
-    case Shader::BufferType::GdsBuffer:
+    case BufferType::GdsBuffer:
         Name(id, "gds_buffer");
         break;
-    case Shader::BufferType::Flatbuf:
+    case BufferType::Flatbuf:
         Name(id, "srt_flatbuf");
         break;
-    case Shader::BufferType::BdaPagetable:
+    case BufferType::BdaPagetable:
         Name(id, "bda_pagetable");
         break;
-    case Shader::BufferType::FaultBuffer:
+    case BufferType::FaultBuffer:
         Name(id, "fault_buffer");
         break;
-    case Shader::BufferType::SharedMemory:
+    case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
         break;
     default:
@@ -966,11 +963,11 @@ void EmitContext::DefineImagesAndSamplers() {
         const Id id{AddGlobalVariable(sampler_pointer_type, spv::StorageClass::UniformConstant)};
         Decorate(id, spv::Decoration::Binding, binding.unified++);
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        auto sharp_desc = std::holds_alternative<u32>(samp_desc.sampler)
-                              ? fmt::format("sgpr:{}", std::get<u32>(samp_desc.sampler))
-                              : fmt::format("inline:{:#x}:{:#x}",
-                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw0,
-                                            std::get<AmdGpu::Sampler>(samp_desc.sampler).raw1);
+        const auto sharp_desc =
+            samp_desc.is_inline_sampler
+                ? fmt::format("inline:{:#x}:{:#x}", samp_desc.inline_sampler.raw0,
+                              samp_desc.inline_sampler.raw1)
+                : fmt::format("sgpr:{}", samp_desc.sharp_idx);
         Name(id, fmt::format("{}_{}{}", stage, "samp", sharp_desc));
         samplers.push_back(id);
         interfaces.push_back(id);
@@ -1094,36 +1091,26 @@ Id EmitContext::DefineUfloatM5ToFloat32(u32 mantissa_bits, const std::string_vie
     Name(func, name);
     AddLabel();
 
-    const auto raw_mantissa{
-        OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
-    const auto mantissa{OpConvertUToF(F32[1], raw_mantissa)};
-    const auto exponent{OpBitcast(
-        S32[1], OpBitFieldSExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U)))};
-
-    const auto is_exp_neg_one{OpIEqual(U1[1], exponent, ConstS32(-1))};
-    const auto is_exp_zero{OpIEqual(U1[1], exponent, ConstS32(0))};
-
-    const auto is_zero{OpIEqual(U1[1], value, ConstU32(0u))};
-    const auto is_nan{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_inf{
-        OpLogicalAnd(U1[1], is_exp_neg_one, OpIEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-    const auto is_denorm{
-        OpLogicalAnd(U1[1], is_exp_zero, OpINotEqual(U1[1], raw_mantissa, ConstU32(0u)))};
-
-    const auto denorm{OpFMul(F32[1], mantissa, ConstF32(1.f / (1 << 20)))};
-    const auto norm{OpLdexp(
-        F32[1],
-        OpFAdd(F32[1],
-               OpFMul(F32[1], mantissa, ConstF32(1.f / static_cast<float>(1 << mantissa_bits))),
-               ConstF32(1.f)),
-        exponent)};
-
-    const auto result{OpSelect(F32[1], is_zero, ConstF32(0.f),
-                               OpSelect(F32[1], is_nan, ConstF32(NAN),
-                                        OpSelect(F32[1], is_inf, ConstF32(INFINITY),
-                                                 OpSelect(F32[1], is_denorm, denorm, norm))))};
-
+    const Id exponent{OpBitFieldUExtract(U32[1], value, ConstU32(mantissa_bits), ConstU32(5U))};
+    const Id mantissa{OpBitFieldUExtract(U32[1], value, ConstU32(0U), ConstU32(mantissa_bits))};
+    const Id mantissa_f{OpConvertUToF(F32[1], mantissa)};
+    const Id a{OpSelect(F32[1], OpINotEqual(U1[1], mantissa, u32_zero_value),
+                        OpFMul(F32[1], ConstF32(1.f / (1 << (14 + mantissa_bits))), mantissa_f),
+                        f32_zero_value)};
+    const Id b{OpBitcast(F32[1], OpBitwiseOr(U32[1], mantissa, ConstU32(0x7f800000U)))};
+    const Id exponent_c{OpISub(U32[1], exponent, ConstU32(15U))};
+    const Id scale_a{
+        OpFDiv(F32[1], ConstF32(1.f),
+               OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value,
+                                                        OpSNegate(U32[1], exponent_c))))};
+    const Id scale_b{OpConvertUToF(F32[1], OpShiftLeftLogical(U32[1], u32_one_value, exponent_c))};
+    const Id scale{
+        OpSelect(F32[1], OpSLessThan(U1[1], exponent_c, u32_zero_value), scale_a, scale_b)};
+    const Id c{OpFMul(F32[1], scale,
+                      OpFAdd(F32[1], ConstF32(1.f),
+                             OpFDiv(F32[1], mantissa_f, ConstF32(f32(1 << mantissa_bits)))))};
+    const Id result{OpSelect(F32[1], OpIEqual(U1[1], exponent, u32_zero_value), a,
+                             OpSelect(F32[1], OpIEqual(U1[1], exponent, ConstU32(31U)), b, c))};
     OpReturnValue(result);
     OpFunctionEnd();
     return func;

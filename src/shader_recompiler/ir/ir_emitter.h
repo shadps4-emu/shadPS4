@@ -81,8 +81,7 @@ public:
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
-    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0,
-                                   IR::Value index = IR::Value(u32(0u)));
+    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
@@ -176,6 +175,9 @@ public:
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
+    [[nodiscard]] Value Ballot(const U1& bit);
+    [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
@@ -227,6 +229,7 @@ public:
     [[nodiscard]] F32 FPSin(const F32& value);
     [[nodiscard]] F32 FPExp2(const F32& value);
     [[nodiscard]] F32 FPLog2(const F32& value);
+    [[nodiscard]] F32 FPPow(const F32& x, const F32& y);
     [[nodiscard]] F32 FPLdexp(const F32& value, const U32& exp);
     [[nodiscard]] F32F64 FPRecip(const F32F64& value);
     [[nodiscard]] F32F64 FPRecipSqrt(const F32F64& value);
@@ -324,6 +327,7 @@ public:
                                      const Value& value);
 
     [[nodiscard]] U8U16U32U64 UConvert(size_t result_bitsize, const U8U16U32U64& value);
+    [[nodiscard]] U8U16U32U64 SConvert(size_t result_bitsize, const U8U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
     [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
@@ -357,9 +361,9 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
-                                       const Value& address2, const Value& address3,
-                                       const Value& address4, const Value& inline_sampler,
+    [[nodiscard]] Value ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                       const Value& address1, const Value& address2,
+                                       const Value& address3, const Value& address4,
                                        TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,

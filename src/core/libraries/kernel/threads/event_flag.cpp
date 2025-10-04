@@ -182,13 +182,12 @@ struct OrbisKernelEventFlagOptParam {
 int PS4_SYSV_ABI sceKernelCreateEventFlag(OrbisKernelEventFlag* ef, const char* pName, u32 attr,
                                           u64 initPattern,
                                           const OrbisKernelEventFlagOptParam* pOptParam) {
-    LOG_INFO(Kernel_Event, "called name = {} attr = {:#x} initPattern = {:#x}", pName, attr,
-             initPattern);
+    LOG_TRACE(Kernel_Event, "called name = {} attr = {:#x} initPattern = {:#x}", pName, attr,
+              initPattern);
     if (ef == nullptr || pName == nullptr) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (pOptParam || !pName ||
-        attr > (ORBIS_KERNEL_EVF_ATTR_MULTI | ORBIS_KERNEL_EVF_ATTR_TH_PRIO)) {
+    if (pOptParam || attr > (ORBIS_KERNEL_EVF_ATTR_MULTI | ORBIS_KERNEL_EVF_ATTR_TH_PRIO)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -253,6 +252,9 @@ int PS4_SYSV_ABI sceKernelCloseEventFlag() {
 
 int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern) {
     LOG_DEBUG(Kernel_Event, "called");
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     ef->Clear(bitPattern);
     return ORBIS_OK;
 }
@@ -260,6 +262,9 @@ int PS4_SYSV_ABI sceKernelClearEventFlag(OrbisKernelEventFlag ef, u64 bitPattern
 int PS4_SYSV_ABI sceKernelCancelEventFlag(OrbisKernelEventFlag ef, u64 setPattern,
                                           int* pNumWaitThreads) {
     LOG_DEBUG(Kernel_Event, "called");
+    if (ef == nullptr) {
+        return ORBIS_KERNEL_ERROR_ESRCH;
+    }
     ef->Cancel(setPattern, pNumWaitThreads);
     return ORBIS_OK;
 }
@@ -358,8 +363,7 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
         UNREACHABLE();
     }
 
-    u32 result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
-
+    const int result = ef->Wait(bitPattern, wait, clear, pResultPat, pTimeout);
     if (result != ORBIS_OK && result != ORBIS_KERNEL_ERROR_ETIMEDOUT) {
         LOG_DEBUG(Kernel_Event, "returned {:#x}", result);
     }
@@ -368,15 +372,15 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 }
 
 void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("PZku4ZrXJqg", "libkernel", 1, "libkernel", 1, 1, sceKernelCancelEventFlag);
-    LIB_FUNCTION("7uhBFWRAS60", "libkernel", 1, "libkernel", 1, 1, sceKernelClearEventFlag);
-    LIB_FUNCTION("s9-RaxukuzQ", "libkernel", 1, "libkernel", 1, 1, sceKernelCloseEventFlag);
-    LIB_FUNCTION("BpFoboUJoZU", "libkernel", 1, "libkernel", 1, 1, sceKernelCreateEventFlag);
-    LIB_FUNCTION("8mql9OcQnd4", "libkernel", 1, "libkernel", 1, 1, sceKernelDeleteEventFlag);
-    LIB_FUNCTION("1vDaenmJtyA", "libkernel", 1, "libkernel", 1, 1, sceKernelOpenEventFlag);
-    LIB_FUNCTION("9lvj5DjHZiA", "libkernel", 1, "libkernel", 1, 1, sceKernelPollEventFlag);
-    LIB_FUNCTION("IOnSvHzqu6A", "libkernel", 1, "libkernel", 1, 1, sceKernelSetEventFlag);
-    LIB_FUNCTION("JTvBflhYazQ", "libkernel", 1, "libkernel", 1, 1, sceKernelWaitEventFlag);
+    LIB_FUNCTION("PZku4ZrXJqg", "libkernel", 1, "libkernel", sceKernelCancelEventFlag);
+    LIB_FUNCTION("7uhBFWRAS60", "libkernel", 1, "libkernel", sceKernelClearEventFlag);
+    LIB_FUNCTION("s9-RaxukuzQ", "libkernel", 1, "libkernel", sceKernelCloseEventFlag);
+    LIB_FUNCTION("BpFoboUJoZU", "libkernel", 1, "libkernel", sceKernelCreateEventFlag);
+    LIB_FUNCTION("8mql9OcQnd4", "libkernel", 1, "libkernel", sceKernelDeleteEventFlag);
+    LIB_FUNCTION("1vDaenmJtyA", "libkernel", 1, "libkernel", sceKernelOpenEventFlag);
+    LIB_FUNCTION("9lvj5DjHZiA", "libkernel", 1, "libkernel", sceKernelPollEventFlag);
+    LIB_FUNCTION("IOnSvHzqu6A", "libkernel", 1, "libkernel", sceKernelSetEventFlag);
+    LIB_FUNCTION("JTvBflhYazQ", "libkernel", 1, "libkernel", sceKernelWaitEventFlag);
 }
 
 } // namespace Libraries::Kernel

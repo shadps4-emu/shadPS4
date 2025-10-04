@@ -501,7 +501,7 @@ int PS4_SYSV_ABI sceSystemServiceLaunchEventDetails();
 int PS4_SYSV_ABI sceSystemServiceLaunchTournamentList();
 int PS4_SYSV_ABI sceSystemServiceLaunchTournamentsTeamProfile();
 int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser();
-int PS4_SYSV_ABI sceSystemServiceLoadExec();
+int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]);
 int PS4_SYSV_ABI sceSystemServiceNavigateToAnotherApp();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBack();
 int PS4_SYSV_ABI sceSystemServiceNavigateToGoBackWithValue();
@@ -607,5 +607,5 @@ int PS4_SYSV_ABI Func_CB5E885E225F69F0();
 
 void PushSystemServiceEvent(const OrbisSystemServiceEvent& event);
 
-void RegisterlibSceSystemService(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SystemService

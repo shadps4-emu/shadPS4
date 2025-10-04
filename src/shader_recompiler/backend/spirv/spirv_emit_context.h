@@ -45,7 +45,7 @@ public:
     Id Def(const IR::Value& value);
 
     void DefineBufferProperties();
-    void DefineInterpolatedAttribs();
+    void DefineAmdPerVertexAttribs();
     void DefineWorkgroupIndex();
 
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
@@ -245,6 +245,9 @@ public:
     boost::container::small_vector<Id, 16> interfaces;
 
     Id output_position{};
+    Id output_point_size{};
+    Id output_layer{};
+    Id output_viewport_index{};
     Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};
@@ -253,6 +256,8 @@ public:
     Id frag_coord{};
     Id front_facing{};
     Id frag_depth{};
+    Id sample_mask{};
+    Id sample_index{};
     Id clip_distances{};
     Id cull_distances{};
 
@@ -279,8 +284,10 @@ public:
     Id shared_memory_u32_type{};
     Id shared_memory_u64_type{};
 
-    Id bary_coord_persp_id{};
-    Id bary_coord_linear_id{};
+    Id bary_coord_smooth{};
+    Id bary_coord_smooth_centroid{};
+    Id bary_coord_smooth_sample{};
+    Id bary_coord_nopersp{};
 
     struct TextureDefinition {
         const VectorIds* data_types;
@@ -355,13 +362,16 @@ public:
     Id sampler_pointer_type{};
 
     struct SpirvAttribute {
-        Id id;
+        union {
+            Id id;
+            std::array<Id, 3> id_array;
+        };
         Id pointer_type;
         Id component_type;
         u32 num_components;
         bool is_integer{};
         bool is_loaded{};
-        s32 buffer_handle{-1};
+        bool is_array{};
     };
     Id input_attr_array;
     Id output_attr_array;
@@ -383,6 +393,7 @@ private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
     void DefineInputs();
+    void DefineVertexBlock();
     void DefineOutputs();
     void DefinePushDataBlock();
     void DefineBuffers();
@@ -391,7 +402,7 @@ private:
     void DefineFunctions();
 
     SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
-                                    bool output);
+                                    bool output, bool loaded = false, bool array = false);
 
     BufferSpv DefineBuffer(bool is_storage, bool is_written, u32 elem_shift, BufferType buffer_type,
                            Id data_type);

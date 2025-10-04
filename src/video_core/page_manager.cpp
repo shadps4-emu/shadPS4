@@ -4,6 +4,7 @@
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/div_ceil.h"
 #include "common/range_lock.h"
 #include "common/signal_context.h"
 #include "core/memory.h"
@@ -247,9 +248,11 @@ struct PageManager::Impl {
         // Iterate requested pages
         const u64 aligned_addr = page << PAGE_BITS;
         const u64 aligned_end = page_end << PAGE_BITS;
-        ASSERT_MSG(rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr),
-                   "Attempted to track non-GPU memory at address {:#x}, size {:#x}.", aligned_addr,
-                   aligned_end - aligned_addr);
+        if (!rasterizer->IsMapped(aligned_addr, aligned_end - aligned_addr)) {
+            LOG_WARNING(Render,
+                        "Tracking memory region {:#x} - {:#x} which is not fully GPU mapped.",
+                        aligned_addr, aligned_end);
+        }
 
         for (; page != page_end; ++page) {
             PageState& state = cached_pages[page];

@@ -152,7 +152,6 @@ void CheatsPatches::setupUI() {
     controlLayout->setAlignment(Qt::AlignLeft);
     QComboBox* downloadComboBox = new QComboBox();
 
-    downloadComboBox->addItem("wolf2022", "wolf2022");
     downloadComboBox->addItem("GoldHEN", "GoldHEN");
     downloadComboBox->addItem("shadPS4", "shadPS4");
 
@@ -243,8 +242,8 @@ void CheatsPatches::setupUI() {
 
     // Add the combo box with options
     patchesComboBox = new QComboBox();
-    patchesComboBox->addItem("GoldHEN", "GoldHEN");
     patchesComboBox->addItem("shadPS4", "shadPS4");
+    patchesComboBox->addItem("GoldHEN", "GoldHEN");
     patchesControlLayout->addWidget(patchesComboBox);
 
     QPushButton* patchesButton = new QPushButton(tr("Download Patches"));
@@ -378,72 +377,50 @@ void CheatsPatches::onSaveButtonClicked() {
     xmlWriter.writeStartDocument();
 
     QXmlStreamReader xmlReader(xmlData);
-    bool insideMetadata = false;
 
     while (!xmlReader.atEnd()) {
         xmlReader.readNext();
 
         if (xmlReader.isStartElement()) {
             if (xmlReader.name() == QStringLiteral("Metadata")) {
-                insideMetadata = true;
                 xmlWriter.writeStartElement(xmlReader.name().toString());
 
                 QString name = xmlReader.attributes().value("Name").toString();
+                QString version = xmlReader.attributes().value("AppVer").toString();
+
+                bool versionMatch = version == m_gameVersion;
                 bool isEnabled = false;
-                bool hasIsEnabled = false;
                 bool foundPatchInfo = false;
 
                 // Check and update the isEnabled attribute
                 for (const QXmlStreamAttribute& attr : xmlReader.attributes()) {
-                    if (attr.name() == QStringLiteral("isEnabled")) {
-                        hasIsEnabled = true;
-                        auto it = m_patchInfos.find(name);
-                        if (it != m_patchInfos.end()) {
-                            QCheckBox* checkBox = findCheckBoxByName(it->name);
-                            if (checkBox) {
-                                foundPatchInfo = true;
-                                isEnabled = checkBox->isChecked();
-                                xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
-                            }
-                        }
-                        if (!foundPatchInfo) {
-                            auto maskIt = m_patchInfos.find(name + " (any version)");
-                            if (maskIt != m_patchInfos.end()) {
-                                QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
-                                if (checkBox) {
-                                    foundPatchInfo = true;
-                                    isEnabled = checkBox->isChecked();
-                                    xmlWriter.writeAttribute("isEnabled",
-                                                             isEnabled ? "true" : "false");
-                                }
-                            }
-                        }
-
-                    } else {
-                        xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
-                    }
+                    if (attr.name() == QStringLiteral("isEnabled"))
+                        continue;
+                    xmlWriter.writeAttribute(attr.name().toString(), attr.value().toString());
                 }
 
-                if (!hasIsEnabled) {
-                    auto it = m_patchInfos.find(name);
-                    if (it != m_patchInfos.end()) {
-                        QCheckBox* checkBox = findCheckBoxByName(it->name);
+                auto it = m_patchInfos.find(name);
+                if (it != m_patchInfos.end()) {
+                    QCheckBox* checkBox = findCheckBoxByName(it->name);
+                    if (checkBox) {
+                        foundPatchInfo = true;
+                        isEnabled = checkBox->isChecked();
+                    }
+                }
+                if (!foundPatchInfo) {
+                    auto maskIt = m_patchInfos.find(name + " (any version)");
+                    if (maskIt != m_patchInfos.end()) {
+                        QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
                         if (checkBox) {
+                            versionMatch = true;
                             foundPatchInfo = true;
                             isEnabled = checkBox->isChecked();
                         }
                     }
-                    if (!foundPatchInfo) {
-                        auto maskIt = m_patchInfos.find(name + " (any version)");
-                        if (maskIt != m_patchInfos.end()) {
-                            QCheckBox* checkBox = findCheckBoxByName(maskIt->name);
-                            if (checkBox) {
-                                foundPatchInfo = true;
-                                isEnabled = checkBox->isChecked();
-                            }
-                        }
-                    }
-                    xmlWriter.writeAttribute("isEnabled", isEnabled ? "true" : "false");
+                }
+                if (foundPatchInfo) {
+                    xmlWriter.writeAttribute("isEnabled",
+                                             (isEnabled && versionMatch) ? "true" : "false");
                 }
             } else {
                 xmlWriter.writeStartElement(xmlReader.name().toString());
@@ -452,9 +429,6 @@ void CheatsPatches::onSaveButtonClicked() {
                 }
             }
         } else if (xmlReader.isEndElement()) {
-            if (xmlReader.name() == QStringLiteral("Metadata")) {
-                insideMetadata = false;
-            }
             xmlWriter.writeEndElement();
         } else if (xmlReader.isCharacters() && !xmlReader.isWhitespace()) {
             xmlWriter.writeCharacters(xmlReader.text().toString());
@@ -510,8 +484,6 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
     QString url;
     if (source == "GoldHEN") {
         url = "https://raw.githubusercontent.com/GoldHEN/GoldHEN_Cheat_Repository/main/json.txt";
-    } else if (source == "wolf2022") {
-        url = "https://wolf2022.ir/trainer/list.json";
     } else if (source == "shadPS4") {
         url = "https://raw.githubusercontent.com/shadps4-emu/ps4_cheats/main/CHEATS_JSON.txt";
     } else {
@@ -528,70 +500,7 @@ void CheatsPatches::downloadCheats(const QString& source, const QString& gameSer
             QByteArray jsonData = reply->readAll();
             bool foundFiles = false;
 
-            if (source == "wolf2022") {
-                QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonData);
-                QJsonArray gamesArray = jsonDoc.object().value("games").toArray();
-
-                foreach (const QJsonValue& value, gamesArray) {
-                    QJsonObject gameObject = value.toObject();
-                    QString title = gameObject.value("title").toString();
-                    QString version = gameObject.value("version").toString();
-
-                    if (title == gameSerial &&
-                        (version == gameVersion || version == gameVersion.mid(1))) {
-                        QString fileUrl =
-                            "https://wolf2022.ir/trainer/" + gameObject.value("url").toString();
-
-                        QString localFileName = gameObject.value("url").toString();
-                        localFileName =
-                            localFileName.left(localFileName.lastIndexOf('.')) + "_wolf2022.json";
-
-                        QString localFilePath = dir.filePath(localFileName);
-
-                        if (QFile::exists(localFilePath) && showMessageBox) {
-                            QMessageBox::StandardButton reply;
-                            reply = QMessageBox::question(
-                                this, tr("File Exists"),
-                                tr("File already exists. Do you want to replace it?") + "\n" +
-                                    localFileName,
-                                QMessageBox::Yes | QMessageBox::No);
-                            if (reply == QMessageBox::No) {
-                                continue;
-                            }
-                        }
-                        QNetworkRequest fileRequest(fileUrl);
-                        QNetworkReply* fileReply = manager->get(fileRequest);
-
-                        connect(fileReply, &QNetworkReply::finished, [=, this]() {
-                            if (fileReply->error() == QNetworkReply::NoError) {
-                                QByteArray fileData = fileReply->readAll();
-                                QFile localFile(localFilePath);
-                                if (localFile.open(QIODevice::WriteOnly)) {
-                                    localFile.write(fileData);
-                                    localFile.close();
-                                } else {
-                                    QMessageBox::warning(
-                                        this, tr("Error"),
-                                        QString(tr("Failed to save file:") + "\n%1")
-                                            .arg(localFilePath));
-                                }
-                            } else {
-                                QMessageBox::warning(this, tr("Error"),
-                                                     QString(tr("Failed to download file:") +
-                                                             "%1\n\n" + tr("Error") + ":%2")
-                                                         .arg(fileUrl)
-                                                         .arg(fileReply->errorString()));
-                            }
-                            fileReply->deleteLater();
-                        });
-
-                        foundFiles = true;
-                    }
-                }
-                if (!foundFiles && showMessageBox) {
-                    QMessageBox::warning(this, tr("Cheats Not Found"), CheatsNotFound_MSG);
-                }
-            } else if (source == "GoldHEN" || source == "shadPS4") {
+            if (source == "GoldHEN" || source == "shadPS4") {
                 QString textContent(jsonData);
                 QRegularExpression regex(
                     QString("%1_%2[^=]*\\.json").arg(gameSerial).arg(gameVersion));
@@ -705,6 +614,7 @@ void CheatsPatches::populateFileListPatches() {
 
     QStringList folders = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     QStringList matchingFiles;
+    QString shadPS4entry = "";
 
     foreach (const QString& folder, folders) {
         QString folderPath = dir.filePath(folder);
@@ -727,6 +637,9 @@ void CheatsPatches::populateFileListPatches() {
                 if (serials.contains(QJsonValue(m_gameSerial))) {
                     QString fileEntry = fileName + " | " + folder;
                     if (!matchingFiles.contains(fileEntry)) {
+                        if (folder == "shadPS4") {
+                            shadPS4entry = fileEntry;
+                        }
                         matchingFiles << fileEntry;
                     }
                 }
@@ -734,6 +647,12 @@ void CheatsPatches::populateFileListPatches() {
         }
     }
     QStringListModel* model = new QStringListModel(matchingFiles, this);
+    if (shadPS4entry != "") {
+        QModelIndexList matches = model->match(model->index(0, 0), Qt::DisplayRole, shadPS4entry, 1,
+                                               Qt::MatchExactly | Qt::MatchCaseSensitive);
+        QModelIndex shadPS4Index = matches.first();
+        model->moveRow(QModelIndex(), shadPS4Index.row(), QModelIndex(), 0);
+    }
     patchesListView->setModel(model);
 
     connect(
@@ -755,11 +674,11 @@ void CheatsPatches::populateFileListPatches() {
 
 void CheatsPatches::downloadPatches(const QString repository, const bool showMessageBox) {
     QString url;
-    if (repository == "GoldHEN") {
-        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
-    }
     if (repository == "shadPS4") {
         url = "https://api.github.com/repos/shadps4-emu/ps4_cheats/contents/PATCHES";
+    }
+    if (repository == "GoldHEN") {
+        url = "https://api.github.com/repos/illusion0001/PS4-PS5-Game-Patch/contents/patches/xml";
     }
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);
     QNetworkRequest request(url);
@@ -848,7 +767,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
     QDir dir = patchesDir.filePath(repository);
 
     QStringList xmlFiles = dir.entryList(QStringList() << "*.xml", QDir::Files);
-    QSet<QString> appVersionsSet;
+    QStringList incompatMessages;
 
     foreach (const QString& xmlFile, xmlFiles) {
         QFile file(dir.filePath(xmlFile));
@@ -859,6 +778,7 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
         }
 
         QXmlStreamReader xmlReader(&file);
+        QSet<QString> appVersionsSet;
         bool foundMatchingID = false;
 
         while (!xmlReader.atEnd() && !xmlReader.hasError()) {
@@ -885,39 +805,33 @@ void CheatsPatches::compatibleVersionNotice(const QString repository) {
                                  QString(tr("XML ERROR:") + "\n%1").arg(xmlReader.errorString()));
         }
 
-        if (foundMatchingID) {
-            QStringList incompatibleVersions;
-            bool hasMatchingVersion = false;
+        if (!foundMatchingID) {
+            continue;
+        }
 
-            foreach (const QString& appVer, appVersionsSet) {
-                if (appVer != m_gameVersion) {
-                    incompatibleVersions.append(appVer);
-                } else {
-                    hasMatchingVersion = true;
-                }
-            }
-
-            if (!incompatibleVersions.isEmpty() ||
-                (hasMatchingVersion && incompatibleVersions.isEmpty())) {
-                QString message;
-
-                if (!incompatibleVersions.isEmpty()) {
-                    QString versionsList = incompatibleVersions.join(", ");
-                    message += QString(tr("The game is in version: %1")).arg(m_gameVersion) + "\n" +
-                               QString(tr("The downloaded patch only works on version: %1"))
-                                   .arg(versionsList);
-
-                    if (hasMatchingVersion) {
-                        message += QString(", %1").arg(m_gameVersion);
-                    }
-                    message += QString("\n" + tr("You may need to update your game."));
-                }
-
-                if (!message.isEmpty()) {
-                    QMessageBox::information(this, tr("Incompatibility Notice"), message);
-                }
+        for (const QString& appVer : appVersionsSet) {
+            if (appVer == QLatin1String("mask") || appVer == m_gameVersion) {
+                return;
             }
         }
+
+        if (!appVersionsSet.isEmpty()) {
+            QStringList versionsList;
+            for (const QString& v : appVersionsSet) {
+                versionsList << v;
+            }
+            QString versions = versionsList.join(", ");
+            QString message =
+                QString(tr("The game is in version: %1")).arg(m_gameVersion) + "\n" +
+                QString(tr("The downloaded patch only works on version: %1")).arg(versions) +
+                QString("\n" + tr("You may need to update your game."));
+            incompatMessages << message;
+        }
+    }
+
+    if (!incompatMessages.isEmpty()) {
+        QString finalMsg = incompatMessages.join("\n\n---\n\n");
+        QMessageBox::information(this, tr("Incompatibility Notice"), finalMsg);
     }
 }
 

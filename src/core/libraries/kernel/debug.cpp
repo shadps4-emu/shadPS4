@@ -14,7 +14,7 @@ void PS4_SYSV_ABI sceKernelDebugOutText(void* unk, char* text) {
 }
 
 void RegisterDebug(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("9JYNqN6jAKI", "libkernel", 1, "libkernel", 1, 1, sceKernelDebugOutText);
+    LIB_FUNCTION("9JYNqN6jAKI", "libkernel", 1, "libkernel", sceKernelDebugOutText);
 }
 
 } // namespace Libraries::Kernel
