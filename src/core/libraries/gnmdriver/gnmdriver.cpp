@@ -72,11 +72,8 @@ static int sdk_version{0};
 
 static u32 asc_next_offs_dw[Liverpool::NumComputeRings];
 
-// We need to get an instance of our address space to derive a proper ring address here.
-auto* memory = Core::Memory::Instance();
-auto& address_space = memory->GetAddressSpace();
-static VAddr tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
-                                              address_space.SystemReservedVirtualSize() - 0xFFFFFFF;
+// This address is initialized in sceGnmGetTheTessellationFactorRingBufferBaseAddress
+static VAddr tessellation_factors_ring_addr = -1;
 static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
@@ -1002,7 +999,14 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
 }
 
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
+    auto* memory = Core::Memory::Instance();
+    auto& address_space = memory->GetAddressSpace();
     LOG_TRACE(Lib_GnmDriver, "called");
+    if (tessellation_factors_ring_addr == -1) {
+        tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
+                                         address_space.SystemReservedVirtualSize() - 0xFFFFFFF;
+    }
+
     return tessellation_factors_ring_addr;
 }
 
