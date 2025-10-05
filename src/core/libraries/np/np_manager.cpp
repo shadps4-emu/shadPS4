@@ -71,9 +71,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -96,9 +94,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -121,9 +117,7 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -161,9 +155,7 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -193,9 +185,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -224,9 +214,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -254,9 +242,7 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
@@ -287,9 +273,7 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-
-    if (g_requests[req_index].state == NpRequestState::Aborted) {
+    } else if (g_requests[req_index].state == NpRequestState::Aborted) {
         return ORBIS_NP_ERROR_ABORTED;
     }
 
