@@ -120,6 +120,10 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
     }
 
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}, async = {}", req_id, request.async);
+
+    // Not sure what values are expected here, so zeroing these for now.
+    std::memset(auth_code, 0, sizeof(OrbisNpAuthorizationCode));
+    *issuer_id = 0;
     return ORBIS_OK;
 }
 
@@ -211,6 +215,9 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
     }
 
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}, async = {}", req_id, request.async);
+
+    // Not sure what values are expected here, so zeroing this for now.
+    std::memset(token, 0, sizeof(OrbisNpIdToken));
     return ORBIS_OK;
 }
 
