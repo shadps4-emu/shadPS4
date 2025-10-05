@@ -108,6 +108,45 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* param,
+                                OrbisNpCheckPlusResult* result) {
+
+    if (req_id == 0 || param == nullptr || result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (param->size != sizeof(OrbisNpCheckPlusParameter)) {
+        return ORBIS_NP_ERROR_INVALID_SIZE;
+    }
+
+    if (param->features < 1 || param->features > 3) {
+        // TODO: If compiled SDK version is greater or equal to fw 3.50,
+        // error if param->features != 1 instead.
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index] == OrbisNpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    g_requests[req_index] = OrbisNpRequestState::Complete;
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, param.features = {:#x}", req_id,
+              param->features);
+    // For now, set authorized to true to signal PS+ access.
+    result->authorized = true;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
                                          OrbisNpLanguageCode* language) {
     if (online_id == nullptr || language == nullptr) {
@@ -432,6 +471,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("2rsFmlGWleQ", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpAvailability);
     LIB_FUNCTION("8Z2Jc5GvGDI", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpAvailabilityA);
     LIB_FUNCTION("KfGZg2y73oM", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpReachability);
+    LIB_FUNCTION("r6MyYJkryz8", "libSceNpManager", 1, "libSceNpManager", sceNpCheckPlus);
     LIB_FUNCTION("KZ1Mj9yEGYc", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountLanguage);
     LIB_FUNCTION("TPMbgIxvog0", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountLanguageA);
     LIB_FUNCTION("ilwLM4zOmu4", "libSceNpManager", 1, "libSceNpManager",

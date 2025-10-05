@@ -66,5 +66,18 @@ struct OrbisNpParentalControlInfo {
     bool user_generated_content_restriction;
 };
 
+struct OrbisNpCheckPlusParameter {
+    u64 size;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    u8 padding[4];
+    u64 features;
+    u8 reserved[32];
+};
+
+struct OrbisNpCheckPlusResult {
+    bool authorized;
+    u8 reserved[32];
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
