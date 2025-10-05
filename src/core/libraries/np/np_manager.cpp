@@ -33,8 +33,7 @@ struct NpRequest {
 
 static std::vector<NpRequest> g_requests;
 
-s32 PS4_SYSV_ABI sceNpCreateRequest() {
-    LOG_DEBUG(Lib_NpManager, "called");
+s32 CreateNpRequest(bool async) {
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
@@ -55,13 +54,18 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
 
     if (req_index == g_requests.size()) {
         // There are no requests to replace.
-        NpRequest new_request{NpRequestState::None, false, 0};
+        NpRequest new_request{NpRequestState::None, async, 0};
         g_requests.emplace_back(new_request);
     }
 
     // Offset by one, first returned ID is 0x20000001
     g_active_requests++;
     return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
+}
+
+s32 PS4_SYSV_ABI sceNpCreateRequest() {
+    LOG_DEBUG(Lib_NpManager, "called");
+    return CreateNpRequest(false);
 }
 
 s32 PS4_SYSV_ABI sceNpCreateAsyncRequest(const OrbisNpCreateAsyncRequestParameter* param) {
@@ -74,33 +78,7 @@ s32 PS4_SYSV_ABI sceNpCreateAsyncRequest(const OrbisNpCreateAsyncRequestParamete
         return ORBIS_NP_ERROR_INVALID_SIZE;
     }
 
-    if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
-        return ORBIS_NP_ERROR_REQUEST_MAX;
-    }
-
-    std::scoped_lock lk{g_request_mutex};
-
-    s32 req_index = 0;
-    while (req_index < g_requests.size()) {
-        // Find first nonexistant request
-        if (g_requests[req_index].state == NpRequestState::None) {
-            // There is no request at this index, set the index to ready then break.
-            g_requests[req_index].state = NpRequestState::Ready;
-            g_requests[req_index].async = true;
-            break;
-        }
-        req_index++;
-    }
-
-    if (req_index == g_requests.size()) {
-        // There are no requests to replace, create a new one.
-        NpRequest new_request{NpRequestState::None, true, 0};
-        g_requests.emplace_back(new_request);
-    }
-
-    // Offset by one, first returned ID is 0x20000001
-    g_active_requests++;
-    return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
+    return CreateNpRequest(true);
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id) {
