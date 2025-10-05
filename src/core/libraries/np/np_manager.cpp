@@ -13,7 +13,22 @@ namespace Libraries::Np::NpManager {
 
 static bool g_signed_in = false;
 static s32 g_active_requests = 0;
-static std::vector<OrbisNpRequestState> g_requests;
+
+// Internal types for storing request-related information
+enum class NpRequestState {
+    None = 0,
+    Ready = 1,
+    Aborted = 2,
+    Complete = 3,
+};
+
+struct NpRequest {
+    NpRequestState state;
+    bool async;
+    s32 result;
+};
+
+static std::vector<NpRequest> g_requests;
 
 s32 PS4_SYSV_ABI sceNpCreateRequest() {
     LOG_DEBUG(Lib_NpManager, "called");
@@ -24,9 +39,9 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
     s32 req_index = 0;
     while (req_index < g_requests.size()) {
         // Find first nonexistant request
-        if (g_requests[req_index] == OrbisNpRequestState::None) {
+        if (g_requests[req_index].state == NpRequestState::None) {
             // There is no request at this index, set the index to ready then break.
-            g_requests[req_index] = OrbisNpRequestState::Ready;
+            g_requests[req_index].state = NpRequestState::Ready;
             break;
         }
         req_index++;
@@ -34,7 +49,8 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
 
     if (req_index == g_requests.size()) {
         // There are no requests to replace.
-        g_requests.emplace_back(OrbisNpRequestState::Ready);
+        NpRequest new_request{NpRequestState::None, false, 0};
+        g_requests.emplace_back(new_request);
     }
 
     // Offset by one, first returned ID is 0x20000001
@@ -49,15 +65,15 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -70,15 +86,15 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
                                            Libraries::UserService::OrbisUserServiceUserId user_id) {
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -91,15 +107,15 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -127,15 +143,15 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -155,15 +171,15 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -182,15 +198,15 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -208,15 +224,15 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -237,15 +253,15 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
@@ -261,12 +277,12 @@ s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
     g_active_requests--;
-    g_requests[req_index] = OrbisNpRequestState::None;
+    g_requests[req_index].state = NpRequestState::None;
     return ORBIS_OK;
 }
 
