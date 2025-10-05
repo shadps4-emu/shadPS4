@@ -74,10 +74,10 @@ struct OrbisNpCheckPlusResult {
 };
 
 struct OrbisNpCreateAsyncRequestParameter {
-	u64 size;
-	u64 cpu_affinity_mask;
-	s32 thread_priority;
-	u8 padding[4];
+    u64 size;
+    u64 cpu_affinity_mask;
+    s32 thread_priority;
+    u8 padding[4];
 };
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
