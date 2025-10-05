@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/kernel/kernel.h"
@@ -299,7 +299,23 @@ void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0qOtCR-ZHck", "libScePosix", 1, "libkernel", posix_pthread_attr_getstacksize);
     LIB_FUNCTION("VUT1ZSrHT0I", "libScePosix", 1, "libkernel", posix_pthread_attr_getdetachstate);
     LIB_FUNCTION("JKyG3SWyA10", "libScePosix", 1, "libkernel", posix_pthread_attr_setguardsize);
+    LIB_FUNCTION("JNkVVsVDmOk", "libScePosix", 1, "libkernel", posix_pthread_attr_getguardsize);
     LIB_FUNCTION("qlk9pSLsUmM", "libScePosix", 1, "libkernel", posix_pthread_attr_getschedparam);
+
+    LIB_FUNCTION("wtkt-teR1so", "libkernel", 1, "libkernel", posix_pthread_attr_init);
+    LIB_FUNCTION("vQm4fDEsWi8", "libkernel", 1, "libkernel", posix_pthread_attr_getstack);
+    LIB_FUNCTION("2Q0z6rnBrTE", "libkernel", 1, "libkernel", posix_pthread_attr_setstacksize);
+    LIB_FUNCTION("Ucsu-OK+els", "libkernel", 1, "libkernel", posix_pthread_attr_get_np);
+    LIB_FUNCTION("RtLRV-pBTTY", "libkernel", 1, "libkernel", posix_pthread_attr_getschedpolicy);
+    LIB_FUNCTION("E+tyo3lp5Lw", "libkernel", 1, "libkernel", posix_pthread_attr_setdetachstate);
+    LIB_FUNCTION("zHchY8ft5pk", "libkernel", 1, "libkernel", posix_pthread_attr_destroy);
+    LIB_FUNCTION("euKRgm0Vn2M", "libkernel", 1, "libkernel", posix_pthread_attr_setschedparam);
+    LIB_FUNCTION("7ZlAakEf0Qg", "libkernel", 1, "libkernel", posix_pthread_attr_setinheritsched);
+    LIB_FUNCTION("0qOtCR-ZHck", "libkernel", 1, "libkernel", posix_pthread_attr_getstacksize);
+    LIB_FUNCTION("VUT1ZSrHT0I", "libkernel", 1, "libkernel", posix_pthread_attr_getdetachstate);
+    LIB_FUNCTION("JKyG3SWyA10", "libkernel", 1, "libkernel", posix_pthread_attr_setguardsize);
+    LIB_FUNCTION("JNkVVsVDmOk", "libkernel", 1, "libkernel", posix_pthread_attr_getguardsize);
+    LIB_FUNCTION("qlk9pSLsUmM", "libkernel", 1, "libkernel", posix_pthread_attr_getschedparam);
 
     // Orbis
     LIB_FUNCTION("4+h9EzwKF4I", "libkernel", 1, "libkernel",
