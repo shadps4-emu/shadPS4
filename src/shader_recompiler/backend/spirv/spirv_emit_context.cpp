@@ -6,7 +6,6 @@
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/amdgpu/types.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 
 #include <boost/container/static_vector.hpp>
@@ -109,7 +108,7 @@ Id EmitContext::Def(const IR::Value& value) {
     case IR::Type::StringLiteral:
         return String(value.StringLiteral());
     default:
-        throw NotImplementedException("Immediate type {}", value.Type());
+        UNREACHABLE_MSG("Immediate type {}", value.Type());
     }
 }
 
@@ -786,7 +785,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_storage, bool is_writte
 void EmitContext::DefineBuffers() {
     for (const auto& desc : info.buffers) {
         const auto buf_sharp = desc.GetSharp(info);
-        const bool is_storage = desc.IsStorage(buf_sharp, profile);
+        const bool is_storage = desc.IsStorage(buf_sharp);
 
         // Set indexes for special buffers.
         if (desc.buffer_type == BufferType::Flatbuf) {
@@ -921,7 +920,7 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     default:
         break;
     }
-    throw InvalidArgument("Invalid texture type {}", type);
+    UNREACHABLE_MSG("Invalid texture type {}", type);
 }
 
 void EmitContext::DefineImagesAndSamplers() {

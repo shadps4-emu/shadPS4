@@ -6,7 +6,6 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
-#include "common/polyfill_thread.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -140,8 +139,8 @@ void TextureCache::DownloadedImagesThread(const std::stop_token& token) {
         DownloadedImage image;
         {
             std::unique_lock lock{downloaded_images_mutex};
-            Common::CondvarWait(downloaded_images_cv, lock, token,
-                                [this] { return !downloaded_images_queue.empty(); });
+            downloaded_images_cv.wait(lock, token,
+                                      [this] { return !downloaded_images_queue.empty(); });
             if (token.stop_requested()) {
                 break;
             }
@@ -212,7 +211,7 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    boost::container::small_vector<ImageId, 16> deleted_images;
+    ImageIds deleted_images;
     ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
     for (const ImageId id : deleted_images) {
         // TODO: Download image data back to host.
@@ -440,7 +439,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
+ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
 
     if (info.guest_address == 0) [[unlikely]] {
@@ -448,7 +447,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     }
 
     std::scoped_lock lock{mutex};
-    boost::container::small_vector<ImageId, 8> image_ids;
+    ImageIds image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
@@ -529,13 +528,12 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
 }
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
-    boost::container::small_vector<ImageId, 4> image_ids;
+    ImageIds image_ids;
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         if (image.info.guest_address != address) {
             return;
         }
-        if (ensure_valid && (False(image.flags & ImageFlagBits::GpuModified) ||
-                             True(image.flags & ImageFlagBits::Dirty))) {
+        if (ensure_valid && !image.SafeToDownload()) {
             return;
         }
         image_ids.push_back(image_id);
@@ -559,7 +557,7 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
-ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
+ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
@@ -572,7 +570,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
     return image.FindView(desc.view_info);
 }
 
-ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc) {
+ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
@@ -597,7 +595,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const BaseDesc& desc
     return image.FindView(desc.view_info, false);
 }
 
-ImageView& TextureCache::FindDepthTarget(ImageId image_id, const BaseDesc& desc) {
+ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
@@ -662,10 +660,8 @@ void TextureCache::RefreshImage(Image& image) {
         image.hash = hash;
     }
 
-    const auto& num_layers = image.info.resources.layers;
-    const auto& num_mips = image.info.resources.levels;
-    ASSERT(num_mips == image.info.mips_layout.size());
-
+    const u32 num_layers = image.info.resources.layers;
+    const u32 num_mips = image.info.resources.levels;
     const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
     const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
@@ -731,9 +727,8 @@ void TextureCache::RefreshImage(Image& image) {
     image.Upload(image_copies, buffer, offset);
 }
 
-vk::Sampler TextureCache::GetSampler(
-    const AmdGpu::Sampler& sampler,
-    const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base) {
+vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
+                                     AmdGpu::BorderColorBuffer border_color_base) {
     const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
     const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
     return it->second.Handle();
