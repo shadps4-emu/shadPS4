@@ -4,22 +4,22 @@
 #include "shader_recompiler/frontend/translate/translate.h"
 #include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/reinterpret.h"
+#include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
 
 namespace Shader::Gcn {
 
-static AmdGpu::NumberFormat NumberFormatCompressed(
-    AmdGpu::Liverpool::ShaderExportFormat export_format) {
+static AmdGpu::NumberFormat NumberFormatCompressed(AmdGpu::ShaderExportFormat export_format) {
     switch (export_format) {
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_FP16:
+    case AmdGpu::ShaderExportFormat::ABGR_FP16:
         return AmdGpu::NumberFormat::Float;
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_UNORM16:
+    case AmdGpu::ShaderExportFormat::ABGR_UNORM16:
         return AmdGpu::NumberFormat::Unorm;
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_SNORM16:
+    case AmdGpu::ShaderExportFormat::ABGR_SNORM16:
         return AmdGpu::NumberFormat::Snorm;
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_UINT16:
+    case AmdGpu::ShaderExportFormat::ABGR_UINT16:
         return AmdGpu::NumberFormat::Uint;
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_SINT16:
+    case AmdGpu::ShaderExportFormat::ABGR_SINT16:
         return AmdGpu::NumberFormat::Sint;
     default:
         UNREACHABLE_MSG("Unimplemented compressed export format {}",
@@ -27,18 +27,18 @@ static AmdGpu::NumberFormat NumberFormatCompressed(
     }
 }
 
-static u32 MaskFromExportFormat(u8 mask, AmdGpu::Liverpool::ShaderExportFormat export_format) {
+static u32 MaskFromExportFormat(u8 mask, AmdGpu::ShaderExportFormat export_format) {
     switch (export_format) {
-    case AmdGpu::Liverpool::ShaderExportFormat::R_32:
+    case AmdGpu::ShaderExportFormat::R_32:
         // Red only
         return mask & 1;
-    case AmdGpu::Liverpool::ShaderExportFormat::GR_32:
+    case AmdGpu::ShaderExportFormat::GR_32:
         // Red and Green only
         return mask & 3;
-    case AmdGpu::Liverpool::ShaderExportFormat::AR_32:
+    case AmdGpu::ShaderExportFormat::AR_32:
         // Red and Alpha only
         return mask & 9;
-    case AmdGpu::Liverpool::ShaderExportFormat::ABGR_32:
+    case AmdGpu::ShaderExportFormat::ABGR_32:
         // All components
         return mask;
     default:
@@ -59,7 +59,7 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     }
 
     const auto color_buffer = runtime_info.fs_info.color_buffers[color_buffer_idx];
-    if (color_buffer.export_format == AmdGpu::Liverpool::ShaderExportFormat::Zero || exp.en == 0) {
+    if (color_buffer.export_format == AmdGpu::ShaderExportFormat::Zero || exp.en == 0) {
         // No export
         return;
     }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/texture_cache/sampler.h"
@@ -10,7 +9,7 @@
 namespace VideoCore {
 
 Sampler::Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sampler,
-                 const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base) {
+                 const AmdGpu::BorderColorBuffer border_color_base) {
     using namespace Vulkan;
     const bool anisotropy_enable = instance.IsAnisotropicFilteringSupported() &&
                                    (AmdGpu::IsAnisoFilter(sampler.xy_mag_filter) ||

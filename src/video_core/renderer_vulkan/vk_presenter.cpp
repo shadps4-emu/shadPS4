@@ -146,6 +146,10 @@ Presenter::~Presenter() {
     ImGui::Core::Shutdown(device);
 }
 
+bool Presenter::IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const {
+    return std::ranges::find(vo_buffers_addr, color_buffer.Address()) != vo_buffers_addr.cend();
+}
+
 void Presenter::RecreateFrame(Frame* frame, u32 width, u32 height) {
     const vk::Device device = instance.GetDevice();
     if (frame->imgui_texture) {
@@ -288,7 +292,7 @@ static vk::Format GetFrameViewFormat(const Libraries::VideoOut::PixelFormat form
 
 Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
                                VAddr cpu_address) {
-    auto desc = VideoCore::TextureCache::VideoOutDesc{attribute, cpu_address};
+    auto desc = VideoCore::TextureCache::ImageDesc{attribute, cpu_address};
     const auto image_id = texture_cache.FindImage(desc);
     texture_cache.UpdateImage(image_id);
 

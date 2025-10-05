@@ -397,13 +397,11 @@ Id EmitImageAtomicFMin32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
 }
 
 Id EmitImageAtomicInc32(EmitContext&, IR::Inst*, u32, Id, Id) {
-    // TODO: This is not yet implemented
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitImageAtomicDec32(EmitContext&, IR::Inst*, u32, Id, Id) {
-    // TODO: This is not yet implemented
-    throw NotImplementedException("SPIR-V Instruction");
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {

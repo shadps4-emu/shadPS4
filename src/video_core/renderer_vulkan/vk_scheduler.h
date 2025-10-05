@@ -1,14 +1,15 @@
-// SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <condition_variable>
-#include <boost/container/static_vector.hpp>
+#include <mutex>
+#include <queue>
 
-#include "common/types.h"
 #include "common/unique_function.h"
-#include "video_core/amdgpu/liverpool.h"
+#include "video_core/amdgpu/regs_color.h"
+#include "video_core/amdgpu/regs_primitive.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
 
@@ -45,20 +46,22 @@ struct RenderState {
 };
 
 struct SubmitInfo {
-    boost::container::static_vector<vk::Semaphore, 3> wait_semas;
-    boost::container::static_vector<u64, 3> wait_ticks;
-    boost::container::static_vector<vk::Semaphore, 3> signal_semas;
-    boost::container::static_vector<u64, 3> signal_ticks;
+    std::array<vk::Semaphore, 3> wait_semas;
+    std::array<u64, 3> wait_ticks;
+    std::array<vk::Semaphore, 3> signal_semas;
+    std::array<u64, 3> signal_ticks;
     vk::Fence fence;
+    u32 num_wait_semas;
+    u32 num_signal_semas;
 
     void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
-        wait_semas.emplace_back(semaphore);
-        wait_ticks.emplace_back(tick);
+        wait_semas[num_wait_semas] = semaphore;
+        wait_ticks[num_wait_semas++] = tick;
     }
 
     void AddSignal(vk::Semaphore semaphore, u64 tick = 1) {
-        signal_semas.emplace_back(semaphore);
-        signal_ticks.emplace_back(tick);
+        signal_semas[num_signal_semas] = semaphore;
+        signal_ticks[num_signal_semas++] = tick;
     }
 
     void AddSignal(vk::Fence fence) {
@@ -66,9 +69,9 @@ struct SubmitInfo {
     }
 };
 
-using Viewports = boost::container::static_vector<vk::Viewport, AmdGpu::Liverpool::NumViewports>;
-using Scissors = boost::container::static_vector<vk::Rect2D, AmdGpu::Liverpool::NumViewports>;
-using ColorWriteMasks = std::array<vk::ColorComponentFlags, AmdGpu::Liverpool::NumColorBuffers>;
+using Viewports = boost::container::static_vector<vk::Viewport, AmdGpu::NUM_VIEWPORTS>;
+using Scissors = boost::container::static_vector<vk::Rect2D, AmdGpu::NUM_VIEWPORTS>;
+using ColorWriteMasks = std::array<vk::ColorComponentFlags, AmdGpu::NUM_COLOR_BUFFERS>;
 struct StencilOps {
     vk::StencilOp fail_op{};
     vk::StencilOp pass_op{};
@@ -413,6 +416,7 @@ private:
     const Instance& instance;
     MasterSemaphore master_semaphore;
     CommandPool command_pool;
+    DynamicState dynamic_state;
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
     struct PendingOp {
@@ -421,7 +425,6 @@ private:
     };
     std::queue<PendingOp> pending_ops;
     RenderState render_state;
-    DynamicState dynamic_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};
 };
