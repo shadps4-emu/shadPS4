@@ -15,6 +15,7 @@
 
 #include <vector>
 #include <fmt/ranges.h>
+
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -139,6 +140,7 @@ static auto GetLayerExtensions(std::vector<const char*>&& extensions,
             if (extension.extensionName == std::string_view(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME)) {
                 found = true;
                 all_missing_vk_settings = false;
+                break;
             }
         }
         if (!found) {

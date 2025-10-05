@@ -3,16 +3,18 @@
 
 #pragma once
 
-#include <boost/container/static_vector.hpp>
-
 #include "common/types.h"
-#include "video_core/amdgpu/liverpool.h"
+#include "video_core/amdgpu/cb_db_extent.h"
+#include "video_core/amdgpu/tiling.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
 
 namespace AmdGpu {
+struct ColorBuffer;
+struct DepthBuffer;
+struct Image;
 enum class ImageType : u64;
-}
+} // namespace AmdGpu
 
 namespace Libraries::VideoOut {
 struct BufferAttributeGroup;
@@ -36,10 +38,9 @@ struct ImageProperties {
 struct ImageInfo {
     ImageInfo() = default;
     ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address) noexcept;
-    ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
-              const AmdGpu::Liverpool::CbDbExtent& hint = {}) noexcept;
-    ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices, VAddr htile_address,
-              const AmdGpu::Liverpool::CbDbExtent& hint = {}, bool write_buffer = false) noexcept;
+    ImageInfo(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint) noexcept;
+    ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr htile_address,
+              AmdGpu::CbDbExtent hint, bool write_buffer = false) noexcept;
     ImageInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
 
     bool IsTiled() const {
@@ -60,7 +61,7 @@ struct ImageInfo {
         VAddr cmask_addr;
         VAddr fmask_addr;
         VAddr htile_addr;
-        u32 htile_clear_mask = u32(-1);
+        s32 htile_clear_mask = -1;
     } meta_info{};
 
     ImageProperties props{};
@@ -79,7 +80,7 @@ struct ImageInfo {
         u32 height;
         u32 offset;
     };
-    boost::container::static_vector<MipInfo, 16> mips_layout;
+    std::array<MipInfo, 16> mips_layout;
     VAddr guest_address{};
     u32 guest_size{};
     u8 bank_swizzle{};
