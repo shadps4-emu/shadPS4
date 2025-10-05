@@ -19,11 +19,26 @@ struct OrbisNpAuthCreateAsyncRequestParameter {
 	u8 padding[4];
 };
 
+struct OrbisNpAuthGetAuthorizationCodeParameter {
+	u64 size;
+	const OrbisNpOnlineId* online_id;
+	const OrbisNpClientId* client_id;
+	const char* scope;
+};
+
 struct OrbisNpAuthGetAuthorizationCodeParameterA {
 	u64 size;
 	s32 user_id;
 	u8 padding[4];
 	const OrbisNpClientId* client_id;
+	const char* scope;
+};
+
+struct OrbisNpAuthGetIdTokenParameter {
+	u64 size;
+	const OrbisNpOnlineId* online_id;
+	const OrbisNpClientId* client_id;
+	const OrbisNpClientSecret* client_secret;
 	const char* scope;
 };
 

@@ -18,7 +18,9 @@ s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest(const OrbisNpAuthCreateAsyncRequest
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
+s32 PS4_SYSV_ABI
+sceNpAuthGetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameter* param,
+                              OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -30,12 +32,15 @@ sceNpAuthGetAuthorizationCodeA(s32 req_id, const OrbisNpAuthGetAuthorizationCode
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeV3() {
+s32 PS4_SYSV_ABI
+sceNpAuthGetAuthorizationCodeV3(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
+                                OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetIdToken() {
+s32 PS4_SYSV_ABI sceNpAuthGetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameter* param,
+                                     OrbisNpIdToken* token) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -46,7 +51,8 @@ s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA(s32 req_id, const OrbisNpAuthGetIdTokenPar
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3() {
+s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
+                                       OrbisNpIdToken* token) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
