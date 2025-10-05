@@ -437,6 +437,10 @@ s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
 }
 
 s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
+    if (result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -455,6 +459,10 @@ s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
 }
 
 s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
+    if (result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
