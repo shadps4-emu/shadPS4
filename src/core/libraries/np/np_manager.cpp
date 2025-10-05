@@ -411,6 +411,7 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
 
     LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, user_id = {}, is_async = {}",
               req_id, user_id, request.async);
+
     // TODO: Add to config?
     *age = 13;
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
