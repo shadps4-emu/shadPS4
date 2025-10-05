@@ -8,37 +8,24 @@
 
 namespace Libraries::Np::NpAuth {
 
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpAuthGetIdToken() {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpAuthAbortRequest() {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest() {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceNpAuthCreateRequest() {
     LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
     return 1;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 id) {
-    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
+s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest(const OrbisNpAuthCreateAsyncRequestParameter* param) {
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeA() {
+s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode() {
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceNpAuthGetAuthorizationCodeA(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
+                               OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -48,7 +35,13 @@ s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeV3() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA() {
+s32 PS4_SYSV_ABI sceNpAuthGetIdToken() {
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
+                                      OrbisNpIdToken* token) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -58,38 +51,50 @@ s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthPollAsync() {
+s32 PS4_SYSV_ABI sceNpAuthSetTimeout(s32 req_id, s32 resolve_retry, u32 resolve_timeout,
+                                     u32 conn_timeout, u32 send_timeout, u32 recv_timeout) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthSetTimeout() {
+s32 PS4_SYSV_ABI sceNpAuthWaitAsync(s32 req_id, s32* result) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpAuthWaitAsync() {
+s32 PS4_SYSV_ABI sceNpAuthPollAsync(s32 req_id, s32* result) {
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpAuthAbortRequest(s32 req_id) {
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 req_id) {
+    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
     return ORBIS_OK;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("KxGkOrQJTqY", "libSceNpAuthCompat", 1, "libSceNpAuth",
-                 sceNpAuthGetAuthorizationCode);
-    LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuthCompat", 1, "libSceNpAuth", sceNpAuthGetIdToken);
-    LIB_FUNCTION("cE7wIsqXdZ8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthAbortRequest);
-    LIB_FUNCTION("N+mr7GjTvr8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthCreateAsyncRequest);
     LIB_FUNCTION("6bwFkosYRQg", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthCreateRequest);
-    LIB_FUNCTION("H8wG9Bk-nPc", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthDeleteRequest);
+    LIB_FUNCTION("N+mr7GjTvr8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthCreateAsyncRequest);
     LIB_FUNCTION("KxGkOrQJTqY", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetAuthorizationCode);
     LIB_FUNCTION("qAUXQ9GdWp8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetAuthorizationCodeA);
     LIB_FUNCTION("KI4dHLlTNl0", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetAuthorizationCodeV3);
     LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetIdToken);
     LIB_FUNCTION("CocbHVIKPE8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetIdTokenA);
     LIB_FUNCTION("RdsFVsgSpZY", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthGetIdTokenV3);
-    LIB_FUNCTION("gjSyfzSsDcE", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthPollAsync);
     LIB_FUNCTION("PM3IZCw-7m0", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthSetTimeout);
     LIB_FUNCTION("SK-S7daqJSE", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthWaitAsync);
+    LIB_FUNCTION("gjSyfzSsDcE", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthPollAsync);
+    LIB_FUNCTION("cE7wIsqXdZ8", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthAbortRequest);
+    LIB_FUNCTION("H8wG9Bk-nPc", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthDeleteRequest);
+
+    LIB_FUNCTION("KxGkOrQJTqY", "libSceNpAuthCompat", 1, "libSceNpAuth",
+                 sceNpAuthGetAuthorizationCode);
+    LIB_FUNCTION("uaB-LoJqHis", "libSceNpAuthCompat", 1, "libSceNpAuth", sceNpAuthGetIdToken);
 };
 
 } // namespace Libraries::Np::NpAuth

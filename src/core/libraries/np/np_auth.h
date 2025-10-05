@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/np/np_types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,19 +12,29 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpAuth {
 
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCode();
-s32 PS4_SYSV_ABI sceNpAuthGetIdToken();
-s32 PS4_SYSV_ABI sceNpAuthAbortRequest();
-s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest();
-s32 PS4_SYSV_ABI sceNpAuthCreateRequest();
-s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 id);
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeA();
-s32 PS4_SYSV_ABI sceNpAuthGetAuthorizationCodeV3();
-s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA();
-s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3();
-s32 PS4_SYSV_ABI sceNpAuthPollAsync();
-s32 PS4_SYSV_ABI sceNpAuthSetTimeout();
-s32 PS4_SYSV_ABI sceNpAuthWaitAsync();
+struct OrbisNpAuthCreateAsyncRequestParameter {
+	u64 size;
+	u64 cpu_affinity_mask;
+	s32 thread_priority;
+	u8 padding[4];
+};
+
+struct OrbisNpAuthGetAuthorizationCodeParameterA {
+	u64 size;
+	s32 user_id;
+	u8 padding[4];
+	const OrbisNpClientId* client_id;
+	const char* scope;
+};
+
+struct OrbisNpAuthGetIdTokenParameterA {
+	u64 size;
+	s32 user_id;
+	u8 padding[4];
+	const OrbisNpClientId* client_id;
+	const OrbisNpClientSecret* client_secret;
+	const char* scope;
+};
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpAuth
