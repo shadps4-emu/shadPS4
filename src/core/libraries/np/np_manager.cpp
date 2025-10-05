@@ -73,6 +73,10 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
     g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -94,6 +98,10 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
     g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -113,6 +121,10 @@ s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
     g_requests[req_index].state = NpRequestState::Complete;
@@ -151,6 +163,10 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
     g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -177,6 +193,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
     g_requests[req_index].state = NpRequestState::Complete;
@@ -206,6 +226,10 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
     g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -230,6 +254,10 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
 
     if (g_requests[req_index].state == NpRequestState::Complete) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
     g_requests[req_index].state = NpRequestState::Complete;
@@ -261,6 +289,10 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    if (g_requests[req_index].state == NpRequestState::Aborted) {
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
     g_requests[req_index].state = NpRequestState::Complete;
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
@@ -270,6 +302,18 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
     *age = 13;
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
     LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
+    LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index].state == NpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    g_requests[req_index].state = NpRequestState::Aborted;
     return ORBIS_OK;
 }
 
@@ -494,6 +538,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpGetParentalControlInfo);
     LIB_FUNCTION("m9L3O6yst-U", "libSceNpManager", 1, "libSceNpManager",
                  sceNpGetParentalControlInfoA);
+    LIB_FUNCTION("OzKvTvg3ZYU", "libSceNpManager", 1, "libSceNpManager", sceNpAbortRequest);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", sceNpDeleteRequest);
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountCountry);
     LIB_FUNCTION("JT+t00a3TxA", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountCountryA);
