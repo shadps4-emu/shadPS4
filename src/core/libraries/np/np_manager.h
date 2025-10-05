@@ -73,5 +73,12 @@ struct OrbisNpCheckPlusResult {
     u8 reserved[32];
 };
 
+struct OrbisNpCreateAsyncRequestParameter {
+	u64 size;
+	u64 cpu_affinity_mask;
+	s32 thread_priority;
+	u8 padding[4];
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
