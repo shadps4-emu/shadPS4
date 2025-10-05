@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
+
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -13,6 +15,7 @@ namespace Libraries::Np::NpManager {
 
 static bool g_signed_in = false;
 static s32 g_active_requests = 0;
+static std::mutex g_request_mutex;
 
 // Internal types for storing request-related information
 enum class NpRequestState {
@@ -35,6 +38,8 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
+
+    std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = 0;
     while (req_index < g_requests.size()) {
@@ -73,6 +78,8 @@ s32 PS4_SYSV_ABI sceNpCreateAsyncRequest(const OrbisNpCreateAsyncRequestParamete
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = 0;
     while (req_index < g_requests.size()) {
         // Find first nonexistant request
@@ -100,6 +107,8 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+
+    std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
@@ -135,6 +144,8 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
                                            Libraries::UserService::OrbisUserServiceUserId user_id) {
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -169,6 +180,8 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
 
 s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -218,6 +231,8 @@ s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* par
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -260,6 +275,8 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -301,6 +318,8 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -340,6 +359,8 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
     if (online_id == nullptr || age == nullptr || info == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+
+    std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
@@ -384,6 +405,8 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -422,6 +445,9 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
 
 s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -442,6 +468,8 @@ s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -455,7 +483,8 @@ s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
     // Since we're not actually performing any sort of network request here,
     // we can just set result based on the request and return.
     *result = g_requests[req_index].result;
-    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id, *result);
+    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
     return ORBIS_OK;
 }
 
@@ -464,6 +493,8 @@ s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
@@ -477,12 +508,16 @@ s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
     // Since we're not actually performing any sort of network request here,
     // we can just set result based on the request and return.
     *result = g_requests[req_index].result;
-    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id, *result);
+    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
         g_requests[req_index].state == NpRequestState::None) {
