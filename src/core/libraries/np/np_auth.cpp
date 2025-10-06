@@ -91,6 +91,8 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_auth_request_mutex};
+
     // From here the actual authorization code request is performed.
     s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
     if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
@@ -179,6 +181,8 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
         param->scope == nullptr) {
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
+
+    std::scoped_lock lk{g_auth_request_mutex};
 
     // From here the actual authorization code request is performed.
     s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
