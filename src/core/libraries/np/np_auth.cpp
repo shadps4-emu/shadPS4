@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -13,10 +14,58 @@
 namespace Libraries::Np::NpAuth {
 
 static bool g_signed_in = false;
+static s32 g_active_auth_requests = 0;
+static std::mutex g_auth_request_mutex;
+
+// Internal types for storing request-related information
+enum class NpAuthRequestState {
+    None = 0,
+    Ready = 1,
+    Aborted = 2,
+    Complete = 3,
+};
+
+struct NpAuthRequest {
+    NpAuthRequestState state;
+    bool async;
+    s32 result;
+};
+
+static std::vector<NpAuthRequest> g_auth_requests;
+
+s32 CreateNpAuthRequest(bool async) {
+    if (g_active_auth_requests == ORBIS_NP_AUTH_REQUEST_LIMIT) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_MAX;
+    }
+
+    std::scoped_lock lk{g_auth_request_mutex};
+
+    s32 req_index = 0;
+    while (req_index < g_auth_requests.size()) {
+        // Find first nonexistant request
+        if (g_auth_requests[req_index].state == NpAuthRequestState::None) {
+            // There is no request at this index, set the index to ready then break.
+            g_auth_requests[req_index].state = NpAuthRequestState::Ready;
+            g_auth_requests[req_index].async = false;
+            break;
+        }
+        req_index++;
+    }
+
+    if (req_index == g_auth_requests.size()) {
+        // There are no requests to replace.
+        NpAuthRequest new_request{NpAuthRequestState::Ready, async, 0};
+        g_auth_requests.emplace_back(new_request);
+    }
+
+    // Offset by one, first returned ID is 0x10000001
+    g_active_auth_requests++;
+    LOG_DEBUG(Lib_NpAuth, "called, async = {}", async);
+    return req_index + ORBIS_NP_AUTH_REQUEST_ID_OFFSET + 1;
+}
 
 s32 PS4_SYSV_ABI sceNpAuthCreateRequest() {
-    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
-    return 1;
+    return CreateNpAuthRequest(false);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest(const OrbisNpAuthCreateAsyncRequestParameter* param) {
@@ -27,8 +76,7 @@ s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest(const OrbisNpAuthCreateAsyncRequest
         return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
     }
 
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    return CreateNpAuthRequest(true);
 }
 
 s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
@@ -47,11 +95,12 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
 
     // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
     // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
-    
+
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return ORBIS_OK;
 }
 
@@ -86,21 +135,18 @@ sceNpAuthGetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeP
     internal_params.user_id = user_id;
     internal_params.scope = param->scope;
 
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetAuthorizationCode(req_id, &internal_params, 0, auth_code, issuer_id);
 }
 
 s32 PS4_SYSV_ABI
 sceNpAuthGetAuthorizationCodeA(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
                                OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetAuthorizationCode(req_id, param, 0, auth_code, issuer_id);
 }
 
 s32 PS4_SYSV_ABI
 sceNpAuthGetAuthorizationCodeV3(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
                                 OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetAuthorizationCode(req_id, param, 1, auth_code, issuer_id);
 }
 
@@ -121,11 +167,12 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
 
     // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
     // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
-    
+
     if (!g_signed_in) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return ORBIS_OK;
 }
 
@@ -161,19 +208,16 @@ s32 PS4_SYSV_ABI sceNpAuthGetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenPara
     internal_params.client_secret = param->client_secret;
     internal_params.scope = param->scope;
 
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetIdToken(req_id, &internal_params, 0, token);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
                                       OrbisNpIdToken* token) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetIdToken(req_id, param, 0, token);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
                                        OrbisNpIdToken* token) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
     return GetIdToken(req_id, param, 1, token);
 }
 
@@ -183,23 +227,91 @@ s32 PS4_SYSV_ABI sceNpAuthSetTimeout(s32 req_id, s32 resolve_retry, u32 resolve_
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpAuthAbortRequest(s32 req_id) {
+    LOG_DEBUG(Lib_NpAuth, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_auth_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_auth_requests[req_index].state == NpAuthRequestState::Complete) {
+        // If the request is already complete, abort is ignored.
+        return ORBIS_OK;
+    }
+
+    g_auth_requests[req_index].state = NpAuthRequestState::Aborted;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpAuthWaitAsync(s32 req_id, s32* result) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    if (result == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_auth_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (!g_auth_requests[req_index].async ||
+        g_auth_requests[req_index].state == NpAuthRequestState::Ready) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ID;
+    }
+
+    // Since we're not actually performing any sort of network request here,
+    // we can just set result based on the request and return.
+    *result = g_auth_requests[req_index].result;
+    LOG_WARNING(Lib_NpAuth, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpAuthPollAsync(s32 req_id, s32* result) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
-}
+    if (result == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
 
-s32 PS4_SYSV_ABI sceNpAuthAbortRequest(s32 req_id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
+    std::scoped_lock lk{g_auth_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (!g_auth_requests[req_index].async ||
+        g_auth_requests[req_index].state == NpAuthRequestState::Ready) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ID;
+    }
+
+    // Since we're not actually performing any sort of network request here,
+    // we can just set result based on the request and return.
+    *result = g_auth_requests[req_index].result;
+    LOG_WARNING(Lib_NpAuth, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 req_id) {
-    LOG_WARNING(Lib_NpAuth, "(DUMMY) called");
+    LOG_DEBUG(Lib_NpAuth, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_auth_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    g_active_auth_requests--;
+    g_auth_requests[req_index].state = NpAuthRequestState::None;
     return ORBIS_OK;
 }
 

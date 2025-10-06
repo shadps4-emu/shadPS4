@@ -12,43 +12,46 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpAuth {
 
+constexpr s32 ORBIS_NP_AUTH_REQUEST_LIMIT = 0x10;
+constexpr s32 ORBIS_NP_AUTH_REQUEST_ID_OFFSET = 0x10000000;
+
 struct OrbisNpAuthCreateAsyncRequestParameter {
-	u64 size;
-	u64 cpu_affinity_mask;
-	s32 thread_priority;
-	u8 padding[4];
+    u64 size;
+    u64 cpu_affinity_mask;
+    s32 thread_priority;
+    u8 padding[4];
 };
 
 struct OrbisNpAuthGetAuthorizationCodeParameter {
-	u64 size;
-	const OrbisNpOnlineId* online_id;
-	const OrbisNpClientId* client_id;
-	const char* scope;
+    u64 size;
+    const OrbisNpOnlineId* online_id;
+    const OrbisNpClientId* client_id;
+    const char* scope;
 };
 
 struct OrbisNpAuthGetAuthorizationCodeParameterA {
-	u64 size;
-	s32 user_id;
-	u8 padding[4];
-	const OrbisNpClientId* client_id;
-	const char* scope;
+    u64 size;
+    s32 user_id;
+    u8 padding[4];
+    const OrbisNpClientId* client_id;
+    const char* scope;
 };
 
 struct OrbisNpAuthGetIdTokenParameter {
-	u64 size;
-	const OrbisNpOnlineId* online_id;
-	const OrbisNpClientId* client_id;
-	const OrbisNpClientSecret* client_secret;
-	const char* scope;
+    u64 size;
+    const OrbisNpOnlineId* online_id;
+    const OrbisNpClientId* client_id;
+    const OrbisNpClientSecret* client_secret;
+    const char* scope;
 };
 
 struct OrbisNpAuthGetIdTokenParameterA {
-	u64 size;
-	s32 user_id;
-	u8 padding[4];
-	const OrbisNpClientId* client_id;
-	const OrbisNpClientSecret* client_secret;
-	const char* scope;
+    u64 size;
+    s32 user_id;
+    u8 padding[4];
+    const OrbisNpClientId* client_id;
+    const OrbisNpClientSecret* client_secret;
+    const char* scope;
 };
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
