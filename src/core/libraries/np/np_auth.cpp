@@ -44,6 +44,14 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
     }
 
     // From here the actual authorization code request is performed.
+
+    // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
+    // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
+    
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
     return ORBIS_OK;
 }
 
@@ -109,7 +117,15 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
 
-    // From here the actual id token request is performed.
+    // From here the actual authorization code request is performed.
+
+    // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
+    // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
+    
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
     return ORBIS_OK;
 }
 
