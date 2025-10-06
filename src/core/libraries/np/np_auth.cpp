@@ -8,6 +8,7 @@
 #include "core/libraries/np/np_auth.h"
 #include "core/libraries/np/np_auth_error.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpAuth {
 
@@ -30,6 +31,22 @@ s32 PS4_SYSV_ABI sceNpAuthCreateAsyncRequest(const OrbisNpAuthCreateAsyncRequest
     return ORBIS_OK;
 }
 
+s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
+                         s32 flag, OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
+    if (param == nullptr || auth_code == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+    if (param->size != sizeof(OrbisNpAuthGetAuthorizationCodeParameter)) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
+    }
+    if (param->user_id == -1 || param->client_id == nullptr || param->scope == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+
+    // From here the actual authorization code request is performed.
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI
 sceNpAuthGetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameter* param,
                               OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
@@ -39,31 +56,44 @@ sceNpAuthGetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeP
     if (param->size != sizeof(OrbisNpAuthGetAuthorizationCodeParameter)) {
         return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
     }
-    if (param->scope == nullptr) {
+    if (param->online_id == nullptr || param->client_id == nullptr || param->scope == nullptr) {
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
     if (!g_signed_in) {
         // returns the result of sceNpManagerIntGetUserIdByOnlineId,
-        // which fails because you can't get a valid online id while not signed in.
+        // which will never succeed since games cannot retrieve a valid online id while signed out.
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
+    // For simplicity, call sceUserServiceGetInitialUser to get the user_id.
+    s32 user_id = 0;
+    ASSERT(UserService::sceUserServiceGetInitialUser(&user_id) == 0);
+
+    // Library constructs an OrbisNpAuthGetAuthorizationCodeParameterA struct,
+    // then uses that to call GetAuthorizationCode.
+    OrbisNpAuthGetAuthorizationCodeParameterA internal_params;
+    std::memset(&internal_params, 0, sizeof(internal_params));
+    internal_params.size = sizeof(internal_params);
+    internal_params.client_id = param->client_id;
+    internal_params.user_id = user_id;
+    internal_params.scope = param->scope;
+
     LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
-    return ORBIS_OK;
+    return GetAuthorizationCode(req_id, &internal_params, 0, auth_code, issuer_id);
 }
 
 s32 PS4_SYSV_ABI
 sceNpAuthGetAuthorizationCodeA(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
                                OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    return GetAuthorizationCode(req_id, param, 0, auth_code, issuer_id);
 }
 
 s32 PS4_SYSV_ABI
 sceNpAuthGetAuthorizationCodeV3(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParameterA* param,
                                 OrbisNpAuthorizationCode* auth_code, s32* issuer_id) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    return GetAuthorizationCode(req_id, param, 1, auth_code, issuer_id);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameter* param,
