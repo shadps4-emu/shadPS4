@@ -54,7 +54,7 @@ s32 CreateNpRequest(bool async) {
 
     if (req_index == g_requests.size()) {
         // There are no requests to replace.
-        NpRequest new_request{NpRequestState::None, async, 0};
+        NpRequest new_request{NpRequestState::Ready, async, 0};
         g_requests.emplace_back(new_request);
     }
 
