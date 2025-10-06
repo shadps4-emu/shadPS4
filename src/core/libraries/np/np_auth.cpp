@@ -96,22 +96,69 @@ sceNpAuthGetAuthorizationCodeV3(s32 req_id, const OrbisNpAuthGetAuthorizationCod
     return GetAuthorizationCode(req_id, param, 1, auth_code, issuer_id);
 }
 
+s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 flag,
+               OrbisNpIdToken* token) {
+    if (param == nullptr || token == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+    if (param->size != sizeof(OrbisNpAuthGetIdTokenParameterA)) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
+    }
+    if (param->user_id == -1 || param->client_id == nullptr || param->client_secret == nullptr ||
+        param->scope == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+
+    // From here the actual id token request is performed.
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpAuthGetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameter* param,
                                      OrbisNpIdToken* token) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    if (param == nullptr || token == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+    if (param->size != sizeof(OrbisNpAuthGetIdTokenParameter)) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_SIZE;
+    }
+    if (param->online_id == nullptr || param->client_id == nullptr ||
+        param->client_secret == nullptr || param->scope == nullptr) {
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    }
+    if (!g_signed_in) {
+        // Calls sceNpManagerIntGetUserIdByOnlineId to get a user id, returning any errors.
+        // This call will not succeed while signed out because games cannot retrieve an online id.
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+
+    // For simplicity, call sceUserServiceGetInitialUser to get the user_id.
+    s32 user_id = 0;
+    ASSERT(UserService::sceUserServiceGetInitialUser(&user_id) == 0);
+
+    // Library constructs an OrbisNpAuthGetIdTokenParameterA struct,
+    // then uses that to call GetIdToken.
+    OrbisNpAuthGetIdTokenParameterA internal_params;
+    std::memset(&internal_params, 0, sizeof(internal_params));
+    internal_params.size = sizeof(internal_params);
+    internal_params.user_id = user_id;
+    internal_params.client_id = param->client_id;
+    internal_params.client_secret = param->client_secret;
+    internal_params.scope = param->scope;
+
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    return GetIdToken(req_id, &internal_params, 0, token);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdTokenA(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
                                       OrbisNpIdToken* token) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    return GetIdToken(req_id, param, 0, token);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthGetIdTokenV3(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param,
                                        OrbisNpIdToken* token) {
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    return GetIdToken(req_id, param, 1, token);
 }
 
 s32 PS4_SYSV_ABI sceNpAuthSetTimeout(s32 req_id, s32 resolve_retry, u32 resolve_timeout,
