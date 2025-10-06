@@ -117,21 +117,23 @@ struct AddressSpace::Impl {
         RTL_OSVERSIONINFOW os_version_info{};
         RtlGetVersion(&os_version_info);
 
-        u64 supported_user_max = USER_MAX;
+        u64 supported_system_min = SYSTEM_MANAGED_MIN;
         // This is the build number for Windows 11 22H2
         static constexpr s32 AffectedBuildNumber = 22621;
         if (os_version_info.dwBuildNumber <= AffectedBuildNumber) {
-            // Older Windows builds have an issue with VirtualAlloc2 on higher addresses.
-            // To prevent regressions, limit the maximum address we reserve for this platform.
-            supported_user_max = 0x11000000000ULL;
-            LOG_WARNING(Core, "Windows 10 detected, reducing user max to {:#x} to avoid problems",
-                        supported_user_max);
+            // Older Windows builds have an issue when searching for free addresses.
+            // To prevent regressions, increase our minimum address.
+            // This will give some space for mappings outside our control to use.
+            supported_system_min = 0x10000000ULL;
+            LOG_WARNING(
+                Core, "Windows 10 detected, increasing minimum address to {:#x} to avoid problems",
+                supported_system_min);
         }
 
         // Determine the free address ranges we can access.
-        VAddr next_addr = SYSTEM_MANAGED_MIN;
+        VAddr next_addr = supported_system_min;
         MEMORY_BASIC_INFORMATION info{};
-        while (next_addr <= supported_user_max) {
+        while (next_addr <= USER_MAX) {
             ASSERT_MSG(VirtualQuery(reinterpret_cast<PVOID>(next_addr), &info, sizeof(info)),
                        "Failed to query memory information for address {:#x}", next_addr);
 
@@ -139,10 +141,10 @@ struct AddressSpace::Impl {
             next_addr = reinterpret_cast<VAddr>(info.BaseAddress) + info.RegionSize;
             next_addr = Common::AlignUp(next_addr, alignment);
 
-            // Prevent size from going past supported_user_max
+            // Prevent size from going past USER_MAX
             u64 size = info.RegionSize;
-            if (next_addr > supported_user_max) {
-                size -= (next_addr - supported_user_max);
+            if (next_addr > USER_MAX) {
+                size -= (next_addr - USER_MAX);
             }
             size = Common::AlignDown(size, alignment);
 
@@ -171,7 +173,7 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         system_reserved_size = SystemReservedSize;
         user_base = reinterpret_cast<u8*>(USER_MIN);
-        user_size = supported_user_max - USER_MIN - 1;
+        user_size = USER_MAX - USER_MIN - 1;
 
         // Increase BackingSize to account for config options.
         BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
@@ -183,9 +185,9 @@ struct AddressSpace::Impl {
 
         ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
         // Allocate a virtual memory for the backing file map as placeholder
-        backing_base = static_cast<u8*>(VirtualAlloc2(process, nullptr, BackingSize,
-                                                      MEM_RESERVE | MEM_RESERVE_PLACEHOLDER,
-                                                      PAGE_NOACCESS, nullptr, 0));
+        backing_base = static_cast<u8*>(
+            VirtualAlloc2(process, reinterpret_cast<PVOID>(USER_MAX + 1), BackingSize,
+                          MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, nullptr, 0));
         ASSERT_MSG(backing_base, "{}", Common::GetLastErrorMsg());
 
         // Map backing placeholder. This will commit the pages
