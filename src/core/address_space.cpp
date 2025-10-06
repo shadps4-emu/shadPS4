@@ -118,9 +118,10 @@ struct AddressSpace::Impl {
         RtlGetVersion(&os_version_info);
 
         u64 supported_user_max = USER_MAX;
-        static constexpr s32 Windows11BuildNumber = 22000;
-        if (os_version_info.dwBuildNumber < Windows11BuildNumber) {
-            // Windows 10 has an issue with VirtualAlloc2 on higher addresses.
+        // This is the build number for Windows 11 22H2
+        static constexpr s32 AffectedBuildNumber = 22621;
+        if (os_version_info.dwBuildNumber <= AffectedBuildNumber) {
+            // Older Windows builds have an issue with VirtualAlloc2 on higher addresses.
             // To prevent regressions, limit the maximum address we reserve for this platform.
             supported_user_max = 0x11000000000ULL;
             LOG_WARNING(Core, "Windows 10 detected, reducing user max to {:#x} to avoid problems",
