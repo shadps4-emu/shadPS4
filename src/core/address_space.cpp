@@ -125,9 +125,10 @@ struct AddressSpace::Impl {
             // To prevent regressions, increase our minimum address.
             // This will give some space for mappings outside our control to use.
             supported_system_min = 0x10000000ULL;
-            LOG_WARNING(
-                Core, "Windows 10 detected, increasing minimum address to {:#x} to avoid problems",
-                supported_system_min);
+            LOG_WARNING(Core,
+                        "Outdated Windows build {} detected, increasing minimum address to {:#x} "
+                        "to avoid problems",
+                        os_version_info.dwBuildNumber, supported_system_min);
         }
 
         // Determine the free address ranges we can access.
