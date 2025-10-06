@@ -46,7 +46,7 @@ s32 CreateNpAuthRequest(bool async) {
         if (g_auth_requests[req_index].state == NpAuthRequestState::None) {
             // There is no request at this index, set the index to ready then break.
             g_auth_requests[req_index].state = NpAuthRequestState::Ready;
-            g_auth_requests[req_index].async = false;
+            g_auth_requests[req_index].async = async;
             break;
         }
         req_index++;
