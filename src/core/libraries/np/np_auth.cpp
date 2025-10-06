@@ -92,15 +92,32 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
     }
 
     // From here the actual authorization code request is performed.
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
 
-    // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
-    // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
+    auto& request = g_auth_requests[req_index];
+    if (request.state == NpAuthRequestState::Complete) {
+        request.result = ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpAuthRequestState::Aborted) {
+        request.result = ORBIS_NP_AUTH_ERROR_ABORTED;
+        return ORBIS_NP_AUTH_ERROR_ABORTED;
+    }
 
+    request.state = NpAuthRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}, async = {}", req_id, request.async);
     return ORBIS_OK;
 }
 
@@ -117,8 +134,8 @@ sceNpAuthGetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeP
         return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
     }
     if (!g_signed_in) {
-        // returns the result of sceNpManagerIntGetUserIdByOnlineId,
-        // which will never succeed since games cannot retrieve a valid online id while signed out.
+        // Calls sceNpManagerIntGetUserIdByOnlineId to get a user id, returning any errors.
+        // This call will not succeed while signed out because games cannot retrieve an online id.
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
     }
 
@@ -164,15 +181,32 @@ s32 GetIdToken(s32 req_id, const OrbisNpAuthGetIdTokenParameterA* param, s32 fla
     }
 
     // From here the actual authorization code request is performed.
+    s32 req_index = req_id - ORBIS_NP_AUTH_REQUEST_ID_OFFSET - 1;
+    if (g_active_auth_requests == 0 || g_auth_requests.size() <= req_index ||
+        g_auth_requests[req_index].state == NpAuthRequestState::None) {
+        return ORBIS_NP_AUTH_ERROR_REQUEST_NOT_FOUND;
+    }
 
-    // return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT when request is already complete
-    // return ORBIS_NP_AUTH_ERROR_ABORTED when request is aborted
+    auto& request = g_auth_requests[req_index];
+    if (request.state == NpAuthRequestState::Complete) {
+        request.result = ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+        return ORBIS_NP_AUTH_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpAuthRequestState::Aborted) {
+        request.result = ORBIS_NP_AUTH_ERROR_ABORTED;
+        return ORBIS_NP_AUTH_ERROR_ABORTED;
+    }
 
+    request.state = NpAuthRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
-    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}", req_id);
+    LOG_ERROR(Lib_NpAuth, "(STUBBED) called, req_id = {:#x}, async = {}", req_id, request.async);
     return ORBIS_OK;
 }
 
