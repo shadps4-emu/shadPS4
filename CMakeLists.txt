@@ -851,10 +851,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
-set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/profile.h
+set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/resource.h
                       src/shader_recompiler/info.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
@@ -952,17 +952,24 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/value.h
 )
 
-set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
+set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
+               src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
                src/video_core/amdgpu/pixel_format.h
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
+               src/video_core/amdgpu/regs_color.h
+               src/video_core/amdgpu/regs_depth.h
+               src/video_core/amdgpu/regs.cpp
+               src/video_core/amdgpu/regs.h
+               src/video_core/amdgpu/regs_primitive.h
+               src/video_core/amdgpu/regs_shader.h
+               src/video_core/amdgpu/regs_texture.h
+               src/video_core/amdgpu/regs_vertex.h
                src/video_core/amdgpu/resource.h
                src/video_core/amdgpu/tiling.cpp
                src/video_core/amdgpu/tiling.h
-               src/video_core/amdgpu/types.h
-               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp

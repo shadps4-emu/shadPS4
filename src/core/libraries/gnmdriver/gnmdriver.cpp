@@ -1004,7 +1004,7 @@ VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
         auto* memory = Core::Memory::Instance();
         auto& address_space = memory->GetAddressSpace();
         tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
-                                         address_space.SystemReservedVirtualSize() - 0xFFFFFFF;
+                                         address_space.SystemReservedVirtualSize() - 0x10000000;
     }
 
     return tessellation_factors_ring_addr;

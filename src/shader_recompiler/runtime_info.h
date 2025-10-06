@@ -3,13 +3,12 @@
 
 #pragma once
 
-#include <algorithm>
 #include <span>
-#include <boost/container/static_vector.hpp>
 #include "common/types.h"
 #include "shader_recompiler/frontend/tessellation.h"
-#include "video_core/amdgpu/liverpool.h"
-#include "video_core/amdgpu/types.h"
+#include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/regs_shader.h"
+#include "video_core/amdgpu/regs_vertex.h"
 
 namespace Shader {
 
@@ -36,7 +35,7 @@ enum class LogicalStage : u32 {
 
 constexpr u32 MaxStageTypes = static_cast<u32>(LogicalStage::NumLogicalStages);
 
-[[nodiscard]] constexpr Stage StageFromIndex(size_t index) noexcept {
+constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
 }
 
@@ -87,7 +86,6 @@ struct VertexRuntimeInfo {
     bool clip_disable{};
     u32 step_rate_0;
     u32 step_rate_1;
-    // Domain
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
     AmdGpu::TessellationPartitioning tess_partitioning;
@@ -110,22 +108,24 @@ struct VertexRuntimeInfo {
 };
 
 struct HullRuntimeInfo {
-    // from registers
     u32 num_input_control_points;
     u32 num_threads;
     AmdGpu::TessellationType tess_type;
     bool offchip_lds_enable;
-
-    // from tess constants buffer
     u32 ls_stride;
     u32 hs_output_cp_stride;
     u32 hs_output_base;
 
-    auto operator<=>(const HullRuntimeInfo&) const noexcept = default;
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        ls_stride = tess_constants.ls_stride;
+        hs_output_cp_stride = tess_constants.hs_cp_stride;
+        hs_output_base = tess_constants.hs_output_base;
+    }
 
-    // It might be possible for a non-passthrough TCS to have these conditions, in some
-    // dumb situation.
-    // In that case, it should be fine to assume passthrough and declare some extra
+    bool operator==(const HullRuntimeInfo&) const = default;
+
+    // It might be possible for a non-passthrough TCS to have these conditions, in some dumb
+    // situation. In that case, it should be fine to assume passthrough and declare some extra
     // output control points and attributes that shouldnt be read by the TES anyways
     bool IsPassthrough() const {
         return hs_output_base == 0 && ls_stride == hs_output_cp_stride && num_threads == 1;
@@ -137,12 +137,6 @@ struct HullRuntimeInfo {
     // input control points
     u32 NumOutputControlPoints() const {
         return IsPassthrough() ? num_input_control_points : num_threads;
-    }
-
-    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        ls_stride = tess_constants.ls_stride;
-        hs_output_cp_stride = tess_constants.hs_cp_stride;
-        hs_output_base = tess_constants.hs_output_base;
     }
 };
 
@@ -157,11 +151,11 @@ struct GeometryRuntimeInfo {
     u32 out_vertex_data_size{};
     AmdGpu::PrimitiveType in_primitive;
     GsOutputPrimTypes out_primitive;
-    AmdGpu::Liverpool::GsMode::Mode mode;
+    AmdGpu::GsScenario mode;
     std::span<const u32> vs_copy;
     u64 vs_copy_hash;
 
-    bool operator==(const GeometryRuntimeInfo& other) const noexcept {
+    bool operator==(const GeometryRuntimeInfo& other) const {
         return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
                other.num_invocations && output_vertices == other.output_vertices &&
                in_primitive == other.in_primitive &&
@@ -181,10 +175,10 @@ struct PsColorBuffer {
     AmdGpu::DataFormat data_format : 6;
     AmdGpu::NumberFormat num_format : 4;
     AmdGpu::NumberConversion num_conversion : 3;
-    AmdGpu::Liverpool::ShaderExportFormat export_format : 4;
+    AmdGpu::ShaderExportFormat export_format : 4;
     AmdGpu::CompMapping swizzle;
 
-    bool operator==(const PsColorBuffer& other) const noexcept = default;
+    bool operator==(const PsColorBuffer& other) const = default;
 };
 
 struct FragmentRuntimeInfo {
@@ -200,18 +194,18 @@ struct FragmentRuntimeInfo {
 
         bool operator==(const PsInput&) const noexcept = default;
     };
-    AmdGpu::Liverpool::PsInput en_flags;
-    AmdGpu::Liverpool::PsInput addr_flags;
+    AmdGpu::PsInput en_flags;
+    AmdGpu::PsInput addr_flags;
     u32 num_inputs;
     std::array<PsInput, 32> inputs;
     std::array<PsColorBuffer, MaxColorBuffers> color_buffers;
-    AmdGpu::Liverpool::ShaderExportFormat z_export_format;
+    AmdGpu::ShaderExportFormat z_export_format;
     u8 mrtz_mask;
     bool dual_source_blending;
 
     bool operator==(const FragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
-               en_flags.raw == other.en_flags.raw && addr_flags.raw == other.addr_flags.raw &&
+               en_flags == other.en_flags && addr_flags == other.addr_flags &&
                num_inputs == other.num_inputs && z_export_format == other.z_export_format &&
                mrtz_mask == other.mrtz_mask && dual_source_blending == other.dual_source_blending &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),

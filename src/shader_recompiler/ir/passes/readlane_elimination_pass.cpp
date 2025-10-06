@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+#include <queue>
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader::Optimization {

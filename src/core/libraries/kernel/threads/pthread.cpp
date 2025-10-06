@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -665,6 +665,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", posix_pthread_getaffinity_np);
     LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", posix_pthread_setaffinity_np);
+    LIB_FUNCTION("3eqs37G74-s", "libkernel", 1, "libkernel", posix_pthread_getthreadid_np);
 
     // Orbis
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", ORBIS(posix_pthread_once));

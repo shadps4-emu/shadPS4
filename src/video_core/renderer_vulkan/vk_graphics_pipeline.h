@@ -6,10 +6,10 @@
 #include <boost/container/static_vector.hpp>
 #include <xxhash.h>
 
-#include "common/types.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
-#include "video_core/renderer_vulkan/liverpool_to_vk.h"
-#include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/amdgpu/regs_color.h"
+#include "video_core/amdgpu/regs_depth.h"
+#include "video_core/amdgpu/regs_primitive.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 
 namespace VideoCore {
@@ -26,8 +26,6 @@ class Instance;
 class Scheduler;
 class DescriptorHeap;
 
-using Liverpool = AmdGpu::Liverpool;
-
 template <typename T>
 using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
 
@@ -36,25 +34,25 @@ struct GraphicsPipelineKey {
     std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
     u32 patch_control_points;
     u32 num_color_attachments;
-    std::array<Shader::PsColorBuffer, Liverpool::NumColorBuffers> color_buffers;
-    std::array<Liverpool::BlendControl, Liverpool::NumColorBuffers> blend_controls;
-    std::array<vk::ColorComponentFlags, Liverpool::NumColorBuffers> write_masks;
-    Liverpool::ColorBufferMask cb_shader_mask;
-    Liverpool::ColorControl::LogicOp logic_op;
+    std::array<Shader::PsColorBuffer, AmdGpu::NUM_COLOR_BUFFERS> color_buffers;
+    std::array<AmdGpu::BlendControl, AmdGpu::NUM_COLOR_BUFFERS> blend_controls;
+    std::array<vk::ColorComponentFlags, AmdGpu::NUM_COLOR_BUFFERS> write_masks;
+    AmdGpu::ColorBufferMask cb_shader_mask;
+    AmdGpu::ColorControl::LogicOp logic_op;
     u8 num_samples;
     u8 depth_samples;
-    std::array<u8, Liverpool::NumColorBuffers> color_samples;
+    std::array<u8, AmdGpu::NUM_COLOR_BUFFERS> color_samples;
     u32 mrt_mask;
     struct {
-        Liverpool::DepthBuffer::ZFormat z_format : 2;
-        Liverpool::DepthBuffer::StencilFormat stencil_format : 1;
+        AmdGpu::DepthBuffer::ZFormat z_format : 2;
+        AmdGpu::DepthBuffer::StencilFormat stencil_format : 1;
         u32 depth_clamp_enable : 1;
     };
     struct {
         AmdGpu::PrimitiveType prim_type : 5;
-        Liverpool::PolygonMode polygon_mode : 2;
-        Liverpool::ClipSpace clip_space : 1;
-        Liverpool::ProvokingVtxLast provoking_vtx_last : 1;
+        AmdGpu::PolygonMode polygon_mode : 2;
+        AmdGpu::ClipSpace clip_space : 1;
+        AmdGpu::ProvokingVtxLast provoking_vtx_last : 1;
         u32 depth_clip_enable : 1;
     };
 
