@@ -46,7 +46,7 @@ s32 CreateNpRequest(bool async) {
         if (g_requests[req_index].state == NpRequestState::None) {
             // There is no request at this index, set the index to ready then break.
             g_requests[req_index].state = NpRequestState::Ready;
-            g_requests[req_index].async = false;
+            g_requests[req_index].async = async;
             break;
         }
         req_index++;
