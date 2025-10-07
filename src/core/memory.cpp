@@ -361,7 +361,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                   "Out of flexible memory, available flexible memory = {:#x}"
                   " requested size = {:#x}",
                   total_flexible_size - flexible_usage, size);
-        return ORBIS_KERNEL_ERROR_ENOMEM;
+        return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     std::scoped_lock lk{mutex};
