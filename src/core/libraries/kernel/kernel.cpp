@@ -256,10 +256,14 @@ const char** PS4_SYSV_ABI getargv() {
     return entry_params.argv;
 }
 
-s32 PS4_SYSV_ABI get_authinfo(u64 pid, AuthInfoData p2) {
-    LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {:#x}", pid);
-    *Kernel::__Error() = POSIX_ESRCH;
-    return -1;
+s32 PS4_SYSV_ABI get_authinfo(u64 tid, AuthInfoData* p2) {
+    LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {:#x}", tid);
+    if (g_curthread->tid != tid) {
+        *Kernel::__Error() = POSIX_ESRCH;
+        return -1;
+    }
+    p2->caps[0] = 0x2000000000000000;
+    return ORBIS_OK;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
