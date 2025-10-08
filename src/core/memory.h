@@ -44,7 +44,7 @@ enum class MemoryMapFlags : u32 {
     Shared = 1,
     Private = 2,
     Fixed = 0x10,
-    NoOverwrite = 0x0080,
+    NoOverwrite = 0x80,
     NoSync = 0x800,
     NoCore = 0x20000,
     NoCoalesce = 0x400000,

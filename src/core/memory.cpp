@@ -439,7 +439,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
         // If flag NoOverwrite is provided, don't overwrite mapped VMAs.
         // When it isn't provided, VMAs can be overwritten regardless of if they're mapped.
-        while ((False(flags & MemoryMapFlags::NoOverwrite) || !vma.IsMapped()) &&
+        while ((False(flags & MemoryMapFlags::NoOverwrite) || vma.IsFree()) &&
                unmap_addr < mapped_addr + size) {
             auto unmapped = UnmapBytesFromEntry(unmap_addr, vma, unmap_size);
             unmap_addr += unmapped;
@@ -449,7 +449,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
         vma = FindVMA(mapped_addr)->second;
         auto remaining_size = vma.base + vma.size - mapped_addr;
-        if (vma.IsMapped() || remaining_size < size) {
+        if (!vma.IsFree() || remaining_size < size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, mapped_addr);
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
