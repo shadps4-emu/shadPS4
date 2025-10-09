@@ -632,7 +632,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
         std::filesystem::create_directories(dump_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
-    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
     file.WriteSpan(code);
 }
 
