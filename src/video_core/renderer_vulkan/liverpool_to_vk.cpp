@@ -13,27 +13,27 @@
 
 namespace Vulkan::LiverpoolToVK {
 
-using DepthBuffer = Liverpool::DepthBuffer;
+using DepthBuffer = AmdGpu::DepthBuffer;
 
-vk::StencilOp StencilOp(Liverpool::StencilFunc op) {
+vk::StencilOp StencilOp(AmdGpu::StencilFunc op) {
     switch (op) {
-    case Liverpool::StencilFunc::Keep:
+    case AmdGpu::StencilFunc::Keep:
         return vk::StencilOp::eKeep;
-    case Liverpool::StencilFunc::Zero:
+    case AmdGpu::StencilFunc::Zero:
         return vk::StencilOp::eZero;
-    case Liverpool::StencilFunc::ReplaceTest:
+    case AmdGpu::StencilFunc::ReplaceTest:
         return vk::StencilOp::eReplace;
-    case Liverpool::StencilFunc::AddClamp:
+    case AmdGpu::StencilFunc::AddClamp:
         return vk::StencilOp::eIncrementAndClamp;
-    case Liverpool::StencilFunc::SubClamp:
+    case AmdGpu::StencilFunc::SubClamp:
         return vk::StencilOp::eDecrementAndClamp;
-    case Liverpool::StencilFunc::Invert:
+    case AmdGpu::StencilFunc::Invert:
         return vk::StencilOp::eInvert;
-    case Liverpool::StencilFunc::AddWrap:
+    case AmdGpu::StencilFunc::AddWrap:
         return vk::StencilOp::eIncrementAndWrap;
-    case Liverpool::StencilFunc::SubWrap:
+    case AmdGpu::StencilFunc::SubWrap:
         return vk::StencilOp::eDecrementAndWrap;
-    case Liverpool::StencilFunc::ReplaceOp:
+    case AmdGpu::StencilFunc::ReplaceOp:
         return vk::StencilOp::eReplace;
     default:
         UNREACHABLE();
@@ -41,23 +41,23 @@ vk::StencilOp StencilOp(Liverpool::StencilFunc op) {
     }
 }
 
-vk::CompareOp CompareOp(Liverpool::CompareFunc func) {
+vk::CompareOp CompareOp(AmdGpu::CompareFunc func) {
     switch (func) {
-    case Liverpool::CompareFunc::Always:
+    case AmdGpu::CompareFunc::Always:
         return vk::CompareOp::eAlways;
-    case Liverpool::CompareFunc::Equal:
+    case AmdGpu::CompareFunc::Equal:
         return vk::CompareOp::eEqual;
-    case Liverpool::CompareFunc::GreaterEqual:
+    case AmdGpu::CompareFunc::GreaterEqual:
         return vk::CompareOp::eGreaterOrEqual;
-    case Liverpool::CompareFunc::Greater:
+    case AmdGpu::CompareFunc::Greater:
         return vk::CompareOp::eGreater;
-    case Liverpool::CompareFunc::LessEqual:
+    case AmdGpu::CompareFunc::LessEqual:
         return vk::CompareOp::eLessOrEqual;
-    case Liverpool::CompareFunc::Less:
+    case AmdGpu::CompareFunc::Less:
         return vk::CompareOp::eLess;
-    case Liverpool::CompareFunc::NotEqual:
+    case AmdGpu::CompareFunc::NotEqual:
         return vk::CompareOp::eNotEqual;
-    case Liverpool::CompareFunc::Never:
+    case AmdGpu::CompareFunc::Never:
         return vk::CompareOp::eNever;
     default:
         UNREACHABLE();
@@ -126,13 +126,13 @@ vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type) {
     }
 }
 
-vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode) {
+vk::PolygonMode PolygonMode(AmdGpu::PolygonMode mode) {
     switch (mode) {
-    case Liverpool::PolygonMode::Point:
+    case AmdGpu::PolygonMode::Point:
         return vk::PolygonMode::ePoint;
-    case Liverpool::PolygonMode::Line:
+    case AmdGpu::PolygonMode::Line:
         return vk::PolygonMode::eLine;
-    case Liverpool::PolygonMode::Fill:
+    case AmdGpu::PolygonMode::Fill:
         return vk::PolygonMode::eFill;
     default:
         UNREACHABLE();
@@ -140,15 +140,15 @@ vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode) {
     }
 }
 
-vk::CullModeFlags CullMode(Liverpool::CullMode mode) {
+vk::CullModeFlags CullMode(AmdGpu::CullMode mode) {
     switch (mode) {
-    case Liverpool::CullMode::None:
+    case AmdGpu::CullMode::None:
         return vk::CullModeFlagBits::eNone;
-    case Liverpool::CullMode::Front:
+    case AmdGpu::CullMode::Front:
         return vk::CullModeFlagBits::eFront;
-    case Liverpool::CullMode::Back:
+    case AmdGpu::CullMode::Back:
         return vk::CullModeFlagBits::eBack;
-    case Liverpool::CullMode::FrontAndBack:
+    case AmdGpu::CullMode::FrontAndBack:
         return vk::CullModeFlagBits::eFrontAndBack;
     default:
         UNREACHABLE();
@@ -156,11 +156,11 @@ vk::CullModeFlags CullMode(Liverpool::CullMode mode) {
     }
 }
 
-vk::FrontFace FrontFace(Liverpool::FrontFace face) {
+vk::FrontFace FrontFace(AmdGpu::FrontFace face) {
     switch (face) {
-    case Liverpool::FrontFace::Clockwise:
+    case AmdGpu::FrontFace::Clockwise:
         return vk::FrontFace::eClockwise;
-    case Liverpool::FrontFace::CounterClockwise:
+    case AmdGpu::FrontFace::CounterClockwise:
         return vk::FrontFace::eCounterClockwise;
     default:
         UNREACHABLE();
@@ -168,8 +168,8 @@ vk::FrontFace FrontFace(Liverpool::FrontFace face) {
     }
 }
 
-vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor) {
-    using BlendFactor = Liverpool::BlendControl::BlendFactor;
+vk::BlendFactor BlendFactor(AmdGpu::BlendControl::BlendFactor factor) {
+    using BlendFactor = AmdGpu::BlendControl::BlendFactor;
     switch (factor) {
     case BlendFactor::Zero:
         return vk::BlendFactor::eZero;
@@ -214,8 +214,8 @@ vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor) {
     }
 }
 
-bool IsDualSourceBlendFactor(Liverpool::BlendControl::BlendFactor factor) {
-    using BlendFactor = Liverpool::BlendControl::BlendFactor;
+bool IsDualSourceBlendFactor(AmdGpu::BlendControl::BlendFactor factor) {
+    using BlendFactor = AmdGpu::BlendControl::BlendFactor;
     switch (factor) {
     case BlendFactor::Src1Color:
     case BlendFactor::Src1Alpha:
@@ -227,8 +227,8 @@ bool IsDualSourceBlendFactor(Liverpool::BlendControl::BlendFactor factor) {
     }
 }
 
-vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
-    using BlendFunc = Liverpool::BlendControl::BlendFunc;
+vk::BlendOp BlendOp(AmdGpu::BlendControl::BlendFunc func) {
+    using BlendFunc = AmdGpu::BlendControl::BlendFunc;
     switch (func) {
     case BlendFunc::Add:
         return vk::BlendOp::eAdd;
@@ -245,8 +245,8 @@ vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func) {
     }
 }
 
-vk::LogicOp LogicOp(Liverpool::ColorControl::LogicOp logic_op) {
-    using LogicOp = Liverpool::ColorControl::LogicOp;
+vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op) {
+    using LogicOp = AmdGpu::ColorControl::LogicOp;
     switch (logic_op) {
     case LogicOp::Clear:
         return vk::LogicOp::eClear;
@@ -805,9 +805,9 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
     return format->vk_format;
 }
 
-vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
+vk::ClearValue ColorBufferClearValue(const AmdGpu::ColorBuffer& color_buffer) {
     const auto comp_swizzle = color_buffer.Swizzle();
-    const auto format = color_buffer.info.format.Value();
+    const auto format = AmdGpu::DataFormat(color_buffer.info.format);
     const auto number_type = color_buffer.GetFixedNumberFormat();
 
     const auto& c0 = color_buffer.clear_word0;

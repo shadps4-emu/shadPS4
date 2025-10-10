@@ -13,7 +13,6 @@
 #include <boost/intrusive/list.hpp>
 
 #include "common/assert.h"
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/patch.h"
@@ -105,7 +104,7 @@ public:
 
     explicit TypedValue(const Value& value) : Value(value) {
         if ((value.Type() & type_) == IR::Type::Void) {
-            throw InvalidArgument("Incompatible types {} and {}", type_, value.Type());
+            UNREACHABLE_MSG("Incompatible types {} and {}", type_, value.Type());
         }
     }
 

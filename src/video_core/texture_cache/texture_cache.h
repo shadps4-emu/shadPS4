@@ -3,13 +3,17 @@
 
 #pragma once
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
+#include <queue>
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
-#include "video_core/amdgpu/resource.h"
+#include "shader_recompiler/resource.h"
 #include "video_core/multi_level_page_table.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
@@ -32,8 +36,10 @@ class TextureCache {
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
 
+    using ImageIds = boost::container::small_vector<ImageId, 16>;
+
     struct Traits {
-        using Entry = boost::container::small_vector<ImageId, 16>;
+        using Entry = ImageIds;
         static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 10;
         static constexpr size_t PageBits = 20;
@@ -49,44 +55,24 @@ public:
         VideoOut,
     };
 
-    struct BaseDesc {
+    struct ImageDesc {
         ImageInfo info;
         ImageViewInfo view_info;
         BindingType type{BindingType::Texture};
 
-        BaseDesc() = default;
-        BaseDesc(BindingType type_, ImageInfo info_, ImageViewInfo view_info_) noexcept
-            : info{std::move(info_)}, view_info{std::move(view_info_)}, type{type_} {}
-    };
-
-    struct TextureDesc : public BaseDesc {
-        TextureDesc() = default;
-        TextureDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
-            : BaseDesc{desc.is_written ? BindingType::Storage : BindingType::Texture,
-                       ImageInfo{image, desc}, ImageViewInfo{image, desc}} {}
-    };
-
-    struct RenderTargetDesc : public BaseDesc {
-        RenderTargetDesc() = default;
-        RenderTargetDesc(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                         const AmdGpu::Liverpool::CbDbExtent& hint = {})
-            : BaseDesc{BindingType::RenderTarget, ImageInfo{buffer, hint}, ImageViewInfo{buffer}} {}
-    };
-
-    struct DepthTargetDesc : public BaseDesc {
-        DepthTargetDesc() = default;
-        DepthTargetDesc(const AmdGpu::Liverpool::DepthBuffer& buffer,
-                        const AmdGpu::Liverpool::DepthView& view,
-                        const AmdGpu::Liverpool::DepthControl& ctl, VAddr htile_address,
-                        const AmdGpu::Liverpool::CbDbExtent& hint = {}, bool write_buffer = false)
-            : BaseDesc{BindingType::DepthTarget,
-                       ImageInfo{buffer, view.NumSlices(), htile_address, hint, write_buffer},
-                       ImageViewInfo{buffer, view, ctl}} {}
-    };
-
-    struct VideoOutDesc : public BaseDesc {
-        VideoOutDesc(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address)
-            : BaseDesc{BindingType::VideoOut, ImageInfo{group, cpu_address}, ImageViewInfo{}} {}
+        ImageDesc() = default;
+        ImageDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
+            : info{image, desc}, view_info{image, desc},
+              type{desc.is_written ? BindingType::Storage : BindingType::Texture} {}
+        ImageDesc(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint)
+            : info{buffer, hint}, view_info{buffer}, type{BindingType::RenderTarget} {}
+        ImageDesc(const AmdGpu::DepthBuffer& buffer, AmdGpu::DepthView view,
+                  AmdGpu::DepthControl ctl, VAddr htile_address, AmdGpu::CbDbExtent hint,
+                  bool write_buffer = false)
+            : info{buffer, view.NumSlices(), htile_address, hint, write_buffer},
+              view_info{buffer, view, ctl}, type{BindingType::DepthTarget} {}
+        ImageDesc(const Libraries::VideoOut::BufferAttributeGroup& group, VAddr cpu_address)
+            : info{group, cpu_address}, type{BindingType::VideoOut} {}
     };
 
 public:
@@ -111,19 +97,19 @@ public:
     void ProcessDownloadImages();
 
     /// Retrieves the image handle of the image with the provided attributes.
-    [[nodiscard]] ImageId FindImage(BaseDesc& desc, bool exact_fmt = false);
+    [[nodiscard]] ImageId FindImage(ImageDesc& desc, bool exact_fmt = false);
 
     /// Retrieves image whose address matches provided
     [[nodiscard]] ImageId FindImageFromRange(VAddr address, size_t size, bool ensure_valid = true);
 
     /// Retrieves an image view with the properties of the specified image id.
-    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const BaseDesc& desc);
+    [[nodiscard]] ImageView& FindTexture(ImageId image_id, const ImageDesc& desc);
 
     /// Retrieves the render target with specified properties
-    [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const BaseDesc& desc);
+    [[nodiscard]] ImageView& FindRenderTarget(ImageId image_id, const ImageDesc& desc);
 
     /// Retrieves the depth target with specified properties
-    [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const BaseDesc& desc);
+    [[nodiscard]] ImageView& FindDepthTarget(ImageId image_id, const ImageDesc& desc);
 
     /// Updates image contents if it was modified by CPU.
     void UpdateImage(ImageId image_id) {
@@ -151,9 +137,8 @@ public:
     void RefreshImage(Image& image);
 
     /// Retrieves the sampler that matches the provided S# descriptor.
-    [[nodiscard]] vk::Sampler GetSampler(
-        const AmdGpu::Sampler& sampler,
-        const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base);
+    [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler,
+                                         AmdGpu::BorderColorBuffer border_color_base);
 
     /// Retrieves the image with the specified id.
     [[nodiscard]] Image& GetImage(ImageId id) {
@@ -212,7 +197,7 @@ public:
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
-        boost::container::small_vector<ImageId, 32> images;
+        ImageIds images;
         ForEachPage(cpu_addr, size, [this, &images, cpu_addr, size, func](u64 page) {
             const auto it = page_table.find(page);
             if (it == nullptr) {
@@ -329,7 +314,6 @@ private:
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
-
     struct DownloadedImage {
         u64 tick;
         VAddr device_addr;
@@ -340,7 +324,6 @@ private:
     std::mutex downloaded_images_mutex;
     std::condition_variable_any downloaded_images_cv;
     std::jthread downloaded_images_thread;
-
     struct MetaDataInfo {
         enum class Type {
             CMask,
@@ -348,7 +331,7 @@ private:
             HTile,
         };
         Type type;
-        u32 clear_mask{u32(-1)};
+        s32 clear_mask = -1;
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
 };

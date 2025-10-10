@@ -12,13 +12,12 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
-#include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 namespace Vulkan {
 
@@ -36,8 +35,7 @@ constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
 
-static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs,
-                      const AmdGpu::Liverpool::VsOutputControl& ctl) {
+static u32 MapOutputs(std::span<Shader::OutputMap, 3> outputs, const AmdGpu::VsOutputControl& ctl) {
     u32 num_outputs = 0;
 
     if (ctl.vs_out_misc_enable) {
@@ -110,10 +108,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
     }
     case Stage::Hull: {
         BuildCommon(regs.hs_program);
-        info.hs_info.num_input_control_points = regs.ls_hs_config.hs_input_control_points.Value();
-        info.hs_info.num_threads = regs.ls_hs_config.hs_output_control_points.Value();
+        info.hs_info.num_input_control_points = regs.ls_hs_config.hs_input_control_points;
+        info.hs_info.num_threads = regs.ls_hs_config.hs_output_control_points;
         info.hs_info.tess_type = regs.tess_config.type;
-        info.hs_info.offchip_lds_enable = regs.hs_program.settings.rsrc2_hs.oc_lds_en.Value();
+        info.hs_info.offchip_lds_enable = regs.hs_program.settings.oc_lds_en;
 
         // We need to initialize most hs_info fields after finding the V# with tess constants
         break;
@@ -130,7 +128,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.vs_info.num_outputs = MapOutputs(info.vs_info.outputs, regs.vs_output_control);
         info.vs_info.emulate_depth_negative_one_to_one =
             !instance.IsDepthClipControlSupported() &&
-            regs.clipper_control.clip_space == Liverpool::ClipSpace::MinusWToW;
+            regs.clipper_control.clip_space == AmdGpu::ClipSpace::MinusWToW;
         info.vs_info.tess_emulated_primitive =
             regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
             regs.primitive_type == AmdGpu::PrimitiveType::QuadList;
@@ -157,7 +155,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         gs_info.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
         gs_info.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
         gs_info.mode = regs.vgt_gs_mode.mode;
-        const auto params_vc = Liverpool::GetParams(regs.vs_program);
+        const auto params_vc = AmdGpu::GetParams(regs.vs_program);
         gs_info.vs_copy = params_vc.code;
         gs_info.vs_copy_hash = params_vc.hash;
         DumpShader(gs_info.vs_copy, gs_info.vs_copy_hash, Shader::Stage::Vertex, 0, "copy.bin");
@@ -191,7 +189,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.fs_info.inputs[i] = {
-                .param_index = u8(ps_inputs[i].input_offset.Value()),
+                .param_index = u8(ps_inputs[i].input_offset),
                 .is_default = bool(ps_inputs[i].use_default),
                 .is_flat = bool(ps_inputs[i].flat_shade),
                 .default_value = u8(ps_inputs[i].default_value),
@@ -327,11 +325,11 @@ bool PipelineCache::RefreshGraphicsKey() {
 
     const bool db_enabled = regs.depth_buffer.DepthValid() || regs.depth_buffer.StencilValid();
 
-    key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format.Value()
-                                                  : Liverpool::DepthBuffer::ZFormat::Invalid;
+    key.z_format = regs.depth_buffer.DepthValid() ? regs.depth_buffer.z_info.format
+                                                  : AmdGpu::DepthBuffer::ZFormat::Invalid;
     key.stencil_format = regs.depth_buffer.StencilValid()
-                             ? regs.depth_buffer.stencil_info.format.Value()
-                             : Liverpool::DepthBuffer::StencilFormat::Invalid;
+                             ? regs.depth_buffer.stencil_info.format
+                             : AmdGpu::DepthBuffer::StencilFormat::Invalid;
     key.depth_clamp_enable = !regs.depth_render_override.disable_viewport_clamp;
     key.depth_clip_enable = regs.clipper_control.ZclipEnable();
     key.clip_space = regs.clipper_control.clip_space;
@@ -339,17 +337,17 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.prim_type = regs.primitive_type;
     key.polygon_mode = regs.polygon_control.PolyMode();
     key.patch_control_points =
-        regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points.Value() : 0;
+        regs.stage_enable.hs_en ? regs.ls_hs_config.hs_input_control_points : 0;
     key.logic_op = regs.color_control.rop3;
     key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
     key.num_samples = key.depth_samples;
     key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =
-        regs.color_control.mode == AmdGpu::Liverpool::ColorControl::OperationMode::Disable;
+        regs.color_control.mode == AmdGpu::ColorControl::OperationMode::Disable;
 
     // First pass to fill render target information needed by shader recompiler
-    for (s32 cb = 0; cb < Liverpool::NumColorBuffers && !skip_cb_binding; ++cb) {
+    for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
         const auto& col_buf = regs.color_buffers[cb];
         if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
             // No attachment bound or writing to it is disabled.
@@ -436,15 +434,7 @@ bool PipelineCache::RefreshGraphicsStages() {
             return false;
         }
 
-        const auto& bininfo = Liverpool::GetBinaryInfo(*pgm);
-        if (!bininfo.Valid()) {
-            LOG_WARNING(Render_Vulkan, "Invalid binary info structure!");
-            key.stage_hashes[stage_out_idx] = 0;
-            infos[stage_out_idx] = nullptr;
-            return false;
-        }
-
-        auto params = Liverpool::GetParams(*pgm);
+        const auto params = AmdGpu::GetParams(*pgm);
         std::optional<Shader::Gcn::FetchShaderData> fetch_shader_;
         std::tie(infos[stage_out_idx], modules[stage_out_idx], fetch_shader_,
                  key.stage_hashes[stage_out_idx]) =
@@ -463,7 +453,7 @@ bool PipelineCache::RefreshGraphicsStages() {
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
-    case Liverpool::ShaderStageEnable::VgtStages::EsGs:
+    case AmdGpu::ShaderStageEnable::VgtStages::EsGs:
         if (!instance.IsGeometryStageSupported()) {
             LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");
             return false;
@@ -479,7 +469,7 @@ bool PipelineCache::RefreshGraphicsStages() {
             return false;
         }
         break;
-    case Liverpool::ShaderStageEnable::VgtStages::LsHs:
+    case AmdGpu::ShaderStageEnable::VgtStages::LsHs:
         if (!instance.IsTessellationSupported() ||
             (regs.tess_config.type == AmdGpu::TessellationType::Isoline &&
              !instance.IsTessellationIsolinesSupported())) {
@@ -519,7 +509,7 @@ bool PipelineCache::RefreshGraphicsStages() {
 bool PipelineCache::RefreshComputeKey() {
     Shader::Backend::Bindings binding{};
     const auto& cs_pgm = liverpool->GetCsRegs();
-    const auto cs_params = Liverpool::GetParams(cs_pgm);
+    const auto cs_params = AmdGpu::GetParams(cs_pgm);
     std::tie(infos[0], modules[0], fetch_shader, compute_key.value) =
         GetProgram(Shader::Stage::Compute, LogicalStage::Compute, cs_params, binding);
     return true;

@@ -23,4 +23,24 @@ struct OrbisNpId {
     u8 reserved[8];
 };
 
+struct OrbisNpClientId {
+    char id[129];
+    u8 padding[7];
+};
+
+struct OrbisNpAuthorizationCode {
+    char code[129];
+    u8 padding[7];
+};
+
+struct OrbisNpClientSecret {
+    char secret[257];
+    u8 padding[7];
+};
+
+struct OrbisNpIdToken {
+    char token[4097];
+    u8 padding[7];
+};
+
 }; // namespace Libraries::Np

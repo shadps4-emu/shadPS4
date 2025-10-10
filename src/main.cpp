@@ -255,6 +255,7 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;

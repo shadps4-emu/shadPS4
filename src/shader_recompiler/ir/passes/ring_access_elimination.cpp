@@ -96,7 +96,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         if (info.gs_copy_data.output_vertices &&
             info.gs_copy_data.output_vertices != output_vertices) {
             ASSERT_MSG(output_vertices > info.gs_copy_data.output_vertices &&
-                           gs_info.mode == AmdGpu::Liverpool::GsMode::Mode::ScenarioG,
+                           gs_info.mode == AmdGpu::GsScenario::ScenarioG,
                        "Invalid geometry shader vertex configuration scenario = {}, max_vert_out = "
                        "{}, output_vertices = {}",
                        u32(gs_info.mode), output_vertices, info.gs_copy_data.output_vertices);

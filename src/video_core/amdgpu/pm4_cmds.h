@@ -4,26 +4,24 @@
 #pragma once
 
 #include <cstring>
+#include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
 #include "common/uint128.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/time.h"
-#include "core/platform.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
 namespace AmdGpu {
 
-/// This enum defines the Shader types supported in PM4 type 3 header
 enum class PM4ShaderType : u32 {
-    ShaderGraphics = 0, ///< Graphics shader
-    ShaderCompute = 1   ///< Compute shader
+    ShaderGraphics = 0,
+    ShaderCompute = 1,
 };
 
-/// This enum defines the predicate value supported in PM4 type 3 header
 enum class PM4Predicate : u32 {
-    PredDisable = 0, ///< Predicate disabled
-    PredEnable = 1   ///< Predicate enabled
+    PredDisable = 0,
+    PredEnable = 1,
 };
 
 union PM4Type0Header {
@@ -466,7 +464,7 @@ struct PM4CmdEventWriteEop {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence(auto&& write_mem) const {
+    void SignalFence(auto&& write_mem, auto&& signal_irq) const {
         u32* address = Address<u32>();
         switch (data_sel.Value()) {
         case DataSelect::None: {
@@ -502,7 +500,7 @@ struct PM4CmdEventWriteEop {
             ASSERT(data_sel == DataSelect::None);
             [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
-            Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
+            signal_irq();
             break;
         }
         default: {
@@ -682,7 +680,7 @@ struct PM4CmdWaitRegMem {
         return reg.Value();
     }
 
-    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+    bool Test(std::span<const u32> regs) const {
         u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
@@ -934,7 +932,7 @@ struct PM4CmdReleaseMem {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence(Platform::InterruptId irq_id) const {
+    void SignalFence(auto&& signal_irq) const {
         switch (data_sel.Value()) {
         case DataSelect::Data32Low: {
             *Address<u32>() = DataDWord();
@@ -965,7 +963,7 @@ struct PM4CmdReleaseMem {
         case InterruptSelect::IrqUndocumented:
             [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
-            Platform::IrqC::Instance()->Signal(irq_id);
+            signal_irq();
             break;
         }
         default: {

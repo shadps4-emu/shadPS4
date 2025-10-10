@@ -2,17 +2,18 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
 #include "core/debug_state.h"
-#include "imgui_memory_editor.h"
-#include "reg_popup.h"
-#include "text_editor.h"
+#include "core/devtools/widget/imgui_memory_editor.h"
+#include "core/devtools/widget/reg_popup.h"
+#include "core/devtools/widget/text_editor.h"
 
 namespace Core::Devtools::Widget {
 
 struct ShaderCache {
     MemoryEditor hex_view;
     TextEditor dis_view;
-    Vulkan::Liverpool::UserData user_data;
+    AmdGpu::UserData user_data;
 };
 
 class RegView {
