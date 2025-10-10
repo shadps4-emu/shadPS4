@@ -127,6 +127,19 @@ void IPC::InputLoop() {
             entry.patchMask = static_cast<MemoryPatcher::PatchMask>(next_u64());
             entry.maskOffset = static_cast<int>(next_u64());
             MemoryPatcher::AddPatchToQueue(entry);
+        } else if (cmd == "APPLY_CHEAT") {
+            MemoryPatcher::patchInfo entry;
+            entry.gameSerial = "*";
+            entry.modNameStr = next_str();
+            entry.offsetStr = next_str();
+            entry.valueStr = next_str();
+            entry.targetStr = next_str();
+            entry.sizeStr = next_str();
+            entry.isOffset = next_u64() != 0;
+            entry.littleEndian = next_u64() != 0;
+            MemoryPatcher::PatchMemory(entry.modNameStr, entry.offsetStr, entry.valueStr,
+                                       entry.targetStr, entry.sizeStr, entry.isOffset,
+                                       entry.littleEndian);
         } else if (cmd == "PAUSE") {
             DebugState.PauseGuestThreads();
         } else if (cmd == "RESUME") {
