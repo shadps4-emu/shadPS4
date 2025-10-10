@@ -19,6 +19,10 @@ struct std::hash<vk::ShaderModule> {
     }
 };
 
+namespace AmdGpu {
+class Liverpool;
+}
+
 namespace Shader {
 struct Info;
 }

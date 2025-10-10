@@ -5,7 +5,6 @@
 
 #include <span>
 #include <vector>
-#include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "common/types.h"
@@ -17,109 +16,10 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/params.h"
-#include "shader_recompiler/profile.h"
+#include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/amdgpu/resource.h"
 
 namespace Shader {
-
-static constexpr size_t NumUserDataRegs = 16;
-static constexpr size_t NumImages = 64;
-static constexpr size_t NumBuffers = 40;
-static constexpr size_t NumSamplers = 16;
-static constexpr size_t NumFMasks = 8;
-
-enum class BufferType : u32 {
-    Guest,
-    Flatbuf,
-    BdaPagetable,
-    FaultBuffer,
-    GdsBuffer,
-    SharedMemory,
-};
-
-struct Info;
-
-struct BufferResource {
-    u32 sharp_idx;
-    IR::Type used_types;
-    AmdGpu::Buffer inline_cbuf;
-    BufferType buffer_type;
-    u8 instance_attrib{};
-    bool is_written{};
-    bool is_formatted{};
-
-    bool IsSpecial() const noexcept {
-        return buffer_type != BufferType::Guest;
-    }
-
-    bool IsStorage(const AmdGpu::Buffer& buffer, const Profile& profile) const noexcept {
-        // When using uniform buffers, a size is required at compilation time, so we need to
-        // either compile a lot of shader specializations to handle each size or just force it to
-        // the maximum possible size always. However, for some vendors the shader-supplied size is
-        // used for bounds checking uniform buffer accesses, so the latter would effectively turn
-        // off buffer robustness behavior. Instead, force storage buffers which are bounds checked
-        // using the actual buffer size. We are assuming the performance hit from this is
-        // acceptable.
-        return true; // buffer.GetSize() > profile.max_ubo_size || is_written;
-    }
-
-    [[nodiscard]] constexpr AmdGpu::Buffer GetSharp(const Info& info) const noexcept;
-};
-using BufferResourceList = boost::container::small_vector<BufferResource, NumBuffers>;
-
-struct ImageResource {
-    u32 sharp_idx;
-    bool is_depth{};
-    bool is_atomic{};
-    bool is_array{};
-    bool is_written{};
-    bool is_r128{};
-
-    [[nodiscard]] constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
-};
-using ImageResourceList = boost::container::small_vector<ImageResource, NumImages>;
-
-struct SamplerResource {
-    u32 sharp_idx;
-    AmdGpu::Sampler inline_sampler;
-    u32 is_inline_sampler : 1;
-    u32 associated_image : 4;
-    u32 disable_aniso : 1;
-
-    constexpr AmdGpu::Sampler GetSharp(const Info& info) const noexcept;
-};
-using SamplerResourceList = boost::container::small_vector<SamplerResource, NumSamplers>;
-
-struct FMaskResource {
-    u32 sharp_idx;
-
-    constexpr AmdGpu::Image GetSharp(const Info& info) const noexcept;
-};
-using FMaskResourceList = boost::container::small_vector<FMaskResource, NumFMasks>;
-
-struct PushData {
-    static constexpr u32 XOffsetIndex = 0;
-    static constexpr u32 YOffsetIndex = 1;
-    static constexpr u32 XScaleIndex = 2;
-    static constexpr u32 YScaleIndex = 3;
-    static constexpr u32 UdRegsIndex = 4;
-    static constexpr u32 BufOffsetIndex = UdRegsIndex + NumUserDataRegs / 4;
-
-    float xoffset;
-    float yoffset;
-    float xscale;
-    float yscale;
-    std::array<u32, NumUserDataRegs> ud_regs;
-    std::array<u8, NumBuffers> buf_offsets;
-
-    void AddOffset(u32 binding, u32 offset) {
-        ASSERT(offset < 256 && binding < buf_offsets.size());
-        buf_offsets[binding] = offset;
-    }
-};
-static_assert(sizeof(PushData) <= 128,
-              "PushData size is greater than minimum size guaranteed by Vulkan spec");
 
 enum class Qualifier : u8 {
     None,
@@ -235,7 +135,7 @@ struct Info {
         Dynamic = 1 << 1,
     };
     ReadConstType readconst_types{};
-    bool uses_dma{false};
+    bool uses_dma{};
 
     explicit Info(Stage stage_, LogicalStage l_stage_, ShaderParams params)
         : stage{stage_}, l_stage{l_stage_}, pgm_hash{params.hash}, pgm_base{params.Base()},
@@ -262,7 +162,7 @@ struct Info {
         u32 mask = ud_mask.mask;
         while (mask) {
             const u32 index = std::countr_zero(mask);
-            ASSERT(bnd.user_data < NumUserDataRegs && index < NumUserDataRegs);
+            ASSERT(bnd.user_data < NUM_USER_DATA_REGS && index < NUM_USER_DATA_REGS);
             mask &= ~(1U << index);
             push.ud_regs[bnd.user_data++] = user_data[index];
         }
@@ -276,9 +176,8 @@ struct Info {
 
     void RefreshFlatBuf() {
         flattened_ud_buf.resize(srt_info.flattened_bufsize_dw);
-        ASSERT(user_data.size() <= NumUserDataRegs);
+        ASSERT(user_data.size() <= NUM_USER_DATA_REGS);
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
-        // Run the JIT program to walk the SRT and write the leaves to a flat buffer
         if (srt_info.walker_func) {
             srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
         }
@@ -295,43 +194,5 @@ struct Info {
     }
 };
 DECLARE_ENUM_FLAG_OPERATORS(Info::ReadConstType);
-
-constexpr AmdGpu::Buffer BufferResource::GetSharp(const Info& info) const noexcept {
-    const auto buffer = inline_cbuf ? inline_cbuf : info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
-    if (!buffer.Valid()) {
-        LOG_DEBUG(Render, "Encountered invalid buffer sharp");
-        return AmdGpu::Buffer::Null();
-    }
-    return buffer;
-}
-
-constexpr AmdGpu::Image ImageResource::GetSharp(const Info& info) const noexcept {
-    AmdGpu::Image image{};
-    if (!is_r128) {
-        image = info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
-    } else {
-        const auto raw = info.ReadUdSharp<u128>(sharp_idx);
-        std::memcpy(&image, &raw, sizeof(raw));
-    }
-    if (!image.Valid()) {
-        LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");
-        image = AmdGpu::Image::Null(is_depth);
-    } else if (is_depth) {
-        const auto data_fmt = image.GetDataFmt();
-        if (data_fmt != AmdGpu::DataFormat::Format16 && data_fmt != AmdGpu::DataFormat::Format32) {
-            LOG_DEBUG(Render_Vulkan, "Encountered non-depth image used with depth instruction!");
-            image = AmdGpu::Image::Null(true);
-        }
-    }
-    return image;
-}
-
-constexpr AmdGpu::Sampler SamplerResource::GetSharp(const Info& info) const noexcept {
-    return is_inline_sampler ? inline_sampler : info.ReadUdSharp<AmdGpu::Sampler>(sharp_idx);
-}
-
-constexpr AmdGpu::Image FMaskResource::GetSharp(const Info& info) const noexcept {
-    return info.ReadUdSharp<AmdGpu::Image>(sharp_idx);
-}
 
 } // namespace Shader

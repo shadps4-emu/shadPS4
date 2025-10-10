@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -152,20 +152,20 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     };
 
     const vk::TimelineSemaphoreSubmitInfo timeline_si = {
-        .waitSemaphoreValueCount = static_cast<u32>(info.wait_ticks.size()),
+        .waitSemaphoreValueCount = info.num_wait_semas,
         .pWaitSemaphoreValues = info.wait_ticks.data(),
-        .signalSemaphoreValueCount = static_cast<u32>(info.signal_ticks.size()),
+        .signalSemaphoreValueCount = info.num_signal_semas,
         .pSignalSemaphoreValues = info.signal_ticks.data(),
     };
 
     const vk::SubmitInfo submit_info = {
         .pNext = &timeline_si,
-        .waitSemaphoreCount = static_cast<u32>(info.wait_semas.size()),
+        .waitSemaphoreCount = info.num_wait_semas,
         .pWaitSemaphores = info.wait_semas.data(),
         .pWaitDstStageMask = wait_stage_masks.data(),
         .commandBufferCount = 1U,
         .pCommandBuffers = &current_cmdbuf,
-        .signalSemaphoreCount = static_cast<u32>(info.signal_semas.size()),
+        .signalSemaphoreCount = info.num_signal_semas,
         .pSignalSemaphores = info.signal_semas.data(),
     };
 

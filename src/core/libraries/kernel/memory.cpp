@@ -655,11 +655,17 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     auto* memory = Core::Memory::Instance();
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
+    const auto vaddr = reinterpret_cast<VAddr>(addr);
 
-    // mmap is less restrictive than other functions in regards to alignment
-    // To avoid potential issues, align address and size here.
-    const VAddr aligned_addr = Common::AlignDown(std::bit_cast<VAddr>(addr), 16_KB);
+    // Align address and size here. Both align up to the next page
+    const VAddr aligned_addr = Common::AlignUp(vaddr, 16_KB);
     const u64 aligned_size = Common::AlignUp(len, 16_KB);
+
+    if (True(mem_flags & Core::MemoryMapFlags::Fixed) && vaddr != aligned_addr) {
+        // If flags Fixed is specified, the input address must be aligned.
+        ErrSceToPosix(ORBIS_KERNEL_ERROR_EINVAL);
+        return reinterpret_cast<void*>(-1);
+    }
 
     s32 result = ORBIS_OK;
     if (fd == -1) {

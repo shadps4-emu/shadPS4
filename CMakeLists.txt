@@ -851,10 +851,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
-set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/profile.h
+set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/resource.h
                       src/shader_recompiler/info.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
@@ -952,17 +952,24 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/value.h
 )
 
-set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
+set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
+               src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
                src/video_core/amdgpu/pixel_format.h
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
+               src/video_core/amdgpu/regs_color.h
+               src/video_core/amdgpu/regs_depth.h
+               src/video_core/amdgpu/regs.cpp
+               src/video_core/amdgpu/regs.h
+               src/video_core/amdgpu/regs_primitive.h
+               src/video_core/amdgpu/regs_shader.h
+               src/video_core/amdgpu/regs_texture.h
+               src/video_core/amdgpu/regs_vertex.h
                src/video_core/amdgpu/resource.h
                src/video_core/amdgpu/tiling.cpp
                src/video_core/amdgpu/tiling.h
-               src/video_core/amdgpu/types.h
-               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -1216,7 +1223,7 @@ if (APPLE)
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
-        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-segaddr,USER_AREA,0x7000000000,-image_base,0x700000000000)
     endif()
 
     # Replacement for std::chrono::time_zone
@@ -1265,6 +1272,13 @@ if (WIN32)
         target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
+    endif()
+
+    # Change base image address
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /BASE:0x700000000000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
     endif()
 endif()
 
