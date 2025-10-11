@@ -8,13 +8,18 @@
 
 #include <SDL3/SDL.h>
 
+#include "common/config.h"
 #include "common/memory_patcher.h"
 #include "common/thread.h"
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "core/debugger.h"
+#include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 /**
  * Protocol summary:
@@ -141,6 +146,30 @@ void IPC::InputLoop() {
             SDL_memset(&event, 0, sizeof(event));
             event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
             SDL_PushEvent(&event);
+        } else if (cmd == "ADJUST_VOLUME") {
+            int value = static_cast<int>(next_u64());
+            bool is_game_specific = next_u64() != 0;
+            Config::setVolumeSlider(value, is_game_specific);
+            Libraries::AudioOut::AdjustVol();
+        } else if (cmd == "SET_FSR") {
+            if (presenter) {
+                bool use_fsr = next_u64() != 0;
+                presenter->GetFsrSettingsRef().enable = use_fsr;
+            }
+        } else if (cmd == "SET_RCAS") {
+            if (presenter) {
+                bool use_rcas = next_u64() != 0;
+                presenter->GetFsrSettingsRef().use_rcas = use_rcas;
+            }
+        } else if (cmd == "SET_RCAS_ATTENUATION") {
+            if (presenter) {
+                int value = static_cast<int>(next_u64());
+                presenter->GetFsrSettingsRef().rcas_attenuation =
+                    static_cast<float>(value / 1000.0f);
+            }
+        } else if (cmd == "RELOAD_INPUTS") {
+            std::string config = next_str();
+            Input::ParseInputConfig(config);
         } else {
             std::cerr << ";UNKNOWN CMD: " << cmd << std::endl;
         }
