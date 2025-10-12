@@ -459,6 +459,11 @@ jobs:
       uses: actions/download-artifact@v5
       with:
         path: ./artifacts
+
+    - name: Make SDL artifacts executable
+      run: |
+        chmod -R a+x ./artifacts/shadps4-linux-sdl-*
+        chmod -R a+x ./artifacts/shadps4-macos-sdl-*
   
     - name: Compress individual directories (without parent directory)
       run: |
