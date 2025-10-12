@@ -21,9 +21,11 @@ public:
         Init(param, nullptr, false);
     }
     ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
-        
-        LOG_DEBUG(Lib_Ime, "param->work: 0x{:X}", static_cast<u64>(reinterpret_cast<uintptr_t>(param->work)));
-        LOG_DEBUG(Lib_Ime, "param->inputTextBuffer: 0x{:X}", static_cast<u64>(reinterpret_cast<uintptr_t>(param->arg)));
+
+        LOG_DEBUG(Lib_Ime, "param->work: 0x{:X}",
+                  static_cast<u64>(reinterpret_cast<uintptr_t>(param->work)));
+        LOG_DEBUG(Lib_Ime, "param->inputTextBuffer: 0x{:X}",
+                  static_cast<u64>(reinterpret_cast<uintptr_t>(param->arg)));
         Init(param, extended, true);
     }
     ~ImeHandler() = default;
@@ -31,12 +33,14 @@ public:
     void Init(const void* param, const OrbisImeParamExtended* extended, bool ime_mode) {
         if (ime_mode) {
             m_param.ime = *(OrbisImeParam*)param;
-            LOG_DEBUG(Lib_Ime, "m_param.ime.work: 0x{:X}", static_cast<u64>(reinterpret_cast<uintptr_t>(m_param.ime.work)));
-            LOG_DEBUG(Lib_Ime, "m_param.ime.inputTextBuffer: 0x{:X}", static_cast<u64>(reinterpret_cast<uintptr_t>(m_param.ime.inputTextBuffer)));
+            LOG_DEBUG(Lib_Ime, "m_param.ime.work: 0x{:X}",
+                      static_cast<u64>(reinterpret_cast<uintptr_t>(m_param.ime.work)));
+            LOG_DEBUG(Lib_Ime, "m_param.ime.inputTextBuffer: 0x{:X}",
+                      static_cast<u64>(reinterpret_cast<uintptr_t>(m_param.ime.inputTextBuffer)));
             if (extended)
-            m_param.ime_ext = *extended;
+                m_param.ime_ext = *extended;
             else
-            m_param.ime_ext = {};
+                m_param.ime_ext = {};
         } else {
             m_param.key = *(OrbisImeKeyboardParam*)param;
         }
@@ -65,6 +69,12 @@ public:
         if (ime_mode) {
             g_ime_state = ImeState(&m_param.ime, &m_param.ime_ext);
             g_ime_ui = ImeUi(&g_ime_state, &m_param.ime, &m_param.ime_ext);
+
+            // Queue the Open event so it is delivered on next sceImeUpdate
+            LOG_DEBUG(Lib_Ime, "IME Event queued: Open rect x={}, y={}, w={}, h={}",
+                      openEvent.param.rect.x, openEvent.param.rect.y, openEvent.param.rect.width,
+                      openEvent.param.rect.height);
+            g_ime_state.SendEvent(&openEvent);
         }
     }
 
@@ -529,7 +539,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
                   static_cast<u32>(extended->disable_device));
         LOG_DEBUG(Lib_Ime, "extended->ext_keyboard_mode: {}", extended->ext_keyboard_mode);
     }
-    
+
     if (param->user_id ==
         Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) { // Todo: check valid user IDs
         LOG_ERROR(Lib_Ime, "Invalid user_id: {}", static_cast<u32>(param->user_id));
@@ -565,7 +575,7 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
                   static_cast<u32>(param->option), kValidImeOptionMask);
         return Error::INVALID_OPTION;
     }
-    
+
     if (param->maxTextLength == 0 || param->maxTextLength > ORBIS_IME_DIALOG_MAX_TEXT_LENGTH) {
         LOG_ERROR(Lib_Ime, "Invalid maxTextLength: {}", param->maxTextLength);
         return Error::INVALID_MAX_TEXT_LENGTH;
@@ -640,14 +650,13 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         LOG_ERROR(Lib_Ime, "IME handler is already open");
         return Error::BUSY;
     }
-       
-    if (extended){
+
+    if (extended) {
         g_ime_handler = std::make_unique<ImeHandler>(param, extended);
-    }
-    else {
+    } else {
         g_ime_handler = std::make_unique<ImeHandler>(param);
     }
-    if (!g_ime_handler) { 
+    if (!g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create IME handler");
         return Error::NO_MEMORY; // or Error::INTERNAL
     }
