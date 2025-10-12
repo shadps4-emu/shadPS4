@@ -272,9 +272,10 @@ void ImeUi::DrawInputText() {
     if (first_render) {
         SetKeyboardFocusHere();
     }
-    if (InputTextEx("##ImeInput", nullptr, state->current_text.begin(),
-                    ime_param->maxTextLength * 4 + 1, input_size,
-                    ImGuiInputTextFlags_CallbackAlways, InputTextCallback, this)) {
+    if (InputTextExLimited("##ImeInput", nullptr, state->current_text.begin(),
+                           ime_param->maxTextLength * 4 + 1, input_size,
+                           ImGuiInputTextFlags_CallbackAlways, ime_param->maxTextLength,
+                           InputTextCallback, this)) {
     }
 }
 
