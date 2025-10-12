@@ -170,6 +170,13 @@ void IPC::InputLoop() {
         } else if (cmd == "RELOAD_INPUTS") {
             std::string config = next_str();
             Input::ParseInputConfig(config);
+        } else if (cmd == "SET_ACTIVE_CONTROLLER") {
+            std::string active_controller = next_str();
+            GamepadSelect::SetSelectedGamepad(active_controller);
+            SDL_Event checkGamepad;
+            SDL_memset(&checkGamepad, 0, sizeof(checkGamepad));
+            checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
+            SDL_PushEvent(&checkGamepad);
         } else {
             std::cerr << ";UNKNOWN CMD: " << cmd << std::endl;
         }
