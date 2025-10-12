@@ -291,7 +291,7 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
             LOG_ERROR(Lib_Ime, "Failed to convert UTF-8 to Orbis for eventParam.str");
             return 0;
         }
-        
+
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
                                            ui->ime_param->inputTextBuffer,
                                            ui->ime_param->maxTextLength)) {
