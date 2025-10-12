@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <vector>
 #include "ime_ui.h"
 #include "imgui/imgui_std.h"
 
@@ -25,7 +27,8 @@ ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* exte
     }
     work_buffer = param->work;
     text_buffer = param->inputTextBuffer;
-    max_text_length = param->maxTextLength;
+    // Respect both the absolute IME limit and the caller-provided limit
+    max_text_length = std::min(param->maxTextLength, ORBIS_IME_MAX_TEXT_LENGTH);
 
     if (extended) {
         LOG_INFO(Lib_Ime, "Extended IME parameters provided");
@@ -34,7 +37,7 @@ ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* exte
     if (text_buffer) {
         const std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
         if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
-                                ORBIS_IME_MAX_TEXT_LENGTH * 4)) {
+                                ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1)) {
             LOG_ERROR(Lib_Ime, "Failed to convert text to utf8 encoding");
         }
     }
@@ -141,7 +144,9 @@ void ImeState::SetText(const char16_t* text, u32 length) {
         return;
     }
 
-    if (!ConvertOrbisToUTF8(text, length, current_text.begin(), current_text.capacity())) {
+    // Clamp to the effective maximum number of characters
+    const u32 clamped_len = std::min(length, max_text_length);
+    if (!ConvertOrbisToUTF8(text, clamped_len, current_text.begin(), current_text.capacity())) {
         LOG_ERROR(Lib_Ime, "ImeState::SetText failed to convert updated text to UTF-8");
         return;
     }
@@ -287,21 +292,22 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         eventParam.text_area[0].mode = OrbisImeTextAreaMode::Edit;
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
-                                           ui->ime_param->maxTextLength)) {
+                                           ui->state->max_text_length)) {
             LOG_ERROR(Lib_Ime, "Failed to convert UTF-8 to Orbis for eventParam.str");
             return 0;
         }
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
                                            ui->ime_param->inputTextBuffer,
-                                           ui->ime_param->maxTextLength)) {
+                                           ui->state->max_text_length)) {
             LOG_ERROR(Lib_Ime, "Failed to convert UTF-8 to Orbis for inputTextBuffer");
             return 0;
         }
 
         eventParam.caret_index = data->CursorPos;
         eventParam.text_area[0].index = data->CursorPos;
-        eventParam.text_area[0].length = data->CursorPos;
+        eventParam.text_area[0].length =
+            (data->CursorPos > lastCaretPos) ? 1 : -1; // data->CursorPos;
 
         OrbisImeEvent event{};
         event.id = OrbisImeEventId::UpdateText;
