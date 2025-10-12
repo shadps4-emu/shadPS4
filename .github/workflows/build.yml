@@ -462,8 +462,8 @@ jobs:
 
     - name: Make SDL artifacts executable
       run: |
-        chmod a+x ./artifacts/shadps4-linux-sdl-*
-        chmod a+x ./artifacts/shadps4-macos-sdl-*
+        chmod -R a+x ./artifacts/shadps4-linux-sdl-*
+        chmod -R a+x ./artifacts/shadps4-macos-sdl-*
   
     - name: Compress individual directories (without parent directory)
       run: |
