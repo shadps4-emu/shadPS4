@@ -152,18 +152,18 @@ void IPC::InputLoop() {
             Config::setVolumeSlider(value, is_game_specific);
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
+            bool use_fsr = next_u64() != 0;
             if (presenter) {
-                bool use_fsr = next_u64() != 0;
                 presenter->GetFsrSettingsRef().enable = use_fsr;
             }
         } else if (cmd == "SET_RCAS") {
+            bool use_rcas = next_u64() != 0;
             if (presenter) {
-                bool use_rcas = next_u64() != 0;
                 presenter->GetFsrSettingsRef().use_rcas = use_rcas;
             }
         } else if (cmd == "SET_RCAS_ATTENUATION") {
+            int value = static_cast<int>(next_u64());
             if (presenter) {
-                int value = static_cast<int>(next_u64());
                 presenter->GetFsrSettingsRef().rcas_attenuation =
                     static_cast<float>(value / 1000.0f);
             }
