@@ -196,6 +196,7 @@ jobs:
     - name: Package and Upload macOS SDL artifact
       run: |
         mkdir upload
+        chmod a+x ${{github.workspace}}/build/shadps4
         mv ${{github.workspace}}/build/shadps4 upload
         mv ${{github.workspace}}/build/MoltenVK_icd.json upload
         mv ${{github.workspace}}/build/libMoltenVK.dylib upload
