@@ -88,10 +88,14 @@ ControlSettings::ControlSettings(std::shared_ptr<GameInfoClass> game_info_get, b
         SetUIValuestoMappings();
     });
 
-    connect(ui->LeftDeadzoneSlider, &QSlider::valueChanged, this,
-            [this](int value) { ui->LeftDeadzoneValue->setText(QString::number(value)); });
-    connect(ui->RightDeadzoneSlider, &QSlider::valueChanged, this,
-            [this](int value) { ui->RightDeadzoneValue->setText(QString::number(value)); });
+    connect(ui->LeftDeadzoneMinSlider, &QSlider::valueChanged, this,
+            [this](int value) { ui->LeftDeadzoneMinValue->setText(QString::number(value)); });
+    connect(ui->LeftDeadzoneMaxSlider, &QSlider::valueChanged, this,
+            [this](int value) { ui->LeftDeadzoneMaxValue->setText(QString::number(value)); });
+    connect(ui->RightDeadzoneMinSlider, &QSlider::valueChanged, this,
+            [this](int value) { ui->RightDeadzoneMinValue->setText(QString::number(value)); });
+    connect(ui->RightDeadzoneMaxSlider, &QSlider::valueChanged, this,
+            [this](int value) { ui->RightDeadzoneMaxValue->setText(QString::number(value)); });
 
     connect(ui->RSlider, &QSlider::valueChanged, this, [this](int value) {
         QString RedValue = QString("%1").arg(value, 3, 10, QChar('0'));
@@ -287,11 +291,15 @@ void ControlSettings::SaveControllerConfig(bool CloseOnSave) {
     lines.push_back("");
     lines.push_back("# Range of deadzones: 1 (almost none) to 127 (max)");
 
-    std::string deadzonevalue = std::to_string(ui->LeftDeadzoneSlider->value());
-    lines.push_back("analog_deadzone = leftjoystick, " + deadzonevalue + ", 127");
+    std::string deadzone_min_value = std::to_string(ui->LeftDeadzoneMinSlider->value());
+    std::string deadzone_max_value = std::to_string(ui->LeftDeadzoneMaxSlider->value());
+    lines.push_back("analog_deadzone = leftjoystick, " + deadzone_min_value + ", " +
+                    deadzone_max_value);
 
-    deadzonevalue = std::to_string(ui->RightDeadzoneSlider->value());
-    lines.push_back("analog_deadzone = rightjoystick, " + deadzonevalue + ", 127");
+    deadzone_min_value = std::to_string(ui->RightDeadzoneMinSlider->value());
+    deadzone_max_value = std::to_string(ui->RightDeadzoneMaxSlider->value());
+    lines.push_back("analog_deadzone = rightjoystick, " + deadzone_min_value + ", " +
+                    deadzone_max_value);
 
     lines.push_back("");
     std::string OverrideLB = ui->LightbarCheckBox->isChecked() ? "true" : "false";
@@ -387,8 +395,10 @@ void ControlSettings::SetDefault() {
     ui->RStickLeftButton->setText("axis_right_x");
     ui->RStickRightButton->setText("axis_right_x");
 
-    ui->LeftDeadzoneSlider->setValue(2);
-    ui->RightDeadzoneSlider->setValue(2);
+    ui->LeftDeadzoneMinSlider->setValue(2);
+    ui->LeftDeadzoneMaxSlider->setValue(127);
+    ui->RightDeadzoneMinSlider->setValue(2);
+    ui->RightDeadzoneMaxSlider->setValue(127);
 
     ui->RSlider->setValue(0);
     ui->GSlider->setValue(0);
@@ -527,24 +537,42 @@ void ControlSettings::SetUIValuestoMappings() {
         if (input_string.contains("leftjoystick")) {
             std::size_t comma_pos = line.find(',');
             if (comma_pos != std::string::npos) {
-                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                ui->LeftDeadzoneSlider->setValue(deadzonevalue);
-                ui->LeftDeadzoneValue->setText(QString::number(deadzonevalue));
+                std::string deadzone_values = line.substr(comma_pos + 1);
+                std::size_t comma_pos2 = deadzone_values.find(',');
+                if (comma_pos2 != std::string::npos) {
+                    int deadzone_min_value = std::stoi(deadzone_values.substr(0, comma_pos2));
+                    int deadzone_max_value = std::stoi(deadzone_values.substr(comma_pos2 + 1));
+                    ui->LeftDeadzoneMinSlider->setValue(deadzone_min_value);
+                    ui->LeftDeadzoneMaxSlider->setValue(deadzone_max_value);
+                    ui->LeftDeadzoneMinValue->setText(QString::number(deadzone_min_value));
+                    ui->LeftDeadzoneMaxValue->setText(QString::number(deadzone_max_value));
+                }
             } else {
-                ui->LeftDeadzoneSlider->setValue(2);
-                ui->LeftDeadzoneValue->setText("2");
+                ui->LeftDeadzoneMinSlider->setValue(2);
+                ui->LeftDeadzoneMaxSlider->setValue(127);
+                ui->LeftDeadzoneMinValue->setText("2");
+                ui->LeftDeadzoneMaxValue->setText("127");
             }
         }
 
         if (input_string.contains("rightjoystick")) {
             std::size_t comma_pos = line.find(',');
             if (comma_pos != std::string::npos) {
-                int deadzonevalue = std::stoi(line.substr(comma_pos + 1));
-                ui->RightDeadzoneSlider->setValue(deadzonevalue);
-                ui->RightDeadzoneValue->setText(QString::number(deadzonevalue));
+                std::string deadzone_values = line.substr(comma_pos + 1);
+                std::size_t comma_pos2 = deadzone_values.find(',');
+                if (comma_pos2 != std::string::npos) {
+                    int deadzone_min_value = std::stoi(deadzone_values.substr(0, comma_pos2));
+                    int deadzone_max_value = std::stoi(deadzone_values.substr(comma_pos2 + 1));
+                    ui->RightDeadzoneMinSlider->setValue(deadzone_min_value);
+                    ui->RightDeadzoneMaxSlider->setValue(deadzone_max_value);
+                    ui->RightDeadzoneMinValue->setText(QString::number(deadzone_min_value));
+                    ui->RightDeadzoneMaxValue->setText(QString::number(deadzone_max_value));
+                }
             } else {
-                ui->RightDeadzoneSlider->setValue(2);
-                ui->RightDeadzoneValue->setText("2");
+                ui->RightDeadzoneMinSlider->setValue(2);
+                ui->RightDeadzoneMaxSlider->setValue(127);
+                ui->RightDeadzoneMinValue->setText("2");
+                ui->RightDeadzoneMaxValue->setText("127");
             }
         }
 
