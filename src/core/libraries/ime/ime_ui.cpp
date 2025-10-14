@@ -80,10 +80,10 @@ void ImeState::SendEnterEvent() {
     // Sync work and input buffers with the latest UTF-8 text
     if (current_text.begin()) {
         ConvertUTF8ToOrbis(current_text.begin(), current_text.size(),
-                           reinterpret_cast<char16_t*>(work_buffer), max_text_length);
+                           reinterpret_cast<char16_t*>(work_buffer), max_text_length + 1);
         if (text_buffer) {
             ConvertUTF8ToOrbis(current_text.begin(), current_text.size(), text_buffer,
-                               max_text_length);
+                               max_text_length + 1);
         }
     }
     if (text.str) {
@@ -114,10 +114,10 @@ void ImeState::SendCloseEvent() {
     // Sync work and input buffers with the latest UTF-8 text
     if (current_text.begin()) {
         ConvertUTF8ToOrbis(current_text.begin(), current_text.size(),
-                           reinterpret_cast<char16_t*>(work_buffer), max_text_length);
+                           reinterpret_cast<char16_t*>(work_buffer), max_text_length + 1);
         if (text_buffer) {
             ConvertUTF8ToOrbis(current_text.begin(), current_text.size(), text_buffer,
-                               max_text_length);
+                               max_text_length + 1);
         }
     }
     if (text.str) {
@@ -145,7 +145,7 @@ void ImeState::SetText(const char16_t* text, u32 length) {
     }
 
     // Clamp to the effective maximum number of characters
-    const u32 clamped_len = std::min(length, max_text_length);
+    const u32 clamped_len = std::min(length, max_text_length) + 1;
     if (!ConvertOrbisToUTF8(text, clamped_len, current_text.begin(), current_text.capacity())) {
         LOG_ERROR(Lib_Ime, "ImeState::SetText failed to convert updated text to UTF-8");
         return;
@@ -293,14 +293,14 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         eventParam.text_area[0].mode = OrbisImeTextAreaMode::Edit;
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen, eventParam.str,
-                                           ui->state->max_text_length)) {
+                                           ui->state->max_text_length + 1)) {
             LOG_ERROR(Lib_Ime, "Failed to convert UTF-8 to Orbis for eventParam.str");
             return 0;
         }
 
         if (!ui->state->ConvertUTF8ToOrbis(data->Buf, data->BufTextLen,
                                            ui->ime_param->inputTextBuffer,
-                                           ui->state->max_text_length)) {
+                                           ui->state->max_text_length + 1)) {
             LOG_ERROR(Lib_Ime, "Failed to convert UTF-8 to Orbis for inputTextBuffer");
             return 0;
         }
