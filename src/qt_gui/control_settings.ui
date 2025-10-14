@@ -357,11 +357,21 @@
              </sizepolicy>
             </property>
             <property name="title">
-             <string>Left Stick Deadzone (def:2 max:127)</string>
+             <string>Left Stick Deadzone</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_15">
              <item>
-              <widget class="QLabel" name="LeftDeadzoneValue">
+              <widget class="QLabel" name="LeftDeadzoneMinLabel">
+               <property name="text">
+                <string>Min Deadzone (def:2 max:127)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignLeft</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="LeftDeadzoneMinValue">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                  <horstretch>0</horstretch>
@@ -369,7 +379,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Left Deadzone</string>
+                <string>2</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -377,7 +387,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QSlider" name="LeftDeadzoneSlider">
+              <widget class="QSlider" name="LeftDeadzoneMinSlider">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                  <horstretch>0</horstretch>
@@ -388,6 +398,57 @@
                 <number>1</number>
                </property>
                <property name="maximum">
+                <number>127</number>
+               </property>
+               <property name="value">
+                <number>2</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="LeftDeadzoneMaxLabel">
+               <property name="text">
+                <string>Max Deadzone (def:127 max:127)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignLeft</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="LeftDeadzoneMaxValue">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>127</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="LeftDeadzoneMaxSlider">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>127</number>
+               </property>
+               <property name="value">
                 <number>127</number>
                </property>
                <property name="orientation">
@@ -1546,11 +1607,21 @@
              </sizepolicy>
             </property>
             <property name="title">
-             <string>Right Stick Deadzone (def:2, max:127)</string>
+             <string>Right Stick Deadzone</string>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_13">
              <item>
-              <widget class="QLabel" name="RightDeadzoneValue">
+              <widget class="QLabel" name="RightDeadzoneMinLabel">
+               <property name="text">
+                <string>Min Deadzone (def:2 max:127)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignLeft</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="RightDeadzoneMinValue">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                  <horstretch>0</horstretch>
@@ -1558,7 +1629,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>Right Deadzone</string>
+                <string>2</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -1566,7 +1637,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QSlider" name="RightDeadzoneSlider">
+              <widget class="QSlider" name="RightDeadzoneMinSlider">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                  <horstretch>0</horstretch>
@@ -1577,6 +1648,57 @@
                 <number>1</number>
                </property>
                <property name="maximum">
+                <number>127</number>
+               </property>
+               <property name="value">
+                <number>2</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Orientation::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="RightDeadzoneMaxLabel">
+               <property name="text">
+                <string>Max Deadzone (def:127 max:127)</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignLeft</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="RightDeadzoneMaxValue">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>127</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="RightDeadzoneMaxSlider">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>127</number>
+               </property>
+               <property name="value">
                 <number>127</number>
                </property>
                <property name="orientation">
