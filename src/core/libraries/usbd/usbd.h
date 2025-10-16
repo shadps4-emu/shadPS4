@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "usb_backend.h"
 
 extern "C" {
 struct libusb_device;
@@ -20,6 +21,8 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Usbd {
+
+extern std::shared_ptr<UsbBackend> usb_backend;
 
 using SceUsbdDevice = libusb_device;
 using SceUsbdDeviceHandle = libusb_device_handle;

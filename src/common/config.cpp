@@ -212,6 +212,9 @@ std::filesystem::path save_data_path = {};
 // Settings
 ConfigEntry<u32> m_language(1); // english
 
+// USB Device
+static ConfigEntry<int> usbDeviceBackend(UsbBackendType::Real);
+
 // Keys
 static string trophyKey = "";
 
@@ -831,6 +834,14 @@ int getRcasAttenuation() {
 
 void setRcasAttenuation(int value, bool is_game_specific) {
     rcasAttenuation.set(value, is_game_specific);
+}
+
+int getUsbDeviceBackend() {
+    return usbDeviceBackend.get();
+}
+
+void setUsbDeviceBackend(int value) {
+    usbDeviceBackend.set(value);
 }
 
 void load(const std::filesystem::path& path, bool is_game_specific) {
