@@ -278,8 +278,8 @@
       <translation>ریلیز کا ڈیٹا درست نہیں ہے۔</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>مخصوص کردہ اثاثے کے لیے کوئی ڈاؤن لوڈ URL نہیں ملا۔</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;نوٹ:&lt;/b&gt;&lt;br&gt;&lt;br&gt; ورژن &lt;b&gt;0.12.0&lt;/b&gt; سے، ایمولیٹر کا Qt ورژن براہِ راست اپ ڈیٹس حاصل نہیں کرے گا۔&lt;br&gt;&lt;br&gt; تاہم، Qt انٹرفیس نیا سرکاری لانچر کے ذریعے دستیاب رہے گا:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – جو اصل shadPS4 سورس کوڈ پر مبنی ہے۔&lt;br&gt;&lt;br&gt; ہم تجویز کرتے ہیں کہ اپ ڈیٹس وصول کرنا جاری رکھنے کے لیے اس لانچر پر منتقل ہوجائیں۔</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

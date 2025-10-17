@@ -276,8 +276,8 @@
       <translation>Virheelliset julkaisutiedot.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Lataus-URL:ia ei löytynyt määritetylle omaisuudelle.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Huomio:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Versiosta &lt;b&gt;0.12.0&lt;/b&gt; lähtien emulaattorin Qt‑versio ei saa suoria päivityksiä enää.&lt;br&gt;&lt;br&gt; Qt‑käyttöliittymä on kuitenkin edelleen käytettävissä uuden virallisen käynnistäjän kautta:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – perustuen alkuperäiseen shadPS4‑lähdekoodiin.&lt;br&gt;&lt;br&gt;Suosittelemme siirtymistä tähän käynnistäjään, jotta voit jatkaa päivitysten saamista.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
