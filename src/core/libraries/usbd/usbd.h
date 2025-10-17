@@ -32,6 +32,11 @@ using SceUsbdTransfer = libusb_transfer;
 using SceUsbdControlSetup = libusb_control_setup;
 using SceUsbdTransferCallback = void PS4_SYSV_ABI (*)(SceUsbdTransfer* transfer);
 
+// TODO: implement emulated devices
+using SkylandersPortalBackend = UsbRealBackend;
+using InfinityBaseBackend = UsbRealBackend;
+using DimensionsToypadBackend = UsbRealBackend;
+
 enum class SceUsbdSpeed : u32 {
     UNKNOWN = 0,
     LOW = 1,

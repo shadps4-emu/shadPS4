@@ -12,6 +12,43 @@
 
 namespace Libraries::Usbd {
 
+#if defined(_WIN32)
+typedef CRITICAL_SECTION usbi_mutex_t;
+#else
+typedef pthread_mutex_t usbi_mutex_t;
+#endif
+
+struct list_head {
+    struct list_head *prev, *next;
+};
+
+// Forward declared libusb structs
+struct UsbDeviceHandle {
+    usbi_mutex_t lock;
+    unsigned long claimed_interfaces;
+    struct list_head list;
+    struct libusb_device* dev;
+    int auto_detach_kernel_driver;
+};
+
+struct UsbDevice {
+    volatile long refcnt;
+
+    struct libusb_context* ctx;
+    struct libusb_device* parent_dev;
+
+    uint8_t bus_number;
+    uint8_t port_number;
+    uint8_t device_address;
+    enum libusb_speed speed;
+
+    struct list_head list;
+    unsigned long session_data;
+
+    struct libusb_device_descriptor device_descriptor;
+    volatile long attached;
+};
+
 class UsbEmulatedImpl {
 public:
     UsbEmulatedImpl() = default;
@@ -167,7 +204,7 @@ public:
     }
     s32 AttachKernelDriver(libusb_device_handle* dev_handle, s32 interface_number) override {
 #if defined(_WIN32)
-        s_has_removed_driver = true;
+        s_has_removed_driver = false;
         return LIBUSB_SUCCESS;
 #else
         return libusb_attach_kernel_driver(dev_handle, interface_number);
@@ -231,46 +268,10 @@ protected:
     bool s_has_removed_driver = false;
 };
 
-struct list_head {
-    struct list_head *prev, *next;
-};
-
-#if defined(_WIN32)
-typedef CRITICAL_SECTION usbi_mutex_t;
-#else
-typedef pthread_mutex_t usbi_mutex_t;
-#endif
-
-struct UsbDeviceHandle {
-    usbi_mutex_t lock;
-    unsigned long claimed_interfaces;
-    struct list_head list;
-    struct libusb_device* dev;
-    int auto_detach_kernel_driver;
-};
-
-struct UsbDevice {
-    volatile long refcnt;
-
-    struct libusb_context* ctx;
-    struct libusb_device* parent_dev;
-
-    uint8_t bus_number;
-    uint8_t port_number;
-    uint8_t device_address;
-    enum libusb_speed speed;
-
-    struct list_head list;
-    unsigned long session_data;
-
-    struct libusb_device_descriptor device_descriptor;
-    volatile long attached;
-};
-
 class UsbEmulatedBackend : public UsbRealBackend {
 public:
     s64 GetDeviceList(libusb_device*** list) override {
-        auto** fake = new libusb_device*[2];
+        auto** fake = static_cast<libusb_device**>(calloc(2, sizeof(libusb_device*)));
         fake[0] = GetDevice(nullptr);
         fake[1] = nullptr;
         *list = fake;
@@ -278,7 +279,19 @@ public:
         return 1;
     }
     void FreeDeviceList(libusb_device** list, s32 unref_devices) override {
-        libusb_free_device_list(list, 0); // to avoid unref fake device
+        if (!list) {
+            return;
+        }
+
+        if (unref_devices) {
+            int i = 0;
+            libusb_device* dev;
+
+            while ((dev = list[i++]) != nullptr) {
+                free(dev);
+            }
+        }
+        free(list);
     }
 
     s32 GetConfiguration(libusb_device_handle* dev, s32* config) override {
@@ -288,7 +301,7 @@ public:
         const auto endpoint_descs = FillEndpointDescriptorPair();
         const auto interface_desc = FillInterfaceDescriptor(endpoint_descs);
 
-        const auto interface = new libusb_interface();
+        const auto interface = static_cast<libusb_interface*>(calloc(1, sizeof(libusb_interface*)));
         interface->altsetting = interface_desc;
         interface->num_altsetting = 0;
 
@@ -326,13 +339,14 @@ public:
         return LIBUSB_SUCCESS;
     }
     void CloseDevice(libusb_device_handle* dev_handle) override {
-        UNREACHABLE_MSG("Guest decided to close device, might be an implementation issue");
+        LOG_WARNING(Lib_Usbd, "Guest decided to close device, might be an implementation issue");
+        free(dev_handle);
     }
     libusb_device* GetDevice(libusb_device_handle* dev_handle) override {
         const auto desc = FillDeviceDescriptor();
         ASSERT(desc);
 
-        const auto fake = new UsbDevice();
+        const auto fake = static_cast<UsbDevice*>(calloc(1, sizeof(UsbDevice*)));
         fake->bus_number = 0;
         fake->port_number = 0;
         fake->device_address = 0;
@@ -353,7 +367,8 @@ public:
         return dev_handle;
     }
     s32 ResetDevice(libusb_device_handle* dev_handle) override {
-        UNREACHABLE_MSG("Guest decided to reset device, might be an implementation issue");
+        LOG_WARNING(Lib_Usbd, "Guest decided to reset device, might be an implementation issue");
+        return LIBUSB_SUCCESS;
     }
 
     s32 KernelDriverActive(libusb_device_handle* dev_handle, s32 interface_number) override {

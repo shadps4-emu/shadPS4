@@ -457,10 +457,19 @@ int PS4_SYSV_ABI Func_D56B43060720B1E0() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    if (Config::getUsbDeviceBackend() == Config::UsbBackendType::SkylandersPortal) {
-        // usb_backend = std::make_shared<SkylandersPortalBackend>();
-    } else {
+    switch (Config::getUsbDeviceBackend()) {
+    case Config::SkylandersPortal:
+        usb_backend = std::make_shared<SkylandersPortalBackend>();
+        break;
+    case Config::InfinityBase:
+        usb_backend = std::make_shared<InfinityBaseBackend>();
+        break;
+    case Config::DimensionsToypad:
+        usb_backend = std::make_shared<DimensionsToypadBackend>();
+        break;
+    default:
         usb_backend = std::make_shared<UsbRealBackend>();
+        break;
     }
 
     LIB_FUNCTION("0ktE1PhzGFU", "libSceUsbd", 1, "libSceUsbd", sceUsbdAllocTransfer);
