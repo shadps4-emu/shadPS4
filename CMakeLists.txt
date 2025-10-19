@@ -664,19 +664,19 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
-set(QUASIFS src/core/quasifs/src/quasifs.cpp
-            src/core/quasifs/src/quasifs_vdriver.cpp
-            src/core/quasifs/src/quasifs_inode_device.cpp
-            src/core/quasifs/src/quasifs_inode_directory.cpp
-            src/core/quasifs/src/quasifs_inode_regularfile.cpp
-            src/core/quasifs/src/quasifs_inode_symlink.cpp
-            src/core/quasifs/src/quasifs_partition.cpp    
+set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
+            src/core/file_sys/quasifs/src/quasifs_vdriver.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_device.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_directory.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_regularfile.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
+            src/core/file_sys/quasifs/src/quasifs_partition.cpp    
 )
 
-set(HOSTIO src/core/quasifs/hostio/src/host_io_base.cpp
-           src/core/quasifs/hostio/src/host_io_virtual.cpp
-           src/core/quasifs/hostio/src/host_io_posix.cpp
-           src/core/quasifs/hostio/src/host_io_win32.cpp
+set(HOSTIO src/core/file_sys/hostio/src/host_io_base.cpp
+           src/core/file_sys/hostio/src/host_io_virtual.cpp
+           src/core/file_sys/hostio/src/host_io_posix.cpp
+           src/core/file_sys/hostio/src/host_io_win32.cpp
 )
 
 set(COMMON src/common/logging/backend.cpp

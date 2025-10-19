@@ -43,9 +43,12 @@
 #include "emulator.h"
 #include "video_core/renderdoc.h"
 
-#include "core/quasifs/quasifs.h"
-#include "core/quasifs/quasifs_inode_device.h"
-#include "core/quasifs/quasifs_partition.h"
+#include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/file_sys/devices/std_device.h"
+#include "core/file_sys/devices/zero_device.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -62,6 +65,7 @@ Emulator::Emulator() {
     WSAStartup(versionWanted, &wsaData);
 #endif
 }
+
 
 Emulator::~Emulator() {}
 
@@ -84,28 +88,57 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
 
     auto* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
-    QuasiFS::partition_ptr partition_app0 = QuasiFS::Partition::Create(game_folder);
-    QuasiFS::partition_ptr partition_data = QuasiFS::Partition::Create(mount_data_dir);
-    QuasiFS::partition_ptr partition_dev = QuasiFS::Partition::Create();
-    QuasiFS::partition_ptr partition_download = QuasiFS::Partition::Create(mount_download_dir);
-    QuasiFS::partition_ptr partition_hostapp = QuasiFS::Partition::Create(game_folder);
-    QuasiFS::partition_ptr partition_temp = QuasiFS::Partition::Create(mount_temp_dir);
+    qfs->Operation.Chmod("/", 0777);
+    QuasiFS::partition_ptr partition_app0 = QuasiFS::Partition::Create(game_folder, 0555);
+    QuasiFS::partition_ptr partition_data = QuasiFS::Partition::Create(mount_data_dir, 777);
+    QuasiFS::partition_ptr partition_dev = QuasiFS::Partition::Create("", 0755);
+    QuasiFS::partition_ptr partition_download =
+        QuasiFS::Partition::Create(mount_download_dir, 0777);
+    QuasiFS::partition_ptr partition_hostapp = QuasiFS::Partition::Create(game_folder, 0777);
+    QuasiFS::partition_ptr partition_temp = QuasiFS::Partition::Create(mount_temp_dir, 0777);
+
     qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/data", 0777);
+    qfs->Operation.MKDir("/dev", 0755);
     qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
-    qfs->Operation.MKDir("/dev", 0555);
     qfs->Operation.MKDir("/hostapp", 0777);
     qfs->Operation.MKDir("/temp", 0777);
     qfs->Operation.MKDir("/temp0", 0777);
+
     qfs->Mount("/app0", partition_app0, QuasiFS::MountOptions::MOUNT_NOOPT);
     qfs->Mount("/data", partition_data, QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/dev", partition_dev, QuasiFS::MountOptions::MOUNT_NOOPT);
-    qfs->Mount("/download0", partition_download, QuasiFS::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/dev", partition_dev, QuasiFS::MountOptions::MOUNT_RW);
+    qfs->Mount("/download0", partition_download, QuasiFS::MountOptions::MOUNT_RW);
     qfs->Mount("/hostapp", partition_hostapp,
                QuasiFS::MountOptions::MOUNT_NOOPT | QuasiFS::MountOptions::MOUNT_BIND);
     qfs->Mount("/temp", partition_temp, QuasiFS::MountOptions::MOUNT_RW);
     qfs->Mount("/temp0", partition_temp,
                QuasiFS::MountOptions::MOUNT_RW | QuasiFS::MountOptions::MOUNT_BIND);
+
+    //
+    // Setup /dev
+    //
+
+    qfs->Operation.MKDir("/dev/fd");
+    qfs->ForceInsert("/dev/fd", "0", std::make_shared<std_device>("stdin", false));
+    qfs->ForceInsert("/dev/fd", "1", std::make_shared<std_device>("stdout", false));
+    qfs->ForceInsert("/dev/fd", "2", std::make_shared<std_device>("stderr", true));
+    qfs->Operation.Link("/dev/fd/0", "/dev/stdin");
+    qfs->Operation.Link("/dev/fd/1", "/dev/stdout");
+    qfs->Operation.Link("/dev/fd/2", "/dev/stderr");
+    qfs->Operation.Link("/dev/fd/0", "/dev/deci_stdin");
+    qfs->Operation.Link("/dev/fd/1", "/dev/deci_stdout");
+    qfs->Operation.Link("/dev/fd/2", "/dev/deci_stderr");
+    qfs->ForceInsert("/dev", "zero", std::make_shared<zero_device>());
+
+    if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY); fd_dev != 0)
+        LOG_CRITICAL(Kernel_Fs, "XDXDXD 0");
+    if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY); fd_dev != 1)
+        LOG_CRITICAL(Kernel_Fs, "XDXDXD 1");
+    if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY); fd_dev != 2)
+        LOG_CRITICAL(Kernel_Fs, "XDXDXD 2");
+
+    //
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {

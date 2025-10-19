@@ -49,22 +49,6 @@ struct OrbisKernelDirent {
     char d_name[ORBIS_MAX_PATH + 1]; /* name must be no longer than this */
 };
 
-// flags for Open
-constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
-constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
-constexpr int ORBIS_KERNEL_O_RDWR = 0x0002;
-
-constexpr int ORBIS_KERNEL_O_NONBLOCK = 0x0004;
-constexpr int ORBIS_KERNEL_O_APPEND = 0x0008;
-constexpr int ORBIS_KERNEL_O_FSYNC = 0x0080;
-constexpr int ORBIS_KERNEL_O_SYNC = 0x0080;
-constexpr int ORBIS_KERNEL_O_CREAT = 0x0200;
-constexpr int ORBIS_KERNEL_O_TRUNC = 0x0400;
-constexpr int ORBIS_KERNEL_O_EXCL = 0x0800;
-constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
-constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
-constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
-
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);

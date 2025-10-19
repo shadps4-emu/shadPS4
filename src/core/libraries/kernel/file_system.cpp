@@ -27,7 +27,7 @@
 #include "core/memory.h"
 #include "kernel.h"
 
-#include "core/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -39,6 +39,8 @@
 namespace D = Core::Devices;
 namespace qfs = QuasiFS;
 
+static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
 #define GET_DEVICE_FD(fd)                                                                          \
@@ -49,20 +51,6 @@ using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const ch
 // prefix path, only dev devices
 static std::map<std::string, FactoryDevice> available_device = {
     // clang-format off
-    {"/dev/stdin", GET_DEVICE_FD(0)},
-    {"/dev/stdout", GET_DEVICE_FD(1)},
-    {"/dev/stderr", GET_DEVICE_FD(2)},
-
-    {"/dev/fd/0", GET_DEVICE_FD(0)},
-    {"/dev/fd/1", GET_DEVICE_FD(1)},
-    {"/dev/fd/2", GET_DEVICE_FD(2)},
-
-    {"/dev/deci_stdin", GET_DEVICE_FD(0)},
-    {"/dev/deci_stdout", GET_DEVICE_FD(1)},
-    {"/dev/deci_stderr", GET_DEVICE_FD(2)},
-
-    {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
-
     {"/dev/urandom",  &D::URandomDevice::Create },
     {"/dev/random",   &D::RandomDevice::Create },
     {"/dev/srandom",  &D::SRandomDevice::Create },
@@ -75,17 +63,11 @@ namespace Libraries::Kernel {
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    int fd = qfs->Operation.Open(raw_path, flags, mode);
-
-    if (fd < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-fd);
-        return -1;
-    }
-
-    return fd;
+    int result = g_qfs->Operation.Open(raw_path, flags, mode);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
@@ -102,16 +84,11 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 }
 
 s32 PS4_SYSV_ABI close(s32 fd) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    int result = g_qfs->Operation.Close(fd);
 
-    if (int status = qfs->Operation.Close(fd); status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return ORBIS_OK;
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s32 PS4_SYSV_ABI posix_close(s32 fd) {
@@ -128,17 +105,10 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 }
 
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    int status = qfs->Operation.Write(fd, buf, nbytes);
-
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return status;
+    int result = g_qfs->Operation.Write(fd, buf, nbytes);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
@@ -263,17 +233,10 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    int status = qfs->Operation.LSeek(fd, offset, origin);
-
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return status;
+    int result = g_qfs->Operation.LSeek(fd, offset, origin);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
@@ -286,17 +249,10 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    int status = qfs->Operation.Read(fd, buf, nbytes);
-
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return status;
+    int result = g_qfs->Operation.Read(fd, buf, nbytes);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 
     // if (file->type == Core::FileSys::FileType::Directory) {
     //     s64 result = file->directory->read(buf, nbytes);
@@ -326,17 +282,10 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    int status = qfs->Operation.MKDir(path, mode);
-
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return status;
+    int result = g_qfs->Operation.MKDir(path, mode);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
     // std::error_code ec;
@@ -344,8 +293,6 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     //     *__Error() = POSIX_EIO;
     //     return -1;
     // }
-
-    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
@@ -358,15 +305,10 @@ s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
 }
 
 s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    if (int status = qfs->Operation.RMDir(path); status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return ORBIS_OK;
+    int result = g_qfs->Operation.RMDir(path);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
@@ -381,10 +323,12 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
 
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    qfs::quasi_stat_t st;
-    int status = qfs->Operation.Stat(path, &st);
+    Libraries::Kernel::OrbisKernelStat st;
+    int result = g_qfs->Operation.Stat(path, &st);
+    if (result < 0) {
+        *__Error() = -result;
+        return -1;
+    }
 
     sb->st_dev = st.st_dev;
     sb->st_ino = st.st_ino;
@@ -404,13 +348,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     //  sb-> st_lspare=st.st_
     // OrbisKernelTimespec st_birthtim;
 
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return status;
+    return ORBIS_OK;
 
     // const auto path_name = mnt->GetHostPath(path);
     // std::memset(sb, 0, sizeof(OrbisKernelStat));
@@ -448,14 +386,15 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
     std::string_view guest_path{path};
     for (const auto& prefix : available_device | std::views::keys) {
         if (guest_path.starts_with(prefix)) {
             return ORBIS_OK;
         }
     }
-    const auto path_name = mnt->GetHostPath(guest_path);
-    if (!std::filesystem::exists(path_name)) {
+
+    if (!g_qfs->Exists(guest_path)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -463,10 +402,14 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    qfs::quasi_stat_t st;
-    int status = qfs->Operation.FStat(fd, &st);
+    Libraries::Kernel::OrbisKernelStat st;
+
+    int result = g_qfs->Operation.FStat(fd, &st);
+    if (result < 0) {
+        *__Error() = -result;
+        return -1;
+    }
 
     sb->st_dev = st.st_dev;
     sb->st_ino = st.st_ino;
@@ -486,12 +429,6 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     //  sb-> st_lspare=st.st_
     // OrbisKernelTimespec st_birthtim;
 
-    if (status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
     return ORBIS_OK;
 }
 
@@ -509,15 +446,10 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
-    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-
-    if (int status = qfs->Operation.FTruncate(fd,length); status < 0) {
-        // Open failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(-status);
-        return -1;
-    }
-
-    return ORBIS_OK;
+    int result = g_qfs->Operation.FTruncate(fd, length);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
@@ -655,23 +587,10 @@ s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
 }
 
 s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    if (file->type == Core::FileSys::FileType::Device) {
-        s32 result = file->device->fsync();
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    file->f.Flush();
-    return ORBIS_OK;
+    int result = g_qfs->Operation.FSync(fd);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
@@ -819,42 +738,11 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 }
 
 s32 PS4_SYSV_ABI posix_unlink(const char* path) {
-    if (path == nullptr) {
-        *__Error() = POSIX_EINVAL;
-        return -1;
-    }
-
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
-    bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
-    if (host_path.empty()) {
-        *__Error() = POSIX_ENOENT;
-        return -1;
-    }
-
-    if (ro) {
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
-
-    if (std::filesystem::is_directory(host_path)) {
-        *__Error() = POSIX_EPERM;
-        return -1;
-    }
-
-    auto* file = h->GetFile(host_path);
-    if (file == nullptr) {
-        // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
-        file.Unlink();
-    } else {
-        file->f.Unlink();
-    }
-
+    int result = g_qfs->Operation.Unlink(path);
+    if (result < 0)
+        *__Error() = -result;
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
-    return ORBIS_OK;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
