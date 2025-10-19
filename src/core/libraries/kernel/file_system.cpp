@@ -27,6 +27,8 @@
 #include "core/memory.h"
 #include "kernel.h"
 
+#include "core/quasifs/quasifs.h"
+
 #ifdef _WIN32
 #include <io.h>
 #include <winsock2.h>
@@ -35,6 +37,8 @@
 #endif
 
 namespace D = Core::Devices;
+namespace qfs = QuasiFS;
+
 using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
 
 #define GET_DEVICE_FD(fd)                                                                          \
@@ -71,165 +75,17 @@ namespace Libraries::Kernel {
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    bool read = (flags & 0x3) == ORBIS_KERNEL_O_RDONLY;
-    bool write = (flags & 0x3) == ORBIS_KERNEL_O_WRONLY;
-    bool rdwr = (flags & 0x3) == ORBIS_KERNEL_O_RDWR;
+    int fd = qfs->Operation.Open(raw_path, flags, mode);
 
-    if (!read && !write && !rdwr) {
-        // Start by checking for invalid flags.
-        *__Error() = POSIX_EINVAL;
-        return -1;
-    }
-
-    bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
-    bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
-    // Flags fsync and sync behave the same
-    bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0 || (flags & ORBIS_KERNEL_O_FSYNC) != 0;
-    bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
-    bool truncate = (flags & ORBIS_KERNEL_O_TRUNC) != 0;
-    bool excl = (flags & ORBIS_KERNEL_O_EXCL) != 0;
-    bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
-    bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
-    bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
-
-    if (sync || direct || dsync || nonblock) {
-        LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
-    }
-
-    std::string_view path{raw_path};
-    u32 handle = h->CreateHandle();
-    auto* file = h->GetFile(handle);
-
-    if (path.starts_with("/dev/")) {
-        for (const auto& [prefix, factory] : available_device) {
-            if (path.starts_with(prefix)) {
-                file->is_opened = true;
-                file->type = Core::FileSys::FileType::Device;
-                file->m_guest_name = path;
-                file->device = factory(handle, path.data(), flags, mode);
-                return handle;
-            }
-        }
-    }
-
-    bool read_only = false;
-    file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
-    bool exists = std::filesystem::exists(file->m_host_name);
-    s32 e = 0;
-
-    if (create) {
-        if (excl && exists) {
-            // Error if file exists
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EEXIST;
-            return -1;
-        }
-
-        if (!exists) {
-            if (read_only) {
-                // Can't create files in a read only directory
-                h->DeleteHandle(handle);
-                *__Error() = POSIX_EROFS;
-                return -1;
-            }
-            // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
-        }
-    } else if (!exists) {
-        // If we're not creating a file, and it doesn't exist, return ENOENT
-        h->DeleteHandle(handle);
-        *__Error() = POSIX_ENOENT;
-        return -1;
-    }
-
-    if (std::filesystem::is_directory(file->m_host_name) || directory) {
-        // Directories can be opened even if the directory flag isn't set.
-        // In these cases, error behavior is identical to the directory code path.
-        directory = true;
-    }
-
-    if (directory) {
-        if (!std::filesystem::is_directory(file->m_host_name)) {
-            // If the opened file is not a directory, return ENOTDIR.
-            // This will trigger when create & directory is specified, this is expected.
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_ENOTDIR;
-            return -1;
-        }
-
-        if (write || rdwr) {
-            // Cannot open directories with any type of write access
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
-            return -1;
-        }
-
-        if (truncate) {
-            // Cannot open directories with truncate
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EISDIR;
-            return -1;
-        }
-
-        file->type = Core::FileSys::FileType::Directory;
-        file->is_opened = true;
-        if (file->m_guest_name.starts_with("/app0")) {
-            // TODO: Properly identify type for paths like "/app0/.."
-            file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
-        } else {
-            file->directory = Core::Directories::NormalDirectory::Create(file->m_guest_name);
-        }
-    } else {
-        file->type = Core::FileSys::FileType::Regular;
-
-        if (truncate && read_only) {
-            // Can't open files with truncate flag in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (truncate) {
-            // Open the file as read-write so we can truncate regardless of flags.
-            // Since open starts by closing the file, this won't interfere with later open calls.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-            if (e == 0) {
-                // If the file was opened successfully, reduce size to 0
-                file->f.SetSize(0);
-            }
-        }
-
-        if (read) {
-            // Read only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
-        } else if (read_only) {
-            // Can't open files with write/read-write access in a read only directory
-            h->DeleteHandle(handle);
-            *__Error() = POSIX_EROFS;
-            return -1;
-        } else if (append) {
-            // Append can be specified with rdwr or write, but we treat it as a separate mode.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
-        } else if (write) {
-            // Write only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
-        } else if (rdwr) {
-            // Read and write
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
-        }
-    }
-
-    if (e != 0) {
+    if (fd < 0) {
         // Open failed in platform-specific code, errno needs to be converted.
-        h->DeleteHandle(handle);
-        SetPosixErrno(e);
+        SetPosixErrno(-fd);
         return -1;
     }
 
-    file->is_opened = true;
-    return handle;
+    return fd;
 }
 
 s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
@@ -247,24 +103,14 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 
 s32 PS4_SYSV_ABI close(s32 fd) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    if (int status = qfs->Operation.Close(fd); status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
-    if (fd < 3) {
-        *__Error() = POSIX_EPERM;
-        return -1;
-    }
-    if (file->type == Core::FileSys::FileType::Regular) {
-        file->f.Close();
-    } else if (file->type == Core::FileSys::FileType::Socket) {
-        file->socket->Close();
-    }
-    file->is_opened = false;
-    LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
-    // FIXME: Lock file mutex before deleting it?
-    h->DeleteHandle(fd);
+
     return ORBIS_OK;
 }
 
@@ -282,27 +128,17 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 }
 
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    int status = qfs->Operation.Write(fd, buf, nbytes);
+
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->write(buf, nbytes);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Socket) {
-        // Socket functions handle errnos internally.
-        return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
-    }
-
-    return file->f.WriteRaw<u8>(buf, nbytes);
+    return status;
 }
 
 s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
@@ -410,37 +246,13 @@ s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 }
 
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->lseek(offset, whence);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Directory) {
-        s64 result = file->directory->lseek(offset, whence);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-
-    Common::FS::SeekOrigin origin{};
+    qfs::SeekOrigin origin{};
     if (whence == 0) {
-        origin = Common::FS::SeekOrigin::SetOrigin;
+        origin = qfs::SeekOrigin::ORIGIN;
     } else if (whence == 1) {
-        origin = Common::FS::SeekOrigin::CurrentPosition;
+        origin = qfs::SeekOrigin::CURRENT;
     } else if (whence == 2) {
-        origin = Common::FS::SeekOrigin::End;
+        origin = qfs::SeekOrigin::END;
     } else if (whence == 3 || whence == 4) {
         // whence parameter belongs to an unsupported POSIX extension
         *__Error() = POSIX_ENOTTY;
@@ -451,23 +263,17 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    if (!file->f.Seek(offset, origin)) {
-        if (errno != 0) {
-            // Seek failed in platform-specific code, errno needs to be converted.
-            SetPosixErrno(errno);
-            return -1;
-        }
-        // Shouldn't be possible, but just in case.
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    int status = qfs->Operation.LSeek(fd, offset, origin);
+
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    s64 result = file->f.Tell();
-    if (result < 0) {
-        // Tell failed in platform-specific code, errno needs to be converted.
-        SetPosixErrno(errno);
-        return -1;
-    }
-    return result;
+    return status;
 }
 
 s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
@@ -480,33 +286,29 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    int status = qfs->Operation.Read(fd, buf, nbytes);
+
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->read(buf, nbytes);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Directory) {
-        s64 result = file->directory->read(buf, nbytes);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Socket) {
-        // Socket functions handle errnos internally.
-        return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
-    }
-    return ReadFile(file->f, buf, nbytes);
+    return status;
+
+    // if (file->type == Core::FileSys::FileType::Directory) {
+    //     s64 result = file->directory->read(buf, nbytes);
+    //     if (result < 0) {
+    //         ErrSceToPosix(result);
+    //         return -1;
+    //     }
+    //     return result;
+    // } else if (file->type == Core::FileSys::FileType::Socket) {
+    //     // Socket functions handle errnos internally.
+    //     return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
+    // }
 }
 
 s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
@@ -524,36 +326,25 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
-    if (path == nullptr) {
-        *__Error() = POSIX_ENOTDIR;
-        return -1;
-    }
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    bool ro = false;
-    const auto dir_name = mnt->GetHostPath(path, &ro);
+    int status = qfs->Operation.MKDir(path, mode);
 
-    if (std::filesystem::exists(dir_name)) {
-        *__Error() = POSIX_EEXIST;
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    if (ro) {
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
+    return status;
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
-    std::error_code ec;
-    if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
+    // std::error_code ec;
+    // if (dir_name.empty() || !std::filesystem::create_directory(dir_name, ec)) {
+    //     *__Error() = POSIX_EIO;
+    //     return -1;
+    // }
 
-    if (!std::filesystem::exists(dir_name)) {
-        *__Error() = POSIX_ENOENT;
-        return -1;
-    }
     return ORBIS_OK;
 }
 
@@ -567,33 +358,14 @@ s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
 }
 
 s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    const std::filesystem::path dir_name = mnt->GetHostPath(path, &ro);
-
-    if (ro) {
-        *__Error() = POSIX_EROFS;
+    if (int status = qfs->Operation.RMDir(path); status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    if (dir_name.empty() || !std::filesystem::is_directory(dir_name)) {
-        *__Error() = POSIX_ENOTDIR;
-        return -1;
-    }
-
-    if (!std::filesystem::exists(dir_name)) {
-        *__Error() = POSIX_ENOENT;
-        return -1;
-    }
-
-    std::error_code ec;
-    s32 result = std::filesystem::remove_all(dir_name, ec);
-
-    if (ec) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
     return ORBIS_OK;
 }
 
@@ -608,28 +380,59 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
-    std::memset(sb, 0, sizeof(OrbisKernelStat));
-    const bool is_dir = std::filesystem::is_directory(path_name);
-    const bool is_file = std::filesystem::is_regular_file(path_name);
-    if (!is_dir && !is_file) {
-        *__Error() = POSIX_ENOENT;
+
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    qfs::quasi_stat_t st;
+    int status = qfs->Operation.Stat(path, &st);
+
+    sb->st_dev = st.st_dev;
+    sb->st_ino = st.st_ino;
+    sb->st_mode = st.st_mode;
+    sb->st_nlink = st.st_nlink;
+    // sb->st_uid = st.st_uid;
+    // sb->st_gid = st.st_gid;
+    // sb-> st_rdev=st.st_
+    // sb->st_atim = st.st_atim;
+    // sb->st_mtim = st.st_mtim;
+    //  sb-> st_ctim=st.st_
+    sb->st_size = st.st_size;
+    sb->st_blocks = st.st_blocks;
+    sb->st_blksize = st.st_blksize;
+    // sb->st_flags = st.st_flags;
+    //  sb-> st_gen=st.st_
+    //  sb-> st_lspare=st.st_
+    // OrbisKernelTimespec st_birthtim;
+
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
-    if (std::filesystem::is_directory(path_name)) {
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 65536;
-        sb->st_blksize = 65536;
-        sb->st_blocks = 128;
-        // TODO incomplete
-    } else {
-        sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
-        sb->st_blksize = 512;
-        sb->st_blocks = (sb->st_size + 511) / 512;
-        // TODO incomplete
-    }
+
+    return status;
+
+    // const auto path_name = mnt->GetHostPath(path);
+    // std::memset(sb, 0, sizeof(OrbisKernelStat));
+    // const bool is_dir = std::filesystem::is_directory(path_name);
+    // const bool is_file = std::filesystem::is_regular_file(path_name);
+    // if (!is_dir && !is_file) {
+    //     *__Error() = POSIX_ENOENT;
+    //     return -1;
+    // }
+    // if (std::filesystem::is_directory(path_name)) {
+    //     sb->st_mode = 0000777u | 0040000u;
+    //     sb->st_size = 65536;
+    //     sb->st_blksize = 65536;
+    //     sb->st_blocks = 128;
+    //     // TODO incomplete
+    // } else {
+    //     sb->st_mode = 0000777u | 0100000u;
+    //     sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
+    //     sb->st_blksize = 512;
+    //     sb->st_blocks = (sb->st_size + 511) / 512;
+    //     // TODO incomplete
+    // }
 
     return ORBIS_OK;
 }
@@ -660,50 +463,35 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
-    if (sb == nullptr) {
-        *__Error() = POSIX_EFAULT;
-        return -1;
-    }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-    std::memset(sb, 0, sizeof(OrbisKernelStat));
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    switch (file->type) {
-    case Core::FileSys::FileType::Device: {
-        s32 result = file->device->fstat(sb);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
+    qfs::quasi_stat_t st;
+    int status = qfs->Operation.FStat(fd, &st);
+
+    sb->st_dev = st.st_dev;
+    sb->st_ino = st.st_ino;
+    sb->st_mode = st.st_mode;
+    sb->st_nlink = st.st_nlink;
+    // sb->st_uid = st.st_uid;
+    // sb->st_gid = st.st_gid;
+    // sb-> st_rdev=st.st_
+    // sb->st_atim = st.st_atim;
+    // sb->st_mtim = st.st_mtim;
+    //  sb-> st_ctim=st.st_
+    sb->st_size = st.st_size;
+    sb->st_blocks = st.st_blocks;
+    sb->st_blksize = st.st_blksize;
+    // sb->st_flags = st.st_flags;
+    //  sb-> st_gen=st.st_
+    //  sb-> st_lspare=st.st_
+    // OrbisKernelTimespec st_birthtim;
+
+    if (status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
+        return -1;
     }
-    case Core::FileSys::FileType::Regular: {
-        sb->st_mode = 0000777u | 0100000u;
-        sb->st_size = file->f.GetSize();
-        sb->st_blksize = 512;
-        sb->st_blocks = (sb->st_size + 511) / 512;
-        // TODO incomplete
-        break;
-    }
-    case Core::FileSys::FileType::Directory: {
-        s32 result = file->directory->fstat(sb);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    case Core::FileSys::FileType::Socket: {
-        // Socket functions handle errnos internally
-        return file->socket->fstat(sb);
-    }
-    default:
-        UNREACHABLE();
-    }
+
     return ORBIS_OK;
 }
 
@@ -721,29 +509,14 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
+    if (int status = qfs->Operation.FTruncate(fd,length); status < 0) {
+        // Open failed in platform-specific code, errno needs to be converted.
+        SetPosixErrno(-status);
         return -1;
     }
 
-    if (file->type == Core::FileSys::FileType::Device) {
-        s32 result = file->device->ftruncate(length);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-
-    if (file->m_host_name.empty()) {
-        *__Error() = POSIX_EACCES;
-        return -1;
-    }
-
-    file->f.SetSize(length);
     return ORBIS_OK;
 }
 

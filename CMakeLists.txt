@@ -664,6 +664,21 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
+set(QUASIFS src/core/quasifs/src/quasifs.cpp
+            src/core/quasifs/src/quasifs_vdriver.cpp
+            src/core/quasifs/src/quasifs_inode_device.cpp
+            src/core/quasifs/src/quasifs_inode_directory.cpp
+            src/core/quasifs/src/quasifs_inode_regularfile.cpp
+            src/core/quasifs/src/quasifs_inode_symlink.cpp
+            src/core/quasifs/src/quasifs_partition.cpp    
+)
+
+set(HOSTIO src/core/quasifs/hostio/src/host_io_base.cpp
+           src/core/quasifs/hostio/src/host_io_virtual.cpp
+           src/core/quasifs/hostio/src/host_io_posix.cpp
+           src/core/quasifs/hostio/src/host_io_win32.cpp
+)
+
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h
            src/common/logging/filter.cpp
@@ -1131,6 +1146,8 @@ if (ENABLE_QT_GUI)
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+        ${QUASIFS}
+        ${HOSTIO}
         src/images/shadPS4.icns
     )
 else()
@@ -1143,6 +1160,8 @@ else()
         ${SHADER_RECOMPILER}
         ${VIDEO_CORE}
         ${EMULATOR}
+        ${QUASIFS}
+        ${HOSTIO}
         src/main.cpp
         src/emulator.cpp
         src/emulator.h

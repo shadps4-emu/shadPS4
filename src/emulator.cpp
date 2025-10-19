@@ -43,6 +43,10 @@
 #include "emulator.h"
 #include "video_core/renderdoc.h"
 
+#include "core/quasifs/quasifs.h"
+#include "core/quasifs/quasifs_inode_device.h"
+#include "core/quasifs/quasifs_partition.h"
+
 Frontend::WindowSDL* g_window = nullptr;
 
 namespace Core {
@@ -60,6 +64,57 @@ Emulator::Emulator() {
 }
 
 Emulator::~Emulator() {}
+
+void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const std::string& id) {
+    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
+    if (!std::filesystem::exists(mount_data_dir)) {
+        std::filesystem::create_directory(mount_data_dir);
+    }
+    const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    if (std::filesystem::exists(mount_temp_dir)) {
+        // Temp folder should be cleared on each boot.
+        std::filesystem::remove_all(mount_temp_dir);
+    }
+    std::filesystem::create_directory(mount_temp_dir);
+    const auto& mount_download_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
+    if (!std::filesystem::exists(mount_download_dir)) {
+        std::filesystem::create_directory(mount_download_dir);
+    }
+
+    auto* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
+    QuasiFS::partition_ptr partition_app0 = QuasiFS::Partition::Create(game_folder);
+    QuasiFS::partition_ptr partition_data = QuasiFS::Partition::Create(mount_data_dir);
+    QuasiFS::partition_ptr partition_dev = QuasiFS::Partition::Create();
+    QuasiFS::partition_ptr partition_download = QuasiFS::Partition::Create(mount_download_dir);
+    QuasiFS::partition_ptr partition_hostapp = QuasiFS::Partition::Create(game_folder);
+    QuasiFS::partition_ptr partition_temp = QuasiFS::Partition::Create(mount_temp_dir);
+    qfs->Operation.MKDir("/app0", 0555);
+    qfs->Operation.MKDir("/data", 0777);
+    qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
+    qfs->Operation.MKDir("/dev", 0555);
+    qfs->Operation.MKDir("/hostapp", 0777);
+    qfs->Operation.MKDir("/temp", 0777);
+    qfs->Operation.MKDir("/temp0", 0777);
+    qfs->Mount("/app0", partition_app0, QuasiFS::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/data", partition_data, QuasiFS::MountOptions::MOUNT_RW);
+    qfs->Mount("/dev", partition_dev, QuasiFS::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/download0", partition_download, QuasiFS::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/hostapp", partition_hostapp,
+               QuasiFS::MountOptions::MOUNT_NOOPT | QuasiFS::MountOptions::MOUNT_BIND);
+    qfs->Mount("/temp", partition_temp, QuasiFS::MountOptions::MOUNT_RW);
+    qfs->Mount("/temp0", partition_temp,
+               QuasiFS::MountOptions::MOUNT_RW | QuasiFS::MountOptions::MOUNT_BIND);
+
+    const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
+    if (!std::filesystem::exists(mount_captures_dir)) {
+        std::filesystem::create_directory(mount_captures_dir);
+    }
+    VideoCore::SetOutputDir(mount_captures_dir, id);
+
+    qfs->SyncHost();
+}
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {
     if (std::filesystem::is_directory(file)) {
@@ -95,6 +150,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     std::string app_version;
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
+
     if (param_sfo_exists) {
         auto* param_sfo = Common::Singleton<PSF>::Instance();
         ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
@@ -190,6 +246,7 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
 
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
+    this->LoadFilesystem(game_folder, id);
 
     // Initialize components
     memory = Core::Memory::Instance();
