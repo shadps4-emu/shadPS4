@@ -11,7 +11,7 @@
 #define DEVICE_STUB()                                                                              \
     {                                                                                              \
         LOG_ERROR(Kernel_Fs, "(STUBBED) called");                                                  \
-        return 0;                                                                                  \
+        return -QUASI_ENOSYS;                                                                                  \
     }
 
 namespace QuasiFS {

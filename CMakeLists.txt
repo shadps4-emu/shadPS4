@@ -777,6 +777,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/logger.cpp
          src/core/file_sys/devices/logger.h
          src/core/file_sys/devices/nop_device.h
+         src/core/file_sys/devices/null_device.cpp
+         src/core/file_sys/devices/null_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
          src/core/file_sys/devices/srandom_device.cpp

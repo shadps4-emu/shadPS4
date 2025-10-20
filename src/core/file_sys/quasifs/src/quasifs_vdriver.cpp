@@ -31,7 +31,7 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     partition_ptr part = res.mountpoint;
     dir_ptr parent_node = std::static_pointer_cast<Directory>(res.parent);
 
-    bool request_read = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == 0;
+    bool request_read = !(flags & QUASI_O_WRONLY) || (flags & QUASI_O_RDWR);
     bool request_write = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) != 0;
     bool request_append = flags & QUASI_O_APPEND;
 
@@ -556,8 +556,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     if (host_used && (hio_status != vio_status))
         LogError("Host returned {}, but virtual driver returned {}", hio_status, vio_status);
 
-    return hio_status;
-    // return vio_status;
+    return vio_status;
 }
 
 s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {

@@ -55,6 +55,7 @@
 #include "core/file_sys/devices/random_device.h"
 #include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/devices/zero_device.h"
+#include "core/file_sys/devices/null_device.h"
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -104,7 +105,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
 
     qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/data", 0777);
-    qfs->Operation.MKDir("/dev", 0755);
+    qfs->Operation.MKDir("/dev", 0555);
     qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
     qfs->Operation.MKDir("/hostapp", 0777);
     qfs->Operation.MKDir("/temp", 0777);
@@ -125,10 +126,11 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     //
 
     qfs->Operation.MKDir("/dev/fd");
-    qfs->ForceInsert("/dev/fd", "0", QuasiFS::Device::Create<Devices::NopDevice>());
+    qfs->ForceInsert("/dev/fd", "0", QuasiFS::Device::Create<Devices::ZeroDevice>());
     qfs->ForceInsert("/dev/fd", "1", QuasiFS::Device::Create<Devices::Logger>("stdout", false));
     // qfs->ForceInsert("/dev/fd", "1", std::make_shared<Devices::Logger>("stdout", false));
     qfs->ForceInsert("/dev/fd", "2", QuasiFS::Device::Create<Devices::Logger>("stderr", true));
+    // stdin is unavailable from within the app???
     qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
     qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/stderr");
@@ -142,7 +144,13 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     qfs->ForceInsert("/dev", "urandom", QuasiFS::Device::Create<Devices::RandomDevice>());
     qfs->ForceInsert("/dev", "srandom", QuasiFS::Device::Create<Devices::SRandomDevice>());
     qfs->ForceInsert("/dev", "zero", QuasiFS::Device::Create<Devices::ZeroDevice>());
-    qfs->ForceInsert("/dev", "null", QuasiFS::Device::Create<Devices::NopDevice>());
+    qfs->ForceInsert("/dev", "null", QuasiFS::Device::Create<Devices::NullDevice>());
+
+    qfs->Operation.Chmod("/dev/deci_stderr",0666);
+    qfs->Operation.Chmod("/dev/deci_stdout",0666);
+    qfs->Operation.Chmod("/dev/random",0666);
+    qfs->Operation.Chmod("/dev/urandom",0666);
+    qfs->Operation.Chmod("/dev/srandom",0666);
 
     if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY); fd_dev != 0)
         LOG_CRITICAL(Kernel_Fs, "XDXDXD 0");
