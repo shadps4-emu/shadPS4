@@ -276,8 +276,8 @@
       <translation>Érvénytelen kiadási adatok.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Nincs letöltési URL a megadott eszközhöz.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Értesítés:&lt;/b&gt;&lt;br&gt;&lt;br&gt; A 0.12.0‑ás verziótól kezdve az emulátor Qt‑verziója már nem kap közvetlen frissítéseket.&lt;br&gt;&lt;br&gt; Ugyanakkor a Qt felület továbbra is elérhető az új hivatalos indítóprogrammal:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – az eredeti shadPS4 forráskód alapján.&lt;br&gt;&lt;br&gt;Ajánljuk, hogy erre az indítóra válts át, hogy folytathasd a frissítések fogadását.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

@@ -276,8 +276,8 @@
       <translation type="unfinished">Invalid release data.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation type="unfinished">No download URL found for the specified asset.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Обавештење:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Почевши од верзије &lt;b&gt;0.12.0&lt;/b&gt;, Qt верзија емулатора више неће добијати директна ажурирања.&lt;br&gt;&lt;br&gt; Међутим, Qt интерфејс остаје доступан преко новог званичног ланчера:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – заснован на оригиналном izvor­nom kodu shadPS4.&lt;br&gt;&lt;br&gt; Препоручујемо прелазак на овај ланчер ради наставka примања ажурирања.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

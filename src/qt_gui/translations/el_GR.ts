@@ -276,8 +276,8 @@
       <translation>Μη έγκυρα δεδομένα έκδοσης.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Δεν βρέθηκε URL λήψης για το συγκεκριμένο στοιχείο.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Σημείωση:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Από την έκδοση &lt;b&gt;0.12.0&lt;/b&gt;, η έκδοση Qt του emulator δεν θα λαμβάνει πλέον άμεσες ενημερώσεις.&lt;br&gt;&lt;br&gt; Η διεπαφή Qt παραμένει διαθέσιμη μέσω του νέου επίσημου εκτοξευτή (launcher):&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – βασισμένο στον αρχικό πηγαίο κώδικα του shadPS4.&lt;br&gt;&lt;br&gt;Συνιστούμε να μεταβείτε σε αυτόν τον launcher για να συνεχίσετε να λαμβάνετε ενημερώσεις.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
