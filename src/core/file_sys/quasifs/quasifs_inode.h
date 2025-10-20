@@ -16,15 +16,23 @@ namespace QuasiFS {
 
 class Inode {
 public:
-    Inode() = default;
-    virtual ~Inode() = default;
-
-    static inode_ptr Create(void) {
-        return std::make_shared<Inode>();
+    Inode() {
+        st.st_mode = 0000755;
+        st.st_nlink = 0;
     }
+
+    virtual ~Inode() = default;
 
     virtual s32 ioctl(u64 cmd, Common::VaCtx* args) {
         return -QUASI_ENOTTY;
+    }
+
+    virtual s64 read(void* buf, size_t count) {
+        return -QUASI_EBADF;
+    }
+
+    virtual s64 write(const void* buf, size_t count) {
+        return -QUASI_EBADF;
     }
 
     virtual s64 pread(void* buf, size_t count, u64 offset) {

@@ -2,32 +2,35 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
 #include <memory>
-#include "base_device.h"
+
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
 
 namespace Core::Devices {
 
-class RandomDevice final : BaseDevice {
-    u32 handle;
-
+class RandomDevice final : public QuasiFS::Device {
 public:
-    static std::shared_ptr<BaseDevice> Create(u32 handle, const char*, int, u16);
-    explicit RandomDevice(u32 handle) : handle(handle) {}
+    RandomDevice();
+    ~RandomDevice();
 
-    ~RandomDevice() override = default;
+    s64 read(void* buf, u64 count) override;
 
-    int ioctl(u64 cmd, Common::VaCtx* args) override;
-    s64 write(const void* buf, size_t nbytes) override;
-    size_t readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
-    size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
-    s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override;
-    s64 lseek(s64 offset, int whence) override;
-    s64 read(void* buf, size_t nbytes) override;
-    int fstat(Libraries::Kernel::OrbisKernelStat* sb) override;
-    s32 fsync() override;
-    int ftruncate(s64 length) override;
-    int getdents(void* buf, u32 nbytes, s64* basep) override;
-    s64 pwrite(const void* buf, size_t nbytes, u64 offset) override;
+    // clang-format off
+    s64 write(const void* buf, u64 count) override { DEVICE_STUB(); }
+    s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }
+    s64 pread(void* buf, size_t count, u64 offset) override { DEVICE_STUB(); }
+    s64 pwrite(const void* buf, size_t count, u64 offset) override { DEVICE_STUB(); }
+    s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override { DEVICE_STUB(); }
+    s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override { DEVICE_STUB(); }
+    s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override { DEVICE_STUB(); }
+    s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override { DEVICE_STUB(); }
+    s64 lseek(s64 offset, int whence) override { DEVICE_STUB(); }
+    s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); }
+    s32 fsync() override { DEVICE_STUB(); }
+    s32 ftruncate(s64 length) override { DEVICE_STUB(); }
+    s32 getdents(void* buf, u32 nbytes, s64* basep) override { DEVICE_STUB(); }
+    // clang-format on
 };
 
 } // namespace Core::Devices

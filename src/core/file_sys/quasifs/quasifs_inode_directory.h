@@ -30,7 +30,7 @@ public:
     // s64 pread(void* buf, size_t count, u64 offset) override;
     // s64 pwrite(const void* buf, size_t count, u64 offset) override;
 
-    virtual int fstat(Libraries::Kernel::OrbisKernelStat* sb) override {
+    int fstat(Libraries::Kernel::OrbisKernelStat* sb) override {
         this->st.st_size = entries.size() * 32;
         *sb = st;
         return 0;

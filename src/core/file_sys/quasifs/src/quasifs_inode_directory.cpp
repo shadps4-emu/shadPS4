@@ -9,8 +9,7 @@
 namespace QuasiFS {
 
 Directory::Directory() {
-    st.st_mode = 0000755 | QUASI_S_IFDIR;
-    st.st_nlink = 0;
+    st.st_mode |= QUASI_S_IFDIR;
 }
 
 inode_ptr Directory::lookup(const std::string& name) {

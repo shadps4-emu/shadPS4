@@ -9,13 +9,6 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/file_sys/devices/console_device.h"
-#include "core/file_sys/devices/deci_tty6_device.h"
-#include "core/file_sys/devices/logger.h"
-#include "core/file_sys/devices/nop_device.h"
-#include "core/file_sys/devices/random_device.h"
-#include "core/file_sys/devices/srandom_device.h"
-#include "core/file_sys/devices/urandom_device.h"
 #include "core/file_sys/directories/normal_directory.h"
 #include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
@@ -41,28 +34,23 @@ namespace qfs = QuasiFS;
 
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
-using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const char*, int, u16)>;
+// #define GET_DEVICE_FD(fd)                                                                          \
+//     [](u32, const char*, int, u16) {                                                               \
+//         return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
+//     }
 
-#define GET_DEVICE_FD(fd)                                                                          \
-    [](u32, const char*, int, u16) {                                                               \
-        return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
-    }
-
-// prefix path, only dev devices
-static std::map<std::string, FactoryDevice> available_device = {
-    // clang-format off
-    {"/dev/urandom",  &D::URandomDevice::Create },
-    {"/dev/random",   &D::RandomDevice::Create },
-    {"/dev/srandom",  &D::SRandomDevice::Create },
-    {"/dev/console",  &D::ConsoleDevice::Create },
-    {"/dev/deci_tty6",&D::DeciTty6Device::Create }
-    // clang-format on
-};
+// // prefix path, only dev devices
+// static std::map<std::string, FactoryDevice> available_device = {
+//     // clang-format off
+//     {"/dev/console",  &D::ConsoleDevice::Create },
+//     {"/dev/deci_tty6",&D::DeciTty6Device::Create }
+//     // clang-format on
+// };
 
 namespace Libraries::Kernel {
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
+    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
 
     int result = g_qfs->Operation.Open(raw_path, flags, mode);
     if (result < 0)
@@ -281,7 +269,7 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 }
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
+    LOG_INFO(Kernel_Fs, "path = {} mode = {:#o}", path, mode);
     int result = g_qfs->Operation.MKDir(path, mode);
     if (result < 0)
         *__Error() = -result;
@@ -323,30 +311,11 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
 
-    Libraries::Kernel::OrbisKernelStat st;
-    int result = g_qfs->Operation.Stat(path, &st);
+    int result = g_qfs->Operation.Stat(path, sb);
     if (result < 0) {
         *__Error() = -result;
         return -1;
     }
-
-    sb->st_dev = st.st_dev;
-    sb->st_ino = st.st_ino;
-    sb->st_mode = st.st_mode;
-    sb->st_nlink = st.st_nlink;
-    // sb->st_uid = st.st_uid;
-    // sb->st_gid = st.st_gid;
-    // sb-> st_rdev=st.st_
-    // sb->st_atim = st.st_atim;
-    // sb->st_mtim = st.st_mtim;
-    //  sb-> st_ctim=st.st_
-    sb->st_size = st.st_size;
-    sb->st_blocks = st.st_blocks;
-    sb->st_blksize = st.st_blksize;
-    // sb->st_flags = st.st_flags;
-    //  sb-> st_gen=st.st_
-    //  sb-> st_lspare=st.st_
-    // OrbisKernelTimespec st_birthtim;
 
     return ORBIS_OK;
 
@@ -385,18 +354,12 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
-    std::string_view guest_path{path};
-    for (const auto& prefix : available_device | std::views::keys) {
-        if (guest_path.starts_with(prefix)) {
-            return ORBIS_OK;
-        }
+    QuasiFS::Resolved res;
+    if (int result = g_qfs->Resolve(path, res); result != 0) {
+        *__Error() = -result;
+        return ErrnoToSceKernelError(*__Error());
     }
 
-    if (!g_qfs->Exists(guest_path)) {
-        return ORBIS_KERNEL_ERROR_ENOENT;
-    }
     return ORBIS_OK;
 }
 
@@ -454,6 +417,22 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
 
 s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
     s32 result = posix_ftruncate(fd, length);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
+    int result = g_qfs->Operation.Truncate(path, length);
+    if (result < 0)
+        *__Error() = -result;
+    return result;
+}
+
+s32 PS4_SYSV_ABI sceKernelTruncate(const char* path, s64 length) {
+    s32 result = posix_truncate(path, length);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -1081,6 +1060,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("kBwCPsYX-m4", "libkernel", 1, "libkernel", sceKernelFstat);
     LIB_FUNCTION("ih4CD9-gghM", "libkernel", 1, "libkernel", posix_ftruncate);
     LIB_FUNCTION("VW3TVZiM4-E", "libkernel", 1, "libkernel", sceKernelFtruncate);
+    LIB_FUNCTION("WlyEA-sLDf0", "libkernel", 1, "libkernel", sceKernelTruncate);
     LIB_FUNCTION("NN01qLRhiqU", "libScePosix", 1, "libkernel", posix_rename);
     LIB_FUNCTION("NN01qLRhiqU", "libkernel", 1, "libkernel", posix_rename);
     LIB_FUNCTION("52NcYU9+lEo", "libkernel", 1, "libkernel", sceKernelRename);

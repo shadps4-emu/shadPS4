@@ -7,7 +7,7 @@
 
 namespace QuasiFS {
 
-class Symlink : public Inode {
+class Symlink final : public Inode {
     const fs::path target;
 
 public:

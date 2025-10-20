@@ -10,9 +10,9 @@ Device::Device() {
     this->st.st_blksize = 0;
     this->st.st_blocks = 0;
 
-    this->st.st_mode = 0000755 | QUASI_S_IFCHR;
-    this->st.st_nlink = 0;
-    // not incrementing target, this type is a softlink
+    this->st.st_mode |= QUASI_S_IFCHR;
 }
+
+Device::~Device() = default;
 
 } // namespace QuasiFS

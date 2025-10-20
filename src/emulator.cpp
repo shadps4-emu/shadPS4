@@ -47,7 +47,13 @@
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/file_sys/quasifs/quasifs_inode_device.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
-#include "core/file_sys/devices/std_device.h"
+
+#include "core/file_sys/devices/console_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
+#include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/devices/zero_device.h"
 
 Frontend::WindowSDL* g_window = nullptr;
@@ -65,7 +71,6 @@ Emulator::Emulator() {
     WSAStartup(versionWanted, &wsaData);
 #endif
 }
-
 
 Emulator::~Emulator() {}
 
@@ -109,8 +114,8 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     qfs->Mount("/data", partition_data, QuasiFS::MountOptions::MOUNT_RW);
     qfs->Mount("/dev", partition_dev, QuasiFS::MountOptions::MOUNT_RW);
     qfs->Mount("/download0", partition_download, QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/hostapp", partition_hostapp,
-               QuasiFS::MountOptions::MOUNT_NOOPT | QuasiFS::MountOptions::MOUNT_BIND);
+    //qfs->Mount("/hostapp", partition_hostapp,
+    //           QuasiFS::MountOptions::MOUNT_NOOPT | QuasiFS::MountOptions::MOUNT_BIND);
     qfs->Mount("/temp", partition_temp, QuasiFS::MountOptions::MOUNT_RW);
     qfs->Mount("/temp0", partition_temp,
                QuasiFS::MountOptions::MOUNT_RW | QuasiFS::MountOptions::MOUNT_BIND);
@@ -120,23 +125,31 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     //
 
     qfs->Operation.MKDir("/dev/fd");
-    qfs->ForceInsert("/dev/fd", "0", std::make_shared<std_device>("stdin", false));
-    qfs->ForceInsert("/dev/fd", "1", std::make_shared<std_device>("stdout", false));
-    qfs->ForceInsert("/dev/fd", "2", std::make_shared<std_device>("stderr", true));
-    qfs->Operation.Link("/dev/fd/0", "/dev/stdin");
-    qfs->Operation.Link("/dev/fd/1", "/dev/stdout");
-    qfs->Operation.Link("/dev/fd/2", "/dev/stderr");
-    qfs->Operation.Link("/dev/fd/0", "/dev/deci_stdin");
-    qfs->Operation.Link("/dev/fd/1", "/dev/deci_stdout");
-    qfs->Operation.Link("/dev/fd/2", "/dev/deci_stderr");
-    qfs->ForceInsert("/dev", "zero", std::make_shared<zero_device>());
+    qfs->ForceInsert("/dev/fd", "0", QuasiFS::Device::Create<Devices::NopDevice>());
+    qfs->ForceInsert("/dev/fd", "1", QuasiFS::Device::Create<Devices::Logger>("stdout", false));
+    // qfs->ForceInsert("/dev/fd", "1", std::make_shared<Devices::Logger>("stdout", false));
+    qfs->ForceInsert("/dev/fd", "2", QuasiFS::Device::Create<Devices::Logger>("stderr", true));
+    qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
+    qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
+    qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/stderr");
+    qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/deci_stdin");
+    qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/deci_stdout");
+    qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/deci_stderr");
+
+    qfs->ForceInsert("/dev", "console", QuasiFS::Device::Create<Devices::ConsoleDevice>());
+    qfs->ForceInsert("/dev", "deci_tty6", QuasiFS::Device::Create<Devices::DeciTty6Device>());
+    qfs->ForceInsert("/dev", "random", QuasiFS::Device::Create<Devices::RandomDevice>());
+    qfs->ForceInsert("/dev", "urandom", QuasiFS::Device::Create<Devices::RandomDevice>());
+    qfs->ForceInsert("/dev", "srandom", QuasiFS::Device::Create<Devices::SRandomDevice>());
+    qfs->ForceInsert("/dev", "zero", QuasiFS::Device::Create<Devices::ZeroDevice>());
+    qfs->ForceInsert("/dev", "null", QuasiFS::Device::Create<Devices::NopDevice>());
 
     if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY); fd_dev != 0)
         LOG_CRITICAL(Kernel_Fs, "XDXDXD 0");
     if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY); fd_dev != 1)
-        LOG_CRITICAL(Kernel_Fs, "XDXDXD 1");
+        LOG_CRITICAL(Kernel_Fs, "XDXDXD 1 != {}",fd_dev);
     if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY); fd_dev != 2)
-        LOG_CRITICAL(Kernel_Fs, "XDXDXD 2");
+        LOG_CRITICAL(Kernel_Fs, "XDXDXD 2 != {}",fd_dev);
 
     //
 
@@ -147,6 +160,8 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
     qfs->SyncHost();
+
+    // QuasiFS::printTree(qfs->GetRoot(), "/");
 }
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {

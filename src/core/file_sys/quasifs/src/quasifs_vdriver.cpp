@@ -31,8 +31,8 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     partition_ptr part = res.mountpoint;
     dir_ptr parent_node = std::static_pointer_cast<Directory>(res.parent);
 
-    bool request_read = !(flags & QUASI_O_WRONLY) | QUASI_O_RDWR;
-    bool request_write = flags & (QUASI_O_WRONLY | QUASI_O_RDWR);
+    bool request_read = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == 0;
+    bool request_write = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) != 0;
     bool request_append = flags & QUASI_O_APPEND;
 
     //
@@ -48,6 +48,9 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
 
     if ((request_read && !checked_node->CanRead()) || (request_write && !checked_node->CanWrite()))
         return -QUASI_EACCES;
+
+    if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
+        return -QUASI_EINVAL;
 
     //
     // Proceed
@@ -98,7 +101,7 @@ int QFS::OperationImpl::Creat(const fs::path& path, u16 mode) {
     return Open(path, QUASI_O_CREAT | QUASI_O_WRONLY | QUASI_O_TRUNC, mode);
 };
 
-int QFS::OperationImpl::Close(int fd) {
+int QFS::OperationImpl::Close(s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -297,7 +300,7 @@ int QFS::OperationImpl::Unlink(const fs::path& path) {
     return vio_status;
 }
 
-int QFS::OperationImpl::Flush(const int fd) {
+int QFS::OperationImpl::Flush(const s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -327,7 +330,7 @@ int QFS::OperationImpl::Flush(const int fd) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FSync(const int fd) {
+int QFS::OperationImpl::FSync(const s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -393,7 +396,7 @@ int QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FTruncate(const int fd, u64 length) {
+int QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -425,7 +428,7 @@ int QFS::OperationImpl::FTruncate(const int fd, u64 length) {
     return vio_status;
 }
 
-u64 QFS::OperationImpl::LSeek(const int fd, u64 offset, SeekOrigin origin) {
+u64 QFS::OperationImpl::LSeek(const s32 fd, u64 offset, SeekOrigin origin) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -452,7 +455,7 @@ u64 QFS::OperationImpl::LSeek(const int fd, u64 offset, SeekOrigin origin) {
     return vio_status;
 };
 
-s64 QFS::OperationImpl::Tell(int fd) {
+s64 QFS::OperationImpl::Tell(s32 fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 };
 
@@ -466,7 +469,7 @@ void UpdateStatFromHost(Libraries::Kernel::OrbisKernelStat* vfs,
     vfs->st_ctim = host->st_ctim;
 }
 
-s64 QFS::OperationImpl::Write(const int fd, const void* buf, u64 count) {
+s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -496,7 +499,7 @@ s64 QFS::OperationImpl::Write(const int fd, const void* buf, u64 count) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PWrite(const int fd, const void* buf, u64 count, u64 offset) {
+s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -526,7 +529,7 @@ s64 QFS::OperationImpl::PWrite(const int fd, const void* buf, u64 count, u64 off
     return vio_status;
 };
 
-s64 QFS::OperationImpl::Read(const int fd, void* buf, u64 count) {
+s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -553,10 +556,11 @@ s64 QFS::OperationImpl::Read(const int fd, void* buf, u64 count) {
     if (host_used && (hio_status != vio_status))
         LogError("Host returned {}, but virtual driver returned {}", hio_status, vio_status);
 
-    return vio_status;
+    return hio_status;
+    // return vio_status;
 }
 
-s64 QFS::OperationImpl::PRead(const int fd, void* buf, u64 count, u64 offset) {
+s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -716,7 +720,7 @@ int QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
     return vio_status;
 }
 
-int QFS::OperationImpl::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+int QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -793,7 +797,7 @@ int QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FChmod(const int fd, u16 mode) {
+int QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;

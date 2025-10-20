@@ -139,14 +139,16 @@ int HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat*
     // statbuf->st_ino = st.st_ino;
     // statbuf->st_nlink = st.st_nlink;
 
-    // TODO: make working
-    // statbuf->st_mode = st.st_mode;
-    // statbuf->st_size = st.st_size;
-    // statbuf->st_blksize = st.st_blksize;
-    // statbuf->st_blocks = st.st_blocks;
-    // statbuf->st_atim = st.st_atim;
-    // statbuf->st_mtim = st.st_mtim;
-    // statbuf->st_ctim = st.st_ctim;
+    statbuf->st_mode = st.st_mode;
+    statbuf->st_size = st.st_size;
+    statbuf->st_blksize = st.st_blksize;
+    statbuf->st_blocks = st.st_blocks;
+    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;
+    statbuf->st_atim.tv_nsec = st.st_atim.tv_nsec;
+    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;
+    statbuf->st_mtim.tv_nsec = st.st_mtim.tv_nsec;
+    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;
+    statbuf->st_ctim.tv_nsec = st.st_ctim.tv_nsec;
 
     return 0;
 }

@@ -3,15 +3,15 @@
 
 #pragma once
 
-#include "base_device.h"
-
 #include <mutex>
 #include <string>
 #include <vector>
 
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
+
 namespace Core::Devices {
 
-class Logger final : BaseDevice {
+class Logger final : public QuasiFS::Device {
     std::string prefix;
     bool is_err;
 
@@ -20,12 +20,11 @@ class Logger final : BaseDevice {
 
 public:
     explicit Logger(std::string prefix, bool is_err);
-
-    ~Logger() override;
+    ~Logger();
 
     s64 write(const void* buf, size_t nbytes) override;
-    size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
     s64 pwrite(const void* buf, size_t nbytes, u64 offset) override;
+    s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override;
 
     s32 fsync() override;
 

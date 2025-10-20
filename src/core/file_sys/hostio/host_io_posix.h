@@ -41,31 +41,31 @@ public:
 
     static constexpr int ToPOSIXOpenFlags(int quasi_flags) {
         int flags = 0;
-        if (quasi_flags | QUASI_O_RDONLY)
+        if (quasi_flags & QUASI_O_RDONLY)
             flags |= O_RDONLY;
-        if (quasi_flags | QUASI_O_WRONLY)
+        if (quasi_flags & QUASI_O_WRONLY)
             flags |= O_WRONLY;
-        if (quasi_flags | QUASI_O_RDWR)
+        if (quasi_flags & QUASI_O_RDWR)
             flags |= O_RDWR;
-        if (quasi_flags | QUASI_O_CREAT)
+        if (quasi_flags & QUASI_O_CREAT)
             flags |= O_CREAT;
-        if (quasi_flags | QUASI_O_EXCL)
+        if (quasi_flags & QUASI_O_EXCL)
             flags |= O_EXCL;
-        if (quasi_flags | QUASI_O_TRUNC)
+        if (quasi_flags & QUASI_O_TRUNC)
             flags |= O_TRUNC;
-        if (quasi_flags | QUASI_O_APPEND)
+        if (quasi_flags & QUASI_O_APPEND)
             flags |= O_APPEND;
-        if (quasi_flags | QUASI_O_NONBLOCK)
+        if (quasi_flags & QUASI_O_NONBLOCK)
             flags |= O_NONBLOCK;
-        if (quasi_flags | QUASI_O_SYNC)
+        if (quasi_flags & QUASI_O_SYNC)
             flags |= O_SYNC;
-        if (quasi_flags | QUASI_O_FSYNC)
+        if (quasi_flags & QUASI_O_FSYNC)
             flags |= O_FSYNC;
-        if (quasi_flags | QUASI_O_DIRECTORY)
+        if (quasi_flags & QUASI_O_DIRECTORY)
             flags |= O_DIRECTORY;
-        if (quasi_flags | QUASI_O_DIRECT)
+        if (quasi_flags & QUASI_O_DIRECT)
             flags |= O_DIRECT;
-        if (quasi_flags | QUASI_O_DSYNC)
+        if (quasi_flags & QUASI_O_DSYNC)
             flags |= O_DSYNC;
 
         return flags;

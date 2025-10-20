@@ -12,6 +12,14 @@ RegularFile::RegularFile() {
     st.st_nlink = 0;
 }
 
+s64 RegularFile::read(void* buf, size_t count) {
+    return pread(buf, count, 0);
+}
+
+s64 RegularFile::write(const void* buf, size_t count) {
+    return pwrite(buf, count, 0);
+}
+
 s64 RegularFile::pread(void* buf, size_t count, u64 offset) {
     s64 idx;
     u64 read_amt = this->data.size() - offset - count;
