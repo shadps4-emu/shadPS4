@@ -11,14 +11,17 @@
 #include "../../quasi_log.h"
 
 namespace QuasiFS {
-Partition::Partition(const fs::path& host_root, const int root_permissions)
+
+Partition::Partition() : Partition("", 0755, 4096) {}
+
+Partition::Partition(const fs::path& host_root, const int root_permissions,const u32 ioblock_size)
     : block_id(next_block_id++), host_root(host_root.lexically_normal()) {
     this->root = Directory::Create();
     // clear defaults, write
     chmod(this->root, root_permissions);
     IndexInode(this->root);
     mkrelative(this->root, this->root);
-};
+}
 
 fs::path Partition::SanitizePath(const fs::path& path) {
     // lexically normal to resolve relative calls

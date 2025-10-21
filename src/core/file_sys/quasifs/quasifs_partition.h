@@ -8,6 +8,21 @@
 
 namespace QuasiFS {
 
+typedef struct {
+    fs::path host_root{};
+    int root_permissions = 0755;
+
+    /**
+     * st_size = [user supplied]
+     * st_blocks = ceil(st_size / ioblock) * (ioblock / 512)
+     * st_blksize = ioblock
+     * Blocks are always 512B on physical media, ioblocks are logic structures
+     * File can grow as big as it wants, st_blocks is updated only when it exceeds ioblock size
+     */
+
+    u64 ioblock = 4096;
+} fsoptions_t;
+
 class Partition : public std::enable_shared_from_this<Partition> {
 private:
     fileno_t NextFileno(void) {
@@ -27,7 +42,10 @@ private:
 
 public:
     // host-bound directory, permissions for root directory
-    Partition(const fs::path& host_root = "", const int root_permissions = 0755);
+    Partition();
+    Partition(fsoptions_t options);
+    Partition(const fs::path& host_root = "", const int root_permissions = 0755,
+              const u32 ioblock_size = 4096);
     ~Partition() = default;
 
     template <typename... Args>

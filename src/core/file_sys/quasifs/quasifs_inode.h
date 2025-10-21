@@ -19,6 +19,8 @@ public:
     Inode() {
         st.st_mode = 0000755;
         st.st_nlink = 0;
+        st.st_uid = 0;
+        st.st_gid = 0;
     }
 
     virtual ~Inode() = default;

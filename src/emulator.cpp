@@ -103,6 +103,10 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     QuasiFS::partition_ptr partition_hostapp = QuasiFS::Partition::Create(game_folder, 0777);
     QuasiFS::partition_ptr partition_temp = QuasiFS::Partition::Create(mount_temp_dir, 0777);
 
+    qfs->Operation.MKDir("/av_contents", 0775);
+    qfs->Operation.MKDir("/av_contents/photo", 0755);
+    qfs->Operation.MKDir("/av_contents/video", 0755);
+    qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
     qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/data", 0777);
     qfs->Operation.MKDir("/dev", 0555);

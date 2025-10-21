@@ -116,8 +116,8 @@ s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
@@ -237,6 +237,12 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
+    //     const auto* memory = Core::Memory::Instance();
+    // // Invalidate up to the actual number of bytes that could be read.
+    // const auto remaining = file.GetSize() - file.Tell();
+
+    // memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+
     int result = g_qfs->Operation.Read(fd, buf, nbytes);
     if (result < 0)
         *__Error() = -result;
@@ -374,19 +380,19 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return -1;
     }
 
-    sb->st_dev = st.st_dev;
-    sb->st_ino = st.st_ino;
-    sb->st_mode = st.st_mode;
-    sb->st_nlink = st.st_nlink;
+    // sb->st_dev = st.st_dev;
+    // sb->st_ino = st.st_ino;
+    // sb->st_mode = st.st_mode;
+    // sb->st_nlink = st.st_nlink;
     // sb->st_uid = st.st_uid;
     // sb->st_gid = st.st_gid;
     // sb-> st_rdev=st.st_
     // sb->st_atim = st.st_atim;
     // sb->st_mtim = st.st_mtim;
     //  sb-> st_ctim=st.st_
-    sb->st_size = st.st_size;
-    sb->st_blocks = st.st_blocks;
-    sb->st_blksize = st.st_blksize;
+    // sb->st_size = st.st_size;
+    // sb->st_blocks = st.st_blocks;
+    // sb->st_blksize = st.st_blksize;
     // sb->st_flags = st.st_flags;
     //  sb-> st_gen=st.st_
     //  sb-> st_lspare=st.st_
