@@ -34,10 +34,13 @@ AjmSidebandFormat AjmM4aacDecoder::GetFormat() const {
 u32 AjmM4aacDecoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
     return u32();
 }
-std::tuple<u32, u32> AjmM4aacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                                  AjmInstanceGapless& gapless) {
-    return std::tuple<u32, u32>();
+
+std::tuple<u32, u32, bool> AjmM4aacDecoder::ProcessData(std::span<u8>& input,
+                                                        SparseOutputBuffer& output,
+                                                        AjmInstanceGapless& gapless) {
+    return std::tuple<u32, u32, bool>();
 }
+
 AVFrame* AjmM4aacDecoder::ConvertAudioFrame(AVFrame* frame) {
     return nullptr;
 }
