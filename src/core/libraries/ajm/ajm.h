@@ -217,7 +217,7 @@ int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* stream, u32 stream_size, int p
                                         AjmDecMp3ParseFrame* frame);
 int PS4_SYSV_ABI sceAjmFinalize();
 int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* out_context);
-int PS4_SYSV_ABI sceAjmInstanceCodecType();
+int PS4_SYSV_ABI sceAjmInstanceCodecType(u32 instance);
 int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context, AjmCodecType codec_type, AjmInstanceFlags flags,
                                       u32* instance);
 int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context, u32 instance);

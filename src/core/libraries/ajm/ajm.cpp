@@ -59,7 +59,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobControlBufferRa(void* p_buffer, u32 instance_id
                                                  void* p_sideband_output,
                                                  size_t sideband_output_size,
                                                  void* p_return_address) {
-    return BatchJobControlBufferRa(p_buffer, instance_id, flags, p_sideband_input,
+    return BatchJobControlBufferRa(p_buffer, instance_id & 0x3FFF, flags, p_sideband_input,
                                    sideband_input_size, p_sideband_output, sideband_output_size,
                                    p_return_address);
 }
@@ -75,7 +75,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunBufferRa(void* p_buffer, u32 instance_id, u6
                                              void* p_data_output, size_t data_output_size,
                                              void* p_sideband_output, size_t sideband_output_size,
                                              void* p_return_address) {
-    return BatchJobRunBufferRa(p_buffer, instance_id, flags, p_data_input, data_input_size,
+    return BatchJobRunBufferRa(p_buffer, instance_id & 0x3FFF, flags, p_data_input, data_input_size,
                                p_data_output, data_output_size, p_sideband_output,
                                sideband_output_size, p_return_address);
 }
@@ -85,7 +85,7 @@ void* PS4_SYSV_ABI sceAjmBatchJobRunSplitBufferRa(
     size_t num_data_input_buffers, const AjmBuffer* p_data_output_buffers,
     size_t num_data_output_buffers, void* p_sideband_output, size_t sideband_output_size,
     void* p_return_address) {
-    return BatchJobRunSplitBufferRa(p_buffer, instance_id, flags, p_data_input_buffers,
+    return BatchJobRunSplitBufferRa(p_buffer, instance_id & 0x3FFF, flags, p_data_input_buffers,
                                     num_data_input_buffers, p_data_output_buffers,
                                     num_data_output_buffers, p_sideband_output,
                                     sideband_output_size, p_return_address);
@@ -144,9 +144,8 @@ int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmInstanceCodecType() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceAjmInstanceCodecType(u32 instance) {
+    return instance >> 0xe;
 }
 
 int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context_id, AjmCodecType codec_type,
@@ -170,7 +169,7 @@ int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context_id, u32 instance_id) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
-    return it->second->InstanceDestroy(instance_id);
+    return it->second->InstanceDestroy(instance_id & 0x3FFF);
 }
 
 int PS4_SYSV_ABI sceAjmInstanceExtend() {
