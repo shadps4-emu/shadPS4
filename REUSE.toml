@@ -132,6 +132,5 @@ SPDX-FileCopyrightText = "Copyright (c) 2021 Advanced Micro Devices, Inc. All ri
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = "dist/qt.conf"
 SPDX-FileCopyrightText = "shadPS4 Emulator Project"
 SPDX-License-Identifier = "GPL-2.0-or-later"

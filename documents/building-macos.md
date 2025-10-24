@@ -52,8 +52,6 @@ Generate the build directory in the shadPS4 directory:
 cmake -S . -B build/ -DCMAKE_OSX_ARCHITECTURES=x86_64
 ```
 
-If you want to build the Qt GUI, add `-DENABLE_QT_GUI=ON` to the end of this command as well.
-
 Enter the directory:
 ```
 cd build/
