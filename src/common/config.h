@@ -148,6 +148,8 @@ void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
+bool getLoadAutoPatches();
+void setLoadAutoPatches(bool enable);
 
 // TODO
 std::filesystem::path GetSaveDataPath();

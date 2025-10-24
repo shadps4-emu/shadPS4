@@ -389,9 +389,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         args.push_back("--ignore-game-patch");
     }
 
-    if (!MemoryPatcher::patchFile.empty()) {
+    if (!MemoryPatcher::patch_file.empty()) {
         args.push_back("--patch");
-        args.push_back(MemoryPatcher::patchFile);
+        args.push_back(MemoryPatcher::patch_file);
     }
 
     args.push_back("--wait-for-pid");

@@ -218,6 +218,7 @@ static string config_version = Common::g_scm_rev;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 static bool isGameRunning = false;
+static bool load_auto_patches = true;
 
 bool getGameRunning() {
     return isGameRunning;
@@ -814,6 +815,13 @@ int getRcasAttenuation() {
 
 void setRcasAttenuation(int value, bool is_game_specific) {
     rcasAttenuation.set(value, is_game_specific);
+}
+
+bool getLoadAutoPatches() {
+    return load_auto_patches;
+}
+void setLoadAutoPatches(bool enable) {
+    load_auto_patches = enable;
 }
 
 void load(const std::filesystem::path& path, bool is_game_specific) {
