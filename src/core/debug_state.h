@@ -11,7 +11,9 @@
 #include <queue>
 
 #include "common/types.h"
-#include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
+#include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/regs.h"
+#include "video_core/renderer_vulkan/vk_common.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
@@ -54,21 +56,21 @@ struct QueueDump {
 struct PipelineShaderProgramDump {
     std::string name;
     u64 hash;
-    Vulkan::Liverpool::ShaderProgram user_data{};
+    AmdGpu::ShaderProgram user_data{};
     std::vector<u32> code{};
 };
 
 struct PipelineComputerProgramDump {
     std::string name;
     u64 hash;
-    Vulkan::Liverpool::ComputeProgram cs_program{};
+    AmdGpu::ComputeProgram cs_program{};
     std::vector<u32> code{};
 };
 
 struct RegDump {
     bool is_compute{false};
     static constexpr size_t MaxShaderStages = 5;
-    Vulkan::Liverpool::Regs regs{};
+    AmdGpu::Regs regs;
     std::array<PipelineShaderProgramDump, MaxShaderStages> stages{};
     PipelineComputerProgramDump cs_data{};
 };
@@ -219,9 +221,8 @@ public:
 
     void PushQueueDump(QueueDump dump);
 
-    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
-                      const AmdGpu::Liverpool::Regs& regs);
-    using CsState = AmdGpu::Liverpool::ComputeProgram;
+    void PushRegsDump(uintptr_t base_addr, uintptr_t header_addr, const AmdGpu::Regs& regs);
+    using CsState = AmdGpu::ComputeProgram;
     void PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_addr, const CsState& cs_state);
 
     void CollectShader(const std::string& name, Shader::LogicalStage l_stage,

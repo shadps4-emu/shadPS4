@@ -276,8 +276,8 @@
       <translation>Geçersiz sürüm verisi.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Belirtilen varlık için hiçbir indirme URL&apos;si bulunamadı.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Dikkat:&lt;/b&gt;&lt;br&gt;&lt;br&gt; 0.12.0 sürümünden itibaren emulatorün Qt sürümü doğrudan güncelleme almayacak.&lt;br&gt;&lt;br&gt; Ancak Qt arayüzü, yeni resmi başlatıcı (launcher) aracılığıyla kullanılabilir durumda kalacak:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – shadPS4’ün orijinal kaynak koduna dayanarak.&lt;br&gt;&lt;br&gt; Güncellemeleri almaya devam etmek için bu launcher’a geçiş yapmanızı öneririz.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

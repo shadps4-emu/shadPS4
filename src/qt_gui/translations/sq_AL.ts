@@ -276,8 +276,8 @@
       <translation>Të dhënat e lëshimit janë të pavlefshme.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Nuk u gjet URL-ja e shkarkimit për burimin e specifikuar.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Njoftim:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Duke filluar nga versioni &lt;b&gt;0.12.0&lt;/b&gt;, versioni Qt i emulatorit nuk do të marrë më përditësime direkte.&lt;br&gt;&lt;br&gt; Megjithatë, ndërfaqja Qt vazhdon të jetë e disponueshme përmes launcher‑it të ri zyrtar:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – bazuar në kodin burimor origjinal të shadPS4.&lt;br&gt;&lt;br&gt; Ju rekomandojmë të kaloni te ky launcher për të vazhduar të merrni përditësime.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

@@ -65,7 +65,7 @@ static HdrType GetNext(HdrType this_pm4, uint32_t n) {
 }
 
 void ParsePolygonControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<AmdGpu::Liverpool::PolygonControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::PolygonControl const&>(value);
 
     if (!begin_table ||
         BeginTable("PA_SU_SC_MODE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -73,80 +73,80 @@ void ParsePolygonControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("CULL_FRONT");
         TableSetColumnIndex(1);
-        Text("%X", reg.cull_front.Value());
+        Text("%X", reg.cull_front);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("CULL_BACK");
         TableSetColumnIndex(1);
-        Text("%X", reg.cull_back.Value());
+        Text("%X", reg.cull_back);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FACE");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.front_face.Value()).data());
+        Text("%s", enum_name(reg.front_face).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLY_MODE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_polygon_mode.Value());
+        Text("%X", reg.enable_polygon_mode);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLYMODE_FRONT_PTYPE");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.polygon_mode_front.Value()).data());
+        Text("%s", enum_name(reg.polygon_mode_front).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLYMODE_BACK_PTYPE");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.polygon_mode_back.Value()).data());
+        Text("%s", enum_name(reg.polygon_mode_back).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLY_OFFSET_FRONT_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_polygon_offset_front.Value());
+        Text("%X", reg.enable_polygon_offset_front);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLY_OFFSET_BACK_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_polygon_offset_back.Value());
+        Text("%X", reg.enable_polygon_offset_back);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("POLY_OFFSET_PARA_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_polygon_offset_para.Value());
+        Text("%X", reg.enable_polygon_offset_para);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VTX_WINDOW_OFFSET_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_window_offset.Value());
+        Text("%X", reg.enable_window_offset);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("PROVOKING_VTX_LAST");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.provoking_vtx_last.Value(),
-             enum_name(reg.provoking_vtx_last.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.provoking_vtx_last),
+             enum_name(reg.provoking_vtx_last).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("PERSP_CORR_DIS");
         TableSetColumnIndex(1);
-        Text("%X", reg.persp_corr_dis.Value());
+        Text("%X", reg.persp_corr_dis);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MULTI_PRIM_IB_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.multi_prim_ib_ena.Value());
+        Text("%X", reg.multi_prim_ib_ena);
 
         if (begin_table) {
             EndTable();
@@ -155,7 +155,7 @@ void ParsePolygonControl(u32 value, bool begin_table) {
 }
 
 void ParseAaConfig(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::AaConfig const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::AaConfig const&>(value);
 
     if (!begin_table ||
         BeginTable("PA_SC_AA_CONFIG", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -163,31 +163,31 @@ void ParseAaConfig(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("MSAA_NUM_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.msaa_num_samples.Value());
+        Text("%X", reg.msaa_num_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("AA_MASK_CENTROID_DTMN");
         TableSetColumnIndex(1);
-        Text("%X", reg.aa_mask_centroid_dtmn.Value());
+        Text("%X", reg.aa_mask_centroid_dtmn);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MAX_SAMPLE_DIST");
         TableSetColumnIndex(1);
-        Text("%X", reg.max_sample_dst.Value());
+        Text("%X", reg.max_sample_dst);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MSAA_EXPOSED_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.msaa_exposed_samples.Value());
+        Text("%X", reg.msaa_exposed_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DETAIL_TO_EXPOSED_MODE");
         TableSetColumnIndex(1);
-        Text("%X", reg.detail_to_exposed_mode.Value());
+        Text("%X", reg.detail_to_exposed_mode);
 
         if (begin_table) {
             EndTable();
@@ -196,7 +196,7 @@ void ParseAaConfig(u32 value, bool begin_table) {
 }
 
 void ParseViewportControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::ViewportControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::ViewportControl const&>(value);
 
     if (!begin_table ||
         BeginTable("PA_CL_VTE_CNTL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -204,61 +204,61 @@ void ParseViewportControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("VPORT_X_SCALE_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.xscale_enable.Value());
+        Text("%X", reg.xscale_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_X_OFFSET_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.yoffset_enable.Value());
+        Text("%X", reg.yoffset_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_Y_SCALE_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.yscale_enable.Value());
+        Text("%X", reg.yscale_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_Y_OFFSET_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.yoffset_enable.Value());
+        Text("%X", reg.yoffset_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_Z_SCALE_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.zscale_enable.Value());
+        Text("%X", reg.zscale_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VPORT_Z_OFFSET_ENA");
         TableSetColumnIndex(1);
-        Text("%X", reg.zoffset_enable.Value());
+        Text("%X", reg.zoffset_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VTX_XY_FMT");
         TableSetColumnIndex(1);
-        Text("%X", reg.xy_transformed.Value());
+        Text("%X", reg.xy_transformed);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VTX_Z_FMT");
         TableSetColumnIndex(1);
-        Text("%X", reg.z_transformed.Value());
+        Text("%X", reg.z_transformed);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("VTX_W0_FMT");
         TableSetColumnIndex(1);
-        Text("%X", reg.w_transformed.Value());
+        Text("%X", reg.w_transformed);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("PERFCOUNTER_REF");
         TableSetColumnIndex(1);
-        Text("%X", reg.perfcounter_ref.Value());
+        Text("%X", reg.perfcounter_ref);
 
         if (begin_table) {
             EndTable();
@@ -267,7 +267,7 @@ void ParseViewportControl(u32 value, bool begin_table) {
 }
 
 void ParseColorControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::ColorControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::ColorControl const&>(value);
 
     if (!begin_table ||
         BeginTable("CB_COLOR_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -275,25 +275,25 @@ void ParseColorControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("DISABLE_DUAL_QUAD__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.disable_dual_quad.Value());
+        Text("%X", reg.disable_dual_quad);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DEGAMMA_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.degamma_enable.Value());
+        Text("%X", reg.degamma_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MODE");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.mode.Value(), enum_name(reg.mode.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.mode), enum_name(reg.mode).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ROP3");
         TableSetColumnIndex(1);
-        Text("%X", static_cast<u32>(reg.rop3.Value()));
+        Text("%X", static_cast<u32>(reg.rop3));
 
         if (begin_table) {
             EndTable();
@@ -302,7 +302,7 @@ void ParseColorControl(u32 value, bool begin_table) {
 }
 
 void ParseColor0Info(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::ColorBuffer::Color0Info const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::ColorBuffer::Color0Info const&>(value);
 
     if (!begin_table ||
         BeginTable("CB_COLOR_INFO", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -310,109 +310,109 @@ void ParseColor0Info(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("ENDIAN");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.endian.Value()).data());
+        Text("%s", enum_name(reg.endian).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FORMAT");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.format.Value()).data());
+        Text("%s", enum_name(AmdGpu::DataFormat(reg.format)).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("LINEAR_GENERAL");
         TableSetColumnIndex(1);
-        Text("%X", reg.linear_general.Value());
+        Text("%X", reg.linear_general);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("NUMBER_TYPE");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.number_type.Value()).data());
+        Text("%s", enum_name(AmdGpu::NumberFormat(reg.number_type)).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COMP_SWAP");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.comp_swap.Value()).data());
+        Text("%s", enum_name(reg.comp_swap).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FAST_CLEAR");
         TableSetColumnIndex(1);
-        Text("%X", reg.fast_clear.Value());
+        Text("%X", reg.fast_clear);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COMPRESSION");
         TableSetColumnIndex(1);
-        Text("%X", reg.compression.Value());
+        Text("%X", reg.compression);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("BLEND_CLAMP");
         TableSetColumnIndex(1);
-        Text("%X", reg.blend_clamp.Value());
+        Text("%X", reg.blend_clamp);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("BLEND_BYPASS");
         TableSetColumnIndex(1);
-        Text("%X", reg.blend_bypass.Value());
+        Text("%X", reg.blend_bypass);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("SIMPLE_FLOAT");
         TableSetColumnIndex(1);
-        Text("%X", reg.simple_float.Value());
+        Text("%X", reg.simple_float);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ROUND_MODE");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.round_mode.Value(), enum_name(reg.round_mode.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.round_mode), enum_name(reg.round_mode).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("CMASK_IS_LINEAR");
         TableSetColumnIndex(1);
-        Text("%X", reg.cmask_is_linear.Value());
+        Text("%X", reg.cmask_is_linear);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("BLEND_OPT_DONT_RD_DST");
         TableSetColumnIndex(1);
-        Text("%X", reg.blend_opt_dont_rd_dst.Value());
+        Text("%X", reg.blend_opt_dont_rd_dst);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("BLEND_OPT_DISCARD_PIXEL");
         TableSetColumnIndex(1);
-        Text("%X", reg.blend_opt_discard_pixel.Value());
+        Text("%X", reg.blend_opt_discard_pixel);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FMASK_COMPRESSION_DISABLE__CI__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.fmask_compression_disable_ci.Value());
+        Text("%X", reg.fmask_compression_disable_ci);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FMASK_COMPRESS_1FRAG_ONLY__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.fmask_compress_1frag_only.Value());
+        Text("%X", reg.fmask_compress_1frag_only);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DCC_ENABLE__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.dcc_enable.Value());
+        Text("%X", reg.dcc_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("CMASK_ADDR_TYPE__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.cmask_addr_type.Value());
+        Text("%X", reg.cmask_addr_type);
 
         if (begin_table) {
             EndTable();
@@ -421,7 +421,7 @@ void ParseColor0Info(u32 value, bool begin_table) {
 }
 
 void ParseColor0Attrib(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::ColorBuffer::Color0Attrib const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::ColorBuffer::Color0Attrib const&>(value);
 
     if (!begin_table ||
         BeginTable("CB_COLOR_ATTRIB", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -429,37 +429,37 @@ void ParseColor0Attrib(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("TILE_MODE_INDEX");
         TableSetColumnIndex(1);
-        Text("%s", enum_name(reg.tile_mode_index.Value()).data());
+        Text("%s", enum_name(reg.tile_mode_index).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FMASK_TILE_MODE_INDEX");
         TableSetColumnIndex(1);
-        Text("%X", reg.fmask_tile_mode_index.Value());
+        Text("%X", reg.fmask_tile_mode_index);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FMASK_BANK_HEIGHT");
         TableSetColumnIndex(1);
-        Text("%X", reg.fmask_bank_height.Value());
+        Text("%X", reg.fmask_bank_height);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("NUM_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.num_samples_log2.Value());
+        Text("%X", reg.num_samples_log2);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("NUM_FRAGMENTS");
         TableSetColumnIndex(1);
-        Text("%X", reg.num_fragments_log2.Value());
+        Text("%X", reg.num_fragments_log2);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("FORCE_DST_ALPHA_1");
         TableSetColumnIndex(1);
-        Text("%X", reg.force_dst_alpha_1.Value());
+        Text("%X", reg.force_dst_alpha_1);
 
         if (begin_table) {
             EndTable();
@@ -468,7 +468,7 @@ void ParseColor0Attrib(u32 value, bool begin_table) {
 }
 
 void ParseBlendControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::BlendControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::BlendControl const&>(value);
 
     if (!begin_table ||
         BeginTable("CB_BLEND_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -476,59 +476,59 @@ void ParseBlendControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("COLOR_SRCBLEND");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.color_src_factor.Value(),
-             enum_name(reg.color_src_factor.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.color_src_factor),
+             enum_name(reg.color_src_factor).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COLOR_COMB_FCN");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.color_func.Value(), enum_name(reg.color_func.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.color_func), enum_name(reg.color_func).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COLOR_DESTBLEND");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.color_dst_factor.Value(),
-             enum_name(reg.color_dst_factor.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.color_dst_factor),
+             enum_name(reg.color_dst_factor).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALPHA_SRCBLEND");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.alpha_src_factor.Value(),
-             enum_name(reg.alpha_src_factor.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.alpha_src_factor),
+             enum_name(reg.alpha_src_factor).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALPHA_COMB_FCN");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.alpha_func.Value(), enum_name(reg.alpha_func.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.alpha_func), enum_name(reg.alpha_func).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALPHA_DESTBLEND");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.alpha_dst_factor.Value(),
-             enum_name(reg.alpha_dst_factor.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.alpha_dst_factor),
+             enum_name(reg.alpha_dst_factor).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("SEPARATE_ALPHA_BLEND");
         TableSetColumnIndex(1);
-        Text("%X", reg.separate_alpha_blend.Value());
+        Text("%X", reg.separate_alpha_blend);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable.Value());
+        Text("%X", reg.enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DISABLE_ROP3");
         TableSetColumnIndex(1);
-        Text("%X", reg.disable_rop3.Value());
+        Text("%X", reg.disable_rop3);
 
         if (begin_table) {
             EndTable();
@@ -537,7 +537,7 @@ void ParseBlendControl(u32 value, bool begin_table) {
 }
 
 void ParseDepthRenderControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::DepthRenderControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::DepthRenderControl const&>(value);
 
     if (!begin_table ||
         BeginTable("DB_RENDER_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -545,61 +545,61 @@ void ParseDepthRenderControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("DEPTH_CLEAR_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_clear_enable.Value());
+        Text("%X", reg.depth_clear_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCIL_CLEAR_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.stencil_clear_enable.Value());
+        Text("%X", reg.stencil_clear_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DEPTH_COPY");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_clear_enable.Value());
+        Text("%X", reg.depth_clear_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCIL_COPY");
         TableSetColumnIndex(1);
-        Text("%X", reg.stencil_copy.Value());
+        Text("%X", reg.stencil_copy);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("RESUMMARIZE_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.resummarize_enable.Value());
+        Text("%X", reg.resummarize_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCIL_COMPRESS_DISABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.stencil_compress_disable.Value());
+        Text("%X", reg.stencil_compress_disable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DEPTH_COMPRESS_DISABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_compress_disable.Value());
+        Text("%X", reg.depth_compress_disable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COPY_CENTROID");
         TableSetColumnIndex(1);
-        Text("%X", reg.copy_centroid.Value());
+        Text("%X", reg.copy_centroid);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("COPY_SAMPLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.copy_sample.Value());
+        Text("%X", reg.copy_sample);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DECOMPRESS_ENABLE__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.decompress_enable.Value());
+        Text("%X", reg.decompress_enable);
 
         if (begin_table) {
             EndTable();
@@ -608,7 +608,7 @@ void ParseDepthRenderControl(u32 value, bool begin_table) {
 }
 
 void ParseDepthControl(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::DepthControl const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::DepthControl const&>(value);
 
     if (!begin_table ||
         BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -616,63 +616,63 @@ void ParseDepthControl(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("STENCIL_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.stencil_enable.Value());
+        Text("%X", reg.stencil_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("Z_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_enable.Value());
+        Text("%X", reg.depth_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("Z_WRITE_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_write_enable.Value());
+        Text("%X", reg.depth_write_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DEPTH_BOUNDS_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.depth_bounds_enable.Value());
+        Text("%X", reg.depth_bounds_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ZFUNC");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.depth_func.Value(), enum_name(reg.depth_func.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.depth_func), enum_name(reg.depth_func).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("BACKFACE_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.backface_enable.Value());
+        Text("%X", reg.backface_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCILFUNC");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.stencil_ref_func.Value(),
-             enum_name(reg.stencil_ref_func.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.stencil_ref_func),
+             enum_name(reg.stencil_ref_func).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STENCILFUNC_BF");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.stencil_bf_func.Value(),
-             enum_name(reg.stencil_bf_func.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.stencil_bf_func),
+             enum_name(reg.stencil_bf_func).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ENABLE_COLOR_WRITES_ON_DEPTH_FAIL");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_color_writes_on_depth_fail.Value());
+        Text("%X", reg.enable_color_writes_on_depth_fail);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DISABLE_COLOR_WRITES_ON_DEPTH_PASS");
         TableSetColumnIndex(1);
-        Text("%X", reg.disable_color_writes_on_depth_pass.Value());
+        Text("%X", reg.disable_color_writes_on_depth_pass);
 
         if (begin_table) {
             EndTable();
@@ -681,7 +681,7 @@ void ParseDepthControl(u32 value, bool begin_table) {
 }
 
 void ParseEqaa(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::Eqaa const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::Eqaa const&>(value);
 
     if (!begin_table ||
         BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -689,73 +689,73 @@ void ParseEqaa(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("MAX_ANCHOR_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.max_anchor_samples.Value());
+        Text("%X", reg.max_anchor_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("PS_ITER_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.ps_iter_samples.Value());
+        Text("%X", reg.ps_iter_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("MASK_EXPORT_NUM_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.mask_export_num_samples.Value());
+        Text("%X", reg.mask_export_num_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALPHA_TO_MASK_NUM_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.alpha_to_mask_num_samples.Value());
+        Text("%X", reg.alpha_to_mask_num_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("HIGH_QUALITY_INTERSECTIONS");
         TableSetColumnIndex(1);
-        Text("%X", reg.high_quality_intersections.Value());
+        Text("%X", reg.high_quality_intersections);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("INCOHERENT_EQAA_READS");
         TableSetColumnIndex(1);
-        Text("%X", reg.incoherent_eqaa_reads.Value());
+        Text("%X", reg.incoherent_eqaa_reads);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("INTERPOLATE_COMP_Z");
         TableSetColumnIndex(1);
-        Text("%X", reg.interpolate_comp_z.Value());
+        Text("%X", reg.interpolate_comp_z);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("INTERPOLATE_SRC_Z");
         TableSetColumnIndex(1);
-        Text("%X", reg.interpolate_src_z.Value());
+        Text("%X", reg.interpolate_src_z);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("STATIC_ANCHOR_ASSOCIATIONS");
         TableSetColumnIndex(1);
-        Text("%X", reg.static_anchor_associations.Value());
+        Text("%X", reg.static_anchor_associations);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALPHA_TO_MASK_EQAA_DISABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.alpha_to_mask_eqaa_disable.Value());
+        Text("%X", reg.alpha_to_mask_eqaa_disable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("OVERRASTERIZATION_AMOUNT");
         TableSetColumnIndex(1);
-        Text("%X", reg.overrasterization_amount.Value());
+        Text("%X", reg.overrasterization_amount);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ENABLE_POSTZ_OVERRASTERIZATION");
         TableSetColumnIndex(1);
-        Text("%X", reg.enable_postz_overrasterization.Value());
+        Text("%X", reg.enable_postz_overrasterization);
 
         if (begin_table) {
             EndTable();
@@ -764,7 +764,7 @@ void ParseEqaa(u32 value, bool begin_table) {
 }
 
 void ParseZInfo(u32 value, bool begin_table) {
-    auto const reg = reinterpret_cast<Liverpool::DepthBuffer::ZInfo const&>(value);
+    auto const reg = reinterpret_cast<AmdGpu::DepthBuffer::ZInfo const&>(value);
 
     if (!begin_table ||
         BeginTable("DB_DEPTH_CONTROL", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
@@ -772,61 +772,61 @@ void ParseZInfo(u32 value, bool begin_table) {
         TableSetColumnIndex(0);
         Text("FORMAT");
         TableSetColumnIndex(1);
-        Text("%X (%s)", (u32)reg.format.Value(), enum_name(reg.format.Value()).data());
+        Text("%X (%s)", static_cast<u32>(reg.format), enum_name(reg.format).data());
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("NUM_SAMPLES");
         TableSetColumnIndex(1);
-        Text("%X", reg.num_samples.Value());
+        Text("%X", reg.num_samples);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("TILE_SPLIT__CI__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.tile_split.Value());
+        Text("%X", reg.tile_split);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("TILE_MODE_INDEX");
         TableSetColumnIndex(1);
-        Text("%X", static_cast<u32>(reg.tile_mode_index.Value()));
+        Text("%X", static_cast<u32>(reg.tile_mode_index));
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("DECOMPRESS_ON_N_ZPLANES__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.decompress_on_n_zplanes.Value());
+        Text("%X", reg.decompress_on_n_zplanes);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ALLOW_EXPCLEAR");
         TableSetColumnIndex(1);
-        Text("%X", reg.allow_expclear.Value());
+        Text("%X", reg.allow_expclear);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("READ_SIZE");
         TableSetColumnIndex(1);
-        Text("%X", reg.read_size.Value());
+        Text("%X", reg.read_size);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("TILE_SURFACE_ENABLE");
         TableSetColumnIndex(1);
-        Text("%X", reg.tile_surface_en.Value());
+        Text("%X", reg.tile_surface_enable);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("CLEAR_DISALLOWED__VI");
         TableSetColumnIndex(1);
-        Text("%X", reg.clear_disallowed.Value());
+        Text("%X", reg.clear_disallowed);
 
         TableNextRow();
         TableSetColumnIndex(0);
         Text("ZRANGE_PRECISION");
         TableSetColumnIndex(1);
-        Text("%X", reg.zrange_precision.Value());
+        Text("%X", reg.zrange_precision);
 
         if (begin_table) {
             EndTable();

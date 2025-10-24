@@ -276,8 +276,8 @@
       <translation>Dữ liệu bản phát hành không hợp lệ.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Không tìm thấy URL tải xuống cho tài sản đã chỉ định.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Thông báo:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Bắt đầu từ phiên bản &lt;b&gt;0.12.0&lt;/b&gt;, phiên bản Qt của trình giả lập sẽ không còn nhận cập nhật trực tiếp nữa.&lt;br&gt;&lt;br&gt; Tuy nhiên, giao diện Qt vẫn có sẵn qua trình khởi chạy chính thức mới:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – dựa trên mã nguồn gốc của shadPS4.&lt;br&gt;&lt;br&gt; Chúng tôi khuyến nghị bạn chuyển sang trình khởi chạy này để tiếp tục nhận cập nhật.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

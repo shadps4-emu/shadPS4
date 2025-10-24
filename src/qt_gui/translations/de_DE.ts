@@ -276,8 +276,8 @@
       <translation>Ungültige Versionsdaten.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Keine Download-URL für das angegebene Asset gefunden.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Hinweis:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Ab Version &lt;b&gt;0.12.0&lt;/b&gt; erhält die Qt‑Version des Emulators keine direkten Updates mehr.&lt;br&gt;&lt;br&gt; Die Qt‑Oberfläche bleibt jedoch über den neuen offiziellen Launcher verfügbar:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – basierend auf dem ursprünglichen shadPS4‑Quellcode.&lt;br&gt;&lt;br&gt;Wir empfehlen, auf diesen Launcher zu wechseln, um weiterhin Updates zu erhalten.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

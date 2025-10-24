@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <any>
 #include <memory>
 
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/type.h"
 #include "shader_recompiler/ir/value.h"
@@ -21,9 +19,7 @@ Inst::Inst(IR::Opcode op_, u32 flags_) noexcept : op{op_}, flags{flags_} {
 }
 
 Inst::Inst(const Inst& base) : op{base.op}, flags{base.flags} {
-    if (base.op == Opcode::Phi) {
-        throw NotImplementedException("Copying phi node");
-    }
+    ASSERT_MSG(base.op != Opcode::Phi, "Copying phi node");
     std::construct_at(&args);
     const size_t num_args{base.NumArgs()};
     for (size_t index = 0; index < num_args; ++index) {
@@ -150,7 +146,7 @@ IR::Type Inst::Type() const {
 
 void Inst::SetArg(size_t index, Value value) {
     if (index >= NumArgs()) {
-        throw InvalidArgument("Out of bounds argument index {} in opcode {}", index, op);
+        UNREACHABLE_MSG("Out of bounds argument index {} in opcode {}", index, op);
     }
     const IR::Value arg{Arg(index)};
     if (!arg.IsImmediate()) {
@@ -171,7 +167,7 @@ Block* Inst::PhiBlock(size_t index) const {
         UNREACHABLE_MSG("{} is not a Phi instruction", op);
     }
     if (index >= phi_args.size()) {
-        throw InvalidArgument("Out of bounds argument index {} in phi instruction");
+        UNREACHABLE_MSG("Out of bounds argument index {} in phi instruction");
     }
     return phi_args[index].first;
 }

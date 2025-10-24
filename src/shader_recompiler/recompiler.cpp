@@ -6,6 +6,7 @@
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
 
 namespace Shader {

@@ -153,8 +153,12 @@ tr("The Auto Updater allows up to 60 update checks per hour.\\nYou have reached 
         }
 
         if (!found) {
-            QMessageBox::warning(this, tr("Error"),
-                                 tr("No download URL found for the specified asset."));
+            QMessageBox::warning(
+                this, tr("Auto Updater"),
+                // clang-format off
+tr("<b>Notice:</b><br><br> Starting from version <b>0.12.0</b>, the Qt version of the emulator will no longer receive direct updates.<br><br>However, the Qt interface remains available through the new official launcher:<br><br><a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'>Qt Launcher</a> - based on the original shadPS4 source code.<br><br>We recommend switching to this launcher to continue receiving updates."));
+            // clang-format on
+
             reply->deleteLater();
             return;
         }

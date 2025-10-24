@@ -4,7 +4,7 @@
 #include "common/assert.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/buffer.h"
-#include "shader_recompiler/info.h"
+#include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/tile.h"
@@ -54,8 +54,7 @@ ImageInfo::ImageInfo(const Libraries::VideoOut::BufferAttributeGroup& group,
     UpdateSize();
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
-                     const AmdGpu::Liverpool::CbDbExtent& hint /*= {}*/) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::ColorBuffer& buffer, AmdGpu::CbDbExtent hint) noexcept {
     props.is_tiled = buffer.IsTiled();
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
@@ -74,27 +73,25 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::ColorBuffer& buffer,
     guest_address = buffer.Address();
     if (props.is_tiled) {
         guest_size = buffer.GetColorSliceSize() * resources.layers;
-        mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+        mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
     } else {
         std::tie(std::ignore, std::ignore, guest_size) =
             ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
         guest_size *= resources.layers;
-        mips_layout.emplace_back(guest_size, pitch, size.height, 0);
+        mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
     }
     alt_tile = Libraries::Kernel::sceKernelIsNeoMode() && buffer.info.alt_tile_mode;
 }
 
-ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slices,
-                     VAddr htile_address, const AmdGpu::Liverpool::CbDbExtent& hint,
-                     bool write_buffer) noexcept {
+ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr htile_address,
+                     AmdGpu::CbDbExtent hint, bool write_buffer) noexcept {
     tile_mode = buffer.GetTileMode();
     array_mode = AmdGpu::GetArrayMode(tile_mode);
     pixel_format = LiverpoolToVK::DepthFormat(buffer.z_info.format, buffer.stencil_info.format);
     type = AmdGpu::ImageType::Color2D;
     props.is_tiled = buffer.IsTiled();
     props.is_depth = true;
-    props.has_stencil =
-        buffer.stencil_info.format != AmdGpu::Liverpool::DepthBuffer::StencilFormat::Invalid;
+    props.has_stencil = buffer.stencil_info.format != AmdGpu::DepthBuffer::StencilFormat::Invalid;
     num_samples = buffer.NumSamples();
     num_bits = buffer.NumBits();
     size.width = hint.Valid() ? hint.width : buffer.Pitch();
@@ -102,7 +99,7 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     size.depth = 1;
     pitch = buffer.Pitch();
     resources.layers = num_slices;
-    meta_info.htile_addr = buffer.z_info.tile_surface_en ? htile_address : 0;
+    meta_info.htile_addr = buffer.z_info.tile_surface_enable ? htile_address : 0;
 
     stencil_addr = write_buffer ? buffer.StencilWriteAddress() : buffer.StencilAddress();
     stencil_size = pitch * size.height * sizeof(u8);
@@ -110,12 +107,12 @@ ImageInfo::ImageInfo(const AmdGpu::Liverpool::DepthBuffer& buffer, u32 num_slice
     guest_address = write_buffer ? buffer.DepthWriteAddress() : buffer.DepthAddress();
     if (props.is_tiled) {
         guest_size = buffer.GetDepthSliceSize() * resources.layers;
-        mips_layout.emplace_back(guest_size, pitch, buffer.Height(), 0);
+        mips_layout[0] = MipInfo(guest_size, pitch, buffer.Height(), 0);
     } else {
         std::tie(std::ignore, std::ignore, guest_size) =
             ImageSizeLinearAligned(pitch, size.height, num_bits, num_samples);
         guest_size *= resources.layers;
-        mips_layout.emplace_back(guest_size, pitch, size.height, 0);
+        mips_layout[0] = MipInfo(guest_size, pitch, size.height, 0);
     }
 }
 
@@ -154,8 +151,6 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 }
 
 void ImageInfo::UpdateSize() {
-    mips_layout.clear();
-    MipInfo mip_info{};
     guest_size = 0;
     for (s32 mip = 0; mip < resources.levels; ++mip) {
         u32 mip_w = pitch >> mip;
@@ -175,6 +170,7 @@ void ImageInfo::UpdateSize() {
             mip_d = std::bit_ceil(mip_d);
         }
 
+        auto& mip_info = mips_layout[mip];
         switch (array_mode) {
         case AmdGpu::ArrayMode::ArrayLinearAligned: {
             std::tie(mip_info.pitch, mip_info.height, mip_info.size) =
@@ -210,7 +206,6 @@ void ImageInfo::UpdateSize() {
         }
         mip_info.size *= mip_d * resources.layers;
         mip_info.offset = guest_size;
-        mips_layout.emplace_back(mip_info);
         guest_size += mip_info.size;
     }
 }
@@ -229,13 +224,9 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    if (info.mips_layout.empty()) {
-        UNREACHABLE();
-    }
-
     // Find mip
     auto mip = -1;
-    for (auto m = 0; m < info.mips_layout.size(); ++m) {
+    for (auto m = 0; m < info.resources.levels; ++m) {
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = info.mips_layout[m];
         const VAddr mip_base = info.guest_address + mip_ofs;
         const VAddr mip_end = mip_base + mip_size;
