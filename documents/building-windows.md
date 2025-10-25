@@ -79,13 +79,10 @@ Normal x86-based computers, follow:
 1. Open "MSYS2 MINGW64" from your new applications
 2. Run `pacman -Syu`, let it complete;
 3. Run `pacman -S --needed git mingw-w64-x86_64-binutils mingw-w64-x86_64-clang mingw-w64-x86_64-cmake mingw-w64-x86_64-rapidjson mingw-w64-x86_64-ninja mingw-w64-x86_64-ffmpeg`
-   1. Optional (Qt only): run `pacman -S --needed mingw-w64-x86_64-qt6-base mingw-w64-x86_64-qt6-tools mingw-w64-x86_64-qt6-multimedia`
 4. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 5. Run `cd shadPS4`
 6. Run `cmake -S . -B build -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
-   1. Optional (Qt only): add `-DENABLE_QT_GUI=ON`
 7. Run `cmake --build build`
-   1. Optional (Qt only): run `windeployqt6 build/shadps4.exe`
 8. To run the finished product, run `./build/shadPS4.exe`
 
 ARM64-based computers, follow:
@@ -97,9 +94,7 @@ ARM64-based computers, follow:
 4. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 5. Run `cd shadPS4`
 6. Run `cmake -S . -B build -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
-   1. Optional (Qt only): add `-DENABLE_QT_GUI=ON`
 7. Run `cmake --build build`
-   1. Optional (Qt only): run `windeployqt6 build/shadps4.exe`
 8. To run the finished product, run `./build/shadPS4.exe`
 
 ## Note on MSYS2 builds

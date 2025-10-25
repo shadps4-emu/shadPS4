@@ -21,10 +21,6 @@
 #include "sdl_window.h"
 #include "video_core/renderdoc.h"
 
-#ifdef ENABLE_QT_GUI
-#include "qt_gui/sdl_event_wrapper.h"
-#endif
-
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
 #endif
@@ -367,13 +363,6 @@ void WindowSDL::WaitEvent() {
     if (!SDL_WaitEvent(&event)) {
         return;
     }
-
-#ifdef ENABLE_QT_GUI
-    if (SdlEventWrapper::Wrapper::wrapperActive) {
-        if (SdlEventWrapper::Wrapper::GetInstance()->ProcessEvent(&event))
-            return;
-    }
-#endif
 
     if (ImGui::Core::ProcessEvent(&event)) {
         return;
