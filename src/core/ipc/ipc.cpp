@@ -17,6 +17,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "src/core/libraries/usbd/usbd.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -166,6 +167,20 @@ void IPC::InputLoop() {
             if (presenter) {
                 presenter->GetFsrSettingsRef().rcas_attenuation =
                     static_cast<float>(value / 1000.0f);
+            }
+        } else if (cmd == "LOAD_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 pad = next_u64();
+                const u8 slot = next_u64();
+                ref->LoadFigure(pad, slot);
+            }
+        } else if (cmd == "REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 pad = next_u64();
+                const u8 slot = next_u64();
+                ref->RemoveFigure(pad, slot);
             }
         } else if (cmd == "RELOAD_INPUTS") {
             std::string config = next_str();
