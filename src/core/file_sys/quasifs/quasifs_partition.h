@@ -8,7 +8,7 @@
 
 namespace QuasiFS {
 
-typedef struct {
+typedef struct _fsoptions_t {
     fs::path host_root{};
     int root_permissions = 0755;
 
@@ -20,7 +20,8 @@ typedef struct {
      * File can grow as big as it wants, st_blocks is updated only when it exceeds ioblock size
      */
 
-    u64 ioblock = 4096;
+    u32 block_size = 512;
+    u32 ioblock_size = 4096;
 } fsoptions_t;
 
 class Partition : public std::enable_shared_from_this<Partition> {
@@ -32,20 +33,31 @@ private:
     // file list
     std::unordered_map<fileno_t, inode_ptr> inode_table{};
 
+    // root directory
     dir_ptr root;
+    // next available fileno
     fileno_t next_fileno = 2;
+    // technically it's a device+partition id, but block id is enough lmao
     const blkid_t block_id;
 
     static inline blkid_t next_block_id = 1;
 
+    // path to host's directory this will be bound to
     const fs::path host_root{};
+
+    // IO block size, allocation unit (multiples of 512)
+    const u32 ioblock_size{4096};
+    // amount of raw on-disk blocks per io block
+    // this is pretty much so we don't recalculate it over and over and over
+    // and
+    const u32 block_size{512};
 
 public:
     // host-bound directory, permissions for root directory
     Partition();
-    Partition(fsoptions_t options);
+    Partition(fsoptions_t options) = delete;
     Partition(const fs::path& host_root = "", const int root_permissions = 0755,
-              const u32 ioblock_size = 4096);
+              const u32 block_size = 8, const u32 ioblock_size = 4096);
     ~Partition() = default;
 
     template <typename... Args>

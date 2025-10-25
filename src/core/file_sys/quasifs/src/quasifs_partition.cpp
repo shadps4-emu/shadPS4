@@ -12,10 +12,12 @@
 
 namespace QuasiFS {
 
-Partition::Partition() : Partition("", 0755, 4096) {}
+Partition::Partition() : Partition("", 0755, 512, 4096) {}
 
-Partition::Partition(const fs::path& host_root, const int root_permissions,const u32 ioblock_size)
-    : block_id(next_block_id++), host_root(host_root.lexically_normal()) {
+Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 blocks_per_io,
+                     const u32 ioblock_size)
+    : block_id(next_block_id++), host_root(host_root.lexically_normal()),
+      block_size(block_size), ioblock_size(ioblock_size) {
     this->root = Directory::Create();
     // clear defaults, write
     chmod(this->root, root_permissions);
@@ -192,6 +194,15 @@ int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
     if (nullptr == parent)
         return -QUASI_EINVAL;
 
+    // auto* csize = &child->st.st_size;
+    // auto* cbsize = &child->st.st_blksize;
+    // auto* cblks = &child->st.st_blocks;
+
+    // *cbsize = this->ioblock_size;
+    // *cblks = blocks_per_io * (*csize) / (*cbsize);
+
+    child->st.st_blksize = ioblock_size;
+
     auto ret = parent->link(name, child);
     if (ret == 0)
         IndexInode(child);
@@ -206,6 +217,7 @@ int Partition::mkdir(dir_ptr parent, const std::string& name, dir_ptr child) {
     if (nullptr == parent)
         return -QUASI_ENOENT;
 
+    child->st.st_blksize = ioblock_size;
     int ret = parent->link(name, child);
 
     if (ret == 0)

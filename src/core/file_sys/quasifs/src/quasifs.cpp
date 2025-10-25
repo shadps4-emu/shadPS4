@@ -8,6 +8,7 @@
 #include "core/file_sys/quasifs/quasifs_inode_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_regularfile.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_inode_virtualfile.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 #include "../../quasi_log.h"
@@ -408,7 +409,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 new_inode = Directory::Create();
                 part->mkdir(parent_dir, leaf, std::static_pointer_cast<Directory>(new_inode));
             } else if (entry->is_regular_file()) {
-                new_inode = RegularFile::Create();
+                new_inode = QuasiFile::Create<RegularFile>();
                 part->touch(parent_dir, leaf, std::static_pointer_cast<RegularFile>(new_inode));
             } else {
                 LogError("Unsupported host file type: {}", entry_path.string());

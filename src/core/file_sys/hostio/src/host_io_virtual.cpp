@@ -12,6 +12,7 @@
 #include "../../quasifs/quasifs_inode_directory.h"
 #include "../../quasifs/quasifs_inode_regularfile.h"
 #include "../../quasifs/quasifs_inode_symlink.h"
+#include "../../quasifs/quasifs_inode_virtualfile.h"
 #include "../../quasifs/quasifs_partition.h"
 
 #include "../host_io_virtual.h"
@@ -41,24 +42,20 @@ int HostIO_Virtual::Open(const fs::path& path, int flags, u16 mode) {
         if ((flags & QUASI_O_CREAT) == 0)
             return -QUASI_ENOENT;
 
-        target = RegularFile::Create();
+        target =
+            this->host_bound ? QuasiFile::Create<RegularFile>() : QuasiFile::Create<VirtualFile>();
         target->chmod(mode);
         if (0 != part->touch(parent, this->res->leaf, target))
-            // touch failed in target directory, issue with resolve() most likely
+            // touch failed in target directory, issue with resolve() is most likely
             return -QUASI_EFAULT;
 
         this->res->node = target;
     }
 
     // at this point target should exist
-
     if (flags & QUASI_O_TRUNC) {
-        if (target->is_file())
-            std::static_pointer_cast<RegularFile>(target)->ftruncate(0);
-        else if (target->is_dir())
-            return -QUASI_EISDIR;
-        else
-            return -QUASI_EINVAL;
+        if (int status = target->ftruncate(0); status != 0)
+            return status;
     }
 
     // if exists and is a directory, can't be opened with any kind of write
@@ -84,7 +81,8 @@ int HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
         return -QUASI_ENOTDIR;
 
     dir_ptr parent = std::static_pointer_cast<Directory>(this->res->node);
-    file_ptr new_file = RegularFile::Create();
+    file_ptr new_file =
+        this->host_bound ? QuasiFile::Create<RegularFile>() : QuasiFile::Create<VirtualFile>();
     return this->res->mountpoint->touch(parent, path.filename(), new_file);
 }
 
@@ -171,10 +169,7 @@ int HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
     if (!node->is_file())
         return -QUASI_EINVAL;
 
-    if (host_bound)
-        return std::static_pointer_cast<RegularFile>(handle->node)->MockTruncate(size);
-    else
-        return std::static_pointer_cast<RegularFile>(handle->node)->ftruncate(size);
+    return handle->node->ftruncate(size);
 }
 
 int HostIO_Virtual::FTruncate(const int fd, u64 size) {
@@ -192,10 +187,7 @@ int HostIO_Virtual::FTruncate(const int fd, u64 size) {
     if (!node->is_file())
         return -QUASI_EINVAL;
 
-    if (host_bound)
-        return std::static_pointer_cast<RegularFile>(handle->node)->MockTruncate(size);
-    else
-        return std::static_pointer_cast<RegularFile>(handle->node)->ftruncate(size);
+    return handle->node->ftruncate(size);
 }
 
 u64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
@@ -245,14 +237,7 @@ s64 HostIO_Virtual::PWrite(const int fd, const void* buf, u64 count, u64 offset)
     if (handle->append)
         offset = node->st.st_size;
 
-    s64 bw = 0;
-
-    if (this->host_bound && node->is_file()) {
-        bw = std::static_pointer_cast<RegularFile>(node)->MockWrite(offset, buf, count);
-    } else
-        bw = node->pwrite(buf, count, offset);
-
-    return bw;
+    return node->pwrite(buf, count, offset);
 }
 
 s64 HostIO_Virtual::Read(const int fd, void* buf, u64 count) {
@@ -272,9 +257,6 @@ s64 HostIO_Virtual::PRead(const int fd, void* buf, u64 count, u64 offset) {
 
     if (nullptr == node)
         return -QUASI_EBADF;
-
-    if (this->host_bound && node->is_file())
-        return std::static_pointer_cast<RegularFile>(node)->MockRead(offset, buf, count);
 
     return node->pread(buf, count, offset);
 }

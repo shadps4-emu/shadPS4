@@ -2,16 +2,19 @@
 
 #pragma once
 
+#include "common/assert.h"
+
 #include "quasi_types.h"
 #include "quasifs_inode_file.h"
 
 namespace QuasiFS {
 
-class RegularFile final : public QuasiFile {
+class VirtualFile final : public QuasiFile {
+    std::vector<char> data{};
 
 public:
-    RegularFile() = default;
-    ~RegularFile() = default;
+    VirtualFile() = default;
+    ~VirtualFile() = default;
 
     //
     // Working functions
