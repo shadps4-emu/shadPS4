@@ -123,7 +123,7 @@ void FrameDumpViewer::Draw() {
             const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
                                            magic_enum::enum_name(selected_queue_type),
                                            selected_submit_num, selected_queue_num2);
-            Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Write);
+            Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Create);
             const auto& data = frame_dump->queues[selected_cmd].data;
             if (file.IsOpen()) {
                 DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));

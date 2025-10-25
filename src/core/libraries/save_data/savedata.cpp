@@ -1389,7 +1389,7 @@ Error PS4_SYSV_ABI sceSaveDataSaveIcon(const OrbisSaveDataMountPoint* mountPoint
     }
 
     try {
-        const Common::FS::IOFile file(path, Common::FS::FileAccessMode::Write);
+        const Common::FS::IOFile file(path, Common::FS::FileAccessMode::Create);
         file.WriteRaw<u8>(icon->buf, std::min(icon->bufSize, icon->dataSize));
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR(Lib_SaveData, "Failed to load icon: {}", e.what());
