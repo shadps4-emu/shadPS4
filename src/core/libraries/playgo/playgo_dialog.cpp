@@ -30,7 +30,7 @@ Error PS4_SYSV_ABI scePlayGoDialogGetResult(OrbisPlayGoDialogResult* result) {
 
 Status PS4_SYSV_ABI scePlayGoDialogGetStatus() {
     LOG_ERROR(Lib_PlayGoDialog, "(DUMMY) called");
-    return Status::FINISHED;
+    return Status::NONE;
 }
 
 Error PS4_SYSV_ABI scePlayGoDialogInitialize() {
@@ -55,7 +55,7 @@ Error PS4_SYSV_ABI scePlayGoDialogTerminate() {
 
 Status PS4_SYSV_ABI scePlayGoDialogUpdateStatus() {
     LOG_ERROR(Lib_PlayGoDialog, "(DUMMY) called");
-    return Status::FINISHED;
+    return Status::NONE;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
