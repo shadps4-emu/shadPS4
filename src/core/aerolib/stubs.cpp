@@ -38,7 +38,8 @@ template <int stub_index>
 static u64 CommonStub() {
     auto entry = stub_nids[stub_index];
     // if (entry) {
-    //     LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", entry->name, entry->nid,
+    //     LOG_ERROR(Core, "Stub: {} (nid: {}) called, returning zero to {}", entry->name,
+    //     entry->nid,
     //               __builtin_return_address(0));
     // } else {
     //     LOG_ERROR(Core, "Stub: Unknown (nid: {}) called, returning zero to {}",

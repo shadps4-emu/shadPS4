@@ -418,7 +418,8 @@ void QFS::SyncHostImpl(partition_ptr part) {
             }
         }
     } catch (const std::exception& e) {
-        LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(), e.what());
+        LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(),
+                     e.what());
     }
 
     return; // true

@@ -46,7 +46,7 @@ int Partition::GetHostPath(fs::path& output_path, const fs::path& local_path) {
 
     fs::path host_path_target_sanitized = SanitizePath(host_path_target);
     if (host_path_target_sanitized.empty()) {
-        LOG_ERROR(Kernel_Fs,"Malicious path detected: {}", host_path_target.string());
+        LOG_ERROR(Kernel_Fs, "Malicious path detected: {}", host_path_target.string());
         return -QUASI_EACCES;
     }
     output_path = host_path_target_sanitized;
