@@ -10,9 +10,9 @@
 
 #include "../../quasifs/quasi_types.h"
 
-#include "../../quasifs/quasifs_inode_device.h"
-#include "../../quasifs/quasifs_inode_directory.h"
-#include "../../quasifs/quasifs_inode_regularfile.h"
+#include "../../quasifs/quasifs_inode_quasi_device.h"
+#include "../../quasifs/quasifs_inode_quasi_directory.h"
+#include "../../quasifs/quasifs_inode_quasi_file.h"
 #include "../../quasifs/quasifs_inode_symlink.h"
 #include "../../quasifs/quasifs_partition.h"
 

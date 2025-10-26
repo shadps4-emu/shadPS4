@@ -5,8 +5,8 @@
 
 #include "core/file_sys/quasifs/quasifs.h"
 
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_regularfile.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_inode_virtualfile.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
@@ -233,7 +233,7 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
     if (path.empty())
         return -QUASI_EINVAL;
     if (path.is_relative())
-        return -QUASI_EBADF;
+        return -QUASI_EINVAL;
 
     // on return:
     // node - last element of the path (if exists)

@@ -9,7 +9,7 @@
 #include "quasi_errno.h"
 #include "quasi_types.h"
 #include "quasifs_inode.h"
-#include "quasifs_inode_directory.h"
+#include "quasifs_inode_quasi_directory.h"
 #include "quasifs_inode_symlink.h"
 
 #include "../hostio/host_io.h"

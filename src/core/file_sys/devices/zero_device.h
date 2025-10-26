@@ -3,9 +3,15 @@
 
 #pragma once
 
-#include <cstring>
+#include "common/logging/log.h"
 
-#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+
+#define DEVICE_STUB()                                                                              \
+    {                                                                                              \
+        LOG_ERROR(Kernel_Fs, "(STUBBED) called");                                                  \
+        return -QUASI_ENOSYS;                                                                      \
+    }
 
 namespace Core::Devices {
 

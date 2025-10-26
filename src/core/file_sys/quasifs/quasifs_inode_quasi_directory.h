@@ -5,22 +5,31 @@
 #include <map>
 #include <string>
 
+#include "common/assert.h"
+
 #include "quasi_types.h"
 #include "quasifs_inode.h"
 
 namespace QuasiFS {
 
 // Directory
-class Directory : public Inode {
+class QuasiDirectory : public Inode {
 public:
     std::map<std::string, inode_ptr> entries{};
     dir_ptr mounted_root = nullptr;
 
-    Directory();
-    ~Directory() = default;
+    QuasiDirectory();
+    ~QuasiDirectory() = default;
 
     static dir_ptr Create(void) {
-        return std::make_shared<Directory>();
+        return std::make_shared<QuasiDirectory>();
+    }
+
+    template <typename T, typename... Args>
+    static file_ptr Create(Args&&... args) {
+        if constexpr (std::is_base_of_v<QuasiFile, T>)
+            return std::make_shared<T>(std::forward<Args>(args)...);
+        UNREACHABLE();
     }
 
     //

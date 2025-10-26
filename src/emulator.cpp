@@ -45,7 +45,7 @@
 
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 #include "core/file_sys/devices/console_device.h"
@@ -323,8 +323,6 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
         }
     }
 
-    // Create stdin/stdout/stderr
-    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
     this->LoadFilesystem(game_folder, id);
 
     // Initialize components

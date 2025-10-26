@@ -3,8 +3,8 @@
 #include "../quasi_errno.h"
 #include "../quasi_types.h"
 
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_regularfile.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
@@ -16,8 +16,8 @@ Partition::Partition() : Partition("", 0755, 512, 4096) {}
 
 Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 blocks_per_io,
                      const u32 ioblock_size)
-    : block_id(next_block_id++), host_root(host_root.lexically_normal()),
-      block_size(block_size), ioblock_size(ioblock_size) {
+    : block_id(next_block_id++), host_root(host_root.lexically_normal()), block_size(block_size),
+      ioblock_size(ioblock_size) {
     this->root = Directory::Create();
     // clear defaults, write
     chmod(this->root, root_permissions);

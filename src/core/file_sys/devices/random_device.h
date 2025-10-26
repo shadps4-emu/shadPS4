@@ -5,7 +5,15 @@
 
 #include <memory>
 
-#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "common/logging/log.h"
+
+#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+
+#define DEVICE_STUB()                                                                              \
+    {                                                                                              \
+        LOG_ERROR(Kernel_Fs, "(STUBBED) called");                                                  \
+        return -QUASI_ENOSYS;                                                                      \
+    }
 
 namespace Core::Devices {
 
@@ -15,9 +23,9 @@ public:
     ~RandomDevice();
 
     s64 read(void* buf, u64 count) override;
-    s64 write(const void* buf, u64 count) override ;
+    s64 write(const void* buf, u64 count) override;
     s64 pread(void* buf, size_t count, u64 offset) override;
-    s64 pwrite(const void* buf, size_t count, u64 offset) override ;
+    s64 pwrite(const void* buf, size_t count, u64 offset) override;
 
     // clang-format off
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }

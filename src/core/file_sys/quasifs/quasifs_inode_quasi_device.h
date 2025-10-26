@@ -3,16 +3,9 @@
 #pragma once
 
 #include "common/assert.h"
-#include "common/logging/log.h"
 
 #include "quasi_types.h"
 #include "quasifs_inode.h"
-
-#define DEVICE_STUB()                                                                              \
-    {                                                                                              \
-        LOG_ERROR(Kernel_Fs, "(STUBBED) called");                                                  \
-        return -QUASI_ENOSYS;                                                                                  \
-    }
 
 namespace QuasiFS {
 

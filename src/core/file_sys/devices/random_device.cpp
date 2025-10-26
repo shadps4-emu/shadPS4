@@ -27,15 +27,11 @@ s64 RandomDevice::write(const void* buf, u64 count) {
 }
 
 s64 RandomDevice::pread(void* buf, u64 count, u64 offset) {
-    auto rbuf = static_cast<char*>(buf);
-    for (size_t i = 0; i < count; i++) {
-        rbuf[i] = std::rand() & 0xFF;
-    }
-    return count;
+    return read(buf, count);
 }
 
 s64 RandomDevice::pwrite(const void* buf, u64 count, u64 offset) {
-    return count;
+    return write(buf, count);
 }
 
 } // namespace Core::Devices

@@ -7,8 +7,8 @@
 #include "../quasi_types.h"
 
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_regularfile.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
@@ -36,12 +36,13 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     bool request_append = flags & QUASI_O_APPEND;
 
     //
-    // Prioritize QFS permissions
-    // Host is (usually) more lenient
+    // Orbis-specific checks
+    // Universal checks are embedded into QFS
+    // Some of those are universal, but order matters (a lot)
     //
 
-    if ((request_write || request_append) && qfs.IsPartitionRO(part))
-        return -QUASI_EROFS;
+    if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
+        return -QUASI_EINVAL;
 
     // if it doesn't exist, check the parent
     inode_ptr checked_node = nullptr == res.node ? parent_node : res.node;
@@ -49,8 +50,11 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     if ((request_read && !checked_node->CanRead()) || (request_write && !checked_node->CanWrite()))
         return -QUASI_EACCES;
 
-    if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
-        return -QUASI_EINVAL;
+    if ((request_write || request_append) && qfs.IsPartitionRO(part))
+        return -QUASI_EROFS;
+
+    if (flags & QUASI_O_DIRECTORY && flags & QUASI_O_CREAT)
+        return -QUASI_ENOTDIR;
 
     //
     // Proceed
@@ -706,9 +710,12 @@ int QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
         vio_stat.st_size = hio_stat.st_size;
         vio_stat.st_blksize = hio_stat.st_blksize;
         vio_stat.st_blocks = hio_stat.st_blocks;
-        vio_stat.st_atim = hio_stat.st_atim;
-        vio_stat.st_mtim = hio_stat.st_mtim;
-        vio_stat.st_ctim = hio_stat.st_ctim;
+        vio_stat.st_atim.tv_sec = hio_stat.st_atim.tv_sec;
+        vio_stat.st_atim.tv_nsec = hio_stat.st_atim.tv_nsec;
+        vio_stat.st_mtim.tv_sec = hio_stat.st_mtim.tv_sec;
+        vio_stat.st_mtim.tv_nsec = hio_stat.st_mtim.tv_nsec;
+        vio_stat.st_ctim.tv_sec = hio_stat.st_ctim.tv_sec;
+        vio_stat.st_ctim.tv_nsec = hio_stat.st_ctim.tv_nsec;
     }
 
     memcpy(statbuf, &vio_stat, sizeof(Libraries::Kernel::OrbisKernelStat));
@@ -746,9 +753,12 @@ int QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* 
         vio_stat.st_size = hio_stat.st_size;
         vio_stat.st_blksize = hio_stat.st_blksize;
         vio_stat.st_blocks = hio_stat.st_blocks;
-        vio_stat.st_atim = hio_stat.st_atim;
-        vio_stat.st_mtim = hio_stat.st_mtim;
-        vio_stat.st_ctim = hio_stat.st_ctim;
+        vio_stat.st_atim.tv_sec = hio_stat.st_atim.tv_sec;
+        vio_stat.st_atim.tv_nsec = hio_stat.st_atim.tv_nsec;
+        vio_stat.st_mtim.tv_sec = hio_stat.st_mtim.tv_sec;
+        vio_stat.st_mtim.tv_nsec = hio_stat.st_mtim.tv_nsec;
+        vio_stat.st_ctim.tv_sec = hio_stat.st_ctim.tv_sec;
+        vio_stat.st_ctim.tv_nsec = hio_stat.st_ctim.tv_nsec;
     }
 
     memcpy(statbuf, &vio_stat, sizeof(Libraries::Kernel::OrbisKernelStat));

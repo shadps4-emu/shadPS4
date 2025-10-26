@@ -8,9 +8,9 @@
 #include "../../quasifs/quasi_errno.h"
 #include "../../quasifs/quasi_types.h"
 
-#include "../../quasifs/quasifs_inode_device.h"
-#include "../../quasifs/quasifs_inode_directory.h"
-#include "../../quasifs/quasifs_inode_regularfile.h"
+#include "../../quasifs/quasifs_inode_quasi_device.h"
+#include "../../quasifs/quasifs_inode_quasi_directory.h"
+#include "../../quasifs/quasifs_inode_quasi_file.h"
 #include "../../quasifs/quasifs_inode_symlink.h"
 #include "../../quasifs/quasifs_inode_virtualfile.h"
 #include "../../quasifs/quasifs_partition.h"
@@ -169,7 +169,7 @@ int HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
     if (!node->is_file())
         return -QUASI_EINVAL;
 
-    return handle->node->ftruncate(size);
+    return node->ftruncate(size);
 }
 
 int HostIO_Virtual::FTruncate(const int fd, u64 size) {
@@ -201,9 +201,9 @@ u64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) 
 
     auto ptr = &handle->pos;
 
-    u64 new_ptr = (SeekOrigin::ORIGIN == origin) * offset +
-                  (SeekOrigin::CURRENT == origin) * (*(ptr) + offset) +
-                  (SeekOrigin::END == origin) * (node->st.st_size + offset);
+    u64 new_ptr = ((SeekOrigin::ORIGIN == origin) * offset) +
+                  ((SeekOrigin::CURRENT == origin) * (*(ptr) + offset)) +
+                  ((SeekOrigin::END == origin) * (node->st.st_size + offset));
 
     if (new_ptr < 0)
         return -QUASI_EINVAL;
