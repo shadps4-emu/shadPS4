@@ -27,7 +27,7 @@ public:
 
     template <typename T, typename... Args>
     static file_ptr Create(Args&&... args) {
-        if constexpr (std::is_base_of_v<QuasiFile, T>)
+        if constexpr (std::is_base_of_v<QuasiDirectory, T>)
             return std::make_shared<T>(std::forward<Args>(args)...);
         UNREACHABLE();
     }

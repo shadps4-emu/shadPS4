@@ -3,9 +3,10 @@
 #include <cstring>
 #include <filesystem>
 
-#include "../../quasifs/quasi_sys_fcntl.h"
+#include "common/logging/log.h"
 
 #include "../../quasifs/quasi_errno.h"
+#include "../../quasifs/quasi_sys_fcntl.h"
 #include "../../quasifs/quasi_types.h"
 
 #include "../../quasifs/quasifs_inode_quasi_device.h"
@@ -17,8 +18,6 @@
 
 #include "../host_io_virtual.h"
 #include "host_io_base.h"
-
-#include "../../quasi_log.h"
 
 namespace HostIODriver {
 
@@ -286,7 +285,7 @@ int HostIO_Virtual::RMDir(const fs::path& path) {
 
     auto target_nlink = res->node->st.st_nlink;
     if (target_nlink != 0) {
-        LogError("RMDir'd directory nlink is not 0!", "(is ", target_nlink, ")");
+        LOG_ERROR(Kernel_Fs, "RMDir'd directory nlink is not 0!", "(is ", target_nlink, ")");
         return -QUASI_ENOTEMPTY;
     }
 

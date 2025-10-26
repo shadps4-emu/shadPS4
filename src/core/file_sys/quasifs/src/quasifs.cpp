@@ -1,5 +1,7 @@
 // INAA License @marecl 2025
 
+#include "common/logging/log.h"
+
 #include "../quasi_errno.h"
 #include "../quasi_types.h"
 
@@ -10,8 +12,6 @@
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_inode_virtualfile.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
-
-#include "../../quasi_log.h"
 
 namespace QuasiFS {
 std::string file_mode(u16 mode) {
@@ -66,19 +66,16 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
         char timebuf[64];
         std::tm* t = std::localtime(&st.st_mtime);
         std::strftime(timebuf, sizeof(timebuf), "%EY-%m-%d %H:%M", t);
-        // TODO: UID/GID
 
-        std::cout << "[ls -la] "
-                  << std::format("{} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n", file_mode(st.st_mode),
-                                 st.st_mode, st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/ 0,
-                                 st.st_size, timebuf, depEnt, name);
+        LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",
+                 file_mode(st.st_mode), st.st_mode, st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/ 0,
+                 st.st_size, timebuf, depEnt, name);
     } else
         depth--;
 
     if (node->is_link())
-        std::cout << "[ls -la] "
-                  << std::format("\t\t\t\t\t\t\tsymlinked to ->{}\n",
-                                 std::static_pointer_cast<Symlink>(node)->follow().string());
+        LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\tsymlinked to ->{}\n",
+                 std::static_pointer_cast<Symlink>(node)->follow().string());
 
     if (node->is_dir()) {
         if ("." == name)
@@ -88,8 +85,7 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
 
         auto dir = std::dynamic_pointer_cast<Directory>(node);
         if (dir->mounted_root) {
-            std::cout << "[ls -la] "
-                      << std::format("\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
+            LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
             _printTree(dir->mounted_root, "", depth + 1);
         } else {
             for (auto& [childName, child] : dir->entries) {
@@ -155,7 +151,7 @@ int QFS::Mount(const fs::path& path, partition_ptr fs, unsigned int options) {
 
     if (options & MountOptions::MOUNT_REMOUNT) {
         if (nullptr == existing_fs_options) {
-            LogError("Can't remount {}: Not mounted", path.string());
+            LOG_ERROR(Kernel_Fs, "Can't remount {}: Not mounted", path.string());
             return -QUASI_EINVAL;
         }
 
@@ -167,12 +163,12 @@ int QFS::Mount(const fs::path& path, partition_ptr fs, unsigned int options) {
     dir_ptr dir = std::static_pointer_cast<Directory>(res.node);
     if (nullptr != existing_fs_options || dir->mounted_root) {
         // fs_options exists or there's something (else?) mounted there already
-        LogError("Can't mount {}: Already mounted", path.string());
+        LOG_ERROR(Kernel_Fs, "Can't mount {}: Already mounted", path.string());
         return -QUASI_EEXIST;
     }
 
     if (options & MountOptions::MOUNT_BIND)
-        LogError("Mount --bind not implemented");
+        LOG_ERROR(Kernel_Fs, "Mount --bind not implemented");
 
     dir_ptr fs_root = fs->GetRoot();
     mount_t fs_options = {
@@ -206,7 +202,8 @@ int QFS::Unmount(const fs::path& path) {
     dir_ptr res_rootdir = std::static_pointer_cast<Directory>(res.node);
 
     if (options_parentdir != res_parentdir)
-        LogError("Resolved mountpoint has different parent in metadata and in resolution result");
+        LOG_ERROR(Kernel_Fs,
+                  "Resolved mountpoint has different parent in metadata and in resolution result");
 
     if (nullptr == res_rootdir)
         // mounted but rootdir disappeared O.o
@@ -254,9 +251,6 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
     res.node = this->root;
 
     do {
-        if (iter_path.string().size() >= 256)
-            return -QUASI_ENAMETOOLONG;
-
         status = res.mountpoint->Resolve(iter_path, res);
 
         if (0 != status)
@@ -292,7 +286,7 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
 
             if (nullptr != mntparent->mounted_root) {
                 if (mntroot != mntparent->mounted_root)
-                    LogError("Resolved conflicting mount root and node");
+                    LOG_ERROR(Kernel_Fs, "Resolved conflicting mount root and node");
 
                 // just like symlinks, only trailing path is saved
                 // directory, in which partition is mounted, belongs to upstream filesystem,
@@ -370,7 +364,8 @@ s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
 void QFS::SyncHostImpl(partition_ptr part) {
     fs::path host_path{};
     if (0 != part->GetHostPath(host_path)) {
-        LogError("Cannot safely resolve host directory for blkdev {}", part->GetBlkId());
+        LOG_ERROR(Kernel_Fs, "Cannot safely resolve host directory for blkdev {}",
+                  part->GetBlkId());
         return; // false
     }
 
@@ -397,7 +392,8 @@ void QFS::SyncHostImpl(partition_ptr part) {
             part->Resolve(parent_path, res);
 
             if (nullptr == res.node) {
-                LogError("Cannot resolve quasi-target for sync: {}", parent_path.string());
+                LOG_ERROR(Kernel_Fs, "Cannot resolve quasi-target for sync: {}",
+                          parent_path.string());
                 continue;
             }
 
@@ -412,18 +408,19 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 new_inode = QuasiFile::Create<RegularFile>();
                 part->touch(parent_dir, leaf, std::static_pointer_cast<RegularFile>(new_inode));
             } else {
-                LogError("Unsupported host file type: {}", entry_path.string());
+                LOG_ERROR(Kernel_Fs, "Unsupported host file type: {}", entry_path.string());
                 continue;
             }
 
             if (0 != this->hio_driver.Stat(entry_path, &new_inode->st)) {
-                LogError("Cannot stat file: {}", entry_path.string());
+                LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
                 continue;
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "Błąd: " << e.what() << "\n";
+        LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(), e.what());
     }
+
     return; // true
 }
 

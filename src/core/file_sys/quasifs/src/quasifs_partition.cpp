@@ -1,5 +1,7 @@
 // INAA License @marecl 2025
 
+#include "common/logging/log.h"
+
 #include "../quasi_errno.h"
 #include "../quasi_types.h"
 
@@ -8,13 +10,11 @@
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
-#include "../../quasi_log.h"
-
 namespace QuasiFS {
 
 Partition::Partition() : Partition("", 0755, 512, 4096) {}
 
-Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 blocks_per_io,
+Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 block_size,
                      const u32 ioblock_size)
     : block_id(next_block_id++), host_root(host_root.lexically_normal()), block_size(block_size),
       ioblock_size(ioblock_size) {
@@ -46,7 +46,7 @@ int Partition::GetHostPath(fs::path& output_path, const fs::path& local_path) {
 
     fs::path host_path_target_sanitized = SanitizePath(host_path_target);
     if (host_path_target_sanitized.empty()) {
-        LogError("Malicious path detected: {}", host_path_target.string());
+        LOG_ERROR(Kernel_Fs,"Malicious path detected: {}", host_path_target.string());
         return -QUASI_EACCES;
     }
     output_path = host_path_target_sanitized;
@@ -65,6 +65,9 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
 
     if (path.is_relative())
         return -QUASI_EBADF;
+
+    if (path.string().size() >= 256)
+        return -QUASI_ENAMETOOLONG;
 
     res.mountpoint = shared_from_this();
     res.local_path = "/";

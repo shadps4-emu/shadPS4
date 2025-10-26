@@ -2,8 +2,13 @@
 
 #include <filesystem>
 
-#include "../../quasi_log.h"
+#include "common/logging/log.h"
+
 #include "host_io_base.h"
+
+#define STUB()                                                                                     \
+    LOG_ERROR(Kernel_Fs, "Stub called in HostIO_Base: {}:{}", __FILE__, __LINE__);                 \
+    return -38;
 
 namespace HostIODriver {
 

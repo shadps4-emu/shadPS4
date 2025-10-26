@@ -244,22 +244,6 @@ File* HandleTable::GetFile(const std::filesystem::path& host_name) {
     return nullptr;
 }
 
-void HandleTable::CreateStdHandles() {
-    auto setup = [this](const char* path, auto* device) {
-        int fd = CreateHandle();
-        auto* file = GetFile(fd);
-        file->is_opened = true;
-        file->type = FileType::Device;
-        file->m_guest_name = path;
-        file->device =
-            std::shared_ptr<Devices::BaseDevice>{reinterpret_cast<Devices::BaseDevice*>(device)};
-    };
-    // order matters
-    setup("/dev/stdin", new Devices::Logger("stdin", false));   // stdin
-    setup("/dev/stdout", new Devices::Logger("stdout", false)); // stdout
-    setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
-}
-
 int HandleTable::GetFileDescriptor(File* file) {
     std::scoped_lock lock{m_mutex};
     auto it = std::find(m_files.begin(), m_files.end(), file);
