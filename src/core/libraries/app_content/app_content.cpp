@@ -9,7 +9,6 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_format/psf.h"
-#include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
@@ -63,7 +62,6 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
     LOG_INFO(Lib_AppContent, "called");
 
     const auto& addon_path = Config::getAddonInstallDir() / title_id;
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     // Determine which loaded additional content this entitlement label is for.
     s32 i = 0;

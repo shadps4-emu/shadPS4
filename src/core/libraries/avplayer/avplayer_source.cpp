@@ -4,7 +4,7 @@
 #include "common/alignment.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-#include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 
@@ -45,10 +45,10 @@ bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view
             return false;
         }
     } else {
-        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
-        if (AVPLAYER_IS_ERROR(
-                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+        auto qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+        std::filesystem::path filepath{};
+        qfs->GetHostPath(filepath, path);
+        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.c_str(), nullptr, nullptr))) {
             return false;
         }
     }

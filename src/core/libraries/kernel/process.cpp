@@ -4,7 +4,7 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
-#include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
@@ -41,7 +41,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
     ASSERT(flags == 0);
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    QuasiFS::QFS* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
     auto* linker = Common::Singleton<Core::Linker>::Instance();
 
     std::filesystem::path path;
@@ -52,13 +52,13 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
     if (guest_path[0] == '/') {
         // try load /system/common/lib/ +path
         // try load /system/priv/lib/   +path
-        path = mnt->GetHostPath(guest_path);
+        qfs->GetHostPath(path, guest_path);
         handle = linker->LoadAndStartModule(path, args, argp, pRes);
         if (handle != -1)
             return handle;
     } else {
         if (!guest_path.contains('/')) {
-            path = mnt->GetHostPath("/app0/" + guest_path);
+            qfs->GetHostPath(path, "/app0/" + guest_path);
             handle = linker->LoadAndStartModule(path, args, argp, pRes);
             if (handle != -1)
                 return handle;
@@ -66,7 +66,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
             //  try load /system/priv/lib/   +basename
             //  try load /system/common/lib/ +basename
         } else {
-            path = mnt->GetHostPath(guest_path);
+            qfs->GetHostPath(path, guest_path);
             handle = linker->LoadAndStartModule(path, args, argp, pRes);
             if (handle != -1)
                 return handle;
