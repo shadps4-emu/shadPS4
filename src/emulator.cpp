@@ -59,6 +59,8 @@
 
 Frontend::WindowSDL* g_window = nullptr;
 
+namespace qfs = QuasiFS;
+
 namespace Core {
 
 Emulator::Emulator() {
@@ -92,29 +94,29 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
         std::filesystem::create_directory(mount_download_dir);
     }
 
-    auto* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
     qfs->Operation.Chmod("/", 0777);
-    QuasiFS::partition_ptr partition_av_contents = QuasiFS::Partition::Create("", 0775, 512, 16384);
-    QuasiFS::partition_ptr partition_av_contents_photo =
-        QuasiFS::Partition::Create("", 0755, 4096, 32768);
-    QuasiFS::partition_ptr partition_av_contents_thumbs =
-        QuasiFS::Partition::Create("", 0755, 4096, 32768);
-    QuasiFS::partition_ptr partition_av_contents_video =
-        QuasiFS::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 512, 16384);
+    qfs::partition_ptr partition_av_contents_photo =
+        qfs::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents_thumbs =
+        qfs::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents_video =
+        qfs::Partition::Create("", 0755, 4096, 32768);
 
-    QuasiFS::partition_ptr partition_app0 =
-        QuasiFS::Partition::Create(game_folder, 0555, 512, 65536);
-    QuasiFS::partition_ptr partition_data =
-        QuasiFS::Partition::Create(mount_data_dir, 0777, 4096, 32768);
-    QuasiFS::partition_ptr partition_dev = QuasiFS::Partition::Create("", 0755, 16384, 16384);
+    qfs::partition_ptr partition_app0 =
+        qfs::Partition::Create(game_folder, 0555, 512, 65536);
+    qfs::partition_ptr partition_data =
+        qfs::Partition::Create(mount_data_dir, 0777, 4096, 32768);
+    qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
     // no idea what are the block sizes for these 3
-    QuasiFS::partition_ptr partition_download =
-        QuasiFS::Partition::Create(mount_download_dir, 0777, 512, 65536);
-    QuasiFS::partition_ptr partition_hostapp =
-        QuasiFS::Partition::Create(game_folder, 0777, 2048, 16384);
-    QuasiFS::partition_ptr partition_temp =
-        QuasiFS::Partition::Create(mount_temp_dir, 0777, 512, 16384);
+    qfs::partition_ptr partition_download =
+        qfs::Partition::Create(mount_download_dir, 0777, 512, 65536);
+    qfs::partition_ptr partition_hostapp =
+        qfs::Partition::Create(game_folder, 0777, 2048, 16384);
+    qfs::partition_ptr partition_temp =
+        qfs::Partition::Create(mount_temp_dir, 0777, 512, 16384);
 
     qfs->Operation.MKDir("/av_contents", 0775);
     qfs->Operation.MKDir("/av_contents/photo", 0755);
@@ -128,31 +130,31 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     qfs->Operation.MKDir("/temp", 0777);
     qfs->Operation.MKDir("/temp0", 0777);
 
-    qfs->Mount("/av_contents", partition_av_contents, QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/av_contents/photo", partition_av_contents_photo, QuasiFS::MountOptions::MOUNT_RW);
+    qfs->Mount("/av_contents", partition_av_contents, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/av_contents/photo", partition_av_contents_photo, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/thumbnails", partition_av_contents_thumbs,
-               QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/av_contents/video", partition_av_contents_video, QuasiFS::MountOptions::MOUNT_RW);
+               qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/av_contents/video", partition_av_contents_video, qfs::MountOptions::MOUNT_RW);
 
-    qfs->Mount("/app0", partition_app0, QuasiFS::MountOptions::MOUNT_NOOPT);
-    qfs->Mount("/data", partition_data, QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/dev", partition_dev, QuasiFS::MountOptions::MOUNT_RW);
-    qfs->Mount("/download0", partition_download, QuasiFS::MountOptions::MOUNT_RW);
+    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
     // qfs->Mount("/hostapp", partition_hostapp,
-    //            QuasiFS::MountOptions::MOUNT_NOOPT | QuasiFS::MountOptions::MOUNT_BIND);
-    qfs->Mount("/temp", partition_temp, QuasiFS::MountOptions::MOUNT_RW);
+    //            qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
+    qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp0", partition_temp,
-               QuasiFS::MountOptions::MOUNT_RW | QuasiFS::MountOptions::MOUNT_BIND);
+               qfs::MountOptions::MOUNT_RW | qfs::MountOptions::MOUNT_BIND);
 
     //
     // Setup /dev
     //
 
     qfs->Operation.MKDir("/dev/fd");
-    qfs->ForceInsert("/dev/fd", "0", QuasiFS::Device::Create<Devices::ZeroDevice>());
-    qfs->ForceInsert("/dev/fd", "1", QuasiFS::Device::Create<Devices::Logger>("stdout", false));
+    qfs->ForceInsert("/dev/fd", "0", qfs::Device::Create<Devices::ZeroDevice>());
+    qfs->ForceInsert("/dev/fd", "1", qfs::Device::Create<Devices::Logger>("stdout", false));
     // qfs->ForceInsert("/dev/fd", "1", std::make_shared<Devices::Logger>("stdout", false));
-    qfs->ForceInsert("/dev/fd", "2", QuasiFS::Device::Create<Devices::Logger>("stderr", true));
+    qfs->ForceInsert("/dev/fd", "2", qfs::Device::Create<Devices::Logger>("stderr", true));
     // stdin is unavailable from within the app???
     qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
@@ -161,13 +163,13 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/deci_stdout");
     qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/deci_stderr");
 
-    qfs->ForceInsert("/dev", "console", QuasiFS::Device::Create<Devices::ConsoleDevice>());
-    qfs->ForceInsert("/dev", "deci_tty6", QuasiFS::Device::Create<Devices::DeciTty6Device>());
-    qfs->ForceInsert("/dev", "random", QuasiFS::Device::Create<Devices::RandomDevice>());
-    qfs->ForceInsert("/dev", "urandom", QuasiFS::Device::Create<Devices::RandomDevice>());
-    qfs->ForceInsert("/dev", "srandom", QuasiFS::Device::Create<Devices::SRandomDevice>());
-    qfs->ForceInsert("/dev", "zero", QuasiFS::Device::Create<Devices::ZeroDevice>());
-    qfs->ForceInsert("/dev", "null", QuasiFS::Device::Create<Devices::NullDevice>());
+    qfs->ForceInsert("/dev", "console", qfs::Device::Create<Devices::ConsoleDevice>());
+    qfs->ForceInsert("/dev", "deci_tty6", qfs::Device::Create<Devices::DeciTty6Device>());
+    qfs->ForceInsert("/dev", "random", qfs::Device::Create<Devices::RandomDevice>());
+    qfs->ForceInsert("/dev", "urandom", qfs::Device::Create<Devices::RandomDevice>());
+    qfs->ForceInsert("/dev", "srandom", qfs::Device::Create<Devices::SRandomDevice>());
+    qfs->ForceInsert("/dev", "zero", qfs::Device::Create<Devices::ZeroDevice>());
+    qfs->ForceInsert("/dev", "null", qfs::Device::Create<Devices::NullDevice>());
 
     qfs->Operation.Chmod("/dev/deci_stderr", 0666);
     qfs->Operation.Chmod("/dev/deci_stdout", 0666);
@@ -192,7 +194,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
 
     qfs->SyncHost();
 
-    // QuasiFS::printTree(qfs->GetRoot(), "/");
+    // qfs::printTree(qfs->GetRoot(), "/");
 }
 
 void Emulator::Run(std::filesystem::path file, const std::vector<std::string> args) {

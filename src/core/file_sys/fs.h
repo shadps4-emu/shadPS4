@@ -38,8 +38,8 @@ public:
 
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                bool read_only = false);
-    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
-    void UnmountAll();
+    // void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    // void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
                                       bool* is_read_only = nullptr, bool force_base_path = false);
@@ -47,14 +47,6 @@ public:
         std::function<void(const std::filesystem::path& host_path, bool is_file)>;
     void IterateDirectory(std::string_view guest_directory,
                           const IterateDirectoryCallback& callback);
-
-    const MntPair* GetMountFromHostPath(const std::string& host_path) {
-        std::scoped_lock lock{m_mutex};
-        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
-        });
-        return it == m_mnt_pairs.end() ? nullptr : &*it;
-    }
 
     const MntPair* GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
@@ -98,13 +90,10 @@ public:
     virtual ~HandleTable() = default;
 
     int CreateHandle();
-    void DeleteHandle(int d);
     File* GetFile(int d);
     File* GetSocket(int d);
     File* GetFile(const std::filesystem::path& host_name);
-    int GetFileDescriptor(File* file);
 
-    void CreateStdHandles();
 
 private:
     std::vector<File*> m_files;

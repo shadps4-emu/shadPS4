@@ -14,6 +14,11 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
+
+static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
 namespace Libraries::AppContent {
 
 struct AddContInfo {
@@ -104,7 +109,14 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
         if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
             // We've located the correct folder.
-            mnt->Mount(entry.path(), mount_point->data);
+
+            g_qfs->Operation.MKDir(mount_point->data, 0555 /* I think it's like /app0*/);
+            QuasiFS::partition_ptr partition_dlc = QuasiFS::Partition::Create(entry.path(), 0555);
+            g_qfs->Mount(mount_point->data, partition_dlc, QuasiFS::MountOptions::MOUNT_RW);
+            g_qfs->SyncHost(mount_point->data);
+            g_qfs->Mount(mount_point->data, partition_dlc,
+                         QuasiFS::MountOptions::MOUNT_REMOUNT | QuasiFS::MountOptions::MOUNT_NOOPT);
+
             return ORBIS_OK;
         }
     }

@@ -19,9 +19,8 @@ constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
 constexpr auto OrbisSaveDataBlocksMax = 32768;  // 1 GiB
 constexpr std::string_view sce_sys = "sce_sys"; // system folder inside save
 
-// static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
-static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+namespace qfs = QuasiFS;
+static qfs::QFS* g_qfs = Common::Singleton<qfs::QFS>::Instance();
 
 namespace fs = std::filesystem;
 
@@ -193,9 +192,9 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
 
     g_qfs->Operation.MKDir(mount_point);
-    auto part = QuasiFS::Partition::Create(save_path);
+    auto part = qfs::Partition::Create(save_path);
     g_qfs->Mount(mount_point, part,
-                 read_only ? QuasiFS::MountOptions::MOUNT_NOOPT : QuasiFS::MountOptions::MOUNT_RW);
+                 read_only ? qfs::MountOptions::MOUNT_NOOPT : qfs::MountOptions::MOUNT_RW);
     g_qfs->SyncHost(mount_point);
 
     mounted = true;

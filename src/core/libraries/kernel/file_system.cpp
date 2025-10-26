@@ -9,8 +9,7 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
-#include "core/file_sys/directories/normal_directory.h"
-#include "core/file_sys/directories/pfs_directory.h"
+
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -33,19 +32,6 @@ namespace D = Core::Devices;
 namespace qfs = QuasiFS;
 
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
-
-// #define GET_DEVICE_FD(fd)                                                                          \
-//     [](u32, const char*, int, u16) {                                                               \
-//         return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
-//     }
-
-// // prefix path, only dev devices
-// static std::map<std::string, FactoryDevice> available_device = {
-//     // clang-format off
-//     {"/dev/console",  &D::ConsoleDevice::Create },
-//     {"/dev/deci_tty6",&D::DeciTty6Device::Create }
-//     // clang-format on
-// };
 
 namespace Libraries::Kernel {
 
@@ -145,6 +131,7 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     }
+
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
@@ -237,11 +224,11 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
-    //     const auto* memory = Core::Memory::Instance();
+    const auto* memory = Core::Memory::Instance();
     // // Invalidate up to the actual number of bytes that could be read.
-    // const auto remaining = file.GetSize() - file.Tell();
+    const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
 
-    // memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
     int result = g_qfs->Operation.Read(fd, buf, nbytes);
     if (result < 0)
@@ -372,9 +359,9 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
 
-    Libraries::Kernel::OrbisKernelStat st;
+    // Libraries::Kernel::OrbisKernelStat st;
 
-    int result = g_qfs->Operation.FStat(fd, &st);
+    int result = g_qfs->Operation.FStat(fd, sb);
     if (result < 0) {
         *__Error() = -result;
         return -1;

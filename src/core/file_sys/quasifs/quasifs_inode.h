@@ -46,19 +46,47 @@ public:
     }
 
     virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-        return -QUASI_EBADF;
+        u64 tb = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->read(iov[idx].iov_base, iov[idx].iov_len);
+            if (status < 0)
+                return status;
+            tb += status;
+        }
+        return tb;
     }
 
     virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-        return -QUASI_EBADF;
+        u64 tb = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->write(iov[idx].iov_base, iov[idx].iov_len);
+            if (status < 0)
+                return status;
+            tb += status;
+        }
+        return tb;
     }
 
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
-        return -QUASI_EBADF;
+        u64 tb = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->pread(iov[idx].iov_base, iov[idx].iov_len, offset);
+            if (status < 0)
+                return status;
+            tb += status;
+        }
+        return tb;
     }
 
     virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
-        return -QUASI_EBADF;
+        u64 tb = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->pwrite(iov[idx].iov_base, iov[idx].iov_len,offset);
+            if (status < 0)
+                return status;
+            tb += status;
+        }
+        return tb;
     }
 
     virtual s64 lseek(s64 offset, int whence) {

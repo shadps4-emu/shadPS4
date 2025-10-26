@@ -40,6 +40,8 @@ using Directory = QuasiDirectory;
 using dir_ptr = std::shared_ptr<Directory>;
 class Device;
 using dev_ptr = std::shared_ptr<Device>;
+class Socket;
+using socket_ptr = std::shared_ptr<Socket>;
 
 // resolve path into (parent_dir, leaf_name, inode)
 struct Resolved {
