@@ -22,23 +22,6 @@ Once you are within the installer:
 2. Go to "Individual Components" tab then search and select both `C++ Clang Compiler for Windows` and `MSBuild support for LLVM`
 3. Continue the installation
 
-### (Prerequisite) Download [**Qt**](https://doc.qt.io/qt-6/get-and-install-qt.html)
-
-Beware, this requires you to create a Qt account. If you do not want to do this, please follow the MSYS2/MinGW compilation method instead.
-
-1. Under the current, non beta version of Qt, select the option `MSVC 2022 64-bit` or similar, as well as `QT Multimedia`.  
-   If you are on Windows on ARM / Qualcomm Snapdragon Elite X, select `MSVC 2022 ARM64` instead.
-
-   Go through the installation normally. If you know what you are doing, you may unselect individual components that eat up too much disk space.
-
-2. Download and install [Qt Visual Studio Tools](https://marketplace.visualstudio.com/items?itemName=TheQtCompany.QtVisualStudioTools2022)
-
-Once you are finished, you will have to configure Qt within Visual Studio:
-
-1. Tools -> Options -> Qt -> Versions
-2. Add a new Qt version and navigate it to the correct folder. Should look like so: `C:\Qt\<QtVersion>\msvc2022_64`
-3. Enable the default checkmark on the new version you just created.
-
 ### (Prerequisite) Download [**Git for Windows**](https://git-scm.com/download/win)
 
 Go through the Git for Windows installation as normal
