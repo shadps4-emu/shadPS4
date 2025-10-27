@@ -84,7 +84,6 @@ static std::optional<std::filesystem::path> GetBundleParentDirectory() {
 #endif
 
 static auto UserPaths = [] {
-
     // Try the portable user directory first.
     auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
     if (!std::filesystem::exists(user_dir)) {
@@ -218,6 +217,5 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
 
     return std::nullopt;
 }
-
 
 } // namespace Common::FS
