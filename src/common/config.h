@@ -149,7 +149,7 @@ void setSysModulesPath(const std::filesystem::path& path);
 
 enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 int getUsbDeviceBackend();
-void setUsbDeviceBackend(int value);
+void setUsbDeviceBackend(int value, bool is_game_specific = false);
 
 // TODO
 bool GetLoadGameSizeEnabled();

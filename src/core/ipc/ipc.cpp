@@ -168,19 +168,42 @@ void IPC::InputLoop() {
                 presenter->GetFsrSettingsRef().rcas_attenuation =
                     static_cast<float>(value / 1000.0f);
             }
-        } else if (cmd == "LOAD_FIGURE") {
+        } else if (cmd == "USB_LOAD_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
             if (ref) {
+                const std::string& file_name = next_str();
                 const u8 pad = next_u64();
                 const u8 slot = next_u64();
-                ref->LoadFigure(pad, slot);
+                ref->LoadFigure(file_name, pad, slot);
             }
-        } else if (cmd == "REMOVE_FIGURE") {
+        } else if (cmd == "USB_REMOVE_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
             if (ref) {
                 const u8 pad = next_u64();
                 const u8 slot = next_u64();
-                ref->RemoveFigure(pad, slot);
+                const bool full_remove = next_u64() != 0;
+                ref->RemoveFigure(pad, slot, full_remove);
+            }
+        } else if (cmd == "USB_MOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 new_pad = next_u64();
+                const u8 new_index = next_u64();
+                const u8 old_pad = next_u64();
+                const u8 old_index = next_u64();
+                ref->MoveFigure(new_pad, new_index, old_pad, old_index);
+            }
+        } else if (cmd == "USB_TEMP_REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 index = next_u64();
+                ref->TempRemoveFigure(index);
+            }
+        } else if (cmd == "USB_CANCEL_REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 index = next_u64();
+                ref->CancelRemoveFigure(index);
             }
         } else if (cmd == "RELOAD_INPUTS") {
             std::string config = next_str();

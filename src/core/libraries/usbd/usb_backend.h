@@ -37,9 +37,9 @@ struct UsbDevice {
     struct libusb_context* ctx;
     struct libusb_device* parent_dev;
 
-    uint8_t bus_number;
-    uint8_t port_number;
-    uint8_t device_address;
+    u8 bus_number;
+    u8 port_number;
+    u8 device_address;
     enum libusb_speed speed;
 
     struct list_head list;
@@ -53,8 +53,11 @@ class UsbEmulatedImpl {
 public:
     UsbEmulatedImpl() = default;
 
-    virtual void LoadFigure(u8 pad, u8 slot) = 0;
-    virtual void RemoveFigure(u8 pad, u8 slot) = 0;
+    virtual void LoadFigure(std::string file_name, u8 pad, u8 slot) = 0;
+    virtual void RemoveFigure(u8 pad, u8 slot, bool full_remove) = 0;
+    virtual void MoveFigure(u8 new_pad, u8 new_index, u8 old_pad, u8 old_index) = 0;
+    virtual void TempRemoveFigure(u8 index) = 0;
+    virtual void CancelRemoveFigure(u8 index) = 0;
 
 protected:
     virtual ~UsbEmulatedImpl() = default;
@@ -113,9 +116,7 @@ public:
     virtual s32 HandleEventsLocked(timeval* tv) = 0;
 
     virtual s32 CheckConnected(libusb_device_handle* dev) = 0;
-    virtual std::shared_ptr<UsbEmulatedImpl> GetImplRef() {
-        return nullptr;
-    };
+    virtual std::shared_ptr<UsbEmulatedImpl> GetImplRef() = 0;
 
 protected:
     virtual ~UsbBackend() = default;
@@ -188,14 +189,14 @@ public:
     }
 
     s32 KernelDriverActive(libusb_device_handle* dev_handle, s32 interface_number) override {
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__APPLE__)
         return s_has_removed_driver ? 0 : 1;
 #else
         return libusb_kernel_driver_active(dev_handle, interface_number);
 #endif
     }
     s32 DetachKernelDriver(libusb_device_handle* dev_handle, s32 interface_number) override {
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__APPLE__)
         s_has_removed_driver = true;
         return LIBUSB_SUCCESS;
 #else
@@ -203,7 +204,7 @@ public:
 #endif
     }
     s32 AttachKernelDriver(libusb_device_handle* dev_handle, s32 interface_number) override {
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__APPLE__)
         s_has_removed_driver = false;
         return LIBUSB_SUCCESS;
 #else
@@ -263,6 +264,10 @@ public:
         return libusb_get_configuration(dev, &config);
     }
 
+    std::shared_ptr<UsbEmulatedImpl> GetImplRef() override {
+        return nullptr;
+    }
+
 protected:
     libusb_context* g_libusb_context = nullptr;
     bool s_has_removed_driver = false;
@@ -295,6 +300,12 @@ public:
     }
 
     s32 GetConfiguration(libusb_device_handle* dev, s32* config) override {
+        config = nullptr;
+        return LIBUSB_SUCCESS;
+    }
+
+    s32 GetDeviceDescriptor(libusb_device* dev, libusb_device_descriptor* desc) override {
+        std::memcpy(desc, FillDeviceDescriptor(), sizeof(libusb_device_descriptor));
         return LIBUSB_SUCCESS;
     }
     s32 GetActiveConfigDescriptor(libusb_device* dev, libusb_config_descriptor** config) override {
@@ -303,7 +314,7 @@ public:
 
         const auto interface = static_cast<libusb_interface*>(calloc(1, sizeof(libusb_interface*)));
         interface->altsetting = interface_desc;
-        interface->num_altsetting = 0;
+        interface->num_altsetting = 1;
 
         const auto new_config = FillConfigDescriptor(interface);
 
@@ -318,7 +329,16 @@ public:
         }
         return GetActiveConfigDescriptor(dev, config);
     }
+    void FreeConfigDescriptor(libusb_config_descriptor* config) override {
+        // Member variable reference, don't free
+    }
 
+    u8 GetBusNumber(libusb_device* dev) override {
+        return 0;
+    }
+    u8 GetDeviceAddress(libusb_device* dev) override {
+        return 0;
+    }
     s32 GetMaxPacketSize(libusb_device* dev, u8 endpoint) override {
         libusb_device_descriptor* desc = nullptr;
 
@@ -422,10 +442,9 @@ public:
     s32 HandleEvents() override {
         if (!flight_list.empty()) {
             const auto transfer = flight_list.front();
-            HandleAsyncTransfer(transfer);
 
             const u8 flags = transfer->flags;
-            transfer->status = LIBUSB_TRANSFER_COMPLETED;
+            transfer->status = HandleAsyncTransfer(transfer);
             transfer->actual_length = transfer->length;
             if (transfer->callback) {
                 transfer->callback(transfer);
@@ -450,7 +469,7 @@ protected:
     virtual libusb_config_descriptor* FillConfigDescriptor(libusb_interface* inter) = 0;
     virtual libusb_device_descriptor* FillDeviceDescriptor() = 0;
 
-    virtual void HandleAsyncTransfer(libusb_transfer* transfer) = 0;
+    virtual libusb_transfer_status HandleAsyncTransfer(libusb_transfer* transfer) = 0;
 
     std::list<libusb_transfer*> flight_list;
 };
