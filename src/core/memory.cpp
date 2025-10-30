@@ -584,6 +584,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
 
     if (prot >= MemoryProt::GpuRead) {
+        // On real hardware, GPU file mmaps cause a full system crash due to an internal error.
         ASSERT_MSG(false, "Files cannot be mapped to GPU memory");
     }
 
