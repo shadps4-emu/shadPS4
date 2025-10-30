@@ -558,6 +558,12 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(fd);
     if (file == nullptr) {
+        LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (file->type != Core::FileSys::FileType::Regular) {
+        LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -567,6 +573,13 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     }
 
     const auto handle = file->f.GetFileMapping();
+
+    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
+        False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
+        // If the file does not have write access, ensure prot does not contain write permissions.
+        // On real hardware, these mappings succeed, but the memory cannot be written to.
+        prot &= ~MemoryProt::CpuWrite;
+    }
 
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
 
