@@ -1079,7 +1079,7 @@ if (APPLE)
     # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
     set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
     set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
-    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
+    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/MoltenVK/libMoltenVK.dylib)
     set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
     set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
     set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
