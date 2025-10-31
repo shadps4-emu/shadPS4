@@ -151,6 +151,10 @@ void setSysModulesPath(const std::filesystem::path& path);
 bool getLoadAutoPatches();
 void setLoadAutoPatches(bool enable);
 
+enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
+int getUsbDeviceBackend();
+void setUsbDeviceBackend(int value, bool is_game_specific = false);
+
 // TODO
 std::filesystem::path GetSaveDataPath();
 std::string getUserName();
