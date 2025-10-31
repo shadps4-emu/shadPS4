@@ -70,6 +70,8 @@ void IPC::Init() {
         return;
     }
 
+    Config::setLoadAutoPatches(false);
+
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");
         this->InputLoop();
