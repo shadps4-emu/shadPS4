@@ -5,6 +5,7 @@ path = [
     "REUSE.toml",
     "crowdin.yml",
     "CMakeSettings.json",
+    "CMakeDarwinPresets.json",
     "CMakeLinuxPresets.json",
     "CMakeWindowsPresets.json",
     "CMakePresets.json",
