@@ -337,7 +337,7 @@ void PS4_SYSV_ABI sched_yield() {
 }
 
 int PS4_SYSV_ABI posix_getpid() {
-    return g_curthread->tid;
+    return GLOBAL_PID;
 }
 
 int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
