@@ -3,9 +3,7 @@
 #pragma once
 
 #include "core/libraries/kernel/file_system.h"
-
 #include "core/file_sys/quasifs/quasi_types.h"
-
 #include "src/host_io_base.h"
 
 namespace HostIODriver {

@@ -7,12 +7,18 @@
 // #error unimplemented
 
 #include <cstdint>
+#include <unordered_map>
+#include <windows.h>
 
 #include "src/host_io_base.h"
 
 namespace HostIODriver {
 
 class HostIO_Win32 final : public HostIO_Base {
+private:
+    // well, *dows keeps raw handles in a different way than we want them to be
+    // filesystem-wise, this is an oddball so we'll just hack it around POSIX 'till it works
+    std::unordered_map<int, HANDLE> fd_mapping{};
 
 public:
     HostIO_Win32();
