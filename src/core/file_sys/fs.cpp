@@ -9,8 +9,6 @@
 
 namespace Core::FileSys {
 
-bool MntPoints::ignore_game_patches = false;
-
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
@@ -69,10 +67,10 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
     patch_path /= rel_path;
 
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
-        return patch_path;
-    }
+    // if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
+    //     !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
+    //     return patch_path;
+    // }
 
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
@@ -130,11 +128,11 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path && !ignore_game_patches) {
-        if (const auto path = search(patch_path)) {
-            return *path;
-        }
-    }
+    // if (!force_base_path && !ignore_game_patches) {
+    //     if (const auto path = search(patch_path)) {
+    //         return *path;
+    //     }
+    // }
     if (const auto path = search(host_path)) {
         return *path;
     }

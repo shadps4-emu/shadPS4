@@ -719,9 +719,10 @@ int QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
             hostpath_status != 0)
             return hostpath_status;
 
-        if (hio_status = qfs.hio_driver.Stat(host_path_target, &hio_stat); 0 != hio_status)
+        if (hio_status = qfs.hio_driver.Stat(host_path_target, &hio_stat); 0 != hio_status) {
             // hosts operation must succeed in order to continue
             return hio_status;
+        }
 
         host_used = true;
     }

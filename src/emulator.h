@@ -28,9 +28,11 @@ public:
     void Run(std::filesystem::path file, const std::vector<std::string> args = {});
     void UpdatePlayTime(const std::string& serial);
 
+    static bool ignore_game_patches;
+
 private:
     void LoadSystemModules(const std::string& game_serial);
-    void LoadFilesystem(const std::filesystem::path& game_folder, const std::string& id);
+    void LoadFilesystem(const std::string& id);
 
     Core::MemoryManager* memory;
     Input::GameController* controller;

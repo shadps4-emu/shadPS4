@@ -1,6 +1,7 @@
 // INAA License @marecl 2025
 
 #include "common/logging/log.h"
+// #include "common/string_util.h"
 
 #include "../quasi_errno.h"
 #include "../quasi_types.h"
@@ -50,6 +51,29 @@ int Partition::GetHostPath(fs::path& output_path, const fs::path& local_path) {
         return -QUASI_EACCES;
     }
     output_path = host_path_target_sanitized;
+
+    // #ifdef _WIN32
+    //     // Windows is case insensitive
+    //     output_path = host_path_target_sanitized;
+    // #endif
+
+    //     fs::path current_path{};
+    //     for (auto part : host_path_target_sanitized) {
+    //         fs::path tmp = Common::ToLower(part.string());
+    //         if (!fs::exists(tmp))
+    //             continue;
+    //         current_path /= tmp;
+    //     }
+
+    //     if (fs::equivalent(current_path, host_path_target_sanitized)) {
+    //         output_path = current_path;
+    //         return 0;
+    //     }
+
+    //     output_path = "";
+    //     LOG_ERROR(Kernel_Fs, "Resolving [{}] to host's [{}] failed", local_path.string(),
+    //               host_path_target_sanitized.string());
+
     // Log("Resolving local {} to {}", local_path.string(), host_path_target_sanitized.string());
     return 0;
 }

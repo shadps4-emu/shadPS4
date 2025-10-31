@@ -13,7 +13,6 @@
 #include "common/path_util.h"
 #include "compatibility_info.h"
 #include "core/file_format/psf.h"
-#include "core/file_sys/fs.h"
 #include "elf_viewer.h"
 #include "emulator.h"
 #include "game_grid_frame.h"

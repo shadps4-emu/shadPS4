@@ -63,6 +63,8 @@ namespace qfs = QuasiFS;
 
 namespace Core {
 
+bool Emulator::ignore_game_patches = false;
+
 Emulator::Emulator() {
     // Initialize NT API functions and set high priority
 #ifdef _WIN32
@@ -77,7 +79,7 @@ Emulator::Emulator() {
 
 Emulator::~Emulator() {}
 
-void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const std::string& id) {
+void Emulator::LoadFilesystem(const std::string& id) {
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
     if (!std::filesystem::exists(mount_data_dir)) {
         std::filesystem::create_directory(mount_data_dir);
@@ -98,31 +100,22 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
 
     qfs->Operation.Chmod("/", 0777);
     qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 512, 16384);
-    qfs::partition_ptr partition_av_contents_photo =
-        qfs::Partition::Create("", 0755, 4096, 32768);
-    qfs::partition_ptr partition_av_contents_thumbs =
-        qfs::Partition::Create("", 0755, 4096, 32768);
-    qfs::partition_ptr partition_av_contents_video =
-        qfs::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 4096, 32768);
+    qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 4096, 32768);
 
-    qfs::partition_ptr partition_app0 =
-        qfs::Partition::Create(game_folder, 0555, 512, 65536);
-    qfs::partition_ptr partition_data =
-        qfs::Partition::Create(mount_data_dir, 0777, 4096, 32768);
+    qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 4096, 32768);
     qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
     // no idea what are the block sizes for these 3
     qfs::partition_ptr partition_download =
         qfs::Partition::Create(mount_download_dir, 0777, 512, 65536);
-    qfs::partition_ptr partition_hostapp =
-        qfs::Partition::Create(game_folder, 0777, 2048, 16384);
-    qfs::partition_ptr partition_temp =
-        qfs::Partition::Create(mount_temp_dir, 0777, 512, 16384);
+
+    qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 512, 16384);
 
     qfs->Operation.MKDir("/av_contents", 0775);
     qfs->Operation.MKDir("/av_contents/photo", 0755);
     qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
     qfs->Operation.MKDir("/av_contents/video", 0755);
-    qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/data", 0777);
     qfs->Operation.MKDir("/dev", 0555);
     qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
@@ -136,12 +129,10 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder, const st
                qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/video", partition_av_contents_video, qfs::MountOptions::MOUNT_RW);
 
-    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
     qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
-    // qfs->Mount("/hostapp", partition_hostapp,
-    //            qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
+
     qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp0", partition_temp,
                qfs::MountOptions::MOUNT_RW | qfs::MountOptions::MOUNT_BIND);
@@ -222,7 +213,22 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     // Certain games may use /hostapp as well such as CUSA001100
     mnt->Mount(game_folder, "/hostapp", true);
 
-    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    qfs->Operation.MKDir("/app0", 0555);
+    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 512, 65536);
+
+    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/hostapp", partition_app0,
+               qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
+
+    // can't sync here, otherwise all mountpoints would need to be updated one by one
+    std::filesystem::path param_sfo_path{};
+    {
+        qfs::Resolved res{};
+        int status = qfs->Resolve("/app0", res);
+        // DON'T do this normally. This is init, anything goes
+        res.mountpoint->GetHostPath(param_sfo_path, "/sce_sys/param.sfo");
+    }
     const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
 
     // Load param.sfo details if it exists
@@ -232,24 +238,28 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
 
-    if (param_sfo_exists) {
-        auto* param_sfo = Common::Singleton<PSF>::Instance();
-        ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
+    // There is no valid dump without this file ~shrug~
+    if (!param_sfo_exists)
+        UNREACHABLE_MSG("Failed to access param.sfo");
 
-        const auto content_id = param_sfo->GetString("CONTENT_ID");
-        const auto title_id = param_sfo->GetString("TITLE_ID");
-        if (content_id.has_value() && !content_id->empty()) {
-            id = std::string(*content_id, 7, 9);
-        } else if (title_id.has_value()) {
-            id = *title_id;
-        }
-        title = param_sfo->GetString("TITLE").value_or("Unknown title");
-        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
-            psf_attributes.raw = *raw_attributes;
-        }
+    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
+
+    const auto content_id = param_sfo->GetString("CONTENT_ID");
+    const auto title_id = param_sfo->GetString("TITLE_ID");
+    if (content_id.has_value() && !content_id->empty()) {
+        id = std::string(*content_id, 7, 9);
+    } else if (title_id.has_value()) {
+        id = *title_id;
     }
+    title = param_sfo->GetString("TITLE").value_or("Unknown title");
+    fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+    app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+    if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+        psf_attributes.raw = *raw_attributes;
+    }
+
+    this->LoadFilesystem(id);
 
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
@@ -324,8 +334,6 @@ void Emulator::Run(std::filesystem::path file, const std::vector<std::string> ar
             LOG_ERROR(Loader, "Too many game arguments, only passing the first 32");
         }
     }
-
-    this->LoadFilesystem(game_folder, id);
 
     // Initialize components
     memory = Core::Memory::Instance();
