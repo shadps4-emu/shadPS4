@@ -163,7 +163,7 @@ s32 PS4_SYSV_ABI posix_clock_gettime(u32 clock_id, OrbisKernelTimespec* ts) {
     case ORBIS_CLOCK_MONOTONIC_FAST: {
         static LARGE_INTEGER pf = [] {
             LARGE_INTEGER res{};
-            QueryPerformanceFrequency(&pf);
+            QueryPerformanceFrequency(&res);
             return res;
         }();
 
