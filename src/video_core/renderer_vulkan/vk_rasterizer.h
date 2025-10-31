@@ -127,22 +127,21 @@ private:
     Common::SharedFirstMutex mapped_ranges_mutex;
     PipelineCache pipeline_cache;
 
-    using RenderTargetInfo =
-        std::pair<VideoCore::ImageId, VideoCore::TextureCache::RenderTargetDesc>;
-    std::array<RenderTargetInfo, Liverpool::NumColorBuffers> cb_descs;
-    std::pair<VideoCore::ImageId, VideoCore::TextureCache::DepthTargetDesc> db_desc;
-    boost::container::static_vector<vk::DescriptorImageInfo, Shader::NumImages> image_infos;
-    boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NumBuffers> buffer_infos;
-    boost::container::static_vector<VideoCore::ImageId, Shader::NumImages> bound_images;
+    using RenderTargetInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
+    std::array<RenderTargetInfo, AmdGpu::NUM_COLOR_BUFFERS> cb_descs;
+    std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc> db_desc;
+    boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
+    boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
+    boost::container::static_vector<VideoCore::ImageId, Shader::NUM_IMAGES> bound_images;
 
     Pipeline::DescriptorWrites set_writes;
     Pipeline::BufferBarriers buffer_barriers;
     Shader::PushData push_data;
 
     using BufferBindingInfo = std::tuple<VideoCore::BufferId, AmdGpu::Buffer, u64>;
-    boost::container::static_vector<BufferBindingInfo, Shader::NumBuffers> buffer_bindings;
-    using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::TextureDesc>;
-    boost::container::static_vector<ImageBindingInfo, Shader::NumImages> image_bindings;
+    boost::container::static_vector<BufferBindingInfo, Shader::NUM_BUFFERS> buffer_bindings;
+    using ImageBindingInfo = std::pair<VideoCore::ImageId, VideoCore::TextureCache::ImageDesc>;
+    boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};
     bool attachment_feedback_loop{};
 };

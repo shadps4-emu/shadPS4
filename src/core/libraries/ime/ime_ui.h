@@ -24,9 +24,7 @@ class ImeState {
 
     void* work_buffer{};
     char16_t* text_buffer{};
-
-    OrbisImeParamExtended extended_param{};
-    bool has_extended = false;
+    u32 max_text_length = 0;
 
     // A character can hold up to 4 bytes in UTF-8
     Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> current_text;

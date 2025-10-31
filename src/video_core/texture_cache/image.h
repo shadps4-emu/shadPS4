@@ -11,6 +11,8 @@
 
 #include <deque>
 #include <optional>
+#include <boost/container/small_vector.hpp>
+#include <boost/container/static_vector.hpp>
 
 namespace Vulkan {
 class Instance;

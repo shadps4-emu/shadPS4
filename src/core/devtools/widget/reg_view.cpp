@@ -29,7 +29,7 @@ namespace Core::Devtools::Widget {
 
 void RegView::ProcessShader(int shader_id) {
     std::vector<u32> shader_code;
-    Vulkan::Liverpool::UserData user_data;
+    AmdGpu::UserData user_data;
     if (data.is_compute) {
         shader_code = data.cs_data.code;
         user_data = data.cs_data.cs_program.user_data;
@@ -129,7 +129,7 @@ void RegView::DrawGraphicsRegs() {
             }
         };
 
-        for (int cb = 0; cb < AmdGpu::Liverpool::NumColorBuffers; ++cb) {
+        for (int cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS; ++cb) {
             PushID(cb);
 
             TableNextRow();
@@ -246,8 +246,7 @@ void RegView::SetData(DebugStateType::RegDump _data, const std::string& base_tit
                     default_reg_popup.SetData(title, regs.depth_buffer, regs.depth_control);
                     default_reg_popup.open = true;
                 }
-            } else if (last_selected_cb >= 0 &&
-                       last_selected_cb < AmdGpu::Liverpool::NumColorBuffers) {
+            } else if (last_selected_cb >= 0 && last_selected_cb < AmdGpu::NUM_COLOR_BUFFERS) {
                 const auto& buffer = regs.color_buffers[last_selected_cb];
                 const bool has_cb = buffer && regs.color_target_mask.GetMask(last_selected_cb);
                 if (has_cb) {
@@ -348,7 +347,7 @@ void RegView::Draw() {
             } else {
                 shader->hex_view.DrawContents(shader->user_data.data(),
                                               shader->user_data.size() *
-                                                  sizeof(Vulkan::Liverpool::UserData::value_type));
+                                                  sizeof(AmdGpu::UserData::value_type));
             }
         }
         End();

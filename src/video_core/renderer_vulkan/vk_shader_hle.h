@@ -3,7 +3,10 @@
 
 #pragma once
 
-#include "video_core/amdgpu/liverpool.h"
+namespace AmdGpu {
+struct ComputeProgram;
+union Regs;
+} // namespace AmdGpu
 
 namespace Shader {
 struct Info;
@@ -14,7 +17,7 @@ namespace Vulkan {
 class Rasterizer;
 
 /// Attempts to execute a shader using HLE if possible.
-bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer);
+bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Regs& regs,
+                      const AmdGpu::ComputeProgram& cs_program, Rasterizer& rasterizer);
 
 } // namespace Vulkan

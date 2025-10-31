@@ -114,6 +114,69 @@ State GameController::GetLastState() const {
 }
 
 void GameController::AddState(const State& state) {
+    // Don't add duplicate states - compare input values (ignoring timestamp)
+    if (m_states_num > 0) {
+        const State& last = GetLastState();
+
+        // Compare button states
+        bool buttons_match = (last.buttonsState == state.buttonsState);
+
+        // Compare axes with a LARGE threshold to maintain continuous state during spinning
+        // Use ±64 (~25% of 0-255 range) - only create new states for significant direction changes
+        // This treats analog movement as continuous rather than discrete state changes
+        bool axes_match = true;
+        for (int i = 0; i < static_cast<int>(Axis::AxisMax); i++) {
+            int diff = std::abs(last.axes[i] - state.axes[i]);
+            if (diff > 64) {
+                axes_match = false;
+                break;
+            }
+        }
+
+        // Compare touchpad states
+        bool touchpad_match = true;
+        for (int i = 0; i < 2; i++) {
+            if (last.touchpad[i].state != state.touchpad[i].state ||
+                last.touchpad[i].x != state.touchpad[i].x ||
+                last.touchpad[i].y != state.touchpad[i].y) {
+                touchpad_match = false;
+                break;
+            }
+        }
+
+        // Skip motion sensor comparison for duplicate detection
+        // Motion sensors (gyro/accelerometer) constantly fluctuate due to sensor noise
+        // and shouldn't affect whether we consider a state as "duplicate" for gameplay purposes
+
+        // If all gameplay-relevant input values are similar enough, just update the values
+        // in the most recent buffered state to track gradual movement without creating new entries
+        if (buttons_match && axes_match && touchpad_match) {
+            m_last_state.time = state.time;
+            // Update the axes to track continuous movement
+            for (int i = 0; i < static_cast<int>(Axis::AxisMax); i++) {
+                m_last_state.axes[i] = state.axes[i];
+            }
+            // Update motion sensor data
+            m_last_state.acceleration = state.acceleration;
+            m_last_state.angularVelocity = state.angularVelocity;
+            m_last_state.orientation = state.orientation;
+
+            // IMPORTANT: Also update the last buffered state (if any) with current axis values
+            // This ensures the game reads the current stick position, not old values
+            if (m_states_num > 0) {
+                const u32 last_index = (m_first_state + m_states_num - 1) % MAX_STATES;
+                m_states[last_index].time = state.time;
+                for (int i = 0; i < static_cast<int>(Axis::AxisMax); i++) {
+                    m_states[last_index].axes[i] = state.axes[i];
+                }
+                m_states[last_index].acceleration = state.acceleration;
+                m_states[last_index].angularVelocity = state.angularVelocity;
+                m_states[last_index].orientation = state.orientation;
+            }
+            return;
+        }
+    }
+
     if (m_states_num >= MAX_STATES) {
         m_states_num = MAX_STATES - 1;
         m_first_state = (m_first_state + 1) % MAX_STATES;

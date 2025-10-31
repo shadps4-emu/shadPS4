@@ -119,8 +119,7 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     if (info.props.is_volume) {
         flags |= vk::ImageCreateFlagBits::e2DArrayCompatible;
     }
-    // Not supported by MoltenVK.
-    if (info.props.is_block && instance->GetDriverID() != vk::DriverId::eMoltenvk) {
+    if (info.props.is_block) {
         flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
     }
 

@@ -12,6 +12,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/memory.h"
+#include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderdoc.h"
@@ -305,14 +306,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::SetConfigReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                const auto reg_addr = ConfigRegWordOffset + set_data->reg_offset;
+                const auto reg_addr = Regs::ConfigRegWordOffset + set_data->reg_offset;
                 const auto* payload = reinterpret_cast<const u32*>(header + 2);
                 std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
                 break;
             }
             case PM4ItOpcode::SetContextReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                const auto reg_addr = ContextRegWordOffset + set_data->reg_offset;
+                const auto reg_addr = Regs::ContextRegWordOffset + set_data->reg_offset;
                 const auto* payload = reinterpret_cast<const u32*>(header + 2);
 
                 std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
@@ -335,7 +336,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 case ContextRegs::CbColor7Base: {
                     const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Base) /
                                             (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
-                    ASSERT(col_buf_id < NumColorBuffers);
+                    ASSERT(col_buf_id < NUM_COLOR_BUFFERS);
 
                     const auto nop_offset = header->type3.count;
                     if (nop_offset == 0x0e || nop_offset == 0x0d || nop_offset == 0x0b) {
@@ -358,7 +359,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     const auto col_buf_id =
                         (reg_addr - ContextRegs::CbColor0Cmask) /
                         (ContextRegs::CbColor1Cmask - ContextRegs::CbColor0Cmask);
-                    ASSERT(col_buf_id < NumColorBuffers);
+                    ASSERT(col_buf_id < NUM_COLOR_BUFFERS);
 
                     const auto nop_offset = header->type3.count;
                     if (nop_offset == 0x04) {
@@ -394,14 +395,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                                  (set_data->reg_offset - 0x200);
                     std::memcpy(addr, header + 2, set_size);
                 } else {
-                    std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                                set_size);
+                    std::memcpy(&regs.reg_array[Regs::ShRegWordOffset + set_data->reg_offset],
+                                header + 2, set_size);
                 }
                 break;
             }
             case PM4ItOpcode::SetUconfigReg: {
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
-                std::memcpy(&regs.reg_array[UconfigRegWordOffset + set_data->reg_offset],
+                std::memcpy(&regs.reg_array[Regs::UconfigRegWordOffset + set_data->reg_offset],
                             header + 2, (count - 1) * sizeof(u32));
                 break;
             }
@@ -418,7 +419,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndex2*>(header);
                 regs.max_index_size = draw_index->max_size;
                 regs.index_base_address.base_addr_lo = draw_index->index_base_lo;
-                regs.index_base_address.base_addr_hi.Assign(draw_index->index_base_hi);
+                regs.index_base_address.base_addr_hi = draw_index->index_base_hi;
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
                 if (DebugState.DumpingCurrentReg()) {
@@ -582,7 +583,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::IndexBase: {
                 const auto* index_base = reinterpret_cast<const PM4CmdDrawIndexBase*>(header);
                 regs.index_base_address.base_addr_lo = index_base->addr_lo;
-                regs.index_base_address.base_addr_hi.Assign(index_base->addr_hi);
+                regs.index_base_address.base_addr_hi = index_base->addr_hi;
                 break;
             }
             case PM4ItOpcode::IndexBufferSize: {
@@ -638,12 +639,14 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             }
             case PM4ItOpcode::EventWriteEop: {
                 const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
-                event_eop->SignalFence([](void* address, u64 data, u32 num_bytes) {
-                    auto* memory = Core::Memory::Instance();
-                    if (!memory->TryWriteBacking(address, &data, num_bytes)) {
-                        memcpy(address, &data, num_bytes);
-                    }
-                });
+                event_eop->SignalFence(
+                    [](void* address, u64 data, u32 num_bytes) {
+                        auto* memory = Core::Memory::Instance();
+                        if (!memory->TryWriteBacking(address, &data, num_bytes)) {
+                            memcpy(address, &data, num_bytes);
+                        }
+                    },
+                    [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop); });
                 break;
             }
             case PM4ItOpcode::DmaData: {
@@ -947,8 +950,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                              (set_data->reg_offset - 0x200);
                 std::memcpy(addr, header + 2, set_size);
             } else {
-                std::memcpy(&regs.reg_array[ShRegWordOffset + set_data->reg_offset], header + 2,
-                            set_size);
+                std::memcpy(&regs.reg_array[Regs::ShRegWordOffset + set_data->reg_offset],
+                            header + 2, set_size);
             }
             break;
         }
@@ -1030,7 +1033,9 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::ReleaseMem: {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
-            release_mem->SignalFence(static_cast<Platform::InterruptId>(queue.pipe_id));
+            release_mem->SignalFence([pipe_id = queue.pipe_id] {
+                Platform::IrqC::Instance()->Signal(static_cast<Platform::InterruptId>(pipe_id));
+            });
             break;
         }
         case PM4ItOpcode::EventWrite: {
@@ -1053,11 +1058,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_EXIT;
 }
 
-std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
-    std::span<const u32> dcb, std::span<const u32> ccb) {
+Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
-
-    // std::vector resize can invalidate spans for commands in flight
     ASSERT_MSG(queue.dcb_buffer.capacity() >= queue.dcb_buffer_offset + dcb.size(),
                "dcb copy buffer out of reserved space");
     ASSERT_MSG(queue.ccb_buffer.capacity() >= queue.ccb_buffer_offset + ccb.size(),
@@ -1068,8 +1070,8 @@ std::pair<std::span<const u32>, std::span<const u32>> Liverpool::CopyCmdBuffers(
     queue.ccb_buffer.resize(
         std::max(queue.ccb_buffer.size(), queue.ccb_buffer_offset + ccb.size()));
 
-    u32 prev_dcb_buffer_offset = queue.dcb_buffer_offset;
-    u32 prev_ccb_buffer_offset = queue.ccb_buffer_offset;
+    const u32 prev_dcb_buffer_offset = queue.dcb_buffer_offset;
+    const u32 prev_ccb_buffer_offset = queue.ccb_buffer_offset;
     if (!dcb.empty()) {
         std::memcpy(queue.dcb_buffer.data() + queue.dcb_buffer_offset, dcb.data(),
                     dcb.size_bytes());

@@ -86,13 +86,14 @@ int main(int argc, char* argv[]) {
         {"-p",
          [&](int& i) {
              if (i + 1 < argc) {
-                 MemoryPatcher::patchFile = argv[++i];
+                 MemoryPatcher::patch_file = argv[++i];
              } else {
                  std::cerr << "Error: Missing argument for -p/--patch\n";
                  exit(1);
              }
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
+
         {"-i", [&](int&) { Core::FileSys::MntPoints::ignore_game_patches = true; }},
         {"--ignore-game-patch", [&](int& i) { arg_map["-i"](i); }},
         {"-f",
@@ -255,6 +256,7 @@ int main(int argc, char* argv[]) {
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;

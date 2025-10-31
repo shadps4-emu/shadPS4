@@ -3,13 +3,11 @@
 
 #include <boost/container/static_vector.hpp>
 
-#include "shader_recompiler/info.h"
-#include "video_core/buffer_cache/buffer_cache.h"
+#include "shader_recompiler/resource.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_pipeline_common.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 

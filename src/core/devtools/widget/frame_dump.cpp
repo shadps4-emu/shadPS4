@@ -118,7 +118,8 @@ void FrameDumpViewer::Draw() {
         SameLine();
         BeginDisabled(selected_cmd == -1);
         if (SmallButton("Dump cmd")) {
-            auto now_time = fmt::localtime(std::time(nullptr));
+            auto time = std::time(nullptr);
+            auto now_time = *std::localtime(&time);
             const auto fname = fmt::format("{:%F %H-%M-%S} {}_{}_{}.bin", now_time,
                                            magic_enum::enum_name(selected_queue_type),
                                            selected_submit_num, selected_queue_num2);

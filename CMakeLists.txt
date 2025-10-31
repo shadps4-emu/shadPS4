@@ -31,7 +31,6 @@ if(UNIX AND NOT APPLE)
     endif()
 endif()
 
-option(ENABLE_QT_GUI "Enable the Qt GUI. If not selected then the emulator uses a minimal SDL-based UI instead" OFF)
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 
@@ -203,7 +202,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "11")
+set(EMULATOR_VERSION_MINOR "12")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -220,10 +219,6 @@ if(NOT (GIT_REMOTE_URL_LOWER MATCHES "shadps4-emu/shadps4" AND (GIT_BRANCH STREQ
     set(ENABLE_UPDATER OFF)
 endif()
 
-if(WIN32 AND ENABLE_QT_GUI AND NOT CMAKE_PREFIX_PATH)
-    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/DetectQtInstallation.cmake")
-endif ()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(Boost 1.84.0 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
@@ -237,7 +232,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.324 CONFIG)
+find_package(VulkanHeaders 1.4.329 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -261,30 +256,6 @@ endif()
 
 add_subdirectory(externals)
 include_directories(src)
-
-if(ENABLE_QT_GUI)
-    find_package(Qt6 REQUIRED COMPONENTS Widgets Concurrent LinguistTools Network Multimedia)
-    qt_standard_project_setup()
-    set(CMAKE_AUTORCC ON)
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTOUIC ON)
-
-    set(QT_TRANSLATIONS "${PROJECT_SOURCE_DIR}/src/qt_gui/translations")
-    file(GLOB_RECURSE TRANSLATIONS_TS ${QT_TRANSLATIONS}/*.ts)
-
-    set_source_files_properties(${TRANSLATIONS_TS} PROPERTIES OUTPUT_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/translations")
-    qt_add_translation(TRANSLATIONS_QM ${TRANSLATIONS_TS})
-
-    set(TRANSLATIONS_QRC ${CMAKE_CURRENT_BINARY_DIR}/translations/translations.qrc)
-    file(WRITE ${TRANSLATIONS_QRC} "<RCC><qresource prefix=\"translations\">\n")
-    foreach (QM ${TRANSLATIONS_QM})
-        get_filename_component(QM_FILE ${QM} NAME)
-        file(APPEND ${TRANSLATIONS_QRC} "<file>${QM_FILE}</file>\n")
-    endforeach (QM)
-    file(APPEND ${TRANSLATIONS_QRC} "</qresource></RCC>")
-
-    qt_add_resources(TRANSLATIONS ${TRANSLATIONS_QRC})
-endif()
 
 set(AJM_LIB src/core/libraries/ajm/ajm.cpp
             src/core/libraries/ajm/ajm.h
@@ -561,6 +532,7 @@ set(RANDOM_LIB src/core/libraries/random/random.cpp
 
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
+             src/core/libraries/usbd/usb_backend.h
 )
 
 set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
@@ -851,10 +823,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
-set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/profile.h
+set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/resource.h
                       src/shader_recompiler/info.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
@@ -952,17 +924,24 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/value.h
 )
 
-set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
+set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
+               src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
                src/video_core/amdgpu/pixel_format.h
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
+               src/video_core/amdgpu/regs_color.h
+               src/video_core/amdgpu/regs_depth.h
+               src/video_core/amdgpu/regs.cpp
+               src/video_core/amdgpu/regs.h
+               src/video_core/amdgpu/regs_primitive.h
+               src/video_core/amdgpu/regs_shader.h
+               src/video_core/amdgpu/regs_texture.h
+               src/video_core/amdgpu/regs_vertex.h
                src/video_core/amdgpu/resource.h
                src/video_core/amdgpu/tiling.cpp
                src/video_core/amdgpu/tiling.h
-               src/video_core/amdgpu/types.h
-               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -1059,112 +1038,26 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
-# The above is shared in SDL and Qt version (TODO share them all)
-
-if(ENABLE_QT_GUI)
-qt_add_resources(RESOURCE_FILES src/shadps4.qrc)
-
-if (ENABLE_UPDATER)
-    set(UPDATER src/qt_gui/check_update.cpp
-                src/qt_gui/check_update.h
-    )
-endif()
-
-set(QT_GUI src/qt_gui/about_dialog.cpp
-           src/qt_gui/about_dialog.h
-           src/qt_gui/about_dialog.ui
-           src/qt_gui/background_music_player.cpp
-           src/qt_gui/background_music_player.h
-           src/qt_gui/cheats_patches.cpp
-           src/qt_gui/cheats_patches.h
-           src/qt_gui/compatibility_info.cpp
-           src/qt_gui/compatibility_info.h
-	   src/qt_gui/control_settings.cpp	   
-           src/qt_gui/control_settings.h
-           src/qt_gui/control_settings.ui
-           src/qt_gui/kbm_gui.cpp	   
-           src/qt_gui/kbm_gui.h
-           src/qt_gui/kbm_gui.ui
-           src/qt_gui/main_window_ui.h
-           src/qt_gui/main_window.cpp
-           src/qt_gui/main_window.h
-           src/qt_gui/gui_context_menus.h
-           src/qt_gui/game_list_utils.h
-           src/qt_gui/game_info.cpp
-           src/qt_gui/game_info.h
-           src/qt_gui/game_list_frame.cpp
-           src/qt_gui/game_list_frame.h
-           src/qt_gui/game_grid_frame.cpp
-           src/qt_gui/game_grid_frame.h
-           src/qt_gui/game_install_dialog.cpp
-           src/qt_gui/game_install_dialog.h
-           src/qt_gui/trophy_viewer.cpp
-           src/qt_gui/trophy_viewer.h
-           src/qt_gui/elf_viewer.cpp
-           src/qt_gui/elf_viewer.h
-           src/qt_gui/kbm_config_dialog.cpp
-           src/qt_gui/kbm_config_dialog.h
-           src/qt_gui/kbm_help_dialog.cpp
-           src/qt_gui/kbm_help_dialog.h
-           src/qt_gui/main_window_themes.cpp
-           src/qt_gui/main_window_themes.h
-           src/qt_gui/log_presets_dialog.cpp
-           src/qt_gui/log_presets_dialog.h
-           src/qt_gui/settings_dialog.cpp
-           src/qt_gui/settings_dialog.h
-           src/qt_gui/settings_dialog.ui
-           src/qt_gui/main.cpp
-           src/qt_gui/gui_settings.cpp
-           src/qt_gui/gui_settings.h
-           src/qt_gui/settings.cpp
-           src/qt_gui/settings.h
-           src/qt_gui/sdl_event_wrapper.cpp
-           src/qt_gui/sdl_event_wrapper.h
-           src/qt_gui/hotkeys.h
-           src/qt_gui/hotkeys.cpp
-           src/qt_gui/hotkeys.ui
-           ${EMULATOR}
-           ${RESOURCE_FILES}
-           ${TRANSLATIONS}
-           ${UPDATER}
+add_executable(shadps4
+    ${AUDIO_CORE}
+    ${IMGUI}
+    ${INPUT}
+    ${COMMON}
+    ${CORE}
+    ${SHADER_RECOMPILER}
+    ${VIDEO_CORE}
+    ${EMULATOR}
+    src/main.cpp
+    src/emulator.cpp
+    src/emulator.h
+    src/sdl_window.h
+    src/sdl_window.cpp
 )
-endif()
-
-if (ENABLE_QT_GUI)
-    qt_add_executable(shadps4
-        ${AUDIO_CORE}
-        ${IMGUI}
-        ${INPUT}
-        ${QT_GUI}
-        ${COMMON}
-        ${CORE}
-        ${SHADER_RECOMPILER}
-        ${VIDEO_CORE}
-        ${EMULATOR}
-        src/images/shadPS4.icns
-    )
-else()
-    add_executable(shadps4
-        ${AUDIO_CORE}
-        ${IMGUI}
-        ${INPUT}
-        ${COMMON}
-        ${CORE}
-        ${SHADER_RECOMPILER}
-        ${VIDEO_CORE}
-        ${EMULATOR}
-        src/main.cpp
-        src/emulator.cpp
-        src/emulator.h
-        src/sdl_window.h
-        src/sdl_window.cpp
-    )
-endif()
 
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
@@ -1184,22 +1077,11 @@ endif()
 
 if (APPLE)
     # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-    if (ENABLE_QT_GUI)
-        set(MVK_BUNDLE_PATH "Resources/vulkan/icd.d")
-        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path/../${MVK_BUNDLE_PATH}")
-        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR}/shadps4.app/Contents/${MVK_BUNDLE_PATH})
-
-        add_custom_command(
-            OUTPUT ${MVK_DST}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${MVK_DST})
-    else()
-        set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
-        set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
-    endif()
-
+    set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
+    set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
     set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
     set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
-    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
+    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
     set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
 
     add_custom_command(
@@ -1216,19 +1098,11 @@ if (APPLE)
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
-        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-segaddr,USER_AREA,0x7000000000,-image_base,0x700000000000)
     endif()
 
     # Replacement for std::chrono::time_zone
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
-endif()
-
-if (ENABLE_QT_GUI)
-    target_link_libraries(shadps4 PRIVATE Qt6::Widgets Qt6::Concurrent Qt6::Network Qt6::Multimedia)
-    add_definitions(-DENABLE_QT_GUI)
-    if (ENABLE_UPDATER)
-        add_definitions(-DENABLE_UPDATER)
-    endif()
 endif()
 
 if (WIN32)
@@ -1266,6 +1140,13 @@ if (WIN32)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
     endif()
+
+    # Change base image address
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /BASE:0x700000000000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
+    endif()
 endif()
 
 if (WIN32)
@@ -1301,25 +1182,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
 add_dependencies(shadps4 ImGui_Resources)
 target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
 
-if (ENABLE_QT_GUI)
-    set_target_properties(shadps4 PROPERTIES
-#       WIN32_EXECUTABLE ON
-        MACOSX_BUNDLE ON
-        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/dist/MacOSBundleInfo.plist.in"
-        MACOSX_BUNDLE_ICON_FILE "shadPS4.icns"
-        MACOSX_BUNDLE_SHORT_VERSION_STRING "${APP_VERSION}"
-    )
-
-    set_source_files_properties(src/images/shadPS4.icns PROPERTIES
-        MACOSX_PACKAGE_LOCATION Resources)
-endif()
-
-if (UNIX AND NOT APPLE)
-    if (ENABLE_QT_GUI)
-        find_package(OpenSSL REQUIRED)
-        target_link_libraries(shadps4 PRIVATE ${OPENSSL_LIBRARIES})
-    endif()
-endif()
 
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
@@ -1328,10 +1190,3 @@ endif()
 
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
-
-if (ENABLE_QT_GUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    install(FILES "dist/net.shadps4.shadPS4.desktop" DESTINATION "share/applications")
-    install(FILES "dist/net.shadps4.shadPS4.metainfo.xml" DESTINATION "share/metainfo")
-    install(FILES ".github/shadps4.png" DESTINATION "share/icons/hicolor/512x512/apps" RENAME "net.shadps4.shadPS4.png")
-    install(FILES "src/images/net.shadps4.shadPS4.svg" DESTINATION "share/icons/hicolor/scalable/apps")
-endif()

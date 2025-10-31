@@ -15,10 +15,6 @@
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "core/ipc/ipc.h"
-#ifdef ENABLE_QT_GUI
-#include <QtCore>
-#endif
-#include "common/assert.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
@@ -176,6 +172,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", Config::copyGPUCmdBuffers());
     LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationCore: {}", Config::vkValidationCoreEnabled());
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
     LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
@@ -340,8 +337,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 #endif
 
-    // Start the timer (Play Time)
-#ifdef ENABLE_QT_GUI
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();
 
@@ -353,7 +348,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
             }
         }).detach();
     }
-#endif
 
     args.insert(args.begin(), eboot_name.generic_string());
     linker->Execute(args);
@@ -363,9 +357,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         window->WaitEvent();
     }
 
-#ifdef ENABLE_QT_GUI
     UpdatePlayTime(id);
-#endif
 
     std::quick_exit(0);
 }
@@ -388,9 +380,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
         args.push_back("--ignore-game-patch");
     }
 
-    if (!MemoryPatcher::patchFile.empty()) {
+    if (!MemoryPatcher::patch_file.empty()) {
         args.push_back("--patch");
-        args.push_back(MemoryPatcher::patchFile);
+        args.push_back(MemoryPatcher::patch_file);
     }
 
     args.push_back("--wait-for-pid");
