@@ -97,7 +97,7 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
         return vio_status;
 
     fd_handle_ptr handle = File::Create();
-    // nasty hack, but: of it existed, no change
+    // nasty hack, but: if it existed, no change
     // if it didn't, VIO will update this member
     handle->node = res.node;
     // virtual fd is stored in open_fd map
@@ -265,7 +265,7 @@ int QFS::OperationImpl::Unlink(const fs::path& path) {
     // symlinks mess this whole thing up, so we need toqfs.Resolve parent and leaf independently
 
     fs::path parent_path = path.parent_path();
-    fs::path leaf = path.filename();
+    std::string leaf = path.filename().string();
 
     // parent, must pass
     resolve_status = qfs.Resolve(parent_path, res);

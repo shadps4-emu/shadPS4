@@ -39,12 +39,6 @@ int HostIO_POSIX::Close(const int fd) {
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::LinkSymbolic(const fs::path& src, const fs::path& dst) {
-    errno = 0;
-    int status = symlink(src.c_str(), dst.c_str());
-    return 0 == status ? status : -errno;
-}
-
 int HostIO_POSIX::Link(const fs::path& src, const fs::path& dst) {
     errno = 0;
     int status = link(src.c_str(), dst.c_str());
@@ -54,6 +48,12 @@ int HostIO_POSIX::Link(const fs::path& src, const fs::path& dst) {
 int HostIO_POSIX::Unlink(const fs::path& path) {
     errno = 0;
     int status = unlink(path.c_str());
+    return 0 == status ? status : -errno;
+}
+
+int HostIO_POSIX::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+    errno = 0;
+    int status = symlink(src.c_str(), dst.c_str());
     return 0 == status ? status : -errno;
 }
 
@@ -68,6 +68,16 @@ int HostIO_POSIX::FSync(const int fd) {
     return 0 == status ? status : -errno;
 }
 
+u64 HostIO_POSIX::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
+    errno = 0;
+    int status = lseek(fd, offset, ToPOSIXSeekOrigin(origin));
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_POSIX::Tell(const int fd) {
+    return LSeek(fd, 0, SeekOrigin::CURRENT);
+}
+
 int HostIO_POSIX::Truncate(const fs::path& path, u64 size) {
     errno = 0;
     int status = truncate(path.c_str(), size);
@@ -80,31 +90,21 @@ int HostIO_POSIX::FTruncate(const int fd, u64 size) {
     return status >= 0 ? status : -errno;
 }
 
-u64 HostIO_POSIX::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
-    errno = 0;
-    int status = lseek(fd, offset, ToPOSIXSeekOrigin(origin));
-    return status >= 0 ? status : -errno;
-}
-
-s64 HostIO_POSIX::Tell(const int fd) {
-    return LSeek(fd, 0, SeekOrigin::CURRENT);
-}
-
 s64 HostIO_POSIX::Write(const int fd, const void* buf, u64 count) {
     errno = 0;
     int status = write(fd, buf, count);
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_POSIX::PWrite(const int fd, const void* buf, u64 count, u64 offset) {
-    errno = 0;
-    int status = pwrite(fd, buf, count, offset);
-    return status >= 0 ? status : -errno;
-}
-
 s64 HostIO_POSIX::Read(const int fd, void* buf, u64 count) {
     errno = 0;
     int status = read(fd, buf, count);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_POSIX::PWrite(const int fd, const void* buf, u64 count, u64 offset) {
+    errno = 0;
+    int status = pwrite(fd, buf, count, offset);
     return status >= 0 ? status : -errno;
 }
 

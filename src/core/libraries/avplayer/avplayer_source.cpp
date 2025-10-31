@@ -48,7 +48,8 @@ bool AvPlayerSource::Init(const SceAvPlayerInitData& init_data, std::string_view
         auto qfs = Common::Singleton<QuasiFS::QFS>::Instance();
         std::filesystem::path filepath{};
         qfs->GetHostPath(filepath, path);
-        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.c_str(), nullptr, nullptr))) {
+        // may get funky with char/wchar path on *dows
+        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
             return false;
         }
     }

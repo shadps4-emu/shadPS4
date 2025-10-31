@@ -64,7 +64,7 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
     if (!name.empty()) {
         auto st = node->st;
         char timebuf[64];
-        std::tm* t = std::localtime(&st.st_mtime);
+        std::tm* t = std::localtime(&st.st_mtim.tv_sec);
         std::strftime(timebuf, sizeof(timebuf), "%EY-%m-%d %H:%M", t);
 
         LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",
@@ -386,7 +386,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
             fs::path entry_path = entry->path();
             fs::path pp = "/" / slice_path(entry->path());
             fs::path parent_path = pp.parent_path();
-            fs::path leaf = pp.filename();
+            std::string leaf = pp.filename().string();
 
             Resolved res;
             part->Resolve(parent_path, res);
