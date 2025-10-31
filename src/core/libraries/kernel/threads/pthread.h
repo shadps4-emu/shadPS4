@@ -16,6 +16,8 @@
 #include "core/thread.h"
 #include "core/tls.h"
 
+#define GLOBAL_PID 0xBAD1
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
