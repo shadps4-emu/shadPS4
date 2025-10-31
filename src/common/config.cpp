@@ -826,6 +826,8 @@ int getUsbDeviceBackend() {
 
 void setUsbDeviceBackend(int value, bool is_game_specific) {
     usbDeviceBackend.set(value, is_game_specific);
+}
+
 bool getLoadAutoPatches() {
     return load_auto_patches;
 }
