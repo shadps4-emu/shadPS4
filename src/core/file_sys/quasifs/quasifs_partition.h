@@ -102,7 +102,7 @@ public:
     int link(inode_ptr source, dir_ptr destination_parent, const std::string& name);
     int unlink(dir_ptr parent, const std::string& name);
 
-    static int chmod(inode_ptr target, mode_t mode);
+    static int chmod(inode_ptr target, u16 mode);
 
 private:
     int rmInode(fileno_t fileno);

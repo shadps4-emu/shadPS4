@@ -4,20 +4,19 @@
 #include <filesystem>
 
 #include "common/logging/log.h"
+#include "src/core/file_sys/hostio/host_io_virtual.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_virtualfile.h"
+#include "src/core/file_sys/quasifs/quasifs_partition.h"
 
-#include "../../quasifs/quasi_errno.h"
-#include "../../quasifs/quasi_sys_fcntl.h"
-#include "../../quasifs/quasi_types.h"
-
-#include "../../quasifs/quasifs_inode_quasi_device.h"
-#include "../../quasifs/quasifs_inode_quasi_directory.h"
-#include "../../quasifs/quasifs_inode_quasi_file.h"
-#include "../../quasifs/quasifs_inode_symlink.h"
-#include "../../quasifs/quasifs_inode_virtualfile.h"
-#include "../../quasifs/quasifs_partition.h"
-
-#include "../host_io_virtual.h"
 #include "host_io_base.h"
+
+#include "src/core/file_sys/quasifs/quasi_errno.h"
+#include "src/core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "src/core/file_sys/quasifs/quasi_types.h"
 
 namespace HostIODriver {
 
@@ -82,23 +81,12 @@ int HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
     dir_ptr parent = std::static_pointer_cast<Directory>(this->res->node);
     file_ptr new_file =
         this->host_bound ? QuasiFile::Create<RegularFile>() : QuasiFile::Create<VirtualFile>();
-    return this->res->mountpoint->touch(parent, path.filename(), new_file);
+    return this->res->mountpoint->touch(parent, path.filename().string(), new_file);
 }
 
 int HostIO_Virtual::Close(const int fd) {
     // N/A
     return 0;
-}
-
-int HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
-    if (nullptr == this->res)
-        return -QUASI_EINVAL;
-
-    symlink_ptr sym = Symlink::Create(src);
-    // symlink counter is never increased
-    sym->st.st_nlink = 1;
-
-    return this->res->mountpoint->touch(this->res->parent, dst.filename(), sym);
 }
 
 int HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
@@ -110,7 +98,7 @@ int HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
 
     Resolved dst_res;
     fs::path dst_path = dst.parent_path();
-    std::string dst_name = dst.filename();
+    std::string dst_name = dst.filename().string();
 
     if (int res_status = part->Resolve(dst_path, dst_res); res_status < 0)
         return res_status;
@@ -136,6 +124,17 @@ int HostIO_Virtual::Unlink(const fs::path& path) {
     return part->unlink(parent, this->res->leaf);
 }
 
+int HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+    if (nullptr == this->res)
+        return -QUASI_EINVAL;
+
+    symlink_ptr sym = Symlink::Create(src);
+    // symlink counter is never increased
+    sym->st.st_nlink = 1;
+
+    return this->res->mountpoint->touch(this->res->parent, dst.filename().string(), sym);
+}
+
 int HostIO_Virtual::Flush(const int fd) {
     // not applicable
     return 0;
@@ -151,6 +150,32 @@ int HostIO_Virtual::FSync(const int fd) {
         return -QUASI_EBADF;
 
     return handle->node->fsync();
+}
+
+u64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
+    if (nullptr == handle)
+        return -QUASI_EINVAL;
+
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -QUASI_EBADF;
+
+    auto ptr = &handle->pos;
+
+    u64 new_ptr = ((SeekOrigin::ORIGIN == origin) * offset) +
+                  ((SeekOrigin::CURRENT == origin) * (*(ptr) + offset)) +
+                  ((SeekOrigin::END == origin) * (node->st.st_size + offset));
+
+    if (new_ptr < 0)
+        return -QUASI_EINVAL;
+
+    *ptr = new_ptr;
+    return *ptr;
+}
+
+s64 HostIO_Virtual::Tell(const int fd) {
+    return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
 int HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
@@ -180,39 +205,13 @@ int HostIO_Virtual::FTruncate(const int fd, u64 size) {
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    if (node->is_dir())
-        return -QUASI_EISDIR;
+    // if (node->is_dir())
+    //     return -QUASI_EISDIR;
 
-    if (!node->is_file())
-        return -QUASI_EINVAL;
+    // if (!node->is_file())
+    //     return -QUASI_EINVAL;
 
     return handle->node->ftruncate(size);
-}
-
-u64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
-    if (nullptr == handle)
-        return -QUASI_EINVAL;
-
-    inode_ptr node = handle->node;
-
-    if (nullptr == node)
-        return -QUASI_EBADF;
-
-    auto ptr = &handle->pos;
-
-    u64 new_ptr = ((SeekOrigin::ORIGIN == origin) * offset) +
-                  ((SeekOrigin::CURRENT == origin) * (*(ptr) + offset)) +
-                  ((SeekOrigin::END == origin) * (node->st.st_size + offset));
-
-    if (new_ptr < 0)
-        return -QUASI_EINVAL;
-
-    *ptr = new_ptr;
-    return *ptr;
-}
-
-s64 HostIO_Virtual::Tell(const int fd) {
-    return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
 s64 HostIO_Virtual::Write(const int fd, const void* buf, u64 count) {
@@ -222,6 +221,15 @@ s64 HostIO_Virtual::Write(const int fd, const void* buf, u64 count) {
         handle->pos += bw;
 
     return bw;
+}
+
+s64 HostIO_Virtual::Read(const int fd, void* buf, u64 count) {
+    s64 br = PRead(fd, buf, count, handle->pos);
+
+    if (br > 0)
+        handle->pos += br;
+
+    return br;
 }
 
 s64 HostIO_Virtual::PWrite(const int fd, const void* buf, u64 count, u64 offset) {
@@ -237,15 +245,6 @@ s64 HostIO_Virtual::PWrite(const int fd, const void* buf, u64 count, u64 offset)
         offset = node->st.st_size;
 
     return node->pwrite(buf, count, offset);
-}
-
-s64 HostIO_Virtual::Read(const int fd, void* buf, u64 count) {
-    s64 br = PRead(fd, buf, count, handle->pos);
-
-    if (br > 0)
-        handle->pos += br;
-
-    return br;
 }
 
 s64 HostIO_Virtual::PRead(const int fd, void* buf, u64 count, u64 offset) {

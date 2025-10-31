@@ -17,7 +17,7 @@ using HostVIO = HostIODriver::HostIO_Virtual;
 #ifdef __linux__
 using HostIO = HostIODriver::HostIO_POSIX;
 #elif _WIN32
-#error Contributors needed
+//#error Contributors needed
 using HostIO = HostIODriver::HostIO_Win32;
 #else
 #warning This architecture isn't supported by HostIO

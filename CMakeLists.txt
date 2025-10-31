@@ -696,9 +696,13 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
 
 set(HOSTIO src/core/file_sys/hostio/src/host_io_base.cpp
            src/core/file_sys/hostio/src/host_io_virtual.cpp
-           src/core/file_sys/hostio/src/host_io_posix.cpp
-           src/core/file_sys/hostio/src/host_io_win32.cpp
 )
+
+if(WIN32)
+    list(APPEND HOSTIO src/core/file_sys/hostio/src/host_io_win32.cpp)
+elseif(UNIX AND (NOT APPLE))
+    list(APPEND HOSTIO src/core/file_sys/hostio/src/host_io_posix.cpp)
+endif()
 
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h

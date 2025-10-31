@@ -29,7 +29,7 @@ fs::path Partition::SanitizePath(const fs::path& path) {
     // lexically normal to resolve relative calls
     // avoids going OOB with malicious file names
     fs::path tmp = path.lexically_normal();
-    if (tmp.string().find(this->host_root, 0) == 0)
+    if (tmp.string().find(this->host_root.string(), 0) == 0)
         return tmp;
 
     return {};
@@ -82,10 +82,11 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
 
     bool is_final = false;
 
-    for (auto part = path.begin(); part != path.end(); part++) {
-        is_final = std::next(part) == path.end();
+    for (auto _part = path.begin(); _part != path.end(); _part++) {
+        std::string part = (*_part).string();
+        is_final = std::next(_part) == path.end();
 
-        if ("/" == *part) {
+        if ("/" == part) {
             res.local_path = "/";
             res.parent = res.parent;
             res.node = res.node;
@@ -94,7 +95,7 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
         }
 
         // empty means trailing / which is interpreted only when using dirs or symlinks
-        if (part->empty()) {
+        if (part.empty()) {
             if (!is_final)
                 // something went wrong
                 throw 666;
@@ -119,12 +120,12 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
 
             dir_ptr dir = std::static_pointer_cast<Directory>(current);
             parent = dir;
-            current = dir->lookup(*part);
+            current = dir->lookup(part);
 
-            res.local_path /= *part;
+            res.local_path /= part;
             res.parent = parent;
             res.node = current;
-            res.leaf = *part;
+            res.leaf = part;
         }
 
         // file not found in current directory, ENOENT
@@ -162,13 +163,13 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
                 // everything AFTER host's path since QFS holds mountpoint meta, its it's job to
                 // resolve mounted root directory.
                 fs::path remainder = "/";
-                for (auto p = std::next(part); p != path.end(); p++)
+                for (auto p = std::next(_part); p != path.end(); p++)
                     remainder /= *p;
                 path = remainder;
 
                 res.parent = current_dir; // no point, unused in this context
                 res.node = current_dir->mounted_root;
-                res.leaf = *part;
+                res.leaf = part;
 
                 return 0;
             }
@@ -179,13 +180,13 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
         if (current->is_link()) {
             // just like with mountpoints, we discard everything up until the "next" element in path
             fs::path remainder = "";
-            for (auto p = std::next(part); p != path.end(); p++)
+            for (auto p = std::next(_part); p != path.end(); p++)
                 remainder /= *p;
             path = remainder;
 
             res.parent = parent;
             res.node = current;
-            res.leaf = *part;
+            res.leaf = part;
             return 0;
         }
     }
@@ -295,7 +296,7 @@ int Partition::unlink(dir_ptr parent, const std::string& name) {
     return rmInode(target);
 }
 
-int Partition::chmod(inode_ptr target, mode_t mode) {
+int Partition::chmod(inode_ptr target, u16 mode) {
     if (nullptr == target)
         return -QUASI_EINVAL;
 

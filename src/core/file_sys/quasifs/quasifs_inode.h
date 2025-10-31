@@ -103,7 +103,7 @@ public:
     }
 
     virtual s32 ftruncate(s64 length) {
-        return -QUASI_EBADF;
+        return -QUASI_EINVAL;
     }
 
     virtual s32 getdents(void* buf, u32 nbytes, s64* basep) {

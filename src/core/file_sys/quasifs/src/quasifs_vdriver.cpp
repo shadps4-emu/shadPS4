@@ -260,7 +260,7 @@ int QFS::OperationImpl::Unlink(const fs::path& path) {
     // symlinks mess this whole thing up, so we need toqfs.Resolve parent and leaf independently
 
     fs::path parent_path = path.parent_path();
-    fs::path leaf = path.filename();
+    std::string leaf = path.filename().string();
 
     // parent, must pass
     resolve_status = qfs.Resolve(parent_path, res);

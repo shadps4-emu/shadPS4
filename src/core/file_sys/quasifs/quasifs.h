@@ -5,12 +5,11 @@
 #include <unordered_map>
 
 #include "common/types.h"
+#include "src/core/file_sys/hostio/host_io.h"
 
 #include "quasi_errno.h"
 #include "quasi_types.h"
 #include "quasifs_inode.h"
-
-#include "../hostio/host_io.h"
 
 /**
  * Wrapper class
@@ -49,7 +48,7 @@ private:
     // when in doubt - man(2)
     //
 
-    class OperationImpl : public HostIO::HostIO_Base {
+    class OperationImpl final : public HostIOBase {
     private:
         QFS& qfs;
         OperationImpl& operator=(const OperationImpl&) = delete;

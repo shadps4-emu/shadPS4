@@ -16,6 +16,7 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
+#include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"

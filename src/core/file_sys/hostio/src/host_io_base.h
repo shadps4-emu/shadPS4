@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <system_error>
 
-#include <dirent.h>
 #include "core/libraries/kernel/file_system.h"
 
 #include "../../quasifs/quasi_types.h"
