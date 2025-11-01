@@ -173,18 +173,12 @@ void IPC::InputLoop() {
         } else if (cmd == "USB_LOAD_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
             if (ref) {
-                const std::string& file_name = next_str();
-                const u8 pad = next_u64();
-                const u8 slot = next_u64();
-                ref->LoadFigure(file_name, pad, slot);
+                ref->LoadFigure(next_str(), next_u64(), next_u64());
             }
         } else if (cmd == "USB_REMOVE_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
             if (ref) {
-                const u8 pad = next_u64();
-                const u8 slot = next_u64();
-                const bool full_remove = next_u64() != 0;
-                ref->RemoveFigure(pad, slot, full_remove);
+                ref->RemoveFigure(next_u64(), next_u64(), next_u64() != 0);
             }
         } else if (cmd == "USB_MOVE_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();

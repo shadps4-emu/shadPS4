@@ -533,6 +533,8 @@ set(RANDOM_LIB src/core/libraries/random/random.cpp
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
              src/core/libraries/usbd/usb_backend.h
+             src/core/libraries/usbd/emulated/skylander.cpp
+             src/core/libraries/usbd/emulated/skylander.h
 )
 
 set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
