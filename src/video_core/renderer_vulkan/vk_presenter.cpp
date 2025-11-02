@@ -539,45 +539,48 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
             ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
             ImGui::SetNextWindowDockID(dockId, ImGuiCond_Once);
-            ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav);
+            if (ImGui::Begin("Display##game_display", nullptr, ImGuiWindowFlags_NoNav)) {
+                auto game_texture = frame->imgui_texture;
+                auto game_width = frame->width;
+                auto game_height = frame->height;
 
-            auto game_texture = frame->imgui_texture;
-            auto game_width = frame->width;
-            auto game_height = frame->height;
-
-            if (Libraries::SystemService::IsSplashVisible()) { // draw splash
-                if (!splash_img.has_value()) {
-                    splash_img.emplace();
-                    auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
-                    if (!splash_path.empty()) {
-                        splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                if (Libraries::SystemService::IsSplashVisible()) { // draw splash
+                    if (!splash_img.has_value()) {
+                        splash_img.emplace();
+                        auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
+                        if (!splash_path.empty()) {
+                            splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
+                        }
+                    }
+                    if (auto& splash_image = this->splash_img.value()) {
+                        auto [im_id, width, height] = splash_image.GetTexture();
+                        game_texture = im_id;
+                        game_width = width;
+                        game_height = height;
                     }
                 }
-                if (auto& splash_image = this->splash_img.value()) {
-                    auto [im_id, width, height] = splash_image.GetTexture();
-                    game_texture = im_id;
-                    game_width = width;
-                    game_height = height;
+
+                ImVec2 contentArea = ImGui::GetContentRegionAvail();
+                SetExpectedGameSize((s32)contentArea.x, (s32)contentArea.y);
+
+                const auto imgRect =
+                    FitImage(game_width, game_height, (s32)contentArea.x, (s32)contentArea.y);
+                ImVec2 offset{
+                    static_cast<float>(imgRect.offset.x),
+                    static_cast<float>(imgRect.offset.y),
+                };
+                ImVec2 size{
+                    static_cast<float>(imgRect.extent.width),
+                    static_cast<float>(imgRect.extent.height),
+                };
+
+                ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
+                ImGui::Image(game_texture, size);
+
+                if (Config::nullGpu()) {
+                    Core::Devtools::Layer::DrawNullGpuNotice();
                 }
             }
-
-            ImVec2 contentArea = ImGui::GetContentRegionAvail();
-            SetExpectedGameSize((s32)contentArea.x, (s32)contentArea.y);
-
-            const auto imgRect =
-                FitImage(game_width, game_height, (s32)contentArea.x, (s32)contentArea.y);
-            ImVec2 offset{
-                static_cast<float>(imgRect.offset.x),
-                static_cast<float>(imgRect.offset.y),
-            };
-            ImVec2 size{
-                static_cast<float>(imgRect.extent.width),
-                static_cast<float>(imgRect.extent.height),
-            };
-
-            ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
-            ImGui::Image(game_texture, size);
-
             ImGui::End();
             ImGui::PopStyleVar(3);
             ImGui::PopStyleColor();

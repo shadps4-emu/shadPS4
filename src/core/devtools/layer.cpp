@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "layer.h"
@@ -460,12 +460,12 @@ void L::Draw() {
 }
 
 void L::TextCentered(const std::string& text) {
-    float window_width = ImGui::GetWindowSize().x;
-    float text_width = ImGui::CalcTextSize(text.c_str()).x;
+    float window_width = GetWindowSize().x;
+    float text_width = CalcTextSize(text.c_str()).x;
     float text_indentation = (window_width - text_width) * 0.5f;
 
-    ImGui::SameLine(text_indentation);
-    ImGui::Text("%s", text.c_str());
+    SameLine(text_indentation);
+    Text("%s", text.c_str());
 }
 
 namespace Overlay {
