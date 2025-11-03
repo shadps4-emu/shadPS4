@@ -144,9 +144,8 @@ void Emulator::LoadFilesystem(const std::string& id) {
     qfs->Operation.MKDir("/dev/fd");
     qfs->ForceInsert("/dev/fd", "0", qfs::Device::Create<Devices::ZeroDevice>());
     qfs->ForceInsert("/dev/fd", "1", qfs::Device::Create<Devices::Logger>("stdout", false));
-    // qfs->ForceInsert("/dev/fd", "1", std::make_shared<Devices::Logger>("stdout", false));
     qfs->ForceInsert("/dev/fd", "2", qfs::Device::Create<Devices::Logger>("stderr", true));
-    // stdin is unavailable from within the app???
+    // std* is unavailable from within the app???
     qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
     qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/stderr");

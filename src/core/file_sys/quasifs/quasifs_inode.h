@@ -30,11 +30,11 @@ public:
     }
 
     virtual s64 read(void* buf, size_t count) {
-        return -QUASI_EBADF;
+        return pread(buf, count, 0);
     }
 
     virtual s64 write(const void* buf, size_t count) {
-        return -QUASI_EBADF;
+        return pwrite(buf, count, 0);
     }
 
     virtual s64 pread(void* buf, size_t count, u64 offset) {
@@ -81,7 +81,7 @@ public:
     virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
         u64 tb = 0;
         for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->pwrite(iov[idx].iov_base, iov[idx].iov_len,offset);
+            int status = this->pwrite(iov[idx].iov_base, iov[idx].iov_len, offset);
             if (status < 0)
                 return status;
             tb += status;

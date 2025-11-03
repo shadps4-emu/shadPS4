@@ -4,6 +4,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "common/assert.h"
 
@@ -14,12 +15,22 @@ namespace QuasiFS {
 
 // Directory
 class QuasiDirectory : public Inode {
-public:
+
+private:
     std::map<std::string, inode_ptr> entries{};
+
+public:
     dir_ptr mounted_root = nullptr;
 
     QuasiDirectory();
     ~QuasiDirectory() = default;
+
+    std::vector<std::string> Entries(void) {
+        std::vector<std::string> out{};
+        for (auto& kv : this->entries)
+            out.push_back(kv.first);
+        return out;
+    }
 
     static dir_ptr Create(void) {
         return std::make_shared<QuasiDirectory>();

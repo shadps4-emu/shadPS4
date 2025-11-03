@@ -88,7 +88,8 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
             LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
             _printTree(dir->mounted_root, "", depth + 1);
         } else {
-            for (auto& [childName, child] : dir->entries) {
+            for (auto& childName : dir->Entries()) {
+                inode_ptr child = dir->lookup(childName);
                 _printTree(child, childName, depth + 1);
             }
         }
@@ -226,6 +227,8 @@ int QFS::ForceInsert(const fs::path& path, const std::string& name, inode_ptr no
     return res.mountpoint->touch(std::static_pointer_cast<Directory>(res.node), name, node);
 }
 
+// DO NOT, AND I SWEAR  D O  N O T touch this function
+// Debugging it is a royal PITA
 int QFS::Resolve(const fs::path& path, Resolved& res) {
     if (path.empty())
         return -QUASI_EINVAL;

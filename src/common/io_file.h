@@ -114,7 +114,6 @@ public:
     bool Flush() const;
     bool Commit() const;
 
-    bool SetSize(u64 size) const;
     u64 GetSize() const;
 
     bool Seek(s64 offset, SeekOrigin origin = SeekOrigin::SetOrigin) const;

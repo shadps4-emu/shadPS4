@@ -83,6 +83,8 @@ inode_ptr Partition::GetInodeByFileno(fileno_t fileno) {
     return (inode_table.end() == ret) ? nullptr : ret->second;
 }
 
+// DO NOT, AND I SWEAR  D O  N O T touch this function
+// Debugging it is a royal PITA
 int Partition::Resolve(fs::path& path, Resolved& res) {
     if (path.empty())
         return -QUASI_EINVAL;
@@ -361,8 +363,8 @@ bool Partition::IndexInode(inode_ptr node) {
     inode_table[node_fileno] = node;
     if (node->is_dir()) {
         auto dir = std::static_pointer_cast<Directory>(node);
-        for (auto& kv : dir->entries)
-            IndexInode(kv.second);
+        for (auto& kv : dir->Entries())
+            IndexInode(dir->lookup(kv));
         if (dir->mounted_root)
             IndexInode(dir->mounted_root);
     }

@@ -24,7 +24,7 @@ public:
     ~SRandomDevice();
 
     s64 pread(void* buf, size_t count, u64 offset) override;
-    //s64 pwrite(const void* buf, size_t count, u64 offset) override;
+    s64 pwrite(const void* buf, size_t count, u64 offset) override;
 
     // clang-format off
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }

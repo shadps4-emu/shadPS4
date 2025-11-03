@@ -11,6 +11,11 @@
 #include "quasi_types.h"
 #include "quasifs_inode.h"
 
+// #ifdef _linux_
+// #else
+// #define QUASI_CASE_INSENSITIVE
+// #endif
+
 /**
  * Wrapper class
  * Basically a Partition object with a bit of extra functionality and single superblock
@@ -39,6 +44,7 @@ private:
     // open file descriptors. search is linear, looking for first available nullptr
     std::vector<fd_handle_ptr> open_fd;
 
+    // Drivers
     HostIO hio_driver{};
     HostVIO vio_driver{};
 
