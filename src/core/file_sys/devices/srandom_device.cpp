@@ -14,11 +14,15 @@ SRandomDevice::SRandomDevice() {
 
 SRandomDevice::~SRandomDevice() = default;
 
-s64 SRandomDevice::read(void* buf, u64 count) {
+s64 SRandomDevice::pread(void* buf, size_t count, u64 offset) {
     auto rbuf = static_cast<char*>(buf);
     for (size_t i = 0; i < count; i++) {
         rbuf[i] = std::rand();
     }
+    return count;
+}
+
+s64 SRandomDevice::pwrite(const void* buf, size_t count, u64 offset) {
     return count;
 }
 

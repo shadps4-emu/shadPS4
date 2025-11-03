@@ -10,21 +10,13 @@ namespace Core::Devices {
 ZeroDevice::ZeroDevice() = default;
 ZeroDevice::~ZeroDevice() = default;
 
-s64 ZeroDevice::read(void* buf, u64 count) {
+s64 ZeroDevice::pread(void* buf, size_t count, u64 offset) {
     memset(buf, 0, count);
     return count;
 }
 
-s64 ZeroDevice::write(const void* buf, u64 count) {
-    return count;
-}
-
-s64 ZeroDevice::pread(void* buf, size_t count, u64 offset) {
-    return read(buf, count);
-}
-
 s64 ZeroDevice::pwrite(const void* buf, size_t count, u64 offset) {
-    return write(buf, count);
+    return count;
 }
 
 } // namespace Core::Devices

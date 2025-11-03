@@ -21,17 +21,11 @@ public:
     ZeroDevice();
     ~ZeroDevice();
 
-    s64 read(void* buf, u64 count) override;
-    s64 write(const void* buf, u64 count) override;
     s64 pread(void* buf, size_t count, u64 offset) override;
     s64 pwrite(const void* buf, size_t count, u64 offset) override;
 
     // clang-format off
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }
-    s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override { DEVICE_STUB(); }
-    s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) override { DEVICE_STUB(); }
-    s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override { DEVICE_STUB(); }
-    s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) override { DEVICE_STUB(); }
     s64 lseek(s64 offset, int whence) override { DEVICE_STUB(); }
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); }
     s32 fsync() override { DEVICE_STUB(); }
