@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ipc.h"
@@ -8,12 +8,18 @@
 
 #include <SDL3/SDL.h>
 
+#include "common/config.h"
 #include "common/memory_patcher.h"
 #include "common/thread.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/debugger.h"
+#include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
+
+extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 /**
  * Protocol summary:
@@ -40,6 +46,7 @@
  * Command list:
  * - CAPABILITIES:
  *   - ENABLE_MEMORY_PATCH: enables PATCH_MEMORY command
+ *   - ENABLE_EMU_CONTROL: enables PAUSE, RESUME, STOP, TOGGLE_FULLSCREEN commands
  * - INPUT CMD:
  *   - RUN: start the emulator execution
  *   - START: start the game execution
@@ -53,7 +60,7 @@
  *   - STOP: stop and quit the emulator
  *   - TOGGLE_FULLSCREEN: enable / disable fullscreen
  * - OUTPUT CMD:
- *   - N/A
+ *   - RESTART(argn: number, argv: ...string): Request restart of the emulator, must call STOP
  **/
 
 void IPC::Init() {
@@ -79,6 +86,15 @@ void IPC::Init() {
         std::cerr << "IPC: Failed to acquire run semaphore, closing process.\n";
         exit(1);
     }
+}
+
+void IPC::SendRestart(const std::vector<std::string>& args) {
+    std::cerr << ";RESTART\n";
+    std::cerr << ";" << args.size() << "\n";
+    for (const auto& arg : args) {
+        std::cerr << ";" << arg << "\n";
+    }
+    std::cerr.flush();
 }
 
 void IPC::InputLoop() {
@@ -130,6 +146,37 @@ void IPC::InputLoop() {
             SDL_memset(&event, 0, sizeof(event));
             event.type = SDL_EVENT_TOGGLE_FULLSCREEN;
             SDL_PushEvent(&event);
+        } else if (cmd == "ADJUST_VOLUME") {
+            int value = static_cast<int>(next_u64());
+            bool is_game_specific = next_u64() != 0;
+            Config::setVolumeSlider(value, is_game_specific);
+            Libraries::AudioOut::AdjustVol();
+        } else if (cmd == "SET_FSR") {
+            bool use_fsr = next_u64() != 0;
+            if (presenter) {
+                presenter->GetFsrSettingsRef().enable = use_fsr;
+            }
+        } else if (cmd == "SET_RCAS") {
+            bool use_rcas = next_u64() != 0;
+            if (presenter) {
+                presenter->GetFsrSettingsRef().use_rcas = use_rcas;
+            }
+        } else if (cmd == "SET_RCAS_ATTENUATION") {
+            int value = static_cast<int>(next_u64());
+            if (presenter) {
+                presenter->GetFsrSettingsRef().rcas_attenuation =
+                    static_cast<float>(value / 1000.0f);
+            }
+        } else if (cmd == "RELOAD_INPUTS") {
+            std::string config = next_str();
+            Input::ParseInputConfig(config);
+        } else if (cmd == "SET_ACTIVE_CONTROLLER") {
+            std::string active_controller = next_str();
+            GamepadSelect::SetSelectedGamepad(active_controller);
+            SDL_Event checkGamepad;
+            SDL_memset(&checkGamepad, 0, sizeof(checkGamepad));
+            checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
+            SDL_PushEvent(&checkGamepad);
         } else {
             std::cerr << ";UNKNOWN CMD: " << cmd << std::endl;
         }

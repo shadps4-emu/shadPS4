@@ -276,8 +276,8 @@
       <translation>داده های نسخه نامعتبر است.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>هیچ URL دانلودی برای دارایی مشخص شده پیدا نشد.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;توجه:&lt;/b&gt;&lt;br&gt;&lt;br&gt; از نسخه &lt;b&gt;0.12.0&lt;/b&gt; به بعد، نسخه Qt امولاتور دیگر به‌روزرسانی مستقیم دریافت نخواهد کرد.&lt;br&gt;&lt;br&gt; با این حال، رابط Qt همچنان از طریق لانچر رسمی جدید در دسترس است:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – مبتنی بر کد منبع اصلی shadPS4.&lt;br&gt;&lt;br&gt; توصیه می‌کنیم برای ادامه دریافت به‌روزرسانی‌ها به این لانچر مهاجرت کنید.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

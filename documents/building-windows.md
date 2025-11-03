@@ -1,12 +1,14 @@
 <!--
-SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-FileCopyrightText: 2025 shadPS4 Emulator Project
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
 # Build shadPS4 for Windows
 
 This tutorial reads as if you have none of the prerequisites already installed. If you do, just ignore the steps regarding installation.
-If you are building to contribute to the project, please omit `--depth 1` from the git invocations.
+> [!WARNING]
+> If you are trying to compile older builds for testing, do not provide the `--depth 1` flag in `git clone`.
+> This flag omits the commit history from your clone, saving storage space while preventing you from testing older commits.
 
 Note: **ARM64 is not supported!** As of writing, it will not build nor run. The instructions with respect to ARM64 are for developers only.
 

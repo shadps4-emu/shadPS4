@@ -6,6 +6,10 @@
 #include <mutex>
 #include "common/types.h"
 
+namespace Libraries::Net {
+struct OrbisNetInAddr;
+}
+
 namespace NetUtil {
 
 class NetUtilInternal {
@@ -29,5 +33,6 @@ public:
     bool RetrieveDefaultGateway();
     bool RetrieveNetmask();
     bool RetrieveIp();
+    int ResolveHostname(const char* hostname, Libraries::Net::OrbisNetInAddr* addr);
 };
 } // namespace NetUtil

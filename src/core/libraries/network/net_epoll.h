@@ -6,6 +6,7 @@
 #include "common/types.h"
 #include "core/libraries/network/net.h"
 
+#include <deque>
 #include <mutex>
 #include <vector>
 
@@ -28,8 +29,9 @@ using epoll_handle = int;
 
 struct Epoll {
     std::vector<std::pair<u32 /*netId*/, OrbisNetEpollEvent>> events{};
-    const char* name;
+    std::string name;
     epoll_handle epoll_fd;
+    std::deque<u32> async_resolutions{};
 
     explicit Epoll(const char* name_) : name(name_), epoll_fd(epoll_create1(0)) {
 #ifdef _WIN32
@@ -37,7 +39,7 @@ struct Epoll {
 #else
         ASSERT(epoll_fd != -1);
 #endif
-        if (name == nullptr) {
+        if (name_ == nullptr) {
             name = "anon";
         }
     }
@@ -49,11 +51,11 @@ struct Epoll {
     void Destroy() noexcept {
         events.clear();
 #ifdef _WIN32
-        epoll_fd = nullptr;
         epoll_close(epoll_fd);
+        epoll_fd = nullptr;
 #else
-        epoll_fd = -1;
         close(epoll_fd);
+        epoll_fd = -1;
 #endif
         name = "";
         destroyed = true;

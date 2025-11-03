@@ -276,8 +276,8 @@
       <translation>Datele versiunii sunt invalide.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Nu s-a găsit URL de descărcare pentru resursa specificată.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Notificare:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Începând cu versiunea &lt;b&gt;0.12.0&lt;/b&gt;, versiunea Qt a emulatorului nu va mai primi actualizări directe.&lt;br&gt;&lt;br&gt; Cu toate acestea, interfața Qt rămâne disponibilă prin noul launcher oficial:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – bazat pe codul sursă original shadPS4.&lt;br&gt;&lt;br&gt;Vă recomandăm să treceți la acest launcher pentru a continua să primiți actualizări.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

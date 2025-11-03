@@ -132,24 +132,24 @@ int PS4_SYSV_ABI sceNpTrophyConfigGetTrophySetInfoInGroup();
 int PS4_SYSV_ABI sceNpTrophyConfigGetTrophySetVersion();
 int PS4_SYSV_ABI sceNpTrophyConfigGetTrophyTitleDetails();
 int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature();
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t user_id,
-                                          u32 service_label, uint64_t options);
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, s32 user_id,
+                                          u32 service_label, u64 options);
 s32 PS4_SYSV_ABI sceNpTrophyCreateHandle(OrbisNpTrophyHandle* handle);
 int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context);
 s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle);
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                        void* buffer, size_t* size);
+                                        void* buffer, u64* size);
 int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                         OrbisNpTrophyGameDetails* details,
                                         OrbisNpTrophyGameData* data);
 int PS4_SYSV_ABI sceNpTrophyGetGroupIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                         OrbisNpTrophyGroupId groupId, void* buffer, size_t* size);
+                                         OrbisNpTrophyGroupId groupId, void* buffer, u64* size);
 int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                          OrbisNpTrophyGroupId groupId,
                                          OrbisNpTrophyGroupDetails* details,
                                          OrbisNpTrophyGroupData* data);
 int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                          OrbisNpTrophyId trophyId, void* buffer, size_t* size);
+                                          OrbisNpTrophyId trophyId, void* buffer, u64* size);
 int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
                                           OrbisNpTrophyId trophyId, OrbisNpTrophyDetails* details,
                                           OrbisNpTrophyData* data);

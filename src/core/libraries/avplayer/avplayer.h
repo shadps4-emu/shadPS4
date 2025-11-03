@@ -16,38 +16,38 @@ namespace Libraries::AvPlayer {
 
 class AvPlayer;
 
-using SceAvPlayerHandle = AvPlayer*;
+using AvPlayerHandle = AvPlayer*;
 
-enum class SceAvPlayerUriType : u32 {
+enum class AvPlayerUriType : u32 {
     Source = 0,
 };
 
-struct SceAvPlayerUri {
+struct AvPlayerUri {
     const char* name;
     u32 length;
 };
 
-enum class SceAvPlayerSourceType {
+enum class AvPlayerSourceType {
     Unknown = 0,
     FileMp4 = 1,
     Hls = 8,
 };
 
-enum class SceAvPlayerStreamType : u32 {
+enum class AvPlayerStreamType : u32 {
     Video,
     Audio,
     TimedText,
     Unknown,
 };
 
-struct SceAvPlayerSourceDetails {
-    SceAvPlayerUri uri;
+struct AvPlayerSourceDetails {
+    AvPlayerUri uri;
     u8 reserved1[64];
-    SceAvPlayerSourceType source_type;
+    AvPlayerSourceType source_type;
     u8 reserved2[44];
 };
 
-struct SceAvPlayerAudio {
+struct AvPlayerAudio {
     u16 channel_count;
     u8 reserved1[2];
     u32 sample_rate;
@@ -55,50 +55,50 @@ struct SceAvPlayerAudio {
     u8 language_code[4];
 };
 
-struct SceAvPlayerVideo {
+struct AvPlayerVideo {
     u32 width;
     u32 height;
     f32 aspect_ratio;
     char language_code[4];
 };
 
-struct SceAvPlayerTextPosition {
+struct AvPlayerTextPosition {
     u16 top;
     u16 left;
     u16 bottom;
     u16 right;
 };
 
-struct SceAvPlayerTimedText {
+struct AvPlayerTimedText {
     u8 language_code[4];
     u16 text_size;
     u16 font_size;
-    SceAvPlayerTextPosition position;
+    AvPlayerTextPosition position;
 };
 
-union SceAvPlayerStreamDetails {
+union AvPlayerStreamDetails {
     u8 reserved[16];
-    SceAvPlayerAudio audio;
-    SceAvPlayerVideo video;
-    SceAvPlayerTimedText subs;
+    AvPlayerAudio audio;
+    AvPlayerVideo video;
+    AvPlayerTimedText subs;
 };
 
-struct SceAvPlayerFrameInfo {
-    u8* pData;
+struct AvPlayerFrameInfo {
+    u8* p_data;
     u8 reserved[4];
     u64 timestamp;
-    SceAvPlayerStreamDetails details;
+    AvPlayerStreamDetails details;
 };
 
-struct SceAvPlayerStreamInfo {
-    SceAvPlayerStreamType type;
+struct AvPlayerStreamInfo {
+    AvPlayerStreamType type;
     u8 reserved[4];
-    SceAvPlayerStreamDetails details;
+    AvPlayerStreamDetails details;
     u64 duration;
     u64 start_time;
 };
 
-struct SceAvPlayerAudioEx {
+struct AvPlayerAudioEx {
     u16 channel_count;
     u8 reserved[2];
     u32 sample_rate;
@@ -107,7 +107,7 @@ struct SceAvPlayerAudioEx {
     u8 reserved1[64];
 };
 
-struct SceAvPlayerVideoEx {
+struct AvPlayerVideoEx {
     u32 width;
     u32 height;
     f32 aspect_ratio;
@@ -124,53 +124,53 @@ struct SceAvPlayerVideoEx {
     u8 reserved1[37];
 };
 
-struct SceAvPlayerTimedTextEx {
+struct AvPlayerTimedTextEx {
     u8 language_code[4];
     u8 reserved[12];
     u8 reserved1[64];
 };
 
-union SceAvPlayerStreamDetailsEx {
-    SceAvPlayerAudioEx audio;
-    SceAvPlayerVideoEx video;
-    SceAvPlayerTimedTextEx subs;
+union AvPlayerStreamDetailsEx {
+    AvPlayerAudioEx audio;
+    AvPlayerVideoEx video;
+    AvPlayerTimedTextEx subs;
     u8 reserved1[80];
 };
 
-struct SceAvPlayerFrameInfoEx {
-    void* pData;
+struct AvPlayerFrameInfoEx {
+    void* p_data;
     u8 reserved[4];
     u64 timestamp;
-    SceAvPlayerStreamDetailsEx details;
+    AvPlayerStreamDetailsEx details;
 };
 
-using SceAvPlayerAllocate = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
-using SceAvPlayerDeallocate = void PS4_SYSV_ABI (*)(void* p, void* mem);
-using SceAvPlayerAllocateTexture = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
-using SceAvPlayerDeallocateTexture = void PS4_SYSV_ABI (*)(void* p, void* mem);
+using AvPlayerAllocate = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
+using AvPlayerDeallocate = void PS4_SYSV_ABI (*)(void* p, void* mem);
+using AvPlayerAllocateTexture = void* PS4_SYSV_ABI (*)(void* p, u32 align, u32 size);
+using AvPlayerDeallocateTexture = void PS4_SYSV_ABI (*)(void* p, void* mem);
 
-struct SceAvPlayerMemAllocator {
+struct AvPlayerMemAllocator {
     void* object_ptr;
-    SceAvPlayerAllocate allocate;
-    SceAvPlayerDeallocate deallocate;
-    SceAvPlayerAllocateTexture allocate_texture;
-    SceAvPlayerDeallocateTexture deallocate_texture;
+    AvPlayerAllocate allocate;
+    AvPlayerDeallocate deallocate;
+    AvPlayerAllocateTexture allocate_texture;
+    AvPlayerDeallocateTexture deallocate_texture;
 };
 
-using SceAvPlayerOpenFile = s32 PS4_SYSV_ABI (*)(void* p, const char* name);
-using SceAvPlayerCloseFile = s32 PS4_SYSV_ABI (*)(void* p);
-using SceAvPlayerReadOffsetFile = s32 PS4_SYSV_ABI (*)(void* p, u8* buf, u64 pos, u32 len);
-using SceAvPlayerSizeFile = u64 PS4_SYSV_ABI (*)(void* p);
+using AvPlayerOpenFile = s32 PS4_SYSV_ABI (*)(void* p, const char* name);
+using AvPlayerCloseFile = s32 PS4_SYSV_ABI (*)(void* p);
+using AvPlayerReadOffsetFile = s32 PS4_SYSV_ABI (*)(void* p, u8* buf, u64 pos, u32 len);
+using AvPlayerSizeFile = u64 PS4_SYSV_ABI (*)(void* p);
 
-struct SceAvPlayerFileReplacement {
+struct AvPlayerFileReplacement {
     void* object_ptr;
-    SceAvPlayerOpenFile open;
-    SceAvPlayerCloseFile close;
-    SceAvPlayerReadOffsetFile readOffset;
-    SceAvPlayerSizeFile size;
+    AvPlayerOpenFile open;
+    AvPlayerCloseFile close;
+    AvPlayerReadOffsetFile read_offset;
+    AvPlayerSizeFile size;
 };
 
-enum class SceAvPlayerEvents {
+enum class AvPlayerEvents {
     StateStop = 0x01,
     StateReady = 0x02,
     StatePlay = 0x03,
@@ -182,26 +182,26 @@ enum class SceAvPlayerEvents {
     DrmError = 0x40,
 };
 
-using SceAvPlayerEventCallback = void PS4_SYSV_ABI (*)(void* p, SceAvPlayerEvents event, s32 src_id,
-                                                       void* data);
+using AvPlayerEventCallback = void PS4_SYSV_ABI (*)(void* p, AvPlayerEvents event, s32 src_id,
+                                                    void* data);
 
-struct SceAvPlayerEventReplacement {
+struct AvPlayerEventReplacement {
     void* object_ptr;
-    SceAvPlayerEventCallback event_callback;
+    AvPlayerEventCallback event_callback;
 };
 
-enum class SceAvPlayerDebuglevels {
+enum class AvPlayerDebuglevels {
     None,
     Info,
     Warnings,
     All,
 };
 
-struct SceAvPlayerInitData {
-    SceAvPlayerMemAllocator memory_replacement;
-    SceAvPlayerFileReplacement file_replacement;
-    SceAvPlayerEventReplacement event_replacement;
-    SceAvPlayerDebuglevels debug_level;
+struct AvPlayerInitData {
+    AvPlayerMemAllocator memory_replacement;
+    AvPlayerFileReplacement file_replacement;
+    AvPlayerEventReplacement event_replacement;
+    AvPlayerDebuglevels debug_level;
     u32 base_priority;
     s32 num_output_video_framebuffers;
     bool auto_start;
@@ -209,13 +209,13 @@ struct SceAvPlayerInitData {
     const char* default_language;
 };
 
-struct SceAvPlayerInitDataEx {
+struct AvPlayerInitDataEx {
     size_t this_size;
-    SceAvPlayerMemAllocator memory_replacement;
-    SceAvPlayerFileReplacement file_replacement;
-    SceAvPlayerEventReplacement event_replacement;
+    AvPlayerMemAllocator memory_replacement;
+    AvPlayerFileReplacement file_replacement;
+    AvPlayerEventReplacement event_replacement;
     const char* default_language;
-    SceAvPlayerDebuglevels debug_level;
+    AvPlayerDebuglevels debug_level;
     u32 audio_decoder_priority;
     u32 audio_decoder_affinity;
     u32 video_decoder_priority;
@@ -233,25 +233,25 @@ struct SceAvPlayerInitDataEx {
     u8 reserved[3];
 };
 
-enum class SceAvPlayerVideoDecoderType {
+enum class AvPlayerVideoDecoderType {
     Default = 0,
     Reserved1,
     Software,
     Software2,
 };
 
-enum class SceAvPlayerAudioDecoderType {
+enum class AvPlayerAudioDecoderType {
     Default = 0,
     Reserved1,
     Reserved2,
 };
 
-struct SceAvPlayerDecoderInit {
+struct AvPlayerDecoderInit {
     union {
-        SceAvPlayerVideoDecoderType video_type;
-        SceAvPlayerAudioDecoderType audio_type;
+        AvPlayerVideoDecoderType video_type;
+        AvPlayerAudioDecoderType audio_type;
         u8 reserved[4];
-    } decoderType;
+    } decoder_type;
     union {
         struct {
             s32 cpu_affinity_mask;
@@ -261,34 +261,34 @@ struct SceAvPlayerDecoderInit {
             u8 compute_queue_id;
             u8 enable_interlaced;
             u8 reserved[16];
-        } avcSw2;
+        } avc_sw2;
         struct {
             u8 audio_channel_order;
             u8 reserved[27];
         } aac;
         u8 reserved[28];
-    } decoderParams;
+    } decoder_params;
 };
 
-struct SceAvPlayerHTTPCtx {
+struct AvPlayerHTTPCtx {
     u32 http_context_id;
     u32 ssl_context_id;
 };
 
-struct SceAvPlayerPostInitData {
+struct AvPlayerPostInitData {
     u32 demux_video_buffer_size;
-    SceAvPlayerDecoderInit video_decoder_init;
-    SceAvPlayerDecoderInit audio_decoder_init;
-    SceAvPlayerHTTPCtx http_context;
+    AvPlayerDecoderInit video_decoder_init;
+    AvPlayerDecoderInit audio_decoder_init;
+    AvPlayerHTTPCtx http_context;
     u8 reserved[56];
 };
 
-enum class SceAvPlayerAvSyncMode {
+enum class AvPlayerAvSyncMode {
     Default = 0,
     None,
 };
 
-using SceAvPlayerLogCallback = int PS4_SYSV_ABI (*)(void* p, const char* format, va_list args);
+using AvPlayerLogCallback = int PS4_SYSV_ABI (*)(void* p, const char* format, va_list args);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 

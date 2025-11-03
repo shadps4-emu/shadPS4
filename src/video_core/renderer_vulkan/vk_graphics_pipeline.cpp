@@ -4,12 +4,10 @@
 #include <algorithm>
 #include <utility>
 #include <boost/container/small_vector.hpp>
-#include <boost/container/static_vector.hpp>
 
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
-#include "shader_recompiler/frontend/fetch_shader.h"
-#include "video_core/amdgpu/resource.h"
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -118,7 +116,7 @@ GraphicsPipeline::GraphicsPipeline(
             .lineWidth = 1.0f,
         },
         vk::PipelineRasterizationProvokingVertexStateCreateInfoEXT{
-            .provokingVertexMode = key.provoking_vtx_last == Liverpool::ProvokingVtxLast::First
+            .provokingVertexMode = key.provoking_vtx_last == AmdGpu::ProvokingVtxLast::First
                                        ? vk::ProvokingVertexModeEXT::eFirstVertex
                                        : vk::ProvokingVertexModeEXT::eLastVertex,
         },
@@ -135,14 +133,14 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples =
-            LiverpoolToVK::NumSamples(key.num_samples, instance.GetFramebufferSampleCounts()),
+        .rasterizationSamples = LiverpoolToVK::NumSamples(
+            key.num_samples, instance.GetColorSampleCounts() & instance.GetDepthSampleCounts()),
         .sampleShadingEnable =
             fs_info.addr_flags.persp_sample_ena || fs_info.addr_flags.linear_sample_ena,
     };
 
     const vk::PipelineViewportDepthClipControlCreateInfoEXT clip_control = {
-        .negativeOneToOne = key.clip_space == Liverpool::ClipSpace::MinusWToW,
+        .negativeOneToOne = key.clip_space == AmdGpu::ClipSpace::MinusWToW,
     };
 
     const vk::PipelineViewportStateCreateInfo viewport_info = {
@@ -259,19 +257,31 @@ GraphicsPipeline::GraphicsPipeline(
         color_formats[i] = color_format;
     }
 
-    const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
+    std::array<vk::SampleCountFlagBits, AmdGpu::NUM_COLOR_BUFFERS> color_samples;
+    std::ranges::transform(key.color_samples, color_samples.begin(), [&instance](u8 num_samples) {
+        return num_samples ? LiverpoolToVK::NumSamples(num_samples, instance.GetColorSampleCounts())
+                           : vk::SampleCountFlagBits::e1;
+    });
+    const vk::AttachmentSampleCountInfoAMD mixed_samples = {
         .colorAttachmentCount = key.num_color_attachments,
-        .pColorAttachmentFormats = color_formats.data(),
-        .depthAttachmentFormat = key.z_format != Liverpool::DepthBuffer::ZFormat::Invalid
-                                     ? depth_format
-                                     : vk::Format::eUndefined,
-        .stencilAttachmentFormat =
-            key.stencil_format != Liverpool::DepthBuffer::StencilFormat::Invalid
-                ? depth_format
-                : vk::Format::eUndefined,
+        .pColorAttachmentSamples = color_samples.data(),
+        .depthStencilAttachmentSamples =
+            LiverpoolToVK::NumSamples(key.depth_samples, instance.GetDepthSampleCounts()),
     };
 
-    std::array<vk::PipelineColorBlendAttachmentState, Liverpool::NumColorBuffers> attachments;
+    const vk::PipelineRenderingCreateInfo pipeline_rendering_ci = {
+        .pNext = instance.IsMixedDepthSamplesSupported() ? &mixed_samples : nullptr,
+        .colorAttachmentCount = key.num_color_attachments,
+        .pColorAttachmentFormats = color_formats.data(),
+        .depthAttachmentFormat = key.z_format != AmdGpu::DepthBuffer::ZFormat::Invalid
+                                     ? depth_format
+                                     : vk::Format::eUndefined,
+        .stencilAttachmentFormat = key.stencil_format != AmdGpu::DepthBuffer::StencilFormat::Invalid
+                                       ? depth_format
+                                       : vk::Format::eUndefined,
+    };
+
+    std::array<vk::PipelineColorBlendAttachmentState, AmdGpu::NUM_COLOR_BUFFERS> attachments;
     for (u32 i = 0; i < key.num_color_attachments; i++) {
         const auto& control = key.blend_controls[i];
 
@@ -322,7 +332,7 @@ GraphicsPipeline::GraphicsPipeline(
         // Unfortunatelly, Vulkan doesn't provide any control on blend inputs, so below we detecting
         // such cases and override alpha value in order to emulate HW behaviour.
         const auto has_alpha_masked_out =
-            (key.cb_shader_mask.GetMask(i) & Liverpool::ColorBufferMask::ComponentA) == 0;
+            (key.cb_shader_mask.GetMask(i) & AmdGpu::ColorBufferMask::ComponentA) == 0;
         const auto has_src_alpha_in_src_blend = src_color == vk::BlendFactor::eSrcAlpha ||
                                                 src_color == vk::BlendFactor::eOneMinusSrcAlpha;
         const auto has_src_alpha_in_dst_blend = dst_color == vk::BlendFactor::eSrcAlpha ||
@@ -341,7 +351,7 @@ GraphicsPipeline::GraphicsPipeline(
 
     const vk::PipelineColorBlendStateCreateInfo color_blending = {
         .logicOpEnable =
-            instance.IsLogicOpSupported() && key.logic_op != Liverpool::ColorControl::LogicOp::Copy,
+            instance.IsLogicOpSupported() && key.logic_op != AmdGpu::ColorControl::LogicOp::Copy,
         .logicOp = LiverpoolToVK::LogicOp(key.logic_op),
         .attachmentCount = key.num_color_attachments,
         .pAttachments = attachments.data(),
@@ -438,9 +448,8 @@ void GraphicsPipeline::BuildDescSetLayout() {
             const auto sharp = buffer.GetSharp(*stage);
             bindings.push_back({
                 .binding = binding++,
-                .descriptorType = buffer.IsStorage(sharp, profile)
-                                      ? vk::DescriptorType::eStorageBuffer
-                                      : vk::DescriptorType::eUniformBuffer,
+                .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
+                                                          : vk::DescriptorType::eUniformBuffer,
                 .descriptorCount = 1,
                 .stageFlags = stage_bit,
             });

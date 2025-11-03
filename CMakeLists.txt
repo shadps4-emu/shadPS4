@@ -237,7 +237,7 @@ find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(VulkanHeaders 1.4.324 CONFIG)
+find_package(VulkanHeaders 1.4.329 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
@@ -382,6 +382,8 @@ set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/net_util.h
                  src/core/libraries/network/net_epoll.cpp
                  src/core/libraries/network/net_epoll.h
+                 src/core/libraries/network/net_resolver.cpp
+                 src/core/libraries/network/net_resolver.h
                  src/core/libraries/network/net_error.h
                  src/core/libraries/network/net.h
                  src/core/libraries/network/ssl.cpp
@@ -598,6 +600,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_auth.h
             src/core/libraries/np/np_profile_dialog.cpp
             src/core/libraries/np/np_profile_dialog.h
+            src/core/libraries/np/np_sns_facebook_dialog.cpp
+            src/core/libraries/np/np_sns_facebook_dialog.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -765,6 +769,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/deci_tty6_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
+         src/core/file_sys/devices/rng_device.cpp
+         src/core/file_sys/devices/rng_device.h
          src/core/file_sys/devices/urandom_device.cpp
          src/core/file_sys/devices/urandom_device.h
          src/core/file_sys/devices/srandom_device.cpp
@@ -822,6 +828,8 @@ set(CORE src/core/aerolib/stubs.cpp
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h
+         src/core/debugger.cpp
+         src/core/debugger.h
          src/core/linker.cpp
          src/core/linker.h
          src/core/memory.cpp
@@ -843,10 +851,10 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
-set(SHADER_RECOMPILER src/shader_recompiler/exception.h
-                      src/shader_recompiler/profile.h
+set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
+                      src/shader_recompiler/resource.h
                       src/shader_recompiler/info.h
                       src/shader_recompiler/params.h
                       src/shader_recompiler/runtime_info.h
@@ -944,17 +952,24 @@ set(SHADER_RECOMPILER src/shader_recompiler/exception.h
                       src/shader_recompiler/ir/value.h
 )
 
-set(VIDEO_CORE src/video_core/amdgpu/liverpool.cpp
+set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
+               src/video_core/amdgpu/liverpool.cpp
                src/video_core/amdgpu/liverpool.h
                src/video_core/amdgpu/pixel_format.cpp
                src/video_core/amdgpu/pixel_format.h
                src/video_core/amdgpu/pm4_cmds.h
                src/video_core/amdgpu/pm4_opcodes.h
+               src/video_core/amdgpu/regs_color.h
+               src/video_core/amdgpu/regs_depth.h
+               src/video_core/amdgpu/regs.cpp
+               src/video_core/amdgpu/regs.h
+               src/video_core/amdgpu/regs_primitive.h
+               src/video_core/amdgpu/regs_shader.h
+               src/video_core/amdgpu/regs_texture.h
+               src/video_core/amdgpu/regs_vertex.h
                src/video_core/amdgpu/resource.h
                src/video_core/amdgpu/tiling.cpp
                src/video_core/amdgpu/tiling.h
-               src/video_core/amdgpu/types.h
-               src/video_core/amdgpu/default_context.cpp
                src/video_core/buffer_cache/buffer.cpp
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
@@ -1189,9 +1204,9 @@ if (APPLE)
         set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 
-    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/libMoltenVK.dylib)
+    set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/MoltenVK/libMoltenVK.dylib)
     set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
-    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
+    set(MVK_ICD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/externals/MoltenVK/MoltenVK/icd/MoltenVK_icd.json)
     set(MVK_ICD_DST ${MVK_DST}/MoltenVK_icd.json)
 
     add_custom_command(
@@ -1208,7 +1223,7 @@ if (APPLE)
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
-        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-image_base,0x20000000000)
+        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-segaddr,USER_AREA,0x7000000000,-image_base,0x700000000000)
     endif()
 
     # Replacement for std::chrono::time_zone
@@ -1257,6 +1272,13 @@ if (WIN32)
         target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
+    endif()
+
+    # Change base image address
+    if (MSVC)
+        target_link_options(shadps4 PRIVATE /BASE:0x700000000000)
+    else()
+        target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
     endif()
 endif()
 

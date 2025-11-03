@@ -88,4 +88,112 @@ static void DrawCenteredText(const char* text, const char* text_end = nullptr,
     SetCursorPos(pos + content);
 }
 
+// Limited-length InputTextEx wrapper (limits UTF-8 code points)
+// - max_chars counts Unicode code points, not bytes
+// - Works for single-line and multi-line
+// - Chains user callbacks if provided
+struct InputTextLimitCtx {
+    int max_chars;
+    ImGuiInputTextCallback user_cb;
+    void* user_user_data;
+    ImGuiInputTextFlags forward_flags; // original flags requested by caller
+};
+
+inline int InputTextLimitCallback(ImGuiInputTextCallbackData* data) {
+    InputTextLimitCtx* ctx = static_cast<InputTextLimitCtx*>(data->UserData);
+    if (ctx && ctx->user_cb) {
+        const ImGuiInputTextFlags ev = data->EventFlag;
+        const ImGuiInputTextFlags ff = ctx->forward_flags;
+        const bool should_forward =
+            ((ev == ImGuiInputTextFlags_CallbackAlways) &&
+             (ff & ImGuiInputTextFlags_CallbackAlways)) ||
+            ((ev == ImGuiInputTextFlags_CallbackEdit) && (ff & ImGuiInputTextFlags_CallbackEdit)) ||
+            ((ev == ImGuiInputTextFlags_CallbackCharFilter) &&
+             (ff & ImGuiInputTextFlags_CallbackCharFilter)) ||
+            ((ev == ImGuiInputTextFlags_CallbackCompletion) &&
+             (ff & ImGuiInputTextFlags_CallbackCompletion)) ||
+            ((ev == ImGuiInputTextFlags_CallbackHistory) &&
+             (ff & ImGuiInputTextFlags_CallbackHistory)) ||
+            ((ev == ImGuiInputTextFlags_CallbackResize) &&
+             (ff & ImGuiInputTextFlags_CallbackResize));
+        if (should_forward) {
+            void* orig = data->UserData;
+            data->UserData = ctx->user_user_data;
+            int user_ret = ctx->user_cb(data);
+            data->UserData = orig;
+            if (user_ret != 0) {
+                return user_ret;
+            }
+        }
+    }
+
+    if (!ctx || ctx->max_chars < 0) {
+        return 0;
+    }
+
+    // Enforce limit: discard extra characters on filter, trim on edit
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackCharFilter) {
+        ImGuiContext* g = data->Ctx;
+        if (!g) {
+            return 0;
+        }
+        ImGuiInputTextState* st = &g->InputTextState;
+        if (st == nullptr || st->TextSrc == nullptr) {
+            return 0;
+        }
+        int cur_chars = ImTextCountCharsFromUtf8(st->TextSrc, st->TextSrc + st->TextLen);
+        int sel_chars = 0;
+        if (st->HasSelection()) {
+            const int ib = st->GetSelectionStart();
+            const int ie = st->GetSelectionEnd();
+            sel_chars = ImTextCountCharsFromUtf8(st->TextSrc + ib, st->TextSrc + ie);
+        }
+        const int remaining = ctx->max_chars - (cur_chars - sel_chars);
+        if (remaining <= 0) {
+            data->EventChar = 0;
+            return 1; // discard
+        }
+        return 0;
+    }
+
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackEdit) {
+        // Trim tail to ensure text length <= max_chars code points
+        const char* s = data->Buf;
+        const char* end = s + data->BufTextLen;
+        const char* p = s;
+        int codepoints = 0;
+        while (p < end && codepoints < ctx->max_chars) {
+            unsigned int c;
+            int len = ImTextCharFromUtf8(&c, p, end);
+            if (len <= 0)
+                break;
+            p += len;
+            codepoints++;
+        }
+        if (p < end) {
+            const int keep_bytes = static_cast<int>(p - s);
+            data->DeleteChars(keep_bytes, data->BufTextLen - keep_bytes);
+            if (data->CursorPos > data->BufTextLen)
+                data->CursorPos = data->BufTextLen;
+            if (data->SelectionStart > data->BufTextLen)
+                data->SelectionStart = data->BufTextLen;
+            if (data->SelectionEnd > data->BufTextLen)
+                data->SelectionEnd = data->BufTextLen;
+        }
+        return 0;
+    }
+
+    return 0;
+}
+
+inline bool InputTextExLimited(const char* label, const char* hint, char* buf, int buf_size,
+                               const ImVec2& size_arg, ImGuiInputTextFlags flags, int max_chars,
+                               ImGuiInputTextCallback callback = nullptr,
+                               void* user_data = nullptr) {
+    InputTextLimitCtx ctx{max_chars, callback, user_data, flags};
+    ImGuiInputTextFlags flags2 =
+        flags | ImGuiInputTextFlags_CallbackCharFilter | ImGuiInputTextFlags_CallbackEdit;
+    return InputTextEx(label, hint, buf, buf_size, size_arg, flags2, InputTextLimitCallback, &ctx);
+}
+
 } // namespace ImGui

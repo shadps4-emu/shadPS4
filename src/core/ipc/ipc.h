@@ -6,7 +6,9 @@
 #include "common/singleton.h"
 
 #include <semaphore>
+#include <string>
 #include <thread>
+#include <vector>
 
 class IPC {
     bool enabled{false};
@@ -33,6 +35,8 @@ public:
     void WaitForStart() {
         start_semaphore.acquire();
     }
+
+    void SendRestart(const std::vector<std::string>& args);
 
 private:
     [[noreturn]] void InputLoop();

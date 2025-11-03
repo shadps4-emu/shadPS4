@@ -5,8 +5,6 @@
 #include <source_location>
 #include <boost/container/small_vector.hpp>
 #include "common/assert.h"
-#include "ir_emitter.h"
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/debug_print.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
@@ -196,7 +194,7 @@ U1 IREmitter::Condition(IR::Condition cond) {
     case IR::Condition::Execnz:
         return GetExec();
     default:
-        throw NotImplementedException("");
+        UNREACHABLE_MSG("");
     }
 }
 
@@ -1828,7 +1826,7 @@ U32U64 IREmitter::ConvertFToS(size_t bitsize, const F32F64& value) {
     default:
         break;
     }
-    throw NotImplementedException("Invalid destination bitsize {}", bitsize);
+    UNREACHABLE_MSG("Invalid destination bitsize {}", bitsize);
 }
 
 U32U64 IREmitter::ConvertFToU(size_t bitsize, const F32F64& value) {
@@ -1929,7 +1927,7 @@ U8U16U32U64 IREmitter::UConvert(size_t result_bitsize, const U8U16U32U64& value)
     default:
         break;
     }
-    throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
+    UNREACHABLE_MSG("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
 U8U16U32U64 IR::IREmitter::SConvert(size_t result_bitsize, const U8U16U32U64& value) {
@@ -1946,8 +1944,7 @@ U8U16U32U64 IR::IREmitter::SConvert(size_t result_bitsize, const U8U16U32U64& va
     default:
         break;
     }
-    throw NotImplementedException("Signed Conversion from {} to {} bits", value.Type(),
-                                  result_bitsize);
+    UNREACHABLE_MSG("Signed Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
 F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
@@ -1978,7 +1975,7 @@ F16F32F64 IREmitter::FPConvert(size_t result_bitsize, const F16F32F64& value) {
     default:
         break;
     }
-    throw NotImplementedException("Conversion from {} to {} bits", value.Type(), result_bitsize);
+    UNREACHABLE_MSG("Conversion from {} to {} bits", value.Type(), result_bitsize);
 }
 
 Value IREmitter::ImageAtomicIAdd(const Value& handle, const Value& coords, const Value& value,

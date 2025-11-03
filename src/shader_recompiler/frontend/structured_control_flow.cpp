@@ -191,7 +191,7 @@ std::string DumpExpr(const Statement* stmt) {
 
 void SanitizeNoBreaks(const Tree& tree) {
     if (std::ranges::find(tree, StatementType::Break, &Statement::type) != tree.end()) {
-        throw NotImplementedException("Capturing statement with break nodes");
+        UNREACHABLE_MSG("Capturing statement with break nodes");
     }
 }
 
@@ -584,7 +584,7 @@ private:
     case StatementType::Variable:
         return ir.GetGotoVariable(stmt.id);
     default:
-        throw NotImplementedException("Statement type {}", u32(stmt.type));
+        UNREACHABLE_MSG("Statement type {}", u32(stmt.type));
     }
 }
 

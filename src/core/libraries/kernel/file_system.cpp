@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ranges>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/error.h"
@@ -14,6 +15,7 @@
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/rng_device.h"
 #include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/devices/urandom_device.h"
 #include "core/file_sys/directories/normal_directory.h"
@@ -63,14 +65,15 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/random",   &D::RandomDevice::Create },
     {"/dev/srandom",  &D::SRandomDevice::Create },
     {"/dev/console",  &D::ConsoleDevice::Create },
-    {"/dev/deci_tty6",&D::DeciTty6Device::Create }
+    {"/dev/deci_tty6",&D::DeciTty6Device::Create },
+    {"/dev/rng",      &D::RngDevice::Create },
     // clang-format on
 };
 
 namespace Libraries::Kernel {
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {}", raw_path, flags, mode);
+    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -523,7 +526,7 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 }
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} mode = {}", path, mode);
+    LOG_INFO(Kernel_Fs, "path = {} mode = {:#o}", path, mode);
     if (path == nullptr) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
@@ -701,8 +704,13 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         // Socket functions handle errnos internally
         return file->socket->fstat(sb);
     }
+    case Core::FileSys::FileType::Epoll:
+    case Core::FileSys::FileType::Resolver: {
+        LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}", magic_enum::enum_name(file->type.load()));
+        break;
+    }
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("{}", u32(file->type.load()));
     }
     return ORBIS_OK;
 }

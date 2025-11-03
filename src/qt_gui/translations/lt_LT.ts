@@ -276,8 +276,8 @@
       <translation>Neteisingi leidimo duomenys.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Nerasta atsisiuntimo URL nurodytam turtui.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Pranešimas:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Nuo versijos &lt;b&gt;0.12.0&lt;/b&gt; emuliatoriaus Qt versija nebekvies tiesioginių atnaujinimų.&lt;br&gt;&lt;br&gt; Tačiau Qt sąsaja vis tiek prieinama per oficialų naują paleidimo programą:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – paremta pradiniu shadPS4 šaltinio kodu.&lt;br&gt;&lt;br&gt;Rekomenduojame pereiti prie šio paleidimo programos, kad ir toliau gautumėte atnaujinimus.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

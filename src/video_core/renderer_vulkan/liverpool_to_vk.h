@@ -5,36 +5,37 @@
 
 #include <span>
 #include "common/assert.h"
-#include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/regs_color.h"
+#include "video_core/amdgpu/regs_depth.h"
+#include "video_core/amdgpu/regs_primitive.h"
+#include "video_core/amdgpu/regs_vertex.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Vulkan::LiverpoolToVK {
 
-using Liverpool = AmdGpu::Liverpool;
+vk::StencilOp StencilOp(AmdGpu::StencilFunc op);
 
-vk::StencilOp StencilOp(Liverpool::StencilFunc op);
-
-vk::CompareOp CompareOp(Liverpool::CompareFunc func);
+vk::CompareOp CompareOp(AmdGpu::CompareFunc func);
 
 bool IsPrimitiveCulled(AmdGpu::PrimitiveType type);
 
 vk::PrimitiveTopology PrimitiveType(AmdGpu::PrimitiveType type);
 
-vk::PolygonMode PolygonMode(Liverpool::PolygonMode mode);
+vk::PolygonMode PolygonMode(AmdGpu::PolygonMode mode);
 
-vk::CullModeFlags CullMode(Liverpool::CullMode mode);
+vk::CullModeFlags CullMode(AmdGpu::CullMode mode);
 
-vk::FrontFace FrontFace(Liverpool::FrontFace mode);
+vk::FrontFace FrontFace(AmdGpu::FrontFace mode);
 
-vk::BlendFactor BlendFactor(Liverpool::BlendControl::BlendFactor factor);
+vk::BlendFactor BlendFactor(AmdGpu::BlendControl::BlendFactor factor);
 
-bool IsDualSourceBlendFactor(Liverpool::BlendControl::BlendFactor factor);
+bool IsDualSourceBlendFactor(AmdGpu::BlendControl::BlendFactor factor);
 
-vk::BlendOp BlendOp(Liverpool::BlendControl::BlendFunc func);
+vk::BlendOp BlendOp(AmdGpu::BlendControl::BlendFunc func);
 
-vk::LogicOp LogicOp(Liverpool::ColorControl::LogicOp logic_op);
+vk::LogicOp LogicOp(AmdGpu::ColorControl::LogicOp logic_op);
 
 vk::SamplerAddressMode ClampMode(AmdGpu::ClampMode mode);
 
@@ -63,17 +64,17 @@ std::span<const SurfaceFormatInfo> SurfaceFormats();
 vk::Format SurfaceFormat(AmdGpu::DataFormat data_format, AmdGpu::NumberFormat num_format);
 
 struct DepthFormatInfo {
-    Liverpool::DepthBuffer::ZFormat z_format;
-    Liverpool::DepthBuffer::StencilFormat stencil_format;
+    AmdGpu::DepthBuffer::ZFormat z_format;
+    AmdGpu::DepthBuffer::StencilFormat stencil_format;
     vk::Format vk_format;
     vk::FormatFeatureFlags2 flags;
 };
 std::span<const DepthFormatInfo> DepthFormats();
 
-vk::Format DepthFormat(Liverpool::DepthBuffer::ZFormat z_format,
-                       Liverpool::DepthBuffer::StencilFormat stencil_format);
+vk::Format DepthFormat(AmdGpu::DepthBuffer::ZFormat z_format,
+                       AmdGpu::DepthBuffer::StencilFormat stencil_format);
 
-vk::ClearValue ColorBufferClearValue(const AmdGpu::Liverpool::ColorBuffer& color_buffer);
+vk::ClearValue ColorBufferClearValue(const AmdGpu::ColorBuffer& color_buffer);
 
 vk::SampleCountFlagBits NumSamples(u32 num_samples, vk::SampleCountFlags supported_flags);
 

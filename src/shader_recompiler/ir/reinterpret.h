@@ -29,25 +29,15 @@ inline F32 ApplyGammaToLinear(IREmitter& ir, const F32& c) {
     return IR::F32{ir.Select(ir.FPGreaterThan(c, ir.Imm32(0.04045f)), a, b)};
 }
 
-inline Value ApplyForceDegamma(IREmitter& ir, const Value& value,
-                               const AmdGpu::CompMapping& mapping) {
+inline Value ApplyForceDegamma(IREmitter& ir, const Value& value) {
     auto x = F32{ir.CompositeExtract(value, 0)};
     auto y = F32{ir.CompositeExtract(value, 1)};
     auto z = F32{ir.CompositeExtract(value, 2)};
     auto w = F32{ir.CompositeExtract(value, 3)};
     // Gamma correction is only applied to RGB components
-    if (AmdGpu::IsRgb(mapping.r)) {
-        x = ApplyGammaToLinear(ir, x);
-    }
-    if (AmdGpu::IsRgb(mapping.g)) {
-        y = ApplyGammaToLinear(ir, y);
-    }
-    if (AmdGpu::IsRgb(mapping.b)) {
-        z = ApplyGammaToLinear(ir, z);
-    }
-    if (AmdGpu::IsRgb(mapping.a)) {
-        w = ApplyGammaToLinear(ir, w);
-    }
+    x = ApplyGammaToLinear(ir, x);
+    y = ApplyGammaToLinear(ir, y);
+    z = ApplyGammaToLinear(ir, z);
     return ir.CompositeConstruct(x, y, z, w);
 }
 

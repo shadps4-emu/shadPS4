@@ -276,8 +276,8 @@
       <translation>Data rilis tidak valid.</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>Tidak ada URL unduhan ditemukan untuk aset yang ditentukan.</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;Peringatan:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Mulai versi &lt;b&gt;0.12.0&lt;/b&gt;, versi Qt dari emulator tidak akan lagi menerima pembaruan langsung.&lt;br&gt;&lt;br&gt; Namun, antarmuka Qt tetap tersedia melalui peluncur resmi baru:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – berdasarkan kode sumber asli shadPS4.&lt;br&gt;&lt;br&gt;Kami menyarankan untuk beralih ke peluncur ini agar terus menerima pembaruan.</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>

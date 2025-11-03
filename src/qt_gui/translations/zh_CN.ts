@@ -276,8 +276,8 @@
       <translation>无效的发布数据。</translation>
     </message>
     <message>
-      <source>No download URL found for the specified asset.</source>
-      <translation>未找到指定资源的下载地址。</translation>
+      <source>&lt;b&gt;Notice:&lt;/b&gt;&lt;br&gt;&lt;br&gt; Starting from version &lt;b&gt;0.12.0&lt;/b&gt;, the Qt version of the emulator will no longer receive direct updates.&lt;br&gt;&lt;br&gt;However, the Qt interface remains available through the new official launcher:&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; - based on the original shadPS4 source code.&lt;br&gt;&lt;br&gt;We recommend switching to this launcher to continue receiving updates.</source>
+      <translation>&lt;b&gt;注意：&lt;/b&gt;&lt;br&gt;&lt;br&gt; 从版本 &lt;b&gt;0.12.0&lt;/b&gt; 起，模拟器的 Qt 版本将不再接收直接更新。&lt;br&gt;&lt;br&gt; 但是，Qt 接口仍可通过新的官方启动器使用：&lt;br&gt;&lt;br&gt;&lt;a href='https://github.com/shadps4-emu/shadps4-qtlauncher/releases/'&gt;Qt Launcher&lt;/a&gt; – 基于原始 shadPS4 源代码。&lt;br&gt;&lt;br&gt; 我们建议切换到此启动器，以继续接收更新。</translation>
     </message>
     <message>
       <source>Your version is already up to date!</source>
