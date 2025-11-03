@@ -134,7 +134,8 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     download_buffer.Commit();
     scheduler.EndRendering();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    tile_manager.TileImage(image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(), copy_size);
+    tile_manager.TileImage(image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
+                           copy_size);
     {
         std::unique_lock lock(downloaded_images_mutex);
         downloaded_images_queue.emplace(scheduler.CurrentTick(), image_addr, mapping.Data(),

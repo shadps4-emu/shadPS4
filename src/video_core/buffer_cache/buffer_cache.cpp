@@ -444,7 +444,8 @@ void BufferCache::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, 
         if (dst_gds) {
             return gds_buffer;
         }
-        const auto [buffer, offset] = ObtainBuffer(dst, num_bytes, ObtainBufferFlags::IsWritten | ObtainBufferFlags::IsTexelBuffer);
+        const auto [buffer, offset] = ObtainBuffer(
+            dst, num_bytes, ObtainBufferFlags::IsWritten | ObtainBufferFlags::IsTexelBuffer);
         return *buffer;
     }();
     const vk::BufferCopy region = {

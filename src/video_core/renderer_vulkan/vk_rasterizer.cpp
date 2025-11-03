@@ -580,8 +580,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (desc.is_formatted) {
                 flags |= VideoCore::ObtainBufferFlags::IsTexelBuffer;
             }
-            const auto [vk_buffer, offset] = buffer_cache.ObtainBuffer(
-                vsharp.base_address, size, flags, buffer_id);
+            const auto [vk_buffer, offset] =
+                buffer_cache.ObtainBuffer(vsharp.base_address, size, flags, buffer_id);
             const u32 offset_aligned = Common::AlignDown(offset, alignment);
             const u32 adjust = offset - offset_aligned;
             ASSERT(adjust % 4 == 0);
