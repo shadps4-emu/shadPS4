@@ -3,11 +3,18 @@
 
 #pragma once
 
-#include "shader_recompiler/info.h"
-#include "video_core/amdgpu/liverpool.h"
+#include "video_core/amdgpu/regs_depth.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 #include "video_core/texture_cache/types.h"
+
+namespace AmdGpu {
+struct ColorBuffer;
+}
+
+namespace Shader {
+struct ImageResource;
+}
 
 namespace Vulkan {
 class Instance;
@@ -19,9 +26,9 @@ namespace VideoCore {
 struct ImageViewInfo {
     ImageViewInfo() = default;
     ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageResource& desc) noexcept;
-    ImageViewInfo(const AmdGpu::Liverpool::ColorBuffer& col_buffer) noexcept;
-    ImageViewInfo(const AmdGpu::Liverpool::DepthBuffer& depth_buffer,
-                  AmdGpu::Liverpool::DepthView view, AmdGpu::Liverpool::DepthControl ctl);
+    ImageViewInfo(const AmdGpu::ColorBuffer& col_buffer) noexcept;
+    ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::DepthView view,
+                  AmdGpu::DepthControl ctl);
 
     AmdGpu::ImageType type = AmdGpu::ImageType::Color2D;
     vk::Format format = vk::Format::eR8G8B8A8Unorm;
@@ -35,8 +42,7 @@ struct ImageViewInfo {
 struct Image;
 
 struct ImageView {
-    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, Image& image,
-              ImageId image_id);
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, const Image& image);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;
@@ -45,7 +51,6 @@ struct ImageView {
     ImageView(ImageView&&) = default;
     ImageView& operator=(ImageView&&) = default;
 
-    ImageId image_id;
     ImageViewInfo info;
     vk::UniqueImageView image_view;
 };

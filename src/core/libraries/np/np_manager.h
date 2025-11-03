@@ -26,12 +26,6 @@ enum class OrbisNpState : u32 {
 using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
                                                                void* userdata);
 
-enum class OrbisNpRequestState {
-    None = 0,
-    Ready = 1,
-    Complete = 2,
-};
-
 enum class OrbisNpGamePresenseStatus {
     Offline = 0,
     Online = 1,
@@ -64,6 +58,26 @@ struct OrbisNpParentalControlInfo {
     bool content_restriction;
     bool chat_restriction;
     bool user_generated_content_restriction;
+};
+
+struct OrbisNpCheckPlusParameter {
+    u64 size;
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    u8 padding[4];
+    u64 features;
+    u8 reserved[32];
+};
+
+struct OrbisNpCheckPlusResult {
+    bool authorized;
+    u8 reserved[32];
+};
+
+struct OrbisNpCreateAsyncRequestParameter {
+    u64 size;
+    u64 cpu_affinity_mask;
+    s32 thread_priority;
+    u8 padding[4];
 };
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);

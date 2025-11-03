@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -267,7 +267,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->cancel_async = false;
 
     auto* memory = Core::Memory::Instance();
-    if (name && memory->IsValidAddress(name)) {
+    if (name && memory->IsValidMapping(reinterpret_cast<VAddr>(name))) {
         new_thread->name = name;
     } else {
         new_thread->name = fmt::format("Thread{}", new_thread->tid.load());
@@ -337,7 +337,7 @@ void PS4_SYSV_ABI sched_yield() {
 }
 
 int PS4_SYSV_ABI posix_getpid() {
-    return g_curthread->tid;
+    return GLOBAL_PID;
 }
 
 int PS4_SYSV_ABI posix_pthread_once(PthreadOnce* once_control,
@@ -665,6 +665,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", posix_pthread_create);
     LIB_FUNCTION("Jb2uGFMr688", "libkernel", 1, "libkernel", posix_pthread_getaffinity_np);
     LIB_FUNCTION("5KWrg7-ZqvE", "libkernel", 1, "libkernel", posix_pthread_setaffinity_np);
+    LIB_FUNCTION("3eqs37G74-s", "libkernel", 1, "libkernel", posix_pthread_getthreadid_np);
 
     // Orbis
     LIB_FUNCTION("14bOACANTBo", "libkernel", 1, "libkernel", ORBIS(posix_pthread_once));

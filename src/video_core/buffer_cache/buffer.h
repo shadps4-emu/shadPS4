@@ -83,29 +83,24 @@ public:
     Buffer& operator=(Buffer&&) = default;
     Buffer(Buffer&&) = default;
 
-    /// Increases the likeliness of this being a stream buffer
     void IncreaseStreamScore(int score) noexcept {
         stream_score += score;
     }
 
-    /// Returns the likeliness of this being a stream buffer
     [[nodiscard]] int StreamScore() const noexcept {
         return stream_score;
     }
 
-    /// Returns true when vaddr -> vaddr+size is fully contained in the buffer
     [[nodiscard]] bool IsInBounds(VAddr addr, u64 size) const noexcept {
         return addr >= cpu_addr && addr + size <= cpu_addr + SizeBytes();
     }
 
-    /// Returns the base CPU address of the buffer
     [[nodiscard]] VAddr CpuAddr() const noexcept {
         return cpu_addr;
     }
 
-    /// Returns the offset relative to the given CPU address
-    [[nodiscard]] u32 Offset(VAddr other_cpu_addr) const noexcept {
-        return static_cast<u32>(other_cpu_addr - cpu_addr);
+    [[nodiscard]] u64 Offset(VAddr other_cpu_addr) const noexcept {
+        return other_cpu_addr - cpu_addr;
     }
 
     size_t SizeBytes() const {
@@ -129,16 +124,16 @@ public:
         return buffer.bda_addr;
     }
 
-    std::optional<vk::BufferMemoryBarrier2> GetBarrier(
-        vk::Flags<vk::AccessFlagBits2> dst_acess_mask, vk::PipelineStageFlagBits2 dst_stage,
-        u32 offset = 0) {
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlags2 dst_acess_mask,
+                                                       vk::PipelineStageFlagBits2 dst_stage,
+                                                       u32 offset = 0) {
         if (dst_acess_mask == access_mask && stage == dst_stage) {
             return {};
         }
 
         DEBUG_ASSERT(offset < size_bytes);
 
-        auto barrier = vk::BufferMemoryBarrier2{
+        const auto barrier = vk::BufferMemoryBarrier2{
             .srcStageMask = stage,
             .srcAccessMask = access_mask,
             .dstStageMask = dst_stage,
@@ -151,6 +146,8 @@ public:
         stage = dst_stage;
         return barrier;
     }
+
+    void Fill(u64 offset, u32 num_bytes, u32 value);
 
 public:
     VAddr cpu_addr = 0;

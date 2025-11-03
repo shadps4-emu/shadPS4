@@ -15,7 +15,7 @@ s64 VirtualFile::write(const void* buf, size_t count) {
     return pwrite(buf, count, 0);
 }
 
-s64 VirtualFile::pread(void* buf, size_t count, u64 offset) {
+s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
     s64 idx;
     s64 read_amt = this->data.size() - offset - count;
 
@@ -31,7 +31,7 @@ s64 VirtualFile::pread(void* buf, size_t count, u64 offset) {
     return read_amt;
 }
 
-s64 VirtualFile::pwrite(const void* buf, size_t count, u64 offset) {
+s64 VirtualFile::pwrite(const void* buf, size_t count, s64 offset) {
     auto size = &this->st.st_size;
     auto end_pos = offset + count;
     *size = end_pos > *size ? end_pos : *size;

@@ -21,8 +21,8 @@ public:
     //
     s64 read(void* buf, size_t count) override;
     s64 write(const void* buf, size_t count) override;
-    s64 pread(void* buf, size_t count, u64 offset) override;
-    s64 pwrite(const void* buf, size_t count, u64 offset) override;
+    s64 pread(void* buf, size_t count, s64 offset) override;
+    s64 pwrite(const void* buf, size_t count, s64 offset) override;
     s32 ftruncate(s64 length) override;
 };
 

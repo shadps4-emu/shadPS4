@@ -9,23 +9,22 @@
 
 namespace Libraries::AvPlayer {
 
-s32 PS4_SYSV_ABI sceAvPlayerAddSource(SceAvPlayerHandle handle, const char* filename) {
+s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filename) {
     LOG_TRACE(Lib_AvPlayer, "filename = {}", filename);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->AddSource(filename);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->AddSource(filename);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(SceAvPlayerHandle handle, SceAvPlayerUriType uriType,
-                                        SceAvPlayerSourceDetails* sourceDetails) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
-    if (handle == nullptr) {
+s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(AvPlayerHandle handle, AvPlayerUriType uri_type,
+                                        AvPlayerSourceDetails* source_details) {
+    LOG_TRACE(Lib_AvPlayer, "called");
+    if (handle == nullptr || uri_type != AvPlayerUriType::Source) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    const auto path = std::string_view(source_details->uri.name, source_details->uri.length);
+    return handle->AddSourceEx(path, source_details->source_type);
 }
 
 int PS4_SYSV_ABI sceAvPlayerChangeStream() {
@@ -33,28 +32,24 @@ int PS4_SYSV_ABI sceAvPlayerChangeStream() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerClose(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerClose(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     delete handle;
-    LOG_TRACE(Lib_AvPlayer, "returning ORBIS_OK");
     return ORBIS_OK;
 }
 
-u64 PS4_SYSV_ABI sceAvPlayerCurrentTime(SceAvPlayerHandle handle) {
+u64 PS4_SYSV_ABI sceAvPlayerCurrentTime(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->CurrentTime();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->CurrentTime();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerDisableStream(SceAvPlayerHandle handle, u32 stream_id) {
+s32 PS4_SYSV_ABI sceAvPlayerDisableStream(AvPlayerHandle handle, u32 stream_id) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -62,60 +57,49 @@ s32 PS4_SYSV_ABI sceAvPlayerDisableStream(SceAvPlayerHandle handle, u32 stream_i
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerEnableStream(SceAvPlayerHandle handle, u32 stream_id) {
+s32 PS4_SYSV_ABI sceAvPlayerEnableStream(AvPlayerHandle handle, u32 stream_id) {
     LOG_TRACE(Lib_AvPlayer, "stream_id = {}", stream_id);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->EnableStream(stream_id);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->EnableStream(stream_id);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetAudioData(SceAvPlayerHandle handle, SceAvPlayerFrameInfo* p_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetAudioData(AvPlayerHandle handle, AvPlayerFrameInfo* p_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || p_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetAudioData(*p_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetAudioData(*p_info);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(SceAvPlayerHandle handle, u32 stream_id,
-                                          SceAvPlayerStreamInfo* p_info) {
+s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(AvPlayerHandle handle, u32 stream_id,
+                                          AvPlayerStreamInfo* p_info) {
     LOG_TRACE(Lib_AvPlayer, "stream_id = {}", stream_id);
     if (handle == nullptr || p_info == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->GetStreamInfo(stream_id, *p_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetStreamInfo(stream_id, *p_info);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetVideoData(SceAvPlayerHandle handle,
-                                          SceAvPlayerFrameInfo* video_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetVideoData(AvPlayerHandle handle, AvPlayerFrameInfo* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetVideoData(*video_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetVideoData(*video_info);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle,
-                                            SceAvPlayerFrameInfoEx* video_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(AvPlayerHandle handle,
+                                            AvPlayerFrameInfoEx* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetVideoData(*video_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetVideoData(*video_info);
 }
 
-SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
+AvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(AvPlayerInitData* data) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (data == nullptr) {
         return nullptr;
@@ -125,15 +109,14 @@ SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
         data->memory_replacement.allocate_texture == nullptr ||
         data->memory_replacement.deallocate == nullptr ||
         data->memory_replacement.deallocate_texture == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AVPlayer Initialisation.");
+        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AvPlayer Initialisation.");
         return nullptr;
     }
 
     return new AvPlayer(*data);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
-                                   SceAvPlayerHandle* p_player) {
+s32 PS4_SYSV_ABI sceAvPlayerInitEx(const AvPlayerInitDataEx* p_data, AvPlayerHandle* p_player) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (p_data == nullptr || p_player == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -143,11 +126,11 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
         p_data->memory_replacement.allocate_texture == nullptr ||
         p_data->memory_replacement.deallocate == nullptr ||
         p_data->memory_replacement.deallocate_texture == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AVPlayer Initialisation.");
+        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AvPlayer Initialisation.");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
 
-    SceAvPlayerInitData data = {};
+    AvPlayerInitData data = {};
     data.memory_replacement = p_data->memory_replacement;
     data.file_replacement = p_data->file_replacement;
     data.event_replacement = p_data->event_replacement;
@@ -159,18 +142,15 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
     return ORBIS_OK;
 }
 
-bool PS4_SYSV_ABI sceAvPlayerIsActive(SceAvPlayerHandle handle) {
+bool PS4_SYSV_ABI sceAvPlayerIsActive(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning false");
         return false;
     }
-    const auto res = handle->IsActive();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->IsActive();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) {
+s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(AvPlayerHandle handle, uint64_t time) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called, time (msec) = {}", time);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -178,22 +158,20 @@ s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) 
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerPause(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerPause(AvPlayerHandle handle) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Pause();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerPostInit(SceAvPlayerHandle handle, SceAvPlayerPostInitData* data) {
+s32 PS4_SYSV_ABI sceAvPlayerPostInit(AvPlayerHandle handle, AvPlayerPostInitData* data) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || data == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->PostInit(*data);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->PostInit(*data);
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerPrintf(const char* format, ...) {
@@ -201,29 +179,28 @@ s32 PS4_SYSV_ABI sceAvPlayerPrintf(const char* format, ...) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerResume(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerResume(AvPlayerHandle handle) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Resume();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(SceAvPlayerHandle handle,
-                                          SceAvPlayerAvSyncMode sync_mode) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(AvPlayerHandle handle, AvPlayerAvSyncMode sync_mode) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->SetAvSyncMode(sync_mode);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(SceAvPlayerLogCallback log_cb, void* user_data) {
+s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(AvPlayerLogCallback log_cb, void* user_data) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag) {
+s32 PS4_SYSV_ABI sceAvPlayerSetLooping(AvPlayerHandle handle, bool loop_flag) {
     LOG_TRACE(Lib_AvPlayer, "called, looping = {}", loop_flag);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -234,43 +211,36 @@ s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag)
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetTrickSpeed(SceAvPlayerHandle handle, s32 trick_speed) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerSetTrickSpeed(AvPlayerHandle handle, s32 trick_speed) {
+    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called speed = {}", trick_speed);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStart(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStart(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->Start();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->Start();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStop(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStop(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->Stop();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->Stop();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStreamCount(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStreamCount(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->GetStreamCount();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetStreamCount();
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerVprintf(const char* format, va_list args) {

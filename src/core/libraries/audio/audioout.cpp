@@ -301,7 +301,7 @@ static void AudioOutputThread(PortOut* port, const std::stop_token& stop) {
         timer.Start();
         {
             std::unique_lock lock{port->mutex};
-            if (port->output_cv.wait(lock, stop, [&] { return port->output_ready; })) {
+            if (port->output_ready) {
                 port->impl->Output(port->output_buffer);
                 port->output_ready = false;
             }
@@ -413,7 +413,6 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
             samples_sent = port.buffer_frames * port.format_info.num_channels;
         }
     }
-    port.output_cv.notify_one();
     return samples_sent;
 }
 

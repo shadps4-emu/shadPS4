@@ -44,6 +44,13 @@ struct SwVersionStruct {
     u32 hex_representation;
 };
 
+struct AuthInfoData {
+    u64 paid;
+    u64 caps[4];
+    u64 attrs[4];
+    u64 ucred[8];
+};
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

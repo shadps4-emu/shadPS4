@@ -15,7 +15,9 @@
 
 namespace Libraries::Net {
 struct Socket;
-}
+struct Epoll;
+struct Resolver;
+} // namespace Libraries::Net
 
 namespace Core::FileSys {
 
@@ -70,6 +72,8 @@ enum class FileType {
     Directory,
     Device,
     Socket,
+    Epoll,
+    Resolver
 };
 
 struct File {
@@ -82,6 +86,8 @@ struct File {
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
     std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
+    std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
+    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
 };
 
 class HandleTable {
@@ -92,6 +98,8 @@ public:
     int CreateHandle();
     File* GetFile(int d);
     File* GetSocket(int d);
+    File* GetEpoll(int d);
+    File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
 
 

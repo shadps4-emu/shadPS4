@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
+
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -13,20 +15,38 @@ namespace Libraries::Np::NpManager {
 
 static bool g_signed_in = false;
 static s32 g_active_requests = 0;
-static std::vector<OrbisNpRequestState> g_requests;
+static std::mutex g_request_mutex;
 
-s32 PS4_SYSV_ABI sceNpCreateRequest() {
-    LOG_DEBUG(Lib_NpManager, "called");
+// Internal types for storing request-related information
+enum class NpRequestState {
+    None = 0,
+    Ready = 1,
+    Aborted = 2,
+    Complete = 3,
+};
+
+struct NpRequest {
+    NpRequestState state;
+    bool async;
+    s32 result;
+};
+
+static std::vector<NpRequest> g_requests;
+
+s32 CreateNpRequest(bool async) {
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = 0;
     while (req_index < g_requests.size()) {
         // Find first nonexistant request
-        if (g_requests[req_index] == OrbisNpRequestState::None) {
+        if (g_requests[req_index].state == NpRequestState::None) {
             // There is no request at this index, set the index to ready then break.
-            g_requests[req_index] = OrbisNpRequestState::Ready;
+            g_requests[req_index].state = NpRequestState::Ready;
+            g_requests[req_index].async = async;
             break;
         }
         req_index++;
@@ -34,7 +54,8 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
 
     if (req_index == g_requests.size()) {
         // There are no requests to replace.
-        g_requests.emplace_back(OrbisNpRequestState::Ready);
+        NpRequest new_request{NpRequestState::Ready, async, 0};
+        g_requests.emplace_back(new_request);
     }
 
     // Offset by one, first returned ID is 0x20000001
@@ -42,69 +63,187 @@ s32 PS4_SYSV_ABI sceNpCreateRequest() {
     return req_index + ORBIS_NP_MANAGER_REQUEST_ID_OFFSET + 1;
 }
 
+s32 PS4_SYSV_ABI sceNpCreateRequest() {
+    LOG_DEBUG(Lib_NpManager, "called");
+    return CreateNpRequest(false);
+}
+
+s32 PS4_SYSV_ABI sceNpCreateAsyncRequest(const OrbisNpCreateAsyncRequestParameter* param) {
+    LOG_DEBUG(Lib_NpManager, "called");
+    if (param == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (param->size != sizeof(OrbisNpCreateAsyncRequestParameter)) {
+        return ORBIS_NP_ERROR_INVALID_SIZE;
+    }
+
+    return CreateNpRequest(true);
+}
+
 s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id) {
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
+              request.async);
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
                                            Libraries::UserService::OrbisUserServiceUserId user_id) {
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
+              request.async);
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCheckNpReachability(s32 req_id,
                                           Libraries::UserService::OrbisUserServiceUserId user_id) {
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}", req_id);
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
+              request.async);
+
+    request.result = ORBIS_OK;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpCheckPlus(s32 req_id, const OrbisNpCheckPlusParameter* param,
+                                OrbisNpCheckPlusResult* result) {
+
+    if (req_id == 0 || param == nullptr || result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (param->size != sizeof(OrbisNpCheckPlusParameter)) {
+        return ORBIS_NP_ERROR_INVALID_SIZE;
+    }
+
+    if (param->features < 1 || param->features > 3) {
+        // TODO: If compiled SDK version is greater or equal to fw 3.50,
+        // error if param->features != 1 instead.
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index].state == NpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
+    }
+
+    request.state = NpRequestState::Complete;
+    if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }
+
+    LOG_ERROR(Lib_NpManager,
+              "(STUBBED) called, req_id = {:#x}, is_async = {}, param.features = {:#x}", req_id,
+              request.async, param->features);
+
+    // For now, set authorized to true to signal PS+ access.
+    result->authorized = true;
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
@@ -114,23 +253,39 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
+              request.async);
+
     std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
@@ -141,23 +296,39 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
 
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, user_id = {}, is_async = {}",
+              req_id, user_id, request.async);
+
     std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
@@ -167,25 +338,41 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, is_async = {}", req_id,
+              request.async);
 
     // TODO: Add to config?
     *age = 13;
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called");
+
+    request.result = ORBIS_OK;
     return ORBIS_OK;
 }
 
@@ -196,38 +383,127 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
 
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
-    if (g_requests[req_index] == OrbisNpRequestState::Complete) {
+    auto& request = g_requests[req_index];
+    if (request.state == NpRequestState::Complete) {
+        request.result = ORBIS_NP_ERROR_INVALID_ARGUMENT;
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    } else if (request.state == NpRequestState::Aborted) {
+        request.result = ORBIS_NP_ERROR_ABORTED;
+        return ORBIS_NP_ERROR_ABORTED;
     }
 
-    g_requests[req_index] = OrbisNpRequestState::Complete;
+    request.state = NpRequestState::Complete;
     if (!g_signed_in) {
+        request.result = ORBIS_NP_ERROR_SIGNED_OUT;
+        // If the request is processed in some form, and it's an async request, then it returns OK.
+        if (request.async) {
+            return ORBIS_OK;
+        }
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
+
+    LOG_ERROR(Lib_NpManager, "(STUBBED) called, req_id = {:#x}, user_id = {}, is_async = {}",
+              req_id, user_id, request.async);
 
     // TODO: Add to config?
     *age = 13;
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
-    LOG_ERROR(Lib_NpManager, "(STUBBED) called, user_id = {}", user_id);
+
+    request.result = ORBIS_OK;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
+    LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index].state == NpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_requests[req_index].state == NpRequestState::Complete) {
+        // If the request is already complete, abort is ignored.
+        return ORBIS_OK;
+    }
+
+    g_requests[req_index].state = NpRequestState::Aborted;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
+    if (result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index].state == NpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (!g_requests[req_index].async || g_requests[req_index].state == NpRequestState::Ready) {
+        return ORBIS_NP_ERROR_INVALID_ID;
+    }
+
+    // Since we're not actually performing any sort of network request here,
+    // we can just set result based on the request and return.
+    *result = g_requests[req_index].result;
+    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
+    if (result == nullptr) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{g_request_mutex};
+
+    s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
+    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+        g_requests[req_index].state == NpRequestState::None) {
+        return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (!g_requests[req_index].async || g_requests[req_index].state == NpRequestState::Ready) {
+        return ORBIS_NP_ERROR_INVALID_ID;
+    }
+
+    // Since we're not actually performing any sort of network request here,
+    // we can just set result based on the request and return.
+    *result = g_requests[req_index].result;
+    LOG_WARNING(Lib_NpManager, "called req_id = {:#x}, returning result = {:#x}", req_id,
+                static_cast<u32>(*result));
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     LOG_DEBUG(Lib_NpManager, "called req_id = {:#x}", req_id);
+
+    std::scoped_lock lk{g_request_mutex};
+
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
     if (g_active_requests == 0 || g_requests.size() <= req_index ||
-        g_requests[req_index] == OrbisNpRequestState::None) {
+        g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
 
     g_active_requests--;
-    g_requests[req_index] = OrbisNpRequestState::None;
+    g_requests[req_index].state = NpRequestState::None;
     return ORBIS_OK;
 }
 
@@ -429,16 +705,22 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     g_signed_in = Config::getPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
+    LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);
     LIB_FUNCTION("2rsFmlGWleQ", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpAvailability);
     LIB_FUNCTION("8Z2Jc5GvGDI", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpAvailabilityA);
     LIB_FUNCTION("KfGZg2y73oM", "libSceNpManager", 1, "libSceNpManager", sceNpCheckNpReachability);
+    LIB_FUNCTION("r6MyYJkryz8", "libSceNpManager", 1, "libSceNpManager", sceNpCheckPlus);
     LIB_FUNCTION("KZ1Mj9yEGYc", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountLanguage);
     LIB_FUNCTION("TPMbgIxvog0", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountLanguageA);
     LIB_FUNCTION("ilwLM4zOmu4", "libSceNpManager", 1, "libSceNpManager",
                  sceNpGetParentalControlInfo);
     LIB_FUNCTION("m9L3O6yst-U", "libSceNpManager", 1, "libSceNpManager",
                  sceNpGetParentalControlInfoA);
+    LIB_FUNCTION("OzKvTvg3ZYU", "libSceNpManager", 1, "libSceNpManager", sceNpAbortRequest);
+    LIB_FUNCTION("jyi5p9XWUSs", "libSceNpManager", 1, "libSceNpManager", sceNpWaitAsync);
+    LIB_FUNCTION("uqcPJLWL08M", "libSceNpManager", 1, "libSceNpManager", sceNpPollAsync);
     LIB_FUNCTION("S7QTn72PrDw", "libSceNpManager", 1, "libSceNpManager", sceNpDeleteRequest);
+
     LIB_FUNCTION("Ghz9iWDUtC4", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountCountry);
     LIB_FUNCTION("JT+t00a3TxA", "libSceNpManager", 1, "libSceNpManager", sceNpGetAccountCountryA);
     LIB_FUNCTION("8VBTeRf1ZwI", "libSceNpManager", 1, "libSceNpManager",

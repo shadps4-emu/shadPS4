@@ -12,6 +12,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_trophy_error.h"
 #include "core/libraries/np/trophy_ui.h"
+#include "core/memory.h"
 
 namespace Libraries::Np::NpTrophy {
 
@@ -148,8 +149,8 @@ int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, int32_t user_id,
-                                          uint32_t service_label, uint64_t options) {
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, s32 user_id,
+                                          uint32_t service_label, u64 options) {
     ASSERT(options == 0ull);
     if (!context) {
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
@@ -230,9 +231,44 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
     return ORBIS_OK;
 }
 
+u64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = file.GetSize() - file.Tell();
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+
+    return file.ReadRaw<u8>(buf, nbytes);
+}
+
 int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                        void* buffer, size_t* size) {
-    LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
+                                        void* buffer, u64* size) {
+    ASSERT(size != nullptr);
+
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
+    const auto trophy_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    auto icon_file = trophy_dir / trophy_folder / "Icons" / "ICON0.PNG";
+
+    Common::FS::IOFile icon(icon_file, Common::FS::FileAccessMode::Read);
+    if (!icon.IsOpen()) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to open trophy icon file: {}", icon_file.string());
+        return ORBIS_NP_TROPHY_ERROR_ICON_FILE_NOT_FOUND;
+    }
+    u64 icon_size = icon.GetSize();
+
+    if (buffer != nullptr) {
+        ReadFile(icon, buffer, *size);
+    } else {
+        *size = icon_size;
+    }
     return ORBIS_OK;
 }
 
@@ -261,9 +297,18 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
     if (details->size != 0x4A0 || data->size != 0x20)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
+    auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
@@ -329,7 +374,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
 }
 
 int PS4_SYSV_ABI sceNpTrophyGetGroupIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                         OrbisNpTrophyGroupId groupId, void* buffer, size_t* size) {
+                                         OrbisNpTrophyGroupId groupId, void* buffer, u64* size) {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -359,9 +404,18 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
     if (details->size != 0x4A0 || data->size != 0x28)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
+    auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
@@ -436,7 +490,7 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
 }
 
 int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpTrophyHandle handle,
-                                          OrbisNpTrophyId trophyId, void* buffer, size_t* size) {
+                                          OrbisNpTrophyId trophyId, void* buffer, u64* size) {
     LOG_ERROR(Lib_NpTrophy, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -461,9 +515,18 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
     if (details->size != 0x498 || data->size != 0x18)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
+    auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
@@ -526,9 +589,18 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
 
     ORBIS_NP_TROPHY_FLAG_ZERO(flags);
 
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
+    auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
@@ -885,9 +957,18 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     if (platinumId == nullptr)
         return ORBIS_NP_TROPHY_ERROR_INVALID_ARGUMENT;
 
+    Common::SlotId contextId;
+    contextId.index = context - 1;
+    if (contextId.index >= trophy_contexts.size()) {
+        return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
+    }
+    ContextKey contextkey = trophy_contexts[contextId];
+    char trophy_folder[9];
+    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
+
     const auto trophy_dir =
         Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
-    auto trophy_file = trophy_dir / "trophy00" / "Xml" / "TROP.XML";
+    auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
@@ -955,7 +1036,7 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
                     trophy_icon_file.append(".PNG");
 
                     std::filesystem::path current_icon_path =
-                        trophy_dir / "trophy00" / "Icons" / trophy_icon_file;
+                        trophy_dir / trophy_folder / "Icons" / trophy_icon_file;
 
                     AddTrophyToQueue(current_icon_path, current_trophy_name, current_trophy_type);
                 }
@@ -992,14 +1073,14 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
             platinum_icon_file.append(".PNG");
 
             std::filesystem::path platinum_icon_path =
-                trophy_dir / "trophy00" / "Icons" / platinum_icon_file;
+                trophy_dir / trophy_folder / "Icons" / platinum_icon_file;
 
             *platinumId = platinum_trophy_id;
             AddTrophyToQueue(platinum_icon_path, platinum_trophy_name, "P");
         }
     }
 
-    doc.save_file((trophy_dir / "trophy00" / "Xml" / "TROP.XML").native().c_str());
+    doc.save_file((trophy_dir / trophy_folder / "Xml" / "TROP.XML").native().c_str());
 
     return ORBIS_OK;
 }

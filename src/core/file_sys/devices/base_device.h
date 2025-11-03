@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <core/libraries/kernel/orbis_error.h>
 #include "common/types.h"
 #include "common/va_ctx.h"
+#include "core/libraries/kernel/orbis_error.h"
 
 /**
  *
@@ -31,27 +31,27 @@ public:
 
     virtual ~BaseDevice() = 0;
 
-    virtual int ioctl(u64 cmd, Common::VaCtx* args) {
+    virtual s32 ioctl(u64 cmd, Common::VaCtx* args) {
         return ORBIS_KERNEL_ERROR_ENOTTY;
     }
 
-    virtual s64 write(const void* buf, size_t nbytes) {
+    virtual s64 write(const void* buf, u64 nbytes) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
+    virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
+    virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
+    virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual size_t pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, u64 offset) {
+    virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -59,11 +59,11 @@ public:
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual s64 read(void* buf, size_t nbytes) {
+    virtual s64 read(void* buf, u64 nbytes) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual int fstat(Libraries::Kernel::OrbisKernelStat* sb) {
+    virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -71,15 +71,15 @@ public:
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual int ftruncate(s64 length) {
+    virtual s32 ftruncate(s64 length) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual int getdents(void* buf, u32 nbytes, s64* basep) {
+    virtual s64 getdents(void* buf, u32 nbytes, s64* basep) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    virtual s64 pwrite(const void* buf, size_t nbytes, u64 offset) {
+    virtual s64 pwrite(const void* buf, u64 nbytes, s64 offset) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 };

@@ -17,6 +17,7 @@ class IDataStreamer {
 public:
     virtual ~IDataStreamer() = default;
     virtual bool Init(std::string_view path) = 0;
+    virtual void Reset() = 0;
     virtual AVIOContext* GetContext() = 0;
 };
 

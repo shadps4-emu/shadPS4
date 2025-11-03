@@ -89,6 +89,11 @@ public:
         return features.depthBounds;
     }
 
+    /// Returns true if 16-bit floats are supported in shaders
+    bool IsShaderFloat16Supported() const {
+        return vk12_features.shaderFloat16;
+    }
+
     /// Returns true if 64-bit floats are supported in shaders
     bool IsShaderFloat64Supported() const {
         return features.shaderFloat64;
@@ -232,6 +237,17 @@ public:
     bool IsWorkgroupMemoryExplicitLayoutSupported() const {
         return workgroup_memory_explicit_layout &&
                workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess;
+    }
+
+    /// Returns true if VK_NV_framebuffer_mixed_samples or
+    /// VK_AMD_mixed_attachment_samples is supported
+    bool IsMixedDepthSamplesSupported() const {
+        return nv_framebuffer_mixed_samples || amd_mixed_attachment_samples;
+    }
+
+    /// Returns true if VK_AMD_mixed_attachment_samples is supported
+    bool IsMixedAnySamplesSupported() const {
+        return amd_mixed_attachment_samples;
     }
 
     /// Returns true when geometry shaders are supported by the device
@@ -384,10 +400,14 @@ public:
         return properties.limits.maxFramebufferHeight;
     }
 
-    /// Returns the sample count flags supported by framebuffers.
-    vk::SampleCountFlags GetFramebufferSampleCounts() const {
-        return properties.limits.framebufferColorSampleCounts &
-               properties.limits.framebufferDepthSampleCounts &
+    /// Returns the sample count flags supported by color buffers.
+    vk::SampleCountFlags GetColorSampleCounts() const {
+        return properties.limits.framebufferColorSampleCounts;
+    }
+
+    /// Returns the sample count flags supported by depth buffer.
+    vk::SampleCountFlags GetDepthSampleCounts() const {
+        return properties.limits.framebufferDepthSampleCounts &
                properties.limits.framebufferStencilSampleCounts;
     }
 
@@ -476,6 +496,8 @@ private:
     bool image_load_store_lod{};
     bool amd_gcn_shader{};
     bool amd_shader_trinary_minmax{};
+    bool nv_framebuffer_mixed_samples{};
+    bool amd_mixed_attachment_samples{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};

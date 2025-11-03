@@ -6,7 +6,6 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
-#include "common/polyfill_thread.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -73,16 +72,15 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
     info.num_bits = 32;
     info.UpdateSize();
 
-    const ImageId null_id = slot_images.insert(instance, scheduler, info);
-    auto& img = slot_images[null_id];
-
-    const vk::Image& null_image = img.image;
-    Vulkan::SetObjectName(instance.GetDevice(), null_image,
+    const ImageId null_id =
+        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
+    auto& image = slot_images[null_id];
+    Vulkan::SetObjectName(instance.GetDevice(), image.GetImage(),
                           fmt::format("Null Image ({})", vk::to_string(format)));
 
-    img.flags = ImageFlagBits::Empty;
-    img.track_addr = img.info.guest_address;
-    img.track_addr_end = img.info.guest_address + img.info.guest_size;
+    image.flags = ImageFlagBits::Empty;
+    image.track_addr = image.info.guest_address;
+    image.track_addr_end = image.info.guest_address + image.info.guest_size;
 
     null_images.emplace(format, null_id);
     return null_id;
@@ -124,7 +122,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-    cmdbuf.copyImageToBuffer(image.image, vk::ImageLayout::eTransferSrcOptimal,
+    cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
                              download_buffer.Handle(), image_download);
 
     {
@@ -141,8 +139,8 @@ void TextureCache::DownloadedImagesThread(const std::stop_token& token) {
         DownloadedImage image;
         {
             std::unique_lock lock{downloaded_images_mutex};
-            Common::CondvarWait(downloaded_images_cv, lock, token,
-                                [this] { return !downloaded_images_queue.empty(); });
+            downloaded_images_cv.wait(lock, token,
+                                      [this] { return !downloaded_images_queue.empty(); });
             if (token.stop_requested()) {
                 break;
             }
@@ -213,7 +211,7 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
     std::scoped_lock lk{mutex};
 
-    boost::container::small_vector<ImageId, 16> deleted_images;
+    ImageIds deleted_images;
     ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
     for (const ImageId id : deleted_images) {
         // TODO: Download image data back to host.
@@ -269,7 +267,8 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     if (recreate) {
         auto new_info = requested_info;
         new_info.resources = std::max(requested_info.resources, cache_image.info.resources);
-        const auto new_image_id = slot_images.insert(instance, scheduler, new_info);
+        const auto new_image_id =
+            slot_images.insert(instance, scheduler, blit_helper, slot_image_views, new_info);
         RegisterImage(new_image_id);
 
         // Inherit image usage
@@ -290,7 +289,14 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
         } else if (cache_image.info.num_samples == 1 && new_info.props.is_depth &&
                    new_info.num_samples > 1) {
             // Perform a rendering pass to transfer the channels of source as samples in dest.
-            blit_helper.BlitColorToMsDepth(cache_image, new_image);
+            cache_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal,
+                                vk::AccessFlagBits2::eShaderRead, {});
+            new_image.Transit(vk::ImageLayout::eDepthAttachmentOptimal,
+                              vk::AccessFlagBits2::eDepthStencilAttachmentWrite, {});
+            blit_helper.ReinterpretColorAsMsDepth(
+                new_info.size.width, new_info.size.height, new_info.num_samples,
+                cache_image.info.pixel_format, new_info.pixel_format, cache_image.GetImage(),
+                new_image.GetImage());
         } else {
             LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
         }
@@ -308,15 +314,16 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                                            BindingType binding,
                                                            ImageId cache_image_id,
                                                            ImageId merged_image_id) {
-    auto& tex_cache_image = slot_images[cache_image_id];
-    // We can assume it is safe to delete the image if it wasn't accessed in some number of frames.
+    auto& cache_image = slot_images[cache_image_id];
     const bool safe_to_delete =
-        scheduler.CurrentTick() - tex_cache_image.tick_accessed_last > NumFramesBeforeRemoval;
+        scheduler.CurrentTick() - cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
-    if (image_info.guest_address == tex_cache_image.info.guest_address) { // Equal address
-        if (image_info.BlockDim() != tex_cache_image.info.BlockDim() ||
-            image_info.num_bits * image_info.num_samples !=
-                tex_cache_image.info.num_bits * tex_cache_image.info.num_samples) {
+    // Equal address
+    if (image_info.guest_address == cache_image.info.guest_address) {
+        const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
+        const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
+        if (image_info.BlockDim() != cache_image.info.BlockDim() ||
+            lhs_block_size != rhs_block_size) {
             // Very likely this kind of overlap is caused by allocation from a pool.
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
@@ -329,19 +336,19 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         }
 
         // Compressed view of uncompressed image with same block size.
-        if (image_info.props.is_block && !tex_cache_image.info.props.is_block) {
+        if (image_info.props.is_block && !cache_image.info.props.is_block) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
-        if (image_info.guest_size == tex_cache_image.info.guest_size &&
+        if (image_info.guest_size == cache_image.info.guest_size &&
             (image_info.type == AmdGpu::ImageType::Color3D ||
-             tex_cache_image.info.type == AmdGpu::ImageType::Color3D)) {
+             cache_image.info.type == AmdGpu::ImageType::Color3D)) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         // Size and resources are less than or equal, use image view.
-        if (image_info.pixel_format != tex_cache_image.info.pixel_format ||
-            image_info.guest_size <= tex_cache_image.info.guest_size) {
+        if (image_info.pixel_format != cache_image.info.pixel_format ||
+            image_info.guest_size <= cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
@@ -350,14 +357,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         }
 
         // Size and resources are greater, expand the image.
-        if (image_info.type == tex_cache_image.info.type &&
-            image_info.resources > tex_cache_image.info.resources) {
+        if (image_info.type == cache_image.info.type &&
+            image_info.resources > cache_image.info.resources) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         // Size is greater but resources are not, because the tiling mode is different.
         // Likely the address is reused for a image with a different tiling mode.
-        if (image_info.tile_mode != tex_cache_image.info.tile_mode) {
+        if (image_info.tile_mode != cache_image.info.tile_mode) {
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
@@ -368,9 +375,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
-    if (image_info.guest_address > tex_cache_image.info.guest_address) {
-        if (auto mip = image_info.MipOf(tex_cache_image.info); mip >= 0) {
-            if (auto slice = image_info.SliceOf(tex_cache_image.info, mip); slice >= 0) {
+    if (image_info.guest_address > cache_image.info.guest_address) {
+        if (auto mip = image_info.MipOf(cache_image.info); mip >= 0) {
+            if (auto slice = image_info.SliceOf(cache_image.info, mip); slice >= 0) {
                 return {cache_image_id, mip, slice};
             }
         }
@@ -383,12 +390,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         return {{}, -1, -1};
     } else {
         // Left overlap, the image from cache is a possible subresource of the image requested
-        if (auto mip = tex_cache_image.info.MipOf(image_info); mip >= 0) {
-            if (auto slice = tex_cache_image.info.SliceOf(image_info, mip); slice >= 0) {
+        if (auto mip = cache_image.info.MipOf(image_info); mip >= 0) {
+            if (auto slice = cache_image.info.SliceOf(image_info, mip); slice >= 0) {
                 // We have a larger image created and a separate one, representing a subres of it
                 // bound as render target. In this case we need to rebind render target.
-                if (tex_cache_image.binding.is_target) {
-                    tex_cache_image.binding.needs_rebind = 1u;
+                if (cache_image.binding.is_target) {
+                    cache_image.binding.needs_rebind = 1u;
                     if (merged_image_id) {
                         GetImage(merged_image_id).binding.is_target = 1u;
                     }
@@ -399,15 +406,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
                 // We need to have a larger, already allocated image to copy this one into
                 if (merged_image_id) {
-                    tex_cache_image.Transit(vk::ImageLayout::eTransferSrcOptimal,
-                                            vk::AccessFlagBits2::eTransferRead, {});
-
-                    const auto num_mips_to_copy = tex_cache_image.info.resources.levels;
-                    ASSERT(num_mips_to_copy == 1);
-
                     auto& merged_image = slot_images[merged_image_id];
-                    merged_image.CopyMip(tex_cache_image, mip, slice);
-
+                    merged_image.CopyMip(cache_image, mip, slice);
                     FreeImage(cache_image_id);
                 }
             }
@@ -418,7 +418,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
-    const auto new_image_id = slot_images.insert(instance, scheduler, info);
+    const auto new_image_id =
+        slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     RegisterImage(new_image_id);
 
     auto& src_image = slot_images[image_id];
@@ -438,7 +439,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     return new_image_id;
 }
 
-ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
+ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
 
     if (info.guest_address == 0) [[unlikely]] {
@@ -446,7 +447,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     }
 
     std::scoped_lock lock{mutex};
-    boost::container::small_vector<ImageId, 8> image_ids;
+    ImageIds image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
@@ -507,7 +508,7 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
     }
     // Create and register a new image
     if (!image_id) {
-        image_id = slot_images.insert(instance, scheduler, info);
+        image_id = slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
         RegisterImage(image_id);
     }
 
@@ -527,13 +528,12 @@ ImageId TextureCache::FindImage(BaseDesc& desc, bool exact_fmt) {
 }
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
-    boost::container::small_vector<ImageId, 4> image_ids;
+    ImageIds image_ids;
     ForEachImageInRegion(address, size, [&](ImageId image_id, Image& image) {
         if (image.info.guest_address != address) {
             return;
         }
-        if (ensure_valid && (False(image.flags & ImageFlagBits::GpuModified) ||
-                             True(image.flags & ImageFlagBits::Dirty))) {
+        if (ensure_valid && !image.SafeToDownload()) {
             return;
         }
         image_ids.push_back(image_id);
@@ -557,19 +557,7 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
     return {};
 }
 
-ImageView& TextureCache::RegisterImageView(ImageId image_id, const ImageViewInfo& view_info) {
-    Image& image = slot_images[image_id];
-    if (const ImageViewId view_id = image.FindView(view_info); view_id) {
-        return slot_image_views[view_id];
-    }
-
-    const ImageViewId view_id = slot_image_views.insert(instance, view_info, image, image_id);
-    image.image_view_infos.emplace_back(view_info);
-    image.image_view_ids.emplace_back(view_id);
-    return slot_image_views[view_id];
-}
-
-ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
+ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
@@ -579,13 +567,15 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const BaseDesc& desc) {
         }
     }
     UpdateImage(image_id);
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info);
 }
 
-ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
-    const ImageId image_id = FindImage(desc);
+ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
+    if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
+        download_images.emplace(image_id);
+    }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
 
@@ -602,15 +592,13 @@ ImageView& TextureCache::FindRenderTarget(BaseDesc& desc) {
         image.info.meta_info.fmask_addr = desc.info.meta_info.fmask_addr;
     }
 
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info, false);
 }
 
-ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
-    const ImageId image_id = FindImage(desc);
+ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
-    image.usage.stencil = image.info.props.has_stencil;
     UpdateImage(image_id);
 
     // Register meta data for this depth buffer
@@ -635,7 +623,8 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
             info.guest_address = desc.info.stencil_addr;
             info.guest_size = desc.info.stencil_size;
             info.size = desc.info.size;
-            stencil_id = slot_images.insert(instance, scheduler, info);
+            stencil_id =
+                slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
             RegisterImage(stencil_id);
         }
         Image& image = slot_images[stencil_id];
@@ -643,10 +632,10 @@ ImageView& TextureCache::FindDepthTarget(BaseDesc& desc) {
         image.AssociateDepth(image_id);
     }
 
-    return RegisterImageView(image_id, desc.view_info);
+    return image.FindView(desc.view_info, false);
 }
 
-void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_scheduler /*= nullptr*/) {
+void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
@@ -671,14 +660,12 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         image.hash = hash;
     }
 
-    const auto& num_layers = image.info.resources.layers;
-    const auto& num_mips = image.info.resources.levels;
-    ASSERT(num_mips == image.info.mips_layout.size());
-
+    const u32 num_layers = image.info.resources.layers;
+    const u32 num_mips = image.info.resources.levels;
     const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
     const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
-    boost::container::small_vector<vk::BufferImageCopy, 14> image_copy{};
+    boost::container::small_vector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
@@ -698,7 +685,7 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
 
         const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
         const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
-        image_copy.push_back({
+        image_copies.push_back({
             .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
             .bufferImageHeight = mip_height,
@@ -713,21 +700,18 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
         });
     }
 
-    if (image_copy.empty()) {
+    if (image_copies.empty()) {
         image.flags &= ~ImageFlagBits::Dirty;
         return;
     }
 
-    auto* sched_ptr = custom_scheduler ? custom_scheduler : &scheduler;
-    sched_ptr->EndRendering();
+    scheduler.EndRendering();
 
-    const VAddr image_addr = image.info.guest_address;
-    const size_t image_size = image.info.guest_size;
-    const auto [in_buffer, in_offset] = buffer_cache.ObtainBufferForImage(image_addr, image_size);
+    const auto [in_buffer, in_offset] =
+        buffer_cache.ObtainBufferForImage(image.info.guest_address, image.info.guest_size);
     if (auto barrier = in_buffer->GetBarrier(vk::AccessFlagBits2::eTransferRead,
                                              vk::PipelineStageFlagBits2::eTransfer)) {
-        const auto cmdbuf = sched_ptr->CommandBuffer();
-        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        scheduler.CommandBuffer().pipelineBarrier2(vk::DependencyInfo{
             .dependencyFlags = vk::DependencyFlagBits::eByRegion,
             .bufferMemoryBarrierCount = 1,
             .pBufferMemoryBarriers = &barrier.value(),
@@ -735,53 +719,16 @@ void TextureCache::RefreshImage(Image& image, Vulkan::Scheduler* custom_schedule
     }
 
     const auto [buffer, offset] =
-        !custom_scheduler ? tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info)
-                          : std::make_pair(in_buffer->Handle(), in_offset);
-    for (auto& copy : image_copy) {
+        tile_manager.DetileImage(in_buffer->Handle(), in_offset, image.info);
+    for (auto& copy : image_copies) {
         copy.bufferOffset += offset;
     }
 
-    const vk::BufferMemoryBarrier2 pre_barrier{
-        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .srcAccessMask = vk::AccessFlagBits2::eMemoryWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .dstAccessMask = vk::AccessFlagBits2::eTransferRead,
-        .buffer = buffer,
-        .offset = offset,
-        .size = image_size,
-    };
-    const vk::BufferMemoryBarrier2 post_barrier{
-        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
-        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
-        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
-        .buffer = buffer,
-        .offset = offset,
-        .size = image_size,
-    };
-    const auto image_barriers =
-        image.GetBarriers(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite,
-                          vk::PipelineStageFlagBits2::eTransfer, {});
-    const auto cmdbuf = sched_ptr->CommandBuffer();
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &pre_barrier,
-        .imageMemoryBarrierCount = static_cast<u32>(image_barriers.size()),
-        .pImageMemoryBarriers = image_barriers.data(),
-    });
-    cmdbuf.copyBufferToImage(buffer, image.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
-    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
-        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-        .bufferMemoryBarrierCount = 1,
-        .pBufferMemoryBarriers = &post_barrier,
-    });
-    image.flags &= ~ImageFlagBits::Dirty;
+    image.Upload(image_copies, buffer, offset);
 }
 
-vk::Sampler TextureCache::GetSampler(
-    const AmdGpu::Sampler& sampler,
-    const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base) {
+vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
+                                     AmdGpu::BorderColorBuffer border_color_base) {
     const u64 hash = XXH3_64bits(&sampler, sizeof(sampler));
     const auto [it, new_sampler] = samplers.try_emplace(hash, instance, sampler, border_color_base);
     return it->second.Handle();
@@ -1020,8 +967,10 @@ void TextureCache::DeleteImage(ImageId image_id) {
     // Reclaim image and any image views it references.
     scheduler.DeferOperation([this, image_id] {
         Image& image = slot_images[image_id];
-        for (const ImageViewId image_view_id : image.image_view_ids) {
-            slot_image_views.erase(image_view_id);
+        for (auto& backing : image.backing_images) {
+            for (const ImageViewId image_view_id : backing.image_view_ids) {
+                slot_image_views.erase(image_view_id);
+            }
         }
         slot_images.erase(image_id);
     });

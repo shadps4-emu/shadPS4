@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -30,7 +30,8 @@ namespace Core {
 enum class MemoryProt : u32 {
     NoAccess = 0,
     CpuRead = 1,
-    CpuReadWrite = 2,
+    CpuWrite = 2,
+    CpuReadWrite = 3,
     CpuExec = 4,
     GpuRead = 16,
     GpuWrite = 32,
@@ -43,12 +44,20 @@ enum class MemoryMapFlags : u32 {
     Shared = 1,
     Private = 2,
     Fixed = 0x10,
-    NoOverwrite = 0x0080,
+    NoOverwrite = 0x80,
     NoSync = 0x800,
     NoCore = 0x20000,
     NoCoalesce = 0x400000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
+
+enum class DMAType : u32 {
+    Free = 0,
+    Allocated = 1,
+    Mapped = 2,
+    Pooled = 3,
+    Committed = 4,
+};
 
 enum class VMAType : u32 {
     Free = 0,
@@ -66,8 +75,7 @@ struct DirectMemoryArea {
     PAddr base = 0;
     u64 size = 0;
     s32 memory_type = 0;
-    bool is_pooled = false;
-    bool is_free = true;
+    DMAType dma_type = DMAType::Free;
 
     PAddr GetEnd() const {
         return base + size;
@@ -78,6 +86,26 @@ struct DirectMemoryArea {
             return false;
         }
         if (memory_type != next.memory_type) {
+            return false;
+        }
+        if (dma_type != next.dma_type) {
+            return false;
+        }
+        return true;
+    }
+};
+
+struct FlexibleMemoryArea {
+    PAddr base = 0;
+    u64 size = 0;
+    bool is_free = true;
+
+    PAddr GetEnd() const {
+        return base + size;
+    }
+
+    bool CanMergeWith(const FlexibleMemoryArea& next) const {
+        if (base + size != next.base) {
             return false;
         }
         if (is_free != next.is_free) {
@@ -117,7 +145,8 @@ struct VirtualMemoryArea {
         if (base + size != next.base) {
             return false;
         }
-        if (type == VMAType::Direct && phys_base + size != next.phys_base) {
+        if ((type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::Pooled) &&
+            phys_base + size != next.phys_base) {
             return false;
         }
         if (prot != next.prot || type != next.type) {
@@ -130,6 +159,9 @@ struct VirtualMemoryArea {
 class MemoryManager {
     using DMemMap = std::map<PAddr, DirectMemoryArea>;
     using DMemHandle = DMemMap::iterator;
+
+    using FMemMap = std::map<PAddr, FlexibleMemoryArea>;
+    using FMemHandle = FMemMap::iterator;
 
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
     using VMAHandle = VMAMap::iterator;
@@ -168,11 +200,40 @@ public:
         return virtual_addr + size < max_gpu_address;
     }
 
-    bool IsValidAddress(const void* addr) const noexcept {
-        const VAddr virtual_addr = reinterpret_cast<VAddr>(addr);
+    bool IsValidMapping(const VAddr virtual_addr, const u64 size = 0) {
         const auto end_it = std::prev(vma_map.end());
         const VAddr end_addr = end_it->first + end_it->second.size;
-        return virtual_addr >= vma_map.begin()->first && virtual_addr < end_addr;
+
+        // If the address fails boundary checks, return early.
+        if (virtual_addr < vma_map.begin()->first || virtual_addr >= end_addr) {
+            return false;
+        }
+
+        // If size is zero and boundary checks succeed, then skip more robust checking
+        if (size == 0) {
+            return true;
+        }
+
+        // Now make sure the full address range is contained in vma_map.
+        auto vma_handle = FindVMA(virtual_addr);
+        auto addr_to_check = virtual_addr;
+        s64 size_to_validate = size;
+        while (vma_handle != vma_map.end() && size_to_validate > 0) {
+            const auto offset_in_vma = addr_to_check - vma_handle->second.base;
+            const auto size_in_vma = vma_handle->second.size - offset_in_vma;
+            size_to_validate -= size_in_vma;
+            addr_to_check += size_in_vma;
+            vma_handle++;
+
+            // Make sure there isn't any gap here
+            if (size_to_validate > 0 && vma_handle != vma_map.end() &&
+                addr_to_check != vma_handle->second.base) {
+                return false;
+            }
+        }
+
+        // If we reach this point and size to validate is not positive, then this mapping is valid.
+        return size_to_validate <= 0;
     }
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
@@ -191,11 +252,11 @@ public:
 
     void Free(PAddr phys_addr, u64 size);
 
-    s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot);
+    s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
-                  bool is_exec = false, PAddr phys_addr = -1, u64 alignment = 0);
+                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
@@ -208,7 +269,7 @@ public:
 
     s32 Protect(VAddr addr, u64 size, MemoryProt prot);
 
-    s64 ProtectBytes(VAddr addr, VirtualMemoryArea vma_base, u64 size, MemoryProt prot);
+    s64 ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 size, MemoryProt prot);
 
     s32 VirtualQuery(VAddr addr, s32 flags, ::Libraries::Kernel::OrbisVirtualQueryInfo* info);
 
@@ -223,9 +284,11 @@ public:
 
     s32 IsStack(VAddr addr, void** start, void** end);
 
-    s32 SetDirectMemoryType(s64 phys_addr, s32 memory_type);
+    s32 SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type);
 
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
+
+    s32 GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
 
@@ -236,6 +299,10 @@ private:
 
     DMemHandle FindDmemArea(PAddr target) {
         return std::prev(dmem_map.upper_bound(target));
+    }
+
+    FMemHandle FindFmemArea(PAddr target) {
+        return std::prev(fmem_map.upper_bound(target));
     }
 
     template <typename Handle>
@@ -258,15 +325,24 @@ private:
         return iter;
     }
 
-    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment = 0);
+    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
+               vma.type == VMAType::Pooled;
+    }
+
+    VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
     DMemHandle CarveDmemArea(PAddr addr, u64 size);
 
+    FMemHandle CarveFmemArea(PAddr addr, u64 size);
+
     VMAHandle Split(VMAHandle vma_handle, u64 offset_in_vma);
 
     DMemHandle Split(DMemHandle dmem_handle, u64 offset_in_area);
+
+    FMemHandle Split(FMemHandle fmem_handle, u64 offset_in_area);
 
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
@@ -275,6 +351,7 @@ private:
 private:
     AddressSpace impl;
     DMemMap dmem_map;
+    FMemMap fmem_map;
     VMAMap vma_map;
     std::mutex mutex;
     u64 total_direct_size{};

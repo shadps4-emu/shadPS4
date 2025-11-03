@@ -91,18 +91,6 @@
 	path = externals/libpng
 	url = https://github.com/pnggroup/libpng
 	shallow = true
-[submodule "externals/MoltenVK/SPIRV-Cross"]
-	path = externals/MoltenVK/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross
-	shallow = true
-[submodule "externals/MoltenVK/MoltenVK"]
-	path = externals/MoltenVK/MoltenVK
-	url = https://github.com/KhronosGroup/MoltenVK
-	shallow = true
-[submodule "externals/MoltenVK/cereal"]
-	path = externals/MoltenVK/cereal
-	url = https://github.com/USCiLab/cereal
-	shallow = true
 [submodule "externals/ext-libusb"]
 	path = externals/ext-libusb
 	url = https://github.com/shadps4-emu/ext-libusb.git
@@ -113,3 +101,15 @@
 	path = externals/hwinfo
 	url = https://github.com/shadps4-emu/ext-hwinfo
 	shallow = true
+[submodule "externals/ext-wepoll"]
+	path = externals/ext-wepoll
+	url = https://github.com/shadps4-emu/ext-wepoll.git
+	shallow = true
+	branch = dist
+[submodule "externals/MoltenVK"]
+	path = externals/MoltenVK
+	url = https://github.com/KhronosGroup/MoltenVK.git
+	shallow = true
+[submodule "externals/json"]
+	path = externals/json
+	url = https://github.com/nlohmann/json.git

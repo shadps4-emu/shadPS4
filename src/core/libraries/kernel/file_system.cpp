@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ranges>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/error.h"
@@ -11,6 +12,16 @@
 #include "common/singleton.h"
 
 #include "core/file_sys/fs.h"
+#include "core/file_sys/devices/console_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
+#include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/rng_device.h"
+#include "core/file_sys/devices/srandom_device.h"
+#include "core/file_sys/directories/normal_directory.h"
+#include "core/file_sys/directories/pfs_directory.h"
+
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -32,6 +43,37 @@ namespace D = Core::Devices;
 namespace qfs = QuasiFS;
 
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
+// #define GET_DEVICE_FD(fd)                                                                          \
+//     [](u32, const char*, int, u16) {                                                               \
+//         return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
+//     }
+
+// // prefix path, only dev devices
+// static std::map<std::string, FactoryDevice> available_device = {
+//     // clang-format off
+//     {"/dev/stdin", GET_DEVICE_FD(0)},
+//     {"/dev/stdout", GET_DEVICE_FD(1)},
+//     {"/dev/stderr", GET_DEVICE_FD(2)},
+
+//     {"/dev/fd/0", GET_DEVICE_FD(0)},
+//     {"/dev/fd/1", GET_DEVICE_FD(1)},
+//     {"/dev/fd/2", GET_DEVICE_FD(2)},
+
+//     {"/dev/deci_stdin", GET_DEVICE_FD(0)},
+//     {"/dev/deci_stdout", GET_DEVICE_FD(1)},
+//     {"/dev/deci_stderr", GET_DEVICE_FD(2)},
+
+//     {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
+
+//     {"/dev/urandom",  &D::URandomDevice::Create },
+//     {"/dev/random",   &D::RandomDevice::Create },
+//     {"/dev/srandom",  &D::SRandomDevice::Create },
+//     {"/dev/console",  &D::ConsoleDevice::Create },
+//     {"/dev/deci_tty6",&D::DeciTty6Device::Create },
+//     {"/dev/rng",      &D::RngDevice::Create },
+//     // clang-format on
+// };
 
 namespace Libraries::Kernel {
 
@@ -366,6 +408,46 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         *__Error() = -result;
         return -1;
     }
+    return ORBIS_OK;
+
+    // switch (file->type) {
+    // case Core::FileSys::FileType::Device: {
+    //     s32 result = file->device->fstat(sb);
+    //     if (result < 0) {
+    //         ErrSceToPosix(result);
+    //         return -1;
+    //     }
+    //     return result;
+    // }
+    // case Core::FileSys::FileType::Regular: {
+    //     sb->st_mode = 0000777u | 0100000u;
+    //     sb->st_size = file->f.GetSize();
+    //     sb->st_blksize = 512;
+    //     sb->st_blocks = (sb->st_size + 511) / 512;
+    //     // TODO incomplete
+    //     break;
+    // }
+    // case Core::FileSys::FileType::Directory: {
+    //     s32 result = file->directory->fstat(sb);
+    //     if (result < 0) {
+    //         ErrSceToPosix(result);
+    //         return -1;
+    //     }
+    //     return result;
+    // }
+    // case Core::FileSys::FileType::Socket: {
+    //     // Socket functions handle errnos internally
+    //     return file->socket->fstat(sb);
+    // }
+    // case Core::FileSys::FileType::Epoll:
+    // case Core::FileSys::FileType::Resolver: {
+    //     LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}",
+    //     magic_enum::enum_name(file->type.load())); break;
+    // }
+    // default:
+    //     UNREACHABLE_MSG("{}", u32(file->type.load()));
+
+    // }
 
     // sb->st_dev = st.st_dev;
     // sb->st_ino = st.st_ino;
@@ -384,8 +466,6 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     //  sb-> st_gen=st.st_
     //  sb-> st_lspare=st.st_
     // OrbisKernelTimespec st_birthtim;
-
-    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_fstat(s32 fd, OrbisKernelStat* sb) {

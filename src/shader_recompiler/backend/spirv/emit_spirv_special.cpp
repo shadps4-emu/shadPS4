@@ -98,11 +98,11 @@ void EmitEmitPrimitive(EmitContext& ctx) {
 }
 
 void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+    UNREACHABLE_MSG("Geometry streams");
 }
 
 void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+    UNREACHABLE_MSG("Geometry streams");
 }
 
 void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, Id arg2, Id arg3) {

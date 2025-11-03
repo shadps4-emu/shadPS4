@@ -231,6 +231,8 @@ if (APPLE)
 
     # MoltenVK
     if (NOT TARGET MoltenVK)
+        set(MVK_EXCLUDE_SPIRV_TOOLS ON)
+        set(MVK_USE_METAL_PRIVATE_API ON)
         add_subdirectory(MoltenVK)
     endif()
 
@@ -238,3 +240,12 @@ if (APPLE)
         add_subdirectory(epoll-shim)
     endif()
 endif()
+
+#windows only
+if (WIN32)
+add_subdirectory(ext-wepoll)
+endif()
+
+#nlohmann json 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(json)

@@ -19,17 +19,21 @@ namespace Libraries::AvPlayer {
 
 class AvPlayer {
 public:
-    AvPlayer(const SceAvPlayerInitData& data);
+    AvPlayer(const AvPlayerInitData& data);
 
-    s32 PostInit(const SceAvPlayerPostInitData& data);
+    s32 PostInit(const AvPlayerPostInitData& data);
     s32 AddSource(std::string_view filename);
+    s32 AddSourceEx(std::string_view path, AvPlayerSourceType source_type);
     s32 GetStreamCount();
-    s32 GetStreamInfo(u32 stream_index, SceAvPlayerStreamInfo& info);
+    s32 GetStreamInfo(u32 stream_index, AvPlayerStreamInfo& info);
     s32 EnableStream(u32 stream_index);
     s32 Start();
-    bool GetAudioData(SceAvPlayerFrameInfo& audio_info);
-    bool GetVideoData(SceAvPlayerFrameInfo& video_info);
-    bool GetVideoData(SceAvPlayerFrameInfoEx& video_info);
+    s32 Pause();
+    s32 Resume();
+    s32 SetAvSyncMode(AvPlayerAvSyncMode sync_mode);
+    bool GetAudioData(AvPlayerFrameInfo& audio_info);
+    bool GetVideoData(AvPlayerFrameInfo& video_info);
+    bool GetVideoData(AvPlayerFrameInfoEx& video_info);
     bool IsActive();
     u64 CurrentTime();
     s32 Stop();
@@ -48,13 +52,12 @@ private:
     static int PS4_SYSV_ABI ReadOffsetFile(void* handle, u8* buffer, u64 position, u32 length);
     static u64 PS4_SYSV_ABI SizeFile(void* handle);
 
-    SceAvPlayerInitData StubInitData(const SceAvPlayerInitData& data);
+    AvPlayerInitData StubInitData(const AvPlayerInitData& data);
 
-    SceAvPlayerInitData m_init_data{};
-    SceAvPlayerInitData m_init_data_original{};
+    AvPlayerInitData m_init_data{};
+    AvPlayerInitData m_init_data_original{};
     std::mutex m_file_io_mutex{};
 
-    std::atomic_bool m_has_source{};
     std::unique_ptr<AvPlayerState> m_state{};
 };
 
