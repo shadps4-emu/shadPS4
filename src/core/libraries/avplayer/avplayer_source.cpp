@@ -50,7 +50,8 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
         std::filesystem::path filepath{};
         qfs->GetHostPath(filepath, path);
         // may get funky with char/wchar path on *dows
-        if (AVPLAYER_IS_ERROR(avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
+        if (AVPLAYER_IS_ERROR(
+                avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
             return false;
         }
     }

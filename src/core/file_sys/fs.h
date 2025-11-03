@@ -102,7 +102,6 @@ public:
     File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
 
-
 private:
     std::vector<File*> m_files;
     std::mutex m_mutex;

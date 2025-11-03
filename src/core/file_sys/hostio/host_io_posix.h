@@ -6,8 +6,8 @@
 
 #include <sys/fcntl.h>
 
-#include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "core/file_sys/quasifs/quasi_types.h"
 #include "core/libraries/kernel/file_system.h"
 #include "src/host_io_base.h"
 
@@ -86,7 +86,7 @@ public:
     int Link(const fs::path& src, const fs::path& dst) override;
     int Unlink(const fs::path& path) override;
     int LinkSymbolic(const fs::path& src, const fs::path& dst) override;
-   
+
     int Flush(const int fd) override;
     int FSync(const int fd) override;
     u64 LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) override;

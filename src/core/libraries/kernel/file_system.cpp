@@ -11,7 +11,6 @@
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 
-#include "core/file_sys/fs.h"
 #include "core/file_sys/devices/console_device.h"
 #include "core/file_sys/devices/deci_tty6_device.h"
 #include "core/file_sys/devices/logger.h"
@@ -21,6 +20,7 @@
 #include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/directories/normal_directory.h"
 #include "core/file_sys/directories/pfs_directory.h"
+#include "core/file_sys/fs.h"
 
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
