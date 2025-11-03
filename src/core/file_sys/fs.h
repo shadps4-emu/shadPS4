@@ -68,7 +68,6 @@ private:
 
 enum class FileType {
     Regular, // standard file
-    Directory,
     Device,
     Socket,
     Epoll,
@@ -82,10 +81,9 @@ struct File {
     std::string m_guest_name;
     Common::FS::IOFile f;
     std::mutex m_mutex;
-    std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
-    std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
-    std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
-    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
+    std::shared_ptr<Libraries::Net::Socket> socket;     // only valid for type == Socket
+    std::shared_ptr<Libraries::Net::Epoll> epoll;       // only valid for type == Epoll
+    std::shared_ptr<Libraries::Net::Resolver> resolver; // only valid for type == Resolver
 };
 
 class HandleTable {
