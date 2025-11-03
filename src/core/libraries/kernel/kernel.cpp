@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "common/va_ctx.h"
 #include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/debug.h"
 #include "core/libraries/kernel/equeue.h"
@@ -189,20 +190,23 @@ s32 PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 }
 
 s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
+    LOG_WARNING(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X}", fd, cmd);
+
+    QuasiFS::QFS* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+    QuasiFS::fd_handle_ptr f = qfs->GetHandle(fd);
+
+    if (nullptr == f->node) {
         g_posix_errno = POSIX_EBADF;
         return -1;
     }
-    if (file->type != Core::FileSys::FileType::Device) {
-        LOG_WARNING(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file->type != Device", fd, cmd);
-        g_posix_errno = ENOTTY;
+
+    if (!f->node->is_block()) {
+        g_posix_errno = POSIX_ENOTTY;
         return -1;
     }
+
     VA_CTX(ctx);
-    s32 result = file->device->ioctl(cmd, &ctx);
+    s32 result = f->node->ioctl(cmd, &ctx);
     LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
     if (result < 0) {
         ErrSceToPosix(result);

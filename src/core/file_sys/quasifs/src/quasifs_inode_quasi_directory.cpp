@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 
-#include "../quasi_errno.h"
+#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 
 namespace QuasiFS {

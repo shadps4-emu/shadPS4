@@ -4,10 +4,9 @@
 
 #include "common/logging/log.h"
 
-#include "../quasi_errno.h"
-#include "../quasi_sys_fcntl.h"
-#include "../quasi_types.h"
-
+#include "core/file_sys/quasifs/quasi_errno.h"
+#include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
@@ -16,7 +15,7 @@
 
 namespace QuasiFS {
 
-int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
+s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     Resolved res;
     // Resolve for parent dir to avoid treating ENOENT as missing just the end file
     int resolve_status = qfs.Resolve(path, res);
@@ -110,11 +109,11 @@ int QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     return next_free_handle;
 }
 
-int QFS::OperationImpl::Creat(const fs::path& path, u16 mode) {
+s32 QFS::OperationImpl::Creat(const fs::path& path, u16 mode) {
     return Open(path, QUASI_O_CREAT | QUASI_O_WRONLY | QUASI_O_TRUNC, mode);
 };
 
-int QFS::OperationImpl::Close(s32 fd) {
+s32 QFS::OperationImpl::Close(s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -138,7 +137,7 @@ int QFS::OperationImpl::Close(s32 fd) {
     return 0;
 }
 
-int QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     Resolved src_res;
     Resolved dst_res;
     int status_what = qfs.Resolve(src, src_res);
@@ -201,7 +200,7 @@ int QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     return vio_status;
 }
 
-int QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
+s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     Resolved src_res;
     Resolved dst_res;
     int status_what = qfs.Resolve(src, src_res);
@@ -258,7 +257,7 @@ int QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     return vio_status;
 }
 
-int QFS::OperationImpl::Unlink(const fs::path& path) {
+s32 QFS::OperationImpl::Unlink(const fs::path& path) {
     Resolved res;
     int resolve_status;
 
@@ -318,7 +317,7 @@ int QFS::OperationImpl::Unlink(const fs::path& path) {
     return vio_status;
 }
 
-int QFS::OperationImpl::Flush(const s32 fd) {
+s32 QFS::OperationImpl::Flush(const s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -349,7 +348,7 @@ int QFS::OperationImpl::Flush(const s32 fd) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FSync(const s32 fd) {
+s32 QFS::OperationImpl::FSync(const s32 fd) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -380,7 +379,7 @@ int QFS::OperationImpl::FSync(const s32 fd) {
     return vio_status;
 };
 
-int QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
+s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
     Resolved res;
     int status = qfs.Resolve(path, res);
 
@@ -417,7 +416,7 @@ int QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
+s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -450,7 +449,7 @@ int QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     return vio_status;
 }
 
-u64 QFS::OperationImpl::LSeek(const s32 fd, u64 offset, SeekOrigin origin) {
+s64 QFS::OperationImpl::LSeek(const s32 fd, u64 offset, SeekOrigin origin) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -616,7 +615,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
     return vio_status;
 };
 
-int QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
+s32 QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
     Resolved res;
     int resolve_status = qfs.Resolve(path, res);
 
@@ -661,7 +660,7 @@ int QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
     return vio_status;
 }
 
-int QFS::OperationImpl::RMDir(const fs::path& path) {
+s32 QFS::OperationImpl::RMDir(const fs::path& path) {
     Resolved res;
     int status = qfs.Resolve(path, res);
 
@@ -696,7 +695,7 @@ int QFS::OperationImpl::RMDir(const fs::path& path) {
     return status;
 }
 
-int QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
     Resolved res;
     int resolve_status = qfs.Resolve(path, res);
 
@@ -753,7 +752,7 @@ int QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
     return vio_status;
 }
 
-int QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;
@@ -797,7 +796,7 @@ int QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* 
     return vio_status;
 }
 
-int QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
+s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
     Resolved res;
     int resolve_status = qfs.Resolve(path, res);
 
@@ -835,7 +834,7 @@ int QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
     return vio_status;
 }
 
-int QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
+s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
         return -QUASI_EBADF;

@@ -10,11 +10,11 @@ namespace Core::Devices {
 NullDevice::NullDevice() = default;
 NullDevice::~NullDevice() = default;
 
-s64 NullDevice::pread(void* buf, size_t count, s64 offset) {
+s64 NullDevice::read(void* buf, u64 count) {
     return 0;
 }
 
-s64 NullDevice::pwrite(const void* buf, size_t count, s64 offset) {
+s64 NullDevice::write(const void* buf, u64 count) {
     return count;
 }
 

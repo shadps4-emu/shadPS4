@@ -655,8 +655,6 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
             src/core/file_sys/quasifs/src/quasifs_partition.cpp
 
-            src/core/file_sys/devices/base_device.cpp
-            src/core/file_sys/devices/base_device.h
             src/core/file_sys/devices/console_device.cpp
             src/core/file_sys/devices/console_device.h
             src/core/file_sys/devices/deci_tty6_device.cpp
@@ -671,6 +669,8 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/devices/random_device.h
             src/core/file_sys/devices/srandom_device.cpp
             src/core/file_sys/devices/srandom_device.h
+            src/core/file_sys/devices/rng_device.cpp
+            src/core/file_sys/devices/rng_device.h
             src/core/file_sys/devices/zero_device.cpp
             src/core/file_sys/devices/zero_device.h
 )

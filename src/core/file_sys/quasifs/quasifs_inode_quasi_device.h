@@ -21,6 +21,9 @@ public:
             return std::make_shared<T>(std::forward<Args>(args)...);
         UNREACHABLE();
     }
+
+    s64 pread(void* buf, u64 count, s64 offset) override;
+    s64 pwrite(const void* buf, u64 count, s64 offset) override;
 };
 
 } // namespace QuasiFS

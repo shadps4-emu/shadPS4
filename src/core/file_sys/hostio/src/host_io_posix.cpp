@@ -2,73 +2,72 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <dirent.h>
 
+#include <dirent.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/unistd.h>
 
-#include "../../quasifs/quasi_types.h"
+#include "core/file_sys/hostio/host_io_posix.h"
+#include "core/file_sys/quasifs/quasi_types.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
 
-#include "../../quasifs/quasifs_inode_quasi_device.h"
-#include "../../quasifs/quasifs_inode_quasi_directory.h"
-#include "../../quasifs/quasifs_inode_quasi_file.h"
-#include "../../quasifs/quasifs_inode_symlink.h"
-#include "../../quasifs/quasifs_partition.h"
-
-#include "../host_io_posix.h"
 #include "host_io_base.h"
 
 namespace HostIODriver {
 
-int HostIO_POSIX::Open(const fs::path& path, int flags, u16 mode) {
+s32 HostIO_POSIX::Open(const fs::path& path, int flags, u16 mode) {
     errno = 0;
     int status = open(path.c_str(), ToPOSIXOpenFlags(flags), ToPOSIXOpenMode(mode));
     return status >= 0 ? status : -errno;
 }
 
-int HostIO_POSIX::Creat(const fs::path& path, u16 mode) {
+s32 HostIO_POSIX::Creat(const fs::path& path, u16 mode) {
     errno = 0;
     int status = creat(path.c_str(), ToPOSIXOpenMode(mode));
     return status >= 0 ? status : -errno;
 }
 
-int HostIO_POSIX::Close(const int fd) {
+s32 HostIO_POSIX::Close(const int fd) {
     errno = 0;
     int status = close(fd);
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::Link(const fs::path& src, const fs::path& dst) {
+s32 HostIO_POSIX::Link(const fs::path& src, const fs::path& dst) {
     errno = 0;
     int status = link(src.c_str(), dst.c_str());
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::Unlink(const fs::path& path) {
+s32 HostIO_POSIX::Unlink(const fs::path& path) {
     errno = 0;
     int status = unlink(path.c_str());
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+s32 HostIO_POSIX::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     errno = 0;
     int status = symlink(src.c_str(), dst.c_str());
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::Flush(const int fd) {
+s32 HostIO_POSIX::Flush(const int fd) {
     errno = 0;
     return 0;
 }
 
-int HostIO_POSIX::FSync(const int fd) {
+s32 HostIO_POSIX::FSync(const int fd) {
     errno = 0;
     int status = fsync(fd);
     return 0 == status ? status : -errno;
 }
 
-u64 HostIO_POSIX::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
+s64 HostIO_POSIX::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
     errno = 0;
     int status = lseek(fd, offset, ToPOSIXSeekOrigin(origin));
     return status >= 0 ? status : -errno;
@@ -78,13 +77,13 @@ s64 HostIO_POSIX::Tell(const int fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
-int HostIO_POSIX::Truncate(const fs::path& path, u64 size) {
+s32 HostIO_POSIX::Truncate(const fs::path& path, u64 size) {
     errno = 0;
     int status = truncate(path.c_str(), size);
     return status >= 0 ? status : -errno;
 }
 
-int HostIO_POSIX::FTruncate(const int fd, u64 size) {
+s32 HostIO_POSIX::FTruncate(const int fd, u64 size) {
     errno = 0;
     int status = ftruncate(fd, size);
     return status >= 0 ? status : -errno;
@@ -114,19 +113,19 @@ s64 HostIO_POSIX::PRead(const int fd, void* buf, u64 count, u64 offset) {
     return status >= 0 ? status : -errno;
 }
 
-int HostIO_POSIX::MKDir(const fs::path& path, u16 mode) {
+s32 HostIO_POSIX::MKDir(const fs::path& path, u16 mode) {
     errno = 0;
     int status = mkdir(path.c_str(), mode);
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::RMDir(const fs::path& path) {
+s32 HostIO_POSIX::RMDir(const fs::path& path) {
     errno = 0;
     int status = rmdir(path.c_str());
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
     errno = 0;
 
     struct stat st;
@@ -160,7 +159,7 @@ int HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat*
     return 0;
 }
 
-int HostIO_POSIX::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_POSIX::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     errno = 0;
 
     struct stat st;
@@ -188,13 +187,13 @@ int HostIO_POSIX::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbu
     return 0;
 }
 
-int HostIO_POSIX::Chmod(const fs::path& path, u16 mode) {
+s32 HostIO_POSIX::Chmod(const fs::path& path, u16 mode) {
     errno = 0;
     int status = chmod(path.c_str(), mode);
     return 0 == status ? status : -errno;
 }
 
-int HostIO_POSIX::FChmod(const int fd, u16 mode) {
+s32 HostIO_POSIX::FChmod(const int fd, u16 mode) {
     errno = 0;
     int status = fchmod(fd, mode);
     return 0 == status ? status : -errno;

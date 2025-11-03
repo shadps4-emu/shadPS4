@@ -30,11 +30,11 @@ public:
     }
 
     virtual s64 read(void* buf, u64 count) {
-        return pread(buf, count, 0);
+        return -QUASI_EBADF;
     }
 
     virtual s64 write(const void* buf, u64 count) {
-        return pwrite(buf, count, 0);
+        return -QUASI_EBADF;
     }
 
     virtual s64 pread(void* buf, u64 count, s64 offset) {
@@ -107,7 +107,7 @@ public:
     }
 
     virtual s64 getdents(void* buf, u32 nbytes, s64* basep) {
-        return -QUASI_EBADF;
+        return -QUASI_EINVAL;
     }
 
     // type helpers

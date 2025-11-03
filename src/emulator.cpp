@@ -53,6 +53,7 @@
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/devices/null_device.h"
 #include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/rng_device.h"
 #include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/devices/zero_device.h"
 
@@ -168,6 +169,7 @@ void Emulator::LoadFilesystem(const std::string& id) {
     qfs->ForceInsert("/dev", "srandom", qfs::Device::Create<Devices::SRandomDevice>());
     qfs->ForceInsert("/dev", "zero", qfs::Device::Create<Devices::ZeroDevice>());
     qfs->ForceInsert("/dev", "null", qfs::Device::Create<Devices::NullDevice>());
+    qfs->ForceInsert("/dev", "rng", qfs::Device::Create<Devices::RngDevice>());
 
     qfs->Operation.Chmod("/dev/deci_stderr", 0666);
     qfs->Operation.Chmod("/dev/deci_stdout", 0666);

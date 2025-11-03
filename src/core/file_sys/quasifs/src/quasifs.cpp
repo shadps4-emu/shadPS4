@@ -2,11 +2,9 @@
 
 #include "common/logging/log.h"
 
-#include "../quasi_errno.h"
-#include "../quasi_types.h"
-
+#include "core/file_sys/quasifs/quasi_errno.h"
+#include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
-
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
@@ -331,21 +329,21 @@ int QFS::GetHostPath(fs::path& output, const fs::path& path) {
     return res.mountpoint->GetHostPath(output, res.local_path);
 }
 
-bool QFS::IsOpen(const int fd) noexcept {
+bool QFS::IsOpen(const s32 fd) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return false;
     return fh->IsOpen();
 }
 
-int QFS::SetSize(const int fd, uint64_t size) noexcept {
+int QFS::SetSize(const s32 fd, uint64_t size) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return -QUASI_EBADF;
     return this->Operation.FTruncate(fd, size);
 }
 
-s64 QFS::GetSize(const int fd) noexcept {
+s64 QFS::GetSize(const s32 fd) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return -QUASI_EBADF;
@@ -438,7 +436,7 @@ int QFS::GetFreeHandleNo() {
     return open_fd_size;
 }
 
-fd_handle_ptr QFS::GetHandle(int fd) {
+fd_handle_ptr QFS::GetHandle(s32 fd) {
     if (fd < 0 || fd >= this->open_fd.size())
         return nullptr;
     return this->open_fd.at(fd);

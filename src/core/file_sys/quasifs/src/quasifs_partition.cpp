@@ -1,11 +1,9 @@
 // INAA License @marecl 2025
 
 #include "common/logging/log.h"
-// #include "common/string_util.h"
 
-#include "../quasi_errno.h"
-#include "../quasi_types.h"
-
+#include "core/file_sys/quasifs/quasi_errno.h"
+#include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"

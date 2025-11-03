@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/logging/log.h"
-
+#include "common/types.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
 
 #define DEVICE_STUB()                                                                              \
@@ -21,8 +21,8 @@ public:
     ZeroDevice();
     ~ZeroDevice();
 
-    s64 pread(void* buf, size_t count, s64 offset) override;
-    s64 pwrite(const void* buf, size_t count, s64 offset) override;
+    s64 read(void* buf, u64 count) override;
+    s64 write(const void* buf, u64 count) override;
 
     // clang-format off
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }

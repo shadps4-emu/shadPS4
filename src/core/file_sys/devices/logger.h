@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "common/logging/log.h"
-
+#include "common/types.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
 
 #define DEVICE_STUB()                                                                              \

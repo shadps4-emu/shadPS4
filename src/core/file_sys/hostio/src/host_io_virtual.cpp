@@ -4,26 +4,26 @@
 #include <filesystem>
 
 #include "common/logging/log.h"
+#include "core/file_sys/hostio/host_io_posix.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
 #include "src/core/file_sys/hostio/host_io_virtual.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_quasi_device.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_quasi_file.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_symlink.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_virtualfile.h"
-#include "src/core/file_sys/quasifs/quasifs_partition.h"
-
-#include "host_io_base.h"
-
 #include "src/core/file_sys/quasifs/quasi_errno.h"
 #include "src/core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "src/core/file_sys/quasifs/quasi_types.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_virtualfile.h"
+
+#include "host_io_base.h"
 
 namespace HostIODriver {
 
 HostIO_Virtual::HostIO_Virtual() = default;
 HostIO_Virtual::~HostIO_Virtual() = default;
 
-int HostIO_Virtual::Open(const fs::path& path, int flags, u16 mode) {
+s32 HostIO_Virtual::Open(const fs::path& path, int flags, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -72,7 +72,7 @@ int HostIO_Virtual::Open(const fs::path& path, int flags, u16 mode) {
     return 0;
 }
 
-int HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
+s32 HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
     if (!this->res->node->is_dir())
@@ -84,12 +84,12 @@ int HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
     return this->res->mountpoint->touch(parent, path.filename().string(), new_file);
 }
 
-int HostIO_Virtual::Close(const int fd) {
+s32 HostIO_Virtual::Close(const int fd) {
     // N/A
     return 0;
 }
 
-int HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
+s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -110,7 +110,7 @@ int HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
     return part->link(src_node, dst_parent, dst_name);
 }
 
-int HostIO_Virtual::Unlink(const fs::path& path) {
+s32 HostIO_Virtual::Unlink(const fs::path& path) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
     if ("." == this->res->leaf)
@@ -124,7 +124,7 @@ int HostIO_Virtual::Unlink(const fs::path& path) {
     return part->unlink(parent, this->res->leaf);
 }
 
-int HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -135,12 +135,12 @@ int HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     return this->res->mountpoint->touch(this->res->parent, dst.filename().string(), sym);
 }
 
-int HostIO_Virtual::Flush(const int fd) {
+s32 HostIO_Virtual::Flush(const int fd) {
     // not applicable
     return 0;
 }
 
-int HostIO_Virtual::FSync(const int fd) {
+s32 HostIO_Virtual::FSync(const int fd) {
     if (nullptr == handle)
         return -QUASI_EINVAL;
 
@@ -152,7 +152,7 @@ int HostIO_Virtual::FSync(const int fd) {
     return handle->node->fsync();
 }
 
-u64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
+s64 HostIO_Virtual::LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) {
     if (nullptr == handle)
         return -QUASI_EINVAL;
 
@@ -178,7 +178,7 @@ s64 HostIO_Virtual::Tell(const int fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
-int HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
+s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -196,7 +196,7 @@ int HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
     return node->ftruncate(size);
 }
 
-int HostIO_Virtual::FTruncate(const int fd, u64 size) {
+s32 HostIO_Virtual::FTruncate(const int fd, u64 size) {
     if (nullptr == handle)
         return -QUASI_EINVAL;
 
@@ -259,7 +259,7 @@ s64 HostIO_Virtual::PRead(const int fd, void* buf, u64 count, u64 offset) {
     return node->pread(buf, count, offset);
 }
 
-int HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
+s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -267,7 +267,7 @@ int HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
     return this->res->mountpoint->mkdir(this->res->parent, this->res->leaf, new_dir);
 }
 
-int HostIO_Virtual::RMDir(const fs::path& path) {
+s32 HostIO_Virtual::RMDir(const fs::path& path) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -291,7 +291,7 @@ int HostIO_Virtual::RMDir(const fs::path& path) {
     return 0;
 }
 
-int HostIO_Virtual::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_Virtual::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -305,7 +305,7 @@ int HostIO_Virtual::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelSta
     return 0;
 }
 
-int HostIO_Virtual::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_Virtual::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     if (nullptr == this->handle)
         return -QUASI_EINVAL;
 
@@ -319,7 +319,7 @@ int HostIO_Virtual::FStat(const int fd, Libraries::Kernel::OrbisKernelStat* stat
     return 0;
 }
 
-int HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
+s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -331,7 +331,7 @@ int HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
     return Partition::chmod(node, mode);
 }
 
-int HostIO_Virtual::FChmod(const int fd, u16 mode) {
+s32 HostIO_Virtual::FChmod(const int fd, u16 mode) {
     if (nullptr == this->handle)
         return -QUASI_EINVAL;
 

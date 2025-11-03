@@ -39,41 +39,8 @@
 #include <sys/select.h>
 #endif
 
-namespace D = Core::Devices;
 namespace qfs = QuasiFS;
-
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
-
-// #define GET_DEVICE_FD(fd)                                                                          \
-//     [](u32, const char*, int, u16) {                                                               \
-//         return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
-//     }
-
-// // prefix path, only dev devices
-// static std::map<std::string, FactoryDevice> available_device = {
-//     // clang-format off
-//     {"/dev/stdin", GET_DEVICE_FD(0)},
-//     {"/dev/stdout", GET_DEVICE_FD(1)},
-//     {"/dev/stderr", GET_DEVICE_FD(2)},
-
-//     {"/dev/fd/0", GET_DEVICE_FD(0)},
-//     {"/dev/fd/1", GET_DEVICE_FD(1)},
-//     {"/dev/fd/2", GET_DEVICE_FD(2)},
-
-//     {"/dev/deci_stdin", GET_DEVICE_FD(0)},
-//     {"/dev/deci_stdout", GET_DEVICE_FD(1)},
-//     {"/dev/deci_stderr", GET_DEVICE_FD(2)},
-
-//     {"/dev/null", GET_DEVICE_FD(0)}, // fd0 (stdin) is a nop device
-
-//     {"/dev/urandom",  &D::URandomDevice::Create },
-//     {"/dev/random",   &D::RandomDevice::Create },
-//     {"/dev/srandom",  &D::SRandomDevice::Create },
-//     {"/dev/console",  &D::ConsoleDevice::Create },
-//     {"/dev/deci_tty6",&D::DeciTty6Device::Create },
-//     {"/dev/rng",      &D::RngDevice::Create },
-//     // clang-format on
-// };
 
 namespace Libraries::Kernel {
 
@@ -140,43 +107,10 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
-s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
-    const auto* memory = Core::Memory::Instance();
-    // Invalidate up to the actual number of bytes that could be read.
-    const auto remaining = file.GetSize() - file.Tell();
-
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
-    return file.ReadRaw<u8>(buf, nbytes);
-}
-
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->readv(iov, iovcnt);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Directory) {
-        s64 result = file->directory->readv(iov, iovcnt);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
+        total_read += read(fd, iov[i].iov_base, iov[i].iov_len);
     }
     return total_read;
 }
@@ -195,28 +129,11 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 }
 
 s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    std::scoped_lock lk{file->m_mutex};
-
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->writev(iov, iovcnt);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    s64 total_written = 0;
+    s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_read += write(fd, iov[i].iov_base, iov[i].iov_len);
     }
-    return total_written;
+    return total_read;
 }
 
 s64 PS4_SYSV_ABI posix_writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
@@ -401,8 +318,6 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
 
-    // Libraries::Kernel::OrbisKernelStat st;
-
     int result = g_qfs->Operation.FStat(fd, sb);
     if (result < 0) {
         *__Error() = -result;
@@ -575,46 +490,9 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
 }
 
 s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    if (offset < 0) {
-        *__Error() = POSIX_EINVAL;
-        return -1;
-    }
-
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    std::scoped_lock lk{file->m_mutex};
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->preadv(iov, iovcnt, offset);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    } else if (file->type == Core::FileSys::FileType::Directory) {
-        s64 result = file->directory->preadv(iov, iovcnt, offset);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-
-    const s64 pos = file->f.Tell();
-    SCOPE_EXIT {
-        file->f.Seek(pos);
-    };
-    if (!file->f.Seek(offset)) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
+        total_read += g_qfs->Operation.PRead(fd, iov[i].iov_base, iov[i].iov_len, offset);
     }
     return total_read;
 }
@@ -655,13 +533,14 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
 }
 
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
+    QuasiFS::fd_handle_ptr f = g_qfs->GetHandle(fd);
+
     if (buf == nullptr) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
+
+    if (nullptr == f->node) {
         *__Error() = POSIX_EBADF;
         return -1;
     }
@@ -671,28 +550,11 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
 
-    switch (file->type) {
-    case Core::FileSys::FileType::Directory: {
-        s64 result = file->directory->getdents(buf, nbytes, basep);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    case Core::FileSys::FileType::Device: {
-        s64 result = file->device->getdents(buf, nbytes, basep);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    default: {
-        // Not directory or device
-        *__Error() = POSIX_EINVAL;
+    s32 result = f->node->getdents(buf, nbytes, basep);
+    LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
+    if (result < 0) {
+        ErrSceToPosix(result);
         return -1;
-    }
     }
 
     return ORBIS_OK;
@@ -729,41 +591,11 @@ s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* base
 }
 
 s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    if (offset < 0) {
-        *__Error() = POSIX_EINVAL;
-        return -1;
-    }
-
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
-    if (file == nullptr) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    std::scoped_lock lk{file->m_mutex};
-
-    if (file->type == Core::FileSys::FileType::Device) {
-        s64 result = file->device->pwritev(iov, iovcnt, offset);
-        if (result < 0) {
-            ErrSceToPosix(result);
-            return -1;
-        }
-        return result;
-    }
-    const s64 pos = file->f.Tell();
-    SCOPE_EXIT {
-        file->f.Seek(pos);
-    };
-    if (!file->f.Seek(offset)) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
-    s64 total_written = 0;
+    s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
+        total_read += g_qfs->Operation.PWrite(fd, iov[i].iov_base, iov[i].iov_len, offset);
     }
-    return total_written;
+    return total_read;
 }
 
 s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {

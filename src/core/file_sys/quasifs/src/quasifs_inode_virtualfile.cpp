@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../quasi_errno.h"
+#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasifs_inode_virtualfile.h"
 
 namespace QuasiFS {
