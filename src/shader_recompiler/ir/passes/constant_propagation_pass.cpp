@@ -204,6 +204,18 @@ void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     }
 }
 
+void FoldDiscardCond(IR::Inst& inst) {
+    const IR::U1 cond{inst.Arg(0)};
+    if (!cond.IsImmediate()) {
+        return;
+    }
+    if (cond.U1()) {
+        inst.ReplaceOpcode(IR::Opcode::Discard);
+    } else {
+        inst.Invalidate();
+    }
+}
+
 template <typename T>
 void FoldAdd(IR::Block& block, IR::Inst& inst) {
     if (!FoldCommutative<T>(inst, [](T a, T b) { return a + b; })) {
@@ -245,10 +257,48 @@ void FoldCmpClass(IR::Block& block, IR::Inst& inst) {
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
         const IR::F32 value = IR::F32{inst.Arg(0)};
         inst.ReplaceUsesWithAndRemove(
-            ir.LogicalNot(ir.LogicalOr(ir.FPIsInf(value), ir.FPIsInf(value))));
+            ir.LogicalNot(ir.LogicalOr(ir.FPIsNan(value), ir.FPIsInf(value))));
     } else {
         UNREACHABLE();
     }
+}
+
+bool FoldPackedAncillary(IR::Block& block, IR::Inst& inst) {
+    if (inst.Arg(0).IsImmediate() || !inst.Arg(1).IsImmediate() || !inst.Arg(2).IsImmediate()) {
+        return false;
+    }
+    IR::Inst* value = inst.Arg(0).InstRecursive();
+    if (value->GetOpcode() != IR::Opcode::GetAttributeU32 ||
+        value->Arg(0).Attribute() != IR::Attribute::PackedAncillary) {
+        return false;
+    }
+    const u32 offset = inst.Arg(1).U32();
+    const u32 bits = inst.Arg(2).U32();
+    IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+    if (offset >= 8 && offset + bits <= 12) {
+        const auto sample_index = ir.GetAttributeU32(IR::Attribute::SampleIndex);
+        if (offset == 8 && bits == 4) {
+            inst.ReplaceUsesWithAndRemove(sample_index);
+        } else {
+            inst.ReplaceUsesWithAndRemove(
+                ir.BitFieldExtract(sample_index, ir.Imm32(offset - 8), ir.Imm32(bits)));
+        }
+    } else if (offset >= 16 && offset + bits <= 27) {
+        const auto mrt_index = ir.GetAttributeU32(IR::Attribute::RenderTargetIndex);
+        if (offset == 16 && bits == 11) {
+            inst.ReplaceUsesWithAndRemove(mrt_index);
+        } else {
+            inst.ReplaceUsesWithAndRemove(
+                ir.BitFieldExtract(mrt_index, ir.Imm32(offset - 16), ir.Imm32(bits)));
+        }
+    } else {
+        UNREACHABLE_MSG("Unhandled bitfield extract from ancillary VGPR offset={}, bits={}", offset,
+                        bits);
+    }
+
+    value->ReplaceUsesWithAndRemove(ir.Imm32(0U));
+
+    return true;
 }
 
 void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
@@ -353,12 +403,8 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::UnpackSint2_10_10_10:
         return FoldInverseFunc(inst, IR::Opcode::PackSint2_10_10_10);
     case IR::Opcode::SelectU1:
-    case IR::Opcode::SelectU8:
-    case IR::Opcode::SelectU16:
     case IR::Opcode::SelectU32:
-    case IR::Opcode::SelectU64:
     case IR::Opcode::SelectF32:
-    case IR::Opcode::SelectF64:
         return FoldSelect(inst);
     case IR::Opcode::FPNeg32:
         FoldWhenAllImmediates(inst, [](f32 a) { return -a; });
@@ -381,23 +427,41 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::ULessThan64:
         FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a < b; });
         return;
-    case IR::Opcode::SLessThanEqual:
+    case IR::Opcode::SLessThanEqual32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a <= b; });
         return;
-    case IR::Opcode::ULessThanEqual:
+    case IR::Opcode::SLessThanEqual64:
+        FoldWhenAllImmediates(inst, [](s64 a, s64 b) { return a <= b; });
+        return;
+    case IR::Opcode::ULessThanEqual32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a <= b; });
         return;
-    case IR::Opcode::SGreaterThan:
+    case IR::Opcode::ULessThanEqual64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a <= b; });
+        return;
+    case IR::Opcode::SGreaterThan32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a > b; });
         return;
-    case IR::Opcode::UGreaterThan:
+    case IR::Opcode::SGreaterThan64:
+        FoldWhenAllImmediates(inst, [](s64 a, s64 b) { return a > b; });
+        return;
+    case IR::Opcode::UGreaterThan32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a > b; });
         return;
-    case IR::Opcode::SGreaterThanEqual:
+    case IR::Opcode::UGreaterThan64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a > b; });
+        return;
+    case IR::Opcode::SGreaterThanEqual32:
         FoldWhenAllImmediates(inst, [](s32 a, s32 b) { return a >= b; });
         return;
-    case IR::Opcode::UGreaterThanEqual:
+    case IR::Opcode::SGreaterThanEqual64:
+        FoldWhenAllImmediates(inst, [](s64 a, s64 b) { return a >= b; });
+        return;
+    case IR::Opcode::UGreaterThanEqual32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a >= b; });
+        return;
+    case IR::Opcode::UGreaterThanEqual64:
+        FoldWhenAllImmediates(inst, [](u64 a, u64 b) { return a >= b; });
         return;
     case IR::Opcode::IEqual32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a == b; });
@@ -426,7 +490,28 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::BitwiseXor32:
         FoldWhenAllImmediates(inst, [](u32 a, u32 b) { return a ^ b; });
         return;
+    case IR::Opcode::BitwiseNot32:
+        FoldWhenAllImmediates(inst, [](u32 a) { return ~a; });
+        return;
+    case IR::Opcode::BitReverse32:
+        FoldWhenAllImmediates(inst, [](u32 a) {
+            u32 res{};
+            for (s32 i = 0; i < 32; i++, a >>= 1) {
+                res = (res << 1) | (a & 1);
+            }
+            return res;
+        });
+        return;
+    case IR::Opcode::BitCount32:
+        FoldWhenAllImmediates(inst, [](u32 a) { return static_cast<u32>(std::popcount(a)); });
+        return;
+    case IR::Opcode::BitCount64:
+        FoldWhenAllImmediates(inst, [](u64 a) { return static_cast<u32>(std::popcount(a)); });
+        return;
     case IR::Opcode::BitFieldUExtract:
+        if (FoldPackedAncillary(block, inst)) {
+            return;
+        }
         FoldWhenAllImmediates(inst, [](u32 base, u32 shift, u32 count) {
             if (static_cast<size_t>(shift) + static_cast<size_t>(count) > 32) {
                 UNREACHABLE_MSG("Undefined result in {}({}, {}, {})", IR::Opcode::BitFieldUExtract,
@@ -474,19 +559,12 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
     case IR::Opcode::CompositeExtractF32x4:
         return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF32x4,
                                     IR::Opcode::CompositeInsertF32x4);
-    case IR::Opcode::CompositeExtractF16x2:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x2,
-                                    IR::Opcode::CompositeInsertF16x2);
-    case IR::Opcode::CompositeExtractF16x3:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x3,
-                                    IR::Opcode::CompositeInsertF16x3);
-    case IR::Opcode::CompositeExtractF16x4:
-        return FoldCompositeExtract(inst, IR::Opcode::CompositeConstructF16x4,
-                                    IR::Opcode::CompositeInsertF16x4);
     case IR::Opcode::ConvertF32F16:
         return FoldConvert(inst, IR::Opcode::ConvertF16F32);
     case IR::Opcode::ConvertF16F32:
         return FoldConvert(inst, IR::Opcode::ConvertF32F16);
+    case IR::Opcode::DiscardCond:
+        return FoldDiscardCond(inst);
     default:
         break;
     }

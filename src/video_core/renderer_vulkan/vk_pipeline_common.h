@@ -3,15 +3,16 @@
 
 #pragma once
 
-#include "shader_recompiler/backend/bindings.h"
-#include "shader_recompiler/info.h"
 #include "shader_recompiler/profile.h"
+#include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
-#include "video_core/texture_cache/texture_cache.h"
 
-namespace VideoCore {
-class BufferCache;
-} // namespace VideoCore
+#include <boost/container/small_vector.hpp>
+
+namespace Shader {
+struct Info;
+struct PushData;
+} // namespace Shader
 
 namespace Vulkan {
 
@@ -74,7 +75,7 @@ protected:
     vk::UniqueDescriptorSetLayout desc_layout;
     std::array<const Shader::Info*, Shader::MaxStageTypes> stages{};
     bool uses_push_descriptors{};
-    const bool is_compute;
+    bool is_compute;
 };
 
 } // namespace Vulkan

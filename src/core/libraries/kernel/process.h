@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -11,7 +11,7 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
-static constexpr size_t ORBIS_DBG_MAX_NAME_LENGTH = 256;
+static constexpr u64 ORBIS_DBG_MAX_NAME_LENGTH = 256;
 
 struct OrbisModuleInfoForUnwind {
     u64 st_size;
@@ -23,9 +23,9 @@ struct OrbisModuleInfoForUnwind {
     u64 seg0_size;
 };
 
-int PS4_SYSV_ABI sceKernelIsNeoMode();
+s32 PS4_SYSV_ABI sceKernelIsNeoMode();
 
-int PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(int* ver);
+s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver);
 
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info);

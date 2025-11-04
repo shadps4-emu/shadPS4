@@ -30,14 +30,16 @@ struct Region2D {
 struct Extent2D {
     u32 width;
     u32 height;
+
+    bool operator==(const Extent2D& other) const {
+        return width == other.width && height == other.height;
+    }
 };
 
 struct Extent3D {
     u32 width;
     u32 height;
     u32 depth;
-
-    auto operator<=>(const Extent3D&) const = default;
 
     bool operator==(const Extent3D& other) const {
         return width == other.width && height == other.height && depth == other.depth;

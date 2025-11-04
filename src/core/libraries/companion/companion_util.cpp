@@ -56,16 +56,16 @@ s32 PS4_SYSV_ABI sceCompanionUtilTerminate() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceCompanionUtil(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("cE5Msy11WhU", "libSceCompanionUtil", 1, "libSceCompanionUtil", 1, 1,
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("cE5Msy11WhU", "libSceCompanionUtil", 1, "libSceCompanionUtil",
                  sceCompanionUtilGetEvent);
-    LIB_FUNCTION("MaVrz79mT5o", "libSceCompanionUtil", 1, "libSceCompanionUtil", 1, 1,
+    LIB_FUNCTION("MaVrz79mT5o", "libSceCompanionUtil", 1, "libSceCompanionUtil",
                  sceCompanionUtilGetRemoteOskEvent);
-    LIB_FUNCTION("xb1xlIhf0QY", "libSceCompanionUtil", 1, "libSceCompanionUtil", 1, 1,
+    LIB_FUNCTION("xb1xlIhf0QY", "libSceCompanionUtil", 1, "libSceCompanionUtil",
                  sceCompanionUtilInitialize);
-    LIB_FUNCTION("IPN-FRSrafk", "libSceCompanionUtil", 1, "libSceCompanionUtil", 1, 1,
+    LIB_FUNCTION("IPN-FRSrafk", "libSceCompanionUtil", 1, "libSceCompanionUtil",
                  sceCompanionUtilOptParamInitialize);
-    LIB_FUNCTION("H1fYQd5lFAI", "libSceCompanionUtil", 1, "libSceCompanionUtil", 1, 1,
+    LIB_FUNCTION("H1fYQd5lFAI", "libSceCompanionUtil", 1, "libSceCompanionUtil",
                  sceCompanionUtilTerminate);
 };
 

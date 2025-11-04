@@ -76,10 +76,15 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     font_cfg.OversampleV = 1;
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
         imgui_font_notosansjp_regular_compressed_data,
-        imgui_font_notosansjp_regular_compressed_size, 16.0f, &font_cfg, ranges.Data);
+        imgui_font_notosansjp_regular_compressed_size, 32.0f, &font_cfg, ranges.Data);
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
-                                             16.0f);
+                                             32.0f);
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
+                                             imgui_font_notosansjp_regular_compressed_size, 128.0f,
+                                             &font_cfg, ranges.Data);
+
+    io.FontGlobalScale = 0.5f;
 
     StyleColorsDark();
 
@@ -110,7 +115,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     dock_id = ImHashStr(label);
 
     if (const auto dpi = SDL_GetWindowDisplayScale(window.GetSDLWindow()); dpi > 0.0f) {
-        GetIO().FontGlobalScale = dpi;
+        GetIO().FontGlobalScale *= dpi;
     }
 
     std::at_quick_exit([] { SaveIniSettingsToDisk(GetIO().IniFilename); });

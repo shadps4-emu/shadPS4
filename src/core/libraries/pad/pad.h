@@ -348,5 +348,5 @@ int PS4_SYSV_ABI Func_51E514BCD3A05CA5();
 int PS4_SYSV_ABI Func_89C9237E393DA243();
 int PS4_SYSV_ABI Func_EF103E845B6F0420();
 
-void RegisterlibScePad(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Pad

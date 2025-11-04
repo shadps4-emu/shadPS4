@@ -9,23 +9,22 @@
 
 namespace Libraries::AvPlayer {
 
-s32 PS4_SYSV_ABI sceAvPlayerAddSource(SceAvPlayerHandle handle, const char* filename) {
+s32 PS4_SYSV_ABI sceAvPlayerAddSource(AvPlayerHandle handle, const char* filename) {
     LOG_TRACE(Lib_AvPlayer, "filename = {}", filename);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->AddSource(filename);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->AddSource(filename);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(SceAvPlayerHandle handle, SceAvPlayerUriType uriType,
-                                        SceAvPlayerSourceDetails* sourceDetails) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
-    if (handle == nullptr) {
+s32 PS4_SYSV_ABI sceAvPlayerAddSourceEx(AvPlayerHandle handle, AvPlayerUriType uri_type,
+                                        AvPlayerSourceDetails* source_details) {
+    LOG_TRACE(Lib_AvPlayer, "called");
+    if (handle == nullptr || uri_type != AvPlayerUriType::Source) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    const auto path = std::string_view(source_details->uri.name, source_details->uri.length);
+    return handle->AddSourceEx(path, source_details->source_type);
 }
 
 int PS4_SYSV_ABI sceAvPlayerChangeStream() {
@@ -33,28 +32,24 @@ int PS4_SYSV_ABI sceAvPlayerChangeStream() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerClose(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerClose(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     delete handle;
-    LOG_TRACE(Lib_AvPlayer, "returning ORBIS_OK");
     return ORBIS_OK;
 }
 
-u64 PS4_SYSV_ABI sceAvPlayerCurrentTime(SceAvPlayerHandle handle) {
+u64 PS4_SYSV_ABI sceAvPlayerCurrentTime(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->CurrentTime();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->CurrentTime();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerDisableStream(SceAvPlayerHandle handle, u32 stream_id) {
+s32 PS4_SYSV_ABI sceAvPlayerDisableStream(AvPlayerHandle handle, u32 stream_id) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -62,60 +57,49 @@ s32 PS4_SYSV_ABI sceAvPlayerDisableStream(SceAvPlayerHandle handle, u32 stream_i
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerEnableStream(SceAvPlayerHandle handle, u32 stream_id) {
+s32 PS4_SYSV_ABI sceAvPlayerEnableStream(AvPlayerHandle handle, u32 stream_id) {
     LOG_TRACE(Lib_AvPlayer, "stream_id = {}", stream_id);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->EnableStream(stream_id);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->EnableStream(stream_id);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetAudioData(SceAvPlayerHandle handle, SceAvPlayerFrameInfo* p_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetAudioData(AvPlayerHandle handle, AvPlayerFrameInfo* p_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || p_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetAudioData(*p_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetAudioData(*p_info);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(SceAvPlayerHandle handle, u32 stream_id,
-                                          SceAvPlayerStreamInfo* p_info) {
+s32 PS4_SYSV_ABI sceAvPlayerGetStreamInfo(AvPlayerHandle handle, u32 stream_id,
+                                          AvPlayerStreamInfo* p_info) {
     LOG_TRACE(Lib_AvPlayer, "stream_id = {}", stream_id);
     if (handle == nullptr || p_info == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->GetStreamInfo(stream_id, *p_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetStreamInfo(stream_id, *p_info);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetVideoData(SceAvPlayerHandle handle,
-                                          SceAvPlayerFrameInfo* video_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetVideoData(AvPlayerHandle handle, AvPlayerFrameInfo* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetVideoData(*video_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetVideoData(*video_info);
 }
 
-bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(SceAvPlayerHandle handle,
-                                            SceAvPlayerFrameInfoEx* video_info) {
+bool PS4_SYSV_ABI sceAvPlayerGetVideoDataEx(AvPlayerHandle handle,
+                                            AvPlayerFrameInfoEx* video_info) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || video_info == nullptr) {
-        return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
+        return false;
     }
-    const auto res = handle->GetVideoData(*video_info);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetVideoData(*video_info);
 }
 
-SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
+AvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(AvPlayerInitData* data) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (data == nullptr) {
         return nullptr;
@@ -125,15 +109,14 @@ SceAvPlayerHandle PS4_SYSV_ABI sceAvPlayerInit(SceAvPlayerInitData* data) {
         data->memory_replacement.allocate_texture == nullptr ||
         data->memory_replacement.deallocate == nullptr ||
         data->memory_replacement.deallocate_texture == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AVPlayer Initialisation.");
+        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AvPlayer Initialisation.");
         return nullptr;
     }
 
     return new AvPlayer(*data);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
-                                   SceAvPlayerHandle* p_player) {
+s32 PS4_SYSV_ABI sceAvPlayerInitEx(const AvPlayerInitDataEx* p_data, AvPlayerHandle* p_player) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (p_data == nullptr || p_player == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -143,11 +126,11 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
         p_data->memory_replacement.allocate_texture == nullptr ||
         p_data->memory_replacement.deallocate == nullptr ||
         p_data->memory_replacement.deallocate_texture == nullptr) {
-        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AVPlayer Initialisation.");
+        LOG_ERROR(Lib_AvPlayer, "All allocators are required for AvPlayer Initialisation.");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
 
-    SceAvPlayerInitData data = {};
+    AvPlayerInitData data = {};
     data.memory_replacement = p_data->memory_replacement;
     data.file_replacement = p_data->file_replacement;
     data.event_replacement = p_data->event_replacement;
@@ -159,18 +142,15 @@ s32 PS4_SYSV_ABI sceAvPlayerInitEx(const SceAvPlayerInitDataEx* p_data,
     return ORBIS_OK;
 }
 
-bool PS4_SYSV_ABI sceAvPlayerIsActive(SceAvPlayerHandle handle) {
+bool PS4_SYSV_ABI sceAvPlayerIsActive(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning false");
         return false;
     }
-    const auto res = handle->IsActive();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->IsActive();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) {
+s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(AvPlayerHandle handle, uint64_t time) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called, time (msec) = {}", time);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -178,22 +158,20 @@ s32 PS4_SYSV_ABI sceAvPlayerJumpToTime(SceAvPlayerHandle handle, uint64_t time) 
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerPause(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerPause(AvPlayerHandle handle) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Pause();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerPostInit(SceAvPlayerHandle handle, SceAvPlayerPostInitData* data) {
+s32 PS4_SYSV_ABI sceAvPlayerPostInit(AvPlayerHandle handle, AvPlayerPostInitData* data) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr || data == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->PostInit(*data);
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->PostInit(*data);
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerPrintf(const char* format, ...) {
@@ -201,29 +179,28 @@ s32 PS4_SYSV_ABI sceAvPlayerPrintf(const char* format, ...) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerResume(SceAvPlayerHandle handle) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerResume(AvPlayerHandle handle) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->Resume();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(SceAvPlayerHandle handle,
-                                          SceAvPlayerAvSyncMode sync_mode) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerSetAvSyncMode(AvPlayerHandle handle, AvPlayerAvSyncMode sync_mode) {
+    LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    return ORBIS_OK;
+    return handle->SetAvSyncMode(sync_mode);
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(SceAvPlayerLogCallback log_cb, void* user_data) {
+s32 PS4_SYSV_ABI sceAvPlayerSetLogCallback(AvPlayerLogCallback log_cb, void* user_data) {
     LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag) {
+s32 PS4_SYSV_ABI sceAvPlayerSetLooping(AvPlayerHandle handle, bool loop_flag) {
     LOG_TRACE(Lib_AvPlayer, "called, looping = {}", loop_flag);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
@@ -234,43 +211,36 @@ s32 PS4_SYSV_ABI sceAvPlayerSetLooping(SceAvPlayerHandle handle, bool loop_flag)
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerSetTrickSpeed(SceAvPlayerHandle handle, s32 trick_speed) {
-    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAvPlayerSetTrickSpeed(AvPlayerHandle handle, s32 trick_speed) {
+    LOG_ERROR(Lib_AvPlayer, "(STUBBED) called speed = {}", trick_speed);
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStart(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStart(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->Start();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->Start();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStop(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStop(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
-        LOG_TRACE(Lib_AvPlayer, "returning ORBIS_AVPLAYER_ERROR_INVALID_PARAMS");
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->Stop();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->Stop();
 }
 
-s32 PS4_SYSV_ABI sceAvPlayerStreamCount(SceAvPlayerHandle handle) {
+s32 PS4_SYSV_ABI sceAvPlayerStreamCount(AvPlayerHandle handle) {
     LOG_TRACE(Lib_AvPlayer, "called");
     if (handle == nullptr) {
         return ORBIS_AVPLAYER_ERROR_INVALID_PARAMS;
     }
-    const auto res = handle->GetStreamCount();
-    LOG_TRACE(Lib_AvPlayer, "returning {}", res);
-    return res;
+    return handle->GetStreamCount();
 }
 
 s32 PS4_SYSV_ABI sceAvPlayerVprintf(const char* format, va_list args) {
@@ -278,47 +248,34 @@ s32 PS4_SYSV_ABI sceAvPlayerVprintf(const char* format, va_list args) {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAvPlayer(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("KMcEa+rHsIo", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerAddSource);
-    LIB_FUNCTION("x8uvuFOPZhU", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerAddSourceEx);
-    LIB_FUNCTION("buMCiJftcfw", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerChangeStream);
-    LIB_FUNCTION("NkJwDzKmIlw", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerClose);
-    LIB_FUNCTION("wwM99gjFf1Y", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerCurrentTime);
-    LIB_FUNCTION("BOVKAzRmuTQ", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerDisableStream);
-    LIB_FUNCTION("ODJK2sn9w4A", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerEnableStream);
-    LIB_FUNCTION("Wnp1OVcrZgk", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerGetAudioData);
-    LIB_FUNCTION("d8FcbzfAdQw", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerGetStreamInfo);
-    LIB_FUNCTION("o3+RWnHViSg", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerGetVideoData);
-    LIB_FUNCTION("JdksQu8pNdQ", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerGetVideoDataEx);
-    LIB_FUNCTION("aS66RI0gGgo", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerInit);
-    LIB_FUNCTION("o9eWRkSL+M4", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerInitEx);
-    LIB_FUNCTION("UbQoYawOsfY", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerIsActive);
-    LIB_FUNCTION("XC9wM+xULz8", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerJumpToTime);
-    LIB_FUNCTION("9y5v+fGN4Wk", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPause);
-    LIB_FUNCTION("HD1YKVU26-M", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPostInit);
-    // LIB_FUNCTION("agig-iDRrTE", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerPrintf);
-    LIB_FUNCTION("w5moABNwnRY", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerResume);
-    LIB_FUNCTION("k-q+xOxdc3E", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerSetAvSyncMode);
-    LIB_FUNCTION("eBTreZ84JFY", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerSetLogCallback);
-    LIB_FUNCTION("OVths0xGfho", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerSetLooping);
-    LIB_FUNCTION("av8Z++94rs0", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerSetTrickSpeed);
-    LIB_FUNCTION("ET4Gr-Uu07s", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerStart);
-    LIB_FUNCTION("ZC17w3vB5Lo", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerStop);
-    LIB_FUNCTION("hdTyRzCXQeQ", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0,
-                 sceAvPlayerStreamCount);
-    LIB_FUNCTION("yN7Jhuv8g24", "libSceAvPlayer", 1, "libSceAvPlayer", 1, 0, sceAvPlayerVprintf);
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("KMcEa+rHsIo", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerAddSource);
+    LIB_FUNCTION("x8uvuFOPZhU", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerAddSourceEx);
+    LIB_FUNCTION("buMCiJftcfw", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerChangeStream);
+    LIB_FUNCTION("NkJwDzKmIlw", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerClose);
+    LIB_FUNCTION("wwM99gjFf1Y", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerCurrentTime);
+    LIB_FUNCTION("BOVKAzRmuTQ", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerDisableStream);
+    LIB_FUNCTION("ODJK2sn9w4A", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerEnableStream);
+    LIB_FUNCTION("Wnp1OVcrZgk", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerGetAudioData);
+    LIB_FUNCTION("d8FcbzfAdQw", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerGetStreamInfo);
+    LIB_FUNCTION("o3+RWnHViSg", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerGetVideoData);
+    LIB_FUNCTION("JdksQu8pNdQ", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerGetVideoDataEx);
+    LIB_FUNCTION("aS66RI0gGgo", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerInit);
+    LIB_FUNCTION("o9eWRkSL+M4", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerInitEx);
+    LIB_FUNCTION("UbQoYawOsfY", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerIsActive);
+    LIB_FUNCTION("XC9wM+xULz8", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerJumpToTime);
+    LIB_FUNCTION("9y5v+fGN4Wk", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerPause);
+    LIB_FUNCTION("HD1YKVU26-M", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerPostInit);
+    // LIB_FUNCTION("agig-iDRrTE", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerPrintf);
+    LIB_FUNCTION("w5moABNwnRY", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerResume);
+    LIB_FUNCTION("k-q+xOxdc3E", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerSetAvSyncMode);
+    LIB_FUNCTION("eBTreZ84JFY", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerSetLogCallback);
+    LIB_FUNCTION("OVths0xGfho", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerSetLooping);
+    LIB_FUNCTION("av8Z++94rs0", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerSetTrickSpeed);
+    LIB_FUNCTION("ET4Gr-Uu07s", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerStart);
+    LIB_FUNCTION("ZC17w3vB5Lo", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerStop);
+    LIB_FUNCTION("hdTyRzCXQeQ", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerStreamCount);
+    LIB_FUNCTION("yN7Jhuv8g24", "libSceAvPlayer", 1, "libSceAvPlayer", sceAvPlayerVprintf);
 };
 
 } // namespace Libraries::AvPlayer

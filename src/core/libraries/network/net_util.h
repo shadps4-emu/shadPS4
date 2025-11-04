@@ -6,6 +6,10 @@
 #include <mutex>
 #include "common/types.h"
 
+namespace Libraries::Net {
+struct OrbisNetInAddr;
+}
+
 namespace NetUtil {
 
 class NetUtilInternal {
@@ -15,10 +19,20 @@ public:
 
 private:
     std::array<u8, 6> ether_address{};
+    std::string default_gateway{};
+    std::string netmask{};
+    std::string ip{};
     std::mutex m_mutex;
 
 public:
     const std::array<u8, 6>& GetEthernetAddr() const;
+    const std::string& GetDefaultGateway() const;
+    const std::string& GetNetmask() const;
+    const std::string& GetIp() const;
     bool RetrieveEthernetAddr();
+    bool RetrieveDefaultGateway();
+    bool RetrieveNetmask();
+    bool RetrieveIp();
+    int ResolveHostname(const char* hostname, Libraries::Net::OrbisNetInAddr* addr);
 };
 } // namespace NetUtil

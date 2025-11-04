@@ -102,15 +102,21 @@ enum class NumberConversion : u32 {
     Sint8ToSnormNz = 4,
     Sint16ToSnormNz = 5,
     Uint32ToUnorm = 6,
+    SrgbToNorm = 7,
 };
 
-struct CompMapping {
-    CompSwizzle r;
-    CompSwizzle g;
-    CompSwizzle b;
-    CompSwizzle a;
+union CompMapping {
+    struct {
+        CompSwizzle r;
+        CompSwizzle g;
+        CompSwizzle b;
+        CompSwizzle a;
+    };
+    std::array<CompSwizzle, 4> array;
 
-    auto operator<=>(const CompMapping& other) const = default;
+    bool operator==(const CompMapping& other) const {
+        return array == other.array;
+    }
 
     template <typename T>
     [[nodiscard]] std::array<T, 4> Apply(const std::array<T, 4>& data) const {
@@ -122,6 +128,14 @@ struct CompMapping {
         };
     }
 
+    [[nodiscard]] u32 ApplyMask(u32 mask) const {
+        u32 swizzled_mask{};
+        for (u32 i = 0; i < 4; ++i) {
+            swizzled_mask |= ((mask >> i) & 1) << Map(i);
+        }
+        return swizzled_mask;
+    }
+
     [[nodiscard]] CompMapping Inverse() const {
         CompMapping result{};
         InverseSingle(result.r, CompSwizzle::Red);
@@ -129,6 +143,12 @@ struct CompMapping {
         InverseSingle(result.b, CompSwizzle::Blue);
         InverseSingle(result.a, CompSwizzle::Alpha);
         return result;
+    }
+
+    [[nodiscard]] u32 Map(u32 comp) const {
+        const u32 swizzled_comp = u32(array[comp]);
+        constexpr u32 min_comp = u32(AmdGpu::CompSwizzle::Red);
+        return swizzled_comp >= min_comp ? swizzled_comp - min_comp : comp;
     }
 
 private:
@@ -200,6 +220,8 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
             return format;
         }
     }
+    case NumberFormat::Srgb:
+        return data_format == DataFormat::FormatBc6 ? NumberFormat::Unorm : format;
     case NumberFormat::Uscaled:
         return NumberFormat::Uint;
     case NumberFormat::Sscaled:
@@ -248,6 +270,15 @@ constexpr CompMapping RemapSwizzle(const DataFormat format, const CompMapping sw
         result.a = swizzle.r;
         return result;
     }
+    case DataFormat::Format5_6_5: {
+        // Remap to a more supported component order.
+        CompMapping result;
+        result.r = swizzle.b;
+        result.g = swizzle.g;
+        result.b = swizzle.r;
+        result.a = swizzle.a;
+        return result;
+    }
     default:
         return swizzle;
     }
@@ -267,6 +298,9 @@ constexpr NumberConversion MapNumberConversion(const NumberFormat num_fmt,
             return NumberConversion::None;
         }
     }
+    case NumberFormat::Srgb:
+        return data_fmt == DataFormat::FormatBc6 ? NumberConversion::SrgbToNorm
+                                                 : NumberConversion::None;
     case NumberFormat::Uscaled:
         return NumberConversion::UintToUscaled;
     case NumberFormat::Sscaled:
@@ -303,8 +337,21 @@ constexpr NumberClass GetNumberClass(const NumberFormat nfmt) {
     }
 }
 
+constexpr bool IsRgb(CompSwizzle swizzle) {
+    return swizzle == CompSwizzle::Red || swizzle == CompSwizzle::Green ||
+           swizzle == CompSwizzle::Blue;
+}
+
 constexpr bool IsInteger(const NumberFormat nfmt) {
-    return nfmt == AmdGpu::NumberFormat::Sint || nfmt == AmdGpu::NumberFormat::Uint;
+    return nfmt == NumberFormat::Sint || nfmt == NumberFormat::Uint;
+}
+
+constexpr bool IsBlockCoded(DataFormat format) {
+    return format >= DataFormat::FormatBc1 && format <= DataFormat::FormatBc7;
+}
+
+constexpr bool IsFmask(DataFormat format) {
+    return format >= DataFormat::FormatFmask8_1 && format <= DataFormat::FormatFmask64_8;
 }
 
 std::string_view NameOf(DataFormat fmt);
@@ -312,6 +359,7 @@ std::string_view NameOf(NumberFormat fmt);
 
 u32 NumComponents(DataFormat format);
 u32 NumBitsPerBlock(DataFormat format);
+u32 NumBitsPerElement(DataFormat format);
 
 } // namespace AmdGpu
 

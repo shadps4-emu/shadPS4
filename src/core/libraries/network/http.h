@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include "common/types.h"
+#include "core/libraries/network/ssl.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -31,6 +32,7 @@ struct HttpRequestInternal {
     int httpStatusCode; // +0x20C
     std::mutex m_mutex;
 };
+using OrbisHttpsCaList = Libraries::Ssl::OrbisSslCaList;
 
 int PS4_SYSV_ABI sceHttpAbortRequest();
 int PS4_SYSV_ABI sceHttpAbortRequestForce();
@@ -132,7 +134,7 @@ int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize();
 int PS4_SYSV_ABI sceHttpSetSendTimeOut();
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList();
-int PS4_SYSV_ABI sceHttpsGetCaList();
+int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
 int PS4_SYSV_ABI sceHttpsGetSslError();
 int PS4_SYSV_ABI sceHttpsLoadCert();
 int PS4_SYSV_ABI sceHttpsSetMinSslVersion();
@@ -155,5 +157,5 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize);
 int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const char* in);
 int PS4_SYSV_ABI sceHttpWaitRequest();
 
-void RegisterlibSceHttp(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Http

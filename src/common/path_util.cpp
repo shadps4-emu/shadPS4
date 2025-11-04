@@ -25,10 +25,6 @@
 #endif
 #endif
 
-#ifdef ENABLE_QT_GUI
-#include <QString>
-#endif
-
 namespace Common::FS {
 
 namespace fs = std::filesystem;
@@ -88,13 +84,6 @@ static std::optional<std::filesystem::path> GetBundleParentDirectory() {
 #endif
 
 static auto UserPaths = [] {
-#if defined(__APPLE__) && defined(ENABLE_QT_GUI)
-    // Set the current path to the directory containing the app bundle.
-    if (const auto bundle_dir = GetBundleParentDirectory()) {
-        std::filesystem::current_path(*bundle_dir);
-    }
-#endif
-
     // Try the portable user directory first.
     auto user_dir = std::filesystem::current_path() / PORTABLE_DIR;
     if (!std::filesystem::exists(user_dir)) {
@@ -137,6 +126,7 @@ static auto UserPaths = [] {
     create_path(PathType::PatchesDir, user_dir / PATCHES_DIR);
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
     create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
+    create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
 
     std::ofstream notice_file(user_dir / CUSTOM_TROPHY / "Notice.txt");
     if (notice_file.is_open()) {
@@ -227,23 +217,5 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
 
     return std::nullopt;
 }
-
-#ifdef ENABLE_QT_GUI
-void PathToQString(QString& result, const std::filesystem::path& path) {
-#ifdef _WIN32
-    result = QString::fromStdWString(path.wstring());
-#else
-    result = QString::fromStdString(path.string());
-#endif
-}
-
-std::filesystem::path PathFromQString(const QString& path) {
-#ifdef _WIN32
-    return std::filesystem::path(path.toStdWString());
-#else
-    return std::filesystem::path(path.toStdString());
-#endif
-}
-#endif
 
 } // namespace Common::FS

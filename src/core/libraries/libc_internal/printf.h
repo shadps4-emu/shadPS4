@@ -60,6 +60,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "common/va_ctx.h"
 
@@ -745,17 +746,17 @@ static int fprintf_ctx(Common::VaCtx* ctx, char* buf) {
 }
 
 static int vsnprintf_ctx(char* s, size_t n, const char* format, Common::VaList* arg) {
-    char buffer[n];
-    int result = _vsnprintf(_out_buffer, buffer, format, arg);
-    std::strcpy(s, buffer);
+    std::vector<char> buffer(n);
+    int result = _vsnprintf(_out_buffer, buffer.data(), format, arg);
+    std::strcpy(s, buffer.data());
     return result;
 }
 
 static int snprintf_ctx(char* s, size_t n, Common::VaCtx* ctx) {
     const char* format = vaArgPtr<const char>(&ctx->va_list);
-    char buffer[n];
-    int result = _vsnprintf(_out_buffer, buffer, format, &ctx->va_list);
-    std::strcpy(s, buffer);
+    std::vector<char> buffer(n);
+    int result = _vsnprintf(_out_buffer, buffer.data(), format, &ctx->va_list);
+    std::strcpy(s, buffer.data());
     return result;
 }
 

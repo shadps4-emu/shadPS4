@@ -124,6 +124,42 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     is_coherent = property_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
+void Buffer::Fill(u64 offset, u32 num_bytes, u32 value) {
+    scheduler->EndRendering();
+    ASSERT_MSG(offset % 4 == 0 && num_bytes % 4 == 0,
+               "FillBuffer size must be a multiple of 4 bytes");
+    const auto cmdbuf = scheduler->CommandBuffer();
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = buffer,
+        .offset = offset,
+        .size = num_bytes,
+    };
+    const vk::BufferMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = buffer,
+        .offset = offset,
+        .size = num_bytes,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+    });
+    cmdbuf.fillBuffer(buffer, offset, num_bytes, value);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
+}
+
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
 constexpr u64 WATCHES_RESERVE_CHUNK = 0x1000;
 
@@ -137,12 +173,15 @@ StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& 
                           size_bytes);
 }
 
-std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment) {
+std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) {
     if (!is_coherent && usage == MemoryUsage::Stream) {
         size = Common::AlignUp(size, instance->NonCoherentAtomSize());
     }
 
-    ASSERT(size <= this->size_bytes);
+    if (size > this->size_bytes) {
+        return {nullptr, 0};
+    }
+
     mapped_size = size;
 
     if (alignment > 0) {
@@ -162,8 +201,11 @@ std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment) {
     }
 
     const u64 mapped_upper_bound = offset + size;
-    WaitPendingOperations(mapped_upper_bound);
-    return std::make_pair(mapped_data.data() + offset, offset);
+    if (!WaitPendingOperations(mapped_upper_bound, allow_wait)) {
+        return {nullptr, 0};
+    }
+
+    return {mapped_data.data() + offset, offset};
 }
 
 void StreamBuffer::Commit() {
@@ -177,6 +219,12 @@ void StreamBuffer::Commit() {
     }
 
     offset += mapped_size;
+    if (current_watch_cursor != 0 &&
+        current_watches[current_watch_cursor].tick == scheduler->CurrentTick()) {
+        current_watches[current_watch_cursor].upper_bound = offset;
+        return;
+    }
+
     if (current_watch_cursor + 1 >= current_watches.size()) {
         // Ensure that there are enough watches.
         ReserveWatches(current_watches, WATCHES_RESERVE_CHUNK);
@@ -191,16 +239,20 @@ void StreamBuffer::ReserveWatches(std::vector<Watch>& watches, std::size_t grow_
     watches.resize(watches.size() + grow_size);
 }
 
-void StreamBuffer::WaitPendingOperations(u64 requested_upper_bound) {
+bool StreamBuffer::WaitPendingOperations(u64 requested_upper_bound, bool allow_wait) {
     if (!invalidation_mark) {
-        return;
+        return true;
     }
     while (requested_upper_bound > wait_bound && wait_cursor < *invalidation_mark) {
         auto& watch = previous_watches[wait_cursor];
-        wait_bound = watch.upper_bound;
+        if (!scheduler->IsFree(watch.tick) && !allow_wait) {
+            return false;
+        }
         scheduler->Wait(watch.tick);
+        wait_bound = watch.upper_bound;
         ++wait_cursor;
     }
+    return true;
 }
 
 } // namespace VideoCore

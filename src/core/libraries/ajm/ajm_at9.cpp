@@ -10,15 +10,51 @@ extern "C" {
 #include <libatrac9.h>
 }
 
-#include <vector>
-
 namespace Libraries::Ajm {
 
+struct ChunkHeader {
+    u32 tag;
+    u32 length;
+};
+static_assert(sizeof(ChunkHeader) == 8);
+
+struct AudioFormat {
+    u16 fmt_type;
+    u16 num_channels;
+    u32 avg_sample_rate;
+    u32 avg_byte_rate;
+    u16 block_align;
+    u16 bits_per_sample;
+    u16 ext_size;
+    union {
+        u16 valid_bits_per_sample;
+        u16 samples_per_block;
+        u16 reserved;
+    };
+    u32 channel_mask;
+    u8 guid[16];
+    u32 version;
+    u8 config_data[4];
+    u32 reserved2;
+};
+static_assert(sizeof(AudioFormat) == 52);
+
+struct SampleData {
+    u32 sample_length;
+    u32 encoder_delay;
+    u32 encoder_delay2;
+};
+static_assert(sizeof(SampleData) == 12);
+
+struct RIFFHeader {
+    u32 riff;
+    u32 size;
+    u32 wave;
+};
+static_assert(sizeof(RIFFHeader) == 12);
+
 AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags)
-    : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {
-    ASSERT_MSG(m_handle, "Atrac9GetHandle failed");
-    AjmAt9Decoder::Reset();
-}
+    : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {}
 
 AjmAt9Decoder::~AjmAt9Decoder() {
     Atrac9ReleaseHandle(m_handle);
@@ -42,6 +78,7 @@ void AjmAt9Decoder::Initialize(const void* buffer, u32 buffer_size) {
     AjmAt9Decoder::Reset();
     m_pcm_buffer.resize(m_codec_info.frameSamples * m_codec_info.channels * GetPCMSize(m_format),
                         0);
+    m_is_initialized = true;
 }
 
 void AjmAt9Decoder::GetInfo(void* out_info) const {
@@ -52,8 +89,64 @@ void AjmAt9Decoder::GetInfo(void* out_info) const {
     info->next_frame_size = static_cast<Atrac9Handle*>(m_handle)->Config.FrameBytes;
 }
 
-std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
-                                                AjmInstanceGapless& gapless) {
+u8 g_at9_guid[] = {0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D,
+                   0x88, 0xFC, 0x61, 0x65, 0x4F, 0x8C, 0x83, 0x6C};
+
+void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& gapless) {
+    auto* header = reinterpret_cast<RIFFHeader*>(in_buf.data());
+    in_buf = in_buf.subspan(sizeof(RIFFHeader));
+
+    ASSERT(header->riff == 'FFIR');
+    ASSERT(header->wave == 'EVAW');
+
+    auto* chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
+    in_buf = in_buf.subspan(sizeof(ChunkHeader));
+    while (chunk->tag != 'atad') {
+        switch (chunk->tag) {
+        case ' tmf': {
+            ASSERT(chunk->length == sizeof(AudioFormat));
+            auto* fmt = reinterpret_cast<AudioFormat*>(in_buf.data());
+
+            ASSERT(fmt->fmt_type == 0xFFFE);
+            ASSERT(memcmp(fmt->guid, g_at9_guid, 16) == 0);
+            AjmDecAt9InitializeParameters init_params = {};
+            std::memcpy(init_params.config_data, fmt->config_data, ORBIS_AT9_CONFIG_DATA_SIZE);
+            Initialize(&init_params, sizeof(init_params));
+            break;
+        }
+        case 'tcaf': {
+            ASSERT(chunk->length == sizeof(SampleData));
+            auto* samples = reinterpret_cast<SampleData*>(in_buf.data());
+
+            gapless.init.total_samples = samples->sample_length;
+            gapless.init.skip_samples = samples->encoder_delay;
+            gapless.Reset();
+            break;
+        }
+        default:
+            break;
+        }
+        in_buf = in_buf.subspan(chunk->length);
+
+        chunk = reinterpret_cast<ChunkHeader*>(in_buf.data());
+        in_buf = in_buf.subspan(sizeof(ChunkHeader));
+    }
+}
+
+std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
+                                                      SparseOutputBuffer& output,
+                                                      AjmInstanceGapless& gapless) {
+    bool is_reset = false;
+    if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
+        *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
+        ParseRIFFHeader(in_buf, gapless);
+        is_reset = true;
+    }
+
+    if (!m_is_initialized) {
+        return {0, 0, is_reset};
+    }
+
     int ret = 0;
     int bytes_used = 0;
     switch (m_format) {
@@ -118,7 +211,7 @@ std::tuple<u32, u32> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOut
         m_num_frames = 0;
     }
 
-    return {1, samples_written};
+    return {1, m_codec_info.frameSamples, is_reset};
 }
 
 AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
@@ -134,12 +227,13 @@ AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
 }
 
 u32 AjmAt9Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
-    const auto max_samples =
+    const auto skip_samples =
+        std::min<u32>(gapless.current.skip_samples, m_codec_info.frameSamples);
+    const auto samples =
         gapless.init.total_samples != 0
-            ? std::min(gapless.current.total_samples, u32(m_codec_info.frameSamples))
+            ? std::min<u32>(gapless.current.total_samples, m_codec_info.frameSamples - skip_samples)
             : m_codec_info.frameSamples;
-    const auto skip_samples = std::min(u32(gapless.current.skip_samples), max_samples);
-    return (max_samples - skip_samples) * m_codec_info.channels * GetPCMSize(m_format);
+    return samples * m_codec_info.channels * GetPCMSize(m_format);
 }
 
 } // namespace Libraries::Ajm

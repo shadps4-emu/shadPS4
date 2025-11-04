@@ -81,5 +81,5 @@ int PS4_SYSV_ABI Func_B71349CF15FACAB0();
 int PS4_SYSV_ABI Func_CB18E00EFA946C64();
 int PS4_SYSV_ABI Func_F2AEE270605622B0();
 
-void RegisterlibSceCommonDialog(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::CommonDialog

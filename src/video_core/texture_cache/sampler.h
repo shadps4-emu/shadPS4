@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "video_core/amdgpu/regs_texture.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -15,7 +16,7 @@ namespace VideoCore {
 class Sampler {
 public:
     explicit Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sampler,
-                     const AmdGpu::Liverpool::BorderColorBufferBase& border_color_base);
+                     const AmdGpu::BorderColorBuffer border_color_base);
     ~Sampler();
 
     Sampler(const Sampler&) = delete;
