@@ -152,7 +152,7 @@ inline std::string RunDisassembler(const std::string& disassembler_cli, const T&
             }
         } else {
             cli.replace(pos, src_arg.size(), "\"" + bin_path.string() + "\"");
-            Common::FS::IOFile file(bin_path, Common::FS::FileAccessMode::Write);
+            Common::FS::IOFile file(bin_path, Common::FS::FileAccessMode::Create);
             file.Write(shader_code);
             file.Close();
 
