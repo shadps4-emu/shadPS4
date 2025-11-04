@@ -45,7 +45,7 @@ struct SwVersionStruct {
 };
 
 struct AuthInfoData {
-    u64 unk0;
+    u64 paid;
     u64 caps[4];
     u64 attrs[4];
     u64 ucred[8];

@@ -140,48 +140,39 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                         if (!versionMatches && type != "mask" && type != "mask_jump32")
                             continue;
 
-                        std::string currentPatchName = it->attribute("Name").value();
-
-                        for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
-                             patchLineIt != patchList.children().end(); ++patchLineIt) {
-
-                            std::string type = patchLineIt->attribute("Type").value();
-                            std::string address = patchLineIt->attribute("Address").value();
-                            std::string patchValue = patchLineIt->attribute("Value").value();
-                            std::string maskOffsetStr = patchLineIt->attribute("Offset").value();
-                            std::string targetStr = "";
-                            std::string sizeStr = "";
-                            if (type == "mask_jump32") {
-                                targetStr = patchLineIt->attribute("Target").value();
-                                sizeStr = patchLineIt->attribute("Size").value();
-                            } else {
-                                patchValue = convertValueToHex(type, patchValue);
-                            }
-
-                            bool littleEndian = false;
-
-                            if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
-                                littleEndian = true;
-                            }
-
-                            MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
-                            int maskOffsetValue = 0;
-
-                            if (type == "mask")
-                                patchMask = MemoryPatcher::PatchMask::Mask;
-
-                            if (type == "mask_jump32")
-                                patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
-
-                            if ((type == "mask" || type == "mask_jump32") &&
-                                !maskOffsetStr.empty()) {
-                                maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
-                            }
-
-                            MemoryPatcher::PatchMemory(currentPatchName, address, patchValue,
-                                                       targetStr, sizeStr, false, littleEndian,
-                                                       patchMask, maskOffsetValue);
+                        std::string address = patchLineIt->attribute("Address").value();
+                        std::string patchValue = patchLineIt->attribute("Value").value();
+                        std::string maskOffsetStr = patchLineIt->attribute("Offset").value();
+                        std::string targetStr = "";
+                        std::string sizeStr = "";
+                        if (type == "mask_jump32") {
+                            targetStr = patchLineIt->attribute("Target").value();
+                            sizeStr = patchLineIt->attribute("Size").value();
+                        } else {
+                            patchValue = convertValueToHex(type, patchValue);
                         }
+
+                        bool littleEndian = false;
+                        if (type == "bytes16" || type == "bytes32" || type == "bytes64") {
+                            littleEndian = true;
+                        }
+
+                        MemoryPatcher::PatchMask patchMask = MemoryPatcher::PatchMask::None;
+                        int maskOffsetValue = 0;
+
+                        if (type == "mask")
+                            patchMask = MemoryPatcher::PatchMask::Mask;
+
+                        if (type == "mask_jump32")
+                            patchMask = MemoryPatcher::PatchMask::Mask_Jump32;
+
+                        if ((type == "mask" || type == "mask_jump32") && !maskOffsetStr.empty()) {
+                            maskOffsetValue = std::stoi(maskOffsetStr, 0, 10);
+                        }
+
+                        MemoryPatcher::PatchMemory(currentPatchName, address, patchValue, targetStr,
+                                                   sizeStr, false, littleEndian, patchMask,
+                                                   maskOffsetValue);
                     }
                 }
             }

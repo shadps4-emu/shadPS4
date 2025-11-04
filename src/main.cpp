@@ -211,7 +211,6 @@ int main(int argc, char* argv[]) {
                 game_path = argv[i];
                 has_game_argument = true;
             }
-            break;
         } else {
             std::cerr << "Unknown argument: " << cur_arg << ", see --help for info.\n";
         }
