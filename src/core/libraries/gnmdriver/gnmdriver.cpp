@@ -7,6 +7,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/slot_vector.h"
 #include "core/address_space.h"
@@ -68,7 +69,7 @@ std::condition_variable cv_lock{};
 std::mutex m_submission{};
 static u64 frames_submitted{};      // frame counter
 static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
-static int sdk_version{0};
+static s32 sdk_version{0};
 
 static u32 asc_next_offs_dw[Liverpool::NumComputeRings];
 
@@ -2199,9 +2200,9 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
     }
 
     if (send_init_packet) {
-        if (sdk_version <= 0x1ffffffu) {
+        if (sdk_version < Common::ElfInfo::FW_20) {
             liverpool->SubmitGfx(InitSequence, {});
-        } else if (sdk_version <= 0x3ffffffu) {
+        } else if (sdk_version < Common::ElfInfo::FW_40) {
             if (sceKernelIsNeoMode()) {
                 if (!UseNeoCompatSequences) {
                     liverpool->SubmitGfx(InitSequence200Neo, {});
@@ -2780,14 +2781,20 @@ int PS4_SYSV_ABI Func_C4C328B7CF3B4171() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+    if (sdk_version >= Common::ElfInfo::FW_40) {
+        return sceGnmDrawInitToDefaultContextState400(cmdbuf, size);
+    }
+    return sceGnmDrawInitToDefaultContextState(cmdbuf, size);
 }
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_TRACE(Lib_GnmDriver, "called");
+    if (sdk_version >= Common::ElfInfo::FW_40) {
+        return 0x100;
+    }
+    return 0x20;
 }
 
 int PS4_SYSV_ABI sceGnmFindResources() {

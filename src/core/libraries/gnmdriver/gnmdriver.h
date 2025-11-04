@@ -286,7 +286,7 @@ int PS4_SYSV_ABI Func_ECB4C6BA41FE3350();
 int PS4_SYSV_ABI sceGnmDebugModuleReset();
 int PS4_SYSV_ABI sceGnmDebugReset();
 int PS4_SYSV_ABI Func_C4C328B7CF3B4171();
-int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand();
+int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize();
 int PS4_SYSV_ABI sceGnmFindResources();
 int PS4_SYSV_ABI sceGnmGetResourceRegistrationBuffers();

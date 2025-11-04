@@ -17,7 +17,7 @@ namespace MemoryPatcher {
 extern EXPORT uintptr_t g_eboot_address;
 extern uint64_t g_eboot_image_size;
 extern std::string g_game_serial;
-extern std::string patchFile;
+extern std::string patch_file;
 
 enum PatchMask : uint8_t {
     None,

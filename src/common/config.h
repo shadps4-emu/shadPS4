@@ -27,6 +27,8 @@ void load(const std::filesystem::path& path, bool is_game_specific = false);
 void save(const std::filesystem::path& path, bool is_game_specific = false);
 void resetGameSpecificValue(std::string entry);
 
+bool getGameRunning();
+void setGameRunning(bool running);
 int getVolumeSlider();
 void setVolumeSlider(int volumeValue, bool is_game_specific = false);
 std::string getTrophyKey();
@@ -79,6 +81,10 @@ bool vkValidationEnabled();
 void setVkValidation(bool enable, bool is_game_specific = false);
 bool vkValidationSyncEnabled();
 void setVkSyncValidation(bool enable, bool is_game_specific = false);
+bool vkValidationGpuEnabled();
+void setVkGpuValidation(bool enable, bool is_game_specific = false);
+bool vkValidationCoreEnabled();
+void setVkCoreValidation(bool enable, bool is_game_specific = false);
 bool getVkCrashDiagnosticEnabled();
 void setVkCrashDiagnosticEnabled(bool enable, bool is_game_specific = false);
 bool getVkHostMarkersEnabled();
@@ -97,11 +103,10 @@ double getTrophyNotificationDuration();
 void setTrophyNotificationDuration(double newTrophyNotificationDuration,
                                    bool is_game_specific = false);
 int getCursorHideTimeout();
-void setCursorHideTimeout(int newcursorHideTimeout);
 std::string getMainOutputDevice();
-void setMainOutputDevice(std::string device);
+void setMainOutputDevice(std::string device, bool is_game_specific = false);
 std::string getPadSpkOutputDevice();
-void setPadSpkOutputDevice(std::string device);
+void setPadSpkOutputDevice(std::string device, bool is_game_specific = false);
 std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
 void setMicDevice(std::string device, bool is_game_specific = false);
@@ -122,10 +127,8 @@ void setNeoMode(bool enable, bool is_game_specific = false);
 bool isDevKitConsole();
 void setDevKitConsole(bool enable, bool is_game_specific = false);
 
-bool vkValidationCoreEnabled(); // no set
-bool vkValidationGpuEnabled();  // no set
 int getExtraDmemInMbytes();
-void setExtraDmemInMbytes(int value);
+void setExtraDmemInMbytes(int value, bool is_game_specific = false);
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 std::string getDefaultControllerID();
@@ -143,18 +146,18 @@ void setRcasAttenuation(int value, bool is_game_specific = false);
 bool getIsConnectedToNetwork();
 void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
-void setChooseHomeTab(const std::string& type, bool is_game_specific = false);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
+bool getLoadAutoPatches();
+void setLoadAutoPatches(bool enable);
+
+enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
+int getUsbDeviceBackend();
+void setUsbDeviceBackend(int value, bool is_game_specific = false);
 
 // TODO
-bool GetLoadGameSizeEnabled();
 std::filesystem::path GetSaveDataPath();
-void setLoadGameSizeEnabled(bool enable);
-bool getCompatibilityEnabled();
-bool getCheckCompatibilityOnStartup();
 std::string getUserName();
-std::string getChooseHomeTab();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
 bool GetOverrideControllerColor();
@@ -164,8 +167,6 @@ void SetControllerCustomColor(int r, int b, int g);
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
 void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
-void setCompatibilityEnabled(bool use);
-void setCheckCompatibilityOnStartup(bool use);
 // Gui
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
