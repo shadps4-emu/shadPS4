@@ -163,7 +163,9 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operan
             mask = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         // Get lower qword from xmm register
         c.vmovq(scratch1, xmm_dst);
@@ -177,8 +179,8 @@ static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operan
         c.mov(scratch2, mask);
         c.and_(scratch1, scratch2);
 
-        // Writeback to xmm register, extrq instruction says top 64-bits are undefined so we don't
-        // care to preserve them
+        // Writeback to xmm register, extrq instruction says top 64-bits are undefined but zeroed on
+        // AMD CPUs
         c.vmovq(xmm_dst, scratch1);
 
         c.pop(scratch2);
@@ -287,7 +289,9 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
             mask_value = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask_value = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         c.vmovq(scratch1, xmm_src);
         c.vmovq(scratch2, xmm_dst);
@@ -307,8 +311,9 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
         // dst |= src
         c.or_(scratch2, scratch1);
 
-        // Insert scratch2 into low 64 bits of dst, upper 64 bits are unaffected
-        c.vpinsrq(xmm_dst, xmm_dst, scratch2, 0);
+        // Insert scratch2 into low 64 bits of dst, upper 64 bits are undefined but zeroed on AMD
+        // CPUs
+        c.vmovq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -374,7 +379,7 @@ static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* oper
         c.and_(scratch2, mask);
         c.or_(scratch2, scratch1);
 
-        // Upper 64 bits are undefined in insertq
+        // Upper 64 bits are undefined in insertq but AMD CPUs zero them
         c.vmovq(xmm_dst, scratch2);
 
         c.pop(mask);
@@ -635,6 +640,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         lowQWordDst >>= index;
         lowQWordDst &= mask;
 
+        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
         memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
 
         Common::IncrementRip(ctx, 4);
@@ -675,6 +681,7 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
         lowQWordDst &= ~(mask << index);
         lowQWordDst |= lowQWordSrc << index;
 
+        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
         memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
 
         Common::IncrementRip(ctx, 4);
@@ -746,6 +753,10 @@ static bool PatchesIllegalInstructionHandler(void* context) {
             ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
             const auto status =
                 Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+            if (ZYAN_SUCCESS(status) && instruction.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_UD2)
+                [[unlikely]] {
+                UNREACHABLE_MSG("ud2 at code address {:#x}", (u64)code_address);
+            }
             LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}", (u64)code_address,
                       ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
                                            : "Failed to decode");

@@ -111,6 +111,8 @@ public:
     }
 
     void RelocateAnyImports(Module* m) {
+        std::scoped_lock lk{mutex};
+
         Relocate(m);
         const auto exports = m->GetExportModules();
         for (auto& export_mod : exports) {
@@ -151,7 +153,7 @@ public:
     void Relocate(Module* module);
     bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
-    void Execute(const std::vector<std::string> args = {});
+    void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
 private:

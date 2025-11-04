@@ -21,7 +21,7 @@ int PS4_SYSV_ABI posix_pthread_key_create(PthreadKeyT* key, PthreadKeyDestructor
         it->allocated = 1;
         it->destructor = destructor;
         it->seqno++;
-        *key = std::distance(ThreadKeytable.begin(), it);
+        *key = static_cast<PthreadKeyT>(std::distance(ThreadKeytable.begin(), it));
         return 0;
     }
     return POSIX_EAGAIN;
@@ -44,7 +44,7 @@ int PS4_SYSV_ABI posix_pthread_key_delete(PthreadKeyT key) {
 void _thread_cleanupspecific() {
     Pthread* curthread = g_curthread;
     PthreadKeyDestructor destructor;
-    const void* data = NULL;
+    const void* data = nullptr;
 
     if (curthread->specific == nullptr) {
         return;
@@ -63,7 +63,7 @@ void _thread_cleanupspecific() {
                 }
                 curthread->specific[key].data = nullptr;
                 curthread->specific_data_count--;
-            } else if (curthread->specific[key].data != NULL) {
+            } else if (curthread->specific[key].data != nullptr) {
                 /*
                  * This can happen if the key is deleted via
                  * pthread_key_delete without first setting the value
@@ -97,12 +97,11 @@ void _thread_cleanupspecific() {
 }
 
 int PS4_SYSV_ABI posix_pthread_setspecific(PthreadKeyT key, const void* value) {
-    int ret = 0;
     Pthread* pthread = g_curthread;
 
     if (!pthread->specific) {
-        pthread->specific = new PthreadSpecificElem[PthreadKeysMax]{};
-        if (!pthread->specific) {
+        pthread->specific = new (std::nothrow) PthreadSpecificElem[PthreadKeysMax]{};
+        if (pthread->specific == nullptr) {
             return POSIX_ENOMEM;
         }
     }
@@ -142,22 +141,21 @@ const void* PS4_SYSV_ABI posix_pthread_getspecific(PthreadKeyT key) {
 
 void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
     // Posix
-    LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_create);
-    LIB_FUNCTION("6BpEZuDT7YI", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_key_delete);
-    LIB_FUNCTION("0-KXaS70xy4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_getspecific);
-    LIB_FUNCTION("WrOLvHU0yQM", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_setspecific);
+    LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", posix_pthread_key_create);
+    LIB_FUNCTION("6BpEZuDT7YI", "libScePosix", 1, "libkernel", posix_pthread_key_delete);
+    LIB_FUNCTION("0-KXaS70xy4", "libScePosix", 1, "libkernel", posix_pthread_getspecific);
+    LIB_FUNCTION("WrOLvHU0yQM", "libScePosix", 1, "libkernel", posix_pthread_setspecific);
 
     // Posix-Kernel
-    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", 1, 1, posix_pthread_key_create);
-    LIB_FUNCTION("0-KXaS70xy4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
-    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", 1, 1, posix_pthread_setspecific);
+    LIB_FUNCTION("mqULNdimTn0", "libkernel", 1, "libkernel", posix_pthread_key_create);
+    LIB_FUNCTION("0-KXaS70xy4", "libkernel", 1, "libkernel", posix_pthread_getspecific);
+    LIB_FUNCTION("WrOLvHU0yQM", "libkernel", 1, "libkernel", posix_pthread_setspecific);
 
     // Orbis
-    LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_create));
-    LIB_FUNCTION("PrdHuuDekhY", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_key_delete));
-    LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_getspecific);
-    LIB_FUNCTION("+BzXYkqYeLE", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_setspecific));
+    LIB_FUNCTION("geDaqgH9lTg", "libkernel", 1, "libkernel", ORBIS(posix_pthread_key_create));
+    LIB_FUNCTION("PrdHuuDekhY", "libkernel", 1, "libkernel", ORBIS(posix_pthread_key_delete));
+    LIB_FUNCTION("eoht7mQOCmo", "libkernel", 1, "libkernel", posix_pthread_getspecific);
+    LIB_FUNCTION("+BzXYkqYeLE", "libkernel", 1, "libkernel", ORBIS(posix_pthread_setspecific));
 }
 
 } // namespace Libraries::Kernel

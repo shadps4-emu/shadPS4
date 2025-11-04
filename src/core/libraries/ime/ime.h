@@ -13,78 +13,12 @@ class SymbolsResolver;
 
 namespace Libraries::Ime {
 
-constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
-
-enum class OrbisImeKeyboardOption : u32 {
-    Default = 0,
-    Repeat = 1,
-    RepeatEachKey = 2,
-    AddOsk = 4,
-    EffectiveWithIme = 8,
-    DisableResume = 16,
-    DisableCapslockWithoutShift = 32,
-};
-DECLARE_ENUM_FLAG_OPERATORS(OrbisImeKeyboardOption)
-
-enum class OrbisImeOption : u32 {
-    DEFAULT = 0,
-    MULTILINE = 1,
-    NO_AUTO_CAPITALIZATION = 2,
-    PASSWORD = 4,
-    LANGUAGES_FORCED = 8,
-    EXT_KEYBOARD = 16,
-    NO_LEARNING = 32,
-    FIXED_POSITION = 64,
-    DISABLE_RESUME = 256,
-    DISABLE_AUTO_SPACE = 512,
-    DISABLE_POSITION_ADJUSTMENT = 2048,
-    EXPANDED_PREEDIT_BUFFER = 4096,
-    USE_JAPANESE_EISUU_KEY_AS_CAPSLOCK = 8192,
-    USE_2K_COORDINATES = 16384,
-};
-DECLARE_ENUM_FLAG_OPERATORS(OrbisImeOption)
-
-struct OrbisImeKeyboardParam {
-    OrbisImeKeyboardOption option;
-    s8 reserved1[4];
-    void* arg;
-    OrbisImeEventHandler handler;
-    s8 reserved2[8];
-};
-
-struct OrbisImeParam {
-    s32 user_id;
-    OrbisImeType type;
-    u64 supported_languages;
-    OrbisImeEnterLabel enter_label;
-    OrbisImeInputMethod input_method;
-    OrbisImeTextFilter filter;
-    OrbisImeOption option;
-    u32 maxTextLength;
-    char16_t* inputTextBuffer;
-    float posx;
-    float posy;
-    OrbisImeHorizontalAlignment horizontal_alignment;
-    OrbisImeVerticalAlignment vertical_alignment;
-    void* work;
-    void* arg;
-    OrbisImeEventHandler handler;
-    s8 reserved[8];
-};
-
-struct OrbisImeCaret {
-    f32 x;
-    f32 y;
-    u32 height;
-    u32 index;
-};
-
 int PS4_SYSV_ABI FinalizeImeModule();
 int PS4_SYSV_ABI InitializeImeModule();
 int PS4_SYSV_ABI sceImeCheckFilterText();
 int PS4_SYSV_ABI sceImeCheckRemoteEventParam();
 int PS4_SYSV_ABI sceImeCheckUpdateTextInfo();
-int PS4_SYSV_ABI sceImeClose();
+Error PS4_SYSV_ABI sceImeClose();
 int PS4_SYSV_ABI sceImeConfigGet();
 int PS4_SYSV_ABI sceImeConfigSet();
 int PS4_SYSV_ABI sceImeConfirmCandidate();
@@ -98,22 +32,25 @@ int PS4_SYSV_ABI sceImeDisableController();
 int PS4_SYSV_ABI sceImeFilterText();
 int PS4_SYSV_ABI sceImeForTestFunction();
 int PS4_SYSV_ABI sceImeGetPanelPositionAndForm();
-s32 PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height);
-s32 PS4_SYSV_ABI sceImeKeyboardClose(s32 userId);
+Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u32* height);
+Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId);
 int PS4_SYSV_ABI sceImeKeyboardGetInfo();
-int PS4_SYSV_ABI sceImeKeyboardGetResourceId();
-s32 PS4_SYSV_ABI sceImeKeyboardOpen(s32 userId, const OrbisImeKeyboardParam* param);
+Error PS4_SYSV_ABI
+sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userId,
+                            OrbisImeKeyboardResourceIdArray* resourceIdArray);
+Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUserId userId,
+                                      const OrbisImeKeyboardParam* param);
 int PS4_SYSV_ABI sceImeKeyboardOpenInternal();
 int PS4_SYSV_ABI sceImeKeyboardSetMode();
 int PS4_SYSV_ABI sceImeKeyboardUpdate();
-s32 PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const void* extended);
+Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExtended* extended);
 int PS4_SYSV_ABI sceImeOpenInternal();
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param);
 int PS4_SYSV_ABI sceImeSetCandidateIndex();
-s32 PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret);
-s32 PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length);
+Error PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret);
+Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length);
 int PS4_SYSV_ABI sceImeSetTextGeometry();
-s32 PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler);
+Error PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler);
 int PS4_SYSV_ABI sceImeVshClearPreedit();
 int PS4_SYSV_ABI sceImeVshClose();
 int PS4_SYSV_ABI sceImeVshConfirmPreedit();
@@ -134,6 +71,6 @@ int PS4_SYSV_ABI sceImeVshUpdate();
 int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
-void RegisterlibSceIme(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Ime

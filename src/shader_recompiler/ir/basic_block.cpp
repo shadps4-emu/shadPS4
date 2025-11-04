@@ -30,7 +30,7 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
     const auto result_it{instructions.insert(insertion_point, *inst)};
 
     if (inst->NumArgs() != args.size()) {
-        throw InvalidArgument("Invalid number of arguments {} in {}", args.size(), op);
+        UNREACHABLE_MSG("Invalid number of arguments {} in {}", args.size(), op);
     }
     std::ranges::for_each(args, [inst, index = size_t{0}](const Value& arg) mutable {
         inst->SetArg(index, arg);
@@ -123,8 +123,8 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             ret += fmt::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
         }
 
-        if (op == Opcode::ReadConst) {
-            ret += fmt::format(" (flags={}) ", inst.Flags<u32>());
+        if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
+            ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {

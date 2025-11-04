@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+#include <queue>
 #include "shader_recompiler/ir/program.h"
 
 namespace Shader::Optimization {
@@ -78,10 +79,20 @@ static IR::Value GetRealValue(PhiMap& phi_map, IR::Inst* inst, u32 lane) {
         it->second = new_phi;
 
         // Gather all arguments.
+        boost::container::static_vector<IR::Value, 5> phi_args;
         for (size_t arg_index = 0; arg_index < inst->NumArgs(); arg_index++) {
             IR::Inst* arg_prod = inst->Arg(arg_index).InstRecursive();
             const IR::Value arg = GetRealValue(phi_map, arg_prod, lane);
-            new_phi->AddPhiOperand(inst->PhiBlock(arg_index), arg);
+            phi_args.push_back(arg);
+        }
+        const IR::Value arg0 = phi_args[0].Resolve();
+        if (std::ranges::all_of(phi_args,
+                                [&](const IR::Value& arg) { return arg.Resolve() == arg0; })) {
+            new_phi->ReplaceUsesWith(arg0);
+        } else {
+            for (size_t arg_index = 0; arg_index < inst->NumArgs(); arg_index++) {
+                new_phi->AddPhiOperand(inst->PhiBlock(arg_index), phi_args[arg_index]);
+            }
         }
         return IR::Value{new_phi};
     }
@@ -95,6 +106,10 @@ void ReadLaneEliminationPass(IR::Program& program) {
             if (inst.GetOpcode() != IR::Opcode::ReadLane) {
                 continue;
             }
+            if (!inst.Arg(1).IsImmediate()) {
+                continue;
+            }
+
             const u32 lane = inst.Arg(1).U32();
             IR::Inst* prod = inst.Arg(0).InstRecursive();
 

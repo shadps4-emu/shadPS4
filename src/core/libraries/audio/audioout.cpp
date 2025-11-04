@@ -14,6 +14,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::AudioOut {
@@ -168,8 +169,19 @@ int PS4_SYSV_ABI sceAudioOutGetInfoOpenNum() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAudioOutGetLastOutputTime() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+int PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
+    LOG_DEBUG(Lib_AudioOut, "called, handle: {}, output time: {}", handle, fmt::ptr(output_time));
+    if (!output_time) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
+    }
+    if (handle >= ports_out.size()) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+    }
+    auto& port = ports_out.at(handle - 1);
+    if (!port.IsOpen()) {
+        return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+    }
+    *output_time = port.last_output_time;
     return ORBIS_OK;
 }
 
@@ -196,7 +208,7 @@ int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
             state->channel = port.format_info.num_channels > 2 ? 2 : port.format_info.num_channels;
             break;
         case OrbisAudioOutPort::Personal:
-        case OrbisAudioOutPort::Padspk:
+        case OrbisAudioOutPort::PadSpk:
             state->output = 4;
             state->channel = 1;
             break;
@@ -289,7 +301,7 @@ static void AudioOutputThread(PortOut* port, const std::stop_token& stop) {
         timer.Start();
         {
             std::unique_lock lock{port->mutex};
-            if (port->output_cv.wait(lock, stop, [&] { return port->output_ready; })) {
+            if (port->output_ready) {
                 port->impl->Output(port->output_buffer);
                 port->output_ready = false;
             }
@@ -316,7 +328,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
-    if ((port_type < OrbisAudioOutPort::Main || port_type > OrbisAudioOutPort::Padspk) &&
+    if ((port_type < OrbisAudioOutPort::Main || port_type > OrbisAudioOutPort::PadSpk) &&
         (port_type != OrbisAudioOutPort::Audio3d && port_type != OrbisAudioOutPort::Aux)) {
         LOG_ERROR(Lib_AudioOut, "Invalid port type");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
@@ -386,6 +398,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
+    auto samples_sent = 0;
     auto& port = ports_out.at(handle - 1);
     {
         std::unique_lock lock{port.mutex};
@@ -396,20 +409,22 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         if (ptr != nullptr && port.IsOpen()) {
             std::memcpy(port.output_buffer, ptr, port.BufferSize());
             port.output_ready = true;
+            port.last_output_time = Kernel::sceKernelGetProcessTime();
+            samples_sent = port.buffer_frames * port.format_info.num_channels;
         }
     }
-    port.output_cv.notify_one();
-    return ORBIS_OK;
+    return samples_sent;
 }
 
 int PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
+    int ret = 0;
     for (u32 i = 0; i < num; i++) {
         const auto [handle, ptr] = param[i];
-        if (const auto ret = sceAudioOutOutput(handle, ptr); ret != ORBIS_OK) {
+        if (ret = sceAudioOutOutput(handle, ptr); ret < 0) {
             return ret;
         }
     }
-    return ORBIS_OK;
+    return ret;
 }
 
 int PS4_SYSV_ABI sceAudioOutPtClose() {
@@ -523,7 +538,22 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         }
         port.impl->SetVolume(port.volume);
     }
+    AdjustVol();
     return ORBIS_OK;
+}
+
+void AdjustVol() {
+    if (audio == nullptr) {
+        return;
+    }
+
+    for (int i = 0; i < ports_out.size(); i++) {
+        std::unique_lock lock{ports_out[i].mutex};
+        if (!ports_out[i].IsOpen()) {
+            continue;
+        }
+        ports_out[i].impl->SetVolume(ports_out[i].volume);
+    }
 }
 
 int PS4_SYSV_ABI sceAudioOutSetVolumeDown() {
@@ -596,131 +626,108 @@ int PS4_SYSV_ABI sceAudioOutSetSystemDebugState() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceAudioOut(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("cx2dYFbzIAg", "libSceAudioOutDeviceService", 1, "libSceAudioOut", 1, 1,
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("cx2dYFbzIAg", "libSceAudioOutDeviceService", 1, "libSceAudioOut",
                  sceAudioOutDeviceIdOpen);
-    LIB_FUNCTION("tKumjQSzhys", "libSceAudioDeviceControl", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("tKumjQSzhys", "libSceAudioDeviceControl", 1, "libSceAudioOut",
                  sceAudioDeviceControlGet);
-    LIB_FUNCTION("5ChfcHOf3SM", "libSceAudioDeviceControl", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("5ChfcHOf3SM", "libSceAudioDeviceControl", 1, "libSceAudioOut",
                  sceAudioDeviceControlSet);
-    LIB_FUNCTION("Iz9X7ISldhs", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutA3dControl);
-    LIB_FUNCTION("9RVIoocOVAo", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutA3dExit);
-    LIB_FUNCTION("n7KgxE8rOuE", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutA3dInit);
-    LIB_FUNCTION("WBAO6-n0-4M", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("Iz9X7ISldhs", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutA3dControl);
+    LIB_FUNCTION("9RVIoocOVAo", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutA3dExit);
+    LIB_FUNCTION("n7KgxE8rOuE", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutA3dInit);
+    LIB_FUNCTION("WBAO6-n0-4M", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutAttachToApplicationByPid);
-    LIB_FUNCTION("O3FM2WXIJaI", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("O3FM2WXIJaI", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutChangeAppModuleState);
-    LIB_FUNCTION("s1--uE9mBFw", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutClose);
-    LIB_FUNCTION("ol4LbeTG8mc", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("s1--uE9mBFw", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutClose);
+    LIB_FUNCTION("ol4LbeTG8mc", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutDetachFromApplicationByPid);
-    LIB_FUNCTION("r1V9IFEE+Ts", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("r1V9IFEE+Ts", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutExConfigureOutputMode);
-    LIB_FUNCTION("wZakRQsWGos", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutExGetSystemInfo);
-    LIB_FUNCTION("xjjhT5uw08o", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutExPtClose);
-    LIB_FUNCTION("DsST7TNsyfo", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("wZakRQsWGos", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutExGetSystemInfo);
+    LIB_FUNCTION("xjjhT5uw08o", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutExPtClose);
+    LIB_FUNCTION("DsST7TNsyfo", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutExPtGetLastOutputTime);
-    LIB_FUNCTION("4UlW3CSuCa4", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutExPtOpen);
-    LIB_FUNCTION("Xcj8VTtnZw0", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("4UlW3CSuCa4", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutExPtOpen);
+    LIB_FUNCTION("Xcj8VTtnZw0", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutExSystemInfoIsSupportedAudioOutExMode);
-    LIB_FUNCTION("I3Fwcmkg5Po", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("I3Fwcmkg5Po", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetFocusEnablePid);
-    LIB_FUNCTION("Y3lXfCFEWFY", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("Y3lXfCFEWFY", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetHandleStatusInfo);
-    LIB_FUNCTION("-00OAutAw+c", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutGetInfo);
-    LIB_FUNCTION("RqmKxBqB8B4", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutGetInfoOpenNum);
-    LIB_FUNCTION("Ptlts326pds", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("-00OAutAw+c", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutGetInfo);
+    LIB_FUNCTION("RqmKxBqB8B4", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutGetInfoOpenNum);
+    LIB_FUNCTION("Ptlts326pds", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetLastOutputTime);
-    LIB_FUNCTION("GrQ9s4IrNaQ", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutGetPortState);
-    LIB_FUNCTION("c7mVozxJkPU", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("GrQ9s4IrNaQ", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutGetPortState);
+    LIB_FUNCTION("c7mVozxJkPU", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetSimulatedBusUsableStatusByBusType);
-    LIB_FUNCTION("pWmS7LajYlo", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("pWmS7LajYlo", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetSimulatedHandleStatusInfo);
-    LIB_FUNCTION("oPLghhAWgMM", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("oPLghhAWgMM", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutGetSimulatedHandleStatusInfo2);
-    LIB_FUNCTION("5+r7JYHpkXg", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutGetSparkVss);
-    LIB_FUNCTION("R5hemoKKID8", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutGetSystemState);
-    LIB_FUNCTION("JfEPXVxhFqA", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutInit);
-    LIB_FUNCTION("n16Kdoxnvl0", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("5+r7JYHpkXg", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutGetSparkVss);
+    LIB_FUNCTION("R5hemoKKID8", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutGetSystemState);
+    LIB_FUNCTION("JfEPXVxhFqA", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutInit);
+    LIB_FUNCTION("n16Kdoxnvl0", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutInitIpmiGetSession);
-    LIB_FUNCTION("r+qKw+ueD+Q", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("r+qKw+ueD+Q", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutMasteringGetState);
-    LIB_FUNCTION("xX4RLegarbg", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutMasteringInit);
-    LIB_FUNCTION("4055yaUg3EY", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("xX4RLegarbg", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutMasteringInit);
+    LIB_FUNCTION("4055yaUg3EY", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutMasteringSetParam);
-    LIB_FUNCTION("RVWtUgoif5o", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutMasteringTerm);
-    LIB_FUNCTION("-LXhcGARw3k", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutMbusInit);
-    LIB_FUNCTION("ekNvsT22rsY", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutOpen);
-    LIB_FUNCTION("qLpSK75lXI4", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutOpenEx);
-    LIB_FUNCTION("QOQtbeDqsT4", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutOutput);
-    LIB_FUNCTION("w3PdaSTSwGE", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutOutputs);
-    LIB_FUNCTION("MapHTgeogbk", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutPtClose);
-    LIB_FUNCTION("YZaq+UKbriQ", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("RVWtUgoif5o", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutMasteringTerm);
+    LIB_FUNCTION("-LXhcGARw3k", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutMbusInit);
+    LIB_FUNCTION("ekNvsT22rsY", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutOpen);
+    LIB_FUNCTION("qLpSK75lXI4", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutOpenEx);
+    LIB_FUNCTION("QOQtbeDqsT4", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutOutput);
+    LIB_FUNCTION("w3PdaSTSwGE", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutOutputs);
+    LIB_FUNCTION("MapHTgeogbk", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutPtClose);
+    LIB_FUNCTION("YZaq+UKbriQ", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutPtGetLastOutputTime);
-    LIB_FUNCTION("xyT8IUCL3CI", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutPtOpen);
-    LIB_FUNCTION("o4OLQQqqA90", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetConnections);
-    LIB_FUNCTION("QHq2ylFOZ0k", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("xyT8IUCL3CI", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutPtOpen);
+    LIB_FUNCTION("o4OLQQqqA90", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetConnections);
+    LIB_FUNCTION("QHq2ylFOZ0k", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetConnectionsForUser);
-    LIB_FUNCTION("r9KGqGpwTpg", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetDevConnection);
-    LIB_FUNCTION("08MKi2E-RcE", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("r9KGqGpwTpg", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetDevConnection);
+    LIB_FUNCTION("08MKi2E-RcE", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetHeadphoneOutMode);
-    LIB_FUNCTION("18IVGrIQDU4", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("18IVGrIQDU4", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetJediJackVolume);
-    LIB_FUNCTION("h0o+D4YYr1k", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetJediSpkVolume);
-    LIB_FUNCTION("KI9cl22to7E", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetMainOutput);
-    LIB_FUNCTION("wVwPU50pS1c", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("h0o+D4YYr1k", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetJediSpkVolume);
+    LIB_FUNCTION("KI9cl22to7E", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetMainOutput);
+    LIB_FUNCTION("wVwPU50pS1c", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetMixLevelPadSpk);
-    LIB_FUNCTION("eeRsbeGYe20", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetMorpheusParam);
-    LIB_FUNCTION("IZrItPnflBM", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("eeRsbeGYe20", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetMorpheusParam);
+    LIB_FUNCTION("IZrItPnflBM", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetMorpheusWorkingMode);
-    LIB_FUNCTION("Gy0ReOgXW00", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("Gy0ReOgXW00", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetPortConnections);
-    LIB_FUNCTION("oRBFflIrCg0", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetPortStatuses);
-    LIB_FUNCTION("ae-IVPMSWjU", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutSetRecMode);
-    LIB_FUNCTION("d3WL2uPE1eE", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetSparkParam);
-    LIB_FUNCTION("X7Cfsiujm8Y", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetUsbVolume);
-    LIB_FUNCTION("b+uAV89IlxE", "libSceAudioOut", 1, "libSceAudioOut", 1, 1, sceAudioOutSetVolume);
-    LIB_FUNCTION("rho9DH-0ehs", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSetVolumeDown);
-    LIB_FUNCTION("I91P0HAPpjw", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("oRBFflIrCg0", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetPortStatuses);
+    LIB_FUNCTION("ae-IVPMSWjU", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetRecMode);
+    LIB_FUNCTION("d3WL2uPE1eE", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetSparkParam);
+    LIB_FUNCTION("X7Cfsiujm8Y", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetUsbVolume);
+    LIB_FUNCTION("b+uAV89IlxE", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetVolume);
+    LIB_FUNCTION("rho9DH-0ehs", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSetVolumeDown);
+    LIB_FUNCTION("I91P0HAPpjw", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutStartAuxBroadcast);
-    LIB_FUNCTION("uo+eoPzdQ-s", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutStartSharePlay);
-    LIB_FUNCTION("AImiaYFrKdc", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutStopAuxBroadcast);
-    LIB_FUNCTION("teCyKKZPjME", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutStopSharePlay);
-    LIB_FUNCTION("95bdtHdNUic", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSuspendResume);
-    LIB_FUNCTION("oRJZnXxok-M", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("uo+eoPzdQ-s", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutStartSharePlay);
+    LIB_FUNCTION("AImiaYFrKdc", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutStopAuxBroadcast);
+    LIB_FUNCTION("teCyKKZPjME", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutStopSharePlay);
+    LIB_FUNCTION("95bdtHdNUic", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSuspendResume);
+    LIB_FUNCTION("oRJZnXxok-M", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSysConfigureOutputMode);
-    LIB_FUNCTION("Tf9-yOJwF-A", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("Tf9-yOJwF-A", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSysGetHdmiMonitorInfo);
-    LIB_FUNCTION("y2-hP-KoTMI", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSysGetSystemInfo);
-    LIB_FUNCTION("YV+bnMvMfYg", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("y2-hP-KoTMI", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSysGetSystemInfo);
+    LIB_FUNCTION("YV+bnMvMfYg", "libSceAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSysHdmiMonitorInfoIsSupportedAudioOutMode);
-    LIB_FUNCTION("JEHhANREcLs", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSystemControlGet);
-    LIB_FUNCTION("9CHWVv6r3Dg", "libSceAudioOut", 1, "libSceAudioOut", 1, 1,
-                 sceAudioOutSystemControlSet);
-    LIB_FUNCTION("Mt7JB3lOyJk", "libSceAudioOutSparkControl", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("JEHhANREcLs", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSystemControlGet);
+    LIB_FUNCTION("9CHWVv6r3Dg", "libSceAudioOut", 1, "libSceAudioOut", sceAudioOutSystemControlSet);
+    LIB_FUNCTION("Mt7JB3lOyJk", "libSceAudioOutSparkControl", 1, "libSceAudioOut",
                  sceAudioOutSparkControlSetEqCoef);
-    LIB_FUNCTION("7UsdDOEvjlk", "libSceDbgAudioOut", 1, "libSceAudioOut", 1, 1,
+    LIB_FUNCTION("7UsdDOEvjlk", "libSceDbgAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetSystemDebugState);
 };
 

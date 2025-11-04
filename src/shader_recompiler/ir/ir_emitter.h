@@ -81,8 +81,7 @@ public:
 
     [[nodiscard]] U1 Condition(IR::Condition cond);
 
-    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0,
-                                   IR::Value index = IR::Value(u32(0u)));
+    [[nodiscard]] F32 GetAttribute(Attribute attribute, u32 comp = 0, u32 index = 0);
     [[nodiscard]] U32 GetAttributeU32(Attribute attribute, u32 comp = 0);
     void SetAttribute(Attribute attribute, const F32& value, u32 comp = 0);
 
@@ -96,18 +95,24 @@ public:
     [[nodiscard]] F32 GetPatch(Patch patch);
     void SetPatch(Patch patch, const F32& value);
 
-    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset);
-    void WriteShared(int bit_size, const Value& value, const U32& offset);
+    [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset,
+                                   bool is_gds = false);
+    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false);
 
-    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data);
-    [[nodiscard]] U32 SharedAtomicISub(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicIMin(const U32& address, const U32& data, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicIMax(const U32& address, const U32& data, bool is_signed);
-    [[nodiscard]] U32 SharedAtomicInc(const U32& address);
-    [[nodiscard]] U32 SharedAtomicDec(const U32& address);
-    [[nodiscard]] U32 SharedAtomicAnd(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicOr(const U32& address, const U32& data);
-    [[nodiscard]] U32 SharedAtomicXor(const U32& address, const U32& data);
+    [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicIMin(const U32& address, const U32U64& data, bool is_signed,
+                                          bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
+                                          bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
+    [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
+
+    template <typename T = U32>
+    [[nodiscard]] T SharedAtomicInc(const U32& address, bool is_gds);
+    template <typename T = U32>
+    [[nodiscard]] T SharedAtomicDec(const U32& address, bool is_gds);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
@@ -140,8 +145,12 @@ public:
                                          const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMin(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicFMin(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicIMax(const Value& handle, const Value& address,
                                          const Value& value, bool is_signed, BufferInstInfo info);
+    [[nodiscard]] Value BufferAtomicFMax(const Value& handle, const Value& address,
+                                         const Value& value, BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicInc(const Value& handle, const Value& address,
                                         BufferInstInfo info);
     [[nodiscard]] Value BufferAtomicDec(const Value& handle, const Value& address,
@@ -166,6 +175,9 @@ public:
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
+    [[nodiscard]] Value Ballot(const U1& bit);
+    [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
@@ -217,6 +229,7 @@ public:
     [[nodiscard]] F32 FPSin(const F32& value);
     [[nodiscard]] F32 FPExp2(const F32& value);
     [[nodiscard]] F32 FPLog2(const F32& value);
+    [[nodiscard]] F32 FPPow(const F32& x, const F32& y);
     [[nodiscard]] F32 FPLdexp(const F32& value, const U32& exp);
     [[nodiscard]] F32F64 FPRecip(const F32F64& value);
     [[nodiscard]] F32F64 FPRecipSqrt(const F32F64& value);
@@ -250,7 +263,7 @@ public:
     [[nodiscard]] F32F64 FPMedTri(const F32F64& a, const F32F64& b, const F32F64& c);
 
     [[nodiscard]] U32U64 IAdd(const U32U64& a, const U32U64& b);
-    [[nodiscard]] Value IAddCary(const U32& a, const U32& b);
+    [[nodiscard]] Value IAddCarry(const U32& a, const U32& b);
     [[nodiscard]] U32U64 ISub(const U32U64& a, const U32U64& b);
     [[nodiscard]] U32 IMulHi(const U32& a, const U32& b, bool is_signed = false);
     [[nodiscard]] U32U64 IMul(const U32U64& a, const U32U64& b);
@@ -295,10 +308,10 @@ public:
 
     [[nodiscard]] U1 ILessThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 IEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 ILessThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
-    [[nodiscard]] U1 IGreaterThan(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 ILessThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThan(const U32U64& lhs, const U32U64& rhs, bool is_signed);
     [[nodiscard]] U1 INotEqual(const U32U64& lhs, const U32U64& rhs);
-    [[nodiscard]] U1 IGreaterThanEqual(const U32& lhs, const U32& rhs, bool is_signed);
+    [[nodiscard]] U1 IGreaterThanEqual(const U32U64& lhs, const U32U64& rhs, bool is_signed);
 
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalAnd(const U1& a, const U1& b);
@@ -314,6 +327,7 @@ public:
                                      const Value& value);
 
     [[nodiscard]] U8U16U32U64 UConvert(size_t result_bitsize, const U8U16U32U64& value);
+    [[nodiscard]] U8U16U32U64 SConvert(size_t result_bitsize, const U8U16U32U64& value);
     [[nodiscard]] F16F32F64 FPConvert(size_t result_bitsize, const F16F32F64& value);
 
     [[nodiscard]] Value ImageAtomicIAdd(const Value& handle, const Value& coords,
@@ -347,9 +361,10 @@ public:
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
 
-    [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& address1,
-                                       const Value& address2, const Value& address3,
-                                       const Value& address4, TextureInstInfo info);
+    [[nodiscard]] Value ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
+                                       const Value& address1, const Value& address2,
+                                       const Value& address3, const Value& address4,
+                                       TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleImplicitLod(const Value& handle, const Value& body,
                                                const F32& bias, const Value& offset,

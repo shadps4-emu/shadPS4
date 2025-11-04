@@ -4,24 +4,24 @@
 #pragma once
 
 #include <cstring>
+#include "common/assert.h"
 #include "common/bit_field.h"
-#include "common/rdtsc.h"
 #include "common/types.h"
-#include "core/platform.h"
+#include "common/uint128.h"
+#include "core/libraries/gnmdriver/gnmdriver.h"
+#include "core/libraries/kernel/time.h"
 #include "video_core/amdgpu/pm4_opcodes.h"
 
 namespace AmdGpu {
 
-/// This enum defines the Shader types supported in PM4 type 3 header
 enum class PM4ShaderType : u32 {
-    ShaderGraphics = 0, ///< Graphics shader
-    ShaderCompute = 1   ///< Compute shader
+    ShaderGraphics = 0,
+    ShaderCompute = 1,
 };
 
-/// This enum defines the predicate value supported in PM4 type 3 header
 enum class PM4Predicate : u32 {
-    PredDisable = 0, ///< Predicate disabled
-    PredEnable = 1   ///< Predicate enabled
+    PredDisable = 0,
+    PredEnable = 1,
 };
 
 union PM4Type0Header {
@@ -343,6 +343,16 @@ static u64 GetGpuClock64() {
     return static_cast<u64>(ticks);
 }
 
+static u64 GetGpuPerfCounter() {
+    const auto cpu_freq = Libraries::Kernel::sceKernelGetTscFrequency();
+    const auto gpu_freq = Libraries::GnmDriver::sceGnmGetGpuCoreClockFrequency();
+
+    const auto cpu_cycles = Libraries::Kernel::sceKernelReadTsc();
+    const auto gpu_cycles = Common::MultiplyAndDivide64(cpu_cycles, gpu_freq, cpu_freq);
+
+    return gpu_cycles;
+}
+
 // VGT_EVENT_INITIATOR.EVENT_TYPE
 enum class EventType : u32 {
     SampleStreamoutStats1 = 1,
@@ -415,6 +425,13 @@ struct PM4CmdEventWrite {
         BitField<20, 1, u32> inv_l2; ///< Send WBINVL2 op to the TC L2 cache when EVENT_INDEX = 0111
     };
     u32 address[];
+
+    template <typename T>
+    T Address() const {
+        ASSERT(event_index.Value() >= EventIndex::ZpassDone &&
+               event_index.Value() <= EventIndex::SampleStreamoutStatSx);
+        return std::bit_cast<T>((u64(address[1]) << 32u) | u64(address[0]));
+    }
 };
 
 struct PM4CmdEventWriteEop {
@@ -447,7 +464,7 @@ struct PM4CmdEventWriteEop {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence(auto&& write_mem) const {
+    void SignalFence(auto&& write_mem, auto&& signal_irq) const {
         u32* address = Address<u32>();
         switch (data_sel.Value()) {
         case DataSelect::None: {
@@ -466,7 +483,7 @@ struct PM4CmdEventWriteEop {
             break;
         }
         case DataSelect::PerfCounter: {
-            write_mem(address, Common::FencedRDTSC(), sizeof(u64));
+            write_mem(address, GetGpuPerfCounter(), sizeof(u64));
             break;
         }
         default: {
@@ -483,7 +500,7 @@ struct PM4CmdEventWriteEop {
             ASSERT(data_sel == DataSelect::None);
             [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
-            Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop);
+            signal_irq();
             break;
         }
         default: {
@@ -663,7 +680,7 @@ struct PM4CmdWaitRegMem {
         return reg.Value();
     }
 
-    bool Test(const std::array<u32, Liverpool::NumRegs>& regs) const {
+    bool Test(std::span<const u32> regs) const {
         u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
@@ -699,7 +716,7 @@ struct PM4CmdWaitRegMem {
 struct PM4CmdWriteData {
     PM4Type3Header header;
     union {
-        BitField<8, 11, u32> dst_sel;
+        BitField<8, 4, u32> dst_sel;
         BitField<16, 1, u32> wr_one_addr;
         BitField<20, 1, u32> wr_confirm;
         BitField<30, 1, u32> engine_sel;
@@ -915,7 +932,7 @@ struct PM4CmdReleaseMem {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence(Platform::InterruptId irq_id) const {
+    void SignalFence(auto&& signal_irq) const {
         switch (data_sel.Value()) {
         case DataSelect::Data32Low: {
             *Address<u32>() = DataDWord();
@@ -930,7 +947,7 @@ struct PM4CmdReleaseMem {
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = Common::FencedRDTSC();
+            *Address<u64>() = GetGpuPerfCounter();
             break;
         }
         default: {
@@ -946,7 +963,7 @@ struct PM4CmdReleaseMem {
         case InterruptSelect::IrqUndocumented:
             [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
-            Platform::IrqC::Instance()->Signal(irq_id);
+            signal_irq();
             break;
         }
         default: {

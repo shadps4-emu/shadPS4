@@ -165,5 +165,5 @@ int PS4_SYSV_ABI sceNetCtlApRpStartWithRetry();
 int PS4_SYSV_ABI sceNetCtlApRpStop();
 int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback();
 
-void RegisterlibSceNetCtl(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::NetCtl

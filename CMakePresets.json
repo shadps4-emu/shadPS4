@@ -1,0 +1,35 @@
+{
+  "version": 9,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 30,
+    "patch": 0
+  },
+  "include": ["CMake${hostSystemName}Presets.json"],
+  "configurePresets": [
+    {
+      "name": "x64-Clang-Debug",
+      "displayName": "Clang x64 Debug",
+      "inherits": ["x64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-Clang-Release",
+      "displayName": "Clang x64 Release",
+      "inherits": ["x64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-Clang-RelWithDebInfo",
+      "displayName": "Clang x64 RelWithDebInfo",
+      "inherits": ["x64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    }
+  ]
+}

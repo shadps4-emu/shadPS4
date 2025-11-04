@@ -111,6 +111,8 @@ enum class Class : u8 {
     Lib_Camera,            ///< The LibCamera implementation.
     Lib_CompanionHttpd,    ///< The LibCompanionHttpd implementation.
     Lib_CompanionUtil,     ///< The LibCompanionUtil implementation.
+    Lib_Font,              ///< The libSceFont implementation.
+    Lib_FontFt,            ///< The libSceFontFt implementation.
     Frontend,              ///< Emulator UI
     Render,                ///< Video Core
     Render_Vulkan,         ///< Vulkan backend

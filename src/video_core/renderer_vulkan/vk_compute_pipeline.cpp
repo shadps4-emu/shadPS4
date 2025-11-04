@@ -3,6 +3,7 @@
 
 #include <boost/container/small_vector.hpp>
 
+#include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -31,8 +32,8 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
-            .descriptorType = buffer.IsStorage(sharp, profile) ? vk::DescriptorType::eStorageBuffer
-                                                               : vk::DescriptorType::eUniformBuffer,
+            .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
+                                                      : vk::DescriptorType::eUniformBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });

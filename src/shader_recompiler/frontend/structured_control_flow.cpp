@@ -39,7 +39,6 @@ enum class StatementType {
     Loop,
     Break,
     Return,
-    Kill,
     Unreachable,
     Function,
     Identity,
@@ -88,7 +87,6 @@ struct Statement : ListBaseHook {
     Statement(Break, Statement* cond_, Statement* up_)
         : cond{cond_}, up{up_}, type{StatementType::Break} {}
     Statement(Return, Statement* up_) : up{up_}, type{StatementType::Return} {}
-    Statement(Kill, Statement* up_) : up{up_}, type{StatementType::Kill} {}
     Statement(Unreachable, Statement* up_) : up{up_}, type{StatementType::Unreachable} {}
     Statement(FunctionTag) : children{}, type{StatementType::Function} {}
     Statement(Identity, IR::Condition cond_, Statement* up_)
@@ -174,9 +172,6 @@ std::string DumpExpr(const Statement* stmt) {
         case StatementType::Return:
             ret += fmt::format("{}    return;\n", indent);
             break;
-        case StatementType::Kill:
-            ret += fmt::format("{}    kill;\n", indent);
-            break;
         case StatementType::Unreachable:
             ret += fmt::format("{}    unreachable;\n", indent);
             break;
@@ -196,7 +191,7 @@ std::string DumpExpr(const Statement* stmt) {
 
 void SanitizeNoBreaks(const Tree& tree) {
     if (std::ranges::find(tree, StatementType::Break, &Statement::type) != tree.end()) {
-        throw NotImplementedException("Capturing statement with break nodes");
+        UNREACHABLE_MSG("Capturing statement with break nodes");
     }
 }
 
@@ -335,9 +330,9 @@ private:
             }
         }
         // Expensive operation:
-        if (!AreSiblings(goto_stmt, label_stmt)) {
-            UNREACHABLE_MSG("Goto is not a sibling with the label");
-        }
+        // if (!AreSiblings(goto_stmt, label_stmt)) {
+        //    UNREACHABLE_MSG("Goto is not a sibling with the label");
+        //}
         // goto_stmt and label_stmt are guaranteed to be siblings, eliminate
         if (std::next(goto_stmt) == label_stmt) {
             // Simply eliminate the goto if the label is next to it
@@ -409,9 +404,6 @@ private:
             }
             case EndClass::Exit:
                 root.insert(ip, *pool.Create(Return{}, &root_stmt));
-                break;
-            case EndClass::Kill:
-                root.insert(ip, *pool.Create(Kill{}, &root_stmt));
                 break;
             }
         }
@@ -592,7 +584,7 @@ private:
     case StatementType::Variable:
         return ir.GetGotoVariable(stmt.id);
     default:
-        throw NotImplementedException("Statement type {}", u32(stmt.type));
+        UNREACHABLE_MSG("Statement type {}", u32(stmt.type));
     }
 }
 
@@ -635,9 +627,9 @@ private:
             case StatementType::Code: {
                 ensure_block();
                 if (!stmt.block->is_dummy) {
-                    current_block->has_multiple_predecessors = stmt.block->num_predecessors > 1;
                     const u32 start = stmt.block->begin_index;
                     const u32 size = stmt.block->end_index - start + 1;
+                    current_block->cfg_block = stmt.block;
                     translator.Translate(current_block, stmt.block->begin,
                                          inst_list.subspan(start, size));
                 }
@@ -771,18 +763,6 @@ private:
                 syntax_list.emplace_back().type = IR::AbstractSyntaxNode::Type::Return;
                 break;
             }
-            case StatementType::Kill: {
-                ensure_block();
-                IR::Block* demote_block{MergeBlock(parent, stmt)};
-                IR::IREmitter{*current_block}.Discard();
-                current_block->AddBranch(demote_block);
-                current_block = demote_block;
-
-                auto& merge{syntax_list.emplace_back()};
-                merge.type = IR::AbstractSyntaxNode::Type::Block;
-                merge.data.block = demote_block;
-                break;
-            }
             case StatementType::Unreachable: {
                 ensure_block();
                 current_block = nullptr;
@@ -790,7 +770,7 @@ private:
                 break;
             }
             default:
-                throw NotImplementedException("Statement type {}", u32(stmt.type));
+                UNREACHABLE_MSG("Statement type {}", u32(stmt.type));
             }
         }
         if (current_block) {

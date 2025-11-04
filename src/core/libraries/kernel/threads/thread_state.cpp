@@ -21,9 +21,10 @@ void TcbDtor(Core::Tcb* oldtls);
 ThreadState::ThreadState() {
     // Reserve memory for maximum amount of threads allowed.
     auto* memory = Core::Memory::Instance();
+    auto& impl = memory->GetAddressSpace();
     static constexpr u32 ThrHeapSize = Common::AlignUp(sizeof(Pthread) * MaxThreads, 16_KB);
     void* heap_addr{};
-    const int ret = memory->MapMemory(&heap_addr, Core::SYSTEM_RESERVED_MIN, ThrHeapSize,
+    const int ret = memory->MapMemory(&heap_addr, impl.SystemReservedVirtualBase(), ThrHeapSize,
                                       Core::MemoryProt::CpuReadWrite, Core::MemoryMapFlags::NoFlags,
                                       Core::VMAType::File, "ThrHeap");
     ASSERT_MSG(ret == 0, "Unable to allocate thread heap memory {}", ret);
@@ -37,7 +38,7 @@ void ThreadState::Collect(Pthread* curthread) {
         for (auto it = gc_list.begin(); it != gc_list.end();) {
             Pthread* td = *it;
             if (td->tid != TidTerminated) {
-                it++;
+                ++it;
                 continue;
             }
             FreeStack(&td->attr);
@@ -100,7 +101,9 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         tcb = TcbCtor(thread, 1 /* initial tls */);
     }
     if (tcb != nullptr) {
-        memset(thread, 0, sizeof(Pthread));
+        // Initialize thread struct memory to 0. This is safe since it will be constructed
+        // immediately after.
+        std::memset(static_cast<void*>(thread), 0, sizeof(Pthread));
         std::construct_at(thread);
         thread->tcb = tcb;
         thread->sleepqueue = new SleepQueue{};
@@ -131,7 +134,7 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     }
 }
 
-int ThreadState::FindThread(Pthread* thread, bool include_dead) {
+int ThreadState::FindThread(Pthread* thread, const bool include_dead) {
     if (thread == nullptr) {
         return POSIX_EINVAL;
     }

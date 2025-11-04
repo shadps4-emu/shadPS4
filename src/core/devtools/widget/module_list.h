@@ -8,6 +8,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/path_util.h"
 
@@ -22,7 +23,7 @@ public:
     bool open = false;
 
     static bool IsSystemModule(const std::filesystem::path& path) {
-        const auto sys_modules_path = Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+        const auto sys_modules_path = Config::getSysModulesPath();
 
         const auto abs_path = std::filesystem::absolute(path).lexically_normal();
         const auto abs_sys_path = std::filesystem::absolute(sys_modules_path).lexically_normal();

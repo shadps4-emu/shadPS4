@@ -6,7 +6,7 @@
 
 namespace Shader::Gcn {
 
-void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
+void Translator::EmitFlowControl(const GcnInst& inst) {
     switch (inst.opcode) {
     case Opcode::S_BARRIER:
         return S_BARRIER();
@@ -16,8 +16,11 @@ void Translator::EmitFlowControl(u32 pc, const GcnInst& inst) {
     case Opcode::S_SETPRIO:
         LOG_WARNING(Render_Vulkan, "S_SETPRIO instruction!");
         return;
+    case Opcode::S_TRAP:
+        LOG_WARNING(Render_Vulkan, "S_TRAP instruction!");
+        return;
     case Opcode::S_GETPC_B64:
-        return S_GETPC_B64(pc, inst);
+        return S_GETPC_B64(inst);
     case Opcode::S_SETPC_B64:
     case Opcode::S_WAITCNT:
     case Opcode::S_NOP:
@@ -42,9 +45,7 @@ void Translator::S_BARRIER() {
     ir.Barrier();
 }
 
-void Translator::S_GETPC_B64(u32 pc, const GcnInst& inst) {
-    // This only really exists to let resource tracking pass know
-    // there is an inline cbuf.
+void Translator::S_GETPC_B64(const GcnInst& inst) {
     const IR::ScalarReg dst{inst.dst[0].code};
     ir.SetScalarReg(dst, ir.Imm32(pc));
     ir.SetScalarReg(dst + 1, ir.Imm32(0));

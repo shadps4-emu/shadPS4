@@ -30,7 +30,7 @@ SleepQueue* SleepqLookup(void* wchan);
 
 void SleepqAdd(void* wchan, Pthread* td);
 
-int SleepqRemove(SleepQueue* sq, Pthread* td);
+bool SleepqRemove(SleepQueue* sq, Pthread* td);
 
 void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg);
 
