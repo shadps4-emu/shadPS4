@@ -477,7 +477,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceCesCs.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-         {"libSceFreeTypeOt.sprx", nullptr}}};
+         {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Config::getSysModulesPath();

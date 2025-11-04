@@ -114,32 +114,27 @@ s32 PS4_SYSV_ABI sceFontSelectRendererFt() {
 }
 
 void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("e60aorDdpB8", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtInitAliases);
-    LIB_FUNCTION("BxcmiMc3UaA", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSetAliasFont);
-    LIB_FUNCTION("MEWjebIzDEI", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSetAliasPath);
-    LIB_FUNCTION("ZcQL0iSjvFw", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportBdf);
-    LIB_FUNCTION("LADHEyFTxRQ", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportCid);
-    LIB_FUNCTION("+jqQjsancTs", "libSceFontFt", 1, "libSceFontFt", 1, 1,
-                 sceFontFtSupportFontFormats);
-    LIB_FUNCTION("oakL15-mBtc", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportOpenType);
-    LIB_FUNCTION("dcQeaDr8UJc", "libSceFontFt", 1, "libSceFontFt", 1, 1,
-                 sceFontFtSupportOpenTypeOtf);
-    LIB_FUNCTION("2KXS-HkZT3c", "libSceFontFt", 1, "libSceFontFt", 1, 1,
-                 sceFontFtSupportOpenTypeTtf);
-    LIB_FUNCTION("H0mJnhKwV-s", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportPcf);
-    LIB_FUNCTION("S2mw3sYplAI", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportPfr);
-    LIB_FUNCTION("+ehNXJPUyhk", "libSceFontFt", 1, "libSceFontFt", 1, 1,
-                 sceFontFtSupportSystemFonts);
-    LIB_FUNCTION("4BAhDLdrzUI", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportTrueType);
-    LIB_FUNCTION("Utlzbdf+g9o", "libSceFontFt", 1, "libSceFontFt", 1, 1,
-                 sceFontFtSupportTrueTypeGx);
-    LIB_FUNCTION("nAfQ6qaL1fU", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportType1);
-    LIB_FUNCTION("X9+pzrGtBus", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportType42);
-    LIB_FUNCTION("w0hI3xsK-hc", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtSupportWinFonts);
-    LIB_FUNCTION("w5sfH9r8ZJ4", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontFtTermAliases);
-    LIB_FUNCTION("ojW+VKl4Ehs", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectGlyphsFt);
-    LIB_FUNCTION("oM+XCzVG3oM", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectLibraryFt);
-    LIB_FUNCTION("Xx974EW-QFY", "libSceFontFt", 1, "libSceFontFt", 1, 1, sceFontSelectRendererFt);
+    LIB_FUNCTION("e60aorDdpB8", "libSceFontFt", 1, "libSceFontFt", sceFontFtInitAliases);
+    LIB_FUNCTION("BxcmiMc3UaA", "libSceFontFt", 1, "libSceFontFt", sceFontFtSetAliasFont);
+    LIB_FUNCTION("MEWjebIzDEI", "libSceFontFt", 1, "libSceFontFt", sceFontFtSetAliasPath);
+    LIB_FUNCTION("ZcQL0iSjvFw", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportBdf);
+    LIB_FUNCTION("LADHEyFTxRQ", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportCid);
+    LIB_FUNCTION("+jqQjsancTs", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportFontFormats);
+    LIB_FUNCTION("oakL15-mBtc", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportOpenType);
+    LIB_FUNCTION("dcQeaDr8UJc", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportOpenTypeOtf);
+    LIB_FUNCTION("2KXS-HkZT3c", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportOpenTypeTtf);
+    LIB_FUNCTION("H0mJnhKwV-s", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportPcf);
+    LIB_FUNCTION("S2mw3sYplAI", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportPfr);
+    LIB_FUNCTION("+ehNXJPUyhk", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportSystemFonts);
+    LIB_FUNCTION("4BAhDLdrzUI", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportTrueType);
+    LIB_FUNCTION("Utlzbdf+g9o", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportTrueTypeGx);
+    LIB_FUNCTION("nAfQ6qaL1fU", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportType1);
+    LIB_FUNCTION("X9+pzrGtBus", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportType42);
+    LIB_FUNCTION("w0hI3xsK-hc", "libSceFontFt", 1, "libSceFontFt", sceFontFtSupportWinFonts);
+    LIB_FUNCTION("w5sfH9r8ZJ4", "libSceFontFt", 1, "libSceFontFt", sceFontFtTermAliases);
+    LIB_FUNCTION("ojW+VKl4Ehs", "libSceFontFt", 1, "libSceFontFt", sceFontSelectGlyphsFt);
+    LIB_FUNCTION("oM+XCzVG3oM", "libSceFontFt", 1, "libSceFontFt", sceFontSelectLibraryFt);
+    LIB_FUNCTION("Xx974EW-QFY", "libSceFontFt", 1, "libSceFontFt", sceFontSelectRendererFt);
 };
 
 } // namespace Libraries::FontFt
