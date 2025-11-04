@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "common/types.h"
 #include "core/libraries/network/ssl.h"
 
@@ -25,6 +26,12 @@ struct OrbisHttpUriElement {
     u8 reserved[10];
 };
 
+struct HttpRequestInternal {
+    int state;          // +0x20
+    int errorCode;      // +0x28
+    int httpStatusCode; // +0x20C
+    std::mutex m_mutex;
+};
 using OrbisHttpsCaList = Libraries::Ssl::OrbisSslCaList;
 
 int PS4_SYSV_ABI sceHttpAbortRequest();
@@ -32,7 +39,7 @@ int PS4_SYSV_ABI sceHttpAbortRequestForce();
 int PS4_SYSV_ABI sceHttpAbortWaitRequest();
 int PS4_SYSV_ABI sceHttpAddCookie();
 int PS4_SYSV_ABI sceHttpAddQuery();
-int PS4_SYSV_ABI sceHttpAddRequestHeader();
+int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode);
 int PS4_SYSV_ABI sceHttpAddRequestHeaderRaw();
 int PS4_SYSV_ABI sceHttpAuthCacheExport();
 int PS4_SYSV_ABI sceHttpAuthCacheFlush();
@@ -42,11 +49,12 @@ int PS4_SYSV_ABI sceHttpCookieExport();
 int PS4_SYSV_ABI sceHttpCookieFlush();
 int PS4_SYSV_ABI sceHttpCookieImport();
 int PS4_SYSV_ABI sceHttpCreateConnection();
-int PS4_SYSV_ABI sceHttpCreateConnectionWithURL();
+int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, bool enableKeepalive);
 int PS4_SYSV_ABI sceHttpCreateEpoll();
 int PS4_SYSV_ABI sceHttpCreateRequest();
 int PS4_SYSV_ABI sceHttpCreateRequest2();
-int PS4_SYSV_ABI sceHttpCreateRequestWithURL();
+int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char* url,
+                                             u64 contentLength);
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL2();
 int PS4_SYSV_ABI sceHttpCreateTemplate();
 int PS4_SYSV_ABI sceHttpDbgEnableProfile();
@@ -62,7 +70,7 @@ int PS4_SYSV_ABI sceHttpDeleteRequest();
 int PS4_SYSV_ABI sceHttpDeleteTemplate();
 int PS4_SYSV_ABI sceHttpDestroyEpoll();
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled();
-int PS4_SYSV_ABI sceHttpGetAllResponseHeaders();
+int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize);
 int PS4_SYSV_ABI sceHttpGetAuthEnabled();
 int PS4_SYSV_ABI sceHttpGetAutoRedirect();
 int PS4_SYSV_ABI sceHttpGetConnectionStat();
@@ -76,10 +84,13 @@ int PS4_SYSV_ABI sceHttpGetMemoryPoolStats();
 int PS4_SYSV_ABI sceHttpGetNonblock();
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
 int PS4_SYSV_ABI sceHttpGetResponseContentLength();
-int PS4_SYSV_ABI sceHttpGetStatusCode();
-int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, std::size_t poolSize);
-int PS4_SYSV_ABI sceHttpParseResponseHeader();
-int PS4_SYSV_ABI sceHttpParseStatusLine();
+int PS4_SYSV_ABI sceHttpGetStatusCode(int reqId, int* statusCode);
+int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize);
+int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, const char* fieldStr,
+                                            const char** fieldValue, u64* valueLen);
+int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
+                                        int32_t* httpMinorVer, int32_t* responseCode,
+                                        const char** reasonPhrase, u64* phraseLen);
 int PS4_SYSV_ABI sceHttpReadData();
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush();
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader();
@@ -88,7 +99,7 @@ int PS4_SYSV_ABI sceHttpsDisableOption();
 int PS4_SYSV_ABI sceHttpsDisableOptionPrivate();
 int PS4_SYSV_ABI sceHttpsEnableOption();
 int PS4_SYSV_ABI sceHttpsEnableOptionPrivate();
-int PS4_SYSV_ABI sceHttpSendRequest();
+int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled();
 int PS4_SYSV_ABI sceHttpSetAuthEnabled();
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback();
@@ -134,14 +145,16 @@ int PS4_SYSV_ABI sceHttpTerm();
 int PS4_SYSV_ABI sceHttpTryGetNonblock();
 int PS4_SYSV_ABI sceHttpTrySetNonblock();
 int PS4_SYSV_ABI sceHttpUnsetEpoll();
-int PS4_SYSV_ABI sceHttpUriBuild();
+int PS4_SYSV_ABI sceHttpUriBuild(char* out, u64* require, u64 prepare,
+                                 const OrbisHttpUriElement* srcElement, u32 option);
 int PS4_SYSV_ABI sceHttpUriCopy();
 int PS4_SYSV_ABI sceHttpUriEscape();
-int PS4_SYSV_ABI sceHttpUriMerge();
+int PS4_SYSV_ABI sceHttpUriMerge(char* mergedUrl, char* url, char* relativeUri, u64* require,
+                                 u64 prepare, u32 option);
 int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, void* pool,
-                                 size_t* require, size_t prepare);
-int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, size_t srcSize);
-int PS4_SYSV_ABI sceHttpUriUnescape(char* out, size_t* require, size_t prepare, const char* in);
+                                 u64* require, u64 prepare);
+int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize);
+int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const char* in);
 int PS4_SYSV_ABI sceHttpWaitRequest();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);

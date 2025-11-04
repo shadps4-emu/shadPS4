@@ -140,7 +140,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 return -1;
             }
             // Create a file if it doesn't exist
-            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Write);
+            Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -205,22 +205,30 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         if (read) {
-            // Read only
+            // Open exclusively for reading
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (read_only) {
             // Can't open files with write/read-write access in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
             return -1;
-        } else if (append) {
-            // Append can be specified with rdwr or write, but we treat it as a separate mode.
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
         } else if (write) {
-            // Write only
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            if (append) {
+                // Open exclusively for appending
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Append);
+            } else {
+                // Open exclusively for writing
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Write);
+            }
         } else if (rdwr) {
             // Read and write
-            e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            if (append) {
+                // Open for reading and appending
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadAppend);
+            } else {
+                // Open for reading and writing
+                e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::ReadWrite);
+            }
         }
     }
 
@@ -354,6 +362,12 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_read += ReadFile(file->f, iov[i].iov_base, iov[i].iov_len);
@@ -509,6 +523,12 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
         // Socket functions handle errnos internally.
         return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
     }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
     return ReadFile(file->f, buf, nbytes);
 }
 
@@ -801,11 +821,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
     if (file) {
-        // We need to force ReadWrite if the file had Write access before
-        // Otherwise f.Open will clear the file contents.
-        auto access_mode = file->f.GetAccessMode() == Common::FS::FileAccessMode::Write
-                               ? Common::FS::FileAccessMode::ReadWrite
-                               : file->f.GetAccessMode();
+        auto access_mode = file->f.GetAccessMode();
         file->f.Close();
         std::filesystem::remove(src_path);
         file->f.Open(dst_path, access_mode);
@@ -853,6 +869,11 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
             return -1;
         }
         return result;
+    }
+
+    if (file->f.IsWriteOnly()) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     const s64 pos = file->f.Tell();
