@@ -17,6 +17,7 @@
 #include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "src/core/libraries/usbd/usbd.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -69,6 +70,8 @@ void IPC::Init() {
     if (!enabled) {
         return;
     }
+
+    Config::setLoadAutoPatches(false);
 
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");
@@ -166,6 +169,37 @@ void IPC::InputLoop() {
             if (presenter) {
                 presenter->GetFsrSettingsRef().rcas_attenuation =
                     static_cast<float>(value / 1000.0f);
+            }
+        } else if (cmd == "USB_LOAD_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                ref->LoadFigure(next_str(), next_u64(), next_u64());
+            }
+        } else if (cmd == "USB_REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                ref->RemoveFigure(next_u64(), next_u64(), next_u64() != 0);
+            }
+        } else if (cmd == "USB_MOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 new_pad = next_u64();
+                const u8 new_index = next_u64();
+                const u8 old_pad = next_u64();
+                const u8 old_index = next_u64();
+                ref->MoveFigure(new_pad, new_index, old_pad, old_index);
+            }
+        } else if (cmd == "USB_TEMP_REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 index = next_u64();
+                ref->TempRemoveFigure(index);
+            }
+        } else if (cmd == "USB_CANCEL_REMOVE_FIGURE") {
+            const auto ref = Libraries::Usbd::usb_backend->GetImplRef();
+            if (ref) {
+                const u8 index = next_u64();
+                ref->CancelRemoveFigure(index);
             }
         } else if (cmd == "RELOAD_INPUTS") {
             std::string config = next_str();

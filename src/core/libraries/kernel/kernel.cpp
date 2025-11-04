@@ -23,6 +23,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/sys_net.h"
@@ -256,6 +257,18 @@ const char** PS4_SYSV_ABI getargv() {
     return entry_params.argv;
 }
 
+s32 PS4_SYSV_ABI get_authinfo(int pid, AuthInfoData* p2) {
+    LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
+    if ((pid != 0) && (pid != GLOBAL_PID)) {
+        *Kernel::__Error() = POSIX_ESRCH;
+        return -1;
+    }
+
+    *p2 = {};
+    p2->caps[0] = 0x2000000000000000;
+    return ORBIS_OK;
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
@@ -273,6 +286,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
+    LIB_FUNCTION("igMefp4SAv0", "libkernel", 1, "libkernel", get_authinfo);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);

@@ -110,3 +110,6 @@
 	path = externals/MoltenVK
 	url = https://github.com/KhronosGroup/MoltenVK.git
 	shallow = true
+[submodule "externals/json"]
+	path = externals/json
+	url = https://github.com/nlohmann/json.git
