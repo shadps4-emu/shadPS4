@@ -35,6 +35,10 @@ s32 PS4_SYSV_ABI sceKernelGetCpumode() {
     return 0;
 }
 
+s32 PS4_SYSV_ABI sceKernelGetCurrentCpu() {
+    return 0;
+}
+
 void* PS4_SYSV_ABI sceKernelGetProcParam() {
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     return linker->GetProcParam();
@@ -214,6 +218,7 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);
     LIB_FUNCTION("rNRtm1uioyY", "libkernel", 1, "libkernel", sceKernelHasNeoMode);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", sceKernelGetCpumode);
+    LIB_FUNCTION("g0VTBxfJyu0", "libkernel", 1, "libkernel", sceKernelGetCurrentCpu);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", sceKernelGetProcParam);
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", sceKernelLoadStartModule);
     LIB_FUNCTION("LwG8g3niqwA", "libkernel", 1, "libkernel", sceKernelDlsym);
