@@ -21,6 +21,10 @@ s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
            Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
 }
 
+s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
+    return Config::isNeoModeConsole();
+}
+
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
     s32 version = Common::ElfInfo::Instance().RawFirmwareVer();
     *ver = version;
@@ -208,6 +212,7 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xeu-pV8wkKs", "libkernel", 1, "libkernel", sceKernelIsInSandbox);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);
+    LIB_FUNCTION("rNRtm1uioyY", "libkernel", 1, "libkernel", sceKernelHasNeoMode);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", sceKernelGetCpumode);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", sceKernelGetProcParam);
     LIB_FUNCTION("wzvqT4UqKX8", "libkernel", 1, "libkernel", sceKernelLoadStartModule);

@@ -266,9 +266,9 @@ const char** PS4_SYSV_ABI getargv() {
     return entry_params.argv;
 }
 
-s32 PS4_SYSV_ABI get_authinfo(int pid, AuthInfoData* p2) {
+s32 PS4_SYSV_ABI get_authinfo(s32 pid, AuthInfoData* p2) {
     LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
-    if ((pid != 0) && (pid != GLOBAL_PID)) {
+    if (pid != 0 && pid != GLOBAL_PID) {
         *Kernel::__Error() = POSIX_ESRCH;
         return -1;
     }
