@@ -228,10 +228,10 @@ int QFS::ForceInsert(const fs::path& path, const std::string& name, inode_ptr no
 // DO NOT, AND I SWEAR  D O  N O T touch this function
 // Debugging it is a royal PITA
 int QFS::Resolve(const fs::path& path, Resolved& res) {
-    if (path.empty())
+    if (path.empty() || !path.string().starts_with("/"))
         return -QUASI_EINVAL;
-    if (path.is_relative())
-        return -QUASI_EINVAL;
+    // if (path.is_relative())
+    //     return -QUASI_EINVAL;
 
     // on return:
     // node - last element of the path (if exists)
@@ -303,6 +303,7 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
                 res.mountpoint = mounted_partition;
                 res.parent = mntparent;
                 res.node = mntroot;
+                res.local_path = "/";
                 res.leaf = "/";
 
                 if (iter_path != "/")

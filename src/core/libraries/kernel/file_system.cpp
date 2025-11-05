@@ -552,7 +552,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
 
     s32 result = f->node->getdents(buf, nbytes, basep);
     if (result < 0) {
-        ErrSceToPosix(result);
+        *__Error() = -result;
         return -1;
     }
 

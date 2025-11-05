@@ -25,6 +25,8 @@ s32 HostIO_Win32::Creat(const fs::path& path, u16 mode) {
 
 s32 HostIO_Win32::Close(const s32 fd) {
     errno = 0;
+    if (fd < 0)
+        return -EBADF;
     s32 status = _close(fd);
     return 0 == status ? 0 : -errno;
 }
@@ -83,5 +85,61 @@ int HostIO_Win32::FTruncate(const s32 fd, u64 size) {
     s32 status = _chsize_s(fd, size);
     return status >= 0 ? status : -errno;
 }
+
+s64 HostIO_Win32::Write(const s32 fd, const void* buf, u64 count) {
+    errno = 0;
+    s32 status = _write(fd, buf, count);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_Win32::Read(const s32 fd, void* buf, u64 count) {
+    errno = 0;
+    s32 status = _read(fd, buf, count);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_Win32::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
+    errno = 0;
+    s64 bak = LSeek(fd, 0, SeekOrigin::CURRENT);
+    if (bak < 0)
+        return -errno;
+    LSeek(fd, offset, SeekOrigin::ORIGIN);
+
+    s32 status = _write(fd, buf, count);
+
+    LSeek(fd, bak, SeekOrigin::ORIGIN);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_Win32::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+    errno = 0;
+    s64 bak = LSeek(fd, 0, SeekOrigin::CURRENT);
+    if (bak < 0)
+        return -errno;
+    LSeek(fd, offset, SeekOrigin::ORIGIN);
+
+    s32 status = _read(fd, buf, count);
+
+    LSeek(fd, bak, SeekOrigin::ORIGIN);
+    return status >= 0 ? status : -errno;
+}
+
+s32 HostIO_Win32::MKDir(const fs::path& path, u16 mode) {
+    errno = 0;
+    s32 status = _wmkdir(path.c_str());
+    return status >= 0 ? status : -errno;
+}
+
+s32 HostIO_Win32::RMDir(const fs::path& path) {
+    errno = 0;
+    s32 status = _wrmdir(path.c_str());
+    return status >= 0 ? status : -errno;
+}
+
+// s32 HostIO_Win32::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {}
+// s32 HostIO_Win32::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {}
+
+// s32 HostIO_Win32::Chmod(const fs::path& path, u16 mode) {}
+// s32 HostIO_Win32::FChmod(const s32 fd, u16 mode) {}
 
 } // namespace HostIODriver

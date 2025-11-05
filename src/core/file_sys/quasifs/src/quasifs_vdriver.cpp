@@ -72,15 +72,20 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     int vio_status = 0;
 
     if (part->IsHostMounted()) {
-        fs::path host_path_target{};
-        if (int hostpath_status = part->GetHostPath(host_path_target, res.local_path);
-            hostpath_status != 0)
-            return hostpath_status;
 
-        if (hio_status = qfs.hio_driver.Open(host_path_target, flags, mode); hio_status < 0)
-            // hosts operation must succeed in order to continue
-            return hio_status;
-        host_used = true;
+        if (nullptr == res.node || (res.node && !res.node->is_dir())) {
+            // if doesn't exist, creation/throwing becomes host's problem
+            // however we might want to open a dir for dirents, which would be suboptimal
+            fs::path host_path_target{};
+            if (int hostpath_status = part->GetHostPath(host_path_target, res.local_path);
+                hostpath_status != 0)
+                return hostpath_status;
+
+            if (hio_status = qfs.hio_driver.Open(host_path_target, flags, mode); hio_status < 0)
+                // hosts operation must succeed in order to continue
+                return hio_status;
+            host_used = true;
+        }
     }
 
     qfs.vio_driver.SetCtx(&res, host_used, nullptr);

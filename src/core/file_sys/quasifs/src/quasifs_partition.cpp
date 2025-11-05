@@ -84,11 +84,11 @@ inode_ptr Partition::GetInodeByFileno(fileno_t fileno) {
 // DO NOT, AND I SWEAR  D O  N O T touch this function
 // Debugging it is a royal PITA
 int Partition::Resolve(fs::path& path, Resolved& res) {
-    if (path.empty())
+    if (path.empty() || !path.string().starts_with("/"))
         return -QUASI_EINVAL;
 
-    if (path.is_relative())
-        return -QUASI_EBADF;
+    // if (path.is_relative())
+    //     return -QUASI_EBADF;
 
     if (path.string().size() >= 256)
         return -QUASI_ENAMETOOLONG;

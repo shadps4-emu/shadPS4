@@ -42,7 +42,7 @@ public:
 
 private:
     void LoadSystemModules(const std::string& game_serial);
-    void LoadFilesystem(const std::string& id);
+    void LoadFilesystem(const std::filesystem::path& game_folder);
 
     Core::MemoryManager* memory;
     Input::GameController* controller;
