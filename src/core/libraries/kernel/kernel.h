@@ -56,7 +56,7 @@ struct AuthInfoData {
 struct OrbisKernelTitleWorkaround {
     s32 version;
     s32 align;
-    u64 ids[2];  
+    u64 ids[2];
 };
 
 struct OrbisKernelAppInfo {
