@@ -238,13 +238,13 @@ s32 PS4_SYSV_ABI sceKernelSetGPO() {
 
 s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
     if (ret == nullptr) {
-        return ORBIS_OK; // but why?
+        return ORBIS_OK;
     }
-    ASSERT(ret->struct_size == 40);
-    u32 fake_fw = Common::ElfInfo::Instance().RawFirmwareVer();
+    ASSERT(ret->struct_size == sizeof(SwVersionStruct));
+    u32 fake_fw = CURRENT_FIRMWARE_VERSION;
     ret->hex_representation = fake_fw;
     std::snprintf(ret->text_representation, 28, "%2x.%03x.%03x", fake_fw >> 0x18,
-                  fake_fw >> 0xc & 0xfff, fake_fw & 0xfff); // why %2x?
+                  fake_fw >> 0xc & 0xfff, fake_fw & 0xfff);
     LOG_INFO(Lib_Kernel, "called, returned sw version: {}", ret->text_representation);
     return ORBIS_OK;
 }
