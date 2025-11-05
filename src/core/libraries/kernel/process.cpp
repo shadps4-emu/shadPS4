@@ -46,6 +46,7 @@ s32 PS4_SYSV_ABI sceKernelGetCpumode() {
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCurrentCpu() {
+    LOG_DEBUG(Lib_Kernel, "called");
     return 0;
 }
 
