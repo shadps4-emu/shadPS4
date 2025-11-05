@@ -249,7 +249,6 @@ s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
     if (ret == nullptr) {
         return ORBIS_OK;
     }
-    ASSERT(ret->struct_size == sizeof(SwVersionStruct));
     u32 fake_fw = CURRENT_FIRMWARE_VERSION;
     ret->hex_representation = fake_fw;
     std::snprintf(ret->text_representation, 28, "%2x.%03x.%03x", fake_fw >> 0x18,
@@ -268,6 +267,10 @@ const char** PS4_SYSV_ABI getargv() {
 
 s32 PS4_SYSV_ABI get_authinfo(s32 pid, AuthInfoData* p2) {
     LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
+    if (p2 == nullptr) {
+        *Kernel::__Error() = POSIX_EPERM;
+        return -1;
+    }
     if (pid != 0 && pid != GLOBAL_PID) {
         *Kernel::__Error() = POSIX_ESRCH;
         return -1;
