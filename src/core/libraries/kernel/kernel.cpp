@@ -242,6 +242,7 @@ s32 PS4_SYSV_ABI sceKernelGetAllowedSdkVersionOnSystem(s32* ver) {
     }
     // Returns the highest game SDK version this PS4 allows.
     *ver = CURRENT_FIRMWARE_VERSION | 0xfff;
+    LOG_INFO(Lib_Kernel, "called, returned sw version: {}", *ver);
     return ORBIS_OK;
 }
 

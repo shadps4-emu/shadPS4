@@ -25,6 +25,16 @@ s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
     return Config::isNeoModeConsole();
 }
 
+s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
+    // These hardcoded values are based on hardware observations.
+    // Different models of PS4/PS4 Pro likely return slightly different values.
+    LOG_DEBUG(Lib_Kernel, "called");
+    if (Config::isNeoModeConsole()) {
+        return 0x740f30;
+    }
+    return 0x710f10;
+}
+
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
     s32 version = Common::ElfInfo::Instance().RawFirmwareVer();
     *ver = version;
@@ -217,6 +227,7 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);
     LIB_FUNCTION("rNRtm1uioyY", "libkernel", 1, "libkernel", sceKernelHasNeoMode);
+    LIB_FUNCTION("0vTn5IDMU9A", "libkernel", 1, "libkernel", sceKernelGetMainSocId);
     LIB_FUNCTION("VOx8NGmHXTs", "libkernel", 1, "libkernel", sceKernelGetCpumode);
     LIB_FUNCTION("g0VTBxfJyu0", "libkernel", 1, "libkernel", sceKernelGetCurrentCpu);
     LIB_FUNCTION("959qrazPIrg", "libkernel", 1, "libkernel", sceKernelGetProcParam);
