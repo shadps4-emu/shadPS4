@@ -1285,7 +1285,8 @@ u16 PS4_SYSV_ABI sceNetNtohs(u16 net16) {
 
 int PS4_SYSV_ABI sceNetPoolCreate(const char* name, int size, int flags) {
     LOG_ERROR(Lib_Net, "(DUMMY) name = {} size = {} flags = {} ", std::string(name), size, flags);
-    return ORBIS_OK;
+    static s32 id = 1;
+    return id++;
 }
 
 int PS4_SYSV_ABI sceNetPoolDestroy() {
