@@ -58,7 +58,7 @@ void PersistMemory(u32 slot_id, bool lock) {
     while (n++ < 10) {
         try {
             IOFile f;
-            int r = f.Open(memoryPath, Common::FS::FileAccessMode::Write);
+            int r = f.Open(memoryPath, Common::FS::FileAccessMode::Create);
             if (f.IsOpen()) {
                 f.WriteRaw<u8>(data.memory_cache.data(), data.memory_cache.size());
                 f.Close();
@@ -150,7 +150,7 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
             fs::copy_file(src_icon, icon_path);
         }
     } else {
-        int fd = qfs->Operation.Open(icon_path, QUASI_O_WRONLY | QUASI_O_TRUNC);
+        int fd = qfs->Operation.Creat(icon_path);
         qfs->Operation.Write(fd, buf, buf_size);
         qfs->Operation.Close(fd);
     }

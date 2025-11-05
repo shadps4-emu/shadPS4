@@ -40,28 +40,30 @@ namespace {
         switch (mode) {
         case FileAccessMode::Read:
             return L"rb";
-        case FileAccessMode::Write:
-            return L"wb";
         case FileAccessMode::Append:
             return L"ab";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return L"r+b";
         case FileAccessMode::ReadAppend:
             return L"a+b";
+        case FileAccessMode::Create:
+            return L"wb";
         }
         break;
     case FileType::TextFile:
         switch (mode) {
         case FileAccessMode::Read:
             return L"r";
-        case FileAccessMode::Write:
-            return L"w";
         case FileAccessMode::Append:
             return L"a";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return L"r+";
         case FileAccessMode::ReadAppend:
             return L"a+";
+        case FileAccessMode::Create:
+            return L"w";
         }
         break;
     }
@@ -91,28 +93,30 @@ namespace {
         switch (mode) {
         case FileAccessMode::Read:
             return "rb";
-        case FileAccessMode::Write:
-            return "wb";
         case FileAccessMode::Append:
             return "ab";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return "r+b";
         case FileAccessMode::ReadAppend:
             return "a+b";
+        case FileAccessMode::Create:
+            return "wb";
         }
         break;
     case FileType::TextFile:
         switch (mode) {
         case FileAccessMode::Read:
             return "r";
-        case FileAccessMode::Write:
-            return "w";
         case FileAccessMode::Append:
             return "a";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return "r+";
         case FileAccessMode::ReadAppend:
             return "a+";
+        case FileAccessMode::Create:
+            return "w";
         }
         break;
     }

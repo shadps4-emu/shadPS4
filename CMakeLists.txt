@@ -461,6 +461,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/mouse/mouse.h
                 src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
+                src/core/libraries/font/font.cpp
+                src/core/libraries/font/font.h
+                src/core/libraries/font/fontft.cpp
+                src/core/libraries/font/fontft.h
+                src/core/libraries/font/font_error.h
+
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
