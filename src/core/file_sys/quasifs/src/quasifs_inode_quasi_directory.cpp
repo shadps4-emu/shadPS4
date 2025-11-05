@@ -16,6 +16,7 @@ inode_ptr QuasiDirectory::lookup(const std::string& name) {
     auto it = entries.find(name);
     if (it == entries.end())
         return nullptr;
+    st.st_atim.tv_sec = time(0);
     return it->second;
 }
 
@@ -27,6 +28,7 @@ int QuasiDirectory::link(const std::string& name, inode_ptr child) {
     entries[name] = child;
     if (!child->is_link())
         child->st.st_nlink++;
+    st.st_mtim.tv_sec = time(0);
     return 0;
 }
 
@@ -54,10 +56,12 @@ int QuasiDirectory::unlink(const std::string& name) {
     // not referenced in original location anymore
     target->st.st_nlink--;
     entries.erase(it);
+    st.st_mtim.tv_sec = time(0);
     return 0;
 }
 
 std::vector<std::string> QuasiDirectory::list() {
+    st.st_atim.tv_sec = time(0);
     std::vector<std::string> r;
     for (auto& p : entries)
         r.push_back(p.first);

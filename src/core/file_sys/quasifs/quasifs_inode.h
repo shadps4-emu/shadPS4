@@ -2,7 +2,9 @@
 
 #pragma once
 
+#include <ctime>
 #include <vector>
+#include <assert.h>
 
 #include "common/types.h"
 #include "common/va_ctx.h"
@@ -21,6 +23,17 @@ public:
         st.st_nlink = 0;
         st.st_uid = 0;
         st.st_gid = 0;
+
+        static_assert(sizeof(time_t) == 8, "Time is not stored in 64 bits");
+
+        st.st_birthtim.tv_sec = time(0);
+        st.st_birthtim.tv_nsec = 0;
+        st.st_ctim.tv_sec = time(0);
+        st.st_ctim.tv_nsec = 0;
+        st.st_mtim.tv_sec = time(0);
+        st.st_mtim.tv_nsec = 0;
+        st.st_atim.tv_sec = time(0);
+        st.st_atim.tv_nsec = 0;
     }
 
     virtual ~Inode() = default;
@@ -29,6 +42,8 @@ public:
         return -QUASI_ENOTTY;
     }
 
+    // these don't make sense with anything that's not a device
+    // kept here to verify
     virtual s64 read(void* buf, u64 count) {
         return -QUASI_EBADF;
     }
@@ -37,6 +52,7 @@ public:
         return -QUASI_EBADF;
     }
 
+    // these 4 make sense everywhere
     virtual s64 pread(void* buf, u64 count, s64 offset) {
         return -QUASI_EBADF;
     }
@@ -161,6 +177,7 @@ public:
     int chmod(u16 mode) {
         u16* st_mode = &this->st.st_mode;
         *st_mode = ((*st_mode) & (~0x1FF)) | (mode & 0x1FF);
+        st.st_birthtim.tv_sec = time(0);
         return 0;
     }
 };

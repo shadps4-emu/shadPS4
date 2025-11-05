@@ -79,6 +79,11 @@ public:
     blkid_t GetBlkId(void) {
         return this->block_id;
     }
+    void AdjustStat(Libraries::Kernel::OrbisKernelStat* statbuf) {
+        auto& s = statbuf->st_size;
+        statbuf->st_blksize = this->block_size;
+        statbuf->st_blocks = (1 + (s / this->ioblock_size)) * this->ioblock_size / this->block_size;
+    }
     inode_ptr GetInodeByFileno(fileno_t fileno);
 
     int Resolve(fs::path& path, Resolved& res);

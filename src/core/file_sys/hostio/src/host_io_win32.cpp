@@ -25,8 +25,6 @@ s32 HostIO_Win32::Creat(const fs::path& path, u16 mode) {
 
 s32 HostIO_Win32::Close(const s32 fd) {
     errno = 0;
-    if (fd < 0)
-        return -EBADF;
     s32 status = _close(fd);
     return 0 == status ? 0 : -errno;
 }

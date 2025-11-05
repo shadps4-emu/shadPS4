@@ -165,9 +165,9 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
 
     qfs->SyncHost();
 
-     qfs::printTree(qfs->GetRoot(), "/");
+    qfs::printTree(qfs->GetRoot(), "/");
 
-     return;
+    return;
 }
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
@@ -421,14 +421,14 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-   // const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
+    // const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
     if (!std::filesystem::exists(mount_data_dir)) {
         std::filesystem::create_directory(mount_data_dir);
     }
     mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
 
     // Mounting temp folders
-    //const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    // const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
     if (std::filesystem::exists(mount_temp_dir)) {
         // Temp folder should be cleared on each boot.
         std::filesystem::remove_all(mount_temp_dir);
@@ -437,14 +437,15 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
-   // const auto& mount_download_dir =
-   //     Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
+    // const auto& mount_download_dir =
+    //     Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
     if (!std::filesystem::exists(mount_download_dir)) {
         std::filesystem::create_directory(mount_download_dir);
     }
     mnt->Mount(mount_download_dir, "/download0");
 
- //   const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
+    //   const auto& mount_captures_dir =
+    //   Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {
         std::filesystem::create_directory(mount_captures_dir);
     }

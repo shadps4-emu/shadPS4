@@ -20,6 +20,7 @@ s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
         static_cast<char*>(buf)[idx] = c;
     }
 
+    st.st_atim.tv_sec = time(0);
     return read_amt;
 }
 
@@ -34,6 +35,7 @@ s64 VirtualFile::pwrite(const void* buf, size_t count, s64 offset) {
     for (u64 idx = offset; idx < *size; idx++)
         this->data[idx] = static_cast<const char*>(buf)[idx];
 
+    st.st_mtim.tv_sec = time(0);
     return count;
 }
 
@@ -42,6 +44,7 @@ s32 VirtualFile::ftruncate(s64 length) {
         return -QUASI_EINVAL;
     this->data.resize(length, 0);
     this->st.st_size = length;
+    st.st_mtim.tv_sec = time(0);
     return 0;
 }
 

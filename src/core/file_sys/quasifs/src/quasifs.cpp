@@ -420,6 +420,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
                 continue;
             }
+            part->AdjustStat(&new_inode->st);
         }
     } catch (const std::exception& e) {
         LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(),

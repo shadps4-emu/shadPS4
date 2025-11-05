@@ -12,6 +12,7 @@ Symlink::Symlink(fs::path target) : target(target) {
 }
 
 fs::path Symlink::follow(void) {
+    st.st_atim.tv_sec = time(0);
     return target;
 }
 } // namespace QuasiFS

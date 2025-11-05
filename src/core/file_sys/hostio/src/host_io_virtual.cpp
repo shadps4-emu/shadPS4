@@ -24,6 +24,9 @@ HostIO_Virtual::HostIO_Virtual() = default;
 HostIO_Virtual::~HostIO_Virtual() = default;
 
 s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
+    if (int remainder = flags & ~__QUASI_O_ALLFLAGS_AT_ONCE; remainder != 0)
+        LOG_WARNING(Kernel_Fs, "open() received unknown flags: {:x}", remainder);
+
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
