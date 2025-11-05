@@ -236,6 +236,15 @@ s32 PS4_SYSV_ABI sceKernelSetGPO() {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelGetAllowedSdkVersionOnSystem(s32* ver) {
+    if (ver == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    // Returns the highest game SDK version this PS4 allows.
+    *ver = CURRENT_FIRMWARE_VERSION | 0xfff;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
     if (ret == nullptr) {
         return ORBIS_OK;
@@ -285,6 +294,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
+    LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
     LIB_FUNCTION("igMefp4SAv0", "libkernel", 1, "libkernel", get_authinfo);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
