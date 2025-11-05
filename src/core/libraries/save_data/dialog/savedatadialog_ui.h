@@ -26,6 +26,15 @@ enum class SaveDataDialogMode : u32 {
     PROGRESS_BAR = 5,
 };
 
+// dirty hack
+#ifdef DELETE
+#undef DELETE
+#endif
+#ifdef ERROR
+#undef ERROR
+#endif
+
+
 enum class DialogType : u32 {
     SAVE = 1,
     LOAD = 2,
