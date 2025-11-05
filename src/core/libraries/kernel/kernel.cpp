@@ -293,6 +293,7 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
 
     auto& game_info = Common::ElfInfo::Instance();
     *app_info = {};
+    app_info->has_param_sfo = 1;
     strncpy(app_info->cusa_name, game_info.GameSerial().data(), 10);
     return ORBIS_OK;
 }
