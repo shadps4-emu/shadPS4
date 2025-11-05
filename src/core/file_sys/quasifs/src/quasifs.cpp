@@ -414,6 +414,8 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 continue;
             }
 
+            // this should populate **everything** immediately
+            // this is a note to self TODO:
             if (0 != this->hio_driver.Stat(entry_path, &new_inode->st)) {
                 LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
                 continue;

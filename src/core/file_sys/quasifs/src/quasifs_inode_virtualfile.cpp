@@ -7,14 +7,6 @@
 
 namespace QuasiFS {
 
-s64 VirtualFile::read(void* buf, size_t count) {
-    return pread(buf, count, 0);
-}
-
-s64 VirtualFile::write(const void* buf, size_t count) {
-    return pwrite(buf, count, 0);
-}
-
 s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
     s64 idx;
     s64 read_amt = this->data.size() - offset - count;

@@ -16,20 +16,6 @@ s64 Logger::write(const void* buf, u64 nbytes) {
     return nbytes;
 }
 
-s64 Logger::pwrite(const void* buf, u64 nbytes, s64 offset) {
-    log(static_cast<const char*>(buf), nbytes);
-    return nbytes;
-}
-
-s64 Logger::writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
-    size_t total_written = 0;
-    for (int i = 0; i < iovcnt; i++) {
-        log(static_cast<const char*>(iov[i].iov_base), iov[i].iov_len);
-        total_written += iov[i].iov_len;
-    }
-    return total_written;
-}
-
 s32 Logger::fsync() {
     log_flush();
     return 0;
