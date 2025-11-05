@@ -45,36 +45,36 @@ public:
      * This function doesn't return numeric fd
      * The only outputs are 0 and -errno!
      */
-    s32 Open(const fs::path& path, int flags, u16 mode = 0755) override;
+    s32 Open(const fs::path& path, s32 flags, u16 mode = 0755) override;
     s32 Creat(const fs::path& path, u16 mode = 0755) override;
-    s32 Close(const int fd) override;
+    s32 Close(const s32 fd) override;
 
     s32 Link(const fs::path& src, const fs::path& dst) override;
     s32 Unlink(const fs::path& path) override;
     s32 LinkSymbolic(const fs::path& src, const fs::path& dst) override;
 
-    s32 Flush(const int fd) override;
-    s32 FSync(const int fd) override;
-    s64 LSeek(const int fd, u64 offset, QuasiFS::SeekOrigin origin) override;
-    s64 Tell(const int fd) override;
+    s32 Flush(const s32 fd) override;
+    s32 FSync(const s32 fd) override;
+    s64 LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) override;
+    s64 Tell(const s32 fd) override;
 
     s32 Truncate(const fs::path& path, u64 size) override;
-    s32 FTruncate(const int fd, u64 size) override;
+    s32 FTruncate(const s32 fd, u64 size) override;
 
-    s64 Write(const int fd, const void* buf, u64 count) override;
-    s64 Read(const int fd, void* buf, u64 count) override;
+    s64 Write(const s32 fd, const void* buf, u64 count) override;
+    s64 Read(const s32 fd, void* buf, u64 count) override;
 
-    s64 PWrite(const int fd, const void* buf, u64 count, u64 offset) override;
-    s64 PRead(const int fd, void* buf, u64 count, u64 offset) override;
+    s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset) override;
+    s64 PRead(const s32 fd, void* buf, u64 count, u64 offset) override;
 
     s32 MKDir(const fs::path& path, u16 mode = 0755) override;
     s32 RMDir(const fs::path& path) override;
 
     s32 Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) override;
-    s32 FStat(const int fd, Libraries::Kernel::OrbisKernelStat* statbuf) override;
+    s32 FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) override;
 
     s32 Chmod(const fs::path& path, u16 mode) override;
-    s32 FChmod(const int fd, u16 mode) override;
+    s32 FChmod(const s32 fd, u16 mode) override;
 
     //
     // Derived, complex functions are to be handled by main FS class

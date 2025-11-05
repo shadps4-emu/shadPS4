@@ -551,7 +551,6 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     }
 
     s32 result = f->node->getdents(buf, nbytes, basep);
-    LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
     if (result < 0) {
         ErrSceToPosix(result);
         return -1;
