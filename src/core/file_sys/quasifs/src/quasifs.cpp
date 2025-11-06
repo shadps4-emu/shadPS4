@@ -1,5 +1,7 @@
 // INAA License @marecl 2025
 
+#include <iostream>
+
 #include "common/logging/log.h"
 
 #include "core/file_sys/quasifs/quasi_errno.h"
@@ -66,16 +68,25 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
         std::tm* t = std::localtime(&st.st_mtim.tv_sec);
         std::strftime(timebuf, sizeof(timebuf), "%EY-%m-%d %H:%M", t);
 
-        LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",
-                 file_mode(st.st_mode), st.st_mode, st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/ 0,
-                 st.st_size, timebuf, depEnt, name);
+        // LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",
+        //          file_mode(st.st_mode), st.st_mode, st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/
+        //          0, st.st_size, timebuf, depEnt, name);
+
+        std::string line = std::format(
+            "[ls -la] {} {:08o} {:03d} {}:{} {:>08} {}\t{}{}\n", file_mode(st.st_mode), st.st_mode,
+            st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/ 0, st.st_size, timebuf, depEnt, name);
+
+        std::cout << "[FileSystem]" << line;
     } else
         depth--;
 
-    if (node->is_link())
-        LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\tsymlinked to ->{}\n",
-                 std::static_pointer_cast<Symlink>(node)->follow().string());
-
+    if (node->is_link()) {
+        // LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\tsymlinked to ->{}\n",
+        //          std::static_pointer_cast<Symlink>(node)->follow().string());
+        std::string line = std::format("[ls -la]\t\t\t\t\t\t\t\t[->{}]\n",
+                                       std::static_pointer_cast<Symlink>(node)->follow().string());
+        std::cout << "[FileSystem]" << line;
+    }
     if (node->is_dir()) {
         if ("." == name)
             return;
@@ -84,7 +95,10 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
 
         auto dir = std::dynamic_pointer_cast<Directory>(node);
         if (dir->mounted_root) {
-            LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
+            // LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
+            std::string line =
+                std::format("[ls -la]\t\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
+            std::cout << "[FileSystem]" << line;
             _printTree(dir->mounted_root, "", depth + 1);
         } else {
             for (auto& childName : dir->Entries()) {

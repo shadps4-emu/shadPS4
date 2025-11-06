@@ -8,14 +8,13 @@
 namespace QuasiFS {
 
 s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
-    s64 idx;
     s64 read_amt = this->data.size() - offset - count;
 
     // if >= 0 - we're good to go
     // <0 - n-bytes are missing, won't enter loop
     read_amt = count + read_amt * (read_amt < 0);
 
-    for (idx = 0; idx < read_amt; idx++) {
+    for (s64 idx = 0; idx < read_amt; idx++) {
         char c = this->data.at(idx + offset);
         static_cast<char*>(buf)[idx] = c;
     }
@@ -25,14 +24,14 @@ s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
 }
 
 s64 VirtualFile::pwrite(const void* buf, size_t count, s64 offset) {
-    auto size = &this->st.st_size;
+    auto& size = this->st.st_size;
     auto end_pos = offset + count;
-    *size = end_pos > *size ? end_pos : *size;
+    size = end_pos > size ? end_pos : size;
 
     // size can only be greater, so it will always scale up
-    this->data.resize(*size, 0);
+    this->data.resize(size, 0);
 
-    for (u64 idx = offset; idx < *size; idx++)
+    for (u64 idx = offset; idx < size; idx++)
         this->data[idx] = static_cast<const char*>(buf)[idx];
 
     st.st_mtim.tv_sec = time(0);

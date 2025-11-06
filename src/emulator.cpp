@@ -101,28 +101,23 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
 
     qfs->Operation.MKDir("/app0", 0555);
-    qfs->Operation.MKDir("/hostapp", 0555);
     qfs->Operation.MKDir("/av_contents", 0775);
-    qfs->Operation.MKDir("/av_contents/photo", 0755);
-    qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
-    qfs->Operation.MKDir("/av_contents/video", 0755);
-    qfs->Operation.MKDir("/data", 0777);
     qfs->Operation.MKDir("/dev", 0555);
-    qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
+    qfs->Operation.MKDir("/host", 0777);
     qfs->Operation.MKDir("/hostapp", 0777);
-    qfs->Operation.MKDir("/temp", 0777);
-    qfs->Operation.MKDir("/temp0", 0777);
 
     qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
     qfs->Mount("/av_contents", partition_av_contents, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
+
+    // mounting av_contents would shadow these
+    qfs->Operation.MKDir("/av_contents/photo", 0755);
+    qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
+    qfs->Operation.MKDir("/av_contents/video", 0755);
     qfs->Mount("/av_contents/photo", partition_av_contents_photo, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/thumbnails", partition_av_contents_thumbs,
                qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/video", partition_av_contents_video, qfs::MountOptions::MOUNT_RW);
-
-    qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
-    qfs->Mount("/hostapp", partition_app0,
-               qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
 
     //
     // Setup /dev
@@ -156,11 +151,11 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs->Operation.Chmod("/dev/srandom", 0666);
 
     if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY); fd_dev != 0)
-        LOG_CRITICAL(Kernel_Fs, "XDXDXD 0");
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stdin is not 0 (it's {})", fd_dev);
     if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY); fd_dev != 1)
-        LOG_CRITICAL(Kernel_Fs, "XDXDXD 1 != {}", fd_dev);
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stdout is not 1 (it's {})", fd_dev);
     if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY); fd_dev != 2)
-        LOG_CRITICAL(Kernel_Fs, "XDXDXD 2 != {}", fd_dev);
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stderr is not 2 (it's {})", fd_dev);
 
     qfs->SyncHost();
 
@@ -201,8 +196,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     mnt->Mount(game_folder, "/app0", true);
-    // Certain games may use /hostapp as well such as CUSA001100
-    mnt->Mount(game_folder, "/hostapp", true);
 
     this->LoadFilesystem(game_folder);
 
@@ -267,6 +260,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     std::filesystem::create_directory(mount_temp_dir);
 
+    qfs->Operation.MKDir("/data", 0777);
+    qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
+    qfs->Operation.MKDir("/temp", 0777);
+    qfs->Operation.MKDir("/temp0", 0777);
     qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 4096, 32768);
     qfs::partition_ptr partition_download =
         qfs::Partition::Create(mount_download_dir, 0777, 512, 65536);
@@ -420,42 +417,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-    // const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
-    // if (!std::filesystem::exists(mount_data_dir)) {
-    //     std::filesystem::create_directory(mount_data_dir);
-    // }
-    // mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
-
-    // Mounting temp folders
-    // const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    // if (std::filesystem::exists(mount_temp_dir)) {
-    //     // Temp folder should be cleared on each boot.
-    //     std::filesystem::remove_all(mount_temp_dir);
-    // }
-    // std::filesystem::create_directory(mount_temp_dir);
-    // mnt->Mount(mount_temp_dir, "/temp0");
-    // mnt->Mount(mount_temp_dir, "/temp");
-
-    // const auto& mount_download_dir =
-    //     Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
-    // if (!std::filesystem::exists(mount_download_dir)) {
-    //     std::filesystem::create_directory(mount_download_dir);
-    // }
-    // mnt->Mount(mount_download_dir, "/download0");
-
-    //   const auto& mount_captures_dir =
-    //   Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
-    // if (!std::filesystem::exists(mount_captures_dir)) {
-    //     std::filesystem::create_directory(mount_captures_dir);
-    // }
-    // VideoCore::SetOutputDir(mount_captures_dir, id);
-
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
+    std::filesystem::path eboot_path{};
+    qfs->GetHostPath(eboot_path, guest_eboot_path);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
                      Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));

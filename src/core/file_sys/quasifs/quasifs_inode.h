@@ -142,8 +142,8 @@ public:
     struct Libraries::Kernel::OrbisKernelStat st{};
 
     int chmod(u16 mode) {
-        u16* st_mode = &this->st.st_mode;
-        *st_mode = ((*st_mode) & (~0x1FF)) | (mode & 0x1FF);
+        u16& st_mode = this->st.st_mode;
+        st_mode = ((st_mode) & (~0x1FF)) | (mode & 0x1FF);
         st.st_birthtim.tv_sec = time(0);
         return 0;
     }
