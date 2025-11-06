@@ -250,7 +250,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
 }
 
 bool MustKeepDrawing() {
-    return layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
+    return layers.size() > 1 || change_layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
 }
 
 } // namespace Core
