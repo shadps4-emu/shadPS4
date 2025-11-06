@@ -133,6 +133,30 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
             psf_attributes.raw = *raw_attributes;
         }
+
+        // Extract sdk version from pubtool info.
+        std::string_view pubtool_info = param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
+        u64 sdk_ver_offset = pubtool_info.find("sdk_ver");
+        
+        if (sdk_ver_offset == pubtool_info.npos) {
+            // Default to using firmware version if SDK version is not found.
+            sdk_version = fw_version;
+        } else {
+            // Increment offset to account for sdk_ver= part of string.
+            sdk_ver_offset += 8;
+            u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
+            if (sdk_ver_len == pubtool_info.npos) {
+                // If there's no more commas, this is likely the last entry of pubtool info.
+                // Use string length instead.
+                sdk_ver_len = pubtool_info.size();
+            }
+            sdk_ver_len -= sdk_ver_offset;
+            std::string sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len).data();
+            // Number is stored in base 16.
+            sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
+        }
+    }
+
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
     game_info.game_serial = id;
