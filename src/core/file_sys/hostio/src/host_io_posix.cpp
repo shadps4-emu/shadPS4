@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <sys/fcntl.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <sys/unistd.h>
 
 #include "core/file_sys/hostio/host_io_posix.h"
@@ -89,15 +90,47 @@ s32 HostIO_POSIX::FTruncate(const s32 fd, u64 size) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_POSIX::Write(const s32 fd, const void* buf, u64 count) {
-    errno = 0;
-    s32 status = write(fd, buf, count);
-    return status >= 0 ? status : -errno;
-}
-
 s64 HostIO_POSIX::Read(const s32 fd, void* buf, u64 count) {
     errno = 0;
     s32 status = read(fd, buf, count);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+    errno = 0;
+    s32 status = pread(fd, buf, count, offset);
+    return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_POSIX::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+    errno = 0;
+
+    iovec* iov_native = new iovec[iovcnt];
+    for (s32 idx = 0; idx < iovcnt; idx++)
+        iov_native[idx] = {.iov_base = iov[idx].iov_base, .iov_len = iov[idx].iov_len};
+
+    s64 ret = readv(fd, iov_native, iovcnt);
+    delete[] iov_native;
+
+    return ret;
+}
+
+s64 HostIO_POSIX::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    errno = 0;
+
+    iovec* iov_native = new iovec[iovcnt];
+    for (s32 idx = 0; idx < iovcnt; idx++)
+        iov_native[idx] = {.iov_base = iov[idx].iov_base, .iov_len = iov[idx].iov_len};
+
+    s64 ret = preadv(fd, iov_native, iovcnt, offset);
+    delete[] iov_native;
+
+    return ret;
+}
+
+s64 HostIO_POSIX::Write(const s32 fd, const void* buf, u64 count) {
+    errno = 0;
+    s32 status = write(fd, buf, count);
     return status >= 0 ? status : -errno;
 }
 
@@ -107,10 +140,30 @@ s64 HostIO_POSIX::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 HostIO_POSIX::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     errno = 0;
-    s32 status = pread(fd, buf, count, offset);
-    return status >= 0 ? status : -errno;
+
+    iovec* iov_native = new iovec[iovcnt];
+    for (s32 idx = 0; idx < iovcnt; idx++)
+        iov_native[idx] = {.iov_base = iov[idx].iov_base, .iov_len = iov[idx].iov_len};
+
+    s64 ret = writev(fd, iov_native, iovcnt);
+    delete[] iov_native;
+
+    return ret;
+}
+
+s64 HostIO_POSIX::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    errno = 0;
+
+    iovec* iov_native = new iovec[iovcnt];
+    for (s32 idx = 0; idx < iovcnt; idx++)
+        iov_native[idx] = {.iov_base = iov[idx].iov_base, .iov_len = iov[idx].iov_len};
+
+    s64 ret = pwritev(fd, iov_native, iovcnt, offset);
+    delete[] iov_native;
+
+    return ret;
 }
 
 s32 HostIO_POSIX::MKDir(const fs::path& path, u16 mode) {
@@ -125,7 +178,7 @@ s32 HostIO_POSIX::RMDir(const fs::path& path) {
     return 0 == status ? status : -errno;
 }
 
-s32 HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     errno = 0;
 
     struct stat st;
@@ -158,7 +211,7 @@ s32 HostIO_POSIX::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat*
     return 0;
 }
 
-s32 HostIO_POSIX::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_POSIX::FStat(const s32 fd, OrbisKernelStat* statbuf) {
     errno = 0;
 
     struct stat st;

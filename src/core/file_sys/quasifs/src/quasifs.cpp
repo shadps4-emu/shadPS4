@@ -5,10 +5,10 @@
 #include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 

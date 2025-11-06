@@ -93,27 +93,15 @@ Emulator::~Emulator() {}
 void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    qfs->Operation.MKDir("/app0", 0555);
-    qfs->Operation.MKDir("/hostapp", 0555);
-    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder);
-    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
-
-    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
-    qfs->Mount("/hostapp", partition_app0,
-               qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
-
-    qfs->Operation.Chmod("/", 0777);
+    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 512, 65536);
     qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 512, 16384);
     qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 4096, 32768);
     qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 4096, 32768);
     qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 4096, 32768);
     qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
-    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
-    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
-    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
-    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
 
-
+    qfs->Operation.MKDir("/app0", 0555);
+    qfs->Operation.MKDir("/hostapp", 0555);
     qfs->Operation.MKDir("/av_contents", 0775);
     qfs->Operation.MKDir("/av_contents/photo", 0755);
     qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
@@ -125,6 +113,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs->Operation.MKDir("/temp", 0777);
     qfs->Operation.MKDir("/temp0", 0777);
 
+    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
     qfs->Mount("/av_contents", partition_av_contents, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/photo", partition_av_contents_photo, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/av_contents/thumbnails", partition_av_contents_thumbs,
@@ -132,6 +121,8 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs->Mount("/av_contents/video", partition_av_contents_video, qfs::MountOptions::MOUNT_RW);
 
     qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/hostapp", partition_app0,
+               qfs::MountOptions::MOUNT_NOOPT | qfs::MountOptions::MOUNT_BIND);
 
     //
     // Setup /dev
@@ -286,7 +277,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     qfs->Mount("/temp0", partition_temp,
                qfs::MountOptions::MOUNT_RW | qfs::MountOptions::MOUNT_BIND);
     qfs->SyncHost("/data");
-    qfs->SyncHost("/donwload0");
+    qfs->SyncHost("/download0");
     qfs->SyncHost("/temp");
     qfs->SyncHost("/temp0");
 
@@ -430,34 +421,34 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     g_window = window.get();
 
     // const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
-    if (!std::filesystem::exists(mount_data_dir)) {
-        std::filesystem::create_directory(mount_data_dir);
-    }
-    mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
+    // if (!std::filesystem::exists(mount_data_dir)) {
+    //     std::filesystem::create_directory(mount_data_dir);
+    // }
+    // mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
 
     // Mounting temp folders
     // const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    if (std::filesystem::exists(mount_temp_dir)) {
-        // Temp folder should be cleared on each boot.
-        std::filesystem::remove_all(mount_temp_dir);
-    }
-    std::filesystem::create_directory(mount_temp_dir);
-    mnt->Mount(mount_temp_dir, "/temp0");
-    mnt->Mount(mount_temp_dir, "/temp");
+    // if (std::filesystem::exists(mount_temp_dir)) {
+    //     // Temp folder should be cleared on each boot.
+    //     std::filesystem::remove_all(mount_temp_dir);
+    // }
+    // std::filesystem::create_directory(mount_temp_dir);
+    // mnt->Mount(mount_temp_dir, "/temp0");
+    // mnt->Mount(mount_temp_dir, "/temp");
 
     // const auto& mount_download_dir =
     //     Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
-    if (!std::filesystem::exists(mount_download_dir)) {
-        std::filesystem::create_directory(mount_download_dir);
-    }
-    mnt->Mount(mount_download_dir, "/download0");
+    // if (!std::filesystem::exists(mount_download_dir)) {
+    //     std::filesystem::create_directory(mount_download_dir);
+    // }
+    // mnt->Mount(mount_download_dir, "/download0");
 
     //   const auto& mount_captures_dir =
     //   Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
-    if (!std::filesystem::exists(mount_captures_dir)) {
-        std::filesystem::create_directory(mount_captures_dir);
-    }
-    VideoCore::SetOutputDir(mount_captures_dir, id);
+    // if (!std::filesystem::exists(mount_captures_dir)) {
+    //     std::filesystem::create_directory(mount_captures_dir);
+    // }
+    // VideoCore::SetOutputDir(mount_captures_dir, id);
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

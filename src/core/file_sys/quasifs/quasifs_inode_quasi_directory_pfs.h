@@ -33,7 +33,6 @@ private:
 public:
     DirectoryPFS() = default;
     ~DirectoryPFS() = default;
-
 };
 
 } // namespace QuasiFS

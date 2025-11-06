@@ -12,10 +12,9 @@
 namespace HostIODriver {
 namespace fs = std::filesystem;
 using namespace QuasiFS;
+using namespace Libraries::Kernel;
 
 class HostIO_Base {
-
-protected:
 public:
     HostIO_Base();
     ~HostIO_Base();
@@ -37,15 +36,22 @@ public:
     virtual s32 FTruncate(const s32 fd, u64 size);
     virtual s64 LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin);
     virtual s64 Tell(const s32 fd);
-    virtual s64 Write(const s32 fd, const void* buf, u64 count);
-    virtual s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset);
+
     virtual s64 Read(const s32 fd, void* buf, u64 count);
     virtual s64 PRead(const s32 fd, void* buf, u64 count, u64 offset);
+    virtual s64 ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt);
+    virtual s64 PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
+
+    virtual s64 Write(const s32 fd, const void* buf, u64 count);
+    virtual s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset);
+    virtual s64 WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt);
+    virtual s64 PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
+
     virtual s32 MKDir(const fs::path& path, u16 mode = 0755);
     virtual s32 RMDir(const fs::path& path);
 
-    virtual s32 Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf);
-    virtual s32 FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf);
+    virtual s32 Stat(const fs::path& path, OrbisKernelStat* statbuf);
+    virtual s32 FStat(const s32 fd, OrbisKernelStat* statbuf);
 
     virtual s32 Chmod(const fs::path& path, u16 mode);
     virtual s32 FChmod(const s32 fd, u16 mode);

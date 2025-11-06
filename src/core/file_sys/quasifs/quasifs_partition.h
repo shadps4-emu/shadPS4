@@ -30,21 +30,18 @@ private:
     const fs::path host_root{};
 
     // IO block size, allocation unit (multiples of 512)
-    u32 ioblock_size{4096};
+    const u32 ioblock_size{4096};
     // amount of raw on-disk blocks per io block
     // this is pretty much so we don't recalculate it over and over and over
     // and
-    u32 block_size{512};
-
-    u8 filesystem_format = FileSystem::NORMAL;
+    const u32 block_size{512};
 
 public:
     // host-bound directory, permissions for root directory
-    Partition(const fs::path& host_root = "");
+    Partition();
+    Partition(const fs::path& host_root = "", const int root_permissions = 0755,
+              const u32 block_size = 512, const u32 ioblock_size = 4096);
     ~Partition() = default;
-
-    void Format(const int root_permissions = 0755, u8 format = FileSystem::NORMAL,
-                const u32 block_size = 512, const u32 ioblock_size = 4096);
 
     template <typename... Args>
     static partition_ptr Create(Args&&... args) {

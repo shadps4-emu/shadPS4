@@ -22,8 +22,11 @@ public:
         UNREACHABLE();
     }
 
-    s64 pread(void* buf, u64 count, s64 offset) override;
-    s64 pwrite(const void* buf, u64 count, s64 offset) override;
+    virtual s64 read(void* buf, u64 count);
+    virtual s64 write(const void* buf, u64 count);
+
+    s64 pread(void* buf, u64 count, s64 offset) final override;
+    s64 pwrite(const void* buf, u64 count, s64 offset) final override;
 };
 
 } // namespace QuasiFS

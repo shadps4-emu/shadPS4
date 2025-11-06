@@ -73,10 +73,20 @@ private:
         s32 FTruncate(const s32 fd, u64 size) override;
         s64 LSeek(const s32 fd, u64 offset, SeekOrigin origin) override;
         s64 Tell(const s32 fd) override;
-        s64 Write(const s32 fd, const void* buf, u64 count) override;
-        s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset) override;
+
         s64 Read(const s32 fd, void* buf, u64 count) override;
         s64 PRead(const s32 fd, void* buf, u64 count, u64 offset) override;
+        s64 ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) override;
+        s64 PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
+                   s64 offset) override;
+
+        s64 Write(const s32 fd, const void* buf, u64 count) override;
+        s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset) override;
+        s64 WriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                   u32 iovcnt) override;
+        s64 PWriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
+                    s64 offset) override;
+
         s32 MKDir(const fs::path& path, u16 mode = 0755) override;
         s32 RMDir(const fs::path& path) override;
 

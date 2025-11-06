@@ -200,22 +200,7 @@ s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    // if (node->is_dir())
-    //     return -QUASI_EISDIR;
-
-    // if (!node->is_file())
-    //     return -QUASI_EINVAL;
-
     return handle->node->ftruncate(size);
-}
-
-s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
-    s64 bw = this->PWrite(fd, buf, count, handle->pos);
-
-    if (bw > 0)
-        handle->pos += bw;
-
-    return bw;
 }
 
 s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
@@ -225,6 +210,51 @@ s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
         handle->pos += br;
 
     return br;
+}
+
+s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+    if (nullptr == handle)
+        return -QUASI_EINVAL;
+
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -QUASI_EBADF;
+
+    return node->pread(buf, count, offset);
+}
+
+s64 HostIO_Virtual::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+    s64 br = PReadV(fd, iov, iovcnt, handle->pos);
+
+    if (br > 0)
+        handle->pos += br;
+
+    return br;
+}
+
+s64 HostIO_Virtual::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -QUASI_EBADF;
+
+    if (handle->append)
+        offset = node->st.st_size;
+
+    return node->preadv(iov, iovcnt, offset);
+}
+
+s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
+    s64 bw = this->PWrite(fd, buf, count, handle->pos);
+
+    if (bw > 0)
+        handle->pos += bw;
+
+    return bw;
 }
 
 s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
@@ -242,16 +272,28 @@ s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, u64 offset)
     return node->pwrite(buf, count, offset);
 }
 
-s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+    s64 bw = this->PWriteV(fd, iov, iovcnt, handle->pos);
+
+    if (bw > 0)
+        handle->pos += bw;
+
+    return bw;
+}
+
+s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     if (nullptr == handle)
-        return -QUASI_EINVAL;
+        return -QUASI_EBADF;
 
     inode_ptr node = handle->node;
 
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    return node->pread(buf, count, offset);
+    if (handle->append)
+        offset = node->st.st_size;
+
+    return node->pwritev(iov, iovcnt, offset);
 }
 
 s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
@@ -286,7 +328,7 @@ s32 HostIO_Virtual::RMDir(const fs::path& path) {
     return 0;
 }
 
-s32 HostIO_Virtual::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
@@ -295,12 +337,12 @@ s32 HostIO_Virtual::Stat(const fs::path& path, Libraries::Kernel::OrbisKernelSta
     if (nullptr == node)
         return -QUASI_ENOENT;
 
-    memcpy(statbuf, &node->st, sizeof(Libraries::Kernel::OrbisKernelStat));
+    memcpy(statbuf, &node->st, sizeof(OrbisKernelStat));
 
     return 0;
 }
 
-s32 HostIO_Virtual::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
     if (nullptr == this->handle)
         return -QUASI_EINVAL;
 
@@ -309,7 +351,7 @@ s32 HostIO_Virtual::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* stat
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    memcpy(statbuf, &node->st, sizeof(Libraries::Kernel::OrbisKernelStat));
+    memcpy(statbuf, &node->st, sizeof(OrbisKernelStat));
 
     return 0;
 }
@@ -350,7 +392,7 @@ s64 HostIO_Virtual::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
     if (nullptr != basep)
         *basep = handle->pos;
 
-    s64 br = node->getdents(buf + handle->pos, nbytes, basep);
+    s64 br = node->getdents(static_cast<char*>(buf) + handle->pos, nbytes, basep);
     if (br > 0)
         handle->pos += br;
 

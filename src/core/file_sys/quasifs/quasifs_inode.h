@@ -16,6 +16,8 @@
 
 namespace QuasiFS {
 
+static_assert(sizeof(time_t) == 8, "Time is not stored in 64 bits");
+
 class Inode {
 public:
     Inode() {
@@ -23,8 +25,6 @@ public:
         st.st_nlink = 0;
         st.st_uid = 0;
         st.st_gid = 0;
-
-        static_assert(sizeof(time_t) == 8, "Time is not stored in 64 bits");
 
         st.st_birthtim.tv_sec = time(0);
         st.st_birthtim.tv_nsec = 0;
@@ -42,17 +42,6 @@ public:
         return -QUASI_ENOTTY;
     }
 
-    // these don't make sense with anything that's not a device
-    // kept here to verify
-    virtual s64 read(void* buf, u64 count) {
-        return -QUASI_EBADF;
-    }
-
-    virtual s64 write(const void* buf, u64 count) {
-        return -QUASI_EBADF;
-    }
-
-    // these 4 make sense everywhere
     virtual s64 pread(void* buf, u64 count, s64 offset) {
         return -QUASI_EBADF;
     }
@@ -61,29 +50,7 @@ public:
         return -QUASI_EBADF;
     }
 
-    virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-        u64 tb = 0;
-        for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->read(iov[idx].iov_base, iov[idx].iov_len);
-            if (status < 0)
-                return status;
-            tb += status;
-        }
-        return tb;
-    }
-
-    virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt) {
-        u64 tb = 0;
-        for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->write(iov[idx].iov_base, iov[idx].iov_len);
-            if (status < 0)
-                return status;
-            tb += status;
-        }
-        return tb;
-    }
-
-    virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, s64 offset) {
+    virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
         u64 tb = 0;
         for (unsigned int idx = 0; idx < iovcnt; idx++) {
             int status = this->pread(iov[idx].iov_base, iov[idx].iov_len, offset);
@@ -94,7 +61,7 @@ public:
         return tb;
     }
 
-    virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, int iovcnt, s64 offset) {
+    virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
         u64 tb = 0;
         for (unsigned int idx = 0; idx < iovcnt; idx++) {
             int status = this->pwrite(iov[idx].iov_base, iov[idx].iov_len, offset);

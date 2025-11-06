@@ -108,4 +108,5 @@ typedef struct mount_t {
     dir_ptr parentdir;
     unsigned int options;
 } mount_t;
+
 } // namespace QuasiFS

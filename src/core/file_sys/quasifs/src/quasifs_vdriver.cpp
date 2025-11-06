@@ -512,6 +512,143 @@ void UpdateStatFromHost(Libraries::Kernel::OrbisKernelStat* vfs,
     vfs->st_ctim = host->st_ctim;
 }
 
+s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
+    if (fd < 0)
+        return -QUASI_EBADF;
+
+    fd_handle_ptr handle = qfs.GetHandle(fd);
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    if (!handle->read)
+        return -QUASI_EBADF;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    if (handle->IsHostBound()) {
+        int host_fd = handle->host_fd;
+        if (hio_status = qfs.hio_driver.Read(host_fd, buf, count); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    }
+
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.Read(fd, buf, count);
+    qfs.vio_driver.ClearCtx();
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
+}
+
+s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+    if (fd < 0)
+        return -QUASI_EBADF;
+
+    fd_handle_ptr handle = qfs.GetHandle(fd);
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    if (!handle->read)
+        return -QUASI_EBADF;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    if (handle->IsHostBound()) {
+        int host_fd = handle->host_fd;
+        if (hio_status = qfs.hio_driver.PRead(host_fd, buf, count, offset); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    }
+
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PRead(fd, buf, count, offset);
+    qfs.vio_driver.ClearCtx();
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
+};
+
+s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
+    if (fd < 0)
+        return -QUASI_EBADF;
+
+    fd_handle_ptr handle = qfs.GetHandle(fd);
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    if (!handle->read)
+        return -QUASI_EBADF;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    if (handle->IsHostBound()) {
+        int host_fd = handle->host_fd;
+        if (hio_status = qfs.hio_driver.ReadV(host_fd, iov, iovcnt); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    }
+
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.ReadV(fd, iov, iovcnt);
+    qfs.vio_driver.ClearCtx();
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
+}
+
+s64 QFS::OperationImpl::PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
+                               s64 offset) {
+    if (fd < 0)
+        return -QUASI_EBADF;
+
+    fd_handle_ptr handle = qfs.GetHandle(fd);
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    if (!handle->read)
+        return -QUASI_EBADF;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    if (handle->IsHostBound()) {
+        int host_fd = handle->host_fd;
+        if (hio_status = qfs.hio_driver.PReadV(host_fd, iov, iovcnt, offset); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    }
+
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PReadV(fd, iov, iovcnt, offset);
+    qfs.vio_driver.ClearCtx();
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
+}
+
 s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
     if (fd < 0)
         return -QUASI_EBADF;
@@ -580,7 +717,8 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, u64 off
     return vio_status;
 };
 
-s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
+s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                               u32 iovcnt) {
     if (fd < 0)
         return -QUASI_EBADF;
 
@@ -588,7 +726,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     if (nullptr == handle)
         return -QUASI_EBADF;
 
-    if (!handle->read)
+    if (!handle->write)
         return -QUASI_EBADF;
 
     bool host_used = false;
@@ -597,14 +735,14 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
-        if (hio_status = qfs.hio_driver.Read(host_fd, buf, count); hio_status < 0)
+        if (hio_status = qfs.hio_driver.WriteV(host_fd, iov, iovcnt); hio_status < 0)
             // hosts operation must succeed in order to continue
             return hio_status;
         host_used = true;
     }
 
     qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-    vio_status = qfs.vio_driver.Read(fd, buf, count);
+    vio_status = qfs.vio_driver.WriteV(fd, iov, iovcnt);
     qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
@@ -614,7 +752,8 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                                u32 iovcnt, s64 offset) {
     if (fd < 0)
         return -QUASI_EBADF;
 
@@ -622,7 +761,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
     if (nullptr == handle)
         return -QUASI_EBADF;
 
-    if (!handle->read)
+    if (!handle->write)
         return -QUASI_EBADF;
 
     bool host_used = false;
@@ -631,14 +770,14 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
-        if (hio_status = qfs.hio_driver.PRead(host_fd, buf, count, offset); hio_status < 0)
+        if (hio_status = qfs.hio_driver.PWriteV(host_fd, iov, iovcnt, offset); hio_status < 0)
             // hosts operation must succeed in order to continue
             return hio_status;
         host_used = true;
     }
 
     qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-    vio_status = qfs.vio_driver.PRead(fd, buf, count, offset);
+    vio_status = qfs.vio_driver.PWriteV(fd, iov, iovcnt, offset);
     qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
@@ -646,7 +785,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
                   vio_status);
 
     return vio_status;
-};
+}
 
 s32 QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
     Resolved res;

@@ -15,6 +15,14 @@ Device::Device() {
 
 Device::~Device() = default;
 
+s64 Device::read(void* buf, u64 count) {
+    return -QUASI_EBADF;
+}
+
+s64 Device::write(const void* buf, u64 count) {
+    return -QUASI_EBADF;
+}
+
 s64 Device::pread(void* buf, u64 count, s64 offset) {
     return read(buf, count);
 }

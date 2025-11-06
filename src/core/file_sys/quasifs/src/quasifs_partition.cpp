@@ -12,28 +12,14 @@
 
 namespace QuasiFS {
 
-Partition::Partition(const fs::path& host_root)
-    : block_id(next_block_id++), host_root(host_root.lexically_normal()) {}
+Partition::Partition() : Partition("", 0755, 512, 4096) {}
 
-void Partition::Format(const int root_permissions, u8 format, const u32 block_size,
-                       const u32 ioblock_size) {
-    this->inode_table.clear();
-    this->next_fileno = 2;
-    this->ioblock_size = ioblock_size;
-    this->block_size = block_size;
-    this->filesystem_format = format;
-
-    switch (format) {
-    default:
-        LOG_ERROR(Kernel_Fs, "Unknown target partition type. Defaulting to normal");
-    case FileSystem::NORMAL:
-        this->root = Directory::Create<Directory>();
-        break;
-    case FileSystem::PFS:
-        this->root = Directory::Create<DirectoryPFS>();
-        break;
-    }
-
+Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 block_size,
+                     const u32 ioblock_size)
+    : block_id(next_block_id++), host_root(host_root.lexically_normal()), block_size(block_size),
+      ioblock_size(ioblock_size) {
+    this->root = Directory::Create<Directory>();
+    // clear defaults, write
     chmod(this->root, root_permissions);
     IndexInode(this->root);
     mkrelative(this->root, this->root);
