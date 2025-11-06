@@ -236,15 +236,24 @@ s32 PS4_SYSV_ABI sceKernelSetGPO() {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceKernelGetAllowedSdkVersionOnSystem(s32* ver) {
+    if (ver == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    // Returns the highest game SDK version this PS4 allows.
+    *ver = CURRENT_FIRMWARE_VERSION | 0xfff;
+    LOG_INFO(Lib_Kernel, "called, returned sw version: {}", *ver);
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
     if (ret == nullptr) {
-        return ORBIS_OK; // but why?
+        return ORBIS_OK;
     }
-    ASSERT(ret->struct_size == 40);
-    u32 fake_fw = Common::ElfInfo::Instance().RawFirmwareVer();
+    u32 fake_fw = CURRENT_FIRMWARE_VERSION;
     ret->hex_representation = fake_fw;
     std::snprintf(ret->text_representation, 28, "%2x.%03x.%03x", fake_fw >> 0x18,
-                  fake_fw >> 0xc & 0xfff, fake_fw & 0xfff); // why %2x?
+                  fake_fw >> 0xc & 0xfff, fake_fw & 0xfff);
     LOG_INFO(Lib_Kernel, "called, returned sw version: {}", ret->text_representation);
     return ORBIS_OK;
 }
@@ -257,15 +266,35 @@ const char** PS4_SYSV_ABI getargv() {
     return entry_params.argv;
 }
 
-s32 PS4_SYSV_ABI get_authinfo(int pid, AuthInfoData* p2) {
+s32 PS4_SYSV_ABI get_authinfo(s32 pid, AuthInfoData* p2) {
     LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
-    if ((pid != 0) && (pid != GLOBAL_PID)) {
+    if (p2 == nullptr) {
+        *Kernel::__Error() = POSIX_EPERM;
+        return -1;
+    }
+    if (pid != 0 && pid != GLOBAL_PID) {
         *Kernel::__Error() = POSIX_ESRCH;
         return -1;
     }
 
     *p2 = {};
     p2->caps[0] = 0x2000000000000000;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
+    LOG_WARNING(Lib_Kernel, "(STUBBED) called, pid: {}", pid);
+    if (pid != GLOBAL_PID) {
+        return ORBIS_KERNEL_ERROR_EPERM;
+    }
+    if (app_info == nullptr) {
+        return ORBIS_OK;
+    }
+
+    auto& game_info = Common::ElfInfo::Instance();
+    *app_info = {};
+    app_info->has_param_sfo = 1;
+    strncpy(app_info->cusa_name, game_info.GameSerial().data(), 10);
     return ORBIS_OK;
 }
 
@@ -285,8 +314,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
+    LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
     LIB_FUNCTION("Mv1zUObHvXI", "libkernel", 1, "libkernel", sceKernelGetSystemSwVersion);
     LIB_FUNCTION("igMefp4SAv0", "libkernel", 1, "libkernel", get_authinfo);
+    LIB_FUNCTION("G-MYv5erXaU", "libkernel", 1, "libkernel", sceKernelGetAppInfo);
     LIB_FUNCTION("PfccT7qURYE", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("wW+k21cmbwQ", "libkernel", 1, "libkernel", kernel_ioctl);
     LIB_FUNCTION("JGfTMBOdUJo", "libkernel", 1, "libkernel", sceKernelGetFsSandboxRandomWord);
