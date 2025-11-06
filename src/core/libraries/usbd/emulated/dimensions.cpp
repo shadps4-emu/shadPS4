@@ -513,8 +513,8 @@ libusb_transfer_status DimensionsBackend::HandleAsyncTransfer(libusb_transfer* t
 
     switch (transfer->endpoint) {
     case 0x81: {
-        // Read Endpoint, if a request has not been sent via the write endpoint, set expected result
-        // as EHCI_CC_HALTED so the game doesn't report the Toypad as being disconnected.
+        // Read Endpoint, wait to respond with either an added/removed figure response, or a queued
+        // response from a previous write
         bool responded = false;
         while (!responded) {
             std::lock_guard lock(m_query_mutex);
