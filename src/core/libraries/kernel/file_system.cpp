@@ -640,14 +640,19 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
+
+    // get the difference between file clock and system clock
+    const auto now_sys = std::chrono::system_clock::now();
+    const auto now_file = std::filesystem::file_time_type::clock::now();
+    // calculate the file modified time
+    const auto mtime = std::filesystem::last_write_time(path_name);
+    const auto mtimestamp = now_sys + (mtime - now_file);
+
     if (std::filesystem::is_directory(path_name)) {
         sb->st_mode = 0000777u | 0040000u;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
         sb->st_blocks = 128;
-
-        const auto mtime = std::filesystem::last_write_time(path_name);
-        const auto mtimestamp = std::chrono::clock_cast<std::chrono::system_clock>(mtime);
         sb->st_mtim.tv_sec = std::chrono::system_clock::to_time_t(mtimestamp);
         // TODO incomplete
     } else {
@@ -655,9 +660,6 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
-
-        const auto mtime = std::filesystem::last_write_time(path_name);
-        const auto mtimestamp = std::chrono::clock_cast<std::chrono::system_clock>(mtime);
         sb->st_mtim.tv_sec = std::chrono::system_clock::to_time_t(mtimestamp);
         // TODO incomplete
     }
