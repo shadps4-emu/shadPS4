@@ -135,9 +135,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
 
         // Extract sdk version from pubtool info.
-        std::string_view pubtool_info = param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
+        std::string_view pubtool_info =
+            param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
         u64 sdk_ver_offset = pubtool_info.find("sdk_ver");
-        
+
         if (sdk_ver_offset == pubtool_info.npos) {
             // Default to using firmware version if SDK version is not found.
             sdk_version = fw_version;
