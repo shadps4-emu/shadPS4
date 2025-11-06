@@ -234,8 +234,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Operating System: {}", os.name());
 
     if (param_sfo_exists) {
-        LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
-        LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
+        LOG_INFO(Loader, "Game id: {}, Title: {}, Version: {}", id, title, app_version);
+        LOG_INFO(Loader, "FW version: {:#x}, SDK version: {:#x}", fw_version, sdk_version);
         LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
         LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
