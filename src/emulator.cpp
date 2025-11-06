@@ -113,6 +113,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::string id;
     std::string title;
     std::string app_version;
+    u32 sdk_version;
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
     if (param_sfo_exists) {
@@ -132,7 +133,21 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
             psf_attributes.raw = *raw_attributes;
         }
+    auto& game_info = Common::ElfInfo::Instance();
+    game_info.initialized = true;
+    game_info.game_serial = id;
+    game_info.title = title;
+    game_info.app_ver = app_version;
+    game_info.firmware_ver = fw_version & 0xFFF00000;
+    game_info.raw_firmware_ver = fw_version;
+    game_info.psf_attributes = psf_attributes;
+
+    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
+    if (std::filesystem::exists(pic1_path)) {
+        game_info.splash_path = pic1_path;
     }
+
+    game_info.game_folder = game_folder;
 
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
@@ -234,22 +249,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
             }
         }
     }
-
-    auto& game_info = Common::ElfInfo::Instance();
-    game_info.initialized = true;
-    game_info.game_serial = id;
-    game_info.title = title;
-    game_info.app_ver = app_version;
-    game_info.firmware_ver = fw_version & 0xFFF00000;
-    game_info.raw_firmware_ver = fw_version;
-    game_info.psf_attributes = psf_attributes;
-
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
-    }
-
-    game_info.game_folder = game_folder;
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
     std::string window_title = "";
