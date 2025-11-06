@@ -737,51 +737,9 @@ s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
         return resolve_status;
     }
 
-    partition_ptr part = res.mountpoint;
-    // bool host_used = false;
-    // int hio_status = 0;
-    int vio_status = 0;
-
-    // Libraries::Kernel::OrbisKernelStat hio_stat;
-    Libraries::Kernel::OrbisKernelStat vio_stat;
-
-    // if (part->IsHostMounted()) {
-    //     fs::path host_path_target{};
-    //     if (int hostpath_status = part->GetHostPath(host_path_target, res.local_path);
-    //         hostpath_status != 0)
-    //         return hostpath_status;
-
-    //     if (hio_status = qfs.hio_driver.Stat(host_path_target, &hio_stat); 0 != hio_status) {
-    //         // hosts operation must succeed in order to continue
-    //         return hio_status;
-    //     }
-
-    //     host_used = true;
-    // }
-
-    // qfs.vio_driver.SetCtx(&res, host_used, nullptr);
     qfs.vio_driver.SetCtx(&res, false, nullptr);
-    vio_status = qfs.vio_driver.Stat(res.local_path, &vio_stat);
+    int vio_status = qfs.vio_driver.Stat(res.local_path, statbuf);
     qfs.vio_driver.ClearCtx();
-
-    // if (host_used) {
-    //     vio_stat.st_mode = hio_stat.st_mode;
-    //     vio_stat.st_size = hio_stat.st_size;
-    //     vio_stat.st_blksize = hio_stat.st_blksize;
-    //     vio_stat.st_blocks = hio_stat.st_blocks;
-    //     vio_stat.st_atim.tv_sec = hio_stat.st_atim.tv_sec;
-    //     vio_stat.st_atim.tv_nsec = hio_stat.st_atim.tv_nsec;
-    //     vio_stat.st_mtim.tv_sec = hio_stat.st_mtim.tv_sec;
-    //     vio_stat.st_mtim.tv_nsec = hio_stat.st_mtim.tv_nsec;
-    //     vio_stat.st_ctim.tv_sec = hio_stat.st_ctim.tv_sec;
-    //     vio_stat.st_ctim.tv_nsec = hio_stat.st_ctim.tv_nsec;
-    // }
-
-    memcpy(statbuf, &vio_stat, sizeof(Libraries::Kernel::OrbisKernelStat));
-
-    // if (host_used && (hio_status != vio_status))
-    //     LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-    //               vio_status);
 
     return vio_status;
 }
@@ -794,42 +752,9 @@ s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* 
     if (nullptr == handle)
         return -QUASI_EBADF;
 
-    // bool host_used = false;
-    // int hio_status = 0;
-    int vio_status = 0;
-
-    // Libraries::Kernel::OrbisKernelStat hio_stat;
-    Libraries::Kernel::OrbisKernelStat vio_stat;
-
-    // if (handle->IsHostBound()) {
-    //     int host_fd = handle->host_fd;
-    //     hio_status = qfs.hio_driver.FStat(host_fd, &hio_stat);
-    //     host_used = true;
-    // }
-
     qfs.vio_driver.SetCtx(nullptr, false, handle);
-    // qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-    vio_status = qfs.vio_driver.FStat(fd, &vio_stat);
+    int vio_status = qfs.vio_driver.FStat(fd, statbuf);
     qfs.vio_driver.ClearCtx();
-
-    // if (host_used) {
-    //     vio_stat.st_mode = hio_stat.st_mode;
-    //     vio_stat.st_size = hio_stat.st_size;
-    //     vio_stat.st_blksize = hio_stat.st_blksize;
-    //     vio_stat.st_blocks = hio_stat.st_blocks;
-    //     vio_stat.st_atim.tv_sec = hio_stat.st_atim.tv_sec;
-    //     vio_stat.st_atim.tv_nsec = hio_stat.st_atim.tv_nsec;
-    //     vio_stat.st_mtim.tv_sec = hio_stat.st_mtim.tv_sec;
-    //     vio_stat.st_mtim.tv_nsec = hio_stat.st_mtim.tv_nsec;
-    //     vio_stat.st_ctim.tv_sec = hio_stat.st_ctim.tv_sec;
-    //     vio_stat.st_ctim.tv_nsec = hio_stat.st_ctim.tv_nsec;
-    // }
-
-    memcpy(statbuf, &vio_stat, sizeof(Libraries::Kernel::OrbisKernelStat));
-
-    // if (host_used && (hio_status != vio_status))
-    //     LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-    //               vio_status);
 
     return vio_status;
 }
@@ -843,31 +768,9 @@ s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
         return resolve_status;
     }
 
-    partition_ptr part = res.mountpoint;
-    bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
-
-    if (part->IsHostMounted()) {
-        fs::path host_path_target{};
-        if (int hostpath_status = part->GetHostPath(host_path_target, res.local_path);
-            hostpath_status != 0)
-            return hostpath_status;
-
-        if (hio_status = qfs.hio_driver.Chmod(host_path_target, mode); 0 != hio_status)
-            // hosts operation must succeed in order to continue
-            return hio_status;
-
-        host_used = true;
-    }
-
-    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-    vio_status = qfs.vio_driver.Chmod(res.local_path, mode);
+    qfs.vio_driver.SetCtx(&res, false, nullptr);
+    int vio_status = qfs.vio_driver.Chmod(res.local_path, mode);
     qfs.vio_driver.ClearCtx();
-
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
 
     return vio_status;
 }
@@ -883,25 +786,27 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     if (!handle->read)
         return -QUASI_EBADF;
 
-    bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
-
-    if (handle->IsHostBound()) {
-        int host_fd = handle->host_fd;
-        if (hio_status = qfs.hio_driver.FChmod(host_fd, mode); hio_status < 0)
-            // hosts operation must succeed in order to continue
-            return hio_status;
-        host_used = true;
-    }
-
-    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-    vio_status = qfs.vio_driver.FChmod(fd, mode);
+    qfs.vio_driver.SetCtx(nullptr, false, handle);
+    int vio_status = qfs.vio_driver.FChmod(fd, mode);
     qfs.vio_driver.ClearCtx();
 
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
+    return vio_status;
+}
+
+s64 QFS::OperationImpl::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
+    if (fd < 0)
+        return -QUASI_EBADF;
+
+    fd_handle_ptr handle = qfs.GetHandle(fd);
+    if (nullptr == handle)
+        return -QUASI_EBADF;
+
+    if (!handle->read)
+        return -QUASI_EBADF;
+
+    qfs.vio_driver.SetCtx(nullptr, false, handle);
+    int vio_status = qfs.vio_driver.GetDents(fd, buf, nbytes, basep);
+    qfs.vio_driver.ClearCtx();
 
     return vio_status;
 }

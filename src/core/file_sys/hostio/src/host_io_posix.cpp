@@ -206,4 +206,6 @@ s32 HostIO_POSIX::FChmod(const s32 fd, u16 mode) {
     return 0 == status ? status : -errno;
 }
 
+// s64 HostIO_POSIX::GetDents(void* buf, u32 nbytes, s64* basep) { return -QUASI_ENOSYS; }
+
 } // namespace HostIODriver

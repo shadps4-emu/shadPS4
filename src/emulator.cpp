@@ -95,7 +95,8 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
 
     qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/hostapp", 0555);
-    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 512, 65536);
+    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder);
+    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
 
     qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
     qfs->Mount("/hostapp", partition_app0,
@@ -107,6 +108,11 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 4096, 32768);
     qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 4096, 32768);
     qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
+    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
+    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
+    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
+    partition_app0->Format(0555, qfs::FileSystem::PFS, 512, 65536);
+
 
     qfs->Operation.MKDir("/av_contents", 0775);
     qfs->Operation.MKDir("/av_contents/photo", 0755);

@@ -86,7 +86,7 @@ private:
         s32 Chmod(const fs::path& path, u16 mode) override;
         s32 FChmod(const s32 fd, u16 mode) override;
 
-        s64 getdents(void* buf, u32 nbytes, s64* basep);
+        s64 GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) override;
     };
 
 public:

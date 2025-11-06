@@ -488,6 +488,8 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
 s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
+        // TODO: implement preadv in operation, bind preadv to be like posix_pread
+        // current solution has a lot of overhead
         total_read += g_qfs->Operation.PRead(fd, iov[i].iov_base, iov[i].iov_len, offset);
     }
     return total_read;
@@ -529,24 +531,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
 }
 
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
-    QuasiFS::fd_handle_ptr f = g_qfs->GetHandle(fd);
-
-    if (buf == nullptr) {
-        *__Error() = POSIX_EFAULT;
-        return -1;
-    }
-
-    if (nullptr == f->node) {
-        *__Error() = POSIX_EBADF;
-        return -1;
-    }
-
-    if (nbytes < 512) {
-        *__Error() = POSIX_EINVAL;
-        return -1;
-    }
-
-    s32 result = f->node->getdents(buf, nbytes, basep);
+    int result = g_qfs->Operation.GetDents(fd, buf, nbytes, basep);
     if (result < 0) {
         *__Error() = -result;
         return -1;

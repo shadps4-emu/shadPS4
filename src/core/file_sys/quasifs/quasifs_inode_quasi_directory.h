@@ -19,6 +19,21 @@ class QuasiDirectory : public Inode {
 private:
     std::map<std::string, inode_ptr> entries{};
 
+    time_t last_dirent_rebuild_time{0};
+    void RebuildDirents(void);
+    static constexpr s32 MAX_LENGTH = 255;
+    static constexpr s64 DIRECTORY_ALIGNMENT = 0x200;
+
+#pragma pack(push, 1)
+    typedef struct dirent_t {
+        quasi_ino_t d_ino{};
+        u64 d_off{};
+        unsigned short d_reclen{};
+        unsigned char d_type{};
+        char d_name[256]{};
+    } dirent_t;
+#pragma pack(pop)
+
 public:
     dir_ptr mounted_root = nullptr;
 
@@ -32,12 +47,8 @@ public:
         return out;
     }
 
-    static dir_ptr Create(void) {
-        return std::make_shared<QuasiDirectory>();
-    }
-
     template <typename T, typename... Args>
-    static file_ptr Create(Args&&... args) {
+    static dir_ptr Create(Args&&... args) {
         if constexpr (std::is_base_of_v<QuasiDirectory, T>)
             return std::make_shared<T>(std::forward<Args>(args)...);
         UNREACHABLE();
@@ -49,11 +60,11 @@ public:
 
     // s64 pread(void* buf, size_t count, u64 offset) override;
     // s64 pwrite(const void* buf, size_t count, u64 offset) override;
-    int ftruncate(s64 length) override {
+    s32 ftruncate(s64 length) override {
         return -QUASI_EISDIR;
     }
 
-    int fstat(Libraries::Kernel::OrbisKernelStat* sb) override {
+    s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override {
         this->st.st_size = entries.size() * 32;
         *sb = st;
         return 0;

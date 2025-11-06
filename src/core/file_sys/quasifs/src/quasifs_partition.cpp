@@ -5,20 +5,35 @@
 #include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 namespace QuasiFS {
 
-Partition::Partition() : Partition("", 0755, 512, 4096) {}
+Partition::Partition(const fs::path& host_root)
+    : block_id(next_block_id++), host_root(host_root.lexically_normal()) {}
 
-Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 block_size,
-                     const u32 ioblock_size)
-    : block_id(next_block_id++), host_root(host_root.lexically_normal()), block_size(block_size),
-      ioblock_size(ioblock_size) {
-    this->root = Directory::Create();
-    // clear defaults, write
+void Partition::Format(const int root_permissions, u8 format, const u32 block_size,
+                       const u32 ioblock_size) {
+    this->inode_table.clear();
+    this->next_fileno = 2;
+    this->ioblock_size = ioblock_size;
+    this->block_size = block_size;
+    this->filesystem_format = format;
+
+    switch (format) {
+    default:
+        LOG_ERROR(Kernel_Fs, "Unknown target partition type. Defaulting to normal");
+    case FileSystem::NORMAL:
+        this->root = Directory::Create<Directory>();
+        break;
+    case FileSystem::PFS:
+        this->root = Directory::Create<DirectoryPFS>();
+        break;
+    }
+
     chmod(this->root, root_permissions);
     IndexInode(this->root);
     mkrelative(this->root, this->root);
@@ -238,7 +253,7 @@ int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
 }
 
 int Partition::mkdir(dir_ptr parent, const std::string& name) {
-    return mkdir(parent, name, Directory::Create());
+    return mkdir(parent, name, Directory::Create<Directory>());
 }
 
 int Partition::mkdir(dir_ptr parent, const std::string& name, dir_ptr child) {

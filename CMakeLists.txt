@@ -657,7 +657,7 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_file.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_socket.cpp
-            src/core/file_sys/quasifs/src/quasifs_inode_virtualfile.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_quasi_file_virtual.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
             src/core/file_sys/quasifs/src/quasifs_partition.cpp
 

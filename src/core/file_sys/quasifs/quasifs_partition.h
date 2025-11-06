@@ -8,22 +8,6 @@
 
 namespace QuasiFS {
 
-typedef struct _fsoptions_t {
-    fs::path host_root{};
-    int root_permissions = 0755;
-
-    /**
-     * st_size = [user supplied]
-     * st_blocks = ceil(st_size / ioblock) * (ioblock / 512)
-     * st_blksize = ioblock
-     * Blocks are always 512B on physical media, ioblocks are logic structures
-     * File can grow as big as it wants, st_blocks is updated only when it exceeds ioblock size
-     */
-
-    u32 block_size = 512;
-    u32 ioblock_size = 4096;
-} fsoptions_t;
-
 class Partition : public std::enable_shared_from_this<Partition> {
 private:
     fileno_t NextFileno(void) {
@@ -46,19 +30,21 @@ private:
     const fs::path host_root{};
 
     // IO block size, allocation unit (multiples of 512)
-    const u32 ioblock_size{4096};
+    u32 ioblock_size{4096};
     // amount of raw on-disk blocks per io block
     // this is pretty much so we don't recalculate it over and over and over
     // and
-    const u32 block_size{512};
+    u32 block_size{512};
+
+    u8 filesystem_format = FileSystem::NORMAL;
 
 public:
     // host-bound directory, permissions for root directory
-    Partition();
-    Partition(fsoptions_t options) = delete;
-    Partition(const fs::path& host_root = "", const int root_permissions = 0755,
-              const u32 block_size = 8, const u32 ioblock_size = 4096);
+    Partition(const fs::path& host_root = "");
     ~Partition() = default;
+
+    void Format(const int root_permissions = 0755, u8 format = FileSystem::NORMAL,
+                const u32 block_size = 512, const u32 ioblock_size = 4096);
 
     template <typename... Args>
     static partition_ptr Create(Args&&... args) {

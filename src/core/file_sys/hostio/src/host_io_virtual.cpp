@@ -14,7 +14,7 @@
 #include "src/core/file_sys/quasifs/quasi_errno.h"
 #include "src/core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "src/core/file_sys/quasifs/quasi_types.h"
-#include "src/core/file_sys/quasifs/quasifs_inode_virtualfile.h"
+#include "src/core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
 
 #include "host_io_base.h"
 
@@ -258,7 +258,7 @@ s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
-    dir_ptr new_dir = Directory::Create();
+    dir_ptr new_dir = Directory::Create<Directory>();
     return this->res->mountpoint->mkdir(this->res->parent, this->res->leaf, new_dir);
 }
 
@@ -337,4 +337,24 @@ s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
 
     return Partition::chmod(node, mode);
 }
+
+s64 HostIO_Virtual::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
+    if (nullptr == this->handle)
+        return -QUASI_EINVAL;
+
+    inode_ptr node = this->handle->node;
+
+    if (nullptr == node)
+        return -QUASI_EBADF;
+
+    if (nullptr != basep)
+        *basep = handle->pos;
+
+    s64 br = node->getdents(buf + handle->pos, nbytes, basep);
+    if (br > 0)
+        handle->pos += br;
+
+    return br;
+}
+
 } // namespace HostIODriver

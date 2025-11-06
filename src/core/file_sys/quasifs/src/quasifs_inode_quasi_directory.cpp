@@ -67,4 +67,11 @@ std::vector<std::string> QuasiDirectory::list() {
         r.push_back(p.first);
     return r;
 }
+
+void QuasiDirectory::RebuildDirents(void) {
+    if (this->st.st_mtim.tv_sec == this->last_dirent_rebuild_time)
+        return;
+    this->last_dirent_rebuild_time = this->st.st_mtim.tv_sec;
+}
+
 } // namespace QuasiFS

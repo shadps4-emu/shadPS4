@@ -5,10 +5,11 @@
 #include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
-#include "core/file_sys/quasifs/quasifs_inode_virtualfile.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 namespace QuasiFS {
@@ -404,7 +405,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
             inode_ptr new_inode{};
 
             if (entry->is_directory()) {
-                new_inode = Directory::Create();
+                new_inode = Directory::Create<Directory>();
                 part->mkdir(parent_dir, leaf, std::static_pointer_cast<Directory>(new_inode));
             } else if (entry->is_regular_file()) {
                 new_inode = QuasiFile::Create<RegularFile>();

@@ -78,16 +78,6 @@ struct File {
     }
 };
 
-#pragma pack(push, 1)
-typedef struct dirent_t {
-    quasi_ino_t d_ino{};
-    u64 d_off{};
-    unsigned short d_reclen{};
-    unsigned char d_type{};
-    char d_name[256]{};
-} dirent_t;
-#pragma pack(pop)
-
 enum class SeekOrigin : uint8_t { ORIGIN, CURRENT, END };
 
 //
@@ -106,6 +96,10 @@ enum {
     MOUNT_EXEC = 0x04,   // 0 - noexec
     MOUNT_REMOUNT = 0x08 // update mount flags
 };
+}
+
+namespace FileSystem {
+enum { NORMAL, PFS };
 }
 
 typedef struct mount_t {
