@@ -164,6 +164,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
+    game_info.sdk_ver = sdk_version;
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
