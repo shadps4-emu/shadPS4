@@ -104,8 +104,8 @@ struct AddressSpace::Impl {
         GetSystemInfo(&sys_info);
         u64 alignment = sys_info.dwAllocationGranularity;
 
-        // Determine the host OS build number
-        // Retrieve module handle for ntdll
+        // Older Windows builds have a severe performance issue with VirtualAlloc2.
+        // We need to get the host's Windows version, then determine if it needs a workaround.
         auto ntdll_handle = GetModuleHandleW(L"ntdll.dll");
         ASSERT_MSG(ntdll_handle, "Failed to retrieve ntdll handle");
 
