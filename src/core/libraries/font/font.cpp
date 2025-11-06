@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -38,23 +38,21 @@ struct FontState {
     float scale_w = 16.0f;
     float scale_h = 16.0f;
     Libraries::Font::OrbisFontLib library = nullptr;
-    bool face_ready = false;
-    std::vector<unsigned char> face_data;
-    stbtt_fontinfo face{};
-    float scale_for_height = 0.0f;
-    int ascent = 0, descent = 0, lineGap = 0;
     bool ext_face_ready = false;
     std::vector<unsigned char> ext_face_data;
     stbtt_fontinfo ext_face{};
     float ext_scale_for_height = 0.0f;
     int ext_ascent = 0, ext_descent = 0, ext_lineGap = 0;
     std::unordered_map<std::uint64_t, GlyphEntry> ext_cache;
-    std::unordered_map<std::uint64_t, GlyphEntry> sys_cache;
-    std::unordered_map<std::uint64_t, float> ext_kern_cache;
-    std::unordered_map<std::uint64_t, float> sys_kern_cache;
     std::vector<std::uint8_t> scratch;
     bool logged_ext_use = false;
-    bool logged_sys_use = false;
+    // Cached layout (PS4-style) for GetHorizontalLayout
+    float cached_baseline_y = 0.0f;
+    bool layout_cached = false;
+    // Renderer binding state (PS4 requires a bound renderer for render-scale queries)
+    Libraries::Font::OrbisFontRenderer bound_renderer = nullptr;
+    // Mark when the game asked for PS4 internal/system fonts (via OpenFontSet)
+    bool system_requested = false;
 };
 
 static std::unordered_map<Libraries::Font::OrbisFontHandle, FontState> g_font_state;
@@ -83,55 +81,86 @@ static void LogExternalFormatSupport(u32 formats_mask) {
     LOG_INFO(Lib_Font, "ExternalFormatsMask=0x{:X}", formats_mask);
 }
 
-static bool ReadFileBinary(const std::string& path, std::vector<unsigned char>& out) {
-    std::ifstream f(path, std::ios::binary);
-    if (!f)
-        return false;
-    f.seekg(0, std::ios::end);
-    std::streampos sz = f.tellg();
-    if (sz <= 0)
-        return false;
-    out.resize(static_cast<size_t>(sz));
-    f.seekg(0, std::ios::beg);
-    f.read(reinterpret_cast<char*>(out.data()), sz);
-    return f.good();
+enum class ScaleMode {
+    AscenderHeight,
+    EmSquare,
+};
+
+static ScaleMode GetScaleMode() {
+    static int inited = 0;
+    static ScaleMode mode = ScaleMode::AscenderHeight;
+    if (!inited) {
+        inited = 1;
+        if (const char* env = std::getenv("SHADPS4_FONT_SCALE_MODE")) {
+            std::string v = env;
+            for (auto& c : v)
+                c = static_cast<char>(std::tolower(c));
+            if (v == "em" || v == "emsquare" || v == "em_square") {
+                mode = ScaleMode::EmSquare;
+            }
+        }
+        LOG_INFO(Lib_Font, "FontScaleMode: {}",
+                 mode == ScaleMode::EmSquare ? "em-square" : "ascender-height");
+    }
+    return mode;
 }
 
-static bool EnsureSystemFace(FontState& st) {
-    if (st.face_ready)
-        return true;
-    std::vector<std::string> candidates;
-    if (const char* env_dir = std::getenv("SHADPS4_FONTS_DIR"); env_dir && *env_dir) {
-        candidates.emplace_back(std::string(env_dir) + "/NotoSansJP-Regular.ttf");
-        candidates.emplace_back(std::string(env_dir) + "/ProggyVector-Regular.ttf");
-    }
-    static const char* rel_roots[] = {".", "..", "../..", "../../..", "../../../.."};
-    for (auto* root : rel_roots) {
-        candidates.emplace_back(std::string(root) +
-                                "/src/imgui/renderer/fonts/NotoSansJP-Regular.ttf");
-        candidates.emplace_back(std::string(root) +
-                                "/src/imgui/renderer/fonts/ProggyVector-Regular.ttf");
-    }
-    for (const auto& path : candidates) {
-        st.face_data.clear();
-        if (ReadFileBinary(path, st.face_data)) {
-            if (stbtt_InitFont(&st.face, st.face_data.data(), 0)) {
-                st.face_ready = true;
-                stbtt_GetFontVMetrics(&st.face, &st.ascent, &st.descent, &st.lineGap);
-                if (st.scale_for_height == 0.0f)
-                    st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-                LOG_INFO(Lib_Font,
-                         "SystemFace: loaded '{}' (ascent={}, descent={}, lineGap={}, scale={})",
-                         path, st.ascent, st.descent, st.lineGap, st.scale_for_height);
-                return true;
-            } else {
-                LOG_WARNING(Lib_Font, "SystemFace: stbtt_InitFont failed for '{}'", path);
+static float GetScaleBias() {
+    static int inited = 0;
+    static float bias = 1.0f;
+    if (!inited) {
+        inited = 1;
+        if (const char* env = std::getenv("SHADPS4_FONT_SCALE_BIAS")) {
+            try {
+                bias = std::max(0.01f, std::min(10.0f, std::stof(env)));
+            } catch (...) {
+                bias = 1.0f;
             }
-        } else {
-            LOG_DEBUG(Lib_Font, "SystemFace: could not open '{}'", path);
+        }
+        if (bias != 1.0f) {
+            LOG_INFO(Lib_Font, "FontScaleBias: {}", bias);
         }
     }
-    LOG_WARNING(Lib_Font, "SystemFace: no font file found; using placeholder rectangles");
+    return bias;
+}
+
+static float ComputeScale(const stbtt_fontinfo* face, float pixel_h) {
+    if (!face)
+        return 0.0f;
+    float s = 0.0f;
+    if (GetScaleMode() == ScaleMode::EmSquare)
+        s = stbtt_ScaleForMappingEmToPixels(face, pixel_h);
+    else
+        s = stbtt_ScaleForPixelHeight(face, pixel_h);
+    return s * GetScaleBias();
+}
+
+// External face scale: keep legacy ascender-height mapping to avoid regressions
+// in titles that ship their own fonts (e.g., CUSA47038). No EM toggle, no bias.
+static float ComputeScaleExt(const stbtt_fontinfo* face, float pixel_h) {
+    if (!face)
+        return 0.0f;
+    return stbtt_ScaleForPixelHeight(face, pixel_h);
+}
+
+static void UpdateCachedLayout(FontState& st) {
+    if (!st.ext_face_ready) {
+        return;
+    }
+    if (st.ext_scale_for_height == 0.0f)
+        st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+    int asc = 0, desc = 0, gap = 0;
+    stbtt_GetFontVMetrics(&st.ext_face, &asc, &desc, &gap);
+    const float scale = st.ext_scale_for_height;
+    st.cached_baseline_y = static_cast<float>(asc) * scale;
+    st.layout_cached = true;
+}
+
+static bool ReportSystemFaceRequest(FontState& st) {
+    if (!st.system_requested) {
+        st.system_requested = true;
+        LOG_ERROR(Lib_Font, "SystemFace: internal PS4 font requested but not available");
+    }
     return false;
 }
 
@@ -170,8 +199,8 @@ s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buff
 }
 
 s32 PS4_SYSV_ABI sceFontBindRenderer(OrbisFontHandle fontHandle, OrbisFontRenderer renderer) {
-    LOG_DEBUG(Lib_Font, "sceFontBindRenderer fontHandle={} renderer={}",
-              static_cast<const void*>(fontHandle), static_cast<const void*>(renderer));
+    auto& st = GetState(fontHandle);
+    st.bound_renderer = renderer;
     return ORBIS_OK;
 }
 
@@ -421,17 +450,14 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
     auto& st = GetState(fontHandle);
     const stbtt_fontinfo* face = nullptr;
     float scale = 0.0f;
-    bool use_ext = false;
 
-    int ext_glyph = 0;
     if (st.ext_face_ready) {
         if (st.ext_scale_for_height == 0.0f)
             st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
-        ext_glyph = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
-        if (ext_glyph > 0) {
+        const int glyph = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
+        if (glyph > 0) {
             face = &st.ext_face;
             scale = st.ext_scale_for_height;
-            use_ext = true;
             if (!st.logged_ext_use) {
                 LOG_INFO(Lib_Font, "RenderFace: handle={} source=external (game font)",
                          static_cast<const void*>(fontHandle));
@@ -439,33 +465,16 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
             }
         }
     }
-    if (!face && EnsureSystemFace(st)) {
-        if (st.scale_for_height == 0.0f)
-            st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-        int sys_glyph = stbtt_FindGlyphIndex(&st.face, static_cast<int>(code));
-        if (sys_glyph > 0) {
-            face = &st.face;
-            scale = st.scale_for_height;
-            use_ext = false;
-            if (!st.logged_sys_use) {
-                LOG_INFO(Lib_Font, "RenderFace: handle={} source=system (fallback)",
-                         static_cast<const void*>(fontHandle));
-                st.logged_sys_use = true;
-            }
-        }
-    }
+
+    if (!face)
+        ReportSystemFaceRequest(st);
+
     if (face) {
         const int pixel_h = std::max(1, (int)std::lround(st.scale_h));
         const std::uint64_t key = MakeGlyphKey(code, pixel_h);
         GlyphEntry* ge = nullptr;
-        if (use_ext) {
-            auto it = st.ext_cache.find(key);
-            if (it != st.ext_cache.end())
-                ge = &it->second;
-        } else {
-            auto it = st.sys_cache.find(key);
-            if (it != st.sys_cache.end())
-                ge = &it->second;
+        if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
+            ge = &it->second;
         }
         if (!ge) {
             GlyphEntry entry{};
@@ -477,14 +486,10 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
             entry.h = std::max(0, entry.y1 - entry.y0);
             entry.advance = static_cast<float>(aw) * scale;
             entry.bearingX = static_cast<float>(lsb) * scale;
-            if (use_ext) {
-                ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
-            } else {
-                ge = &st.sys_cache.emplace(key, std::move(entry)).first->second;
-            }
+            ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
         }
-        metrics->w = ge->w > 0 ? (float)ge->w : st.scale_w;
-        metrics->h = ge->h > 0 ? (float)ge->h : st.scale_h;
+        metrics->w = ge->w > 0 ? static_cast<float>(ge->w) : st.scale_w;
+        metrics->h = ge->h > 0 ? static_cast<float>(ge->h) : st.scale_h;
         metrics->h_bearing_x = ge->bearingX;
         metrics->h_bearing_y = static_cast<float>(-ge->y0);
         metrics->h_adv = ge->advance > 0.0f ? ge->advance : st.scale_w;
@@ -492,10 +497,10 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
         metrics->v_bearing_y = 0.0f;
         metrics->v_adv = 0.0f;
         LOG_TRACE(Lib_Font,
-                  "GetCharGlyphMetrics: code=U+{:04X} src={} size=({}, {}) adv={} bearing=({}, {}) "
-                  "box={}x{}",
-                  code, use_ext ? "external" : "system", st.scale_w, st.scale_h, metrics->h_adv,
-                  metrics->h_bearing_x, metrics->h_bearing_y, metrics->w, metrics->h);
+                  "GetCharGlyphMetrics: code=U+{:04X} src=external size=({}, {}) adv={} "
+                  "bearing=({}, {}) box={}x{}",
+                  code, st.scale_w, st.scale_h, metrics->h_adv, metrics->h_bearing_x,
+                  metrics->h_bearing_y, metrics->w, metrics->h);
         return ORBIS_OK;
     }
     metrics->w = st.scale_w;
@@ -551,8 +556,37 @@ s32 PS4_SYSV_ABI sceFontGetGlyphExpandBufferState() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetHorizontalLayout() {
-    LOG_DEBUG(Lib_Font, "GetHorizontalLayout: default layout (no effects)");
+s32 PS4_SYSV_ABI sceFontGetHorizontalLayout(OrbisFontHandle fontHandle,
+                                            OrbisFontHorizontalLayout* layout) {
+    if (!layout) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto& st = GetState(fontHandle);
+    if (st.ext_face_ready) {
+        if (st.ext_scale_for_height == 0.0f)
+            st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
+        int asc = 0, desc = 0, gap = 0;
+        stbtt_GetFontVMetrics(&st.ext_face, &asc, &desc, &gap);
+        const float scale = st.ext_scale_for_height;
+        layout->baselineOffset = static_cast<float>(asc) * scale;
+        layout->lineAdvance = static_cast<float>(asc - desc + gap) * scale;
+        layout->decorationExtent = 0.0f;
+        LOG_INFO(
+            Lib_Font,
+            "GetHorizontalLayout: handle={} ext_ready={} baselineOffset={} lineAdvance={} scale={}",
+            static_cast<const void*>(fontHandle), st.ext_face_ready, layout->baselineOffset,
+            layout->lineAdvance, scale);
+        return ORBIS_OK;
+    }
+    ReportSystemFaceRequest(st);
+    layout->baselineOffset = st.scale_h * 0.8f;
+    layout->lineAdvance = st.scale_h;
+    layout->decorationExtent = 0.0f;
+    LOG_INFO(
+        Lib_Font,
+        "GetHorizontalLayout: fallback handle={} ext_ready={} baselineOffset={} lineAdvance={}",
+        static_cast<const void*>(fontHandle), st.ext_face_ready, layout->baselineOffset,
+        layout->lineAdvance);
     return ORBIS_OK;
 }
 
@@ -563,39 +597,24 @@ s32 PS4_SYSV_ABI sceFontGetKerning(OrbisFontHandle fontHandle, u32 preCode, u32 
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto& st = GetState(fontHandle);
-    const stbtt_fontinfo* face = nullptr;
-    float scale = 0.0f;
     if (st.ext_face_ready) {
         if (st.ext_scale_for_height == 0.0f)
             st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
         int g1 = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(preCode));
         int g2 = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
         if (g1 > 0 && g2 > 0) {
-            face = &st.ext_face;
-            scale = st.ext_scale_for_height;
+            const int kern = stbtt_GetCodepointKernAdvance(&st.ext_face, static_cast<int>(preCode),
+                                                           static_cast<int>(code));
+            const float kx = static_cast<float>(kern) * st.ext_scale_for_height;
+            kerning->dx = kx;
+            kerning->dy = 0.0f;
+            kerning->px = 0.0f;
+            kerning->py = 0.0f;
+            LOG_TRACE(Lib_Font, "GetKerning: pre=U+{:04X} code=U+{:04X} dx={}", preCode, code, kx);
+            return ORBIS_OK;
         }
     }
-    if (!face && EnsureSystemFace(st)) {
-        if (st.scale_for_height == 0.0f)
-            st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-        int g1 = stbtt_FindGlyphIndex(&st.face, static_cast<int>(preCode));
-        int g2 = stbtt_FindGlyphIndex(&st.face, static_cast<int>(code));
-        if (g1 > 0 && g2 > 0) {
-            face = &st.face;
-            scale = st.scale_for_height;
-        }
-    }
-    if (face) {
-        const int kern =
-            stbtt_GetCodepointKernAdvance(face, static_cast<int>(preCode), static_cast<int>(code));
-        const float kx = static_cast<float>(kern) * scale;
-        kerning->dx = kx;
-        kerning->dy = 0.0f;
-        kerning->px = 0.0f;
-        kerning->py = 0.0f;
-        LOG_TRACE(Lib_Font, "GetKerning: pre=U+{:04X} code=U+{:04X} dx={}", preCode, code, kx);
-        return ORBIS_OK;
-    }
+    ReportSystemFaceRequest(st);
     kerning->dx = 0.0f;
     kerning->dy = 0.0f;
     kerning->px = 0.0f;
@@ -638,14 +657,25 @@ s32 PS4_SYSV_ABI sceFontGetRenderScaledKerning() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetRenderScalePixel() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* w, float* h) {
+    auto& st = GetState(fontHandle);
+    if (w)
+        *w = st.scale_w;
+    if (h)
+        *h = st.scale_h;
+    if (!st.bound_renderer) {
+        LOG_DEBUG(Lib_Font,
+                  "GetRenderScalePixel: no renderer bound; returning configured scale w={} h={}",
+                  w ? *w : -1.0f, h ? *h : -1.0f);
+    } else {
+        LOG_DEBUG(Lib_Font, "GetRenderScalePixel: handle={} -> w={}, h={}",
+                  static_cast<const void*>(fontHandle), w ? *w : -1.0f, h ? *h : -1.0f);
+    }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetRenderScalePoint() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* w, float* h) {
+    return sceFontGetRenderScalePixel(fontHandle, w, h);
 }
 
 s32 PS4_SYSV_ABI sceFontGetResolutionDpi() {
@@ -681,8 +711,26 @@ s32 PS4_SYSV_ABI sceFontGetTypographicDesign() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetVerticalLayout() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontGetVerticalLayout(OrbisFontHandle fontHandle,
+                                          OrbisFontVerticalLayout* layout) {
+    if (!layout) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto& st = GetState(fontHandle);
+    if (st.ext_face_ready) {
+        if (st.ext_scale_for_height == 0.0f)
+            st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+        int asc = 0, desc = 0, gap = 0;
+        stbtt_GetFontVMetrics(&st.ext_face, &asc, &desc, &gap);
+        layout->baselineOffsetX = 0.0f;
+        layout->columnAdvance = static_cast<float>(asc - desc + gap) * st.ext_scale_for_height;
+        layout->decorationSpan = 0.0f;
+        return ORBIS_OK;
+    }
+    ReportSystemFaceRequest(st);
+    layout->baselineOffsetX = 0.0f;
+    layout->columnAdvance = st.scale_h;
+    layout->decorationSpan = 0.0f;
     return ORBIS_OK;
 }
 
@@ -1106,7 +1154,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontMemory(OrbisFontLib library, const void* fontAdd
                     (fontSize >= 3 ? (char)p[2] : '?'), (fontSize >= 4 ? (char)p[3] : '?'),
                     is_otf_cff);
         if (is_otf_cff) {
-            LOG_WARNING(Lib_Font, "Stubbed: CFF outlines not implemented; fallback to system font");
+            LOG_WARNING(Lib_Font, "Stubbed: CFF outlines not implemented; system font unavailable");
         }
     }
     return ORBIS_OK;
@@ -1125,15 +1173,14 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
     *pFontHandle = f;
     auto& st = GetState(f);
     st.library = library;
-    EnsureSystemFace(st);
-    if (st.scale_for_height == 0.0f)
-        st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-    LOG_INFO(
-        Lib_Font,
-        "OpenFontSet: lib={} fontSetType={} openMode={} open_params={} handle={} (system face={})",
-        static_cast<const void*>(library), fontSetType, openMode,
-        static_cast<const void*>(open_params), static_cast<const void*>(*pFontHandle),
-        EnsureSystemFace(GetState(f)));
+    const bool system_ok = ReportSystemFaceRequest(st);
+
+    LOG_INFO(Lib_Font,
+             "OpenFontSet: lib={} fontSetType={} openMode={} open_params={} handle={} (system "
+             "available={})",
+             static_cast<const void*>(library), fontSetType, openMode,
+             static_cast<const void*>(open_params), static_cast<const void*>(*pFontHandle),
+             system_ok);
     return ORBIS_OK;
 }
 
@@ -1185,47 +1232,33 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
     int g_x0 = 0, g_y0 = 0, g_x1 = 0, g_y1 = 0;
     const stbtt_fontinfo* face = nullptr;
     float scale = 0.0f;
-    bool use_ext = false;
 
-    int ext_glyph = 0;
     if (st.ext_face_ready) {
         if (st.ext_scale_for_height == 0.0f)
             st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
-        ext_glyph = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
-        if (ext_glyph > 0) {
+        const int glyph_index = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
+        if (glyph_index > 0) {
             face = &st.ext_face;
             scale = st.ext_scale_for_height;
-            use_ext = true;
         }
     }
-    if (!face && EnsureSystemFace(st)) {
-        if (st.scale_for_height == 0.0f)
-            st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-        int sys_glyph = stbtt_FindGlyphIndex(&st.face, static_cast<int>(code));
-        if (sys_glyph > 0) {
-            face = &st.face;
-            scale = st.scale_for_height;
-            use_ext = false;
-        }
-    }
+
+    if (!face)
+        ReportSystemFaceRequest(st);
+
+    const float frac_x = x - std::floor(x);
+    const float frac_y = y - std::floor(y);
+    const bool use_subpixel = (frac_x != 0.0f) || (frac_y != 0.0f);
+
     if (face) {
-        LOG_DEBUG(Lib_Font, "RenderGlyphSrc(H): handle={} code=U+{:04X} src={}",
-                  static_cast<const void*>(fontHandle), code, use_ext ? "external" : "system");
-        const float frac_x = x - std::floor(x);
-        const float frac_y = y - std::floor(y);
-        const bool use_subpixel = (frac_x != 0.0f) || (frac_y != 0.0f);
+        LOG_DEBUG(Lib_Font, "RenderGlyphSrc(H): handle={} code=U+{:04X} src=external",
+                  static_cast<const void*>(fontHandle), code);
         const int pixel_h = std::max(1, (int)std::lround(st.scale_h));
         const std::uint64_t key = MakeGlyphKey(code, pixel_h);
         GlyphEntry* ge = nullptr;
         if (!use_subpixel) {
-            if (use_ext) {
-                auto it = st.ext_cache.find(key);
-                if (it != st.ext_cache.end())
-                    ge = &it->second;
-            } else {
-                auto it = st.sys_cache.find(key);
-                if (it != st.sys_cache.end())
-                    ge = &it->second;
+            if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
+                ge = &it->second;
             }
         }
         if (!ge) {
@@ -1248,16 +1281,10 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
                 entry.bitmap.resize(static_cast<size_t>(entry.w * entry.h));
                 stbtt_MakeCodepointBitmap(face, entry.bitmap.data(), entry.w, entry.h, entry.w,
                                           scale, scale, static_cast<int>(code));
-            }
-            if (!use_subpixel) {
-                if (use_ext) {
-                    ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
-                } else {
-                    ge = &st.sys_cache.emplace(key, std::move(entry)).first->second;
-                }
-            } else {
-                fw = (float)entry.w;
-                fh = (float)entry.h;
+                ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
+            } else if (use_subpixel) {
+                fw = static_cast<float>(entry.w);
+                fh = static_cast<float>(entry.h);
                 g_x0 = entry.x0;
                 g_y0 = entry.y0;
                 g_x1 = entry.x1;
@@ -1265,8 +1292,8 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
             }
         }
         if (ge) {
-            fw = (float)ge->w;
-            fh = (float)ge->h;
+            fw = static_cast<float>(ge->w);
+            fh = static_cast<float>(ge->h);
             g_x0 = ge->x0;
             g_y0 = ge->y0;
             g_x1 = ge->x1;
@@ -1305,8 +1332,22 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
         return ORBIS_OK;
     }
 
-    int ix = static_cast<int>(std::floor(x));
-    int iy = static_cast<int>(std::floor(y));
+    if (!st.layout_cached) {
+        UpdateCachedLayout(st);
+    }
+    float layout_baseline = st.layout_cached ? st.cached_baseline_y : 0.0f;
+
+    float adjusted_y = y;
+    if (face && layout_baseline > 0.0f) {
+        const float top_expect = adjusted_y + static_cast<float>(g_y0);
+        const float bottom_expect = top_expect + fh;
+        if (bottom_expect <= 0.0f || top_expect < 0.0f) {
+            adjusted_y += layout_baseline;
+        }
+    }
+
+    int ix = static_cast<int>(x);
+    int iy = static_cast<int>(adjusted_y);
     int left = ix;
     int top = iy;
     if (face) {
@@ -1346,6 +1387,12 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
 
     int cw = std::max(0, rx1 - rx0);
     int ch = std::max(0, ry1 - ry0);
+    if (ch == 0 && face) {
+        LOG_DEBUG(Lib_Font,
+                  "RenderGlyph(H): zero-height glyph code=U+{:04X} top={} ih={} g_y0={} g_y1={}"
+                  " y={}, g_adv={} scale={} src=external",
+                  code, top, ih, g_y0, g_y1, y, metrics ? metrics->h_adv : -1.0f, scale);
+    }
 
     if (cw > 0 && ch > 0) {
         const int bpp = std::max(1, static_cast<int>(surf->pixelSizeByte));
@@ -1362,14 +1409,8 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
             const int pixel_h = std::max(1, (int)std::lround(st.scale_h));
             const std::uint64_t key = MakeGlyphKey(code, pixel_h);
             const GlyphEntry* ge = nullptr;
-            if (use_ext) {
-                auto it = st.ext_cache.find(key);
-                if (it != st.ext_cache.end())
-                    ge = &it->second;
-            } else {
-                auto it = st.sys_cache.find(key);
-                if (it != st.sys_cache.end())
-                    ge = &it->second;
+            if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
+                ge = &it->second;
             }
             const float frac_x = x - std::floor(x);
             const float frac_y = y - std::floor(y);
@@ -1614,16 +1655,13 @@ s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float
     auto& st = GetState(fontHandle);
     st.scale_w = w;
     st.scale_h = h;
-    const bool sys_ok = EnsureSystemFace(st);
     if (st.ext_face_ready)
-        st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
-    if (sys_ok)
-        st.scale_for_height = stbtt_ScaleForPixelHeight(&st.face, st.scale_h);
-    LOG_INFO(
-        Lib_Font,
-        "SetScalePixel: handle={} w={} h={} ext_scale={} sys_scale={} ext_ready={} sys_ready={}",
-        static_cast<const void*>(fontHandle), w, h, st.ext_scale_for_height, st.scale_for_height,
-        st.ext_face_ready, sys_ok);
+        st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+    ReportSystemFaceRequest(st);
+    LOG_INFO(Lib_Font, "SetScalePixel: handle={} w={} h={} ext_scale={} ext_ready={}",
+             static_cast<const void*>(fontHandle), w, h, st.ext_scale_for_height,
+             st.ext_face_ready);
+    st.layout_cached = false;
     return ORBIS_OK;
 }
 

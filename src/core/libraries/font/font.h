@@ -1,24 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #pragma once
-
 #include <cstdint>
 #include "common/types.h"
-
 namespace Core::Loader {
 class SymbolsResolver;
 }
-
 namespace Libraries::Font {
-
-using OrbisFontLib = void*;
 
 struct OrbisFontHandleOpaque {
     u32 reserved[64];
 };
-using OrbisFontHandle = OrbisFontHandleOpaque*;
 
+using OrbisFontLib = void*;
+using OrbisFontHandle = OrbisFontHandleOpaque*;
 using OrbisFontRendererCreateParams = void*;
 using OrbisFontRenderer = void*;
 using OrbisFontLibCreateParams = void*;
@@ -32,9 +27,6 @@ struct OrbisFontOpenParams {
     const void* reserved_ptr2;
     const void* reserved_ptr1;
 };
-#if INTPTR_MAX == INT64_MAX
-static_assert(sizeof(OrbisFontOpenParams) == 32, "OrbisFontOpenParams size");
-#endif
 
 struct OrbisFontGlyphMetrics {
     float w;
@@ -46,9 +38,6 @@ struct OrbisFontGlyphMetrics {
     float v_bearing_y;
     float v_adv;
 };
-#if INTPTR_MAX == INT64_MAX
-static_assert(sizeof(OrbisFontGlyphMetrics) == 32, "OrbisFontGlyphMetrics size");
-#endif
 
 struct OrbisFontKerning {
     float dx;
@@ -56,9 +45,6 @@ struct OrbisFontKerning {
     float px;
     float py;
 };
-#if INTPTR_MAX == INT64_MAX
-static_assert(sizeof(OrbisFontKerning) == 16, "OrbisFontKerning size");
-#endif
 
 struct OrbisFontGlyphImageMetrics {
     float bearing_x;
@@ -162,10 +148,6 @@ struct OrbisFontRenderSurface {
     u64 reserved_q[11];
 };
 
-#if INTPTR_MAX == INT64_MAX
-static_assert(sizeof(OrbisFontRenderSurface) == 128, "OrbisFontRenderSurface ABI size");
-#endif
-
 struct OrbisFontStyleFrame {
     /*0x00*/ u16 magic; // Expected to be 0xF09
     /*0x02*/ u16 flags;
@@ -180,7 +162,23 @@ struct OrbisFontStyleFrame {
     /*0x24*/
 };
 
+
+struct OrbisFontHorizontalLayout {
+    float baselineOffset;
+    float lineAdvance;
+    float decorationExtent;
+};
+struct OrbisFontVerticalLayout {
+    float baselineOffsetX;
+    float columnAdvance;
+    float decorationSpan;
+};
+
 #if INTPTR_MAX == INT64_MAX
+static_assert(sizeof(OrbisFontOpenParams) == 32, "OrbisFontOpenParams size");
+static_assert(sizeof(OrbisFontGlyphMetrics) == 32, "OrbisFontGlyphMetrics size");
+static_assert(sizeof(OrbisFontKerning) == 16, "OrbisFontKerning size");
+static_assert(sizeof(OrbisFontRenderSurface) == 128, "OrbisFontRenderSurface ABI size");
 static_assert(sizeof(OrbisFontGlyphImageMetrics) == 24, "OrbisFontGlyphImageMetrics ABI size");
 static_assert(sizeof(OrbisFontRenderOutput) == 64, "OrbisFontRenderOutput ABI size");
 static_assert(sizeof(OrbisFontMem) == 64, "OrbisFontMem ABI size");
@@ -241,7 +239,8 @@ s32 PS4_SYSV_ABI sceFontGetFontMetrics();
 s32 PS4_SYSV_ABI sceFontGetFontResolution();
 s32 PS4_SYSV_ABI sceFontGetFontStyleInformation();
 s32 PS4_SYSV_ABI sceFontGetGlyphExpandBufferState();
-s32 PS4_SYSV_ABI sceFontGetHorizontalLayout();
+s32 PS4_SYSV_ABI sceFontGetHorizontalLayout(OrbisFontHandle fontHandle,
+                                            OrbisFontHorizontalLayout* layout);
 s32 PS4_SYSV_ABI sceFontGetKerning(OrbisFontHandle fontHandle, u32 preCode, u32 code,
                                    OrbisFontKerning* kerning);
 s32 PS4_SYSV_ABI sceFontGetLibrary(OrbisFontHandle fontHandle, OrbisFontLib* pLibrary);
@@ -250,14 +249,15 @@ s32 PS4_SYSV_ABI sceFontGetRenderCharGlyphMetrics();
 s32 PS4_SYSV_ABI sceFontGetRenderEffectSlant();
 s32 PS4_SYSV_ABI sceFontGetRenderEffectWeight();
 s32 PS4_SYSV_ABI sceFontGetRenderScaledKerning();
-s32 PS4_SYSV_ABI sceFontGetRenderScalePixel();
-s32 PS4_SYSV_ABI sceFontGetRenderScalePoint();
+s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* w, float* h);
+s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* w, float* h);
 s32 PS4_SYSV_ABI sceFontGetResolutionDpi();
 s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* w, float* h);
 s32 PS4_SYSV_ABI sceFontGetScalePoint();
 s32 PS4_SYSV_ABI sceFontGetScriptLanguage();
 s32 PS4_SYSV_ABI sceFontGetTypographicDesign();
-s32 PS4_SYSV_ABI sceFontGetVerticalLayout();
+s32 PS4_SYSV_ABI sceFontGetVerticalLayout(OrbisFontHandle fontHandle,
+                                          OrbisFontVerticalLayout* layout);
 s32 PS4_SYSV_ABI sceFontGlyphDefineAttribute();
 s32 PS4_SYSV_ABI sceFontGlyphGetAttribute();
 s32 PS4_SYSV_ABI sceFontGlyphGetGlyphForm();
