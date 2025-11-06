@@ -162,7 +162,6 @@ struct OrbisFontStyleFrame {
     /*0x24*/
 };
 
-
 struct OrbisFontHorizontalLayout {
     float baselineOffset;
     float lineAdvance;
