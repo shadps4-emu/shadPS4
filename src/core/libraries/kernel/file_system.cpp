@@ -653,14 +653,16 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_size = 65536;
         sb->st_blksize = 65536;
         sb->st_blocks = 128;
-        sb->st_mtim.tv_sec = std::chrono::system_clock::to_time_t(mtimestamp);
+        sb->st_mtim.tv_sec =
+            std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
         // TODO incomplete
     } else {
         sb->st_mode = 0000777u | 0100000u;
         sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
-        sb->st_mtim.tv_sec = std::chrono::system_clock::to_time_t(mtimestamp);
+        sb->st_mtim.tv_sec =
+            std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
         // TODO incomplete
     }
 
