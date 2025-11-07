@@ -4,6 +4,8 @@
 #pragma once
 
 #include "common/types.h"
+#include "emulated/dimensions.h"
+#include "emulated/infinity.h"
 #include "emulated/skylander.h"
 #include "usb_backend.h"
 
@@ -33,10 +35,9 @@ using SceUsbdTransfer = libusb_transfer;
 using SceUsbdControlSetup = libusb_control_setup;
 using SceUsbdTransferCallback = void PS4_SYSV_ABI (*)(SceUsbdTransfer* transfer);
 
-// TODO: implement emulated devices
 using SkylandersPortalBackend = SkylanderBackend;
-using InfinityBaseBackend = UsbRealBackend;
-using DimensionsToypadBackend = UsbRealBackend;
+using InfinityBaseBackend = InfinityBackend;
+using DimensionsToypadBackend = DimensionsBackend;
 
 enum class SceUsbdSpeed : u32 {
     UNKNOWN = 0,
