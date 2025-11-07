@@ -130,7 +130,9 @@ s32 QFS::OperationImpl::Close(s32 fd) {
         LOG_ERROR(Kernel_Fs, "Closing std stream, this will have consequences fd={}", fd);
 
     // if it fails, it fails
-    int hio_status = qfs.hio_driver.Close(handle->host_fd);
+    int hio_status = 0;
+    if (handle->host_fd >= 0)
+        hio_status = qfs.hio_driver.Close(handle->host_fd);
 
     // no further action is required, this is pro-forma
     qfs.vio_driver.Close(fd);
@@ -193,7 +195,7 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
         host_used = true;
     } else if (dst_part->IsHostMounted() ^ src_part->IsHostMounted()) {
         LOG_ERROR(Kernel_Fs,
-                  "Symlinks can be only created if both source and destination are host-bound");
+                  "Symlinks can be only created on the same type of partition (virtual/host)");
         return -QUASI_ENOSYS;
     }
 
@@ -227,6 +229,12 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     partition_ptr src_part = src_res.mountpoint;
     partition_ptr dst_part = dst_res.mountpoint;
 
+    if (src_part != dst_part) {
+        LOG_ERROR(Kernel_Fs, "Hard links can only be created within one partition");
+        // I think this is the right error
+        return -QUASI_ENOSYS;
+    }
+
     if (qfs.IsPartitionRO(dst_part))
         return -QUASI_EROFS;
 
@@ -234,7 +242,7 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     int hio_status = 0;
     int vio_status = 0;
 
-    if (dst_part->IsHostMounted() && src_part->IsHostMounted()) {
+    if (dst_part->IsHostMounted()) {
         fs::path host_path_src{};
         fs::path host_path_dst{};
 
@@ -249,10 +257,6 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
             // hosts operation must succeed in order to continue
             return hio_status;
         host_used = true;
-    } else if (dst_part->IsHostMounted() ^ src_part->IsHostMounted()) {
-        LOG_ERROR(Kernel_Fs,
-                  "Links can be only created if both source and destination are host-bound");
-        return -QUASI_ENOSYS;
     }
 
     qfs.vio_driver.SetCtx(&src_res, host_used, nullptr);

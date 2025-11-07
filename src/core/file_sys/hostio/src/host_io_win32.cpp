@@ -103,6 +103,13 @@ s64 HostIO_Win32::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
     return status >= 0 ? status : -errno;
 }
 
+s64 HostIO_Win32::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+    return 0;
+}
+s64 HostIO_Win32::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    return 0;
+}
+
 s64 HostIO_Win32::Write(const s32 fd, const void* buf, u64 count) {
     errno = 0;
     s32 status = _write(fd, buf, count);
@@ -120,6 +127,13 @@ s64 HostIO_Win32::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
 
     LSeek(fd, bak, SeekOrigin::ORIGIN);
     return status >= 0 ? status : -errno;
+}
+
+s64 HostIO_Win32::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+    return 0;
+}
+s64 HostIO_Win32::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    return 0;
 }
 
 s32 HostIO_Win32::MKDir(const fs::path& path, u16 mode) {
