@@ -8,6 +8,38 @@
 
 namespace Libraries::FontFt {
 
+namespace {
+bool g_library_selected = false;
+bool g_renderer_selected = false;
+
+constexpr OrbisFontLibrarySelection kDefaultLibrarySelection{0xF2000000u, 0, nullptr, nullptr};
+
+static void* PS4_SYSV_ABI RendererCreateStub() {
+    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer create called");
+    return nullptr;
+}
+
+static void PS4_SYSV_ABI RendererQueryStub() {
+    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer query called");
+}
+
+static void PS4_SYSV_ABI RendererDestroyStub() {
+    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer destroy called");
+}
+
+static OrbisFontRendererSelection MakeRendererSelection() {
+    OrbisFontRendererSelection sel{};
+    sel.magic = 0xF2000000u;
+    sel.size = 0x168;
+    sel.create_fn = reinterpret_cast<uintptr_t>(&RendererCreateStub);
+    sel.query_fn = reinterpret_cast<uintptr_t>(&RendererQueryStub);
+    sel.destroy_fn = reinterpret_cast<uintptr_t>(&RendererDestroyStub);
+    return sel;
+}
+
+static const OrbisFontRendererSelection kDefaultRendererSelection = MakeRendererSelection();
+} // namespace
+
 s32 PS4_SYSV_ABI sceFontFtInitAliases() {
     LOG_ERROR(Lib_FontFt, "(STUBBED) called");
     return ORBIS_OK;
@@ -103,14 +135,28 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontSelectLibraryFt() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
+const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value) {
+    if (!g_library_selected) {
+        g_library_selected = true;
+        LOG_INFO(Lib_FontFt, "SelectLibraryFt: using default FreeType shim");
+    }
+    LOG_INFO(Lib_FontFt, "SelectLibraryFt: value={}", value);
+    if (value == 0) {
+        return &kDefaultLibrarySelection;
+    }
+    return nullptr;
 }
 
-s32 PS4_SYSV_ABI sceFontSelectRendererFt() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) called");
-    return ORBIS_OK;
+const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value) {
+    if (!g_renderer_selected) {
+        g_renderer_selected = true;
+        LOG_INFO(Lib_FontFt, "SelectRendererFt: using stb_truetype renderer backend");
+    }
+    LOG_INFO(Lib_FontFt, "SelectRendererFt: value={}", value);
+    if (value == 0) {
+        return &kDefaultRendererSelection;
+    }
+    return nullptr;
 }
 
 void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym) {

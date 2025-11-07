@@ -4,14 +4,21 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <limits>
+#include <new>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "common/logging/log.h"
+#include "common/singleton.h"
+#include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/libs.h"
@@ -21,7 +28,13 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "externals/dear_imgui/imstb_truetype.h"
 
+namespace Libraries::Font {
+struct FontLibOpaque;
+}
+
 namespace {
+Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+
 struct GlyphEntry {
     std::vector<std::uint8_t> bitmap;
     int w = 0;
@@ -62,6 +75,10 @@ struct LibraryState {
     bool support_external = false;
     u32 external_formats = 0;
     u32 external_fontMax = 0;
+    const Libraries::Font::OrbisFontMem* backing_memory = nullptr;
+    Libraries::Font::OrbisFontLibCreateParams create_params = nullptr;
+    u64 edition = 0;
+    Libraries::Font::FontLibOpaque* native = nullptr;
 };
 static std::unordered_map<Libraries::Font::OrbisFontLib, LibraryState> g_library_state;
 
@@ -73,12 +90,65 @@ static FontState& GetState(Libraries::Font::OrbisFontHandle h) {
     return g_font_state[h];
 }
 
+static FontState* TryGetState(Libraries::Font::OrbisFontHandle h) {
+    if (!h)
+        return nullptr;
+    auto it = g_font_state.find(h);
+    if (it == g_font_state.end())
+        return nullptr;
+    return &it->second;
+}
+
 static LibraryState& GetLibState(Libraries::Font::OrbisFontLib lib) {
     return g_library_state[lib];
 }
 
+static void RemoveLibState(Libraries::Font::OrbisFontLib lib) {
+    g_library_state.erase(lib);
+}
+
 static void LogExternalFormatSupport(u32 formats_mask) {
     LOG_INFO(Lib_Font, "ExternalFormatsMask=0x{:X}", formats_mask);
+}
+
+static std::filesystem::path ResolveGuestPath(const char* guest_path) {
+    if (!guest_path) {
+        return {};
+    }
+    if (guest_path[0] != '/') {
+        return std::filesystem::path(guest_path);
+    }
+    if (!g_mnt) {
+        return {};
+    }
+    return g_mnt->GetHostPath(guest_path);
+}
+
+static bool LoadGuestFileBytes(const std::filesystem::path& host_path,
+                               std::vector<unsigned char>& out_bytes) {
+    std::ifstream file(host_path, std::ios::binary | std::ios::ate);
+    if (!file) {
+        return false;
+    }
+    const std::streamoff size = file.tellg();
+    if (size < 0) {
+        return false;
+    }
+    if (size == 0) {
+        out_bytes.clear();
+        return true;
+    }
+    if (static_cast<std::uint64_t>(size) > std::numeric_limits<std::size_t>::max()) {
+        return false;
+    }
+    out_bytes.resize(static_cast<std::size_t>(size));
+    file.seekg(0, std::ios::beg);
+    if (!file.read(reinterpret_cast<char*>(out_bytes.data()),
+                   static_cast<std::streamsize>(out_bytes.size()))) {
+        out_bytes.clear();
+        return false;
+    }
+    return true;
 }
 
 enum class ScaleMode {
@@ -189,8 +259,41 @@ static inline void LogStrideOnce(const Libraries::Font::OrbisFontRenderSurface* 
 
 namespace Libraries::Font {
 
-struct FontLibOpaque {};
+struct FontLibOpaque {
+    u16 magic;
+    u16 reserved0;
+    u32 lock_word;
+    u32 flags;
+    u8 reserved1[0x14];
+    void* alloc_ctx;
+    void** alloc_vtbl;
+    u8 reserved2[0x50];
+    void* sys_driver;
+    void* fontset_registry;
+    u8 reserved3[0x10];
+    void* sysfonts_ctx;
+    void* external_fonts_ctx;
+    u32* device_cache_buf;
+};
+static_assert(sizeof(FontLibOpaque) == 0xB8, "FontLibOpaque size");
+static_assert(offsetof(FontLibOpaque, alloc_ctx) == 0x20, "FontLibOpaque alloc_ctx offset");
+static_assert(offsetof(FontLibOpaque, alloc_vtbl) == 0x28, "FontLibOpaque alloc_vtbl offset");
+static_assert(offsetof(FontLibOpaque, sys_driver) == 0x80, "FontLibOpaque sys_driver offset");
+static_assert(offsetof(FontLibOpaque, fontset_registry) == 0x88,
+              "FontLibOpaque fontset_registry offset");
+static_assert(offsetof(FontLibOpaque, sysfonts_ctx) == 0xA0, "FontLibOpaque sysfonts_ctx offset");
+static_assert(offsetof(FontLibOpaque, external_fonts_ctx) == 0xA8,
+              "FontLibOpaque external_fonts_ctx offset");
+static_assert(offsetof(FontLibOpaque, device_cache_buf) == 0xB0,
+              "FontLibOpaque device_cache_buf offset");
 struct OrbisFontRenderer_ {};
+
+static void* g_allocator_vtbl_stub[4] = {};
+static std::uint8_t g_sys_driver_stub{};
+static std::uint8_t g_fontset_registry_stub{};
+static std::uint8_t g_sysfonts_ctx_stub{};
+static std::uint8_t g_external_fonts_ctx_stub{};
+static u32 g_device_cache_stub{};
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buffer, u32 size) {
     LOG_ERROR(Lib_Font, "(STUBBED) called library={} buffer={} size={}",
@@ -199,8 +302,13 @@ s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buff
 }
 
 s32 PS4_SYSV_ABI sceFontBindRenderer(OrbisFontHandle fontHandle, OrbisFontRenderer renderer) {
+    if (!fontHandle || !renderer) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
     auto& st = GetState(fontHandle);
     st.bound_renderer = renderer;
+    LOG_INFO(Lib_Font, "BindRenderer: handle={} renderer={}", static_cast<const void*>(fontHandle),
+             static_cast<const void*>(renderer));
     return ORBIS_OK;
 }
 
@@ -325,9 +433,10 @@ s32 PS4_SYSV_ABI sceFontCreateGraphicsServiceWithEdition() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCreateLibrary() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceFontCreateLibrary(const OrbisFontMem* memory,
+                                      OrbisFontLibCreateParams create_params,
+                                      OrbisFontLib* pLibrary) {
+    return sceFontCreateLibraryWithEdition(memory, create_params, 0, pLibrary);
 }
 
 s32 PS4_SYSV_ABI sceFontCreateLibraryWithEdition(const OrbisFontMem* memory,
@@ -336,16 +445,52 @@ s32 PS4_SYSV_ABI sceFontCreateLibraryWithEdition(const OrbisFontMem* memory,
     if (!pLibrary) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    (void)memory;
-    (void)create_params;
-    (void)edition;
-    *pLibrary = new FontLibOpaque{};
+    if (!memory) {
+        return ORBIS_FONT_ERROR_INVALID_MEMORY;
+    }
+    auto* lib = new (std::nothrow) FontLibOpaque{};
+    if (!lib) {
+        return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
+    }
+    lib->magic = 0x0F01;
+    lib->lock_word = 0;
+    lib->flags = 0;
+    lib->alloc_ctx = const_cast<OrbisFontMem*>(memory);
+    lib->alloc_vtbl = g_allocator_vtbl_stub;
+    lib->sys_driver = &g_sys_driver_stub;
+    lib->fontset_registry = &g_fontset_registry_stub;
+    lib->sysfonts_ctx = &g_sysfonts_ctx_stub;
+    lib->external_fonts_ctx = &g_external_fonts_ctx_stub;
+    lib->device_cache_buf = &g_device_cache_stub;
+    *pLibrary = lib;
+    auto& state = GetLibState(lib);
+    state = LibraryState{};
+    state.backing_memory = memory;
+    state.create_params = create_params;
+    state.edition = edition;
+    state.native = lib;
+    LOG_INFO(Lib_Font, "CreateLibrary: memory={} selection={} edition={} -> lib={}",
+             static_cast<const void*>(memory), static_cast<const void*>(create_params), edition,
+             static_cast<const void*>(*pLibrary));
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCreateRenderer() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontDestroyLibrary(OrbisFontLib* pLibrary) {
+    if (!pLibrary || !*pLibrary) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto lib = *pLibrary;
+    RemoveLibState(lib);
+    delete static_cast<FontLibOpaque*>(lib);
+    *pLibrary = nullptr;
+    LOG_INFO(Lib_Font, "DestroyLibrary: lib={} destroyed", static_cast<const void*>(lib));
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontCreateRenderer(const OrbisFontMem* memory,
+                                       OrbisFontRendererCreateParams create_params,
+                                       OrbisFontRenderer* pRenderer) {
+    return sceFontCreateRendererWithEdition(memory, create_params, 0, pRenderer);
 }
 
 s32 PS4_SYSV_ABI sceFontCreateRendererWithEdition(const OrbisFontMem* memory,
@@ -354,55 +499,29 @@ s32 PS4_SYSV_ABI sceFontCreateRendererWithEdition(const OrbisFontMem* memory,
     if (!pRenderer) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    (void)memory;
-    (void)create_params;
-    (void)edition;
-    *pRenderer = new OrbisFontRenderer_{};
+    if (!memory) {
+        return ORBIS_FONT_ERROR_INVALID_MEMORY;
+    }
+    auto* renderer = new (std::nothrow) OrbisFontRenderer_{};
+    if (!renderer) {
+        return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
+    }
+    *pRenderer = renderer;
+    LOG_INFO(Lib_Font, "CreateRenderer: memory={} selection={} edition={} renderer={}",
+             static_cast<const void*>(memory), static_cast<const void*>(create_params), edition,
+             static_cast<const void*>(renderer));
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontCreateString() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontCreateWords() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontCreateWritingLine() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDefineAttribute() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDeleteGlyph() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDestroyGraphicsDevice() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDestroyGraphicsService() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDestroyLibrary() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceFontDestroyRenderer() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontDestroyRenderer(OrbisFontRenderer* pRenderer) {
+    if (!pRenderer || !*pRenderer) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto renderer = *pRenderer;
+    delete static_cast<OrbisFontRenderer_*>(renderer);
+    *pRenderer = nullptr;
+    LOG_INFO(Lib_Font, "DestroyRenderer: renderer={} destroyed",
+             static_cast<const void*>(renderer));
     return ORBIS_OK;
 }
 
@@ -558,10 +677,14 @@ s32 PS4_SYSV_ABI sceFontGetGlyphExpandBufferState() {
 
 s32 PS4_SYSV_ABI sceFontGetHorizontalLayout(OrbisFontHandle fontHandle,
                                             OrbisFontHorizontalLayout* layout) {
-    if (!layout) {
+    if (!fontHandle || !layout) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    auto& st = GetState(fontHandle);
+    auto* st_ptr = TryGetState(fontHandle);
+    if (!st_ptr) {
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
+    }
+    auto& st = *st_ptr;
     if (st.ext_face_ready) {
         if (st.ext_scale_for_height == 0.0f)
             st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
@@ -637,9 +760,18 @@ s32 PS4_SYSV_ABI sceFontGetPixelResolution() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetRenderCharGlyphMetrics() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceFontGetRenderCharGlyphMetrics(OrbisFontHandle fontHandle, u32 codepoint,
+                                                  OrbisFontGlyphMetrics* out_metrics) {
+    if (!fontHandle || !out_metrics) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto& st = GetState(fontHandle);
+    if (!st.bound_renderer) {
+        LOG_DEBUG(Lib_Font, "GetRenderCharGlyphMetrics: renderer not bound for handle={}",
+                  static_cast<const void*>(fontHandle));
+        return ORBIS_FONT_ERROR_NOT_BOUND_RENDERER;
+    }
+    return sceFontGetCharGlyphMetrics(fontHandle, codepoint, out_metrics);
 }
 
 s32 PS4_SYSV_ABI sceFontGetRenderEffectSlant() {
@@ -657,25 +789,34 @@ s32 PS4_SYSV_ABI sceFontGetRenderScaledKerning() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* w, float* h) {
-    auto& st = GetState(fontHandle);
-    if (w)
-        *w = st.scale_w;
-    if (h)
-        *h = st.scale_h;
-    if (!st.bound_renderer) {
+s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* out_w,
+                                            float* out_h) {
+    if (!fontHandle || (!out_w && !out_h)) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto* st = TryGetState(fontHandle);
+    if (!st) {
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
+    }
+    if (out_w)
+        *out_w = st->scale_w;
+    if (out_h)
+        *out_h = st->scale_h;
+    if (!st->bound_renderer) {
         LOG_DEBUG(Lib_Font,
                   "GetRenderScalePixel: no renderer bound; returning configured scale w={} h={}",
-                  w ? *w : -1.0f, h ? *h : -1.0f);
+                  out_w ? *out_w : -1.0f, out_h ? *out_h : -1.0f);
     } else {
         LOG_DEBUG(Lib_Font, "GetRenderScalePixel: handle={} -> w={}, h={}",
-                  static_cast<const void*>(fontHandle), w ? *w : -1.0f, h ? *h : -1.0f);
+                  static_cast<const void*>(fontHandle), out_w ? *out_w : -1.0f,
+                  out_h ? *out_h : -1.0f);
     }
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* w, float* h) {
-    return sceFontGetRenderScalePixel(fontHandle, w, h);
+s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* out_w,
+                                            float* out_h) {
+    return sceFontGetRenderScalePixel(fontHandle, out_w, out_h);
 }
 
 s32 PS4_SYSV_ABI sceFontGetResolutionDpi() {
@@ -683,16 +824,21 @@ s32 PS4_SYSV_ABI sceFontGetResolutionDpi() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* w, float* h) {
-    if (!w || !h) {
+s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* out_w, float* out_h) {
+    if (!fontHandle || (!out_w && !out_h)) {
         LOG_DEBUG(Lib_Font, "sceFontGetScalePixel: invalid params");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    const auto& st = GetState(fontHandle);
-    *w = st.scale_w;
-    *h = st.scale_h;
+    auto* st = TryGetState(fontHandle);
+    if (!st) {
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
+    }
+    if (out_w)
+        *out_w = st->scale_w;
+    if (out_h)
+        *out_h = st->scale_h;
     LOG_DEBUG(Lib_Font, "GetScalePixel: handle={} -> w={}, h={}",
-              static_cast<const void*>(fontHandle), *w, *h);
+              static_cast<const void*>(fontHandle), out_w ? *out_w : -1.0f, out_h ? *out_h : -1.0f);
     return ORBIS_OK;
 }
 
@@ -1049,27 +1195,69 @@ s32 PS4_SYSV_ABI sceFontGraphicsUpdateShapeFillPlot() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontMemoryInit(OrbisFontMem* fontMemory, void* address, u32 sizeByte,
-                                   const OrbisFontMemInterface* memInterface, void* mspaceObject,
-                                   OrbisFontMemDestroyCb destroyCallback, void* destroyObject) {
-    LOG_ERROR(Lib_Font,
-              "(STUBBED) called font_mem={} region_base={} sizeByte={} mem_if={} mspace_handle={}"
-              " destroy_cb={} destroy_ctx={}",
-              static_cast<const void*>(fontMemory), static_cast<const void*>(address), sizeByte,
-              static_cast<const void*>(memInterface), static_cast<const void*>(mspaceObject),
-              reinterpret_cast<const void*>(destroyCallback),
-              static_cast<const void*>(destroyObject));
+s32 PS4_SYSV_ABI sceFontMemoryInit(OrbisFontMem* mem_desc, void* region_addr, u32 region_size,
+                                   const OrbisFontMemInterface* iface, void* mspace_obj,
+                                   OrbisFontMemDestroyCb destroy_cb, void* destroy_ctx) {
+    if (!mem_desc) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+
+    mem_desc->mem_kind = 0;
+    mem_desc->attr_bits = 0;
+    mem_desc->region_base = region_addr;
+    mem_desc->region_size = region_size;
+    mem_desc->iface = iface;
+    mem_desc->mspace_handle = mspace_obj;
+    mem_desc->on_destroy = destroy_cb;
+    mem_desc->destroy_ctx = destroy_ctx;
+    mem_desc->some_ctx1 = nullptr;
+    mem_desc->some_ctx2 = nullptr;
+
+    LOG_INFO(
+        Lib_Font,
+        "FontMemoryInit: font_mem={} region_base={} size={} mspace={} mem_if_set={} destroy_cb={}",
+        static_cast<const void*>(mem_desc), static_cast<const void*>(region_addr), region_size,
+        static_cast<const void*>(mem_desc->mspace_handle), iface != nullptr,
+        reinterpret_cast<const void*>(destroy_cb));
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontMemoryTerm() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceFontMemoryTerm(OrbisFontMem* mem_desc) {
+    if (!mem_desc) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    if (mem_desc->on_destroy) {
+        mem_desc->on_destroy(mem_desc, mem_desc->destroy_ctx, mem_desc->some_ctx1);
+    }
+    std::memset(mem_desc, 0, sizeof(*mem_desc));
+    LOG_INFO(Lib_Font, "FontMemoryTerm: font_mem={} cleaned", static_cast<const void*>(mem_desc));
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceFontOpenFontFile() {
-    LOG_ERROR(Lib_Font, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceFontOpenFontFile(OrbisFontLib library, const char* guest_path, u32 open_mode,
+                                     const OrbisFontOpenParams* open_detail,
+                                     OrbisFontHandle* out_handle) {
+    if (!library || !guest_path || !out_handle) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    const auto host_path = ResolveGuestPath(guest_path);
+    const std::filesystem::path path_to_open =
+        host_path.empty() ? std::filesystem::path(guest_path) : host_path;
+
+    std::vector<unsigned char> file_bytes;
+    if (!LoadGuestFileBytes(path_to_open, file_bytes)) {
+        LOG_WARNING(Lib_Font, "OpenFontFile: failed to open '{}'", path_to_open.string());
+        return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
+    }
+    if (file_bytes.size() > std::numeric_limits<u32>::max()) {
+        LOG_WARNING(Lib_Font, "OpenFontFile: '{}' exceeds libSceFont size limit ({} bytes)",
+                    path_to_open.string(), file_bytes.size());
+        return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
+    }
+    LOG_INFO(Lib_Font, "OpenFontFile: path='{}' size={} openMode={}", path_to_open.string(),
+             static_cast<u32>(file_bytes.size()), open_mode);
+    return sceFontOpenFontMemory(library, file_bytes.data(), static_cast<u32>(file_bytes.size()),
+                                 open_detail, out_handle);
 }
 
 s32 PS4_SYSV_ABI sceFontOpenFontInstance() {
@@ -1185,7 +1373,15 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
 }
 
 s32 PS4_SYSV_ABI sceFontRebindRenderer(OrbisFontHandle fontHandle) {
-    LOG_ERROR(Lib_Font, "(STUBBED) called fontHandle={}", static_cast<const void*>(fontHandle));
+    if (!fontHandle) {
+        return ORBIS_FONT_ERROR_INVALID_PARAMETER;
+    }
+    auto& st = GetState(fontHandle);
+    if (!st.bound_renderer) {
+        return ORBIS_FONT_ERROR_NOT_BOUND_RENDERER;
+    }
+    LOG_INFO(Lib_Font, "RebindRenderer: handle={} renderer={}",
+             static_cast<const void*>(fontHandle), static_cast<const void*>(st.bound_renderer));
     return ORBIS_OK;
 }
 
@@ -1649,10 +1845,14 @@ s32 PS4_SYSV_ABI sceFontSetResolutionDpi() {
 }
 
 s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float h) {
-    if (w <= 0.0f || h <= 0.0f) {
+    if (!fontHandle || w <= 0.0f || h <= 0.0f) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    auto& st = GetState(fontHandle);
+    auto* st_ptr = TryGetState(fontHandle);
+    if (!st_ptr) {
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
+    }
+    auto& st = *st_ptr;
     st.scale_w = w;
     st.scale_h = h;
     if (st.ext_face_ready)
