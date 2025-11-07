@@ -513,6 +513,41 @@ s32 PS4_SYSV_ABI sceFontCreateRendererWithEdition(const OrbisFontMem* memory,
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceFontCreateString() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontCreateWords() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontCreateWritingLine() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontDefineAttribute() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontDeleteGlyph() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontDestroyGraphicsDevice() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceFontDestroyGraphicsService() {
+    LOG_ERROR(Lib_Font, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceFontDestroyRenderer(OrbisFontRenderer* pRenderer) {
     if (!pRenderer || !*pRenderer) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
