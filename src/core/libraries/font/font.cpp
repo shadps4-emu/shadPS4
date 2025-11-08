@@ -302,8 +302,10 @@ static void LoadSystemFontBlob() {
             return;
         }
     }
-    const auto fallback = std::filesystem::current_path() / kSystemFontFileName;
-    LoadFontFromPath(fallback);
+    g_system_font_bytes.clear();
+    g_system_font_available = false;
+    LOG_ERROR(Lib_Font, "SystemFace: configured font '{}' missing; no fallback available",
+              configured_path.string());
 }
 
 static bool EnsureSystemFontBlob() {
