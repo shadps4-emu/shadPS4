@@ -257,7 +257,7 @@ s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* o
 s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* out_w, float* out_h);
 s32 PS4_SYSV_ABI sceFontGetResolutionDpi();
 s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* out_w, float* out_h);
-s32 PS4_SYSV_ABI sceFontGetScalePoint();
+s32 PS4_SYSV_ABI sceFontGetScalePoint(OrbisFontHandle fontHandle, float* out_w, float* out_h);
 s32 PS4_SYSV_ABI sceFontGetScriptLanguage();
 s32 PS4_SYSV_ABI sceFontGetTypographicDesign();
 s32 PS4_SYSV_ABI sceFontGetVerticalLayout(OrbisFontHandle fontHandle,
@@ -332,7 +332,8 @@ s32 PS4_SYSV_ABI sceFontMemoryTerm(OrbisFontMem* mem_desc);
 s32 PS4_SYSV_ABI sceFontOpenFontFile(OrbisFontLib library, const char* guest_path, u32 open_mode,
                                      const OrbisFontOpenParams* open_detail,
                                      OrbisFontHandle* out_handle);
-s32 PS4_SYSV_ABI sceFontOpenFontInstance();
+s32 PS4_SYSV_ABI sceFontOpenFontInstance(OrbisFontHandle fontHandle, OrbisFontHandle templateFont,
+                                         OrbisFontHandle* pFontHandle);
 s32 PS4_SYSV_ABI sceFontOpenFontMemory(OrbisFontLib library, const void* fontAddress, u32 fontSize,
                                        const OrbisFontOpenParams* open_params,
                                        OrbisFontHandle* pFontHandle);
@@ -362,15 +363,15 @@ s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* rende
 s32 PS4_SYSV_ABI sceFontSetEffectSlant();
 s32 PS4_SYSV_ABI sceFontSetEffectWeight();
 s32 PS4_SYSV_ABI sceFontSetFontsOpenMode();
-s32 PS4_SYSV_ABI sceFontSetResolutionDpi();
+s32 PS4_SYSV_ABI sceFontSetResolutionDpi(OrbisFontHandle fontHandle, u32 h_dpi, u32 v_dpi);
 s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float h);
-s32 PS4_SYSV_ABI sceFontSetScalePoint();
+s32 PS4_SYSV_ABI sceFontSetScalePoint(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontSetScriptLanguage();
 s32 PS4_SYSV_ABI sceFontSetTypographicDesign();
 s32 PS4_SYSV_ABI sceFontSetupRenderEffectSlant();
 s32 PS4_SYSV_ABI sceFontSetupRenderEffectWeight();
 s32 PS4_SYSV_ABI sceFontSetupRenderScalePixel(OrbisFontHandle fontHandle, float w, float h);
-s32 PS4_SYSV_ABI sceFontSetupRenderScalePoint();
+s32 PS4_SYSV_ABI sceFontSetupRenderScalePoint(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontStringGetTerminateCode();
 s32 PS4_SYSV_ABI sceFontStringGetTerminateOrder();
 s32 PS4_SYSV_ABI sceFontStringGetWritingForm();
