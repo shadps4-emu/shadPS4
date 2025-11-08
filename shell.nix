@@ -11,6 +11,7 @@ pkgs.mkShell {
     cmake
     pkg-config
     git
+    util-linux
   ];
 
   buildInputs = with pkgs; [
