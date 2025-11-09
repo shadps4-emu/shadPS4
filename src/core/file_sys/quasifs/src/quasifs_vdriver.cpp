@@ -936,7 +936,7 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
+s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
     if (fd < 0)
         return -QUASI_EBADF;
 
@@ -948,7 +948,7 @@ s64 QFS::OperationImpl::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
         return -QUASI_EBADF;
 
     qfs.vio_driver.SetCtx(nullptr, false, handle);
-    int vio_status = qfs.vio_driver.GetDents(fd, buf, nbytes, basep);
+    int vio_status = qfs.vio_driver.GetDents(fd, buf, count, basep);
     qfs.vio_driver.ClearCtx();
 
     return vio_status;

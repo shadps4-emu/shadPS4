@@ -89,7 +89,7 @@ public:
         return -QUASI_EINVAL;
     }
 
-    virtual s64 getdents(void* buf, u32 nbytes, s64* basep) {
+    virtual s64 getdents(void* buf, u32 count, s64 offset, s64* basep) {
         return -QUASI_EINVAL;
     }
 

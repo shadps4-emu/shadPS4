@@ -58,12 +58,12 @@ using fd_handle_ptr = std::shared_ptr<File>;
 struct File {
     File() = default;
     ~File() = default;
-    int host_fd{-1};         // fd if opened with HostIO
+    s32 host_fd{-1};         // fd if opened with HostIO
     inode_ptr node{nullptr}; // inode
     bool read{false};        // read permission
     bool write{false};       // write permission
     bool append{false};      // append
-    u64 pos{0};              // cursor offset
+    s64 pos{0};              // cursor offset
 
     static fd_handle_ptr Create() {
         return std::shared_ptr<File>(new File());

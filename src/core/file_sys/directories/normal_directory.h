@@ -18,13 +18,13 @@ public:
     explicit NormalDirectory(std::string_view guest_path);
     ~NormalDirectory() override = default;
 
-    virtual s64 read(void* buf, u64 nbytes) override;
+    virtual s64 read(void* buf, u64 count) override;
     virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) override;
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
                        s64 offset) override;
     virtual s64 lseek(s64 offset, s32 whence) override;
     virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
-    virtual s64 getdents(void* buf, u64 nbytes, s64* basep) override;
+    virtual s64 getdents(void* buf, u64 count, s64* basep) override;
 
 private:
     static constexpr s32 MAX_LENGTH = 255;

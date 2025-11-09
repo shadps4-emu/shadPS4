@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 
 #include "quasi_types.h"
 #include "quasifs_inode.h"
@@ -16,23 +17,21 @@ namespace QuasiFS {
 // Directory
 class QuasiDirectory : public Inode {
 
-private:
-    std::map<std::string, inode_ptr> entries{};
-
-    time_t last_dirent_rebuild_time{0};
-    void RebuildDirents(void);
-    static constexpr s32 MAX_LENGTH = 255;
-    static constexpr s64 DIRECTORY_ALIGNMENT = 0x200;
-
+protected:
 #pragma pack(push, 1)
     typedef struct dirent_t {
-        quasi_ino_t d_ino{};
-        u64 d_off{};
-        unsigned short d_reclen{};
-        unsigned char d_type{};
-        char d_name[256]{};
+        u32 d_fileno;
+        u16 d_reclen;
+        u8 d_type;
+        u8 d_namlen;
+        char d_name[256];
     } dirent_t;
 #pragma pack(pop)
+    std::map<std::string, inode_ptr> entries{};
+
+    void RebuildDirents(void);
+    time_t last_dirent_rebuild_time{0};
+    std::map<s64, dirent_t> dirent_cache{};
 
 public:
     dir_ptr mounted_root = nullptr;
@@ -58,17 +57,13 @@ public:
     // Inode overrides
     //
 
-    // s64 pread(void* buf, size_t count, u64 offset) override;
+    s64 pread(void* buf, u64 count, s64 offset) override;
     // s64 pwrite(const void* buf, size_t count, u64 offset) override;
-    s32 ftruncate(s64 length) final override {
-        return -QUASI_EISDIR;
-    }
 
-    s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override {
-        this->st.st_size = entries.size() * 32;
-        *sb = st;
-        return 0;
-    }
+    s32 ftruncate(s64 length) final override;
+    s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override;
+
+    s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
 
     //
     // Dir-specific

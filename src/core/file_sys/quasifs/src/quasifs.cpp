@@ -114,7 +114,7 @@ void printTree(const dir_ptr& node, const std::string& name, int depth) {
 }
 
 QFS::QFS(const fs::path& host_path) {
-    this->rootfs = Partition::Create(host_path);
+    this->rootfs = Partition::Create(Directory::Create<Directory>(), host_path);
     this->root = rootfs->GetRoot();
 
     mount_t mount_options = {
@@ -435,7 +435,9 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
                 continue;
             }
-            part->AdjustStat(&new_inode->st);
+            new_inode->st.st_blocks =
+                Common::AlignUp(static_cast<u64>(new_inode->st.st_size), new_inode->st.st_blksize) /
+                512;
         }
     } catch (const std::exception& e) {
         LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(),

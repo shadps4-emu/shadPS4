@@ -659,6 +659,7 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/quasifs/src/quasifs_vdriver.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_device.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory_pfs.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_file.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_socket.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_file_virtual.cpp

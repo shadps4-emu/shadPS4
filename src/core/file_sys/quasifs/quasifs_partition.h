@@ -4,6 +4,9 @@
 
 #include <unordered_map>
 
+#include "common/alignment.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+
 #include "quasi_types.h"
 
 namespace QuasiFS {
@@ -31,16 +34,15 @@ private:
 
     // IO block size, allocation unit (multiples of 512)
     const u32 ioblock_size{4096};
-    // amount of raw on-disk blocks per io block
-    // this is pretty much so we don't recalculate it over and over and over
-    // and
-    const u32 block_size{512};
 
 public:
     // host-bound directory, permissions for root directory
     Partition();
     Partition(const fs::path& host_root = "", const int root_permissions = 0755,
-              const u32 block_size = 512, const u32 ioblock_size = 4096);
+              const u32 ioblock_size = 4096);
+    Partition(dir_ptr root_directory = Directory::Create<Directory>(),
+              const fs::path& host_root = "", const int root_permissions = 0755,
+              const u32 ioblock_size = 4096);
     ~Partition() = default;
 
     template <typename... Args>
@@ -61,11 +63,6 @@ public:
     }
     blkid_t GetBlkId(void) {
         return this->block_id;
-    }
-    void AdjustStat(Libraries::Kernel::OrbisKernelStat* statbuf) {
-        auto& s = statbuf->st_size;
-        statbuf->st_blksize = this->block_size;
-        statbuf->st_blocks = (1 + (s / this->ioblock_size)) * this->ioblock_size / this->block_size;
     }
     inode_ptr GetInodeByFileno(fileno_t fileno);
 

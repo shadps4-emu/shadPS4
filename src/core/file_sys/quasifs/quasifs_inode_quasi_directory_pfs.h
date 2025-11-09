@@ -16,23 +16,29 @@ namespace QuasiFS {
 
 // Directory
 class DirectoryPFS final : public QuasiDirectory {
-private:
-    static constexpr s32 MAX_LENGTH = 255;
-    static constexpr s32 DIRECTORY_ALIGNMENT = 0x10000;
 
+protected:
 #pragma pack(push, 1)
     typedef struct dirent_pfs_t {
         u32 d_fileno;
         u32 d_type;
         u32 d_namlen;
         u32 d_reclen;
-        char d_name[MAX_LENGTH + 1];
+        char d_name[256];
     } dirent_pfs_t;
 #pragma pack(pop)
 
+private:
+    // void RebuildDirents(void);
+
 public:
-    DirectoryPFS() = default;
-    ~DirectoryPFS() = default;
+    DirectoryPFS();
+    ~DirectoryPFS();
+
+    s64 pread(void* buf, u64 count, s64 offset) override;
+    
+    s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
+
 };
 
 } // namespace QuasiFS

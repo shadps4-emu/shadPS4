@@ -53,9 +53,7 @@ s32 HostIO_Base::FStat(const s32 fd, OrbisKernelStat* statbuf) { STUB(); }
 s32 HostIO_Base::Chmod(const fs::path& path, u16 mode) { STUB(); }
 s32 HostIO_Base::FChmod(const s32 fd, u16 mode) { STUB(); }
 
-s64 HostIO_Base::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
-    STUB()
-}
+s64 HostIO_Base::GetDents(const s32 fd, void* buf, u64 count, s64* basep) { STUB(); }
 // clang-format on
 
 } // namespace HostIODriver

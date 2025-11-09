@@ -40,9 +40,10 @@
 #endif
 
 namespace qfs = QuasiFS;
-static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
 namespace Libraries::Kernel {
+
+static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
@@ -537,7 +538,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         return -1;
     }
 
-    return ORBIS_OK;
+    return result;
 }
 
 s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {

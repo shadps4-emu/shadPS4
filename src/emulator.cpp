@@ -47,6 +47,7 @@
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 #include "core/file_sys/devices/console_device.h"
@@ -93,12 +94,14 @@ Emulator::~Emulator() {}
 void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 512, 65536);
-    qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 512, 16384);
-    qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 4096, 32768);
-    qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 4096, 32768);
-    qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 4096, 32768);
-    qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384, 16384);
+    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 65536);
+    // qfs::partition_ptr partition_app0 = qfs::Partition::Create(
+    //     qfs::Directory::Create<qfs::DirectoryPFS>(), game_folder, 0555, 512, 65536);
+    qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 16384);
+    qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384);
 
     qfs->Operation.MKDir("/app0", 0555);
     qfs->Operation.MKDir("/av_contents", 0775);
@@ -264,10 +267,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
     qfs->Operation.MKDir("/temp", 0777);
     qfs->Operation.MKDir("/temp0", 0777);
-    qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 4096, 32768);
-    qfs::partition_ptr partition_download =
-        qfs::Partition::Create(mount_download_dir, 0777, 512, 65536);
-    qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 512, 16384);
+    qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 32768);
+    qfs::partition_ptr partition_download = qfs::Partition::Create(mount_download_dir, 0777, 65536);
+    qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 16384);
     qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);

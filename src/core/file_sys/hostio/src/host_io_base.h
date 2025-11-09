@@ -56,7 +56,7 @@ public:
     virtual s32 Chmod(const fs::path& path, u16 mode);
     virtual s32 FChmod(const s32 fd, u16 mode);
 
-    virtual s64 GetDents(s32 fd, void* buf, u32 nbytes, s64* basep);
+    virtual s64 GetDents(const s32 fd, void* buf, u64 count, s64* basep);
     //
     // Derived, complex functions are to be handled by main FS class
     //

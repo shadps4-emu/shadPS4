@@ -380,7 +380,7 @@ s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
     return Partition::chmod(node, mode);
 }
 
-s64 HostIO_Virtual::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
+s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
     if (nullptr == this->handle)
         return -QUASI_EINVAL;
 
@@ -389,10 +389,8 @@ s64 HostIO_Virtual::GetDents(s32 fd, void* buf, u32 nbytes, s64* basep) {
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    if (nullptr != basep)
-        *basep = handle->pos;
+    s64 br = node->getdents(buf, count, handle->pos, basep);
 
-    s64 br = node->getdents(static_cast<char*>(buf) + handle->pos, nbytes, basep);
     if (br > 0)
         handle->pos += br;
 

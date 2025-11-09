@@ -14,11 +14,14 @@
 #include "core/libraries/system/systemservice.h"
 
 #include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
-static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+namespace qfs = QuasiFS;
 
 namespace Libraries::AppContent {
+
+static qfs::QFS* g_qfs = Common::Singleton<qfs::QFS>::Instance();
 
 struct AddContInfo {
     char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
@@ -109,11 +112,12 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             // We've located the correct folder.
 
             g_qfs->Operation.MKDir(mount_point->data, 0555 /* I think it's like /app0*/);
-            QuasiFS::partition_ptr partition_dlc = QuasiFS::Partition::Create(entry.path(), 0555);
-            g_qfs->Mount(mount_point->data, partition_dlc, QuasiFS::MountOptions::MOUNT_RW);
+            qfs::partition_ptr partition_dlc = qfs::Partition::Create(
+                qfs::Directory::Create<qfs::DirectoryPFS>(), entry.path(), 0555);
+            g_qfs->Mount(mount_point->data, partition_dlc, qfs::MountOptions::MOUNT_RW);
             g_qfs->SyncHost(mount_point->data);
             g_qfs->Mount(mount_point->data, partition_dlc,
-                         QuasiFS::MountOptions::MOUNT_REMOUNT | QuasiFS::MountOptions::MOUNT_NOOPT);
+                         qfs::MountOptions::MOUNT_REMOUNT | qfs::MountOptions::MOUNT_NOOPT);
 
             return ORBIS_OK;
         }
