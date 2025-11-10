@@ -26,20 +26,20 @@ s32 HostIO_Base::LinkSymbolic(const fs::path& src, const fs::path& dst) { STUB()
 
 s32 HostIO_Base::Flush(const s32 fd) { STUB(); }
 s32 HostIO_Base::FSync(const s32 fd) { STUB(); }
-s64 HostIO_Base::LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) { STUB(); }
+s64 HostIO_Base::LSeek(const s32 fd, s64 offset, s32 whence) { STUB(); }
 s64 HostIO_Base::Tell(const s32 fd) { STUB(); }
 
 s32 HostIO_Base::Truncate(const fs::path& path, u64 size) { STUB(); }
 s32 HostIO_Base::FTruncate(const s32 fd, u64 size) { STUB(); }
 
 s64 HostIO_Base::Read(const s32 fd, void* buf, u64 count) { STUB(); }
-s64 HostIO_Base::PRead(const s32 fd, void* buf, u64 count, u64 offset) { STUB(); }
+s64 HostIO_Base::PRead(const s32 fd, void* buf, u64 count, s64 offset) { STUB(); }
 s64 HostIO_Base::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) { STUB(); }
 s64 HostIO_Base::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt,
                         s64 offset) { STUB(); }
 
 s64 HostIO_Base::Write(const s32 fd, const void* buf, u64 count) { STUB(); }
-s64 HostIO_Base::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) { STUB(); }
+s64 HostIO_Base::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) { STUB(); }
 s64 HostIO_Base::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) { STUB(); }
 s64 HostIO_Base::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt,
                          s64 offset) { STUB(); }

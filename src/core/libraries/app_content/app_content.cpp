@@ -112,8 +112,9 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             // We've located the correct folder.
 
             g_qfs->Operation.MKDir(mount_point->data, 0555 /* I think it's like /app0*/);
-            qfs::partition_ptr partition_dlc = qfs::Partition::Create(
-                qfs::Directory::Create<qfs::DirectoryPFS>(), entry.path(), 0555);
+            // Didn't verify FS type
+            qfs::partition_ptr partition_dlc =
+                qfs::Partition::Create(qfs::DirectoryPFS::Create(), entry.path(), 0555);
             g_qfs->Mount(mount_point->data, partition_dlc, qfs::MountOptions::MOUNT_RW);
             g_qfs->SyncHost(mount_point->data);
             g_qfs->Mount(mount_point->data, partition_dlc,

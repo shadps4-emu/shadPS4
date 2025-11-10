@@ -22,11 +22,15 @@ public:
     ConsoleDevice();
     ~ConsoleDevice();
 
+    static QuasiFS::dev_ptr Create() {
+        return std::make_shared<ConsoleDevice>();
+    }
+
     // clang-format off
     s64 read(void* buf, u64 count) override { DEVICE_STUB(); };
     s64 write(const void* buf, u64 count) override { DEVICE_STUB(); };
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); };
-    s64 lseek(s64 offset, int whence) override { DEVICE_STUB(); };
+    s64 lseek(s64 current, s64 offset, s32 whence) override { DEVICE_STUB(); };
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); };
     s32 fsync() override { DEVICE_STUB(); };
     s32 ftruncate(s64 length) override { DEVICE_STUB(); };

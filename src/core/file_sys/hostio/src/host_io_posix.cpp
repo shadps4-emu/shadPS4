@@ -68,9 +68,9 @@ s32 HostIO_POSIX::FSync(const s32 fd) {
     return 0 == status ? status : -errno;
 }
 
-s64 HostIO_POSIX::LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) {
+s64 HostIO_POSIX::LSeek(const s32 fd, s64 offset, s32 whence) {
     errno = 0;
-    s32 status = lseek(fd, offset, ToPOSIXSeekOrigin(origin));
+    s32 status = lseek(fd, offset, ToPOSIXSeekOrigin(whence));
     return status >= 0 ? status : -errno;
 }
 
@@ -96,7 +96,7 @@ s64 HostIO_POSIX::Read(const s32 fd, void* buf, u64 count) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     errno = 0;
     s32 status = pread(fd, buf, count, offset);
     return status >= 0 ? status : -errno;
@@ -134,7 +134,7 @@ s64 HostIO_POSIX::Write(const s32 fd, const void* buf, u64 count) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_POSIX::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
+s64 HostIO_POSIX::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     errno = 0;
     s32 status = pwrite(fd, buf, count, offset);
     return status >= 0 ? status : -errno;

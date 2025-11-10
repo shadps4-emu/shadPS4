@@ -783,12 +783,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/file_sys/directories/base_directory.cpp
-         src/core/file_sys/directories/base_directory.h
-         src/core/file_sys/directories/normal_directory.cpp
-         src/core/file_sys/directories/normal_directory.h
-         src/core/file_sys/directories/pfs_directory.cpp
-         src/core/file_sys/directories/pfs_directory.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h

@@ -85,7 +85,7 @@ public:
 
     s32 Flush(const s32 fd) override;
     s32 FSync(const s32 fd) override;
-    s64 LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) override;
+    s64 LSeek(const s32 fd, u64 offset, s32 whence) override;
     s64 Tell(const s32 fd) override;
 
     s32 Truncate(const fs::path& path, u64 size) override;

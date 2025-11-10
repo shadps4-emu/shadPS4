@@ -55,19 +55,19 @@ public:
 
     s32 Flush(const s32 fd) override;
     s32 FSync(const s32 fd) override;
-    s64 LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) override;
+    s64 LSeek(const s32 fd, s64 offset, s32 whence) override;
     s64 Tell(const s32 fd) override;
 
     s32 Truncate(const fs::path& path, u64 size) override;
     s32 FTruncate(const s32 fd, u64 size) override;
 
     s64 Read(const s32 fd, void* buf, u64 count) override;
-    s64 PRead(const s32 fd, void* buf, u64 count, u64 offset) override;
+    s64 PRead(const s32 fd, void* buf, u64 count, s64 offset) override;
     s64 ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) override;
     s64 PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) override;
 
     s64 Write(const s32 fd, const void* buf, u64 count) override;
-    s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset) override;
+    s64 PWrite(const s32 fd, const void* buf, u64 count, s64 offset) override;
     s64 WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) override;
     s64 PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) override;
 

@@ -16,6 +16,10 @@ public:
     VirtualFile() = default;
     ~VirtualFile() = default;
 
+    static std::shared_ptr<VirtualFile> Create() {
+        return std::make_shared<VirtualFile>();
+    }
+
     //
     // Working functions
     //

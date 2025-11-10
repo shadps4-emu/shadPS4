@@ -72,7 +72,7 @@ public:
         return tb;
     }
 
-    virtual s64 lseek(s64 offset, int whence) {
+    virtual s64 lseek(s64 current, s64 offset, s32 whence) {
         return -QUASI_EBADF;
     }
 

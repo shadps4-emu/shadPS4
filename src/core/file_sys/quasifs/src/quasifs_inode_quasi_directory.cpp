@@ -17,14 +17,14 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     return getdents(buf, count, offset, nullptr);
 }
 
-s32 QuasiDirectory::ftruncate(s64 length) {
-    return -QUASI_EISDIR;
-}
-
 s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     RebuildDirents();
     *sb = st;
     return 0;
+}
+
+s32 QuasiDirectory::ftruncate(s64 length) {
+    return -QUASI_EISDIR;
 }
 
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
@@ -123,6 +123,9 @@ void QuasiDirectory::RebuildDirents(void) {
         return;
     this->last_dirent_rebuild_time = this->st.st_mtim.tv_sec;
 
+    constexpr u32 dirent_meta_size = sizeof(dirent_t::d_fileno) + sizeof(dirent_t::d_type) +
+                                     sizeof(dirent_t::d_namlen) + sizeof(dirent_t::d_reclen);
+
     u64 dirent_size = 0;
     this->dirent_cache.clear();
 
@@ -135,10 +138,7 @@ void QuasiDirectory::RebuildDirents(void) {
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;
-        tmp.d_reclen =
-            Common::AlignUp(sizeof(tmp.d_fileno) + sizeof(tmp.d_type) + sizeof(tmp.d_namlen) +
-                                sizeof(tmp.d_reclen) + (tmp.d_namlen + 1),
-                            4);
+        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
 
         dirent_cache[dirent_size] = tmp;
         dirent_size += tmp.d_reclen;

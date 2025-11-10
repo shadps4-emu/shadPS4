@@ -58,7 +58,7 @@ s32 HostIO_Win32::FSync(const s32 fd) {
     return 0 == status ? 0 : -errno;
 }
 
-s64 HostIO_Win32::LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) {
+s64 HostIO_Win32::LSeek(const s32 fd, u64 offset, s32 whence) {
     errno = 0;
     s32 status = _lseeki64(fd, offset, ToWIN32SeekOrigin(origin));
     return status >= 0 ? status : -errno;

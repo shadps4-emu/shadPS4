@@ -78,7 +78,9 @@ struct File {
     }
 };
 
-enum class SeekOrigin : uint8_t { ORIGIN, CURRENT, END };
+namespace SeekOrigin {
+enum { ORIGIN = 0, CURRENT, END };
+}
 
 //
 // Access

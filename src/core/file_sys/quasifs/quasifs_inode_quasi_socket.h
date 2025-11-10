@@ -15,11 +15,8 @@ public:
     Socket();
     ~Socket();
 
-    template <typename T, typename... Args>
-    static dev_ptr Create(Args&&... args) {
-        if constexpr (std::is_base_of_v<Socket, T>)
-            return std::make_shared<T>(std::forward<Args>(args)...);
-        UNREACHABLE();
+    static socket_ptr Create() {
+        return std::make_shared<Socket>();
     }
 };
 

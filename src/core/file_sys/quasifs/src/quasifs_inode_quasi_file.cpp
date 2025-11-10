@@ -25,6 +25,12 @@ s64 QuasiFile::pwrite(const void* buf, size_t count, s64 offset) {
     return count;
 }
 
+s64 QuasiFile::lseek(s64 current, s64 offset, s32 whence) {
+    return ((SeekOrigin::ORIGIN == whence) * offset) +
+           ((SeekOrigin::CURRENT == whence) * (current + offset)) +
+           ((SeekOrigin::END == whence) * (this->st.st_size + offset));
+}
+
 s32 QuasiFile::ftruncate(s64 length) {
     if (length < 0)
         return -QUASI_EINVAL;

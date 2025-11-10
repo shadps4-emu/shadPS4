@@ -109,6 +109,7 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     handle->read = request_read;
     handle->write = request_write;
     handle->append = request_append;
+    handle->pos = 0;
     auto next_free_handle = qfs.GetFreeHandleNo();
     qfs.open_fd[next_free_handle] = handle;
     return next_free_handle;
@@ -471,7 +472,7 @@ s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::LSeek(const s32 fd, u64 offset, SeekOrigin origin) {
+s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
     if (fd < 0)
         return -QUASI_EBADF;
 
@@ -485,14 +486,14 @@ s64 QFS::OperationImpl::LSeek(const s32 fd, u64 offset, SeekOrigin origin) {
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
-        if (hio_status = qfs.hio_driver.LSeek(host_fd, offset, origin); hio_status < 0)
+        if (hio_status = qfs.hio_driver.LSeek(host_fd, offset, whence); hio_status < 0)
             // hosts operation must succeed in order to continue
             return hio_status;
         host_used = true;
     }
 
     qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-    vio_status = qfs.vio_driver.LSeek(fd, offset, origin);
+    vio_status = qfs.vio_driver.LSeek(fd, offset, whence);
     qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
@@ -550,7 +551,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     if (fd < 0)
         return -QUASI_EBADF;
 
@@ -687,7 +688,7 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
+s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     if (fd < 0)
         return -QUASI_EBADF;
 

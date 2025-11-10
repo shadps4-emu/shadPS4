@@ -34,16 +34,16 @@ public:
     virtual s32 FSync(const s32 fd);
     virtual s32 Truncate(const fs::path& path, u64 size);
     virtual s32 FTruncate(const s32 fd, u64 size);
-    virtual s64 LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin);
+    virtual s64 LSeek(const s32 fd, s64 offset, s32 whence);
     virtual s64 Tell(const s32 fd);
 
     virtual s64 Read(const s32 fd, void* buf, u64 count);
-    virtual s64 PRead(const s32 fd, void* buf, u64 count, u64 offset);
+    virtual s64 PRead(const s32 fd, void* buf, u64 count, s64 offset);
     virtual s64 ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt);
     virtual s64 PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
 
     virtual s64 Write(const s32 fd, const void* buf, u64 count);
-    virtual s64 PWrite(const s32 fd, const void* buf, u64 count, u64 offset);
+    virtual s64 PWrite(const s32 fd, const void* buf, u64 count, s64 offset);
     virtual s64 WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt);
     virtual s64 PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
 

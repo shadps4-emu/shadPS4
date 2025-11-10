@@ -40,14 +40,21 @@ public:
     Partition();
     Partition(const fs::path& host_root = "", const int root_permissions = 0755,
               const u32 ioblock_size = 4096);
-    Partition(dir_ptr root_directory = Directory::Create<Directory>(),
-              const fs::path& host_root = "", const int root_permissions = 0755,
-              const u32 ioblock_size = 4096);
+    Partition(dir_ptr root_directory = Directory::Create(), const fs::path& host_root = "",
+              const int root_permissions = 0755, const u32 ioblock_size = 4096);
     ~Partition() = default;
 
-    template <typename... Args>
-    static partition_ptr Create(Args&&... args) {
-        return std::make_shared<Partition>(std::forward<Args>(args)...);
+    static partition_ptr Create(const fs::path& host_root = "", const int root_permissions = 0755,
+                                const u32 ioblock_size = 4096) {
+        return std::make_shared<Partition>(Directory::Create(), host_root, root_permissions,
+                                           ioblock_size);
+    }
+
+    static partition_ptr Create(dir_ptr root_directory = Directory::Create(),
+                                const fs::path& host_root = "", const int root_permissions = 0755,
+                                const u32 ioblock_size = 4096) {
+        return std::make_shared<Partition>(root_directory, host_root, root_permissions,
+                                           ioblock_size);
     }
 
     // empty - invalid, not empty - safe
@@ -71,17 +78,16 @@ public:
     // create file at path (creates entry in parent dir). returns 0 or negative errno
     template <typename T>
     int touch(dir_ptr parent, const std::string& name) {
-        if constexpr (!std::is_base_of_v<Inode, T>)
+        if constexpr (std::is_base_of_v<Inode, T>)
             return touch(parent, name, T::Create());
+        UNREACHABLE_MSG(" QuasiFS:Partition:Touch Created element must derive from Inode");
         static_assert(std::is_base_of_v<Inode, T>,
                       " QuasiFS:Partition:Touch Created element must derive from Inode");
+        return -666;
     }
     int touch(dir_ptr parent, const std::string& name, inode_ptr child);
 
     int mkdir(dir_ptr parent, const std::string& name);
-    int mkdir(dir_ptr parent, const std::string& name, dir_ptr child);
-
-    int rmdir(fs::path path);
     int rmdir(dir_ptr parent, const std::string& name);
 
     int link(inode_ptr source, dir_ptr destination_parent, const std::string& name);

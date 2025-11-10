@@ -46,24 +46,27 @@ public:
         return out;
     }
 
-    template <typename T, typename... Args>
-    static dir_ptr Create(Args&&... args) {
-        if constexpr (std::is_base_of_v<QuasiDirectory, T>)
-            return std::make_shared<T>(std::forward<Args>(args)...);
-        UNREACHABLE();
+    // Create out of thin air
+    static dir_ptr Create() {
+        return std::make_shared<QuasiDirectory>();
+    }
+
+    // Allow "inheriting" type of directory
+    virtual dir_ptr Spawn() const {
+        return std::make_shared<QuasiDirectory>();
     }
 
     //
     // Inode overrides
     //
 
-    s64 pread(void* buf, u64 count, s64 offset) override;
+    virtual s64 pread(void* buf, u64 count, s64 offset) override;
     // s64 pwrite(const void* buf, size_t count, u64 offset) override;
 
-    s32 ftruncate(s64 length) final override;
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override;
+    s32 ftruncate(s64 length) final override;
 
-    s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
+    virtual s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
 
     //
     // Dir-specific

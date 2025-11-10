@@ -29,16 +29,25 @@ protected:
 #pragma pack(pop)
 
 private:
-    // void RebuildDirents(void);
+    void RebuildDirents(void);
+    s64 dirents_size{};
 
 public:
     DirectoryPFS();
     ~DirectoryPFS();
 
-    s64 pread(void* buf, u64 count, s64 offset) override;
-    
-    s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
+    static dir_ptr Create() {
+        return std::make_shared<DirectoryPFS>();
+    }
 
+    virtual dir_ptr Spawn() const override {
+        return std::make_shared<DirectoryPFS>();
+    }
+
+    s64 pread(void* buf, u64 count, s64 offset) override;
+
+    s64 lseek(s64 current, s64 offset, s32 whence) override;
+    s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
 };
 
 } // namespace QuasiFS

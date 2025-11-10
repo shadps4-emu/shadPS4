@@ -15,11 +15,8 @@ public:
     Device();
     ~Device();
 
-    template <typename T, typename... Args>
-    static dev_ptr Create(Args&&... args) {
-        if constexpr (std::is_base_of_v<Device, T>)
-            return std::make_shared<T>(std::forward<Args>(args)...);
-        UNREACHABLE();
+    static dev_ptr Create() {
+        return std::make_shared<Device>();
     }
 
     virtual s64 read(void* buf, u64 count);

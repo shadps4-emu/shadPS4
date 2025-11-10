@@ -43,8 +43,7 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
         if ((flags & QUASI_O_CREAT) == 0)
             return -QUASI_ENOENT;
 
-        target =
-            this->host_bound ? QuasiFile::Create<RegularFile>() : QuasiFile::Create<VirtualFile>();
+        target = this->host_bound ? RegularFile::Create() : VirtualFile::Create();
         target->chmod(mode);
         if (0 != part->touch(parent, this->res->leaf, target))
             // touch failed in target directory, issue with resolve() is most likely
@@ -147,7 +146,7 @@ s32 HostIO_Virtual::FSync(const s32 fd) {
     return handle->node->fsync();
 }
 
-s64 HostIO_Virtual::LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) {
+s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
     if (nullptr == handle)
         return -QUASI_EINVAL;
 
@@ -156,17 +155,13 @@ s64 HostIO_Virtual::LSeek(const s32 fd, u64 offset, QuasiFS::SeekOrigin origin) 
     if (nullptr == node)
         return -QUASI_EBADF;
 
-    auto ptr = &handle->pos;
+    s64 new_position = node->lseek(handle->pos, offset, whence);
 
-    u64 new_ptr = ((SeekOrigin::ORIGIN == origin) * offset) +
-                  ((SeekOrigin::CURRENT == origin) * (*(ptr) + offset)) +
-                  ((SeekOrigin::END == origin) * (node->st.st_size + offset));
-
-    if (new_ptr < 0)
+    if (new_position < 0)
         return -QUASI_EINVAL;
 
-    *ptr = new_ptr;
-    return *ptr;
+    handle->pos = new_position;
+    return handle->pos;
 }
 
 s64 HostIO_Virtual::Tell(const s32 fd) {
@@ -212,7 +207,7 @@ s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
     return br;
 }
 
-s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     if (nullptr == handle)
         return -QUASI_EINVAL;
 
@@ -257,7 +252,7 @@ s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
     return bw;
 }
 
-s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
+s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     if (nullptr == handle)
         return -QUASI_EBADF;
 
@@ -300,8 +295,7 @@ s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
     if (nullptr == this->res)
         return -QUASI_EINVAL;
 
-    dir_ptr new_dir = Directory::Create<Directory>();
-    return this->res->mountpoint->mkdir(this->res->parent, this->res->leaf, new_dir);
+    return this->res->mountpoint->mkdir(this->res->parent, this->res->leaf);
 }
 
 s32 HostIO_Virtual::RMDir(const fs::path& path) {

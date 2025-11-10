@@ -114,7 +114,7 @@ void printTree(const dir_ptr& node, const std::string& name, int depth) {
 }
 
 QFS::QFS(const fs::path& host_path) {
-    this->rootfs = Partition::Create(Directory::Create<Directory>(), host_path);
+    this->rootfs = Partition::Create(Directory::Create(), host_path);
     this->root = rootfs->GetRoot();
 
     mount_t mount_options = {
@@ -416,18 +416,17 @@ void QFS::SyncHostImpl(partition_ptr part) {
 
             dir_ptr parent_dir =
                 res.node->is_dir() ? std::static_pointer_cast<Directory>(res.node) : nullptr;
-            inode_ptr new_inode{};
 
             if (entry->is_directory()) {
-                new_inode = Directory::Create<Directory>();
-                part->mkdir(parent_dir, leaf, std::static_pointer_cast<Directory>(new_inode));
+                part->mkdir(parent_dir, leaf);
             } else if (entry->is_regular_file()) {
-                new_inode = QuasiFile::Create<RegularFile>();
-                part->touch(parent_dir, leaf, std::static_pointer_cast<RegularFile>(new_inode));
+                part->touch<RegularFile>(parent_dir, leaf);
             } else {
                 LOG_ERROR(Kernel_Fs, "Unsupported host file type: {}", entry_path.string());
                 continue;
             }
+
+            inode_ptr new_inode = parent_dir->lookup(leaf);
 
             // this should populate **everything** immediately
             // this is a note to self TODO:

@@ -12,16 +12,15 @@
 
 namespace QuasiFS {
 
-Partition::Partition() : Partition(Directory::Create<Directory>(), "", 0755, 4096) {}
+Partition::Partition() : Partition(Directory::Create(), "", 0755, 4096) {}
 
 Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 ioblock_size)
-    : Partition(Directory::Create<Directory>(), host_root, root_permissions, ioblock_size) {}
+    : Partition(dir_ptr(), host_root, root_permissions, ioblock_size) {}
 
 Partition::Partition(dir_ptr root_directory, const fs::path& host_root, const int root_permissions,
                      const u32 ioblock_size)
-    : block_id(next_block_id++), host_root(host_root.lexically_normal()),
+    : root(root_directory), block_id(next_block_id++), host_root(host_root.lexically_normal()),
       ioblock_size(ioblock_size) {
-    this->root = Directory::Create<Directory>();
     // clear defaults, write
     chmod(this->root, root_permissions);
     IndexInode(this->root);
@@ -233,12 +232,11 @@ int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
 }
 
 int Partition::mkdir(dir_ptr parent, const std::string& name) {
-    return mkdir(parent, name, Directory::Create<Directory>());
-}
-
-int Partition::mkdir(dir_ptr parent, const std::string& name, dir_ptr child) {
     if (nullptr == parent)
         return -QUASI_ENOENT;
+
+    dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
+    dir_ptr child = real_parent->Spawn();
 
     child->st.st_blksize = ioblock_size;
     int ret = parent->link(name, child);
@@ -246,20 +244,9 @@ int Partition::mkdir(dir_ptr parent, const std::string& name, dir_ptr child) {
     if (ret == 0)
         IndexInode(child);
 
-    auto real_parent = parent->mounted_root ? parent->mounted_root : parent;
     mkrelative(real_parent, child);
 
     return ret;
-}
-
-int Partition::rmdir(fs::path path) {
-    Resolved res;
-    int resolve_status = this->Resolve(path, res);
-
-    if (resolve_status != 0)
-        return resolve_status;
-
-    return this->rmdir(res.parent, res.leaf);
 }
 
 int Partition::rmdir(dir_ptr parent, const std::string& name) {

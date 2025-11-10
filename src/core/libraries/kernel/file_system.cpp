@@ -151,7 +151,7 @@ s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 }
 
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
-    qfs::SeekOrigin origin{};
+    s32 origin{};
     if (whence == 0) {
         origin = qfs::SeekOrigin::ORIGIN;
     } else if (whence == 1) {

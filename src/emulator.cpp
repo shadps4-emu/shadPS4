@@ -94,9 +94,8 @@ Emulator::~Emulator() {}
 void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder, 0555, 65536);
-    // qfs::partition_ptr partition_app0 = qfs::Partition::Create(
-    //     qfs::Directory::Create<qfs::DirectoryPFS>(), game_folder, 0555, 512, 65536);
+    qfs::partition_ptr partition_app0 =
+        qfs::Partition::Create(qfs::DirectoryPFS::Create(), game_folder, 0555, 65536);
     qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 16384);
     qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 32768);
     qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 32768);
@@ -127,9 +126,9 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     //
 
     qfs->Operation.MKDir("/dev/fd");
-    qfs->ForceInsert("/dev/fd", "0", qfs::Device::Create<Devices::ZeroDevice>());
-    qfs->ForceInsert("/dev/fd", "1", qfs::Device::Create<Devices::Logger>("stdout", false));
-    qfs->ForceInsert("/dev/fd", "2", qfs::Device::Create<Devices::Logger>("stderr", true));
+    qfs->ForceInsert("/dev/fd", "0", Devices::ZeroDevice::Create());
+    qfs->ForceInsert("/dev/fd", "1", Devices::Logger::Create("stdout", false));
+    qfs->ForceInsert("/dev/fd", "2", Devices::Logger::Create("stderr", true));
     // std* is unavailable from within the app???
     qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
@@ -138,14 +137,14 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/deci_stdout");
     qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/deci_stderr");
 
-    qfs->ForceInsert("/dev", "console", qfs::Device::Create<Devices::ConsoleDevice>());
-    qfs->ForceInsert("/dev", "deci_tty6", qfs::Device::Create<Devices::DeciTty6Device>());
-    qfs->ForceInsert("/dev", "random", qfs::Device::Create<Devices::RandomDevice>());
-    qfs->ForceInsert("/dev", "urandom", qfs::Device::Create<Devices::RandomDevice>());
-    qfs->ForceInsert("/dev", "srandom", qfs::Device::Create<Devices::SRandomDevice>());
-    qfs->ForceInsert("/dev", "zero", qfs::Device::Create<Devices::ZeroDevice>());
-    qfs->ForceInsert("/dev", "null", qfs::Device::Create<Devices::NullDevice>());
-    qfs->ForceInsert("/dev", "rng", qfs::Device::Create<Devices::RngDevice>());
+    qfs->ForceInsert("/dev", "console", Devices::ConsoleDevice::Create());
+    qfs->ForceInsert("/dev", "deci_tty6", Devices::DeciTty6Device::Create());
+    qfs->ForceInsert("/dev", "random", Devices::RandomDevice::Create());
+    qfs->ForceInsert("/dev", "urandom", Devices::RandomDevice::Create());
+    qfs->ForceInsert("/dev", "srandom", Devices::SRandomDevice::Create());
+    qfs->ForceInsert("/dev", "zero", Devices::ZeroDevice::Create());
+    qfs->ForceInsert("/dev", "null", Devices::NullDevice::Create());
+    qfs->ForceInsert("/dev", "rng", Devices::RngDevice::Create());
 
     qfs->Operation.Chmod("/dev/deci_stderr", 0666);
     qfs->Operation.Chmod("/dev/deci_stdout", 0666);
