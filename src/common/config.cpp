@@ -4,8 +4,9 @@
 #include <fstream>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <fmt/core.h>
-#include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
 #include "common/assert.h"
@@ -145,6 +146,8 @@ static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static std::filesystem::path sys_modules_path = {};
 static std::filesystem::path sys_font_path = {};
+static std::string sys_font_fallback_name = {};
+static std::unordered_map<std::string, std::filesystem::path> system_font_overrides;
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -249,6 +252,36 @@ std::filesystem::path getSysFontPath() {
 
 void setSysFontPath(const std::filesystem::path& path) {
     sys_font_path = path;
+}
+
+std::optional<std::filesystem::path> getSystemFontOverride(std::string_view key) {
+    if (key.empty()) {
+        return std::nullopt;
+    }
+    auto it = system_font_overrides.find(std::string(key));
+    if (it == system_font_overrides.end()) {
+        return std::nullopt;
+    }
+    return it->second;
+}
+
+std::string getSystemFontFallbackName() {
+    return sys_font_fallback_name;
+}
+
+void setSystemFontFallbackName(const std::string& name) {
+    sys_font_fallback_name = name;
+}
+
+void setSystemFontOverride(std::string_view key, const std::filesystem::path& path) {
+    if (key.empty()) {
+        return;
+    }
+    system_font_overrides[std::string(key)] = path;
+}
+
+void clearSystemFontOverrides() {
+    system_font_overrides.clear();
 }
 
 int getVolumeSlider() {
@@ -866,6 +899,10 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         return;
     }
 
+    if (!is_game_specific) {
+        system_font_overrides.clear();
+    }
+
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
@@ -889,7 +926,43 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
         sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
+        // Accept alias without trailing 's'
+        sys_modules_path = toml::find_fs_path_or(general, "sysModulePath", sys_modules_path);
+        // Prefer 'sysFontPath'; accept 'SysFontPath' for compatibility
         sys_font_path = toml::find_fs_path_or(general, "sysFontPath", sys_font_path);
+        sys_font_path = toml::find_fs_path_or(general, "SysFontPath", sys_font_path);
+    }
+
+    if (data.contains("SystemFonts")) {
+        const toml::value& fonts = data.at("SystemFonts");
+        if (fonts.is_table()) {
+            // Read fallback (lowercase preferred), accept 'Fallback'/'FallbackFontName' for compat
+            if (fonts.contains("fallback")) {
+                const auto& v = fonts.at("fallback");
+                if (v.is_string()) {
+                    sys_font_fallback_name = toml::get<std::string>(v);
+                }
+            } else if (fonts.contains("Fallback")) {
+                const auto& v = fonts.at("Fallback");
+                if (v.is_string()) {
+                    sys_font_fallback_name = toml::get<std::string>(v);
+                }
+            } else if (fonts.contains("FallbackFontName")) {
+                const auto& v = fonts.at("FallbackFontName");
+                if (v.is_string()) {
+                    sys_font_fallback_name = toml::get<std::string>(v);
+                }
+            }
+            for (const auto& [name, value] : fonts.as_table()) {
+                if (name == "fallback" || name == "Fallback" || name == "FallbackFontName") {
+                    continue;
+                }
+                if (value.is_string()) {
+                    system_font_overrides[name] =
+                        std::filesystem::path(toml::get<std::string>(value));
+                }
+            }
+        }
     }
 
     if (data.contains("Input")) {
@@ -1159,7 +1232,22 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         // Non game-specific entries
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
+        // Save using 'sysFontPath' to match style
         data["General"]["sysFontPath"] = string{fmt::UTF(sys_font_path.u8string()).data};
+        {
+            toml::table fonts_table;
+            if (!sys_font_fallback_name.empty()) {
+                fonts_table["fallback"] = sys_font_fallback_name;
+            }
+            for (const auto& [name, path_override] : system_font_overrides) {
+                fonts_table[name] = string{fmt::UTF(path_override.u8string()).data};
+            }
+            if (!fonts_table.empty()) {
+                data["SystemFonts"] = fonts_table;
+            } else if (data.is_table()) {
+                data.as_table().erase("SystemFonts");
+            }
+        }
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};

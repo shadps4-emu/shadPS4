@@ -382,19 +382,23 @@ s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectSlant(OrbisFontStyleFrame* styleFrame
 s32 PS4_SYSV_ABI sceFontStyleFrameGetEffectWeight(OrbisFontStyleFrame* fontStyleFrame,
                                                   float* weightXScale, float* weightYScale,
                                                   uint32_t* mode);
-s32 PS4_SYSV_ABI sceFontStyleFrameGetResolutionDpi();
-s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel(OrbisFontStyleFrame* styleFrame, float* w,
+s32 PS4_SYSV_ABI sceFontStyleFrameGetResolutionDpi(const OrbisFontStyleFrame* styleFrame,
+                                                   u32* h_dpi, u32* v_dpi);
+s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePixel(const OrbisFontStyleFrame* styleFrame, float* w,
                                                 float* h);
-s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePoint();
-s32 PS4_SYSV_ABI sceFontStyleFrameInit();
-s32 PS4_SYSV_ABI sceFontStyleFrameSetEffectSlant();
-s32 PS4_SYSV_ABI sceFontStyleFrameSetEffectWeight();
-s32 PS4_SYSV_ABI sceFontStyleFrameSetResolutionDpi();
-s32 PS4_SYSV_ABI sceFontStyleFrameSetScalePixel();
-s32 PS4_SYSV_ABI sceFontStyleFrameSetScalePoint();
-s32 PS4_SYSV_ABI sceFontStyleFrameUnsetEffectSlant();
-s32 PS4_SYSV_ABI sceFontStyleFrameUnsetEffectWeight();
-s32 PS4_SYSV_ABI sceFontStyleFrameUnsetScale();
+s32 PS4_SYSV_ABI sceFontStyleFrameGetScalePoint(const OrbisFontStyleFrame* styleFrame, float* w,
+                                                float* h);
+s32 PS4_SYSV_ABI sceFontStyleFrameInit(OrbisFontStyleFrame* styleFrame);
+s32 PS4_SYSV_ABI sceFontStyleFrameSetEffectSlant(OrbisFontStyleFrame* styleFrame, float slantRatio);
+s32 PS4_SYSV_ABI sceFontStyleFrameSetEffectWeight(OrbisFontStyleFrame* styleFrame,
+                                                  float weightXScale, float weightYScale, u32 mode);
+s32 PS4_SYSV_ABI sceFontStyleFrameSetResolutionDpi(OrbisFontStyleFrame* styleFrame, u32 h_dpi,
+                                                   u32 v_dpi);
+s32 PS4_SYSV_ABI sceFontStyleFrameSetScalePixel(OrbisFontStyleFrame* styleFrame, float w, float h);
+s32 PS4_SYSV_ABI sceFontStyleFrameSetScalePoint(OrbisFontStyleFrame* styleFrame, float w, float h);
+s32 PS4_SYSV_ABI sceFontStyleFrameUnsetEffectSlant(OrbisFontStyleFrame* styleFrame);
+s32 PS4_SYSV_ABI sceFontStyleFrameUnsetEffectWeight(OrbisFontStyleFrame* styleFrame);
+s32 PS4_SYSV_ABI sceFontStyleFrameUnsetScale(OrbisFontStyleFrame* styleFrame);
 s32 PS4_SYSV_ABI sceFontSupportExternalFonts(OrbisFontLib library, u32 fontMax, u32 formats);
 s32 PS4_SYSV_ABI sceFontSupportGlyphs();
 s32 PS4_SYSV_ABI sceFontSupportSystemFonts(OrbisFontLib library);

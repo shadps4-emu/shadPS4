@@ -4,6 +4,8 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
+#include <string_view>
 #include <vector>
 #include "types.h"
 
@@ -150,6 +152,11 @@ std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
 std::filesystem::path getSysFontPath();
 void setSysFontPath(const std::filesystem::path& path);
+std::optional<std::filesystem::path> getSystemFontOverride(std::string_view key);
+std::string getSystemFontFallbackName();
+void setSystemFontFallbackName(const std::string& name);
+void setSystemFontOverride(std::string_view key, const std::filesystem::path& path);
+void clearSystemFontOverrides();
 bool getLoadAutoPatches();
 void setLoadAutoPatches(bool enable);
 
