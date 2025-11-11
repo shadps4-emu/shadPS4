@@ -68,6 +68,7 @@ class ElfInfo {
     std::string app_ver{};
     u32 firmware_ver = 0;
     u32 raw_firmware_ver = 0;
+    u32 sdk_ver = 0;
     PSFAttributes psf_attributes{};
 
     std::filesystem::path splash_path{};
@@ -115,6 +116,11 @@ public:
     [[nodiscard]] u32 RawFirmwareVer() const {
         ASSERT(initialized);
         return raw_firmware_ver;
+    }
+
+    [[nodiscard]] u32 CompiledSdkVer() const {
+        ASSERT(initialized);
+        return sdk_ver;
     }
 
     [[nodiscard]] const PSFAttributes& GetPSFAttributes() const {

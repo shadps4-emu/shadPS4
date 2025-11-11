@@ -36,9 +36,8 @@ Go through the Git for Windows installation as normal
 
 1. Open up Visual Studio, select `Open a local folder` and select the folder with the shadPS4 source code. The folder should contain `CMakeLists.txt`
 2. Change Clang x64 Debug to Clang x64 Release if you want a regular, non-debug build.
-3. If you want to build shadPS4 with the Qt Gui, simply select Clang x64 Release with Qt instead.
-4. Change the project to build to shadps4.exe
-5. Build -> Build All
+3. Change the project to build to shadps4.exe
+4. Build -> Build All
 
 Your shadps4.exe will be in `C:\path\to\source\Build\x64-Clang-Release\`
 
