@@ -383,6 +383,15 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
     if (nullptr == node)
         return -QUASI_EBADF;
 
+    // GetDents must have read size equal to or greater than block size for that FS
+    // In most cases it's 512 bytes
+    // Not sure yet if other partitions share the same size
+    if (count < 512) {
+        LOG_ERROR(Kernel_Fs,
+                  "(Partial STUB) check for block size associated. Read size must be greater");
+        return -QUASI_EINVAL;
+    }
+
     s64 br = node->getdents(buf, count, handle->pos, basep);
 
     if (br > 0)

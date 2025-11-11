@@ -62,7 +62,7 @@ public:
 
     virtual s64 pread(void* buf, u64 count, s64 offset) override;
     // s64 pwrite(const void* buf, size_t count, u64 offset) override;
-
+    s64 lseek(s64 current, s64 offset, s32 whence) override;
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override;
     s32 ftruncate(s64 length) final override;
 

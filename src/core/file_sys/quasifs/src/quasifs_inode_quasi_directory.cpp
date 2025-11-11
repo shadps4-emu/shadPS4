@@ -17,6 +17,20 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     return getdents(buf, count, offset, nullptr);
 }
 
+s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
+    LOG_ERROR(Kernel_Fs, "(STUB)");
+    switch (whence) {
+    case 0:
+        return offset;
+    case 1:
+        return current + offset;
+    case 2:
+        return this->st.st_size + offset;
+    }
+    UNREACHABLE_MSG("lseek with unknown whence {}", whence);
+    return -QUASI_ENOSYS;
+}
+
 s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     RebuildDirents();
     *sb = st;
@@ -29,8 +43,12 @@ s32 QuasiDirectory::ftruncate(s64 length) {
 
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
+    memset(buf, 0, count);
 
-    auto it = dirent_cache.lower_bound(offset);
+    if (offset >= this->st.st_size)
+        return 0;
+
+    auto it = dirent_cache.upper_bound(offset);
 
     if (it == dirent_cache.end())
         return 0;
@@ -140,8 +158,8 @@ void QuasiDirectory::RebuildDirents(void) {
         tmp.d_type = node->type() >> 12;
         tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
 
-        dirent_cache[dirent_size] = tmp;
         dirent_size += tmp.d_reclen;
+        dirent_cache[dirent_size] = tmp;
     }
 
     this->st.st_size = dirent_size;

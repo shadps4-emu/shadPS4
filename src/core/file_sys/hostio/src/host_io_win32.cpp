@@ -58,7 +58,7 @@ s32 HostIO_Win32::FSync(const s32 fd) {
     return 0 == status ? 0 : -errno;
 }
 
-s64 HostIO_Win32::LSeek(const s32 fd, u64 offset, s32 whence) {
+s64 HostIO_Win32::LSeek(const s32 fd, s64 offset, s32 whence) {
     errno = 0;
     s32 status = _lseeki64(fd, offset, ToWIN32SeekOrigin(origin));
     return status >= 0 ? status : -errno;
@@ -90,7 +90,7 @@ s64 HostIO_Win32::Read(const s32 fd, void* buf, u64 count) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_Win32::PRead(const s32 fd, void* buf, u64 count, u64 offset) {
+s64 HostIO_Win32::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     errno = 0;
     s64 bak = LSeek(fd, 0, SeekOrigin::CURRENT);
     if (bak < 0)
@@ -116,7 +116,7 @@ s64 HostIO_Win32::Write(const s32 fd, const void* buf, u64 count) {
     return status >= 0 ? status : -errno;
 }
 
-s64 HostIO_Win32::PWrite(const s32 fd, const void* buf, u64 count, u64 offset) {
+s64 HostIO_Win32::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     errno = 0;
     s64 bak = LSeek(fd, 0, SeekOrigin::CURRENT);
     if (bak < 0)
