@@ -46,8 +46,6 @@ s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
         cumulative_offset += dirent.d_reclen;
     }
 
-    *reclen_location += Common::AlignUp(cumulative_offset, count) - cumulative_offset;
-
     return count;
 }
 
@@ -77,7 +75,7 @@ s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
 s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
     memset(buf, 0, count);
- 
+
     auto it = dirent_cache.lower_bound(offset);
 
     if (it == dirent_cache.end())
