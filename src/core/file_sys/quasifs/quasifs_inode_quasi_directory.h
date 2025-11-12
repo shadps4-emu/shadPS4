@@ -31,7 +31,6 @@ protected:
 
     void RebuildDirents(void);
     time_t last_dirent_rebuild_time{0};
-    std::map<s64, dirent_t> dirent_cache{};
     std::vector<u64> dirent_offset{};
     std::vector<u8> dirent_cache_bin{};
 

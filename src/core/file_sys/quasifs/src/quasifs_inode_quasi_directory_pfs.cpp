@@ -19,33 +19,23 @@ s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
     RebuildDirents();
     memset(buf, 0, count);
 
-    auto it = dirent_cache.lower_bound(offset);
+    // data is contiguous. i think that's how it's said
+    // anyway, everything goes raw
+    // always returns count
+    // always zeroes buffer
+    // no cut-off, will just spew out data whenever you ask for it
 
-    if (it == dirent_cache.end())
-        return 0;
+    if (offset >= this->dirent_cache_bin.size())
+        return count;
 
-    u64 cumulative_offset = 0;
-    u32* reclen_location = nullptr;
-    for (; it != dirent_cache.end(); it++) {
-        auto dirent = it->second;
-        if (dirent.d_reclen + cumulative_offset > count)
-            break;
+    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    // bytes_to_read but retains the same variable lmao
+    if (bytes_available >= count)
+        bytes_available = count;
 
-        auto partial_base = static_cast<u8*>(buf) + cumulative_offset;
-        auto _fileno = reinterpret_cast<u32*>(partial_base);
-        auto _type = reinterpret_cast<u32*>(partial_base) + 1;
-        auto _namlen = reinterpret_cast<u32*>(partial_base) + 2;
-        reclen_location = reinterpret_cast<u32*>(partial_base) + 3;
+    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
 
-        *_fileno = dirent.d_fileno;
-        *_type = dirent.d_type;
-        *_namlen = dirent.d_namlen;
-        *reclen_location = dirent.d_reclen;
-
-        memcpy(reinterpret_cast<u8*>(reclen_location + 1), &dirent.d_name, dirent.d_namlen);
-        cumulative_offset += dirent.d_reclen;
-    }
-
+    // always returns count
     return count;
 }
 
@@ -58,10 +48,11 @@ s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
         if ((current + offset) >= dirents_size)
             return current + offset;
         {
-            auto _tmp = dirent_cache.lower_bound(current + offset);
-            if (_tmp == dirent_cache.end())
+            auto _tmp =
+                std::lower_bound(dirent_offset.begin(), dirent_offset.end(), current + offset);
+            if (_tmp == dirent_offset.end())
                 return -QUASI_EINVAL;
-            return _tmp->first;
+            return *_tmp;
         }
         break;
     case 2:
@@ -76,29 +67,17 @@ s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
     memset(buf, 0, count);
 
-    auto it = dirent_cache.lower_bound(offset);
+    // honestly i have no idea on how to implement this
+    // buffer behaves like a regular directory
+    // variable sizes are same as dirent_t, but data is still aligned to 8 bytes
+    // initial call pulls all COMPLETE dirents (like base), but returns real amount of bytes
+    // for some reason, subsequent calls return 0
 
-    if (it == dirent_cache.end())
-        return 0;
-
-    u64 cumulative_offset = 0;
-    for (; it != dirent_cache.end(); it++) {
-        auto dirent = it->second;
-
-        if (dirent.d_reclen + cumulative_offset > count)
-            break;
-
-        memcpy(static_cast<u8*>(buf) + cumulative_offset, &dirent, dirent.d_reclen);
-        cumulative_offset += dirent.d_reclen;
-    }
-
-    if (basep)
-        *basep = cumulative_offset;
-
-    return cumulative_offset;
+    return count;
 }
 
 void DirectoryPFS::RebuildDirents(void) {
+
     // adding/removing entries changes mtime
     if (this->st.st_mtim.tv_sec == this->last_dirent_rebuild_time)
         return;
@@ -109,10 +88,11 @@ void DirectoryPFS::RebuildDirents(void) {
                                      sizeof(dirent_pfs_t::d_reclen);
 
     u64 dirent_size = 0;
-    this->dirent_cache.clear();
+    this->dirent_cache_bin.clear();
+    this->dirent_offset.clear();
 
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
-        dirent_t tmp{};
+        dirent_pfs_t tmp{};
         inode_ptr node = entry->second;
         std::string name = entry->first;
 
@@ -122,11 +102,13 @@ void DirectoryPFS::RebuildDirents(void) {
         tmp.d_type = node->type() >> 12;
         tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 8);
 
-        dirent_cache[dirent_size] = tmp;
+        auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
+        dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
+        dirent_offset.push_back(dirent_size);
         dirent_size += tmp.d_reclen;
     }
 
-    this->dirents_size = dirent_size;
+    this->st.st_size = dirent_size;
 
     return;
 }

@@ -46,6 +46,10 @@ s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
     memset(buf, 0, count);
 
+    // Copies as many COMPLETE dirents as possible
+    // If they don't fit - fill with 0s
+    // Last dirent has its size adjusted to fill the rest of the buffer
+
     if (offset >= this->st.st_size)
         return 0;
 
@@ -63,16 +67,8 @@ s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     u8* dirent_data = static_cast<u8*>(dirent_cache_bin.data());
     u8* buffer = static_cast<u8*>(buf);
 
-    for (; _start != dirent_offset.end(); _start++) {
-        if ((*reinterpret_cast<u16*>(dirent_data + 4) + *_start) < offset)
-            continue;
-        real_start = *_start;
-    }
-
-    
-
-
     u64 bytes_to_read = 0;
+    // track last reclen to update after writing
     u64 reclen_offset = 0;
     // there's always data left
     for (auto _end_reverse = std::make_reverse_iterator(_end); _end_reverse != dirent_offset.rend();
@@ -84,12 +80,10 @@ s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
             break;
     }
 
-    std::copy(dirent_cache_bin.begin() + *_start,
-              dirent_cache_bin.begin() + *_start + bytes_to_read, reinterpret_cast<u8*>(buf));
+    memcpy(reinterpret_cast<u8*>(buf), dirent_cache_bin.data() + *_start, bytes_to_read);
 
-    u8* tmp = static_cast<u8*>(buf);
-    *(reinterpret_cast<u16*>(tmp + reclen_offset)) +=
-        Common::AlignUp(bytes_to_read, count) - bytes_to_read;
+    u8* tmp = static_cast<u8*>(buf) + reclen_offset - *_start;
+    *(reinterpret_cast<u16*>(tmp)) += count - bytes_to_read;
 
     if (basep)
         *basep = count;
