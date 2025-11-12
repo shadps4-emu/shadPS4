@@ -366,7 +366,7 @@ public:
         const auto desc = FillDeviceDescriptor();
         ASSERT(desc);
 
-        const auto fake = static_cast<UsbDevice*>(calloc(1, sizeof(UsbDevice*)));
+        const auto fake = static_cast<UsbDevice*>(calloc(1, sizeof(UsbDevice)));
         fake->bus_number = 0;
         fake->port_number = 0;
         fake->device_address = 0;
