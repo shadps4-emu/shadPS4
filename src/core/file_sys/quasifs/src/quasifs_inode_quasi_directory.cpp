@@ -15,11 +15,35 @@ QuasiDirectory::QuasiDirectory() {
 }
 
 s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
+    RebuildDirents();
+
+    // complete dirents are divided into 512 (0-filled) byte blocks
+    // if more than 512 bytes are read, it draws bytes from the next block
+    // anything after last dirent is zeroed-out
+    // reclen of last complete dirent (in aligned segment) has size filling up to the end of the
+    // segment
+
+    if (offset >= this->dirent_cache_bin.size())
+        return 0;
+
+    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    // bytes_to_read but retains the same variable lmao
+    if (bytes_available >= count)
+        bytes_available = count;
+
+    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
+
+    // always returns count
+    return count;
+
     return getdents(buf, count, offset, nullptr);
 }
 
 s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
     LOG_ERROR(Kernel_Fs, "(STUB)");
+
+    // TBD, most likely acts like a file would
+
     switch (whence) {
     case 0:
         return offset;
@@ -46,9 +70,9 @@ s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
     memset(buf, 0, count);
 
-    // Copies as many COMPLETE dirents as possible
-    // If they don't fit - fill with 0s
-    // Last dirent has its size adjusted to fill the rest of the buffer
+    // always returns 512 bytes
+    // forces handle ptr to increment in multiples of 512
+    // returns each memory-aligned segment
 
     if (offset >= this->st.st_size)
         return 0;
@@ -157,7 +181,6 @@ void QuasiDirectory::RebuildDirents(void) {
 
     u64 dirent_size = 0;
     this->dirent_cache_bin.clear();
-    this->dirent_offset.clear();
 
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
         dirent_t tmp{};
@@ -172,11 +195,11 @@ void QuasiDirectory::RebuildDirents(void) {
 
         auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
         dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
-        dirent_offset.push_back(dirent_size);
         dirent_size += tmp.d_reclen;
     }
 
-    this->st.st_size = dirent_size;
+    // directory size is aligned to 512
+    this->st.st_size = Common::AlignUp(dirent_size, 512);
 
     return;
 }

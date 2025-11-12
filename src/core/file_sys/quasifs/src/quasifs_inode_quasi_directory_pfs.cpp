@@ -39,29 +39,22 @@ s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
     return count;
 }
 
-s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
-    switch (whence) {
-    case 0:
-        return offset;
-        break;
-    case 1:
-        if ((current + offset) >= dirents_size)
-            return current + offset;
-        {
-            auto _tmp =
-                std::lower_bound(dirent_offset.begin(), dirent_offset.end(), current + offset);
-            if (_tmp == dirent_offset.end())
-                return -QUASI_EINVAL;
-            return *_tmp;
-        }
-        break;
-    case 2:
-        return dirents_size + offset;
-        break;
-    }
-    UNREACHABLE_MSG("lseek with unknown whence {}", whence);
-    return -QUASI_ENOSYS;
-}
+// s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
+//     LOG_ERROR(Kernel_Fs, "(PFS STUB)");
+
+//     // TBD, most likely acts like a file would
+
+//     switch (whence) {
+//     case 0:
+//         return offset;
+//     case 1:
+//         return current + offset;
+//     case 2:
+//         return this->st.st_size + offset;
+//     }
+//     UNREACHABLE_MSG("lseek with unknown whence {}", whence);
+//     return -QUASI_ENOSYS;
+// }
 
 s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
@@ -89,7 +82,6 @@ void DirectoryPFS::RebuildDirents(void) {
 
     u64 dirent_size = 0;
     this->dirent_cache_bin.clear();
-    this->dirent_offset.clear();
 
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
         dirent_pfs_t tmp{};
@@ -104,11 +96,10 @@ void DirectoryPFS::RebuildDirents(void) {
 
         auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
         dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
-        dirent_offset.push_back(dirent_size);
         dirent_size += tmp.d_reclen;
     }
 
-    this->st.st_size = dirent_size;
+    // directory size is always 65536 bytes
 
     return;
 }
