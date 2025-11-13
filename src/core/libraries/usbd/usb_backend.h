@@ -312,7 +312,7 @@ public:
         const auto endpoint_descs = FillEndpointDescriptorPair();
         const auto interface_desc = FillInterfaceDescriptor(endpoint_descs);
 
-        const auto interface = static_cast<libusb_interface*>(calloc(1, sizeof(libusb_interface*)));
+        const auto interface = static_cast<libusb_interface*>(calloc(1, sizeof(libusb_interface)));
         interface->altsetting = interface_desc;
         interface->num_altsetting = 1;
 
@@ -366,7 +366,7 @@ public:
         const auto desc = FillDeviceDescriptor();
         ASSERT(desc);
 
-        const auto fake = static_cast<UsbDevice*>(calloc(1, sizeof(UsbDevice*)));
+        const auto fake = static_cast<UsbDevice*>(calloc(1, sizeof(UsbDevice)));
         fake->bus_number = 0;
         fake->port_number = 0;
         fake->device_address = 0;
