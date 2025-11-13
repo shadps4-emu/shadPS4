@@ -142,9 +142,6 @@ public:
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
 
-    /// Return true when a CPU region is modified from the CPU
-    [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
-
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
