@@ -15,26 +15,11 @@ QuasiDirectory::QuasiDirectory() {
 }
 
 s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
-    RebuildDirents();
-
     // complete dirents are divided into 512 (0-filled) byte blocks
     // if more than 512 bytes are read, it draws bytes from the next block
     // anything after last dirent is zeroed-out
     // reclen of last complete dirent (in aligned segment) has size filling up to the end of the
     // segment
-
-    if (offset >= this->dirent_cache_bin.size())
-        return 0;
-
-    s64 bytes_available = this->dirent_cache_bin.size() - offset;
-    // bytes_to_read but retains the same variable lmao
-    if (bytes_available >= count)
-        bytes_available = count;
-
-    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
-
-    // always returns count
-    return count;
 
     return getdents(buf, count, offset, nullptr);
 }
@@ -68,50 +53,27 @@ s32 QuasiDirectory::ftruncate(s64 length) {
 
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
-    memset(buf, 0, count);
 
     // always returns 512 bytes
     // forces handle ptr to increment in multiples of 512
     // returns each memory-aligned segment
+    // doesn't zero-out remaining space in buffer
 
-    if (offset >= this->st.st_size)
+    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    s64 true_end = Common::AlignUp(static_cast<u64>(offset) + count, 512);
+    s64 to_read = true_end - offset;
+
+    if (bytes_available <= 0)
         return 0;
 
-    auto _start = std::lower_bound(dirent_offset.begin(), dirent_offset.end(), offset);
-    auto _end = std::lower_bound(dirent_offset.begin(), dirent_offset.end(), offset + count);
+    to_read = to_read > 512 ? 512 : to_read;
+    to_read = to_read > bytes_available ? bytes_available : to_read;
 
-    // lower_bound will *always* select an element that's NOT SMALLER than x
-    // so if arg lands between two values, it will always select the bigger one
-    if (_start != dirent_offset.begin() && *_start > offset)
-        _start--;
-
-    u64 real_start = 0;
-    u64 real_end = 0;
-
-    u8* dirent_data = static_cast<u8*>(dirent_cache_bin.data());
-    u8* buffer = static_cast<u8*>(buf);
-
-    u64 bytes_to_read = 0;
-    // track last reclen to update after writing
-    u64 reclen_offset = 0;
-    // there's always data left
-    for (auto _end_reverse = std::make_reverse_iterator(_end); _end_reverse != dirent_offset.rend();
-         _end_reverse++) {
-        reclen_offset = *_end_reverse + 4;
-        bytes_to_read = *_end_reverse - *_start +
-                        *reinterpret_cast<u16*>(dirent_cache_bin.data() + reclen_offset);
-        if (bytes_to_read < count)
-            break;
-    }
-
-    memcpy(reinterpret_cast<u8*>(buf), dirent_cache_bin.data() + *_start, bytes_to_read);
-
-    u8* tmp = static_cast<u8*>(buf) + reclen_offset - *_start;
-    *(reinterpret_cast<u16*>(tmp)) += count - bytes_to_read;
+    memcpy(this->dirent_cache_bin.data() + offset, buf, to_read);
 
     if (basep)
-        *basep = count;
-    return count;
+        *basep = to_read;
+    return to_read;
 }
 
 inode_ptr QuasiDirectory::lookup(const std::string& name) {
@@ -179,29 +141,42 @@ void QuasiDirectory::RebuildDirents(void) {
     constexpr u32 dirent_meta_size = sizeof(dirent_t::d_fileno) + sizeof(dirent_t::d_type) +
                                      sizeof(dirent_t::d_namlen) + sizeof(dirent_t::d_reclen);
 
+    u64 next_ceiling = 512;
     u64 dirent_size = 0;
+    u64 last_reclen_offset = 4;
     this->dirent_cache_bin.clear();
-
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
         dirent_t tmp{};
         inode_ptr node = entry->second;
         std::string name = entry->first;
 
+        // prepare dirent
         tmp.d_fileno = node->fileno;
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;
-        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
-
+        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 8);
         auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
+
+        if (dirent_size + tmp.d_reclen > next_ceiling) {
+            // fill rest of the sector with 0s
+            std::fill(dirent_cache_bin.begin() + dirent_size,
+                      dirent_cache_bin.begin() + next_ceiling, 0);
+            // last reclen size to fill the void
+            *reinterpret_cast<u16*>(dirent_cache_bin.data() + last_reclen_offset) +=
+                next_ceiling - dirent_size;
+            dirent_size = next_ceiling;
+        }
+
+        last_reclen_offset = dirent_size + 4;
         dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
         dirent_size += tmp.d_reclen;
+        next_ceiling = Common::AlignUp(dirent_size, 512);
     }
 
-    // directory size is aligned to 512
-    this->st.st_size = Common::AlignUp(dirent_size, 512);
-
-    return;
+    std::fill(dirent_cache_bin.begin() + dirent_size,
+              dirent_cache_bin.begin() + Common::AlignUp(dirent_size, 512), 0);
+    this->st.st_size = next_ceiling;
 }
 
 } // namespace QuasiFS
