@@ -107,7 +107,7 @@ enum class VMAType : u32 {
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
-    std::map<uintptr_t, PhysicalMemoryArea> phys_areas;
+    std::map<u64, PhysicalMemoryArea> phys_areas;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     std::string name = "";
@@ -153,6 +153,20 @@ struct VirtualMemoryArea {
         }
 
         return true;
+    }
+
+    void ForEachPhysArea(u64 offset, u64 size, auto&& func) {
+        if (size == 0) {
+            return;
+        }
+        const u64 end = offset + size;
+        auto it = std::prev(phys_areas.upper_bound(offset));
+        for (; it != phys_areas.end() && it->first < end; ++it) {
+            const auto& pma = it->second;
+            const u64 clip_start = std::max(it->first, offset);
+            const u64 clip_end = std::min(it->first + pma.size, end);
+            func(pma.base + (clip_start - it->first), clip_end - clip_start);
+        }
     }
 };
 

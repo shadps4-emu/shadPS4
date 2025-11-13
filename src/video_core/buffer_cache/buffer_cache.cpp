@@ -155,7 +155,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
         memory->TryWriteBacking(dst_addr, download.mapped + (copy.dstOffset - download.offset),
                                 copy.size);
     }
-    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
+    memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
 }
 
 std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 size,
@@ -187,10 +187,6 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBufferForImage(VAddr device_add
     memory->CopySparseMemory(device_addr, staging.mapped, staging.size);
     staging.Flush();
     return {staging.buffer, staging.offset};
-}
-
-bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
-    return memory_tracker->IsRegionCpuModified(addr, size);
 }
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
