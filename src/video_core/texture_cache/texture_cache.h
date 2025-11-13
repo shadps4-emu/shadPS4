@@ -43,6 +43,7 @@ class TextureCache {
         static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 10;
         static constexpr size_t PageBits = 20;
+        static constexpr bool NullCheck = true;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 
