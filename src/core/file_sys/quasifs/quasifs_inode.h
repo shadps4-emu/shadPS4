@@ -73,7 +73,9 @@ public:
     }
 
     virtual s64 lseek(s64 current, s64 offset, s32 whence) {
-        return -QUASI_EBADF;
+        return ((SeekOrigin::ORIGIN == whence) * offset) +
+               ((SeekOrigin::CURRENT == whence) * (current + offset)) +
+               ((SeekOrigin::END == whence) * (this->st.st_size + offset));
     }
 
     virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) {

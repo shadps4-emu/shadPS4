@@ -23,7 +23,7 @@ public:
     // Conversion helpers
     //
 
-    static constexpr s32 ToWIN32SeekOrigin(QuasiFS::SeekOrigin origin) {
+    static constexpr s32 ToWIN32SeekOrigin(s32 origin) {
         switch (origin) {
         case QuasiFS::SeekOrigin::ORIGIN:
             return SEEK_SET;

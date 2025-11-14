@@ -24,23 +24,6 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     return getdents(buf, count, offset, nullptr);
 }
 
-s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
-    LOG_ERROR(Kernel_Fs, "(STUB)");
-
-    // TBD, most likely acts like a file would
-
-    switch (whence) {
-    case 0:
-        return offset;
-    case 1:
-        return current + offset;
-    case 2:
-        return this->st.st_size + offset;
-    }
-    UNREACHABLE_MSG("lseek with unknown whence {}", whence);
-    return -QUASI_ENOSYS;
-}
-
 s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     RebuildDirents();
     *sb = st;
@@ -54,22 +37,28 @@ s32 QuasiDirectory::ftruncate(s64 length) {
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
 
-    // always returns 512 bytes
-    // forces handle ptr to increment in multiples of 512
-    // returns each memory-aligned segment
+    // at this point count is ALWAYS >512 (checked in VIO Driver)
+    // always returns up to 512 bytes
+    // return always alignd final fptr to 512 bytes
     // doesn't zero-out remaining space in buffer
 
     s64 bytes_available = this->dirent_cache_bin.size() - offset;
-    s64 true_end = Common::AlignUp(static_cast<u64>(offset) + count, 512);
-    s64 to_read = true_end - offset;
-
     if (bytes_available <= 0)
         return 0;
 
-    to_read = to_read > 512 ? 512 : to_read;
-    to_read = to_read > bytes_available ? bytes_available : to_read;
+    if (count > 512)
+        count = 512;
+    u64 apparent_end = count + offset;
+    u64 minimum_read = Common::AlignDown(apparent_end, 512) - offset;
+    u64 maximum_read = Common::AlignUp(apparent_end, 512) - offset;
 
-    memcpy(this->dirent_cache_bin.data() + offset, buf, to_read);
+    u64 to_read = std::min(minimum_read, maximum_read);
+
+    if (to_read > bytes_available)
+        UNREACHABLE_MSG("Buffer read/write misaligned from 512 bytes");
+
+    std::copy(dirent_cache_bin.data() + offset, dirent_cache_bin.data() + offset + to_read,
+              static_cast<u8*>(buf));
 
     if (basep)
         *basep = to_read;
@@ -141,10 +130,11 @@ void QuasiDirectory::RebuildDirents(void) {
     constexpr u32 dirent_meta_size = sizeof(dirent_t::d_fileno) + sizeof(dirent_t::d_type) +
                                      sizeof(dirent_t::d_namlen) + sizeof(dirent_t::d_reclen);
 
-    u64 next_ceiling = 512;
-    u64 dirent_size = 0;
+    u64 next_ceiling = 0;
+    u64 dirent_offset = 0;
     u64 last_reclen_offset = 4;
     this->dirent_cache_bin.clear();
+
     for (auto entry = entries.begin(); entry != entries.end(); ++entry) {
         dirent_t tmp{};
         inode_ptr node = entry->second;
@@ -155,27 +145,33 @@ void QuasiDirectory::RebuildDirents(void) {
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;
-        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 8);
-        auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
+        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
 
-        if (dirent_size + tmp.d_reclen > next_ceiling) {
-            // fill rest of the sector with 0s
-            std::fill(dirent_cache_bin.begin() + dirent_size,
+        // next element may break 512 byte alignment
+        if (tmp.d_reclen + dirent_offset > next_ceiling) {
+            // align previous dirent's size to the current ceiling
+            *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) +
+                                    last_reclen_offset) += next_ceiling - dirent_offset;
+            // set writing pointer to the aligned start position (current ceiling)
+            dirent_offset = next_ceiling;
+            // move the ceiling up and zero-out the buffer
+            next_ceiling += 512;
+            dirent_cache_bin.resize(next_ceiling);
+            std::fill(dirent_cache_bin.begin() + dirent_offset,
                       dirent_cache_bin.begin() + next_ceiling, 0);
-            // last reclen size to fill the void
-            *reinterpret_cast<u16*>(dirent_cache_bin.data() + last_reclen_offset) +=
-                next_ceiling - dirent_size;
-            dirent_size = next_ceiling;
         }
 
-        last_reclen_offset = dirent_size + 4;
-        dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
-        dirent_size += tmp.d_reclen;
-        next_ceiling = Common::AlignUp(dirent_size, 512);
+        // current dirent's reclen position
+        last_reclen_offset = dirent_offset + 4;
+        memcpy(dirent_cache_bin.data() + dirent_offset, &tmp, tmp.d_reclen);
+        dirent_offset += tmp.d_reclen;
     }
 
-    std::fill(dirent_cache_bin.begin() + dirent_size,
-              dirent_cache_bin.begin() + Common::AlignUp(dirent_size, 512), 0);
+    // last reclen, as before
+    *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) + last_reclen_offset) +=
+        next_ceiling - dirent_offset;
+
+    // i have no idea if this is the case, but lseek returns size aligned to 512
     this->st.st_size = next_ceiling;
 }
 

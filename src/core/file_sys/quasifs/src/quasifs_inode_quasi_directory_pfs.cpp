@@ -39,23 +39,6 @@ s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
     return count;
 }
 
-// s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
-//     LOG_ERROR(Kernel_Fs, "(PFS STUB)");
-
-//     // TBD, most likely acts like a file would
-
-//     switch (whence) {
-//     case 0:
-//         return offset;
-//     case 1:
-//         return current + offset;
-//     case 2:
-//         return this->st.st_size + offset;
-//     }
-//     UNREACHABLE_MSG("lseek with unknown whence {}", whence);
-//     return -QUASI_ENOSYS;
-// }
-
 s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
     memset(buf, 0, count);
@@ -95,7 +78,7 @@ void DirectoryPFS::RebuildDirents(void) {
         tmp.d_type = node->type() >> 12;
         tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 8);
         auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
-        
+
         dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
         dirent_size += tmp.d_reclen;
     }
