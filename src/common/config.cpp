@@ -178,7 +178,7 @@ static ConfigEntry<string> fullscreenMode("Windowed");
 static ConfigEntry<string> presentMode("Mailbox");
 static ConfigEntry<bool> isHDRAllowed(false);
 static ConfigEntry<bool> fsrEnabled(false);
-static ConfigEntry<bool> rcasEnabled(false);
+static ConfigEntry<bool> rcasEnabled(true);
 static ConfigEntry<int> rcasAttenuation(250);
 
 // Vulkan
