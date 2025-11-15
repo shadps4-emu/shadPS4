@@ -3,15 +3,15 @@
 
 #include <cstdlib>
 #include <ctime>
+
 #include "common/logging/log.h"
+#include "common/va_ctx.h"
 #include "core/file_sys/devices/rng_device.h"
 
 namespace Core::Devices {
 
-std::shared_ptr<BaseDevice> RngDevice::Create(u32 handle, const char*, s32, u16) {
-    std::srand(std::time(nullptr));
-    return std::static_pointer_cast<BaseDevice>(std::make_shared<RngDevice>(handle));
-}
+RngDevice::RngDevice() = default;
+RngDevice::~RngDevice() = default;
 
 s32 RngDevice::ioctl(u64 cmd, Common::VaCtx* args) {
     LOG_INFO(Kernel_Pthread, "called, cmd = {:#x}", cmd);
@@ -26,61 +26,6 @@ s32 RngDevice::ioctl(u64 cmd, Common::VaCtx* args) {
         // ENOIOCTL
         return -3;
     }
-    return 0;
-}
-
-s64 RngDevice::write(const void* buf, u64 nbytes) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::lseek(s64 offset, s32 whence) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::read(void* buf, u64 nbytes) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s32 RngDevice::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s32 RngDevice::fsync() {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s32 RngDevice::ftruncate(s64 length) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::getdents(void* buf, u32 nbytes, s64* basep) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
-    return 0;
-}
-
-s64 RngDevice::pwrite(const void* buf, u64 nbytes, s64 offset) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) called");
     return 0;
 }
 
