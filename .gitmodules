@@ -108,7 +108,7 @@
 	branch = dist
 [submodule "externals/MoltenVK"]
 	path = externals/MoltenVK
-	url = https://github.com/KhronosGroup/MoltenVK.git
+	url = https://github.com/shadPS4-emu/ext-MoltenVK.git
 	shallow = true
 [submodule "externals/json"]
 	path = externals/json
