@@ -380,7 +380,8 @@ void Rasterizer::OnSubmit() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline)) {
+    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
+        IsComputeImageClear(pipeline)) {
         return false;
     }
 
@@ -517,6 +518,66 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
     }
     dst_image.flags |= VideoCore::ImageFlagBits::GpuModified;
     dst_image.flags &= ~VideoCore::ImageFlagBits::Dirty;
+    return true;
+}
+
+bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
+    if (!pipeline->IsCompute()) {
+        return false;
+    }
+
+    // Ensure shader only has 2 bound buffers
+    const auto& cs_pgm = liverpool->GetCsRegs();
+    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+        return false;
+    }
+
+    // From those 2 buffers, first must hold the clear vector and second the image being cleared
+    const auto& desc0 = info.buffers[0];
+    const auto& desc1 = info.buffers[1];
+    if (desc0.is_formatted || !desc1.is_formatted || desc0.is_written || !desc1.is_written) {
+        return false;
+    }
+
+    // First buffer must have size of vec4 and second the size of a single layer
+    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
+    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
+    const u32 buf1_bpp = AmdGpu::NumBitsPerBlock(buf1.GetDataFmt());
+    if (buf0.GetSize() != 16 || (cs_pgm.dim_x * 128ULL * (buf1_bpp / 8)) != buf1.GetSize()) {
+        return false;
+    }
+
+    // Find image the buffer alias
+    const auto image1_id =
+        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false);
+    if (!image1_id) {
+        return false;
+    }
+
+    // Image clear must be valid
+    VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
+    if (image1.info.guest_size != buf1.GetSize() || image1.info.num_bits != buf1_bpp ||
+        image1.info.props.is_depth) {
+        return false;
+    }
+
+    // Perform image clear
+    const float* values = reinterpret_cast<float*>(buf0.base_address);
+    const vk::ClearValue clear = {
+        .color = {.float32 = std::array<float, 4>{values[0], values[1], values[2], values[3]}},
+    };
+    const VideoCore::SubresourceRange range = {
+        .base =
+            {
+                .level = 0,
+                .layer = 0,
+            },
+        .extent = image1.info.resources,
+    };
+    image1.Clear(clear, range);
+    image1.flags |= VideoCore::ImageFlagBits::GpuModified;
+    image1.flags &= ~VideoCore::ImageFlagBits::Dirty;
     return true;
 }
 
