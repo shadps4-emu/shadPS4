@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
-#include <SDL3/SDL_audio.h>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 
@@ -92,59 +91,45 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     AddLayer(this);
 
-    bool customsoundplayed = false;
-#ifdef ENABLE_QT_GUI
-    QString musicPathWav = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.wav");
-    QString musicPathMp3 = QString::fromStdString(CustomTrophy_Dir.string() + "/trophy.mp3");
-    if (fs::exists(musicPathWav.toStdString())) {
-        BackgroundMusicPlayer::getInstance().setVolume(100);
-        BackgroundMusicPlayer::getInstance().playMusic(musicPathWav, false);
-        customsoundplayed = true;
-    } else if (fs::exists(musicPathMp3.toStdString())) {
-        BackgroundMusicPlayer::getInstance().setVolume(100);
-        BackgroundMusicPlayer::getInstance().playMusic(musicPathMp3, false);
-        customsoundplayed = true;
+    MIX_Init();
+    mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
+    if (!mixer) {
+        LOG_ERROR(Lib_NpTrophy, "Could not initialize SDL Mixer, {}", SDL_GetError());
+        return;
     }
-#endif
 
-    if (!customsoundplayed) {
+    MIX_SetMasterGain(mixer, static_cast<float>(Config::getVolumeSlider() / 100.f));
+    auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
+    auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
+
+    if (std::filesystem::exists(musicPathMp3)) {
+        audio = MIX_LoadAudio(mixer, musicPathMp3.string().c_str(), false);
+    } else if (std::filesystem::exists(musicPathWav)) {
+        audio = MIX_LoadAudio(mixer, musicPathWav.string().c_str(), false);
+    } else {
         auto soundFile = resource.open("src/images/trophy.wav");
         std::vector<u8> soundData = std::vector<u8>(soundFile.begin(), soundFile.end());
+        audio =
+            MIX_LoadAudio_IO(mixer, SDL_IOFromMem(soundData.data(), soundData.size()), false, true);
+        // due to low volume of default sound file
+        MIX_SetMasterGain(mixer, MIX_GetMasterGain(mixer) * 1.3f);
+    }
 
-        SDL_AudioSpec spec;
-        Uint8* audioBuf;
-        Uint32 audioLen;
+    if (!audio) {
+        LOG_ERROR(Lib_NpTrophy, "Could not loud audio file, {}", SDL_GetError());
+        return;
+    }
 
-        if (!SDL_LoadWAV_IO(SDL_IOFromMem(soundData.data(), soundData.size()), true, &spec,
-                            &audioBuf, &audioLen)) {
-            LOG_ERROR(Lib_NpTrophy, "Cannot load trophy sound: {}", SDL_GetError());
-            SDL_free(audioBuf);
-            return;
-        }
-
-        SDL_AudioStream* stream =
-            SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-        if (!stream) {
-            LOG_ERROR(Lib_NpTrophy, "Cannot create audio stream for trophy sound: {}",
-                      SDL_GetError());
-            SDL_free(audioBuf);
-            return;
-        }
-
-        if (!SDL_PutAudioStreamData(stream, audioBuf, audioLen)) {
-            LOG_ERROR(Lib_NpTrophy, "Cannot add trophy sound data to stream: {}", SDL_GetError());
-            SDL_free(audioBuf);
-            return;
-        }
-
-        // Set audio gain 20% higher since audio file itself is soft
-        SDL_SetAudioStreamGain(stream, Config::getVolumeSlider() / 100.0f * 1.2f);
-        SDL_ResumeAudioStreamDevice(stream);
-        SDL_free(audioBuf);
+    if (!MIX_PlayAudio(mixer, audio)) {
+        LOG_ERROR(Lib_NpTrophy, "Could not play audio file, {}", SDL_GetError());
     }
 }
 
 TrophyUI::~TrophyUI() {
+    MIX_DestroyAudio(audio);
+    MIX_DestroyMixer(mixer);
+    MIX_Quit();
+
     Finish();
 }
 
