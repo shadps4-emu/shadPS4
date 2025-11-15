@@ -24,6 +24,11 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     return getdents(buf, count, offset, nullptr);
 }
 
+s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
+    RebuildDirents();
+    return Inode::lseek(current, offset, whence);
+}
+
 s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     RebuildDirents();
     *sb = st;
@@ -42,20 +47,15 @@ s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     // return always alignd final fptr to 512 bytes
     // doesn't zero-out remaining space in buffer
 
+    // we're assuming this is always aligned, no check here
     s64 bytes_available = this->dirent_cache_bin.size() - offset;
     if (bytes_available <= 0)
         return 0;
 
-    if (count > 512)
-        count = 512;
-    u64 apparent_end = count + offset;
+    // offset might push it too far so read count becomes misaligned
+    u64 apparent_end = offset + count;
     u64 minimum_read = Common::AlignDown(apparent_end, 512) - offset;
-    u64 maximum_read = Common::AlignUp(apparent_end, 512) - offset;
-
-    u64 to_read = std::min(minimum_read, maximum_read);
-
-    if (to_read > bytes_available)
-        UNREACHABLE_MSG("Buffer read/write misaligned from 512 bytes");
+    u64 to_read = bytes_available > minimum_read ? minimum_read : bytes_available;
 
     std::copy(dirent_cache_bin.data() + offset, dirent_cache_bin.data() + offset + to_read,
               static_cast<u8*>(buf));
