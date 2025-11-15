@@ -543,8 +543,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
-             fmt::ptr(addr), len, type, prot, flags);
+    // LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, type = {:#x}, prot = {:#x}, flags = {:#x}",
+    //          fmt::ptr(addr), len, type, prot, flags);
 
     const VAddr in_addr = reinterpret_cast<VAddr>(addr);
     auto* memory = Core::Memory::Instance();
@@ -561,7 +561,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}", fmt::ptr(addr), len, flags);
+    // LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}", fmt::ptr(addr), len, flags);
 
     const VAddr pool_addr = reinterpret_cast<VAddr>(addr);
     auto* memory = Core::Memory::Instance();
