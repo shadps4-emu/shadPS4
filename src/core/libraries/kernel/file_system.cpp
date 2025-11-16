@@ -18,8 +18,6 @@
 #include "core/file_sys/devices/random_device.h"
 #include "core/file_sys/devices/rng_device.h"
 #include "core/file_sys/devices/srandom_device.h"
-#include "core/file_sys/directories/normal_directory.h"
-#include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
 
 #include "core/libraries/kernel/file_system.h"
