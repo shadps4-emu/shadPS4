@@ -182,7 +182,13 @@ public:
     }
 
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
-                   const char* function, std::string message) {
+                   const char* function, const char* format, const fmt::format_args& args) {
+        if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
+            return;
+        }
+
+        const auto message = fmt::vformat(format, args);
+
         // Propagate important log messages to the profiler
         if (IsProfilerConnected()) {
             const auto& msg_str = fmt::format("[{}] {}", GetLogClassName(log_class), message);
@@ -199,10 +205,6 @@ public:
             default:
                 break;
             }
-        }
-
-        if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
-            return;
         }
 
         using std::chrono::duration_cast;
@@ -324,8 +326,8 @@ void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
                        unsigned int line_num, const char* function, const char* format,
                        const fmt::format_args& args) {
     if (!initialization_in_progress_suppress_logging) [[likely]] {
-        Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function,
-                                   fmt::vformat(format, args));
+        Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function, format,
+                                   args);
     }
 }
 } // namespace Common::Log
