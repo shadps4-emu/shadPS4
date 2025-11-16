@@ -63,6 +63,18 @@ if (NOT TARGET SDL3::SDL3)
     add_subdirectory(sdl3)
 endif()
 
+# SDL3_mixer
+if (NOT TARGET SDL3_Mixer::SDL3_Mixer)
+    set(SDLMIXER_FLAC OFF)
+    set(SDLMIXER_OGG OFF)
+    set(SDLMIXER_MOD OFF)
+    set(SDLMIXER_MIDI OFF)
+    set(SDLMIXER_OPUS OFF)
+    set(SDLMIXER_WAVPACK OFF)
+    set(BUILD_SHARED_LIBS OFF)
+    add_subdirectory(sdl3_mixer)
+endif()
+
 # vulkan-headers
 if (NOT TARGET Vulkan::Headers)
     set(VULKAN_HEADERS_ENABLE_MODULE OFF)
