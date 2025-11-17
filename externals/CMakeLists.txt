@@ -64,7 +64,7 @@ if (NOT TARGET SDL3::SDL3)
 endif()
 
 # SDL3_mixer
-if (NOT TARGET SDL3_Mixer::SDL3_Mixer)
+if (NOT TARGET SDL3_mixer::SDL3_mixer)
     set(SDLMIXER_FLAC OFF)
     set(SDLMIXER_OGG OFF)
     set(SDLMIXER_MOD OFF)
