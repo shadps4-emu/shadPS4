@@ -368,8 +368,14 @@ s32 PS4_SYSV_ABI sceAudio3dPortFreeState() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id,
+                                                      OrbisAudio3dAttributeId* capabilities,
+                                                      unsigned int* num_capabilities) {
+    LOG_DEBUG(Lib_Audio3d, "(STUBBED) called caps = {}, num = {}", static_cast<void*>(capabilities),
+              static_cast<void*>(num_capabilities));
+    if (capabilities == nullptr) {
+        *num_capabilities = 0;
+    }
     return ORBIS_OK;
 }
 
