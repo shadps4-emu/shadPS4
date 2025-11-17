@@ -371,10 +371,13 @@ s32 PS4_SYSV_ABI sceAudio3dPortFreeState() {
 s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id,
                                                       OrbisAudio3dAttributeId* capabilities,
                                                       u32* num_capabilities) {
-    LOG_DEBUG(Lib_Audio3d, "(STUBBED) called caps = {}, num = {}", static_cast<void*>(capabilities),
+    LOG_ERROR(Lib_Audio3d, "(STUBBED) called caps = {}, num = {}", static_cast<void*>(capabilities),
               static_cast<void*>(num_capabilities));
     if (capabilities == nullptr) {
-        *num_capabilities = 0;
+        // we use ORBIS_AUDIO3D_ATTRIBUTE_PCM, so return only one capability
+        *num_capabilities = 1;
+    } else {
+        capabilities[0] = OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_PCM;
     }
     return ORBIS_OK;
 }
