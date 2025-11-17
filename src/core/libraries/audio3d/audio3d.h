@@ -122,7 +122,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush();
 s32 PS4_SYSV_ABI sceAudio3dPortFreeState();
 s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId port_id,
                                                       OrbisAudio3dAttributeId* capabilities,
-                                                      unsigned int* num_capabilities);
+                                                      u32* num_capabilities);
 s32 PS4_SYSV_ABI sceAudio3dPortGetList();
 s32 PS4_SYSV_ABI sceAudio3dPortGetParameters();
 s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(OrbisAudio3dPortId port_id, u32* queue_level,
