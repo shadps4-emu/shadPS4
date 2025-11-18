@@ -190,7 +190,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         });
         info.buffers.push_back({
             .used_types = IR::Type::U32,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::FAULT_BUFFER_SIZE),
+            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,
         });

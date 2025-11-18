@@ -407,17 +407,12 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     if (uses_dma) {
         // We only use fault buffer for DMA right now.
-        {
-            Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-            for (auto& range : mapped_ranges) {
-                buffer_cache.SynchronizeBuffersInRange(range.lower(),
-                                                       range.upper() - range.lower());
-            }
+        Common::RecursiveSharedLock lock{mapped_ranges_mutex};
+        for (auto& range : mapped_ranges) {
+            buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
         }
-        buffer_cache.MemoryBarrier();
+        fault_process_pending = true;
     }
-
-    fault_process_pending |= uses_dma;
 
     return true;
 }
