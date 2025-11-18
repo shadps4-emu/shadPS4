@@ -13,30 +13,23 @@ layout(std430, binding = 0) buffer input_buf {
 layout(std430, binding = 1) buffer output_buf {
     uint64_t download_buffer[];
 };
-
-// Overlap for 32 bit atomics
 layout(std430, binding = 1) buffer output_buf32 {
     uint download_buffer32[];
 };
 
-layout(constant_id = 0) const uint CACHING_PAGEBITS = 0;
-
 void main() {
-    uint id = gl_GlobalInvocationID.x;
+    const uint id = gl_GlobalInvocationID.x;
     uint word = fault_buffer[id];
-    if (word == 0u) {
-        return;
-    }
-    // 1 page per bit
-    uint base_bit = id * 32u;
+    fault_buffer[id] = 0u;
+    const uint base_bit = id * 32u;
     while (word != 0u) {
-        uint bit = findLSB(word);
-        word &= word - 1;
-        uint page = base_bit + bit;
-        uint store_index = atomicAdd(download_buffer32[0], 1u) + 1u;
-        // It is very unlikely, but should we check for overflow?
-        if (store_index < 1024u) { // only support 1024 page faults
-            download_buffer[store_index] = uint64_t(page) << CACHING_PAGEBITS;
+        const uint store_index = atomicAdd(download_buffer32[0], 1u) + 1u;
+        if (store_index >= MAX_PAGE_FAULTS) {
+            return;
         }
+        const uint bit = findLSB(word);
+        word &= word - 1;
+        const uint page = base_bit + bit;
+        download_buffer[store_index] = uint64_t(page) << CACHING_PAGEBITS;
     }
 }
