@@ -100,9 +100,9 @@ s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
 
         // if this dirent breaks alignment, skip
         // dirents are count-aligned here, excess data is simply not written
-        if (Common::AlignUp(buffer_position, count) !=
-            Common::AlignUp(buffer_position + pfs_dirent->d_reclen, count))
-            break;
+        // if (Common::AlignUp(buffer_position, count) !=
+        //     Common::AlignUp(buffer_position + pfs_dirent->d_reclen, count))
+        //     break;
 
         // we're transposing u32 into smaller types, so there miiight be some issues
         // reclen for both is the same despite difference in var sizes, extra 0s are padded after

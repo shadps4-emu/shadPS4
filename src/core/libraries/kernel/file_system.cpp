@@ -44,9 +44,9 @@ namespace Libraries::Kernel {
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
-
     int result = g_qfs->Operation.Open(raw_path, flags, mode);
+    LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o} result = {}", raw_path, flags, mode,
+             result);
     if (result < 0)
         *__Error() = -result;
     return result;
@@ -67,7 +67,7 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 
 s32 PS4_SYSV_ABI close(s32 fd) {
     int result = g_qfs->Operation.Close(fd);
-
+    LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0)
         *__Error() = -result;
     return result;
@@ -220,8 +220,8 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 }
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    LOG_INFO(Kernel_Fs, "path = {} mode = {:#o}", path, mode);
     int result = g_qfs->Operation.MKDir(path, mode);
+    LOG_INFO(Kernel_Fs, "path = {} mode = {:#o} result = {}", path, mode, result);
     if (result < 0)
         *__Error() = -result;
     return result;
@@ -260,37 +260,12 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
-    LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
-
     int result = g_qfs->Operation.Stat(path, sb);
+    LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
         return -1;
     }
-
-    return ORBIS_OK;
-
-    // const auto path_name = mnt->GetHostPath(path);
-    // std::memset(sb, 0, sizeof(OrbisKernelStat));
-    // const bool is_dir = std::filesystem::is_directory(path_name);
-    // const bool is_file = std::filesystem::is_regular_file(path_name);
-    // if (!is_dir && !is_file) {
-    //     *__Error() = POSIX_ENOENT;
-    //     return -1;
-    // }
-    // if (std::filesystem::is_directory(path_name)) {
-    //     sb->st_mode = 0000777u | 0040000u;
-    //     sb->st_size = 65536;
-    //     sb->st_blksize = 65536;
-    //     sb->st_blocks = 128;
-    //     // TODO incomplete
-    // } else {
-    //     sb->st_mode = 0000777u | 0100000u;
-    //     sb->st_size = static_cast<s64>(std::filesystem::file_size(path_name));
-    //     sb->st_blksize = 512;
-    //     sb->st_blocks = (sb->st_size + 511) / 512;
-    //     // TODO incomplete
-    // }
 
     return ORBIS_OK;
 }
@@ -315,9 +290,8 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
 }
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
-    LOG_DEBUG(Kernel_Fs, "(PARTIAL) fd = {}", fd);
-
     int result = g_qfs->Operation.FStat(fd, sb);
+    LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -362,24 +336,6 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     //     UNREACHABLE_MSG("{}", u32(file->type.load()));
 
     // }
-
-    // sb->st_dev = st.st_dev;
-    // sb->st_ino = st.st_ino;
-    // sb->st_mode = st.st_mode;
-    // sb->st_nlink = st.st_nlink;
-    // sb->st_uid = st.st_uid;
-    // sb->st_gid = st.st_gid;
-    // sb-> st_rdev=st.st_
-    // sb->st_atim = st.st_atim;
-    // sb->st_mtim = st.st_mtim;
-    //  sb-> st_ctim=st.st_
-    // sb->st_size = st.st_size;
-    // sb->st_blocks = st.st_blocks;
-    // sb->st_blksize = st.st_blksize;
-    // sb->st_flags = st.st_flags;
-    //  sb-> st_gen=st.st_
-    //  sb-> st_lspare=st.st_
-    // OrbisKernelTimespec st_birthtim;
 }
 
 s32 PS4_SYSV_ABI posix_fstat(s32 fd, OrbisKernelStat* sb) {
@@ -805,8 +761,8 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
 #else
 s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
                               OrbisKernelTimeval* timeout) {
-    LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
-              nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
+    LOG_INFO(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
+             nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     fd_set read_host, write_host, except_host;
