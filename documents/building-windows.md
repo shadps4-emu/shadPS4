@@ -41,10 +41,6 @@ Go through the Git for Windows installation as normal
 
 Your shadps4.exe will be in `C:\path\to\source\Build\x64-Clang-Release\`
 
-To automatically populate the necessary files to run shadPS4.exe, run in a command prompt or terminal:  
-`C:\Qt\<QtVersion>\msvc2022_64\bin\windeployqt6.exe "C:\path\to\shadps4.exe"`  
-(Change Qt path if you've installed it to non-default path)
-
 ## Option 2: MSYS2/MinGW
 
 > [!IMPORTANT]
@@ -72,7 +68,6 @@ ARM64-based computers, follow:
 1. Open "MSYS2 CLANGARM64" from your new applications
 2. Run `pacman -Syu`, let it complete;
 3. Run `pacman -S --needed git mingw-w64-clang-aarch64-binutils mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-rapidjson mingw-w64-clang-aarch64-cmake mingw-w64-clang-aarch64-ninja mingw-w64-clang-aarch64-ffmpeg`
-   1. Optional (Qt only): run `pacman -S --needed mingw-w64-clang-aarch64-qt6-base mingw-w64-clang-aarch64-qt6-tools mingw-w64-clang-aarch64-qt6-multimedia`
 4. Run `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4`
 5. Run `cd shadPS4`
 6. Run `cmake -S . -B build -DCMAKE_C_COMPILER="clang.exe" -DCMAKE_CXX_COMPILER="clang++.exe" -DCMAKE_CXX_FLAGS="-O2 -march=native"`
