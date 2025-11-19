@@ -363,7 +363,7 @@ static IR::F32 ReadTessControlPointAttribute(IR::U32 addr, const u32 stride, IR:
 
 } // namespace
 
-void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
+void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) {
     const Info& info = program.info;
 
     for (IR::Block* block : program.blocks) {
@@ -561,8 +561,8 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
     }
 }
 
-void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
-    Info& info = program.info;
+void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtime_info) {
+    const Info& info = program.info;
 
     for (IR::Block* block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {

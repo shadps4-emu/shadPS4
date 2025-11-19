@@ -53,8 +53,15 @@ struct BufferResource {
     }
 
     constexpr AmdGpu::Buffer GetSharp(const auto& info) const noexcept {
-        const auto buffer =
-            inline_cbuf ? inline_cbuf : info.template ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        AmdGpu::Buffer buffer{};
+        if (inline_cbuf) {
+            buffer = inline_cbuf;
+            if (inline_cbuf.base_address > 1) {
+                buffer.base_address += info.pgm_base; // address fixup
+            }
+        } else {
+            buffer = info.template ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
+        }
         if (!buffer.Valid()) {
             LOG_DEBUG(Render, "Encountered invalid buffer sharp");
             return AmdGpu::Buffer::Null();
