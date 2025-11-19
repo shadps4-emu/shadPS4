@@ -165,10 +165,10 @@ void SetTcbBase(void* image_address) {
 }
 
 Tcb* GetTcbBase() {
-    void* tcb = nullptr;
+    static thread_local Tcb* tcb = nullptr;
     const int ret = syscall(SYS_arch_prctl, ARCH_GET_GS, &tcb);
     ASSERT_MSG(ret == 0, "Failed to get GS base: errno {}", errno);
-    return static_cast<Tcb*>(tcb);
+    return tcb;
 }
 
 #else
