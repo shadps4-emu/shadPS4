@@ -25,17 +25,17 @@ public:
 
     void Open();
     void Close();
-    bool IsOpened() {
+    [[nodiscard]] bool IsOpened() const {
         return opened;
     }
 
-    bool Save(BlobType type, std::string name, std::vector<u8>&& data);
-    bool Save(BlobType type, std::string name, std::vector<u32>&& data);
+    bool Save(BlobType type, const std::string& name, std::vector<u8>&& data);
+    bool Save(BlobType type, const std::string& name, std::vector<u32>&& data);
 
-    void Load(BlobType type, std::string name, std::vector<u8>& data);
-    void Load(BlobType type, std::string name, std::vector<u32>& data);
+    void Load(BlobType type, const std::string& name, std::vector<u8>& data);
+    void Load(BlobType type, const std::string& name, std::vector<u32>& data);
 
-    void ForEachBlob(BlobType type, std::function<void(std::vector<u8>&& data)> func);
+    void ForEachBlob(BlobType type, const std::function<void(std::vector<u8>&& data)>& func);
 
 private:
     std::filesystem::path cache_dir{};

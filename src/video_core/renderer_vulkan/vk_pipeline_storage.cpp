@@ -69,7 +69,7 @@ void LoadVector(BlobType type, std::filesystem::path path, std::vector<T>& v) {
     file.Read(v);
 }
 
-bool DataBase::Save(BlobType type, std::string name, std::vector<u8>&& data) {
+bool DataBase::Save(BlobType type, const std::string& name, std::vector<u8>&& data) {
     if (!opened) {
         return false;
     }
@@ -78,7 +78,7 @@ bool DataBase::Save(BlobType type, std::string name, std::vector<u8>&& data) {
     return WriteVector(type, path.string(), data);
 }
 
-bool DataBase::Save(BlobType type, std::string name, std::vector<u32>&& data) {
+bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& data) {
     if (!opened) {
         return false;
     }
@@ -87,7 +87,7 @@ bool DataBase::Save(BlobType type, std::string name, std::vector<u32>&& data) {
     return WriteVector(type, path.string(), data);
 }
 
-void DataBase::Load(BlobType type, std::string name, std::vector<u8>& data) {
+void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& data) {
     if (!opened) {
         return;
     }
@@ -96,7 +96,7 @@ void DataBase::Load(BlobType type, std::string name, std::vector<u8>& data) {
     return LoadVector(type, path.string(), data);
 }
 
-void DataBase::Load(BlobType type, std::string name, std::vector<u32>& data) {
+void DataBase::Load(BlobType type, const std::string& name, std::vector<u32>& data) {
     if (!opened) {
         return;
     }
@@ -105,7 +105,7 @@ void DataBase::Load(BlobType type, std::string name, std::vector<u32>& data) {
     return LoadVector(type, path.string(), data);
 }
 
-void DataBase::ForEachBlob(BlobType type, std::function<void(std::vector<u8>&& data)> func) {
+void DataBase::ForEachBlob(BlobType type, const std::function<void(std::vector<u8>&& data)>& func) {
     const auto& ext = GetBlobFileExtension(type);
     for (const auto& file_name : std::filesystem::directory_iterator{cache_dir}) {
         if (file_name.path().extension().string().ends_with(ext)) {

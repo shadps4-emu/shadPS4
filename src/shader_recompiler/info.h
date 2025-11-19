@@ -116,14 +116,10 @@ struct Info : InfoPersistent {
         Qualifier auxiliary;
     };
 
-    // Non-trivially serialized members
-
     std::span<const u32> user_data;
     std::vector<u32> flattened_ud_buf;
     PersistentSrtInfo srt_info;
 
-    // Non-serializable members. To save some space, can be moved into another temporary struct and
-    // be droped once translation is finished
     AttributeFlags loads{};
     AttributeFlags stores{};
 
