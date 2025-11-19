@@ -388,20 +388,28 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         return false;
     }
 
-    const auto module = CompileSPV(spv, instance.GetDevice());
+    // Permutation hash depends on shader variation index. To prevent collisions, we need insert it
+    // at the exact position rather than append
+
+    vk::ShaderModule module{};
 
     auto [it_pgm, new_program] = program_cache.try_emplace(program->info.pgm_hash);
     if (new_program) {
-        program->InsertPermut(module, spec_hash, perm_idx);
+        module = CompileSPV(spv, instance.GetDevice());
         it_pgm.value() = std::move(program);
     } else {
-        // Make sure the permutation doesn't exist yet
         const auto& it =
             std::ranges::find(it_pgm.value()->modules, spec_hash, &Program::Module::spec_hash);
-        assert(it == it_pgm.value()->modules.end());
-        it_pgm.value()->InsertPermut(module, spec_hash,
-                                     perm_idx); // need to insert to prevent collisions
+        if (it != it_pgm.value()->modules.end()) {
+            // If the permutation is already preloaded, make sure it has the same permutation index
+            const auto idx = std::distance(it_pgm.value()->modules.begin(), it);
+            ASSERT(perm_idx == idx);
+            module = it->module;
+        } else {
+            module = CompileSPV(spv, instance.GetDevice());
+        }
     }
+    it_pgm.value()->InsertPermut(module, spec_hash, perm_idx);
 
     infos[stage] = &it_pgm.value()->info;
     modules[stage] = module;
