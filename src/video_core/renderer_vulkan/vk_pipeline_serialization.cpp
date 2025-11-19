@@ -517,7 +517,11 @@ u64 Shader::Gcn::FetchShaderData::Hash() const {
     for (const auto& attrib : attributes) {
         XXH64_update(state, &attrib, sizeof(attrib));
     }
-    return XXH64_digest(state);
+
+    const u64 hash = XXH64_digest(state);
+    XXH64_freeState(state);
+
+    return hash;
 }
 
 u64 StageSpecialization::Hash() const {
@@ -544,6 +548,7 @@ u64 StageSpecialization::Hash() const {
     }
 
     u64 hash = XXH64_digest(state);
+    XXH64_freeState(state);
 
     if (fetch_shader_data) {
         hash = HashCombine(hash, fetch_shader_data->Hash());

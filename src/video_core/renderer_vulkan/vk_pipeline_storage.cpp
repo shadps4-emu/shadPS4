@@ -155,7 +155,6 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& d
 
     auto path = cache_dir / name;
     return WriteVector(type, std::move(path), std::move(data));
-    return true;
 }
 
 void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& data) {
