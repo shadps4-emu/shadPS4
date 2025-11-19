@@ -4,9 +4,9 @@
 #pragma once
 
 #include <mutex>
+#include <SDL3/SDL_gamepad.h>
 #include "SDL3/SDL_joystick.h"
 #include "common/assert.h"
-#include <SDL3/SDL_gamepad.h>
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 

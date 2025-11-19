@@ -382,7 +382,7 @@ u32 GameController::Poll() {
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
     s32 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
-    LOG_INFO(Input, "Gamepad index: {}", index);
+    LOG_TRACE(Input, "Gamepad index: {}", index);
     return index;
 }
 

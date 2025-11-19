@@ -469,10 +469,10 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     Libraries::Pad::OrbisFQuaternion lastOrientation = controller->GetLastOrientation();
     Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
     GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity, deltaTime,
-                                            lastOrientation, outputOrientation);
+                                         lastOrientation, outputOrientation);
     pData->orientation = outputOrientation;
     controller->SetLastOrientation(outputOrientation);
-    
+
     pData->touchData.touchNum =
         (state.touchpad[0].state ? 1 : 0) + (state.touchpad[1].state ? 1 : 0);
 
