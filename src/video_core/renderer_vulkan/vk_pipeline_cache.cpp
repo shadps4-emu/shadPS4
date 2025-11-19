@@ -355,13 +355,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         // Fill color target information
-        key.color_buffers[cb] = Shader::PsColorBuffer{
-            .data_format = col_buf.GetDataFmt(),
-            .num_format = col_buf.GetNumberFmt(),
-            .num_conversion = col_buf.GetNumberConversion(),
-            .export_format = regs.color_export_format.GetFormat(cb),
-            .swizzle = col_buf.Swizzle(),
-        };
+        auto& color_buffer = key.color_buffers[cb];
+        color_buffer.data_format = col_buf.GetDataFmt();
+        color_buffer.num_format = col_buf.GetNumberFmt();
+        color_buffer.num_conversion = col_buf.GetNumberConversion();
+        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        color_buffer.swizzle = col_buf.Swizzle();
     }
 
     // Compile and bind shader stages
@@ -379,7 +378,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             continue;
         }
         if ((key.mrt_mask & (1u << cb)) == 0) {
-            key.color_buffers[cb] = {};
+            std::memset(&key.color_buffers[cb], 0, sizeof(Shader::PsColorBuffer));
             continue;
         }
 
@@ -632,7 +631,7 @@ void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stag
         std::filesystem::create_directories(dump_dir);
     }
     const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
-    const auto file = IOFile{dump_dir / filename, FileAccessMode::Write};
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
     file.WriteSpan(code);
 }
 

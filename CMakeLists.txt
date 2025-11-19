@@ -203,7 +203,7 @@ execute_process(
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
 set(EMULATOR_VERSION_MINOR "12")
-set(EMULATOR_VERSION_PATCH "1")
+set(EMULATOR_VERSION_PATCH "6")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
 
@@ -229,6 +229,7 @@ find_package(magic_enum 0.9.7 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
+find_package(SDL3_mixer 2.8.1 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -463,6 +464,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/mouse/mouse.h
                 src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
+                src/core/libraries/font/font.cpp
+                src/core/libraries/font/font.h
+                src/core/libraries/font/fontft.cpp
+                src/core/libraries/font/fontft.h
+                src/core/libraries/font/font_error.h
+
 )
 
 set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
@@ -535,6 +542,10 @@ set(RANDOM_LIB src/core/libraries/random/random.cpp
 set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/usbd.h
              src/core/libraries/usbd/usb_backend.h
+             src/core/libraries/usbd/emulated/dimensions.cpp
+             src/core/libraries/usbd/emulated/dimensions.h
+             src/core/libraries/usbd/emulated/infinity.cpp
+             src/core/libraries/usbd/emulated/infinity.h
              src/core/libraries/usbd/emulated/skylander.cpp
              src/core/libraries/usbd/emulated/skylander.h
 )
@@ -951,6 +962,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/buffer.h
                src/video_core/buffer_cache/buffer_cache.cpp
                src/video_core/buffer_cache/buffer_cache.h
+               src/video_core/buffer_cache/fault_manager.cpp
+               src/video_core/buffer_cache/fault_manager.h
                src/video_core/buffer_cache/memory_tracker.h
                src/video_core/buffer_cache/range_set.h
                src/video_core/buffer_cache/region_definitions.h
@@ -1062,7 +1075,7 @@ add_executable(shadps4
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

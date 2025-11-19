@@ -6,42 +6,43 @@ with import (fetchTarball "https://github.com/nixos/nixpkgs/archive/cfd19cdc5468
 pkgs.mkShell {
   name = "shadps4-build-env";
 
-  nativeBuildInputs = [
-    pkgs.llvmPackages_18.clang
-    pkgs.cmake
-    pkgs.pkg-config
-    pkgs.git
+  nativeBuildInputs = with pkgs; [
+    llvmPackages_18.clang
+    cmake
+    pkg-config
+    git
+    util-linux
   ];
 
-  buildInputs = [
-    pkgs.alsa-lib
-    pkgs.libpulseaudio
-    pkgs.openal
-    pkgs.zlib
-    pkgs.libedit
-    pkgs.udev
-    pkgs.libevdev
-    pkgs.SDL2
-    pkgs.jack2
-    pkgs.sndio
+  buildInputs = with pkgs; [
+    alsa-lib
+    libpulseaudio
+    openal
+    zlib
+    libedit
+    udev
+    libevdev
+    SDL2
+    jack2
+    sndio
 
-    pkgs.vulkan-headers
-    pkgs.vulkan-utility-libraries
-    pkgs.vulkan-tools
+    vulkan-headers
+    vulkan-utility-libraries
+    vulkan-tools
 
-    pkgs.ffmpeg
-    pkgs.fmt
-    pkgs.glslang
-    pkgs.libxkbcommon
-    pkgs.wayland
-    pkgs.xorg.libxcb
-    pkgs.xorg.xcbutil
-    pkgs.xorg.xcbutilkeysyms
-    pkgs.xorg.xcbutilwm
-    pkgs.sdl3
-    pkgs.stb
-    pkgs.wayland-protocols
-    pkgs.libpng
+    ffmpeg
+    fmt
+    glslang
+    libxkbcommon
+    wayland
+    xorg.libxcb
+    xorg.xcbutil
+    xorg.xcbutilkeysyms
+    xorg.xcbutilwm
+    sdl3
+    stb
+    wayland-protocols
+    libpng
   ];
 
   shellHook = ''
