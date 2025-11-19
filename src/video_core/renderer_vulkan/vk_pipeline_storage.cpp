@@ -5,6 +5,8 @@
 #include "common/elf_info.h"
 #include "common/hash.h"
 #include "common/io_file.h"
+#include "common/polyfill_thread.h"
+#include "common/thread.h"
 
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -12,8 +14,54 @@
 #include "video_core/renderer_vulkan/vk_pipeline_storage.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
+#include <condition_variable>
+#include <future>
+#include <mutex>
+#include <thread>
+#include <queue>
+
 namespace Vulkan {
 namespace Storage {
+
+std::mutex submit_mutex{};
+u32 num_requests{};
+std::condition_variable_any request_cv{};
+std::queue<std::future<void>> req_queue{};
+std::mutex m_request{};
+std::jthread io_worker{};
+
+void ProcessIO(std::stop_token stoken) {
+    Common::SetCurrentThreadName("shadPS4:PipelineCacheIO");
+
+    while (!stoken.stop_requested()) {
+        {
+            std::unique_lock lk{submit_mutex};
+            Common::CondvarWait(request_cv, lk, stoken, [&] { return num_requests; });
+        }
+
+        if (stoken.stop_requested()) {
+            break;
+        }
+
+        while (num_requests) {
+            std::future<void> request{};
+            {
+                std::scoped_lock lock{m_request};
+                if (req_queue.empty()) {
+                    continue;
+                }
+                request = std::move(req_queue.front());
+                req_queue.pop();
+            }
+
+            if (request.valid()) {
+                request.wait();
+            }
+
+            --num_requests;
+        }
+    }
+}
 
 constexpr std::string GetBlobFileExtension(BlobType type) {
     switch (type) {
@@ -29,11 +77,15 @@ constexpr std::string GetBlobFileExtension(BlobType type) {
         return "key";
     }
     default:
-        return "";
+        UNREACHABLE();
     }
 }
 
 void DataBase::Open() {
+    if (opened) {
+        return;
+    }
+
     const auto& game_info = Common::ElfInfo::Instance();
 
     using namespace Common::FS;
@@ -42,6 +94,7 @@ void DataBase::Open() {
         std::filesystem::create_directories(cache_dir);
     }
 
+    io_worker = std::jthread{ProcessIO};
     opened = true;
 }
 
@@ -49,19 +102,36 @@ void DataBase::Close() {
     if (!IsOpened()) {
         return;
     }
+
+    io_worker.request_stop();
+    io_worker.join();
 }
 
 template <typename T>
-bool WriteVector(BlobType type, std::filesystem::path path, const std::vector<T>& v) {
-    using namespace Common::FS;
-    path.replace_extension(GetBlobFileExtension(type));
-    const auto file = IOFile{path, FileAccessMode::Create};
-    file.Write(v);
+bool WriteVector(BlobType type, std::filesystem::path&& path, std::vector<T>&& v) {
+    auto request = std::async(
+        std::launch::async,
+        [=](std::filesystem::path&& path) {
+            using namespace Common::FS;
+            path.replace_extension(GetBlobFileExtension(type));
+            const auto file = IOFile{path, FileAccessMode::Create};
+            file.Write(v);
+        },
+        path);
+
+    {
+        std::scoped_lock lock{m_request};
+        req_queue.emplace(std::move(request));
+    }
+
+    std::scoped_lock lk{submit_mutex};
+    ++num_requests;
+    request_cv.notify_one();
     return true;
 }
 
 template <typename T>
-void LoadVector(BlobType type, std::filesystem::path path, std::vector<T>& v) {
+void LoadVector(BlobType type, std::filesystem::path& path, std::vector<T>& v) {
     using namespace Common::FS;
     path.replace_extension(GetBlobFileExtension(type));
     const auto file = IOFile{path, FileAccessMode::Read};
@@ -74,8 +144,8 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u8>&& da
         return false;
     }
 
-    const auto path = cache_dir / name;
-    return WriteVector(type, path.string(), data);
+    auto path = cache_dir / name;
+    return WriteVector(type, std::move(path), std::move(data));
 }
 
 bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& data) {
@@ -83,8 +153,9 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& d
         return false;
     }
 
-    const auto path = cache_dir / name;
-    return WriteVector(type, path.string(), data);
+    auto path = cache_dir / name;
+    return WriteVector(type, std::move(path), std::move(data));
+    return true;
 }
 
 void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& data) {
@@ -93,7 +164,7 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& dat
     }
 
     auto path = cache_dir / name;
-    return LoadVector(type, path.string(), data);
+    return LoadVector(type, path, data);
 }
 
 void DataBase::Load(BlobType type, const std::string& name, std::vector<u32>& data) {
@@ -102,7 +173,7 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u32>& da
     }
 
     auto path = cache_dir / name;
-    return LoadVector(type, path.string(), data);
+    return LoadVector(type, path, data);
 }
 
 void DataBase::ForEachBlob(BlobType type, const std::function<void(std::vector<u8>&& data)>& func) {
