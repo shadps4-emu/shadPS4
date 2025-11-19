@@ -91,6 +91,7 @@ public:
     float gyro_poll_rate;
     float accel_poll_rate;
     u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
+    SDL_Gamepad* m_sdl_gamepad = nullptr;
 
 private:
     struct StateInternal {
@@ -113,7 +114,6 @@ private:
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
-    SDL_Gamepad* m_sdl_gamepad = nullptr;
     u8 player_index = -1;
 };
 

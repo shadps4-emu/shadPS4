@@ -511,7 +511,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    std::array<ControllerOutput, 24> data = {
+    std::array<ControllerOutput, 33> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
         ControllerOutput(RIGHTJOYSTICK_HALFMODE),
