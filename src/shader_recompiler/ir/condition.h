@@ -37,6 +37,8 @@ constexpr std::string_view NameOf(Condition condition) {
         return "Execz";
     case Condition::Execnz:
         return "Execnz";
+    default:
+        UNREACHABLE();
     }
 }
 

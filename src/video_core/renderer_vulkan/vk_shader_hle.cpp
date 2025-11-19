@@ -12,8 +12,7 @@ namespace Vulkan {
 
 static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
-static bool ExecuteCopyShaderHLE(const Shader::Info& info,
-                                 const AmdGpu::Liverpool::ComputeProgram& cs_program,
+static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::ComputeProgram& cs_program,
                                  Rasterizer& rasterizer) {
     auto& scheduler = rasterizer.GetScheduler();
     auto& buffer_cache = rasterizer.GetBufferCache();
@@ -121,8 +120,8 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info,
     return true;
 }
 
-bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer) {
+bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Regs& regs,
+                      const AmdGpu::ComputeProgram& cs_program, Rasterizer& rasterizer) {
     switch (info.pgm_hash) {
     case COPY_SHADER_HASH:
         return ExecuteCopyShaderHLE(info, cs_program, rasterizer);

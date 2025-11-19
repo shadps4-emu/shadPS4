@@ -1,13 +1,15 @@
-// SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <condition_variable>
-#include <boost/container/static_vector.hpp>
-#include "common/types.h"
+#include <mutex>
+#include <queue>
+
 #include "common/unique_function.h"
-#include "video_core/amdgpu/liverpool.h"
+#include "video_core/amdgpu/regs_color.h"
+#include "video_core/amdgpu/regs_primitive.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
 
@@ -20,14 +22,23 @@ namespace Vulkan {
 class Instance;
 
 struct RenderState {
-    std::array<vk::RenderingAttachmentInfo, 8> color_attachments{};
-    vk::RenderingAttachmentInfo depth_attachment{};
-    vk::RenderingAttachmentInfo stencil_attachment{};
-    u32 num_color_attachments{};
-    bool has_depth{};
-    bool has_stencil{};
-    u32 width = std::numeric_limits<u32>::max();
-    u32 height = std::numeric_limits<u32>::max();
+    std::array<vk::RenderingAttachmentInfo, 8> color_attachments;
+    vk::RenderingAttachmentInfo depth_attachment;
+    vk::RenderingAttachmentInfo stencil_attachment;
+    u32 num_color_attachments;
+    u32 num_layers;
+    bool has_depth;
+    bool has_stencil;
+    u32 width;
+    u32 height;
+
+    RenderState() {
+        std::memset(this, 0, sizeof(*this));
+        color_attachments.fill(vk::RenderingAttachmentInfo{});
+        depth_attachment = vk::RenderingAttachmentInfo{};
+        stencil_attachment = vk::RenderingAttachmentInfo{};
+        num_layers = 1;
+    }
 
     bool operator==(const RenderState& other) const noexcept {
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
@@ -35,20 +46,22 @@ struct RenderState {
 };
 
 struct SubmitInfo {
-    boost::container::static_vector<vk::Semaphore, 3> wait_semas;
-    boost::container::static_vector<u64, 3> wait_ticks;
-    boost::container::static_vector<vk::Semaphore, 3> signal_semas;
-    boost::container::static_vector<u64, 3> signal_ticks;
+    std::array<vk::Semaphore, 3> wait_semas;
+    std::array<u64, 3> wait_ticks;
+    std::array<vk::Semaphore, 3> signal_semas;
+    std::array<u64, 3> signal_ticks;
     vk::Fence fence;
+    u32 num_wait_semas;
+    u32 num_signal_semas;
 
     void AddWait(vk::Semaphore semaphore, u64 tick = 1) {
-        wait_semas.emplace_back(semaphore);
-        wait_ticks.emplace_back(tick);
+        wait_semas[num_wait_semas] = semaphore;
+        wait_ticks[num_wait_semas++] = tick;
     }
 
     void AddSignal(vk::Semaphore semaphore, u64 tick = 1) {
-        signal_semas.emplace_back(semaphore);
-        signal_ticks.emplace_back(tick);
+        signal_semas[num_signal_semas] = semaphore;
+        signal_ticks[num_signal_semas++] = tick;
     }
 
     void AddSignal(vk::Fence fence) {
@@ -56,9 +69,9 @@ struct SubmitInfo {
     }
 };
 
-using Viewports = boost::container::static_vector<vk::Viewport, AmdGpu::Liverpool::NumViewports>;
-using Scissors = boost::container::static_vector<vk::Rect2D, AmdGpu::Liverpool::NumViewports>;
-using ColorWriteMasks = std::array<vk::ColorComponentFlags, AmdGpu::Liverpool::NumColorBuffers>;
+using Viewports = boost::container::static_vector<vk::Viewport, AmdGpu::NUM_VIEWPORTS>;
+using Scissors = boost::container::static_vector<vk::Rect2D, AmdGpu::NUM_VIEWPORTS>;
+using ColorWriteMasks = std::array<vk::ColorComponentFlags, AmdGpu::NUM_COLOR_BUFFERS>;
 struct StencilOps {
     vk::StencilOp fail_op{};
     vk::StencilOp pass_op{};
@@ -96,11 +109,14 @@ struct DynamicState {
         bool stencil_back_compare_mask : 1;
 
         bool primitive_restart_enable : 1;
+        bool rasterizer_discard_enable : 1;
         bool cull_mode : 1;
         bool front_face : 1;
 
         bool blend_constants : 1;
         bool color_write_masks : 1;
+        bool line_width : 1;
+        bool feedback_loop_enabled : 1;
     } dirty_state{};
 
     Viewports viewports{};
@@ -130,11 +146,14 @@ struct DynamicState {
     u32 stencil_back_compare_mask{};
 
     bool primitive_restart_enable{};
+    bool rasterizer_discard_enable{};
     vk::CullModeFlags cull_mode{};
     vk::FrontFace front_face{};
 
-    float blend_constants[4]{};
+    std::array<float, 4> blend_constants{};
     ColorWriteMasks color_write_masks{};
+    float line_width{};
+    bool feedback_loop_enabled{};
 
     /// Commits the dynamic state to the provided command buffer.
     void Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf);
@@ -283,10 +302,17 @@ struct DynamicState {
         }
     }
 
-    void SetBlendConstants(const float blend_constants_[4]) {
-        if (!std::equal(blend_constants, std::end(blend_constants), blend_constants_)) {
-            std::memcpy(blend_constants, blend_constants_, sizeof(blend_constants));
+    void SetBlendConstants(const std::array<float, 4> blend_constants_) {
+        if (blend_constants != blend_constants_) {
+            blend_constants = blend_constants_;
             dirty_state.blend_constants = true;
+        }
+    }
+
+    void SetRasterizerDiscardEnabled(const bool enabled) {
+        if (rasterizer_discard_enable != enabled) {
+            rasterizer_discard_enable = enabled;
+            dirty_state.rasterizer_discard_enable = true;
         }
     }
 
@@ -294,6 +320,20 @@ struct DynamicState {
         if (!std::ranges::equal(color_write_masks, color_write_masks_)) {
             color_write_masks = color_write_masks_;
             dirty_state.color_write_masks = true;
+        }
+    }
+
+    void SetLineWidth(const float width) {
+        if (line_width != width) {
+            line_width = width;
+            dirty_state.line_width = true;
+        }
+    }
+
+    void SetAttachmentFeedbackLoopEnabled(const bool enabled) {
+        if (feedback_loop_enabled != enabled) {
+            feedback_loop_enabled = enabled;
+            dirty_state.feedback_loop_enabled = true;
         }
     }
 };
@@ -317,6 +357,9 @@ public:
     /// Waits for the given tick to trigger on the GPU.
     void Wait(u64 tick);
 
+    /// Attempts to execute operations whose tick the GPU has caught up with.
+    void PopPendingOperations();
+
     /// Starts a new rendering scope with provided state.
     void BeginRendering(const RenderState& new_state);
 
@@ -328,6 +371,7 @@ public:
         return render_state;
     }
 
+    /// Returns the current pipeline dynamic state tracking.
     DynamicState& GetDynamicState() {
         return dynamic_state;
     }
@@ -343,7 +387,11 @@ public:
     }
 
     /// Returns true when a tick has been triggered by the GPU.
-    [[nodiscard]] bool IsFree(u64 tick) const noexcept {
+    [[nodiscard]] bool IsFree(u64 tick) noexcept {
+        if (master_semaphore.IsFree(tick)) {
+            return true;
+        }
+        master_semaphore.Refresh();
         return master_semaphore.IsFree(tick);
     }
 
@@ -368,6 +416,7 @@ private:
     const Instance& instance;
     MasterSemaphore master_semaphore;
     CommandPool command_pool;
+    DynamicState dynamic_state;
     vk::CommandBuffer current_cmdbuf;
     std::condition_variable_any event_cv;
     struct PendingOp {
@@ -376,7 +425,6 @@ private:
     };
     std::queue<PendingOp> pending_ops;
     RenderState render_state;
-    DynamicState dynamic_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};
 };

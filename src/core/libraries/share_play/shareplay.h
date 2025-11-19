@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <core/libraries/np_manager/np_manager.h>
 #include "common/types.h"
+#include "core/libraries/np/np_types.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -19,8 +19,8 @@ constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_CONNECTED = 0x02;
 struct OrbisSharePlayConnectionInfo {
     int status;
     int mode;
-    Libraries::NpManager::OrbisNpOnlineId hostOnlineId;
-    Libraries::NpManager::OrbisNpOnlineId visitorOnlineId;
+    Libraries::Np::OrbisNpOnlineId hostOnlineId;
+    Libraries::Np::OrbisNpOnlineId visitorOnlineId;
     s32 hostUserId;
     s32 visitorUserId;
 };
@@ -50,5 +50,5 @@ int PS4_SYSV_ABI Func_C1C236728D88E177();
 int PS4_SYSV_ABI Func_E9E80C474781F115();
 int PS4_SYSV_ABI Func_F3DD6199DA15ED44();
 
-void RegisterlibSceSharePlay(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::SharePlay

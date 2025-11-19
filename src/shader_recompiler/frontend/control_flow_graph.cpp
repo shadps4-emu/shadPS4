@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <unordered_map>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
@@ -141,8 +140,10 @@ void CFG::EmitLabels() {
         } else if (inst.IsConditionalBranch()) {
             const u32 true_label = inst.BranchTarget(pc);
             const u32 false_label = pc + inst.length;
-            AddLabel(true_label);
-            AddLabel(false_label);
+            if (true_label != false_label) {
+                AddLabel(true_label);
+                AddLabel(false_label);
+            }
         } else if (inst.opcode == Opcode::S_ENDPGM) {
             const u32 next_label = pc + inst.length;
             AddLabel(next_label);
@@ -188,14 +189,15 @@ void CFG::SplitDivergenceScopes() {
             const bool is_close = is_close_scope(inst);
             if ((is_close || index == blk->end_index) && curr_begin != -1) {
                 // If there are no instructions inside scope don't do anything.
-                if (index - curr_begin == 1) {
+                if (index - curr_begin == 1 && is_close) {
                     curr_begin = -1;
                     continue;
                 }
                 // If all instructions in the scope ignore exec masking, we shouldn't insert a
                 // scope.
                 const auto start = inst_list.begin() + curr_begin + 1;
-                if (!std::ranges::all_of(start, inst_list.begin() + index, IgnoresExecMask)) {
+                if (!std::ranges::all_of(start, inst_list.begin() + index + !is_close,
+                                         IgnoresExecMask)) {
                     // Determine the first instruction affected by the exec mask.
                     do {
                         ++curr_begin;
@@ -316,8 +318,6 @@ void CFG::LinkBlocks() {
         // need to link with the next block.
         if (!end_inst.IsTerminateInstruction()) {
             auto* next_block = get_block(block.end);
-            ++next_block->num_predecessors;
-
             block.branch_true = next_block;
             block.end_class = EndClass::Branch;
             continue;
@@ -340,34 +340,16 @@ void CFG::LinkBlocks() {
 
         if (end_inst.IsUnconditionalBranch()) {
             auto* target_block = get_block(target_pc);
-            ++target_block->num_predecessors;
-
             block.branch_true = target_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.IsConditionalBranch()) {
             auto* target_block = get_block(target_pc);
-            ++target_block->num_predecessors;
-
             auto* end_block = get_block(block.end);
-            ++end_block->num_predecessors;
-
             block.branch_true = target_block;
             block.branch_false = end_block;
             block.end_class = EndClass::Branch;
         } else if (end_inst.opcode == Opcode::S_ENDPGM) {
-            const auto& prev_inst = inst_list[block.end_index - 1];
-            if (prev_inst.opcode == Opcode::EXP && prev_inst.control.exp.en == 0) {
-                if (prev_inst.control.exp.target != 9) {
-                    block.end_class = EndClass::Kill;
-                } else if (const auto& exec_mask = inst_list[block.end_index - 2];
-                           exec_mask.src[0].field == OperandField::ConstZero) {
-                    block.end_class = EndClass::Kill;
-                } else {
-                    block.end_class = EndClass::Exit;
-                }
-            } else {
-                block.end_class = EndClass::Exit;
-            }
+            block.end_class = EndClass::Exit;
         } else {
             UNREACHABLE();
         }
@@ -406,12 +388,6 @@ std::string CFG::Dot() const {
             dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
             dot +=
                 fmt::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n", node_uid);
-            ++node_uid;
-            break;
-        case EndClass::Kill:
-            dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-            dot +=
-                fmt::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n", node_uid);
             ++node_uid;
             break;
         }

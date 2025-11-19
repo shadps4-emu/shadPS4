@@ -7,6 +7,7 @@
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/pattern_matching.h"
 #include "shader_recompiler/ir/program.h"
@@ -373,11 +374,27 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             case IR::Opcode::StoreBufferU32x2:
             case IR::Opcode::StoreBufferU32x3:
             case IR::Opcode::StoreBufferU32x4: {
-                const auto info = inst.Flags<IR::BufferInstInfo>();
-                if (!info.globally_coherent) {
+                IR::Value soffset = IR::GetBufferSOffsetArg(&inst);
+                if (!M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::TessFactorsBufferBase),
+                                       MatchIgnore())
+                         .Match(soffset)) {
                     break;
                 }
+
+                const auto info = inst.Flags<IR::BufferInstInfo>();
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+
+                IR::Value voffset;
+                bool success =
+                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchImm(voffset), MatchIgnore())
+                        .Match(inst.Arg(IR::StoreBufferArgs::Address));
+                ASSERT_MSG(success, "unhandled pattern in tess factor store");
+
+                const u32 gcn_factor_idx = (info.inst_offset.Value() + voffset.U32()) >> 2;
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
+
+                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
+
                 const auto GetValue = [&](IR::Value data) -> IR::F32 {
                     if (auto* inst = data.TryInstRecursive();
                         inst && inst->GetOpcode() == IR::Opcode::BitCastU32F32) {
@@ -385,12 +402,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
-                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
-                IR::U32 index = IR::U32{inst.Arg(1)};
-                ASSERT(index.IsImmediate());
-                const u32 gcn_factor_idx = (info.inst_offset.Value() + index.U32()) >> 2;
 
-                const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,
@@ -438,7 +450,9 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
                 const IR::U32 addr{inst.Arg(0)};
-                const IR::U32 data{inst.Arg(1).Resolve()};
+                const IR::Value data = num_dwords == 2
+                                           ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
+                                           : inst.Arg(1).Resolve();
 
                 const auto SetOutput = [&](IR::U32 addr, IR::U32 value, AttributeRegion output_kind,
                                            u32 off_dw) {
@@ -466,10 +480,10 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
 
                 AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
                 if (num_dwords == 1) {
-                    SetOutput(addr, data, region, 0);
+                    SetOutput(addr, IR::U32{data}, region, 0);
                 } else {
                     for (auto i = 0; i < num_dwords; i++) {
-                        SetOutput(addr, IR::U32{data.Inst()->Arg(i)}, region, i);
+                        SetOutput(addr, IR::U32{ir.CompositeExtract(data, i)}, region, i);
                     }
                 }
                 inst.Invalidate();
@@ -499,7 +513,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                             ReadTessControlPointAttribute(addr, stride, ir, i, is_tcs_output_read);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;
@@ -578,7 +592,7 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         const IR::F32 component = GetInput(addr, i);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;

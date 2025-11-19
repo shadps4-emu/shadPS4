@@ -1,23 +1,29 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <optional>
 #include <string>
 #include <fmt/core.h>
 #include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
+#include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/formatter.h"
 #include "common/path_util.h"
 #include "common/scm_rev.h"
+
+using std::nullopt;
+using std::optional;
+using std::string;
 
 namespace toml {
 template <typename TC, typename K>
 std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
                                       std::filesystem::path opt) {
     try {
-        auto str = find<std::string>(v, ky);
+        auto str = find<string>(v, ky);
         if (str.empty()) {
             return opt;
         }
@@ -27,101 +33,231 @@ std::filesystem::path find_fs_path_or(const basic_value<TC>& v, const K& ky,
         return opt;
     }
 }
+
+// why is it so hard to avoid exceptions with this library
+template <typename T>
+std::optional<T> get_optional(const toml::value& v, const std::string& key) {
+    if (!v.is_table())
+        return std::nullopt;
+    const auto& tbl = v.as_table();
+    auto it = tbl.find(key);
+    if (it == tbl.end())
+        return std::nullopt;
+
+    if constexpr (std::is_same_v<T, int>) {
+        if (it->second.is_integer()) {
+            return static_cast<int>(toml::get<int>(it->second));
+        }
+    } else if constexpr (std::is_same_v<T, unsigned int>) {
+        if (it->second.is_integer()) {
+            return static_cast<u32>(toml::get<unsigned int>(it->second));
+        }
+    } else if constexpr (std::is_same_v<T, double>) {
+        if (it->second.is_floating()) {
+            return toml::get<double>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        if (it->second.is_string()) {
+            return toml::get<std::string>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, bool>) {
+        if (it->second.is_boolean()) {
+            return toml::get<bool>(it->second);
+        }
+    } else {
+        static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
+    }
+
+    return std::nullopt;
+}
+
 } // namespace toml
 
 namespace Config {
 
-static bool isNeo = false;
-static bool isDevKit = false;
-static bool playBGM = false;
-static bool isTrophyPopupDisabled = false;
-static int BGMvolume = 50;
-static bool enableDiscordRPC = false;
-static u32 screenWidth = 1280;
-static u32 screenHeight = 720;
-static s32 gpuId = -1; // Vulkan physical device index. Set to negative for auto select
-static std::string logFilter;
-static std::string logType = "sync";
+ConfigMode config_mode = ConfigMode::Default;
+
+void setConfigMode(ConfigMode mode) {
+    config_mode = mode;
+}
+
+template <typename T>
+class ConfigEntry {
+public:
+    const T default_value;
+    T base_value;
+    optional<T> game_specific_value;
+    ConfigEntry(const T& t = T()) : default_value(t), base_value(t), game_specific_value(nullopt) {}
+    ConfigEntry operator=(const T& t) {
+        base_value = t;
+        return *this;
+    }
+    const T get() const {
+        switch (config_mode) {
+        case ConfigMode::Default:
+            return game_specific_value.value_or(base_value);
+        case ConfigMode::Global:
+            return base_value;
+        case ConfigMode::Clean:
+            return default_value;
+        default:
+            UNREACHABLE();
+        }
+    }
+    void setFromToml(const toml::value& v, const std::string& key, bool is_game_specific = false) {
+        if (is_game_specific) {
+            game_specific_value = toml::get_optional<T>(v, key);
+        } else {
+            base_value = toml::get_optional<T>(v, key).value_or(base_value);
+        }
+    }
+    void set(const T value, bool is_game_specific = false) {
+        is_game_specific ? game_specific_value = value : base_value = value;
+    }
+    void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
+                      bool is_game_specific = false) {
+        if (is_game_specific) {
+            data[header][key] = game_specific_value.value_or(base_value);
+            game_specific_value = std::nullopt;
+        } else {
+            data[header][key] = base_value;
+        }
+    }
+    // operator T() {
+    //     return get();
+    // }
+};
+
+// General
+static ConfigEntry<int> volumeSlider(100);
+static ConfigEntry<bool> isNeo(false);
+static ConfigEntry<bool> isDevKit(false);
+static ConfigEntry<int> extraDmemInMbytes(0);
+static ConfigEntry<bool> isPSNSignedIn(false);
+static ConfigEntry<bool> isTrophyPopupDisabled(false);
+static ConfigEntry<double> trophyNotificationDuration(6.0);
+static ConfigEntry<string> logFilter("");
+static ConfigEntry<string> logType("sync");
+// static ConfigEntry<string> userName("shadPS4");
 static std::array<std::string, 4> userNames = {"shadPS4"
                                                "shadps4-2",
-                                               "shadPS4-3", "shadPS4-4"};
-static std::string updateChannel;
-static std::string chooseHomeTab;
-static std::string backButtonBehavior = "left";
-static bool useSpecialPad = false;
-static int specialPadClass = 1;
-static bool isMotionControlsEnabled = true;
-static bool isDebugDump = false;
-static bool isShaderDebug = false;
-static bool isShowSplash = false;
-static bool isAutoUpdate = false;
-static bool isAlwaysShowChangelog = false;
-static std::string isSideTrophy = "right";
-static bool isNullGpu = false;
-static bool shouldCopyGPUBuffers = false;
-static bool shouldDumpShaders = false;
-static bool shouldPatchShaders = true;
-static u32 vblankDivider = 1;
-static bool vkValidation = false;
-static bool vkValidationSync = false;
-static bool vkValidationGpu = false;
-static bool vkCrashDiagnostic = false;
-static bool vkHostMarkers = false;
-static bool vkGuestMarkers = false;
-static bool rdocEnable = false;
-static bool isFpsColor = true;
-static bool isSeparateLogFilesEnabled = false;
-static s16 cursorState = HideCursorState::Idle;
-static int cursorHideTimeout = 5; // 5 seconds (default)
-static double trophyNotificationDuration = 6.0;
-static bool useUnifiedInputConfig = true;
-static bool overrideControllerColor = false;
-static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool compatibilityData = false;
-static bool checkCompatibilityOnStartup = false;
-static std::string trophyKey;
+                                               "shadPS4-3", "shadPS4-4"}; // TODO
+static ConfigEntry<bool> isShowSplash(false);
+static ConfigEntry<string> isSideTrophy("right");
+static ConfigEntry<bool> isConnectedToNetwork(false);
+static bool enableDiscordRPC = false;
+static std::filesystem::path sys_modules_path = {};
 
-// Gui
-static bool load_game_size = true;
+// Input
+static ConfigEntry<int> cursorState(HideCursorState::Idle);
+static ConfigEntry<int> cursorHideTimeout(5); // 5 seconds (default)
+static ConfigEntry<bool> useSpecialPad(false);
+static ConfigEntry<int> specialPadClass(1);
+static ConfigEntry<bool> isMotionControlsEnabled(true);
+static ConfigEntry<bool> useUnifiedInputConfig(true);
+static ConfigEntry<string> defaultControllerID("");
+static ConfigEntry<bool> backgroundControllerInput(false);
+
+// Audio
+static ConfigEntry<string> micDevice("Default Device");
+static ConfigEntry<string> mainOutputDevice("Default Device");
+static ConfigEntry<string> padSpkOutputDevice("Default Device");
+
+// GPU
+static ConfigEntry<u32> windowWidth(1280);
+static ConfigEntry<u32> windowHeight(720);
+static ConfigEntry<u32> internalScreenWidth(1280);
+static ConfigEntry<u32> internalScreenHeight(720);
+static ConfigEntry<bool> isNullGpu(false);
+static ConfigEntry<bool> shouldCopyGPUBuffers(false);
+static ConfigEntry<bool> readbacksEnabled(false);
+static ConfigEntry<bool> readbackLinearImagesEnabled(false);
+static ConfigEntry<bool> directMemoryAccessEnabled(false);
+static ConfigEntry<bool> shouldDumpShaders(false);
+static ConfigEntry<bool> shouldPatchShaders(false);
+static ConfigEntry<u32> vblankFrequency(60);
+static ConfigEntry<bool> isFullscreen(false);
+static ConfigEntry<string> fullscreenMode("Windowed");
+static ConfigEntry<string> presentMode("Mailbox");
+static ConfigEntry<bool> isHDRAllowed(false);
+static ConfigEntry<bool> fsrEnabled(true);
+static ConfigEntry<bool> rcasEnabled(true);
+static ConfigEntry<int> rcasAttenuation(250);
+
+// Vulkan
+static ConfigEntry<s32> gpuId(-1);
+static ConfigEntry<bool> vkValidation(false);
+static ConfigEntry<bool> vkValidationCore(true);
+static ConfigEntry<bool> vkValidationSync(false);
+static ConfigEntry<bool> vkValidationGpu(false);
+static ConfigEntry<bool> vkCrashDiagnostic(false);
+static ConfigEntry<bool> vkHostMarkers(false);
+static ConfigEntry<bool> vkGuestMarkers(false);
+static ConfigEntry<bool> rdocEnable(false);
+
+// Debug
+static ConfigEntry<bool> isDebugDump(false);
+static ConfigEntry<bool> isShaderDebug(false);
+static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
+static ConfigEntry<bool> isFpsColor(true);
+static ConfigEntry<bool> logEnabled(true);
+
+// GUI
 static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
 std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
-u32 main_window_geometry_x = 400;
-u32 main_window_geometry_y = 400;
-u32 main_window_geometry_w = 1280;
-u32 main_window_geometry_h = 720;
-u32 mw_themes = 0;
-u32 m_icon_size = 36;
-u32 m_icon_size_grid = 69;
-u32 m_slider_pos = 0;
-u32 m_slider_pos_grid = 0;
-u32 m_table_mode = 0;
-u32 m_window_size_W = 1280;
-u32 m_window_size_H = 720;
-std::vector<std::string> m_elf_viewer;
-std::vector<std::string> m_recent_files;
-std::string emulator_language = "en_US";
-static int backgroundImageOpacity = 50;
-static bool showBackgroundImage = true;
-static bool isFullscreen = false;
-static std::string fullscreenMode = "Windowed";
-static bool isHDRAllowed = false;
-static bool showLabelsUnderIcons = true;
 
-// Language
-u32 m_language = 1; // english
+// Settings
+ConfigEntry<u32> m_language(1); // english
 
+// USB Device
+static ConfigEntry<int> usbDeviceBackend(UsbBackendType::Real);
+
+// Keys
+static string trophyKey = "";
+
+// Config version, used to determine if a user's config file is outdated.
+static string config_version = Common::g_scm_rev;
+
+// These entries aren't stored in the config
+static bool overrideControllerColor = false;
+static int controllerCustomColorRGB[3] = {0, 0, 255};
+static bool isGameRunning = false;
+static bool load_auto_patches = true;
+
+bool getGameRunning() {
+    return isGameRunning;
+}
+
+void setGameRunning(bool running) {
+    isGameRunning = running;
+}
+
+std::filesystem::path getSysModulesPath() {
+    if (sys_modules_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
+    }
+    return sys_modules_path;
+}
+
+void setSysModulesPath(const std::filesystem::path& path) {
+    sys_modules_path = path;
+}
+
+int getVolumeSlider() {
+    return volumeSlider.get();
+}
 bool allowHDR() {
-    return isHDRAllowed;
+    return isHDRAllowed.get();
 }
 
 bool GetUseUnifiedInputConfig() {
-    return useUnifiedInputConfig;
+    return useUnifiedInputConfig.get();
 }
 
 void SetUseUnifiedInputConfig(bool use) {
-    useUnifiedInputConfig = use;
+    useUnifiedInputConfig.base_value = use;
 }
 
 bool GetOverrideControllerColor() {
@@ -136,22 +272,22 @@ int* GetControllerCustomColor() {
     return controllerCustomColorRGB;
 }
 
+bool getLoggingEnabled() {
+    return logEnabled.get();
+}
+
 void SetControllerCustomColor(int r, int b, int g) {
     controllerCustomColorRGB[0] = r;
     controllerCustomColorRGB[1] = b;
     controllerCustomColorRGB[2] = g;
 }
 
-std::string getTrophyKey() {
+string getTrophyKey() {
     return trophyKey;
 }
 
-void setTrophyKey(std::string key) {
+void setTrophyKey(string key) {
     trophyKey = key;
-}
-
-bool GetLoadGameSizeEnabled() {
-    return load_game_size;
 }
 
 std::filesystem::path GetSaveDataPath() {
@@ -161,44 +297,42 @@ std::filesystem::path GetSaveDataPath() {
     return save_data_path;
 }
 
-void setLoadGameSizeEnabled(bool enable) {
-    load_game_size = enable;
+void setVolumeSlider(int volumeValue, bool is_game_specific) {
+    volumeSlider.set(volumeValue, is_game_specific);
 }
 
 bool isNeoModeConsole() {
-    return isNeo;
+    return isNeo.get();
 }
 
 bool isDevKitConsole() {
-    return isDevKit;
+    return isDevKit.get();
+}
+
+int getExtraDmemInMbytes() {
+    return extraDmemInMbytes.get();
+}
+
+void setExtraDmemInMbytes(int value, bool is_game_specific) {
+    // Disable setting in global config
+    is_game_specific ? extraDmemInMbytes.game_specific_value = value
+                     : extraDmemInMbytes.base_value = 0;
 }
 
 bool getIsFullscreen() {
-    return isFullscreen;
+    return isFullscreen.get();
 }
 
-bool getShowLabelsUnderIcons() {
-    return showLabelsUnderIcons;
+string getFullscreenMode() {
+    return fullscreenMode.get();
 }
 
-bool setShowLabelsUnderIcons() {
-    return false;
-}
-
-std::string getFullscreenMode() {
-    return fullscreenMode;
+std::string getPresentMode() {
+    return presentMode.get();
 }
 
 bool getisTrophyPopupDisabled() {
-    return isTrophyPopupDisabled;
-}
-
-bool getPlayBGM() {
-    return playBGM;
-}
-
-int getBGMvolume() {
-    return BGMvolume;
+    return isTrophyPopupDisabled.get();
 }
 
 bool getEnableDiscordRPC() {
@@ -206,327 +340,358 @@ bool getEnableDiscordRPC() {
 }
 
 s16 getCursorState() {
-    return cursorState;
+    return cursorState.get();
 }
 
 int getCursorHideTimeout() {
-    return cursorHideTimeout;
+    return cursorHideTimeout.get();
+}
+
+string getMicDevice() {
+    return micDevice.get();
+}
+
+std::string getMainOutputDevice() {
+    return mainOutputDevice.get();
+}
+
+std::string getPadSpkOutputDevice() {
+    return padSpkOutputDevice.get();
 }
 
 double getTrophyNotificationDuration() {
-    return trophyNotificationDuration;
+    return trophyNotificationDuration.get();
 }
 
-u32 getScreenWidth() {
-    return screenWidth;
+u32 getWindowWidth() {
+    return windowWidth.get();
 }
 
-u32 getScreenHeight() {
-    return screenHeight;
+u32 getWindowHeight() {
+    return windowHeight.get();
+}
+
+u32 getInternalScreenWidth() {
+    return internalScreenHeight.get();
+}
+
+u32 getInternalScreenHeight() {
+    return internalScreenHeight.get();
 }
 
 s32 getGpuId() {
-    return gpuId;
+    return gpuId.get();
 }
 
-std::string getLogFilter() {
-    return logFilter;
+string getLogFilter() {
+    return logFilter.get();
 }
 
-std::string getLogType() {
-    return logType;
+string getLogType() {
+    return logType.get();
 }
 
-std::string getUserName() {
+string getUserName() {
     return userNames[0];
 }
 
-std::string getUpdateChannel() {
-    return updateChannel;
-}
-
-std::string getChooseHomeTab() {
-    return chooseHomeTab;
-}
-
-std::string getBackButtonBehavior() {
-    return backButtonBehavior;
-}
-
 bool getUseSpecialPad() {
-    return useSpecialPad;
+    return useSpecialPad.get();
 }
 
 int getSpecialPadClass() {
-    return specialPadClass;
+    return specialPadClass.get();
 }
 
 bool getIsMotionControlsEnabled() {
-    return isMotionControlsEnabled;
+    return isMotionControlsEnabled.get();
 }
 
 bool debugDump() {
-    return isDebugDump;
+    return isDebugDump.get();
 }
 
 bool collectShadersForDebug() {
-    return isShaderDebug;
+    return isShaderDebug.get();
 }
 
 bool showSplash() {
-    return isShowSplash;
+    return isShowSplash.get();
 }
 
-bool autoUpdate() {
-    return isAutoUpdate;
-}
-
-bool alwaysShowChangelog() {
-    return isAlwaysShowChangelog;
-}
-
-std::string sideTrophy() {
-    return isSideTrophy;
+string sideTrophy() {
+    return isSideTrophy.get();
 }
 
 bool nullGpu() {
-    return isNullGpu;
+    return isNullGpu.get();
 }
 
 bool copyGPUCmdBuffers() {
-    return shouldCopyGPUBuffers;
+    return shouldCopyGPUBuffers.get();
+}
+
+bool readbacks() {
+    return readbacksEnabled.get();
+}
+
+bool readbackLinearImages() {
+    return readbackLinearImagesEnabled.get();
+}
+
+bool directMemoryAccess() {
+    return directMemoryAccessEnabled.get();
 }
 
 bool dumpShaders() {
-    return shouldDumpShaders;
+    return shouldDumpShaders.get();
 }
 
 bool patchShaders() {
-    return shouldPatchShaders;
+    return shouldPatchShaders.get();
 }
 
 bool isRdocEnabled() {
-    return rdocEnable;
+    return rdocEnable.get();
 }
 
 bool fpsColor() {
-    return isFpsColor;
+    return isFpsColor.get();
 }
 
-u32 vblankDiv() {
-    return vblankDivider;
+bool isLoggingEnabled() {
+    return logEnabled.get();
+}
+
+u32 vblankFreq() {
+    if (vblankFrequency.get() < 60) {
+        vblankFrequency = 60;
+    }
+    return vblankFrequency.get();
 }
 
 bool vkValidationEnabled() {
-    return vkValidation;
+    return vkValidation.get();
+}
+
+bool vkValidationCoreEnabled() {
+    return vkValidationCore.get();
 }
 
 bool vkValidationSyncEnabled() {
-    return vkValidationSync;
+    return vkValidationSync.get();
 }
 
 bool vkValidationGpuEnabled() {
-    return vkValidationGpu;
+    return vkValidationGpu.get();
 }
 
 bool getVkCrashDiagnosticEnabled() {
-    return vkCrashDiagnostic;
+    return vkCrashDiagnostic.get();
 }
 
 bool getVkHostMarkersEnabled() {
-    return vkHostMarkers;
+    return vkHostMarkers.get();
 }
 
 bool getVkGuestMarkersEnabled() {
-    return vkGuestMarkers;
+    return vkGuestMarkers.get();
 }
 
-void setVkCrashDiagnosticEnabled(bool enable) {
-    vkCrashDiagnostic = enable;
+void setVkCrashDiagnosticEnabled(bool enable, bool is_game_specific) {
+    vkCrashDiagnostic.set(enable, is_game_specific);
 }
 
-void setVkHostMarkersEnabled(bool enable) {
-    vkHostMarkers = enable;
+void setVkHostMarkersEnabled(bool enable, bool is_game_specific) {
+    vkHostMarkers.set(enable, is_game_specific);
 }
 
-void setVkGuestMarkersEnabled(bool enable) {
-    vkGuestMarkers = enable;
+void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
+    vkGuestMarkers.set(enable, is_game_specific);
 }
 
-bool getCompatibilityEnabled() {
-    return compatibilityData;
+bool getIsConnectedToNetwork() {
+    return isConnectedToNetwork.get();
 }
 
-bool getCheckCompatibilityOnStartup() {
-    return checkCompatibilityOnStartup;
+void setConnectedToNetwork(bool enable, bool is_game_specific) {
+    isConnectedToNetwork.set(enable, is_game_specific);
 }
 
-void setGpuId(s32 selectedGpuId) {
-    gpuId = selectedGpuId;
+void setGpuId(s32 selectedGpuId, bool is_game_specific) {
+    gpuId.set(selectedGpuId, is_game_specific);
 }
 
-void setScreenWidth(u32 width) {
-    screenWidth = width;
+void setWindowWidth(u32 width, bool is_game_specific) {
+    windowWidth.set(width, is_game_specific);
 }
 
-void setScreenHeight(u32 height) {
-    screenHeight = height;
+void setWindowHeight(u32 height, bool is_game_specific) {
+    windowHeight.set(height, is_game_specific);
 }
 
-void setDebugDump(bool enable) {
-    isDebugDump = enable;
+void setInternalScreenWidth(u32 width) {
+    internalScreenWidth.base_value = width;
 }
 
-void setCollectShaderForDebug(bool enable) {
-    isShaderDebug = enable;
+void setInternalScreenHeight(u32 height) {
+    internalScreenHeight.base_value = height;
 }
 
-void setShowSplash(bool enable) {
-    isShowSplash = enable;
+void setDebugDump(bool enable, bool is_game_specific) {
+    isDebugDump.set(enable, is_game_specific);
 }
 
-void setAutoUpdate(bool enable) {
-    isAutoUpdate = enable;
+void setLoggingEnabled(bool enable, bool is_game_specific) {
+    logEnabled.set(enable, is_game_specific);
 }
 
-void setAlwaysShowChangelog(bool enable) {
-    isAlwaysShowChangelog = enable;
+void setCollectShaderForDebug(bool enable, bool is_game_specific) {
+    isShaderDebug.set(enable, is_game_specific);
 }
 
-void setSideTrophy(std::string side) {
-    isSideTrophy = side;
+void setShowSplash(bool enable, bool is_game_specific) {
+    isShowSplash.set(enable, is_game_specific);
 }
 
-void setNullGpu(bool enable) {
-    isNullGpu = enable;
+void setSideTrophy(string side, bool is_game_specific) {
+    isSideTrophy.set(side, is_game_specific);
 }
 
-void setAllowHDR(bool enable) {
-    isHDRAllowed = enable;
+void setNullGpu(bool enable, bool is_game_specific) {
+    isNullGpu.set(enable, is_game_specific);
 }
 
-void setCopyGPUCmdBuffers(bool enable) {
-    shouldCopyGPUBuffers = enable;
+void setAllowHDR(bool enable, bool is_game_specific) {
+    isHDRAllowed.set(enable, is_game_specific);
 }
 
-void setDumpShaders(bool enable) {
-    shouldDumpShaders = enable;
+void setCopyGPUCmdBuffers(bool enable, bool is_game_specific) {
+    shouldCopyGPUBuffers.set(enable, is_game_specific);
 }
 
-void setVkValidation(bool enable) {
-    vkValidation = enable;
+void setReadbacks(bool enable, bool is_game_specific) {
+    readbacksEnabled.set(enable, is_game_specific);
 }
 
-void setVkSyncValidation(bool enable) {
-    vkValidationSync = enable;
+void setReadbackLinearImages(bool enable, bool is_game_specific) {
+    readbackLinearImagesEnabled.set(enable, is_game_specific);
 }
 
-void setRdocEnabled(bool enable) {
-    rdocEnable = enable;
+void setDirectMemoryAccess(bool enable, bool is_game_specific) {
+    directMemoryAccessEnabled.set(enable, is_game_specific);
 }
 
-void setVblankDiv(u32 value) {
-    vblankDivider = value;
+void setDumpShaders(bool enable, bool is_game_specific) {
+    shouldDumpShaders.set(enable, is_game_specific);
 }
 
-void setIsFullscreen(bool enable) {
-    isFullscreen = enable;
-}
-static void setShowLabelsUnderIcons(bool enable) {
-    showLabelsUnderIcons = enable;
+void setVkValidation(bool enable, bool is_game_specific) {
+    vkValidation.set(enable, is_game_specific);
 }
 
-void setFullscreenMode(std::string mode) {
-    fullscreenMode = mode;
+void setVkSyncValidation(bool enable, bool is_game_specific) {
+    vkValidationSync.set(enable, is_game_specific);
 }
 
-void setisTrophyPopupDisabled(bool disable) {
-    isTrophyPopupDisabled = disable;
+void setVkCoreValidation(bool enable, bool is_game_specific) {
+    vkValidationCore.set(enable, is_game_specific);
 }
 
-void setPlayBGM(bool enable) {
-    playBGM = enable;
+void setVkGpuValidation(bool enable, bool is_game_specific) {
+    vkValidationGpu.set(enable, is_game_specific);
 }
 
-void setBGMvolume(int volume) {
-    BGMvolume = volume;
+void setRdocEnabled(bool enable, bool is_game_specific) {
+    rdocEnable.set(enable, is_game_specific);
+}
+
+void setVblankFreq(u32 value, bool is_game_specific) {
+    vblankFrequency.set(value, is_game_specific);
+}
+
+void setIsFullscreen(bool enable, bool is_game_specific) {
+    isFullscreen.set(enable, is_game_specific);
+}
+
+void setFullscreenMode(string mode, bool is_game_specific) {
+    fullscreenMode.set(mode, is_game_specific);
+}
+
+void setPresentMode(std::string mode, bool is_game_specific) {
+    presentMode.set(mode, is_game_specific);
+}
+
+void setisTrophyPopupDisabled(bool disable, bool is_game_specific) {
+    isTrophyPopupDisabled.set(disable, is_game_specific);
 }
 
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
 
-void setCursorState(s16 newCursorState) {
-    cursorState = newCursorState;
+void setCursorState(s16 newCursorState, bool is_game_specific) {
+    cursorState.set(newCursorState, is_game_specific);
 }
 
-void setCursorHideTimeout(int newcursorHideTimeout) {
-    cursorHideTimeout = newcursorHideTimeout;
-}
-void setTrophyNotificationDuration(double newTrophyNotificationDuration) {
-    trophyNotificationDuration = newTrophyNotificationDuration;
+void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific) {
+    cursorHideTimeout.set(newcursorHideTimeout, is_game_specific);
 }
 
-void setLanguage(u32 language) {
-    m_language = language;
+void setMicDevice(std::string device, bool is_game_specific) {
+    micDevice.set(device, is_game_specific);
 }
 
-void setNeoMode(bool enable) {
-    isNeo = enable;
+void setMainOutputDevice(std::string device, bool is_game_specific) {
+    mainOutputDevice.set(device, is_game_specific);
 }
 
-void setLogType(const std::string& type) {
-    logType = type;
+void setPadSpkOutputDevice(std::string device, bool is_game_specific) {
+    padSpkOutputDevice.set(device, is_game_specific);
 }
 
-void setLogFilter(const std::string& type) {
-    logFilter = type;
+void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
+    trophyNotificationDuration.set(newTrophyNotificationDuration, is_game_specific);
 }
 
-void setSeparateLogFilesEnabled(bool enabled) {
-    isSeparateLogFilesEnabled = enabled;
+void setLanguage(u32 language, bool is_game_specific) {
+    m_language.set(language, is_game_specific);
 }
 
-void setUserName(const std::string& type) {
-    userNames[0] = type;
+void setNeoMode(bool enable, bool is_game_specific) {
+    isNeo.set(enable, is_game_specific);
 }
 
-void setUpdateChannel(const std::string& type) {
-    updateChannel = type;
-}
-void setChooseHomeTab(const std::string& type) {
-    chooseHomeTab = type;
+void setDevKitConsole(bool enable, bool is_game_specific) {
+    isDevKit.set(enable, is_game_specific);
 }
 
-void setBackButtonBehavior(const std::string& type) {
-    backButtonBehavior = type;
+void setLogType(const string& type, bool is_game_specific) {
+    logType.set(type, is_game_specific);
+}
+
+void setLogFilter(const string& type, bool is_game_specific) {
+    logFilter.set(type, is_game_specific);
+}
+
+void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific) {
+    isSeparateLogFilesEnabled.set(enabled, is_game_specific);
+}
+
+void setUserName(const string& name, bool is_game_specific) {
+    userNames[0] = name;
 }
 
 void setUseSpecialPad(bool use) {
-    useSpecialPad = use;
+    useSpecialPad.base_value = use;
 }
 
 void setSpecialPadClass(int type) {
-    specialPadClass = type;
+    specialPadClass.base_value = type;
 }
 
-void setIsMotionControlsEnabled(bool use) {
-    isMotionControlsEnabled = use;
-}
-
-void setCompatibilityEnabled(bool use) {
-    compatibilityData = use;
-}
-
-void setCheckCompatibilityOnStartup(bool use) {
-    checkCompatibilityOnStartup = use;
-}
-
-void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h) {
-    main_window_geometry_x = x;
-    main_window_geometry_y = y;
-    main_window_geometry_w = w;
-    main_window_geometry_h = h;
+void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
+    isMotionControlsEnabled.set(use, is_game_specific);
 }
 
 bool addGameInstallDir(const std::filesystem::path& dir, bool enabled) {
@@ -561,52 +726,6 @@ void setAddonInstallDir(const std::filesystem::path& dir) {
     settings_addon_install_dir = dir;
 }
 
-void setMainWindowTheme(u32 theme) {
-    mw_themes = theme;
-}
-
-void setIconSize(u32 size) {
-    m_icon_size = size;
-}
-
-void setIconSizeGrid(u32 size) {
-    m_icon_size_grid = size;
-}
-
-void setSliderPosition(u32 pos) {
-    m_slider_pos = pos;
-}
-
-void setSliderPositionGrid(u32 pos) {
-    m_slider_pos_grid = pos;
-}
-
-void setTableMode(u32 mode) {
-    m_table_mode = mode;
-}
-
-void setMainWindowWidth(u32 width) {
-    m_window_size_W = width;
-}
-
-void setMainWindowHeight(u32 height) {
-    m_window_size_H = height;
-}
-
-void setElfViewer(const std::vector<std::string>& elfList) {
-    m_elf_viewer.resize(elfList.size());
-    m_elf_viewer = elfList;
-}
-
-void setRecentFiles(const std::vector<std::string>& recentFiles) {
-    m_recent_files.resize(recentFiles.size());
-    m_recent_files = recentFiles;
-}
-
-void setEmulatorLanguage(std::string language) {
-    emulator_language = language;
-}
-
 void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     settings_install_dirs.clear();
     for (const auto& dir : dirs_config) {
@@ -620,22 +739,6 @@ void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config) {
 
 void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
-}
-
-u32 getMainWindowGeometryX() {
-    return main_window_geometry_x;
-}
-
-u32 getMainWindowGeometryY() {
-    return main_window_geometry_y;
-}
-
-u32 getMainWindowGeometryW() {
-    return main_window_geometry_w;
-}
-
-u32 getMainWindowGeometryH() {
-    return main_window_geometry_h;
 }
 
 const std::vector<std::filesystem::path> getGameInstallDirs() {
@@ -664,79 +767,84 @@ std::filesystem::path getAddonInstallDir() {
     return settings_addon_install_dir;
 }
 
-u32 getMainWindowTheme() {
-    return mw_themes;
-}
-
-u32 getIconSize() {
-    return m_icon_size;
-}
-
-u32 getIconSizeGrid() {
-    return m_icon_size_grid;
-}
-
-u32 getSliderPosition() {
-    return m_slider_pos;
-}
-
-u32 getSliderPositionGrid() {
-    return m_slider_pos_grid;
-}
-
-u32 getTableMode() {
-    return m_table_mode;
-}
-
-u32 getMainWindowWidth() {
-    return m_window_size_W;
-}
-
-u32 getMainWindowHeight() {
-    return m_window_size_H;
-}
-
-std::vector<std::string> getElfViewer() {
-    return m_elf_viewer;
-}
-
-std::vector<std::string> getRecentFiles() {
-    return m_recent_files;
-}
-
-std::string getEmulatorLanguage() {
-    return emulator_language;
-}
-
 u32 GetLanguage() {
-    return m_language;
+    return m_language.get();
 }
 
 bool getSeparateLogFilesEnabled() {
-    return isSeparateLogFilesEnabled;
+    return isSeparateLogFilesEnabled.get();
 }
 
-int getBackgroundImageOpacity() {
-    return backgroundImageOpacity;
+bool getPSNSignedIn() {
+    return isPSNSignedIn.get();
 }
 
-void setBackgroundImageOpacity(int opacity) {
-    backgroundImageOpacity = std::clamp(opacity, 0, 100);
+void setPSNSignedIn(bool sign, bool is_game_specific) {
+    isPSNSignedIn.set(sign, is_game_specific);
 }
 
-bool getShowBackgroundImage() {
-    return showBackgroundImage;
+string getDefaultControllerID() {
+    return defaultControllerID.get();
 }
 
-void setShowBackgroundImage(bool show) {
-    showBackgroundImage = show;
+void setDefaultControllerID(string id) {
+    defaultControllerID.base_value = id;
 }
 
-void load(const std::filesystem::path& path) {
-    // If the configuration file does not exist, create it and return
+bool getBackgroundControllerInput() {
+    return backgroundControllerInput.get();
+}
+
+void setBackgroundControllerInput(bool enable, bool is_game_specific) {
+    backgroundControllerInput.set(enable, is_game_specific);
+}
+
+bool getFsrEnabled() {
+    return fsrEnabled.get();
+}
+
+void setFsrEnabled(bool enable, bool is_game_specific) {
+    fsrEnabled.set(enable, is_game_specific);
+}
+
+bool getRcasEnabled() {
+    return rcasEnabled.get();
+}
+
+void setRcasEnabled(bool enable, bool is_game_specific) {
+    rcasEnabled.set(enable, is_game_specific);
+}
+
+int getRcasAttenuation() {
+    return rcasAttenuation.get();
+}
+
+void setRcasAttenuation(int value, bool is_game_specific) {
+    rcasAttenuation.set(value, is_game_specific);
+}
+
+int getUsbDeviceBackend() {
+    return usbDeviceBackend.get();
+}
+
+void setUsbDeviceBackend(int value, bool is_game_specific) {
+    usbDeviceBackend.set(value, is_game_specific);
+}
+
+bool getLoadAutoPatches() {
+    return load_auto_patches;
+}
+void setLoadAutoPatches(bool enable) {
+    load_auto_patches = enable;
+}
+
+void load(const std::filesystem::path& path, bool is_game_specific) {
+    // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
     if (!std::filesystem::exists(path, error)) {
-        save(path);
+        if (!is_game_specific) {
+            save(path);
+        }
         return;
     }
 
@@ -746,100 +854,110 @@ void load(const std::filesystem::path& path) {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifs.open(path, std::ios_base::binary);
-        data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+        data = toml::parse(ifs, string{fmt::UTF(path.filename().u8string()).data});
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
     }
+
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
-        isNeo = toml::find_or<bool>(general, "isPS4Pro", false);
-        isDevKit = toml::find_or<bool>(general, "isDevKit", false);
-        playBGM = toml::find_or<bool>(general, "playBGM", false);
-        isTrophyPopupDisabled = toml::find_or<bool>(general, "isTrophyPopupDisabled", false);
-        trophyNotificationDuration =
-            toml::find_or<double>(general, "trophyNotificationDuration", 5.0);
-        BGMvolume = toml::find_or<int>(general, "BGMvolume", 50);
-        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", true);
-        logFilter = toml::find_or<std::string>(general, "logFilter", "");
-        logType = toml::find_or<std::string>(general, "logType", "sync");
-        userNames[0] = toml::find_or<std::string>(general, "userName", "shadPS4");
-        if (Common::g_is_release) {
-            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Release");
-        } else {
-            updateChannel = toml::find_or<std::string>(general, "updateChannel", "Nightly");
+        volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
+        isNeo.setFromToml(general, "isPS4Pro", is_game_specific);
+        isDevKit.setFromToml(general, "isDevKit", is_game_specific);
+        if (is_game_specific) { // do not get this value from the base config
+            extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
         }
-        isShowSplash = toml::find_or<bool>(general, "showSplash", true);
-        isAutoUpdate = toml::find_or<bool>(general, "autoUpdate", false);
-        isAlwaysShowChangelog = toml::find_or<bool>(general, "alwaysShowChangelog", false);
-        isSideTrophy = toml::find_or<std::string>(general, "sideTrophy", "right");
-        compatibilityData = toml::find_or<bool>(general, "compatibilityEnabled", false);
-        checkCompatibilityOnStartup =
-            toml::find_or<bool>(general, "checkCompatibilityOnStartup", false);
-        chooseHomeTab = toml::find_or<std::string>(general, "chooseHomeTab", "Release");
+        isPSNSignedIn.setFromToml(general, "isPSNSignedIn", is_game_specific);
+        isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
+        trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
+                                               is_game_specific);
+        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
+        logFilter.setFromToml(general, "logFilter", is_game_specific);
+        logType.setFromToml(general, "logType", is_game_specific);
+        // userName.setFromToml(general, "userName", is_game_specific); // TODO
+        isShowSplash.setFromToml(general, "showSplash", is_game_specific);
+        isSideTrophy.setFromToml(general, "sideTrophy", is_game_specific);
+
+        isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
+        defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
+        sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
 
-        cursorState = toml::find_or<int>(input, "cursorState", HideCursorState::Idle);
-        cursorHideTimeout = toml::find_or<int>(input, "cursorHideTimeout", 5);
-        backButtonBehavior = toml::find_or<std::string>(input, "backButtonBehavior", "left");
-        useSpecialPad = toml::find_or<bool>(input, "useSpecialPad", false);
-        specialPadClass = toml::find_or<int>(input, "specialPadClass", 1);
-        isMotionControlsEnabled = toml::find_or<bool>(input, "isMotionControlsEnabled", true);
-        useUnifiedInputConfig = toml::find_or<bool>(input, "useUnifiedInputConfig", true);
+        cursorState.setFromToml(input, "cursorState", is_game_specific);
+        cursorHideTimeout.setFromToml(input, "cursorHideTimeout", is_game_specific);
+        useSpecialPad.setFromToml(input, "useSpecialPad", is_game_specific);
+        specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
+        isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
+        useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
+        backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+        usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
+    }
+
+    if (data.contains("Audio")) {
+        const toml::value& audio = data.at("Audio");
+
+        micDevice.setFromToml(audio, "micDevice", is_game_specific);
+        mainOutputDevice.setFromToml(audio, "mainOutputDevice", is_game_specific);
+        padSpkOutputDevice.setFromToml(audio, "padSpkOutputDevice", is_game_specific);
     }
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
 
-        screenWidth = toml::find_or<int>(gpu, "screenWidth", screenWidth);
-        screenHeight = toml::find_or<int>(gpu, "screenHeight", screenHeight);
-        isNullGpu = toml::find_or<bool>(gpu, "nullGpu", false);
-        shouldCopyGPUBuffers = toml::find_or<bool>(gpu, "copyGPUBuffers", false);
-        shouldDumpShaders = toml::find_or<bool>(gpu, "dumpShaders", false);
-        shouldPatchShaders = toml::find_or<bool>(gpu, "patchShaders", true);
-        vblankDivider = toml::find_or<int>(gpu, "vblankDivider", 1);
-        isFullscreen = toml::find_or<bool>(gpu, "Fullscreen", false);
-        fullscreenMode = toml::find_or<std::string>(gpu, "FullscreenMode", "Windowed");
-        isHDRAllowed = toml::find_or<bool>(gpu, "allowHDR", false);
+        windowWidth.setFromToml(gpu, "screenWidth", is_game_specific);
+        windowHeight.setFromToml(gpu, "screenHeight", is_game_specific);
+        internalScreenWidth.setFromToml(gpu, "internalScreenWidth", is_game_specific);
+        internalScreenHeight.setFromToml(gpu, "internalScreenHeight", is_game_specific);
+        isNullGpu.setFromToml(gpu, "nullGpu", is_game_specific);
+        shouldCopyGPUBuffers.setFromToml(gpu, "copyGPUBuffers", is_game_specific);
+        readbacksEnabled.setFromToml(gpu, "readbacks", is_game_specific);
+        readbackLinearImagesEnabled.setFromToml(gpu, "readbackLinearImages", is_game_specific);
+        directMemoryAccessEnabled.setFromToml(gpu, "directMemoryAccess", is_game_specific);
+        shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
+        shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
+        vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
+        isFullscreen.setFromToml(gpu, "Fullscreen", is_game_specific);
+        fullscreenMode.setFromToml(gpu, "FullscreenMode", is_game_specific);
+        presentMode.setFromToml(gpu, "presentMode", is_game_specific);
+        isHDRAllowed.setFromToml(gpu, "allowHDR", is_game_specific);
+        fsrEnabled.setFromToml(gpu, "fsrEnabled", is_game_specific);
+        rcasEnabled.setFromToml(gpu, "rcasEnabled", is_game_specific);
+        rcasAttenuation.setFromToml(gpu, "rcasAttenuation", is_game_specific);
     }
 
     if (data.contains("Vulkan")) {
         const toml::value& vk = data.at("Vulkan");
 
-        gpuId = toml::find_or<int>(vk, "gpuId", -1);
-        vkValidation = toml::find_or<bool>(vk, "validation", false);
-        vkValidationSync = toml::find_or<bool>(vk, "validation_sync", false);
-        vkValidationGpu = toml::find_or<bool>(vk, "validation_gpu", true);
-        vkCrashDiagnostic = toml::find_or<bool>(vk, "crashDiagnostic", false);
-        vkHostMarkers = toml::find_or<bool>(vk, "hostMarkers", false);
-        vkGuestMarkers = toml::find_or<bool>(vk, "guestMarkers", false);
-        rdocEnable = toml::find_or<bool>(vk, "rdocEnable", false);
+        gpuId.setFromToml(vk, "gpuId", is_game_specific);
+        vkValidation.setFromToml(vk, "validation", is_game_specific);
+        vkValidationCore.setFromToml(vk, "validation_core", is_game_specific);
+        vkValidationSync.setFromToml(vk, "validation_sync", is_game_specific);
+        vkValidationGpu.setFromToml(vk, "validation_gpu", is_game_specific);
+        vkCrashDiagnostic.setFromToml(vk, "crashDiagnostic", is_game_specific);
+        vkHostMarkers.setFromToml(vk, "hostMarkers", is_game_specific);
+        vkGuestMarkers.setFromToml(vk, "guestMarkers", is_game_specific);
+        rdocEnable.setFromToml(vk, "rdocEnable", is_game_specific);
     }
 
+    string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
-        isDebugDump = toml::find_or<bool>(debug, "DebugDump", false);
-        isSeparateLogFilesEnabled = toml::find_or<bool>(debug, "isSeparateLogFilesEnabled", false);
-        isShaderDebug = toml::find_or<bool>(debug, "CollectShader", false);
-        isFpsColor = toml::find_or<bool>(debug, "FPSColor", true);
+        isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
+        isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
+        isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
+        isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
+        logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
+        current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
     if (data.contains("GUI")) {
         const toml::value& gui = data.at("GUI");
-
-        load_game_size = toml::find_or<bool>(gui, "loadGameSizeEnabled", true);
-        m_icon_size = toml::find_or<int>(gui, "iconSize", 0);
-        m_icon_size_grid = toml::find_or<int>(gui, "iconSizeGrid", 0);
-        m_slider_pos = toml::find_or<int>(gui, "sliderPos", 0);
-        m_slider_pos_grid = toml::find_or<int>(gui, "sliderPosGrid", 0);
-        mw_themes = toml::find_or<int>(gui, "theme", 0);
-        m_window_size_W = toml::find_or<int>(gui, "mw_width", 0);
-        m_window_size_H = toml::find_or<int>(gui, "mw_height", 0);
 
         const auto install_dir_array =
             toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
@@ -861,58 +979,41 @@ void load(const std::filesystem::path& path) {
                 {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
         }
 
-        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", {});
+        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
 
-        settings_addon_install_dir = toml::find_fs_path_or(gui, "addonInstallDir", {});
-        main_window_geometry_x = toml::find_or<int>(gui, "geometry_x", 0);
-        main_window_geometry_y = toml::find_or<int>(gui, "geometry_y", 0);
-        main_window_geometry_w = toml::find_or<int>(gui, "geometry_w", 0);
-        main_window_geometry_h = toml::find_or<int>(gui, "geometry_h", 0);
-        m_elf_viewer = toml::find_or<std::vector<std::string>>(gui, "elfDirs", {});
-        m_recent_files = toml::find_or<std::vector<std::string>>(gui, "recentFiles", {});
-        m_table_mode = toml::find_or<int>(gui, "gameTableMode", 0);
-        emulator_language = toml::find_or<std::string>(gui, "emulatorLanguage", "en_US");
-        backgroundImageOpacity = toml::find_or<int>(gui, "backgroundImageOpacity", 50);
-        showBackgroundImage = toml::find_or<bool>(gui, "showBackgroundImage", true);
+        settings_addon_install_dir =
+            toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
     }
 
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
-
-        m_language = toml::find_or<int>(settings, "consoleLanguage", 1);
+        m_language.setFromToml(settings, "consoleLanguage", is_game_specific);
     }
 
     if (data.contains("Keys")) {
         const toml::value& keys = data.at("Keys");
-        trophyKey = toml::find_or<std::string>(keys, "TrophyKey", "");
+        trophyKey = toml::find_or<string>(keys, "TrophyKey", trophyKey);
     }
 
-    // Check if the loaded language is in the allowed list
-    const std::vector<std::string> allowed_languages = {
-        "ar_SA", "da_DK", "de_DE", "el_GR", "en_US", "es_ES", "fa_IR", "fi_FI", "fr_FR", "hu_HU",
-        "id_ID", "it_IT", "ja_JP", "ko_KR", "lt_LT", "nb_NO", "nl_NL", "pl_PL", "pt_BR", "pt_PT",
-        "ro_RO", "ru_RU", "sq_AL", "sv_SE", "tr_TR", "uk_UA", "vi_VN", "zh_CN", "zh_TW"};
-
-    if (std::find(allowed_languages.begin(), allowed_languages.end(), emulator_language) ==
-        allowed_languages.end()) {
-        emulator_language = "en_US"; // Default to en_US if not in the list
+    // Run save after loading to generate any missing fields with default values.
+    if (config_version != current_version && !is_game_specific) {
         save(path);
     }
 }
 
 void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
-    std::vector<std::string> section_order = {"General", "Input", "GPU", "Vulkan",
-                                              "Debug",   "Keys",  "GUI", "Settings"};
+    std::vector<string> section_order = {"General", "Input", "Audio", "GPU",     "Vulkan",
+                                         "Debug",   "Keys",  "GUI",   "Settings"};
 
     for (const auto& section : section_order) {
         if (data.contains(section)) {
-            std::vector<std::string> keys;
+            std::vector<string> keys;
             for (const auto& item : data.at(section).as_table()) {
                 keys.push_back(item.first);
             }
 
-            std::sort(keys.begin(), keys.end(), [](const std::string& a, const std::string& b) {
+            std::sort(keys.begin(), keys.end(), [](const string& a, const string& b) {
                 return std::lexicographical_compare(
                     a.begin(), a.end(), b.begin(), b.end(), [](char a_char, char b_char) {
                         return std::tolower(a_char) < std::tolower(b_char);
@@ -931,7 +1032,7 @@ void sortTomlSections(toml::ordered_value& data) {
     data = ordered_data;
 }
 
-void save(const std::filesystem::path& path) {
+void save(const std::filesystem::path& path, bool is_game_specific) {
     toml::ordered_value data;
 
     std::error_code error;
@@ -941,7 +1042,7 @@ void save(const std::filesystem::path& path) {
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
             data = toml::parse<toml::ordered_type_config>(
-                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+                ifs, string{fmt::UTF(path.filename().u8string()).data});
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -953,140 +1054,122 @@ void save(const std::filesystem::path& path) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
 
-    data["General"]["isPS4Pro"] = isNeo;
-    data["General"]["isDevKit"] = isDevKit;
-    data["General"]["isTrophyPopupDisabled"] = isTrophyPopupDisabled;
-    data["General"]["trophyNotificationDuration"] = trophyNotificationDuration;
-    data["General"]["playBGM"] = playBGM;
-    data["General"]["BGMvolume"] = BGMvolume;
-    data["General"]["enableDiscordRPC"] = enableDiscordRPC;
-    data["General"]["logFilter"] = logFilter;
-    data["General"]["logType"] = logType;
-    data["General"]["userName"] = userNames[0];
-    data["General"]["updateChannel"] = updateChannel;
-    data["General"]["chooseHomeTab"] = chooseHomeTab;
-    data["General"]["showSplash"] = isShowSplash;
-    data["General"]["autoUpdate"] = isAutoUpdate;
-    data["General"]["alwaysShowChangelog"] = isAlwaysShowChangelog;
-    data["General"]["sideTrophy"] = isSideTrophy;
-    data["General"]["compatibilityEnabled"] = compatibilityData;
-    data["General"]["checkCompatibilityOnStartup"] = checkCompatibilityOnStartup;
-    data["Input"]["cursorState"] = cursorState;
-    data["Input"]["cursorHideTimeout"] = cursorHideTimeout;
-    data["Input"]["backButtonBehavior"] = backButtonBehavior;
-    data["Input"]["useSpecialPad"] = useSpecialPad;
-    data["Input"]["specialPadClass"] = specialPadClass;
-    data["Input"]["isMotionControlsEnabled"] = isMotionControlsEnabled;
-    data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig;
-    data["GPU"]["screenWidth"] = screenWidth;
-    data["GPU"]["screenHeight"] = screenHeight;
-    data["GPU"]["nullGpu"] = isNullGpu;
-    data["GPU"]["copyGPUBuffers"] = shouldCopyGPUBuffers;
-    data["GPU"]["dumpShaders"] = shouldDumpShaders;
-    data["GPU"]["patchShaders"] = shouldPatchShaders;
-    data["GPU"]["vblankDivider"] = vblankDivider;
-    data["GPU"]["Fullscreen"] = isFullscreen;
-    data["GPU"]["FullscreenMode"] = fullscreenMode;
-    data["GPU"]["allowHDR"] = isHDRAllowed;
-    data["Vulkan"]["gpuId"] = gpuId;
-    data["Vulkan"]["validation"] = vkValidation;
-    data["Vulkan"]["validation_sync"] = vkValidationSync;
-    data["Vulkan"]["validation_gpu"] = vkValidationGpu;
-    data["Vulkan"]["crashDiagnostic"] = vkCrashDiagnostic;
-    data["Vulkan"]["hostMarkers"] = vkHostMarkers;
-    data["Vulkan"]["guestMarkers"] = vkGuestMarkers;
-    data["Vulkan"]["rdocEnable"] = rdocEnable;
-    data["Debug"]["DebugDump"] = isDebugDump;
-    data["Debug"]["CollectShader"] = isShaderDebug;
-    data["Debug"]["isSeparateLogFilesEnabled"] = isSeparateLogFilesEnabled;
-    data["Debug"]["FPSColor"] = isFpsColor;
-    data["Keys"]["TrophyKey"] = trophyKey;
-
-    std::vector<std::string> install_dirs;
-    std::vector<bool> install_dirs_enabled;
-
-    // temporary structure for ordering
-    struct DirEntry {
-        std::string path_str;
-        bool enabled;
-    };
-
-    std::vector<DirEntry> sorted_dirs;
-    for (const auto& dirInfo : settings_install_dirs) {
-        sorted_dirs.push_back(
-            {std::string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
+    // Entries saved by the game-specific settings GUI
+    volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
+    isTrophyPopupDisabled.setTomlValue(data, "General", "isTrophyPopupDisabled", is_game_specific);
+    trophyNotificationDuration.setTomlValue(data, "General", "trophyNotificationDuration",
+                                            is_game_specific);
+    logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
+    logType.setTomlValue(data, "General", "logType", is_game_specific);
+    // userName.setTomlValue(data, "General", "userName", is_game_specific); // TODO
+    isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
+    isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
+    isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific);
+    isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
+    if (is_game_specific) {
+        extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
     }
+    isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
+    isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
-    // Sort directories alphabetically
-    std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
-        return std::lexicographical_compare(
-            a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
-            [](char a_char, char b_char) { return std::tolower(a_char) < std::tolower(b_char); });
-    });
+    cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
+    cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
+    isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
+                                         is_game_specific);
+    backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
+                                           is_game_specific);
+    usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
-    for (const auto& entry : sorted_dirs) {
-        install_dirs.push_back(entry.path_str);
-        install_dirs_enabled.push_back(entry.enabled);
-    }
+    micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
+    mainOutputDevice.setTomlValue(data, "Audio", "mainOutputDevice", is_game_specific);
+    padSpkOutputDevice.setTomlValue(data, "Audio", "padSpkOutputDevice", is_game_specific);
 
-    data["GUI"]["installDirs"] = install_dirs;
-    data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
-    data["GUI"]["saveDataPath"] = std::string{fmt::UTF(save_data_path.u8string()).data};
-    data["GUI"]["loadGameSizeEnabled"] = load_game_size;
+    windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
+    windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
+    isNullGpu.setTomlValue(data, "GPU", "nullGpu", is_game_specific);
+    shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific);
+    readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific);
+    readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
+    shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
+    vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
+    isFullscreen.setTomlValue(data, "GPU", "Fullscreen", is_game_specific);
+    fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific);
+    presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific);
+    isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
+    fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
+    rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
+    rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific);
+    directMemoryAccessEnabled.setTomlValue(data, "GPU", "directMemoryAccess", is_game_specific);
 
-    data["GUI"]["addonInstallDir"] =
-        std::string{fmt::UTF(settings_addon_install_dir.u8string()).data};
-    data["GUI"]["emulatorLanguage"] = emulator_language;
-    data["GUI"]["backgroundImageOpacity"] = backgroundImageOpacity;
-    data["GUI"]["showBackgroundImage"] = showBackgroundImage;
-    data["Settings"]["consoleLanguage"] = m_language;
+    gpuId.setTomlValue(data, "Vulkan", "gpuId", is_game_specific);
+    vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific);
+    vkValidationSync.setTomlValue(data, "Vulkan", "validation_sync", is_game_specific);
+    vkValidationCore.setTomlValue(data, "Vulkan", "validation_core", is_game_specific);
+    vkValidationGpu.setTomlValue(data, "Vulkan", "validation_gpu", is_game_specific);
+    vkCrashDiagnostic.setTomlValue(data, "Vulkan", "crashDiagnostic", is_game_specific);
+    vkHostMarkers.setTomlValue(data, "Vulkan", "hostMarkers", is_game_specific);
+    vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific);
+    rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
 
-    // Sorting of TOML sections
-    sortTomlSections(data);
+    isDebugDump.setTomlValue(data, "Debug", "DebugDump", is_game_specific);
+    isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
+    isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
+                                           is_game_specific);
+    logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
-    std::ofstream file(path, std::ios::binary);
-    file << data;
-    file.close();
+    m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
-    saveMainWindow(path);
-}
+    if (!is_game_specific) {
+        std::vector<std::string> install_dirs;
+        std::vector<bool> install_dirs_enabled;
 
-void saveMainWindow(const std::filesystem::path& path) {
-    toml::ordered_value data;
+        // temporary structure for ordering
+        struct DirEntry {
+            string path_str;
+            bool enabled;
+        };
 
-    std::error_code error;
-    if (std::filesystem::exists(path, error)) {
-        try {
-            std::ifstream ifs;
-            ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-            ifs.open(path, std::ios_base::binary);
-            data = toml::parse<toml::ordered_type_config>(
-                ifs, std::string{fmt::UTF(path.filename().u8string()).data});
-        } catch (const std::exception& ex) {
-            fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
-            return;
+        std::vector<DirEntry> sorted_dirs;
+        for (const auto& dirInfo : settings_install_dirs) {
+            sorted_dirs.push_back(
+                {string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
         }
-    } else {
-        if (error) {
-            fmt::print("Filesystem error: {}\n", error.message());
-        }
-        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
-    }
 
-    data["GUI"]["mw_width"] = m_window_size_W;
-    data["GUI"]["mw_height"] = m_window_size_H;
-    data["GUI"]["theme"] = mw_themes;
-    data["GUI"]["iconSize"] = m_icon_size;
-    data["GUI"]["sliderPos"] = m_slider_pos;
-    data["GUI"]["iconSizeGrid"] = m_icon_size_grid;
-    data["GUI"]["sliderPosGrid"] = m_slider_pos_grid;
-    data["GUI"]["gameTableMode"] = m_table_mode;
-    data["GUI"]["geometry_x"] = main_window_geometry_x;
-    data["GUI"]["geometry_y"] = main_window_geometry_y;
-    data["GUI"]["geometry_w"] = main_window_geometry_w;
-    data["GUI"]["geometry_h"] = main_window_geometry_h;
-    data["GUI"]["elfDirs"] = m_elf_viewer;
-    data["GUI"]["recentFiles"] = m_recent_files;
+        // Sort directories alphabetically
+        std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
+            return std::lexicographical_compare(
+                a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
+                [](char a_char, char b_char) {
+                    return std::tolower(a_char) < std::tolower(b_char);
+                });
+        });
+
+        for (const auto& entry : sorted_dirs) {
+            install_dirs.push_back(entry.path_str);
+            install_dirs_enabled.push_back(entry.enabled);
+        }
+
+        // Non game-specific entries
+        data["General"]["enableDiscordRPC"] = enableDiscordRPC;
+        data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
+        data["GUI"]["installDirs"] = install_dirs;
+        data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
+        data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
+        data["GUI"]["addonInstallDir"] =
+            string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+        data["Debug"]["ConfigVersion"] = config_version;
+        data["Keys"]["TrophyKey"] = trophyKey;
+
+        // Do not save these entries in the game-specific dialog since they are not in the GUI
+        data["General"]["defaultControllerID"] = defaultControllerID.base_value;
+        data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
+        data["Input"]["specialPadClass"] = specialPadClass.base_value;
+        data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
+        data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
+        data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
+        data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
+        data["Debug"]["FPSColor"] = isFpsColor.base_value;
+    }
 
     // Sorting of TOML sections
     sortTomlSections(data);
@@ -1096,58 +1179,121 @@ void saveMainWindow(const std::filesystem::path& path) {
     file.close();
 }
 
-void setDefaultValues() {
-    isHDRAllowed = false;
-    isNeo = false;
-    isDevKit = false;
-    isFullscreen = false;
-    isTrophyPopupDisabled = false;
-    playBGM = false;
-    BGMvolume = 50;
-    enableDiscordRPC = true;
-    screenWidth = 1280;
-    screenHeight = 720;
-    logFilter = "";
-    logType = "sync";
-    userNames = {"shadPS4", "shadps4-2", "shadPS4-3", "shadPS4-4"};
-    if (Common::g_is_release) {
-        updateChannel = "Release";
-    } else {
-        updateChannel = "Nightly";
+void setDefaultValues(bool is_game_specific) {
+
+    // Entries with game-specific settings that are in the game-specific setings GUI but not in
+    // the global settings GUI
+    if (is_game_specific) {
+        readbacksEnabled.set(false, is_game_specific);
+        readbackLinearImagesEnabled.set(false, is_game_specific);
+        isNeo.set(false, is_game_specific);
+        isDevKit.set(false, is_game_specific);
+        isPSNSignedIn.set(false, is_game_specific);
+        isConnectedToNetwork.set(false, is_game_specific);
+        directMemoryAccessEnabled.set(false, is_game_specific);
+        extraDmemInMbytes.set(0, is_game_specific);
     }
-    chooseHomeTab = "General";
-    cursorState = HideCursorState::Idle;
-    cursorHideTimeout = 5;
-    trophyNotificationDuration = 6.0;
-    backButtonBehavior = "left";
-    useSpecialPad = false;
-    specialPadClass = 1;
-    isDebugDump = false;
-    isShaderDebug = false;
-    isShowSplash = false;
-    isAutoUpdate = false;
-    isAlwaysShowChangelog = false;
-    isSideTrophy = "right";
-    isNullGpu = false;
-    shouldDumpShaders = false;
-    vblankDivider = 1;
-    vkValidation = false;
-    vkValidationSync = false;
-    vkValidationGpu = false;
-    vkCrashDiagnostic = false;
-    vkHostMarkers = false;
-    vkGuestMarkers = false;
-    rdocEnable = false;
-    emulator_language = "en_US";
-    m_language = 1;
-    gpuId = -1;
-    compatibilityData = false;
-    checkCompatibilityOnStartup = false;
-    backgroundImageOpacity = 50;
-    showBackgroundImage = true;
+
+    // Entries with game-specific settings that are in both the game-specific and global GUI
+    // GS - General
+    volumeSlider.set(100, is_game_specific);
+    isTrophyPopupDisabled.set(false, is_game_specific);
+    trophyNotificationDuration.set(6.0, is_game_specific);
+    logFilter.set("", is_game_specific);
+    logType.set("sync", is_game_specific);
+    // userName.set("shadPS4", is_game_specific); // TODO
+    isShowSplash.set(false, is_game_specific);
+    isSideTrophy.set("right", is_game_specific);
+
+    // GS - Input
+    cursorState.set(HideCursorState::Idle, is_game_specific);
+    cursorHideTimeout.set(5, is_game_specific);
+    isMotionControlsEnabled.set(true, is_game_specific);
+    backgroundControllerInput.set(false, is_game_specific);
+    usbDeviceBackend.set(UsbBackendType::Real, is_game_specific);
+
+    // GS - Audio
+    micDevice.set("Default Device", is_game_specific);
+
+    // GS - GPU
+    windowWidth.set(1280, is_game_specific);
+    windowHeight.set(720, is_game_specific);
+    isNullGpu.set(false, is_game_specific);
+    shouldCopyGPUBuffers.set(false, is_game_specific);
+    shouldDumpShaders.set(false, is_game_specific);
+    vblankFrequency.set(60, is_game_specific);
+    isFullscreen.set(false, is_game_specific);
+    fullscreenMode.set("Windowed", is_game_specific);
+    presentMode.set("Mailbox", is_game_specific);
+    isHDRAllowed.set(false, is_game_specific);
+    fsrEnabled.set(true, is_game_specific);
+    rcasEnabled.set(true, is_game_specific);
+    rcasAttenuation.set(250, is_game_specific);
+
+    // GS - Vulkan
+    gpuId.set(-1, is_game_specific);
+    vkValidation.set(false, is_game_specific);
+    vkValidationCore.set(true, is_game_specific);
+    vkValidationSync.set(false, is_game_specific);
+    vkValidationGpu.set(false, is_game_specific);
+    vkCrashDiagnostic.set(false, is_game_specific);
+    vkHostMarkers.set(false, is_game_specific);
+    vkGuestMarkers.set(false, is_game_specific);
+    rdocEnable.set(false, is_game_specific);
+
+    // GS - Debug
+    isDebugDump.set(false, is_game_specific);
+    isShaderDebug.set(false, is_game_specific);
+    isSeparateLogFilesEnabled.set(false, is_game_specific);
+    logEnabled.set(true, is_game_specific);
+
+    // GS - Settings
+    m_language.set(1, is_game_specific);
+
+    // All other entries
+    if (!is_game_specific) {
+
+        // General
+        enableDiscordRPC = false;
+
+        // Input
+        useSpecialPad.base_value = false;
+        specialPadClass.base_value = 1;
+        useUnifiedInputConfig.base_value = true;
+        controllerCustomColorRGB[0] = 0;
+        controllerCustomColorRGB[1] = 0;
+        controllerCustomColorRGB[2] = 255;
+
+        // TODO: Change to be game specific
+        mainOutputDevice = "Default Device";
+        padSpkOutputDevice = "Default Device";
+
+        // GPU
+        shouldPatchShaders.base_value = false;
+        internalScreenWidth.base_value = 1280;
+        internalScreenHeight.base_value = 720;
+
+        // Debug
+        isFpsColor.base_value = true;
+    }
 }
 
-constexpr std::string_view GetDefaultKeyboardConfig() {
+constexpr std::string_view GetDefaultGlobalConfig() {
+    return R"(# Anything put here will be loaded for all games,
+# alongside the game's config or default.ini depending on your preference.
+
+hotkey_renderdoc_capture = f12
+hotkey_fullscreen = f11
+hotkey_show_fps = f10
+hotkey_pause = f9
+hotkey_reload_inputs = f8
+hotkey_toggle_mouse_to_joystick = f7
+hotkey_toggle_mouse_to_gyro = f6
+hotkey_quit = lctrl, lshift, end
+)";
+}
+
+constexpr std::string_view GetDefaultInputConfig() {
     return R"(#Feeling lost? Check out the Help section!
 
 # Keyboard bindings
@@ -1170,7 +1316,7 @@ l3 = x
 r3 = m
 
 options = enter
-touchpad = space
+touchpad_center = space
 
 pad_up = up
 pad_down = down
@@ -1202,7 +1348,7 @@ r2 = r2
 r3 = r3
 
 options = options
-touchpad = back
+touchpad_center = back
 
 pad_up = pad_up
 pad_down = pad_down
@@ -1221,7 +1367,7 @@ analog_deadzone = rightjoystick, 2, 127
 override_controller_color = false, 0, 0, 255
 )";
 }
-std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
+std::filesystem::path GetFoolproofInputConfigFile(const string& game_id) {
     // Read configuration file of the game, and if it doesn't exist, generate it from default
     // If that doesn't exist either, generate that from getDefaultConfig() and try again
     // If even the folder is missing, we start with that.
@@ -1238,7 +1384,7 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
     // Check if the default config exists
     if (!std::filesystem::exists(default_config_file)) {
         // If the default config is also missing, create it from getDefaultConfig()
-        const auto default_config = GetDefaultKeyboardConfig();
+        const auto default_config = GetDefaultInputConfig();
         std::ofstream default_config_stream(default_config_file);
         if (default_config_stream) {
             default_config_stream << default_config;
@@ -1250,11 +1396,28 @@ std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id) {
         return default_config_file;
     }
 
+    // Create global config if it doesn't exist yet
+    if (game_id == "global" && !std::filesystem::exists(config_file)) {
+        if (!std::filesystem::exists(config_file)) {
+            const auto global_config = GetDefaultGlobalConfig();
+            std::ofstream global_config_stream(config_file);
+            if (global_config_stream) {
+                global_config_stream << global_config;
+            }
+        }
+    }
+
     // If game-specific config doesn't exist, create it from the default config
     if (!std::filesystem::exists(config_file)) {
         std::filesystem::copy(default_config_file, config_file);
     }
     return config_file;
+}
+
+void resetGameSpecificValue(std::string entry) {
+    if (entry == "volumeSlider") {
+        volumeSlider.game_specific_value = std::nullopt;
+    }
 }
 
 } // namespace Config

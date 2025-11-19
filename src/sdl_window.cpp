@@ -11,6 +11,7 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "core/debug_state.h"
+#include "core/devtools/layer.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
@@ -144,8 +145,12 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     Input::GameControllers::TryOpenSDLControllers(controllers);
-    using namespace Libraries::UserService;
+
+    if (Config::getBackgroundControllerInput()) {
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    }
 }
+// using namespace Libraries::UserService; // TODO
 
 WindowSDL::~WindowSDL() = default;
 
@@ -208,6 +213,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+    case SDL_EVENT_QUIT_DIALOG:
+        Overlay::ToggleQuitWindow();
+        break;
     case SDL_EVENT_TOGGLE_FULLSCREEN: {
         if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
             SDL_SetWindowFullscreen(window, 0);
@@ -217,15 +225,33 @@ void WindowSDL::WaitEvent() {
         break;
     }
     case SDL_EVENT_TOGGLE_PAUSE:
-        SDL_Log("Received SDL_EVENT_TOGGLE_PAUSE");
-
         if (DebugState.IsGuestThreadsPaused()) {
-            SDL_Log("Game Resumed");
+            LOG_INFO(Frontend, "Game Resumed");
             DebugState.ResumeGuestThreads();
         } else {
-            SDL_Log("Game Paused");
+            LOG_INFO(Frontend, "Game Paused");
             DebugState.PauseGuestThreads();
         }
+        break;
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        controller->GetEngine()->Init();
+        break;
+    case SDL_EVENT_TOGGLE_SIMPLE_FPS:
+        Overlay::ToggleSimpleFps();
+        break;
+    case SDL_EVENT_RELOAD_INPUTS:
+        Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+        break;
+    case SDL_EVENT_MOUSE_TO_JOYSTICK:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+        break;
+    case SDL_EVENT_MOUSE_TO_GYRO:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
+        break;
+    case SDL_EVENT_RDOC_CAPTURE:
+        VideoCore::TriggerCapture();
         break;
     default:
         break;
@@ -278,58 +304,6 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
                             event->type == SDL_EVENT_MOUSE_WHEEL;
     Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
 
-    // Handle window controls outside of the input maps
-    if (event->type == SDL_EVENT_KEY_DOWN) {
-        using namespace Libraries::UserService;
-        u32 input_id = input_event.input.sdl_id;
-        // Reparse kbm inputs
-        if (input_id == SDLK_F8) {
-            Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-            return;
-        }
-        // Toggle mouse capture and movement input
-        else if (input_id == SDLK_F7) {
-            Input::ToggleMouseEnabled();
-            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           !SDL_GetWindowRelativeMouseMode(this->GetSDLWindow()));
-            return;
-        }
-        // Toggle fullscreen
-        else if (input_id == SDLK_F11) {
-            SDL_WindowFlags flag = SDL_GetWindowFlags(window);
-            bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
-            SDL_SetWindowFullscreen(window, !is_fullscreen);
-            return;
-        }
-        // Trigger rdoc capture
-        else if (input_id == SDLK_F12) {
-            VideoCore::TriggerCapture();
-            return;
-        }
-        // test controller connect/disconnect
-        else if (input_id == SDLK_F4) {
-            auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-            for (int i = 3; i >= 0; i--) {
-                if (controllers[i]->user_id != -1) {
-                    AddUserServiceEvent(
-                        {OrbisUserServiceEventType::Logout, (s32)controllers[i]->user_id});
-                    controllers[i]->user_id = -1;
-                    break;
-                }
-            }
-        } else if (input_id == SDLK_F5) {
-            auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-            for (int i = 0; i < 4; i++) {
-                if (controllers[i]->user_id == -1) {
-                    controllers[i]->user_id = i + 1;
-                    AddUserServiceEvent(
-                        {OrbisUserServiceEventType::Login, (s32)controllers[i]->user_id});
-                    break;
-                }
-            }
-        }
-    }
-
     // if it's a wheel event, make a timer that turns it off after a set time
     if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         const SDL_Event* copy = new SDL_Event(*event);
@@ -346,7 +320,6 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 }
 
 void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
-
     bool input_down = event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION ||
                       event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
     Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
@@ -390,8 +363,8 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // add/remove it from the list
     bool inputs_changed = Input::UpdatePressedKeys(input_event);
 
-    // update bindings
     if (inputs_changed) {
+        // update bindings
         Input::ActivateOutputsFromInputs();
     }
 }

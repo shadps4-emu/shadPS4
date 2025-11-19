@@ -6,6 +6,7 @@
 #include <mutex>
 #include "SDL3/SDL_joystick.h"
 #include "common/assert.h"
+#include <SDL3/SDL_gamepad.h>
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 
@@ -25,6 +26,7 @@ enum class Axis {
 };
 
 struct TouchpadEntry {
+    u8 ID = 0;
     bool state{};
     u16 x{};
     u16 y{};
@@ -67,13 +69,28 @@ public:
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
     u32 Poll();
 
-    float gyro_poll_rate;
-    float accel_poll_rate;
-    u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
+    u8 GetTouchCount();
+    void SetTouchCount(u8 touchCount);
+    u8 GetSecondaryTouchCount();
+    void SetSecondaryTouchCount(u8 touchCount);
+    u8 GetPreviousTouchNum();
+    void SetPreviousTouchNum(u8 touchNum);
+    bool WasSecondaryTouchReset();
+    void UnsetSecondaryTouchResetBool();
+
+    void SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation);
+    Libraries::Pad::OrbisFQuaternion GetLastOrientation();
+    std::chrono::steady_clock::time_point GetLastUpdate();
+    void SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate);
     static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                      Libraries::Pad::OrbisFVector3& angularVelocity,
                                      float deltaTime,
+                                     Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
+
+    float gyro_poll_rate;
+    float accel_poll_rate;
+    u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
 
 private:
     struct StateInternal {
@@ -86,8 +103,15 @@ private:
     int m_connected_count = 0;
     u32 m_states_num = 0;
     u32 m_first_state = 0;
+    u8 m_touch_count = 0;
+    u8 m_secondary_touch_count = 0;
+    u8 m_previous_touch_count = 0;
+    u8 m_previous_touchnum = 0;
+    bool m_was_secondary_reset = false;
     std::array<State, MAX_STATES> m_states;
     std::array<StateInternal, MAX_STATES> m_private;
+    std::chrono::steady_clock::time_point m_last_update = {};
+    Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
     SDL_Gamepad* m_sdl_gamepad = nullptr;
     u8 player_index = -1;
@@ -112,3 +136,12 @@ public:
 };
 
 } // namespace Input
+
+namespace GamepadSelect {
+
+int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID);
+std::string GetGUIDString(SDL_JoystickID* gamepadIDs, int index);
+std::string GetSelectedGamepad();
+void SetSelectedGamepad(std::string GUID);
+
+} // namespace GamepadSelect

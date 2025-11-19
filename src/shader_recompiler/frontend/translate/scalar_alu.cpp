@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <bit>
+#include <magic_enum/magic_enum.hpp>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/translate/translate.h"
 
@@ -114,6 +114,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_FF1_I32_B64(inst);
         case Opcode::S_FLBIT_I32_B32:
             return S_FLBIT_I32_B32(inst);
+        case Opcode::S_FLBIT_I32_B64:
+            return S_FLBIT_I32_B64(inst);
         case Opcode::S_BITSET0_B32:
             return S_BITSET_B32(inst, 0);
         case Opcode::S_BITSET1_B32:
@@ -585,6 +587,15 @@ void Translator::S_MOV(const GcnInst& inst) {
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
+    // Moving SGPR to SGPR is used for thread masks, like most operations, but it can also be used
+    // for moving sharps.
+    if (inst.dst[0].field == OperandField::ScalarGPR &&
+        inst.src[0].field == OperandField::ScalarGPR) {
+        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code),
+                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code)));
+        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code + 1),
+                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code + 1)));
+    }
     const IR::U1 src = [&] {
         switch (inst.src[0].field) {
         case OperandField::VccLo:
@@ -670,8 +681,20 @@ void Translator::S_FF1_I32_B32(const GcnInst& inst) {
 }
 
 void Translator::S_FF1_I32_B64(const GcnInst& inst) {
-    const IR::U64 src0{GetSrc64(inst.src[0])};
-    const IR::U32 result{ir.FindILsb(src0)};
+    const auto src = [&] {
+        switch (inst.src[0].field) {
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::VccLo:
+            return ir.GetVcc();
+        case OperandField::ExecLo:
+            return ir.GetExec();
+        default:
+            UNREACHABLE_MSG("unhandled operand type {}", magic_enum::enum_name(inst.src[0].field));
+        }
+    }();
+    const IR::U32 result{ir.BallotFindLsb(ir.Ballot(src))};
+
     SetDst(inst.dst[0], result);
 }
 
@@ -683,6 +706,17 @@ void Translator::S_FLBIT_I32_B32(const GcnInst& inst) {
     const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
     // Select 0xFFFFFFFF if src0 was 0
     const IR::U1 cond = ir.INotEqual(src0, ir.Imm32(0));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
+}
+
+void Translator::S_FLBIT_I32_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
+    const IR::U32 msb_pos = ir.FindUMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(63), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0
+    const IR::U1 cond = ir.INotEqual(src0, ir.Imm64(u64(0u)));
     SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, ir.Imm32(~0U))});
 }
 

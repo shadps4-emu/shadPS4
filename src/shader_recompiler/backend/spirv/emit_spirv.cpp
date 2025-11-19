@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <magic_enum/magic_enum.hpp>
+
 #include "common/assert.h"
 #include "common/func_traits.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -14,7 +16,6 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/runtime_info.h"
-#include "video_core/amdgpu/types.h"
 
 namespace Shader::Backend::SPIRV {
 namespace {
@@ -136,7 +137,7 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
     case IR::Type::U32:
         return ctx.U32[1];
     default:
-        throw NotImplementedException("Phi node type {}", type);
+        UNREACHABLE_MSG("Phi node type {}", type);
     }
 }
 
@@ -224,7 +225,7 @@ spv::ExecutionMode ExecutionMode(AmdGpu::TessellationType primitive) {
     case AmdGpu::TessellationType::Quad:
         return spv::ExecutionMode::Quads;
     }
-    UNREACHABLE_MSG("Tessellation primitive {}", primitive);
+    UNREACHABLE_MSG("Tessellation primitive {}", magic_enum::enum_name(primitive));
 }
 
 spv::ExecutionMode ExecutionMode(AmdGpu::TessellationPartitioning spacing) {
@@ -238,10 +239,11 @@ spv::ExecutionMode ExecutionMode(AmdGpu::TessellationPartitioning spacing) {
     default:
         break;
     }
-    UNREACHABLE_MSG("Tessellation spacing {}", spacing);
+    UNREACHABLE_MSG("Tessellation spacing {}", magic_enum::enum_name(spacing));
 }
 
-void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ctx) {
+void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeInfo& runtime_info,
+                       EmitContext& ctx) {
     ctx.AddCapability(spv::Capability::Image1D);
     ctx.AddCapability(spv::Capability::Sampled1D);
     ctx.AddCapability(spv::Capability::ImageQuery);
@@ -271,7 +273,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (info.has_image_query) {
         ctx.AddCapability(spv::Capability::ImageQuery);
     }
-    if (info.uses_atomic_float_min_max && profile.supports_image_fp32_atomic_min_max) {
+    if ((info.uses_image_atomic_float_min_max && profile.supports_image_fp32_atomic_min_max) ||
+        (info.uses_buffer_atomic_float_min_max && profile.supports_buffer_fp32_atomic_min_max)) {
         ctx.AddExtension("SPV_EXT_shader_atomic_float_min_max");
         ctx.AddCapability(spv::Capability::AtomicFloat32MinMaxEXT);
     }
@@ -292,16 +295,59 @@ void SetupCapabilities(const Info& info, const Profile& profile, EmitContext& ct
     if (stage == LogicalStage::Geometry) {
         ctx.AddCapability(spv::Capability::Geometry);
     }
-    if (info.stage == Stage::Fragment && profile.needs_manual_interpolation) {
-        ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
-        ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+    if (info.stage == Stage::Fragment) {
+        if (profile.supports_amd_shader_explicit_vertex_parameter) {
+            ctx.AddExtension("SPV_AMD_shader_explicit_vertex_parameter");
+        } else if (profile.supports_fragment_shader_barycentric) {
+            ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
+            ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
+        }
+        if (info.loads.Get(IR::Attribute::SampleIndex) ||
+            runtime_info.fs_info.addr_flags.linear_sample_ena ||
+            runtime_info.fs_info.addr_flags.persp_sample_ena) {
+            ctx.AddCapability(spv::Capability::SampleRateShading);
+        }
+        if (info.loads.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::Geometry);
+        }
     }
     if (stage == LogicalStage::TessellationControl || stage == LogicalStage::TessellationEval) {
         ctx.AddCapability(spv::Capability::Tessellation);
     }
-    if (info.dma_types != IR::Type::Void) {
+    if (stage == LogicalStage::Vertex || stage == LogicalStage::TessellationControl ||
+        stage == LogicalStage::TessellationEval) {
+        if (info.stores.GetAny(IR::Attribute::RenderTargetIndex)) {
+            ctx.AddCapability(spv::Capability::ShaderLayer);
+        }
+        if (info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+            ctx.AddCapability(spv::Capability::ShaderViewportIndex);
+        }
+    } else if (stage == LogicalStage::Geometry &&
+               info.stores.GetAny(IR::Attribute::ViewportIndex)) {
+        ctx.AddCapability(spv::Capability::MultiViewport);
+    }
+    if (info.uses_dma) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
+    }
+    const auto shared_type_count = std::popcount(static_cast<u32>(info.shared_types));
+    if (shared_type_count > 1 && profile.supports_workgroup_explicit_memory_layout) {
+        ctx.AddExtension("SPV_KHR_workgroup_memory_explicit_layout");
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayoutKHR);
+        ctx.AddCapability(spv::Capability::WorkgroupMemoryExplicitLayout16BitAccessKHR);
+    }
+    if (info.uses_buffer_int64_atomics || info.uses_shared_int64_atomics) {
+        if (info.uses_buffer_int64_atomics) {
+            ASSERT_MSG(ctx.profile.supports_buffer_int64_atomics,
+                       "Shader requires support for atomic Int64 buffer operations that your "
+                       "Vulkan instance does not advertise");
+        }
+        if (info.uses_shared_int64_atomics) {
+            ASSERT_MSG(ctx.profile.supports_shared_int64_atomics,
+                       "Shader requires support for atomic Int64 shared memory operations that "
+                       "your Vulkan instance does not advertise");
+        }
+        ctx.AddCapability(spv::Capability::Int64Atomics);
     }
 }
 
@@ -415,7 +461,7 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     EmitContext ctx{profile, runtime_info, program.info, binding};
     const Id main{DefineMain(ctx, program)};
     DefineEntryPoint(program.info, ctx, main);
-    SetupCapabilities(program.info, profile, ctx);
+    SetupCapabilities(program.info, profile, runtime_info, ctx);
     SetupFloatMode(ctx, profile, runtime_info, main);
     PatchPhiNodes(program, ctx);
     binding.user_data += program.info.ud_mask.NumRegs();
@@ -437,14 +483,12 @@ Id EmitPhi(EmitContext& ctx, IR::Inst* inst) {
 void EmitVoid(EmitContext&) {}
 
 Id EmitIdentity(EmitContext& ctx, const IR::Value& value) {
-    throw NotImplementedException("Forward identity declaration");
+    UNREACHABLE_MSG("Forward identity declaration");
 }
 
 Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
     const Id id{ctx.Def(value)};
-    if (!Sirit::ValidId(id)) {
-        throw NotImplementedException("Forward identity declaration");
-    }
+    ASSERT_MSG(Sirit::ValidId(id), "Forward identity declaration");
     return id;
 }
 

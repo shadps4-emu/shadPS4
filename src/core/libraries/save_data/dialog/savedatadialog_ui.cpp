@@ -8,6 +8,7 @@
 #include "common/elf_info.h"
 #include "common/singleton.h"
 #include "common/string_util.h"
+#include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/save_data/save_instance.h"
 #include "imgui/imgui_std.h"
@@ -66,7 +67,9 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
     }
 
-    const auto& game_serial = Common::ElfInfo::Instance().GameSerial();
+    const auto& game_serial = Common::Singleton<PSF>::Instance()
+                                  ->GetString("INSTALL_DIR_SAVEDATA")
+                                  .value_or(ElfInfo::Instance().GameSerial());
 
     const auto item = param.items;
     this->user_id = item->userId;
@@ -95,10 +98,8 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             PSF param_sfo;
             param_sfo.Open(param_sfo_path);
 
-            auto last_write = param_sfo.GetLastWrite();
-            std::string date_str =
-                fmt::format("{:%d %b, %Y %R}",
-                            fmt::localtime(std::chrono::system_clock::to_time_t(last_write)));
+            auto last_write = std::chrono::system_clock::to_time_t(param_sfo.GetLastWrite());
+            std::string date_str = fmt::format("{:%d %b, %Y %R}", *std::localtime(&last_write));
 
             size_t size = Common::FS::GetDirectorySize(dir_path);
             std::string size_str = SpaceSizeToString(size);

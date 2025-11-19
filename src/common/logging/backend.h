@@ -21,9 +21,14 @@ void Start();
 /// Explictily stops the logger thread and flushes the buffers
 void Stop();
 
+/// Closes log files and stops the logger
+void Denitializer();
+
 /// The global filter will prevent any messages from even being processed if they are filtered.
 void SetGlobalFilter(const Filter& filter);
 
 void SetColorConsoleBackendEnabled(bool enabled);
+
+void SetAppend();
 
 } // namespace Common::Log

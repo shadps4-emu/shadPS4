@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include <unordered_map>
 #include "shader_recompiler/frontend/instruction.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -19,7 +20,7 @@ namespace Shader::Gcn {
 enum class ConditionOp : u32 {
     F,
     EQ,
-    LG,
+    LG, // NE
     GT,
     GE,
     LT,
@@ -53,18 +54,20 @@ enum class NegateMode : u32 {
     Result,
 };
 
+static constexpr size_t MaxInterpVgpr = 16;
+
 class Translator {
 public:
-    explicit Translator(IR::Block* block_, Info& info, const RuntimeInfo& runtime_info,
-                        const Profile& profile);
+    explicit Translator(Info& info, const RuntimeInfo& runtime_info, const Profile& profile);
 
-    void TranslateInstruction(const GcnInst& inst, u32 pc);
+    void Translate(IR::Block* block, u32 pc, std::span<const GcnInst> inst_list);
+    void TranslateInstruction(const GcnInst& inst);
 
     // Instruction categories
-    void EmitPrologue();
+    void EmitPrologue(IR::Block* first_block);
     void EmitFetch(const GcnInst& inst);
     void EmitExport(const GcnInst& inst);
-    void EmitFlowControl(u32 pc, const GcnInst& inst);
+    void EmitFlowControl(const GcnInst& inst);
     void EmitScalarAlu(const GcnInst& inst);
     void EmitScalarMemory(const GcnInst& inst);
     void EmitVectorAlu(const GcnInst& inst);
@@ -121,8 +124,9 @@ public:
     void S_FF1_I32_B32(const GcnInst& inst);
     void S_FF1_I32_B64(const GcnInst& inst);
     void S_FLBIT_I32_B32(const GcnInst& inst);
+    void S_FLBIT_I32_B64(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
-    void S_GETPC_B64(u32 pc, const GcnInst& inst);
+    void S_GETPC_B64(const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
 
@@ -145,10 +149,11 @@ public:
     void V_READLANE_B32(const GcnInst& inst);
     void V_WRITELANE_B32(const GcnInst& inst);
     void V_ADD_F32(const GcnInst& inst);
+    void V_ADD_F64(const GcnInst& inst);
     void V_SUB_F32(const GcnInst& inst);
     void V_SUBREV_F32(const GcnInst& inst);
     void V_MUL_F32(const GcnInst& inst);
-    void V_MUL_I32_I24(const GcnInst& inst);
+    void V_MUL_I32_I24(const GcnInst& inst, bool is_signed);
     void V_MIN_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MAX_F32(const GcnInst& inst, bool is_legacy = false);
     void V_MIN_I32(const GcnInst& inst);
@@ -183,6 +188,7 @@ public:
     void V_READFIRSTLANE_B32(const GcnInst& inst);
     void V_CVT_I32_F64(const GcnInst& inst);
     void V_CVT_F64_I32(const GcnInst& inst);
+    void V_CVT_F64_U32(const GcnInst& inst);
     void V_CVT_F32_I32(const GcnInst& inst);
     void V_CVT_F32_U32(const GcnInst& inst);
     void V_CVT_U32_F32(const GcnInst& inst);
@@ -203,6 +209,7 @@ public:
     void V_EXP_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
+    void V_RCP_LEGACY_F32(const GcnInst& inst);
     void V_RCP_F64(const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
     void V_SQRT_F32(const GcnInst& inst);
@@ -224,7 +231,7 @@ public:
     // VOPC
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
-    void V_CMP_NE_U64(const GcnInst& inst);
+    void V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);
 
     // VOP3a
@@ -251,6 +258,8 @@ public:
     void V_CVT_PK_I16_I32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
+    void V_ALIGNBIT_B32(const GcnInst& inst);
+    void V_ALIGNBYTE_B32(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);
     void V_MAX_F64(const GcnInst& inst);
     void V_MUL_LO_U32(const GcnInst& inst);
@@ -259,31 +268,27 @@ public:
 
     // Vector interpolation
     // VINTRP
+    void V_INTERP_P1_F32(const GcnInst& inst);
     void V_INTERP_P2_F32(const GcnInst& inst);
     void V_INTERP_MOV_F32(const GcnInst& inst);
 
     // Data share
     // DS
-    void DS_ADD_U32(const GcnInst& inst, bool rtn);
-    void DS_MIN_U32(const GcnInst& inst, bool is_signed, bool rtn);
-    void DS_MAX_U32(const GcnInst& inst, bool is_signed, bool rtn);
+    template <typename T = IR::U32>
+    void DS_OP(const GcnInst& inst, AtomicOp op, bool rtn);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
-    void DS_SWIZZLE_B32(const GcnInst& inst);
-    void DS_AND_B32(const GcnInst& inst, bool rtn);
-    void DS_OR_B32(const GcnInst& inst, bool rtn);
-    void DS_XOR_B32(const GcnInst& inst, bool rtn);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
+    void DS_SWIZZLE_B32(const GcnInst& inst);
     void DS_APPEND(const GcnInst& inst);
     void DS_CONSUME(const GcnInst& inst);
-    void DS_SUB_U32(const GcnInst& inst, bool rtn);
-    void DS_INC_U32(const GcnInst& inst, bool rtn);
-    void DS_DEC_U32(const GcnInst& inst, bool rtn);
 
     // Buffer Memory
     // MUBUF / MTBUF
-    void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst);
-    void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed,
-                      const GcnInst& inst);
+    void BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst,
+                     u32 scalar_width = 32, bool is_signed = false);
+    void BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer_typed, const GcnInst& inst,
+                      u32 scalar_width = 32);
+    template <typename T = IR::U32>
     void BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst);
 
     // Image Memory
@@ -313,13 +318,8 @@ private:
     IR::F32 SelectCubeResult(const IR::F32& x, const IR::F32& y, const IR::F32& z,
                              const IR::F32& x_res, const IR::F32& y_res, const IR::F32& z_res);
 
-    void ExportMrtValue(IR::Attribute attribute, u32 comp, const IR::F32& value,
-                        const PsColorBuffer& color_buffer);
-    void ExportMrtCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportMrtUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-    void ExportCompressed(IR::Attribute attribute, u32 idx, const IR::U32& value);
-    void ExportUncompressed(IR::Attribute attribute, u32 comp, const IR::F32& value);
-
+    void ExportRenderTarget(const GcnInst& inst);
+    void ExportDepth(const GcnInst& inst);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
@@ -329,10 +329,11 @@ private:
     Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
+    u32 next_vgpr_num;
+    std::unordered_map<u32, IR::VectorReg> vgpr_map;
+    std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     bool opcode_missing = false;
+    u32 pc{};
 };
-
-void Translate(IR::Block* block, u32 block_base, std::span<const GcnInst> inst_list, Info& info,
-               const RuntimeInfo& runtime_info, const Profile& profile);
 
 } // namespace Shader::Gcn

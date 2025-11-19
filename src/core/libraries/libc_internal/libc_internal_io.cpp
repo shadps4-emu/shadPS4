@@ -18,7 +18,6 @@ int PS4_SYSV_ABI internal_snprintf(char* s, size_t n, VA_ARGS) {
     return snprintf_ctx(s, n, &ctx);
 }
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", 1, 1,
-                 internal_snprintf);
+    LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
 }
 } // namespace Libraries::LibcInternal

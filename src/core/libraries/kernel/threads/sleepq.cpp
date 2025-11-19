@@ -53,23 +53,23 @@ void SleepqAdd(void* wchan, Pthread* td) {
         sq->sq_wchan = wchan;
         /* sq->sq_type = type; */
     }
-    td->sleepqueue = NULL;
+    td->sleepqueue = nullptr;
     td->wchan = wchan;
     sq->sq_blocked.push_front(td);
 }
 
-int SleepqRemove(SleepQueue* sq, Pthread* td) {
+bool SleepqRemove(SleepQueue* sq, Pthread* td) {
     std::erase(sq->sq_blocked, td);
     if (sq->sq_blocked.empty()) {
         td->sleepqueue = sq;
         sq->unlink();
         td->wchan = nullptr;
-        return 0;
+        return false;
     } else {
         td->sleepqueue = std::addressof(sq->sq_freeq.front());
         sq->sq_freeq.pop_front();
         td->wchan = nullptr;
-        return 1;
+        return true;
     }
 }
 
@@ -88,10 +88,10 @@ void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
     td->wchan = nullptr;
 
     auto sq2 = sq->sq_freeq.begin();
-    for (Pthread* td : sq->sq_blocked) {
-        callback(td, arg);
-        td->sleepqueue = std::addressof(*sq2);
-        td->wchan = nullptr;
+    for (Pthread* td2 : sq->sq_blocked) {
+        callback(td2, arg);
+        td2->sleepqueue = std::addressof(*sq2);
+        td2->wchan = nullptr;
         ++sq2;
     }
     sq->sq_blocked.clear();

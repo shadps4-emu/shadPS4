@@ -100,6 +100,11 @@ s32 SystemSetupCore(StackBuffer* stackBuffer, const OrbisNgs2SystemOption* optio
         return ORBIS_NGS2_ERROR_INVALID_SAMPLE_RATE;
     }
 
+    if (outSystem) {
+        // dummy handle
+        outSystem->systemHandle = 1;
+    }
+
     return ORBIS_OK;
 }
 

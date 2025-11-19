@@ -21,9 +21,8 @@ enum class FileAccessMode {
      */
     Read = 1 << 0,
     /**
-     * If the file at path exists, the existing contents of the file are erased.
-     * The empty file is then opened for writing.
-     * If the file at path does not exist, it creates and opens a new empty file for writing.
+     * If the file at path exists, it opens the file for writing.
+     * If the file at path does not exist, it fails to open the file.
      */
     Write = 1 << 1,
     /**
@@ -42,6 +41,12 @@ enum class FileAccessMode {
      * reading and appending.
      */
     ReadAppend = Read | Append,
+    /**
+     * If the file at path exists, the existing contents of the file are erased.
+     * The empty file is then opened for writing.
+     * If the file at path does not exist, it creates and opens a new empty file for writing.
+     */
+    Create = 1 << 3,
 };
 DECLARE_ENUM_FLAG_OPERATORS(FileAccessMode);
 
@@ -100,6 +105,11 @@ public:
 
     bool IsOpen() const {
         return file != nullptr;
+    }
+
+    bool IsWriteOnly() const {
+        return file_access_mode == FileAccessMode::Append ||
+               file_access_mode == FileAccessMode::Write;
     }
 
     uintptr_t GetFileMapping();
@@ -186,7 +196,9 @@ public:
 
     template <typename T>
     size_t WriteRaw(const void* data, size_t size) const {
-        return std::fwrite(data, sizeof(T), size, file);
+        auto bytes = std::fwrite(data, sizeof(T), size, file);
+        std::fflush(file);
+        return bytes;
     }
 
     template <typename T>
@@ -208,16 +220,16 @@ public:
     }
 
     static size_t WriteBytes(const std::filesystem::path path, const auto& data) {
-        IOFile out(path, FileAccessMode::Write);
+        IOFile out(path, FileAccessMode::Create);
         return out.Write(data);
     }
+    std::FILE* file = nullptr;
 
 private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
 
-    std::FILE* file = nullptr;
     uintptr_t file_mapping = 0;
 };
 

@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "common/logging/log.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
@@ -747,10 +748,10 @@ int PS4_SYSV_ABI sceRtcParseDateTime(OrbisRtcTick* pTickUtc, const char* pszDate
 
     std::string dateTimeString = std::string(pszDateTime);
 
-    char formatKey = dateTimeString[22];
+    char formatKey = dateTimeString[19];
     OrbisRtcDateTime dateTime;
 
-    if (formatKey == 'Z' || formatKey == '-' || formatKey == '+') {
+    if (formatKey == 'Z' || formatKey == '-' || formatKey == '+' || formatKey == '.') {
         // RFC3339
         sceRtcParseRFC3339(pTickUtc, pszDateTime);
     } else if (formatKey == ':') {
@@ -807,19 +808,25 @@ int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateT
     dateTime.hour = std::stoi(dateTimeString.substr(11, 2));
     dateTime.minute = std::stoi(dateTimeString.substr(14, 2));
     dateTime.second = std::stoi(dateTimeString.substr(17, 2));
-    dateTime.microsecond = std::stoi(dateTimeString.substr(20, 2));
+    s32 timezone_pos = 22;
+    if (dateTimeString[19] == '.') {
+        dateTime.microsecond = std::stoi(dateTimeString.substr(20, 2));
+    } else {
+        timezone_pos = 19;
+        dateTime.microsecond = 0;
+    }
 
     sceRtcGetTick(&dateTime, pTickUtc);
 
-    if (dateTimeString[22] != 'Z') {
-        if (dateTimeString[22] == '-') {
-            int timeZoneOffset = std::stoi(dateTimeString.substr(23, 2)) * 60;
-            timeZoneOffset += std::stoi(dateTimeString.substr(26, 2));
+    if (dateTimeString[timezone_pos] != 'Z') {
+        if (dateTimeString[timezone_pos] == '-') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(timezone_pos + 1, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(timezone_pos + 4, 2));
             timeZoneOffset *= -1;
             sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
-        } else if (dateTimeString[22] == '+') {
-            int timeZoneOffset = std::stoi(dateTimeString.substr(23, 2)) * 60;
-            timeZoneOffset += std::stoi(dateTimeString.substr(26, 2));
+        } else if (dateTimeString[timezone_pos] == '+') {
+            int timeZoneOffset = std::stoi(dateTimeString.substr(timezone_pos + 1, 2)) * 60;
+            timeZoneOffset += std::stoi(dateTimeString.substr(timezone_pos + 4, 2));
             sceRtcTickAddMinutes(pTickUtc, pTickUtc, timeZoneOffset);
         }
     }
@@ -827,29 +834,81 @@ int PS4_SYSV_ABI sceRtcParseRFC3339(OrbisRtcTick* pTickUtc, const char* pszDateT
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceRtcSetConf() {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+void PS4_SYSV_ABI sceRtcSetConf(void* p1, void* p2, s32 minuteswest, s32 dsttime) {
+    LOG_INFO(Lib_Rtc, "called");
+    Kernel::OrbisKernelTimezone tz{minuteswest, dsttime};
+    Kernel::sceKernelSettimeofday(0, &tz);
+    return;
 }
 
 int PS4_SYSV_ABI sceRtcSetCurrentAdNetworkTick(OrbisRtcTick* pTick) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_Rtc, "called");
+    if (UNIX_EPOCH_TICKS >= pTick->tick) {
+        return ORBIS_RTC_ERROR_INVALID_VALUE;
+    }
+    s32 ret = 0;
+    if (pTick != nullptr) {
+        u64 temp = pTick->tick - UNIX_EPOCH_TICKS;
+        Kernel::OrbisKernelTimespec ts(temp / 1000000, temp % 1000000);
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_AD_NETWORK, &ts);
+    } else {
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_AD_NETWORK, nullptr);
+    }
+    if (ret < 0) {
+        return Kernel::ErrnoToSceKernelError(*Kernel::__Error());
+    }
+    return ret;
 }
 
 int PS4_SYSV_ABI sceRtcSetCurrentDebugNetworkTick(OrbisRtcTick* pTick) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_Rtc, "called");
+    if (UNIX_EPOCH_TICKS >= pTick->tick) {
+        return ORBIS_RTC_ERROR_INVALID_VALUE;
+    }
+    s32 ret = 0;
+    if (pTick != nullptr) {
+        u64 temp = pTick->tick - UNIX_EPOCH_TICKS;
+        Kernel::OrbisKernelTimespec ts(temp / 1000000, temp % 1000000);
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_DEBUG_NETWORK, &ts);
+    } else {
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_DEBUG_NETWORK, nullptr);
+    }
+    if (ret < 0) {
+        return Kernel::ErrnoToSceKernelError(*Kernel::__Error());
+    }
+    return ret;
 }
 
 int PS4_SYSV_ABI sceRtcSetCurrentNetworkTick(OrbisRtcTick* pTick) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_Rtc, "called");
+    if (UNIX_EPOCH_TICKS >= pTick->tick) {
+        return ORBIS_RTC_ERROR_INVALID_VALUE;
+    }
+    s32 ret = 0;
+    if (pTick != nullptr) {
+        u64 temp = pTick->tick - UNIX_EPOCH_TICKS;
+        Kernel::OrbisKernelTimespec ts(temp / 1000000, temp % 1000000);
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_NETWORK, &ts);
+    } else {
+        ret = Kernel::posix_clock_settime(ORBIS_RTC_CLOCK_ID_NETWORK, nullptr);
+    }
+    if (ret < 0) {
+        return Kernel::ErrnoToSceKernelError(*Kernel::__Error());
+    }
+    return ret;
 }
 
 int PS4_SYSV_ABI sceRtcSetCurrentTick(OrbisRtcTick* pTick) {
-    LOG_ERROR(Lib_Rtc, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_Rtc, "called");
+    if (pTick == nullptr) {
+        return ORBIS_RTC_ERROR_INVALID_POINTER;
+    }
+    if (UNIX_EPOCH_TICKS >= pTick->tick) {
+        return ORBIS_RTC_ERROR_INVALID_VALUE;
+    }
+    s64 temp = pTick->tick - UNIX_EPOCH_TICKS;
+    Kernel::OrbisKernelTimeval tv(temp / 1000000, temp % 1000000);
+    return Kernel::sceKernelSettimeofday(&tv, nullptr);
 }
 
 int PS4_SYSV_ABI sceRtcSetDosTime(OrbisRtcDateTime* pTime, u32 dosTime) {
@@ -1122,57 +1181,54 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     return ORBIS_OK;
 }
 
-void RegisterlibSceRtc(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("lPEBYdVX0XQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCheckValid);
-    LIB_FUNCTION("fNaZ4DbzHAE", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcCompareTick);
-    LIB_FUNCTION("8Yr143yEnRo", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcConvertLocalTimeToUtc);
-    LIB_FUNCTION("M1TvFst-jrM", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcConvertUtcToLocalTime);
-    LIB_FUNCTION("8SljQx6pDP8", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcEnd);
-    LIB_FUNCTION("eiuobaF-hK4", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcFormatRFC2822);
-    LIB_FUNCTION("AxHBk3eat04", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcFormatRFC2822LocalTime);
-    LIB_FUNCTION("WJ3rqFwymew", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcFormatRFC3339);
-    LIB_FUNCTION("DwuHIlLGW8I", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcFormatRFC3339LocalTime);
-    LIB_FUNCTION("lja0nNPWojg", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcFormatRFC3339Precise);
-    LIB_FUNCTION("tOZ6fwwHZOA", "libSceRtc", 1, "libSceRtc", 1, 1,
-                 sceRtcFormatRFC3339PreciseLocalTime);
-    LIB_FUNCTION("LN3Zcb72Q0c", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentAdNetworkTick);
-    LIB_FUNCTION("8lfvnRMqwEM", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentClock);
-    LIB_FUNCTION("ZPD1YOKI+Kw", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentClockLocalTime);
-    LIB_FUNCTION("Ot1DE3gif84", "libSceRtc", 1, "libSceRtc", 1, 1,
-                 sceRtcGetCurrentDebugNetworkTick);
-    LIB_FUNCTION("zO9UL3qIINQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentNetworkTick);
-    LIB_FUNCTION("HWxHOdbM-Pg", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentRawNetworkTick);
-    LIB_FUNCTION("18B2NS1y9UU", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetCurrentTick);
-    LIB_FUNCTION("CyIK-i4XdgQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetDayOfWeek);
-    LIB_FUNCTION("3O7Ln8AqJ1o", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetDaysInMonth);
-    LIB_FUNCTION("E7AR4o7Ny7E", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetDosTime);
-    LIB_FUNCTION("8w-H19ip48I", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetTick);
-    LIB_FUNCTION("jMNwqYr4R-k", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetTickResolution);
-    LIB_FUNCTION("BtqmpTRXHgk", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetTime_t);
-    LIB_FUNCTION("jfRO0uTjtzA", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcGetWin32FileTime);
-    LIB_FUNCTION("LlodCMDbk3o", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcInit);
-    LIB_FUNCTION("Ug8pCwQvh0c", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcIsLeapYear);
-    LIB_FUNCTION("NxEI1KByvCI", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcParseDateTime);
-    LIB_FUNCTION("99bMGglFW3I", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcParseRFC3339);
-    LIB_FUNCTION("fFLgmNUpChg", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetConf);
-    LIB_FUNCTION("sV2tK+yOhBU", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetCurrentAdNetworkTick);
-    LIB_FUNCTION("VLDUPKmw5L8", "libSceRtc", 1, "libSceRtc", 1, 1,
-                 sceRtcSetCurrentDebugNetworkTick);
-    LIB_FUNCTION("qhDBtIo+auw", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetCurrentNetworkTick);
-    LIB_FUNCTION("d4fHLCGmY80", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetCurrentTick);
-    LIB_FUNCTION("aYPCd1cChyg", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetDosTime);
-    LIB_FUNCTION("ueega6v3GUw", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetTick);
-    LIB_FUNCTION("bDEVVP4bTjQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetTime_t);
-    LIB_FUNCTION("n5JiAJXsbcs", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcSetWin32FileTime);
-    LIB_FUNCTION("NR1J0N7L2xY", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddDays);
-    LIB_FUNCTION("MDc5cd8HfCA", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddHours);
-    LIB_FUNCTION("XPIiw58C+GM", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddMicroseconds);
-    LIB_FUNCTION("mn-tf4QiFzk", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddMinutes);
-    LIB_FUNCTION("CL6y9q-XbuQ", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddMonths);
-    LIB_FUNCTION("07O525HgICs", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddSeconds);
-    LIB_FUNCTION("AqVMssr52Rc", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddTicks);
-    LIB_FUNCTION("gI4t194c2W8", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddWeeks);
-    LIB_FUNCTION("-5y2uJ62qS8", "libSceRtc", 1, "libSceRtc", 1, 1, sceRtcTickAddYears);
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("lPEBYdVX0XQ", "libSceRtc", 1, "libSceRtc", sceRtcCheckValid);
+    LIB_FUNCTION("fNaZ4DbzHAE", "libSceRtc", 1, "libSceRtc", sceRtcCompareTick);
+    LIB_FUNCTION("8Yr143yEnRo", "libSceRtc", 1, "libSceRtc", sceRtcConvertLocalTimeToUtc);
+    LIB_FUNCTION("M1TvFst-jrM", "libSceRtc", 1, "libSceRtc", sceRtcConvertUtcToLocalTime);
+    LIB_FUNCTION("8SljQx6pDP8", "libSceRtc", 1, "libSceRtc", sceRtcEnd);
+    LIB_FUNCTION("eiuobaF-hK4", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC2822);
+    LIB_FUNCTION("AxHBk3eat04", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC2822LocalTime);
+    LIB_FUNCTION("WJ3rqFwymew", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC3339);
+    LIB_FUNCTION("DwuHIlLGW8I", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC3339LocalTime);
+    LIB_FUNCTION("lja0nNPWojg", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC3339Precise);
+    LIB_FUNCTION("tOZ6fwwHZOA", "libSceRtc", 1, "libSceRtc", sceRtcFormatRFC3339PreciseLocalTime);
+    LIB_FUNCTION("LN3Zcb72Q0c", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentAdNetworkTick);
+    LIB_FUNCTION("8lfvnRMqwEM", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentClock);
+    LIB_FUNCTION("ZPD1YOKI+Kw", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentClockLocalTime);
+    LIB_FUNCTION("Ot1DE3gif84", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentDebugNetworkTick);
+    LIB_FUNCTION("zO9UL3qIINQ", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentNetworkTick);
+    LIB_FUNCTION("HWxHOdbM-Pg", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentRawNetworkTick);
+    LIB_FUNCTION("18B2NS1y9UU", "libSceRtc", 1, "libSceRtc", sceRtcGetCurrentTick);
+    LIB_FUNCTION("CyIK-i4XdgQ", "libSceRtc", 1, "libSceRtc", sceRtcGetDayOfWeek);
+    LIB_FUNCTION("3O7Ln8AqJ1o", "libSceRtc", 1, "libSceRtc", sceRtcGetDaysInMonth);
+    LIB_FUNCTION("E7AR4o7Ny7E", "libSceRtc", 1, "libSceRtc", sceRtcGetDosTime);
+    LIB_FUNCTION("8w-H19ip48I", "libSceRtc", 1, "libSceRtc", sceRtcGetTick);
+    LIB_FUNCTION("jMNwqYr4R-k", "libSceRtc", 1, "libSceRtc", sceRtcGetTickResolution);
+    LIB_FUNCTION("BtqmpTRXHgk", "libSceRtc", 1, "libSceRtc", sceRtcGetTime_t);
+    LIB_FUNCTION("jfRO0uTjtzA", "libSceRtc", 1, "libSceRtc", sceRtcGetWin32FileTime);
+    LIB_FUNCTION("LlodCMDbk3o", "libSceRtc", 1, "libSceRtc", sceRtcInit);
+    LIB_FUNCTION("Ug8pCwQvh0c", "libSceRtc", 1, "libSceRtc", sceRtcIsLeapYear);
+    LIB_FUNCTION("NxEI1KByvCI", "libSceRtc", 1, "libSceRtc", sceRtcParseDateTime);
+    LIB_FUNCTION("99bMGglFW3I", "libSceRtc", 1, "libSceRtc", sceRtcParseRFC3339);
+    LIB_FUNCTION("fFLgmNUpChg", "libSceRtc", 1, "libSceRtc", sceRtcSetConf);
+    LIB_FUNCTION("sV2tK+yOhBU", "libSceRtc", 1, "libSceRtc", sceRtcSetCurrentAdNetworkTick);
+    LIB_FUNCTION("VLDUPKmw5L8", "libSceRtc", 1, "libSceRtc", sceRtcSetCurrentDebugNetworkTick);
+    LIB_FUNCTION("qhDBtIo+auw", "libSceRtc", 1, "libSceRtc", sceRtcSetCurrentNetworkTick);
+    LIB_FUNCTION("d4fHLCGmY80", "libSceRtc", 1, "libSceRtc", sceRtcSetCurrentTick);
+    LIB_FUNCTION("aYPCd1cChyg", "libSceRtc", 1, "libSceRtc", sceRtcSetDosTime);
+    LIB_FUNCTION("ueega6v3GUw", "libSceRtc", 1, "libSceRtc", sceRtcSetTick);
+    LIB_FUNCTION("bDEVVP4bTjQ", "libSceRtc", 1, "libSceRtc", sceRtcSetTime_t);
+    LIB_FUNCTION("n5JiAJXsbcs", "libSceRtc", 1, "libSceRtc", sceRtcSetWin32FileTime);
+    LIB_FUNCTION("NR1J0N7L2xY", "libSceRtc", 1, "libSceRtc", sceRtcTickAddDays);
+    LIB_FUNCTION("MDc5cd8HfCA", "libSceRtc", 1, "libSceRtc", sceRtcTickAddHours);
+    LIB_FUNCTION("XPIiw58C+GM", "libSceRtc", 1, "libSceRtc", sceRtcTickAddMicroseconds);
+    LIB_FUNCTION("mn-tf4QiFzk", "libSceRtc", 1, "libSceRtc", sceRtcTickAddMinutes);
+    LIB_FUNCTION("CL6y9q-XbuQ", "libSceRtc", 1, "libSceRtc", sceRtcTickAddMonths);
+    LIB_FUNCTION("07O525HgICs", "libSceRtc", 1, "libSceRtc", sceRtcTickAddSeconds);
+    LIB_FUNCTION("AqVMssr52Rc", "libSceRtc", 1, "libSceRtc", sceRtcTickAddTicks);
+    LIB_FUNCTION("gI4t194c2W8", "libSceRtc", 1, "libSceRtc", sceRtcTickAddWeeks);
+    LIB_FUNCTION("-5y2uJ62qS8", "libSceRtc", 1, "libSceRtc", sceRtcTickAddYears);
 };
 
 } // namespace Libraries::Rtc
