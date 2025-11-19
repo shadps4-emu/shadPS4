@@ -230,6 +230,8 @@ struct StageSpecialization {
         }
         return true;
     }
+
+    u64 Hash() const;
 };
 
 } // namespace Shader

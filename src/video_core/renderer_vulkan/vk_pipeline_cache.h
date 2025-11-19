@@ -23,6 +23,10 @@ namespace AmdGpu {
 class Liverpool;
 }
 
+namespace Serialization {
+struct Archive;
+}
+
 namespace Shader {
 struct Info;
 }
@@ -36,18 +40,24 @@ class ShaderCache;
 struct Program {
     struct Module {
         vk::ShaderModule module;
-        Shader::StageSpecialization spec;
+        u64 spec_hash;
     };
     using ModuleList = boost::container::small_vector<Module, 8>;
 
     Shader::Info info;
     ModuleList modules;
 
-    explicit Program(Shader::Stage stage, Shader::LogicalStage l_stage, Shader::ShaderParams params)
+    Program() = default;
+    Program(Shader::Stage stage, Shader::LogicalStage l_stage, Shader::ShaderParams params)
         : info{stage, l_stage, params} {}
 
-    void AddPermut(vk::ShaderModule module, const Shader::StageSpecialization&& spec) {
-        modules.emplace_back(module, std::move(spec));
+    void AddPermut(vk::ShaderModule module, u64 spec_hash) {
+        modules.emplace_back(module, spec_hash);
+    }
+
+    void InsertPermut(vk::ShaderModule module, u64 spec_hash, size_t perm_idx) {
+        modules.resize(std::max(modules.size(), perm_idx + 1));
+        modules[perm_idx] = {module, spec_hash};
     }
 };
 
@@ -57,6 +67,13 @@ public:
                            AmdGpu::Liverpool* liverpool);
     ~PipelineCache();
 
+    void WarmUp();
+    void Sync();
+
+    bool LoadComputePipeline(Serialization::Archive& ar);
+    bool LoadGraphicsPipeline(Serialization::Archive& ar);
+    bool LoadPipelineStage(Serialization::Archive& ar, size_t stage);
+
     const GraphicsPipeline* GetGraphicsPipeline();
 
     const ComputePipeline* GetComputePipeline();
@@ -64,7 +81,7 @@ public:
     using Result = std::tuple<const Shader::Info*, vk::ShaderModule,
                               std::optional<Shader::Gcn::FetchShaderData>, u64>;
     Result GetProgram(Shader::Stage stage, Shader::LogicalStage l_stage,
-                      Shader::ShaderParams params, Shader::Backend::Bindings& binding);
+                      const Shader::ShaderParams& params, Shader::Backend::Bindings& binding);
 
     std::optional<vk::ShaderModule> ReplaceShader(vk::ShaderModule module,
                                                   std::span<const u32> spv_code);
@@ -86,7 +103,7 @@ private:
     std::optional<std::vector<u32>> GetShaderPatch(u64 hash, Shader::Stage stage, size_t perm_idx,
                                                    std::string_view ext);
     vk::ShaderModule CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
-                                   std::span<const u32> code, size_t perm_idx,
+                                   const std::span<const u32>& code, size_t perm_idx,
                                    Shader::Backend::Bindings& binding);
     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
 
