@@ -311,6 +311,9 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     } else if (file->type == Core::FileSys::FileType::Socket) {
         // Socket functions handle errnos internally.
         return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     return file->f.WriteRaw<u8>(buf, nbytes);
