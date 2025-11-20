@@ -311,6 +311,9 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     } else if (file->type == Core::FileSys::FileType::Socket) {
         // Socket functions handle errnos internally.
         return file->socket->SendPacket(buf, nbytes, 0, nullptr, 0);
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
 
     return file->f.WriteRaw<u8>(buf, nbytes);
@@ -405,7 +408,11 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
+
     s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
         total_written += file->f.WriteRaw<u8>(iov[i].iov_base, iov[i].iov_len);
@@ -1047,7 +1054,11 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
             return -1;
         }
         return result;
+    } else if (file->type == Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_EBADF;
+        return -1;
     }
+
     const s64 pos = file->f.Tell();
     SCOPE_EXIT {
         file->f.Seek(pos);
