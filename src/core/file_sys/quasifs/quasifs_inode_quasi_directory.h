@@ -30,7 +30,7 @@ protected:
     std::map<std::string, inode_ptr> entries{};
 
     void RebuildDirents(void);
-    time_t last_dirent_rebuild_time{0};
+    bool dirents_changed{false};
     std::vector<u8> dirent_cache_bin{};
 
 public:

@@ -31,4 +31,11 @@ s64 Device::pwrite(const void* buf, u64 count, s64 offset) {
     return write(buf, count);
 }
 
+s64 Device::lseek(s64 current, s64 offset, s32 whence) {
+    return ((QuasiFS::SeekOrigin::ORIGIN == whence) * offset) +
+           ((QuasiFS::SeekOrigin::CURRENT == whence) * (current + offset)) +
+           ((QuasiFS::SeekOrigin::END == whence) * ((offset > 0) * offset));
+    // ::END is pro-forma
+}
+
 } // namespace QuasiFS

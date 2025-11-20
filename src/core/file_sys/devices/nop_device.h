@@ -23,7 +23,6 @@ public:
     s64 read(void* buf, u64 count) override { return 0; };
     s64 write(const void* buf, u64 count) override { return 0; };
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { return 0; };
-    s64 lseek(s64 current, s64 offset, s32 whence) override { return 0; };
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { return 0; };
     s32 fsync() override { return 0; };
     s32 ftruncate(s64 length) override { return 0; };

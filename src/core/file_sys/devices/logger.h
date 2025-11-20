@@ -40,7 +40,6 @@ public:
     // clang-format off
     s64 read(void* buf, u64 count) override { DEVICE_STUB(); };
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }
-    s64 lseek(s64 current, s64 offset, s32 whence) override { DEVICE_STUB(); }
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); }
     s32 ftruncate(s64 length) override { DEVICE_STUB(); }
     s64 getdents(void* buf, u32 nbytes, s64 offset, s64* basep) override { DEVICE_STUB(); }

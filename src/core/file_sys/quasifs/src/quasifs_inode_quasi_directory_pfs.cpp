@@ -22,6 +22,7 @@ DirectoryPFS::~DirectoryPFS() = default;
 
 s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
     RebuildDirents();
+    st.st_atim.tv_sec = time(0);
 
     // data is contiguous. i think that's how it's said
     // anyway, everything goes raw
@@ -67,6 +68,7 @@ s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
 // future
 s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
+    st.st_atim.tv_sec = time(0);
 
     if (count != 65536)
         LOG_CRITICAL(Kernel_Fs, "PFS dirents read with count={} (which is not 65536) (report this)",
@@ -123,11 +125,9 @@ s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
 }
 
 void DirectoryPFS::RebuildDirents(void) {
-
-    // adding/removing entries changes mtime
-    if (this->st.st_mtim.tv_sec == this->last_dirent_rebuild_time)
+    if (this->dirents_changed)
         return;
-    this->last_dirent_rebuild_time = this->st.st_mtim.tv_sec;
+    this->dirents_changed = false;
 
     constexpr u32 dirent_meta_size = sizeof(dirent_pfs_t::d_fileno) + sizeof(dirent_pfs_t::d_type) +
                                      sizeof(dirent_pfs_t::d_namlen) +

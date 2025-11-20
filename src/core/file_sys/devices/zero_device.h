@@ -30,7 +30,6 @@ public:
 
     // clang-format off
     s32 ioctl(u64 cmd, Common::VaCtx* args) override { DEVICE_STUB(); }
-    s64 lseek(s64 current, s64 offset, s32 whence) override { DEVICE_STUB(); }
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); }
     s32 fsync() override { DEVICE_STUB(); }
     s32 ftruncate(s64 length) override { DEVICE_STUB(); }

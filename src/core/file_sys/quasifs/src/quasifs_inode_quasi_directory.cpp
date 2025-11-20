@@ -26,6 +26,7 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
 
 s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
     RebuildDirents();
+    this->dirents_changed = false;
     return Inode::lseek(current, offset, whence);
 }
 
@@ -41,6 +42,7 @@ s32 QuasiDirectory::ftruncate(s64 length) {
 
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
     RebuildDirents();
+    st.st_atim.tv_sec = time(0);
 
     // at this point count is ALWAYS >512 (checked in VIO Driver)
     // always returns up to 512 bytes
@@ -122,10 +124,9 @@ std::vector<std::string> QuasiDirectory::list() {
 }
 
 void QuasiDirectory::RebuildDirents(void) {
-    // adding/removing entries changes mtime
-    if (this->st.st_mtim.tv_sec == this->last_dirent_rebuild_time)
+    if (this->dirents_changed)
         return;
-    this->last_dirent_rebuild_time = this->st.st_mtim.tv_sec;
+    this->dirents_changed = false;
 
     constexpr u32 dirent_meta_size = sizeof(dirent_t::d_fileno) + sizeof(dirent_t::d_type) +
                                      sizeof(dirent_t::d_namlen) + sizeof(dirent_t::d_reclen);
