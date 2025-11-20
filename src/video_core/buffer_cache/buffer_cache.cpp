@@ -89,13 +89,12 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool download) {
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        if (DownloadBufferMemory(buffer, device_addr, size, is_write)) {
-            scheduler.Finish();
-        }
+        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
     });
 }
 
-bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+template <bool async>
+void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     memory_tracker->ForEachDownloadRange<false>(
@@ -118,7 +117,7 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
             gpu_modified_ranges.Subtract(device_addr_out, range_size);
         });
     if (total_size_bytes == 0) {
-        return false;
+        return;
     }
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
     for (auto& copy : copies) {
@@ -129,8 +128,9 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.Handle(), download_buffer.Handle(), copies);
-    scheduler.DeferOperation([this, buf_addr = buffer.CpuAddr(), copies = std::move(copies),
-                              download, offset, device_addr, size, is_write]() {
+
+    const auto write_func = [this, buf_addr = buffer.CpuAddr(), copies = std::move(copies),
+                             download, offset, device_addr, size, is_write]() {
         auto* memory = Core::Memory::Instance();
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buf_addr + copy.srcOffset;
@@ -142,9 +142,16 @@ bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         if (is_write) {
             memory_tracker->MarkRegionAsCpuModified(device_addr, size);
         }
-    });
+    };
 
-    return true;
+    if constexpr (async) {
+        scheduler.DeferOperation(write_func);
+    } else {
+        scheduler.Finish();
+        write_func();
+    }
+
+    return;
 }
 
 void BufferCache::ReadEdgeImagePages(const Image& image) {
@@ -964,7 +971,7 @@ void BufferCache::RunGarbageCollector() {
         }
         --max_deletions;
         Buffer& buffer = slot_buffers[buffer_id];
-        DownloadBufferMemory(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
+        DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
     };
 }
