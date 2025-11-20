@@ -53,8 +53,7 @@ struct OrbisKernelModuleInfoEx {
 
 struct ModuleInfo {
     bool operator==(const ModuleInfo& other) const {
-        return version_major == other.version_major && version_minor == other.version_minor &&
-               name == other.name;
+        return name == other.name;
     }
     std::string name;
     union {
@@ -203,7 +202,7 @@ public:
         return (rela_bits[index >> 3] >> (index & 7)) & 1;
     }
 
-    s32 Start(size_t args, const void* argp, void* param);
+    s32 Start(u64 args, const void* argp, void* param);
     void LoadModuleToMemory(u32& max_tls_index);
     void LoadDynamicInfo();
     void LoadSymbols();

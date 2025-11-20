@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -9,156 +9,177 @@
 
 namespace Config {
 
-enum HideCursorState : s16 { Never, Idle, Always };
+enum class ConfigMode {
+    Default,
+    Global,
+    Clean,
+};
+void setConfigMode(ConfigMode mode);
 
-void load(const std::filesystem::path& path);
-void save(const std::filesystem::path& path);
-void saveMainWindow(const std::filesystem::path& path);
+struct GameInstallDir {
+    std::filesystem::path path;
+    bool enabled;
+};
 
+enum HideCursorState : int { Never, Idle, Always };
+
+void load(const std::filesystem::path& path, bool is_game_specific = false);
+void save(const std::filesystem::path& path, bool is_game_specific = false);
+void resetGameSpecificValue(std::string entry);
+
+bool getGameRunning();
+void setGameRunning(bool running);
+int getVolumeSlider();
+void setVolumeSlider(int volumeValue, bool is_game_specific = false);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
-bool GetLoadGameSizeEnabled();
-std::filesystem::path GetSaveDataPath();
-void setLoadGameSizeEnabled(bool enable);
 bool getIsFullscreen();
+void setIsFullscreen(bool enable, bool is_game_specific = false);
 std::string getFullscreenMode();
-bool isNeoModeConsole();
-bool getPlayBGM();
-int getBGMvolume();
+void setFullscreenMode(std::string mode, bool is_game_specific = false);
+std::string getPresentMode();
+void setPresentMode(std::string mode, bool is_game_specific = false);
+u32 getWindowWidth();
+u32 getWindowHeight();
+void setWindowWidth(u32 width, bool is_game_specific = false);
+void setWindowHeight(u32 height, bool is_game_specific = false);
+u32 getInternalScreenWidth();
+u32 getInternalScreenHeight();
+void setInternalScreenWidth(u32 width);
+void setInternalScreenHeight(u32 height);
+bool debugDump();
+void setDebugDump(bool enable, bool is_game_specific = false);
+s32 getGpuId();
+void setGpuId(s32 selectedGpuId, bool is_game_specific = false);
+bool allowHDR();
+void setAllowHDR(bool enable, bool is_game_specific = false);
+bool collectShadersForDebug();
+void setCollectShaderForDebug(bool enable, bool is_game_specific = false);
+bool showSplash();
+void setShowSplash(bool enable, bool is_game_specific = false);
+std::string sideTrophy();
+void setSideTrophy(std::string side, bool is_game_specific = false);
+bool nullGpu();
+void setNullGpu(bool enable, bool is_game_specific = false);
+bool copyGPUCmdBuffers();
+void setCopyGPUCmdBuffers(bool enable, bool is_game_specific = false);
+bool readbacks();
+void setReadbacks(bool enable, bool is_game_specific = false);
+bool readbackLinearImages();
+void setReadbackLinearImages(bool enable, bool is_game_specific = false);
+bool directMemoryAccess();
+void setDirectMemoryAccess(bool enable, bool is_game_specific = false);
+bool dumpShaders();
+void setDumpShaders(bool enable, bool is_game_specific = false);
+u32 vblankFreq();
+void setVblankFreq(u32 value, bool is_game_specific = false);
 bool getisTrophyPopupDisabled();
-bool getEnableDiscordRPC();
-bool getSeparateUpdateEnabled();
-bool getCompatibilityEnabled();
-bool getCheckCompatibilityOnStartup();
-int getBackgroundImageOpacity();
-bool getShowBackgroundImage();
-
-std::string getLogFilter();
-std::string getLogType();
-std::string getUserName();
-std::string getUpdateChannel();
-std::string getChooseHomeTab();
-
+void setisTrophyPopupDisabled(bool disable, bool is_game_specific = false);
 s16 getCursorState();
+void setCursorState(s16 cursorState, bool is_game_specific = false);
+bool vkValidationEnabled();
+void setVkValidation(bool enable, bool is_game_specific = false);
+bool vkValidationSyncEnabled();
+void setVkSyncValidation(bool enable, bool is_game_specific = false);
+bool vkValidationGpuEnabled();
+void setVkGpuValidation(bool enable, bool is_game_specific = false);
+bool vkValidationCoreEnabled();
+void setVkCoreValidation(bool enable, bool is_game_specific = false);
+bool getVkCrashDiagnosticEnabled();
+void setVkCrashDiagnosticEnabled(bool enable, bool is_game_specific = false);
+bool getVkHostMarkersEnabled();
+void setVkHostMarkersEnabled(bool enable, bool is_game_specific = false);
+bool getVkGuestMarkersEnabled();
+void setVkGuestMarkersEnabled(bool enable, bool is_game_specific = false);
+bool getEnableDiscordRPC();
+void setEnableDiscordRPC(bool enable);
+bool isRdocEnabled();
+void setRdocEnabled(bool enable, bool is_game_specific = false);
+std::string getLogType();
+void setLogType(const std::string& type, bool is_game_specific = false);
+std::string getLogFilter();
+void setLogFilter(const std::string& type, bool is_game_specific = false);
+double getTrophyNotificationDuration();
+void setTrophyNotificationDuration(double newTrophyNotificationDuration,
+                                   bool is_game_specific = false);
 int getCursorHideTimeout();
-std::string getBackButtonBehavior();
+std::string getMainOutputDevice();
+void setMainOutputDevice(std::string device, bool is_game_specific = false);
+std::string getPadSpkOutputDevice();
+void setPadSpkOutputDevice(std::string device, bool is_game_specific = false);
+std::string getMicDevice();
+void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
+void setMicDevice(std::string device, bool is_game_specific = false);
+void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific = false);
+bool getSeparateLogFilesEnabled();
+u32 GetLanguage();
+void setLanguage(u32 language, bool is_game_specific = false);
+void setUseSpecialPad(bool use);
 bool getUseSpecialPad();
+void setSpecialPadClass(int type);
 int getSpecialPadClass();
+bool getPSNSignedIn();
+void setPSNSignedIn(bool sign, bool is_game_specific = false);
+bool patchShaders(); // no set
+bool fpsColor();     // no set
+bool isNeoModeConsole();
+void setNeoMode(bool enable, bool is_game_specific = false);
+bool isDevKitConsole();
+void setDevKitConsole(bool enable, bool is_game_specific = false);
+
+int getExtraDmemInMbytes();
+void setExtraDmemInMbytes(int value, bool is_game_specific = false);
 bool getIsMotionControlsEnabled();
+void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
+std::string getDefaultControllerID();
+void setDefaultControllerID(std::string id);
+bool getBackgroundControllerInput();
+void setBackgroundControllerInput(bool enable, bool is_game_specific = false);
+bool getLoggingEnabled();
+void setLoggingEnabled(bool enable, bool is_game_specific = false);
+bool getFsrEnabled();
+void setFsrEnabled(bool enable, bool is_game_specific = false);
+bool getRcasEnabled();
+void setRcasEnabled(bool enable, bool is_game_specific = false);
+int getRcasAttenuation();
+void setRcasAttenuation(int value, bool is_game_specific = false);
+bool getIsConnectedToNetwork();
+void setConnectedToNetwork(bool enable, bool is_game_specific = false);
+void setUserName(const std::string& name, bool is_game_specific = false);
+std::filesystem::path getSysModulesPath();
+void setSysModulesPath(const std::filesystem::path& path);
+bool getLoadAutoPatches();
+void setLoadAutoPatches(bool enable);
+
+enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
+int getUsbDeviceBackend();
+void setUsbDeviceBackend(int value, bool is_game_specific = false);
+
+// TODO
+std::filesystem::path GetSaveDataPath();
+std::string getUserName();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
-
-u32 getScreenWidth();
-u32 getScreenHeight();
-s32 getGpuId();
-
-bool debugDump();
-bool collectShadersForDebug();
-bool showSplash();
-bool autoUpdate();
-bool nullGpu();
-bool copyGPUCmdBuffers();
-bool dumpShaders();
-bool patchShaders();
-bool isRdocEnabled();
-u32 vblankDiv();
-
-void setDebugDump(bool enable);
-void setCollectShaderForDebug(bool enable);
-void setShowSplash(bool enable);
-void setAutoUpdate(bool enable);
-void setNullGpu(bool enable);
-void setCopyGPUCmdBuffers(bool enable);
-void setDumpShaders(bool enable);
-void setVblankDiv(u32 value);
-void setGpuId(s32 selectedGpuId);
-void setScreenWidth(u32 width);
-void setScreenHeight(u32 height);
-void setIsFullscreen(bool enable);
-void setFullscreenMode(std::string mode);
-void setisTrophyPopupDisabled(bool disable);
-void setPlayBGM(bool enable);
-void setBGMvolume(int volume);
-void setEnableDiscordRPC(bool enable);
-void setLanguage(u32 language);
-void setNeoMode(bool enable);
-void setUserName(const std::string& type);
-void setUpdateChannel(const std::string& type);
-void setChooseHomeTab(const std::string& type);
-void setSeparateUpdateEnabled(bool use);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& settings_install_dirs_config);
+bool GetOverrideControllerColor();
+void SetOverrideControllerColor(bool enable);
+int* GetControllerCustomColor();
+void SetControllerCustomColor(int r, int b, int g);
+void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
+void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
-void setCompatibilityEnabled(bool use);
-void setCheckCompatibilityOnStartup(bool use);
-void setBackgroundImageOpacity(int opacity);
-void setShowBackgroundImage(bool show);
-
-void setCursorState(s16 cursorState);
-void setCursorHideTimeout(int newcursorHideTimeout);
-void setBackButtonBehavior(const std::string& type);
-void setUseSpecialPad(bool use);
-void setSpecialPadClass(int type);
-void setIsMotionControlsEnabled(bool use);
-
-void setLogType(const std::string& type);
-void setLogFilter(const std::string& type);
-
-void setVkValidation(bool enable);
-void setVkSyncValidation(bool enable);
-void setRdocEnabled(bool enable);
-
-bool vkValidationEnabled();
-bool vkValidationSyncEnabled();
-bool vkValidationGpuEnabled();
-bool getVkCrashDiagnosticEnabled();
-bool getVkHostMarkersEnabled();
-bool getVkGuestMarkersEnabled();
-void setVkCrashDiagnosticEnabled(bool enable);
-void setVkHostMarkersEnabled(bool enable);
-void setVkGuestMarkersEnabled(bool enable);
-
 // Gui
-void setMainWindowGeometry(u32 x, u32 y, u32 w, u32 h);
-bool addGameInstallDir(const std::filesystem::path& dir);
+bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
 void removeGameInstallDir(const std::filesystem::path& dir);
+void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
 void setAddonInstallDir(const std::filesystem::path& dir);
-void setMainWindowTheme(u32 theme);
-void setIconSize(u32 size);
-void setIconSizeGrid(u32 size);
-void setSliderPosition(u32 pos);
-void setSliderPositionGrid(u32 pos);
-void setTableMode(u32 mode);
-void setMainWindowWidth(u32 width);
-void setMainWindowHeight(u32 height);
-void setPkgViewer(const std::vector<std::string>& pkgList);
-void setElfViewer(const std::vector<std::string>& elfList);
-void setRecentFiles(const std::vector<std::string>& recentFiles);
-void setEmulatorLanguage(std::string language);
 
-u32 getMainWindowGeometryX();
-u32 getMainWindowGeometryY();
-u32 getMainWindowGeometryW();
-u32 getMainWindowGeometryH();
-const std::vector<std::filesystem::path>& getGameInstallDirs();
+const std::vector<std::filesystem::path> getGameInstallDirs();
+const std::vector<bool> getGameInstallDirsEnabled();
 std::filesystem::path getAddonInstallDir();
-u32 getMainWindowTheme();
-u32 getIconSize();
-u32 getIconSizeGrid();
-u32 getSliderPosition();
-u32 getSliderPositionGrid();
-u32 getTableMode();
-u32 getMainWindowWidth();
-u32 getMainWindowHeight();
-std::vector<std::string> getPkgViewer();
-std::vector<std::string> getElfViewer();
-std::vector<std::string> getRecentFiles();
-std::string getEmulatorLanguage();
 
-void setDefaultValues();
+void setDefaultValues(bool is_game_specific = false);
 
-// todo: name and function location pending
-std::filesystem::path GetFoolproofKbmConfigFile(const std::string& game_id = "");
+constexpr std::string_view GetDefaultGlobalConfig();
+std::filesystem::path GetFoolproofInputConfigFile(const std::string& game_id = "");
 
-// settings
-u32 GetLanguage();
 }; // namespace Config

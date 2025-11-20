@@ -5,14 +5,13 @@
 
 #pragma once
 
-#include <memory>
 #include <vector>
 #include <imgui.h>
 
 #include "common.h"
 #include "common/types.h"
-#include "imgui_memory_editor.h"
-#include "reg_view.h"
+#include "core/devtools/widget/imgui_memory_editor.h"
+#include "core/devtools/widget/reg_view.h"
 
 namespace AmdGpu {
 union PM4Type3Header;

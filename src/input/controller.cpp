@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
@@ -7,6 +7,8 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
+
+static std::string SelectedGamepad = "";
 
 namespace Input {
 
@@ -165,69 +167,37 @@ void GameController::Acceleration(int id, const float acceleration[3]) {
     AddState(state);
 }
 
-// Stolen from
-// https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU/blob/master/x-IMU%20IMU%20and%20AHRS%20Algorithms/x-IMU%20IMU%20and%20AHRS%20Algorithms/AHRS/MahonyAHRS.cs
-float eInt[3] = {0.0f, 0.0f, 0.0f}; // Integral error terms
-const float Kp = 50.0f;             // Proportional gain
-const float Ki = 1.0f;              // Integral gain
-Libraries::Pad::OrbisFQuaternion o = {1, 0, 0, 0};
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                           Libraries::Pad::OrbisFVector3& angularVelocity,
                                           float deltaTime,
+                                          Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                           Libraries::Pad::OrbisFQuaternion& orientation) {
-    float ax = acceleration.x, ay = acceleration.y, az = acceleration.z;
-    float gx = angularVelocity.x, gy = angularVelocity.y, gz = angularVelocity.z;
+    Libraries::Pad::OrbisFQuaternion q = lastOrientation;
+    Libraries::Pad::OrbisFQuaternion ω = {angularVelocity.x, angularVelocity.y, angularVelocity.z,
+                                          0.0f};
 
-    float q1 = o.w, q2 = o.x, q3 = o.y, q4 = o.z;
+    Libraries::Pad::OrbisFQuaternion qω = {q.w * ω.x + q.x * ω.w + q.y * ω.z - q.z * ω.y,
+                                           q.w * ω.y + q.y * ω.w + q.z * ω.x - q.x * ω.z,
+                                           q.w * ω.z + q.z * ω.w + q.x * ω.y - q.y * ω.x,
+                                           q.w * ω.w - q.x * ω.x - q.y * ω.y - q.z * ω.z};
 
-    // Normalize accelerometer measurement
-    float norm = std::sqrt(ax * ax + ay * ay + az * az);
-    if (norm == 0.0f)
-        return; // Handle NaN
-    norm = 1.0f / norm;
-    ax *= norm;
-    ay *= norm;
-    az *= norm;
+    Libraries::Pad::OrbisFQuaternion qDot = {0.5f * qω.x, 0.5f * qω.y, 0.5f * qω.z, 0.5f * qω.w};
 
-    // Estimated direction of gravity
-    float vx = 2.0f * (q2 * q4 - q1 * q3);
-    float vy = 2.0f * (q1 * q2 + q3 * q4);
-    float vz = q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4;
+    q.x += qDot.x * deltaTime;
+    q.y += qDot.y * deltaTime;
+    q.z += qDot.z * deltaTime;
+    q.w += qDot.w * deltaTime;
 
-    // Error is cross product between estimated direction and measured direction of gravity
-    float ex = (ay * vz - az * vy);
-    float ey = (az * vx - ax * vz);
-    float ez = (ax * vy - ay * vx);
-    if (Ki > 0.0f) {
-        eInt[0] += ex * deltaTime; // Accumulate integral error
-        eInt[1] += ey * deltaTime;
-        eInt[2] += ez * deltaTime;
-    } else {
-        eInt[0] = eInt[1] = eInt[2] = 0.0f; // Prevent integral wind-up
-    }
+    float norm = std::sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+    q.x /= norm;
+    q.y /= norm;
+    q.z /= norm;
+    q.w /= norm;
 
-    // Apply feedback terms
-    gx += Kp * ex + Ki * eInt[0];
-    gy += Kp * ey + Ki * eInt[1];
-    gz += Kp * ez + Ki * eInt[2];
-
-    //// Integrate rate of change of quaternion
-    q1 += (-q2 * gx - q3 * gy - q4 * gz) * (0.5f * deltaTime);
-    q2 += (q1 * gx + q3 * gz - q4 * gy) * (0.5f * deltaTime);
-    q3 += (q1 * gy - q2 * gz + q4 * gx) * (0.5f * deltaTime);
-    q4 += (q1 * gz + q2 * gy - q3 * gx) * (0.5f * deltaTime);
-
-    // Normalize quaternion
-    norm = std::sqrt(q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4);
-    norm = 1.0f / norm;
-    orientation.w = q1 * norm;
-    orientation.x = q2 * norm;
-    orientation.y = q3 * norm;
-    orientation.z = q4 * norm;
-    o.w = q1 * norm;
-    o.x = q2 * norm;
-    o.y = q3 * norm;
-    o.z = q4 * norm;
+    orientation.x = q.x;
+    orientation.y = q.y;
+    orientation.z = q.z;
+    orientation.w = q.w;
     LOG_DEBUG(Lib_Pad, "Calculated orientation: {:.2f} {:.2f} {:.2f} {:.2f}", orientation.x,
               orientation.y, orientation.z, orientation.w);
 }
@@ -258,6 +228,69 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
 
         AddState(state);
     }
+}
+
+u8 GameController::GetTouchCount() {
+    std::scoped_lock lock{m_mutex};
+    return m_touch_count;
+}
+
+void GameController::SetTouchCount(u8 touchCount) {
+    std::scoped_lock lock{m_mutex};
+    m_touch_count = touchCount;
+}
+
+u8 GameController::GetSecondaryTouchCount() {
+    std::scoped_lock lock{m_mutex};
+    return m_secondary_touch_count;
+}
+
+void GameController::SetSecondaryTouchCount(u8 touchCount) {
+    std::scoped_lock lock{m_mutex};
+    m_secondary_touch_count = touchCount;
+    if (touchCount == 0) {
+        m_was_secondary_reset = true;
+    }
+}
+
+u8 GameController::GetPreviousTouchNum() {
+    std::scoped_lock lock{m_mutex};
+    return m_previous_touchnum;
+}
+
+void GameController::SetPreviousTouchNum(u8 touchNum) {
+    std::scoped_lock lock{m_mutex};
+    m_previous_touchnum = touchNum;
+}
+
+bool GameController::WasSecondaryTouchReset() {
+    std::scoped_lock lock{m_mutex};
+    return m_was_secondary_reset;
+}
+
+void GameController::UnsetSecondaryTouchResetBool() {
+    std::scoped_lock lock{m_mutex};
+    m_was_secondary_reset = false;
+}
+
+void GameController::SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation) {
+    std::scoped_lock lock{m_mutex};
+    m_orientation = orientation;
+}
+
+Libraries::Pad::OrbisFQuaternion GameController::GetLastOrientation() {
+    std::scoped_lock lock{m_mutex};
+    return m_orientation;
+}
+
+std::chrono::steady_clock::time_point GameController::GetLastUpdate() {
+    std::scoped_lock lock{m_mutex};
+    return m_last_update;
+}
+
+void GameController::SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate) {
+    std::scoped_lock lock{m_mutex};
+    m_last_update = lastUpdate;
 }
 
 void GameController::SetEngine(std::unique_ptr<Engine> engine) {
@@ -293,3 +326,48 @@ u32 GameController::Poll() {
 }
 
 } // namespace Input
+
+namespace GamepadSelect {
+
+int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
+    char GUIDbuf[33];
+    if (Config::getDefaultControllerID() != "") {
+        for (int i = 0; i < gamepadCount; i++) {
+            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
+            std::string currentGUID = std::string(GUIDbuf);
+            if (currentGUID == Config::getDefaultControllerID()) {
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID) {
+    char GUIDbuf[33];
+    for (int i = 0; i < gamepadCount; i++) {
+        SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
+        std::string currentGUID = std::string(GUIDbuf);
+        if (currentGUID == GUID) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+std::string GetGUIDString(SDL_JoystickID* gamepadIDs, int index) {
+    char GUIDbuf[33];
+    SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[index]), GUIDbuf, 33);
+    std::string GUID = std::string(GUIDbuf);
+    return GUID;
+}
+
+std::string GetSelectedGamepad() {
+    return SelectedGamepad;
+}
+
+void SetSelectedGamepad(std::string GUID) {
+    SelectedGamepad = GUID;
+}
+
+} // namespace GamepadSelect

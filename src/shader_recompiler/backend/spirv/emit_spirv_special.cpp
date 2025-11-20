@@ -9,9 +9,12 @@ namespace Shader::Backend::SPIRV {
 
 void EmitPrologue(EmitContext& ctx) {
     if (ctx.stage == Stage::Fragment) {
-        ctx.DefineInterpolatedAttribs();
+        ctx.DefineAmdPerVertexAttribs();
     }
-    ctx.DefineBufferOffsets();
+    if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
+        ctx.DefineWorkgroupIndex();
+    }
+    ctx.DefineBufferProperties();
 }
 
 void ConvertDepthMode(EmitContext& ctx) {
@@ -25,6 +28,9 @@ void ConvertDepthMode(EmitContext& ctx) {
 }
 
 void ConvertPositionToClipSpace(EmitContext& ctx) {
+    ASSERT_MSG(!ctx.info.stores.GetAny(IR::Attribute::ViewportIndex),
+               "Multi-viewport with shader clip space conversion not yet implemented.");
+
     const Id type{ctx.F32[1]};
     Id position{ctx.OpLoad(ctx.F32[4], ctx.output_position)};
     const Id x{ctx.OpCompositeExtract(type, position, 0u)};
@@ -92,11 +98,11 @@ void EmitEmitPrimitive(EmitContext& ctx) {
 }
 
 void EmitEmitVertex(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+    UNREACHABLE_MSG("Geometry streams");
 }
 
 void EmitEndPrimitive(EmitContext& ctx, const IR::Value& stream) {
-    throw NotImplementedException("Geometry streams");
+    UNREACHABLE_MSG("Geometry streams");
 }
 
 void EmitDebugPrint(EmitContext& ctx, IR::Inst* inst, Id fmt, Id arg0, Id arg1, Id arg2, Id arg3) {

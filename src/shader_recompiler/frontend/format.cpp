@@ -397,7 +397,7 @@ constexpr std::array<InstFormat, 27> InstructionFormatSOPP = {{
     // 17 = S_SENDMSGHALT
     {InstClass::ScalarProgFlow, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 18 = S_TRAP
-    {InstClass::Undefined, InstCategory::Undefined, 0, 1, ScalarType::Any, ScalarType::Any},
+    {InstClass::Undefined, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 19 = S_ICACHE_INV
     {InstClass::ScalarCache, InstCategory::FlowControl, 0, 1, ScalarType::Any, ScalarType::Any},
     // 20 = S_INCPERFLEVEL
@@ -2784,8 +2784,7 @@ constexpr std::array<InstFormat, 256> InstructionFormatDS = {{
     // 62 = DS_APPEND
     {InstClass::DsAppendCon, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 63 = DS_ORDERED_COUNT
-    {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::GdsOrdCnt, InstCategory::DataShare, 3, 1, ScalarType::Uint32, ScalarType::Uint32},
     // 64 = DS_ADD_U64
     {InstClass::DsAtomicArith64, InstCategory::DataShare, 3, 1, ScalarType::Uint64,
      ScalarType::Uint64},
@@ -3570,19 +3569,19 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 65 = IMAGE_GATHER4_CL
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     {},
     {},
     // 68 = IMAGE_GATHER4_L
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 69 = IMAGE_GATHER4_B
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 70 = IMAGE_GATHER4_B_CL
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 71 = IMAGE_GATHER4_LZ
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
@@ -3590,19 +3589,19 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 73 = IMAGE_GATHER4_C_CL
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     {},
     {},
     // 76 = IMAGE_GATHER4_C_L
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 77 = IMAGE_GATHER4_C_B
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 78 = IMAGE_GATHER4_C_B_CL
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 79 = IMAGE_GATHER4_C_LZ
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
@@ -3610,19 +3609,19 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 81 = IMAGE_GATHER4_CL_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     {},
     {},
     // 84 = IMAGE_GATHER4_L_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 85 = IMAGE_GATHER4_B_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 86 = IMAGE_GATHER4_B_CL_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 87 = IMAGE_GATHER4_LZ_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
@@ -3630,19 +3629,19 @@ constexpr std::array<InstFormat, 112> InstructionFormatMIMG = {{
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},
     // 89 = IMAGE_GATHER4_C_CL_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     {},
     {},
     // 92 = IMAGE_GATHER4_C_L_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 93 = IMAGE_GATHER4_C_B_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 94 = IMAGE_GATHER4_C_B_CL_O
-    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
+     ScalarType::Float32},
     // 95 = IMAGE_GATHER4_C_LZ_O
     {InstClass::VectorMemImgSmp, InstCategory::VectorMemory, 4, 1, ScalarType::Uint32,
      ScalarType::Float32},

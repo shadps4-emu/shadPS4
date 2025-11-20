@@ -24,21 +24,6 @@ eval $(/opt/homebrew/bin/brew shellenv)
 brew install clang-format cmake
 ```
 
-Next, install x86_64 Qt. You can skip these steps and move on to **Cloning and compiling** if you do not intend to build the Qt GUI.
-
-**If you are on an ARM Mac:**
-```
-# Installs x86_64 Homebrew to /usr/local
-arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# Installs libraries.
-arch -x86_64 /usr/local/bin/brew install qt@6
-```
-
-**If you are on an x86_64 Mac:**
-```
-brew install qt@6
-```
-
 ### Cloning and compiling:
 
 Clone the repository recursively:
@@ -51,8 +36,6 @@ Generate the build directory in the shadPS4 directory:
 ```
 cmake -S . -B build/ -DCMAKE_OSX_ARCHITECTURES=x86_64
 ```
-
-If you want to build the Qt GUI, add `-DENABLE_QT_GUI=ON` to the end of this command as well.
 
 Enter the directory:
 ```

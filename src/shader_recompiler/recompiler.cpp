@@ -1,14 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
-#include "common/io_file.h"
-#include "common/path_util.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/structured_control_flow.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/post_order.h"
+#include "shader_recompiler/profile.h"
 #include "shader_recompiler/recompiler.h"
 
 namespace Shader {
@@ -63,36 +61,33 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 
     // Run optimization passes
-    const auto stage = program.info.stage;
-
+    if (!profile.support_float64) {
+        Shader::Optimization::LowerFp64ToFp32(program);
+    }
     Shader::Optimization::SsaRewritePass(program.post_order_blocks);
+    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     if (info.l_stage == LogicalStage::TessellationControl) {
-        // Tess passes require previous const prop passes for now (for simplicity). TODO allow
-        // fine grained folding or opportunistic folding we set an operand to an immediate
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::HullShaderTransform(program, runtime_info);
     } else if (info.l_stage == LogicalStage::TessellationEval) {
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::TessellationPreprocess(program, runtime_info);
-        Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
         Shader::Optimization::DomainShaderTransform(program, runtime_info);
     }
-    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    Shader::Optimization::RingAccessElimination(program, runtime_info, stage);
-    if (stage != Stage::Compute) {
-        Shader::Optimization::LowerSharedMemToRegisters(program);
-    }
-    Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
+    Shader::Optimization::RingAccessElimination(program, runtime_info);
+    Shader::Optimization::ReadLaneEliminationPass(program);
     Shader::Optimization::FlattenExtendedUserdataPass(program);
     Shader::Optimization::ResourceTrackingPass(program);
+    Shader::Optimization::LowerBufferFormatToRaw(program);
+    Shader::Optimization::SharedMemorySimplifyPass(program, profile);
+    Shader::Optimization::SharedMemoryToStoragePass(program, runtime_info, profile);
+    Shader::Optimization::SharedMemoryBarrierPass(program, runtime_info, profile);
     Shader::Optimization::IdentityRemovalPass(program.blocks);
     Shader::Optimization::DeadCodeEliminationPass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
-    Shader::Optimization::CollectShaderInfoPass(program);
-    Shader::Optimization::SharedMemoryBarrierPass(program, profile);
+    Shader::Optimization::CollectShaderInfoPass(program, profile);
+
+    Shader::IR::DumpProgram(program, info);
 
     return program;
 }

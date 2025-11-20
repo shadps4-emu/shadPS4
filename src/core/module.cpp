@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cryptopp/sha.h>
-
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/memory_patcher.h"
+#include "common/sha1.h"
 #include "common/string_util.h"
 #include "core/aerolib/aerolib.h"
 #include "core/cpu_patches.h"
@@ -20,8 +19,7 @@ namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
 
-static u64 LoadOffset = CODE_BASE_OFFSET;
-static constexpr u64 CODE_BASE_INCR = 0x010000000u;
+static constexpr u64 ModuleLoadBase = 0x800000000;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -65,11 +63,13 @@ static std::string StringToNid(std::string_view symbol) {
     std::memcpy(input.data(), symbol.data(), symbol.size());
     std::memcpy(input.data() + symbol.size(), Salt.data(), Salt.size());
 
-    std::array<u8, CryptoPP::SHA1::DIGESTSIZE> hash;
-    CryptoPP::SHA1().CalculateDigest(hash.data(), input.data(), input.size());
+    sha1::SHA1::digest8_t hash;
+    sha1::SHA1 sha;
+    sha.processBytes(input.data(), input.size());
+    sha.getDigestBytes(hash);
 
     u64 digest;
-    std::memcpy(&digest, hash.data(), sizeof(digest));
+    std::memcpy(&digest, hash, sizeof(digest));
 
     static constexpr std::string_view codes =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-";
@@ -83,7 +83,7 @@ static std::string StringToNid(std::string_view symbol) {
 }
 
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
-    : memory{memory_}, file{file_}, name{file.stem().string()} {
+    : memory{memory_}, file{file_}, name{file.filename().string()} {
     elf.Open(file);
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
@@ -94,7 +94,7 @@ Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_,
 
 Module::~Module() = default;
 
-s32 Module::Start(size_t args, const void* argp, void* param) {
+s32 Module::Start(u64 args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
     return ExecuteGuest(reinterpret_cast<EntryFunc>(addr), args, argp, param);
@@ -112,10 +112,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 
     // Map module segments (and possible TLS trampolines)
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    memory->MapMemory(out_addr, memory->SystemReservedVirtualBase() + LoadOffset,
-                      aligned_base_size + TrampolineSize, MemoryProt::CpuReadWrite,
-                      MemoryMapFlags::Fixed, VMAType::Code, name, true);
-    LoadOffset += CODE_BASE_INCR * (1 + aligned_base_size / CODE_BASE_INCR);
+    memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
+                      MemoryProt::CpuReadWrite | MemoryProt::CpuExec, MemoryMapFlags::NoFlags,
+                      VMAType::Code, name);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
@@ -134,10 +133,14 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         if (do_map) {
             elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
         }
-        auto& segment = info.segments[info.num_segments++];
-        segment.address = segment_addr;
-        segment.prot = phdr.p_flags;
-        segment.size = GetAlignedSize(phdr);
+        if (info.num_segments < 4) {
+            auto& segment = info.segments[info.num_segments++];
+            segment.address = segment_addr;
+            segment.prot = phdr.p_flags;
+            segment.size = GetAlignedSize(phdr);
+        } else {
+            LOG_ERROR(Core_Linker, "Attempting to add too many segments!");
+        }
     };
 
     for (u16 i = 0; i < elf_header.e_phnum; i++) {
@@ -224,7 +227,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
 
     if (MemoryPatcher::g_eboot_address == 0) {
-        if (name == "eboot") {
+        if (name == "eboot.bin") {
             MemoryPatcher::g_eboot_address = base_virtual_addr;
             MemoryPatcher::g_eboot_image_size = base_size;
             MemoryPatcher::OnGameLoaded();
@@ -435,8 +438,6 @@ void Module::LoadSymbols() {
             sym_r.library = library->name;
             sym_r.library_version = library->version;
             sym_r.module = module->name;
-            sym_r.module_version_major = module->version_major;
-            sym_r.module_version_minor = module->version_minor;
             switch (type) {
             case STT_NOTYPE:
                 sym_r.type = Loader::SymbolType::NoType;

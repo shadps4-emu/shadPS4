@@ -1,10 +1,25 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/aes.h"
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
-#include "trp.h"
+#include "core/file_format/trp.h"
+
+static void DecryptEFSM(std::span<u8, 16> trophyKey, std::span<u8, 16> NPcommID,
+                        std::span<u8, 16> efsmIv, std::span<u8> ciphertext,
+                        std::span<u8> decrypted) {
+    // Step 1: Encrypt NPcommID
+    std::array<u8, 16> trophyIv{};
+    std::array<u8, 16> trpKey;
+    aes::encrypt_cbc(NPcommID.data(), NPcommID.size(), trophyKey.data(), trophyKey.size(),
+                     trophyIv.data(), trpKey.data(), trpKey.size(), false);
+
+    // Step 2: Decrypt EFSM
+    aes::decrypt_cbc(ciphertext.data(), ciphertext.size(), trpKey.data(), trpKey.size(),
+                     efsmIv.data(), decrypted.data(), decrypted.size(), nullptr);
+}
 
 TRP::TRP() = default;
 TRP::~TRP() = default;
@@ -50,11 +65,11 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
 
     const auto user_key_str = Config::getTrophyKey();
     if (user_key_str.size() != 32) {
-        LOG_CRITICAL(Common_Filesystem, "Trophy decryption key is not specified");
+        LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
         return false;
     }
 
-    std::array<CryptoPP::byte, 16> user_key{};
+    std::array<u8, 16> user_key{};
     hexToBytes(user_key_str.c_str(), user_key.data());
 
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
@@ -90,7 +105,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                 TrpEntry entry;
                 file.Read(entry);
                 std::string_view name(entry.entry_name);
-                if (entry.flag == 0 && name.find("TROP") != std::string::npos) { // PNG
+                if (entry.flag == 0) { // PNG
                     if (!file.Seek(entry.entry_pos)) {
                         LOG_CRITICAL(Common_Filesystem, "Failed to seek to TRP entry offset");
                         return false;
@@ -115,7 +130,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
                         return false;
                     }
                     file.Read(ESFM);
-                    crypto.decryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
+                    DecryptEFSM(user_key, np_comm_id, esfmIv, ESFM, XML); // decrypt
                     removePadding(XML);
                     std::string xml_name = entry.entry_name;
                     size_t pos = xml_name.find("ESFM");

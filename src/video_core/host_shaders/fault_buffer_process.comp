@@ -1,0 +1,35 @@
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#version 450
+#extension GL_ARB_gpu_shader_int64 : enable
+
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer input_buf {
+    uint fault_buffer[];
+};
+
+layout(std430, binding = 1) buffer output_buf {
+    uint64_t download_buffer[];
+};
+layout(std430, binding = 1) buffer output_buf32 {
+    uint download_buffer32[];
+};
+
+void main() {
+    const uint id = gl_GlobalInvocationID.x;
+    uint word = fault_buffer[id];
+    fault_buffer[id] = 0u;
+    const uint base_bit = id * 32u;
+    while (word != 0u) {
+        const uint store_index = atomicAdd(download_buffer32[0], 1u) + 1u;
+        if (store_index >= MAX_PAGE_FAULTS) {
+            return;
+        }
+        const uint bit = findLSB(word);
+        word &= word - 1;
+        const uint page = base_bit + bit;
+        download_buffer[store_index] = uint64_t(page) << CACHING_PAGEBITS;
+    }
+}

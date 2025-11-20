@@ -13,28 +13,44 @@ First and foremost, Clang 18 is the **recommended compiler** as it is used for o
 
 #### Debian & Ubuntu
 
-```
-sudo apt install build-essential clang git cmake libasound2-dev libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev qt6-base-dev qt6-tools-dev qt6-multimedia-dev libvulkan-dev vulkan-validationlayers
+```bash
+sudo apt install build-essential clang git cmake libasound2-dev \
+    libpulse-dev libopenal-dev libssl-dev zlib1g-dev libedit-dev \
+    libudev-dev libevdev-dev libsdl2-dev libjack-dev libsndio-dev \
+    libvulkan-dev vulkan-validationlayers libpng-dev
 ```
 
 #### Fedora
 
-```
-sudo dnf install clang git cmake libatomic alsa-lib-devel pipewire-jack-audio-connection-kit-devel openal-devel openssl-devel libevdev-devel libudev-devel libXext-devel qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtmultimedia-devel qt6-qtsvg-devel qt6-qttools-devel vulkan-devel vulkan-validation-layers
+```bash
+sudo dnf install clang git cmake libatomic alsa-lib-devel \
+    pipewire-jack-audio-connection-kit-devel openal-soft-devel \
+    openssl-devel libevdev-devel libudev-devel libXext-devel \
+    vulkan-devel vulkan-validation-layers libpng-devel libuuid-devel
 ```
 
 #### Arch Linux
 
-```
-sudo pacman -S base-devel clang git cmake sndio jack2 openal qt6-base qt6-declarative qt6-multimedia sdl2 vulkan-validation-layers
+```bash
+sudo pacman -S base-devel clang git cmake sndio jack2 openal \
+    sdl2 vulkan-validation-layers libpng
 ```
 
 **Note**: The `shadps4-git` AUR package is not maintained by any of the developers, and it uses the default compiler, which is often set to GCC. Use at your own discretion.
 
 #### OpenSUSE
 
+```bash
+sudo zypper install clang git cmake libasound2 libpulse-devel \
+    libsndio7 libjack-devel openal-soft-devel libopenssl-devel \
+    zlib-devel libedit-devel systemd-devel libevdev-devel \
+    vulkan-devel vulkan-validationlayers libpng-devel
 ```
-sudo zypper install clang git cmake libasound2 libpulse-devel libsndio7 libjack-devel openal-soft-devel libopenssl-devel zlib-devel libedit-devel systemd-devel libevdev-devel qt6-base-devel qt6-multimedia-devel qt6-svg-devel qt6-linguist-devel qt6-gui-private-devel vulkan-devel vulkan-validationlayers
+
+#### NixOS
+
+```bash
+nix-shell shell.nix
 ```
 
 #### Other Linux distributions
@@ -44,16 +60,17 @@ You can try one of two methods:
 - Search the packages by name and install them with your package manager, or
 - Install [distrobox](https://distrobox.it/), create a container using any of the distributions cited above as a base, for Arch Linux you'd do:
 
-```
+```bash
 distrobox create --name archlinux --init --image archlinux:latest
 ```
 
 and install the dependencies on that container as cited above.
-This option is **highly recommended** for NixOS and distributions with immutable/atomic filesystems (example: Fedora Kinoite, SteamOS).
+This option is **highly recommended** for distributions with immutable/atomic filesystems (example: Fedora Kinoite, SteamOS).
 
 ### Cloning
+The project uses submodules to manage dependencies, and they need to be initialized before you can build the project. To achieve this, make sure you've cloned the repository with the --recursive flag
 
-```
+```bash
 git clone --recursive https://github.com/shadps4-emu/shadPS4.git
 cd shadPS4
 ```
@@ -66,30 +83,24 @@ There are 3 options you can choose from. Option 1 is **highly recommended**.
 
 1. Generate the build directory in the shadPS4 directory.
 
-```
-cmake -S . -B build/ -DENABLE_QT_GUI=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+```bash
+cmake -S . -B build/ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 ```
 
-To disable the Qt GUI, remove the `-DENABLE_QT_GUI=ON` flag. To change the build type (for debugging), add `-DCMAKE_BUILD_TYPE=Debug`.
+To change the build type (for debugging), add `-DCMAKE_BUILD_TYPE=Debug`.
 
-2. Use CMake to build the project:
+1. Use CMake to build the project:
 
-```
+```bash
 cmake --build ./build --parallel$(nproc)
 ```
 
 If your computer freezes during this step, this could be caused by excessive system resource usage. In that case, remove `--parallel$(nproc)`.
 
-Now run the emulator. If Qt was enabled at configure time:
+Now run the emulator to get the list of options:
 
-```
+```bash
 ./build/shadps4
-```
-
-Otherwise, specify the path to your PKG's boot file:
-
-```
-./build/shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
 ```
 
 You can also specify the Game ID as an argument for which game to boot, as long as the folder containing the games is specified in config.toml (example: Bloodborne (US) is CUSA00900).
@@ -118,10 +129,6 @@ You can also install other CMake and Clang related extensions if you'd like, but
 Go to Settings, filter by `@ext:ms-vscode.cmake-tools configure` and disable this option:
 
 ![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/1.png)
-
-If you wish to build with the Qt GUI, add `-DENABLE_QT_GUI=ON` to the configure arguments:
-
-![image](https://raw.githubusercontent.com/shadps4-emu/shadPS4/refs/heads/main/documents/Screenshots/Linux/2.png)
 
 On the CMake tab, change the options as you wish, but make sure that it looks similar to or exactly like this:
 

@@ -11,20 +11,12 @@ Id Decorate(EmitContext& ctx, IR::Inst* inst, Id op) {
     return op;
 }
 
-Id EmitFPAbs16(EmitContext& ctx, Id value) {
-    return ctx.OpFAbs(ctx.F16[1], value);
-}
-
 Id EmitFPAbs32(EmitContext& ctx, Id value) {
     return ctx.OpFAbs(ctx.F32[1], value);
 }
 
 Id EmitFPAbs64(EmitContext& ctx, Id value) {
     return ctx.OpFAbs(ctx.F64[1], value);
-}
-
-Id EmitFPAdd16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F16[1], a, b));
 }
 
 Id EmitFPAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
@@ -37,10 +29,6 @@ Id EmitFPAdd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
 
 Id EmitFPSub32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return Decorate(ctx, inst, ctx.OpFSub(ctx.F32[1], a, b));
-}
-
-Id EmitFPFma16(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return Decorate(ctx, inst, ctx.OpFma(ctx.F16[1], a, b, c));
 }
 
 Id EmitFPFma32(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
@@ -75,8 +63,26 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpFMin(ctx.F64[1], a, b);
 }
 
-Id EmitFPMul16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFMul(ctx.F16[1], a, b));
+Id EmitFPMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMin3AMD(ctx.F32[1], a, b, c);
+    }
+    return ctx.OpFMin(ctx.F32[1], a, ctx.OpFMin(ctx.F32[1], b, c));
+}
+
+Id EmitFPMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMax3AMD(ctx.F32[1], a, b, c);
+    }
+    return ctx.OpFMax(ctx.F32[1], a, ctx.OpFMax(ctx.F32[1], b, c));
+}
+
+Id EmitFPMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpFMid3AMD(ctx.F32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpFMin(ctx.F32[1], ctx.OpFMax(ctx.F32[1], a, b), c)};
+    return ctx.OpFMax(ctx.F32[1], ctx.OpFMin(ctx.F32[1], a, b), mmx);
 }
 
 Id EmitFPMul32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
@@ -93,10 +99,6 @@ Id EmitFPDiv32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
 
 Id EmitFPDiv64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
     return Decorate(ctx, inst, ctx.OpFDiv(ctx.F64[1], a, b));
-}
-
-Id EmitFPNeg16(EmitContext& ctx, Id value) {
-    return ctx.OpFNegate(ctx.F16[1], value);
 }
 
 Id EmitFPNeg32(EmitContext& ctx, Id value) {
@@ -119,6 +121,10 @@ Id EmitFPExp2(EmitContext& ctx, Id value) {
     return ctx.OpExp2(ctx.F32[1], value);
 }
 
+Id EmitFPPow(EmitContext& ctx, Id x, Id y) {
+    return ctx.OpPow(ctx.F32[1], x, y);
+}
+
 Id EmitFPLdexp(EmitContext& ctx, Id value, Id exp) {
     return ctx.OpLdexp(ctx.F32[1], value, exp);
 }
@@ -132,7 +138,7 @@ Id EmitFPRecip32(EmitContext& ctx, Id value) {
 }
 
 Id EmitFPRecip64(EmitContext& ctx, Id value) {
-    return ctx.OpFDiv(ctx.F64[1], ctx.Constant(ctx.F64[1], 1.0f), value);
+    return ctx.OpFDiv(ctx.F64[1], ctx.Constant(ctx.F64[1], f64{1.0}), value);
 }
 
 Id EmitFPRecipSqrt32(EmitContext& ctx, Id value) {
@@ -147,12 +153,6 @@ Id EmitFPSqrt(EmitContext& ctx, Id value) {
     return ctx.OpSqrt(ctx.F32[1], value);
 }
 
-Id EmitFPSaturate16(EmitContext& ctx, Id value) {
-    const Id zero{ctx.Constant(ctx.F16[1], u16{0})};
-    const Id one{ctx.Constant(ctx.F16[1], u16{0x3c00})};
-    return ctx.OpFClamp(ctx.F16[1], value, zero, one);
-}
-
 Id EmitFPSaturate32(EmitContext& ctx, Id value) {
     const Id zero{ctx.ConstF32(f32{0.0})};
     const Id one{ctx.ConstF32(f32{1.0})};
@@ -165,20 +165,12 @@ Id EmitFPSaturate64(EmitContext& ctx, Id value) {
     return ctx.OpFClamp(ctx.F64[1], value, zero, one);
 }
 
-Id EmitFPClamp16(EmitContext& ctx, Id value, Id min_value, Id max_value) {
-    return ctx.OpFClamp(ctx.F16[1], value, min_value, max_value);
-}
-
 Id EmitFPClamp32(EmitContext& ctx, Id value, Id min_value, Id max_value) {
     return ctx.OpFClamp(ctx.F32[1], value, min_value, max_value);
 }
 
 Id EmitFPClamp64(EmitContext& ctx, Id value, Id min_value, Id max_value) {
     return ctx.OpFClamp(ctx.F64[1], value, min_value, max_value);
-}
-
-Id EmitFPRoundEven16(EmitContext& ctx, Id value) {
-    return ctx.OpRoundEven(ctx.F16[1], value);
 }
 
 Id EmitFPRoundEven32(EmitContext& ctx, Id value) {
@@ -189,10 +181,6 @@ Id EmitFPRoundEven64(EmitContext& ctx, Id value) {
     return ctx.OpRoundEven(ctx.F64[1], value);
 }
 
-Id EmitFPFloor16(EmitContext& ctx, Id value) {
-    return ctx.OpFloor(ctx.F16[1], value);
-}
-
 Id EmitFPFloor32(EmitContext& ctx, Id value) {
     return ctx.OpFloor(ctx.F32[1], value);
 }
@@ -201,20 +189,12 @@ Id EmitFPFloor64(EmitContext& ctx, Id value) {
     return ctx.OpFloor(ctx.F64[1], value);
 }
 
-Id EmitFPCeil16(EmitContext& ctx, Id value) {
-    return ctx.OpCeil(ctx.F16[1], value);
-}
-
 Id EmitFPCeil32(EmitContext& ctx, Id value) {
     return ctx.OpCeil(ctx.F32[1], value);
 }
 
 Id EmitFPCeil64(EmitContext& ctx, Id value) {
     return ctx.OpCeil(ctx.F64[1], value);
-}
-
-Id EmitFPTrunc16(EmitContext& ctx, Id value) {
-    return ctx.OpTrunc(ctx.F16[1], value);
 }
 
 Id EmitFPTrunc32(EmitContext& ctx, Id value) {
@@ -245,12 +225,12 @@ Id EmitFPFrexpSig64(EmitContext& ctx, Id value) {
 
 Id EmitFPFrexpExp32(EmitContext& ctx, Id value) {
     const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f32, value);
-    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
+    return ctx.OpBitcast(ctx.U32[1], ctx.OpCompositeExtract(ctx.S32[1], frexp, 1));
 }
 
 Id EmitFPFrexpExp64(EmitContext& ctx, Id value) {
     const auto frexp = ctx.OpFrexpStruct(ctx.frexp_result_f64, value);
-    return ctx.OpCompositeExtract(ctx.U32[1], frexp, 1);
+    return ctx.OpBitcast(ctx.U32[1], ctx.OpCompositeExtract(ctx.S32[1], frexp, 1));
 }
 
 Id EmitFPOrdEqual16(EmitContext& ctx, Id lhs, Id rhs) {

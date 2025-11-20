@@ -75,14 +75,17 @@ u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency();
 u64 PS4_SYSV_ABI sceKernelReadTsc();
-int PS4_SYSV_ABI sceKernelClockGettime(s32 clock_id, OrbisKernelTimespec* tp);
+s32 PS4_SYSV_ABI sceKernelClockGettime(u32 clock_id, OrbisKernelTimespec* tp);
 s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz);
-int PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
-                                                OrbisKernelTimezone* timezone, int* dst_seconds);
+s32 PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
+                                                OrbisKernelTimezone* timezone, s32* dst_seconds);
 
-int PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time, OrbisTimesec* st,
+s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time, OrbisTimesec* st,
                                                 u64* dst_sec);
-int PS4_SYSV_ABI sceKernelUsleep(u32 microseconds);
+s32 PS4_SYSV_ABI sceKernelUsleep(u32 microseconds);
+s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp);
+s32 PS4_SYSV_ABI posix_settimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
+s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 
 void RegisterTime(Core::Loader::SymbolsResolver* sym);
 

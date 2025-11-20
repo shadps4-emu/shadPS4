@@ -12,16 +12,15 @@ namespace Vulkan {
 
 static constexpr u64 COPY_SHADER_HASH = 0xfefebf9f;
 
-static bool ExecuteCopyShaderHLE(const Shader::Info& info,
-                                 const AmdGpu::Liverpool::ComputeProgram& cs_program,
+static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::ComputeProgram& cs_program,
                                  Rasterizer& rasterizer) {
     auto& scheduler = rasterizer.GetScheduler();
     auto& buffer_cache = rasterizer.GetBufferCache();
 
     // Copy shader defines three formatted buffers as inputs: control, source, and destination.
-    const auto ctl_buf_sharp = info.texture_buffers[0].GetSharp(info);
-    const auto src_buf_sharp = info.texture_buffers[1].GetSharp(info);
-    const auto dst_buf_sharp = info.texture_buffers[2].GetSharp(info);
+    const auto ctl_buf_sharp = info.buffers[0].GetSharp(info);
+    const auto src_buf_sharp = info.buffers[1].GetSharp(info);
+    const auto dst_buf_sharp = info.buffers[2].GetSharp(info);
     const auto buf_stride = src_buf_sharp.GetStride();
     ASSERT(buf_stride == dst_buf_sharp.GetStride());
 
@@ -95,12 +94,10 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info,
         }
 
         // Obtain buffers for the total source and destination ranges.
-        const auto [src_buf, src_buf_offset] =
-            buffer_cache.ObtainBuffer(src_buf_sharp.base_address + src_offset_min,
-                                      src_offset_max - src_offset_min, false, false);
-        const auto [dst_buf, dst_buf_offset] =
-            buffer_cache.ObtainBuffer(dst_buf_sharp.base_address + dst_offset_min,
-                                      dst_offset_max - dst_offset_min, true, false);
+        const auto [src_buf, src_buf_offset] = buffer_cache.ObtainBuffer(
+            src_buf_sharp.base_address + src_offset_min, src_offset_max - src_offset_min, false);
+        const auto [dst_buf, dst_buf_offset] = buffer_cache.ObtainBuffer(
+            dst_buf_sharp.base_address + dst_offset_min, dst_offset_max - dst_offset_min, true);
 
         // Apply found buffer base.
         const auto vk_copies = std::span{copies}.subspan(batch_start, batch_end - batch_start);
@@ -123,8 +120,8 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info,
     return true;
 }
 
-bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Liverpool::Regs& regs,
-                      const AmdGpu::Liverpool::ComputeProgram& cs_program, Rasterizer& rasterizer) {
+bool ExecuteShaderHLE(const Shader::Info& info, const AmdGpu::Regs& regs,
+                      const AmdGpu::ComputeProgram& cs_program, Rasterizer& rasterizer) {
     switch (info.pgm_hash) {
     case COPY_SHADER_HASH:
         return ExecuteCopyShaderHLE(info, cs_program, rasterizer);

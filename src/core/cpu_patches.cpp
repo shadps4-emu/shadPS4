@@ -22,10 +22,6 @@
 #include <windows.h>
 #else
 #include <pthread.h>
-#ifdef __APPLE__
-#include <half.hpp>
-#include <sys/sysctl.h>
-#endif
 #endif
 
 using namespace Xbyak::util;
@@ -81,469 +77,6 @@ static Xbyak::Address ZydisToXbyakMemoryOperand(const ZydisDecodedOperand& opera
     return ptr[expression];
 }
 
-static u64 ZydisToXbyakImmediateOperand(const ZydisDecodedOperand& operand) {
-    ASSERT_MSG(operand.type == ZYDIS_OPERAND_TYPE_IMMEDIATE,
-               "Expected immediate operand, got type: {}", static_cast<u32>(operand.type));
-    return operand.imm.value.u;
-}
-
-static std::unique_ptr<Xbyak::Operand> ZydisToXbyakOperand(const ZydisDecodedOperand& operand) {
-    switch (operand.type) {
-    case ZYDIS_OPERAND_TYPE_REGISTER: {
-        return std::make_unique<Xbyak::Reg>(ZydisToXbyakRegisterOperand(operand));
-    }
-    case ZYDIS_OPERAND_TYPE_MEMORY: {
-        return std::make_unique<Xbyak::Address>(ZydisToXbyakMemoryOperand(operand));
-    }
-    default:
-        UNREACHABLE_MSG("Unsupported operand type: {}", static_cast<u32>(operand.type));
-    }
-}
-
-static bool OperandUsesRegister(const Xbyak::Operand* operand, int index) {
-    if (operand->isREG()) {
-        return operand->getIdx() == index;
-    }
-    if (operand->isMEM()) {
-        const Xbyak::RegExp& reg_exp = operand->getAddress().getRegExp();
-        return reg_exp.getBase().getIdx() == index || reg_exp.getIndex().getIdx() == index;
-    }
-    UNREACHABLE_MSG("Unsupported operand kind: {}", static_cast<u32>(operand->getKind()));
-}
-
-static bool IsRegisterAllocated(
-    const std::initializer_list<const Xbyak::Operand*>& allocated_registers, const int index) {
-    return std::ranges::find_if(allocated_registers.begin(), allocated_registers.end(),
-                                [index](const Xbyak::Operand* operand) {
-                                    return OperandUsesRegister(operand, index);
-                                }) != allocated_registers.end();
-}
-
-static Xbyak::Reg AllocateScratchRegister(
-    const std::initializer_list<const Xbyak::Operand*> allocated_registers, const u32 bits) {
-    for (int index = Xbyak::Operand::R8; index <= Xbyak::Operand::R15; index++) {
-        if (!IsRegisterAllocated(allocated_registers, index)) {
-            return Xbyak::Reg32e(index, static_cast<int>(bits));
-        }
-    }
-    UNREACHABLE_MSG("Out of scratch registers!");
-}
-
-#ifdef __APPLE__
-
-static pthread_key_t stack_pointer_slot;
-static pthread_key_t patch_stack_slot;
-static std::once_flag patch_context_slots_init_flag;
-static constexpr u32 patch_stack_size = 0x1000;
-
-static_assert(sizeof(void*) == sizeof(u64),
-              "Cannot fit a register inside a thread local storage slot.");
-
-static void FreePatchStack(void* patch_stack) {
-    // Subtract back to the bottom of the stack for free.
-    std::free(static_cast<u8*>(patch_stack) - patch_stack_size);
-}
-
-static void InitializePatchContextSlots() {
-    ASSERT_MSG(pthread_key_create(&stack_pointer_slot, nullptr) == 0,
-               "Unable to allocate thread-local register for stack pointer.");
-    ASSERT_MSG(pthread_key_create(&patch_stack_slot, FreePatchStack) == 0,
-               "Unable to allocate thread-local register for patch stack.");
-}
-
-void InitializeThreadPatchStack() {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    pthread_setspecific(patch_stack_slot,
-                        static_cast<u8*>(std::malloc(patch_stack_size)) + patch_stack_size);
-}
-
-/// Saves the stack pointer to thread local storage and loads the patch stack.
-static void SaveStack(Xbyak::CodeGenerator& c) {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    // Save original stack pointer and load patch stack.
-    c.putSeg(gs);
-    c.mov(qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))], rsp);
-    c.putSeg(gs);
-    c.mov(rsp, qword[reinterpret_cast<void*>(patch_stack_slot * sizeof(void*))]);
-}
-
-/// Restores the stack pointer from thread local storage.
-static void RestoreStack(Xbyak::CodeGenerator& c) {
-    std::call_once(patch_context_slots_init_flag, InitializePatchContextSlots);
-
-    // Save patch stack pointer and load original stack.
-    c.putSeg(gs);
-    c.mov(qword[reinterpret_cast<void*>(patch_stack_slot * sizeof(void*))], rsp);
-    c.putSeg(gs);
-    c.mov(rsp, qword[reinterpret_cast<void*>(stack_pointer_slot * sizeof(void*))]);
-}
-
-#else
-
-// These utilities are not implemented as we can't save anything to thread local storage without
-// temporary registers.
-void InitializeThreadPatchStack() {
-    // No-op
-}
-
-/// Saves the stack pointer to thread local storage and loads the patch stack.
-static void SaveStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
-}
-
-/// Restores the stack pointer from thread local storage.
-static void RestoreStack(Xbyak::CodeGenerator& c) {
-    UNIMPLEMENTED();
-}
-
-#endif
-
-/// Switches to the patch stack, saves registers, and restores the original stack.
-static void SaveRegisters(Xbyak::CodeGenerator& c, const std::initializer_list<Xbyak::Reg> regs) {
-    SaveStack(c);
-    for (const auto& reg : regs) {
-        c.push(reg.cvt64());
-    }
-    RestoreStack(c);
-}
-
-/// Switches to the patch stack, restores registers, and restores the original stack.
-static void RestoreRegisters(Xbyak::CodeGenerator& c,
-                             const std::initializer_list<Xbyak::Reg> regs) {
-    SaveStack(c);
-    for (const auto& reg : regs) {
-        c.pop(reg.cvt64());
-    }
-    RestoreStack(c);
-}
-
-/// Switches to the patch stack and stores all registers.
-static void SaveContext(Xbyak::CodeGenerator& c, bool save_flags = false) {
-    SaveStack(c);
-    for (int reg = Xbyak::Operand::RAX; reg <= Xbyak::Operand::R15; reg++) {
-        c.push(Xbyak::Reg64(reg));
-    }
-    for (int reg = 0; reg <= 7; reg++) {
-        c.lea(rsp, ptr[rsp - 32]);
-        c.vmovdqu(ptr[rsp], Xbyak::Ymm(reg));
-    }
-    if (save_flags) {
-        c.pushfq();
-    }
-}
-
-/// Restores all registers and restores the original stack.
-/// If the destination is a register, it is not restored to preserve the output.
-static void RestoreContext(Xbyak::CodeGenerator& c, const Xbyak::Operand& dst,
-                           bool restore_flags = false) {
-    if (restore_flags) {
-        c.popfq();
-    }
-    for (int reg = 7; reg >= 0; reg--) {
-        if ((!dst.isXMM() && !dst.isYMM()) || dst.getIdx() != reg) {
-            c.vmovdqu(Xbyak::Ymm(reg), ptr[rsp]);
-        }
-        c.lea(rsp, ptr[rsp + 32]);
-    }
-    for (int reg = Xbyak::Operand::R15; reg >= Xbyak::Operand::RAX; reg--) {
-        if (!dst.isREG() || dst.getIdx() != reg) {
-            c.pop(Xbyak::Reg64(reg));
-        } else {
-            c.lea(rsp, ptr[rsp + 8]);
-        }
-    }
-    RestoreStack(c);
-}
-
-#ifdef __APPLE__
-
-static void GenerateANDN(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src1 = ZydisToXbyakRegisterOperand(operands[1]);
-    const auto src2 = ZydisToXbyakOperand(operands[2]);
-
-    const auto scratch = AllocateScratchRegister({&dst, &src1, src2.get()}, dst.getBit());
-
-    SaveRegisters(c, {scratch});
-
-    c.mov(scratch, src1);
-    c.not_(scratch);
-    c.and_(scratch, *src2);
-    c.mov(dst, scratch);
-
-    RestoreRegisters(c, {scratch});
-}
-
-static void GenerateBEXTR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-    const auto start_len = ZydisToXbyakRegisterOperand(operands[2]);
-
-    const Xbyak::Reg32e shift(Xbyak::Operand::RCX, static_cast<int>(start_len.getBit()));
-    const auto scratch1 =
-        AllocateScratchRegister({&dst, src.get(), &start_len, &shift}, dst.getBit());
-    const auto scratch2 =
-        AllocateScratchRegister({&dst, src.get(), &start_len, &shift, &scratch1}, dst.getBit());
-
-    if (dst.getIdx() == shift.getIdx()) {
-        SaveRegisters(c, {scratch1, scratch2});
-    } else {
-        SaveRegisters(c, {scratch1, scratch2, shift});
-    }
-
-    c.mov(scratch1, *src);
-    if (shift.getIdx() != start_len.getIdx()) {
-        c.mov(shift, start_len);
-    }
-
-    c.shr(scratch1, shift.cvt8());
-    c.shr(shift, 8);
-    c.mov(scratch2, 1);
-    c.shl(scratch2, shift.cvt8());
-    c.dec(scratch2);
-
-    c.mov(dst, scratch1);
-    c.and_(dst, scratch2);
-
-    if (dst.getIdx() == shift.getIdx()) {
-        RestoreRegisters(c, {scratch2, scratch1});
-    } else {
-        RestoreRegisters(c, {shift, scratch2, scratch1});
-    }
-}
-
-static void GenerateBLSI(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-
-    const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
-
-    SaveRegisters(c, {scratch});
-
-    // BLSI sets CF to zero if source is zero, otherwise it sets CF to one.
-    Xbyak::Label clear_carry, end;
-
-    c.mov(scratch, *src);
-    c.neg(scratch); // NEG, like BLSI, clears CF if the source is zero and sets it otherwise
-    c.jnc(clear_carry);
-
-    c.and_(scratch, *src);
-    c.stc(); // setting/clearing carry needs to happen after the AND because that clears CF
-    c.jmp(end);
-
-    c.L(clear_carry);
-    c.and_(scratch, *src);
-    // We don't need to clear carry here since AND does that for us
-
-    c.L(end);
-    c.mov(dst, scratch);
-
-    RestoreRegisters(c, {scratch});
-}
-
-static void GenerateBLSMSK(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-
-    const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
-
-    SaveRegisters(c, {scratch});
-
-    Xbyak::Label clear_carry, end;
-
-    // BLSMSK sets CF to zero if source is NOT zero, otherwise it sets CF to one.
-    c.mov(scratch, *src);
-    c.test(scratch, scratch);
-    c.jnz(clear_carry);
-
-    c.dec(scratch);
-    c.xor_(scratch, *src);
-    c.stc();
-    c.jmp(end);
-
-    c.L(clear_carry);
-    c.dec(scratch);
-    c.xor_(scratch, *src);
-    // We don't need to clear carry here since XOR does that for us
-
-    c.L(end);
-    c.mov(dst, scratch);
-
-    RestoreRegisters(c, {scratch});
-}
-
-static void GenerateBLSR(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-
-    const auto scratch = AllocateScratchRegister({&dst, src.get()}, dst.getBit());
-
-    SaveRegisters(c, {scratch});
-
-    Xbyak::Label clear_carry, end;
-
-    // BLSR sets CF to zero if source is NOT zero, otherwise it sets CF to one.
-    c.mov(scratch, *src);
-    c.test(scratch, scratch);
-    c.jnz(clear_carry);
-
-    c.dec(scratch);
-    c.and_(scratch, *src);
-    c.stc();
-    c.jmp(end);
-
-    c.L(clear_carry);
-    c.dec(scratch);
-    c.and_(scratch, *src);
-    // We don't need to clear carry here since AND does that for us
-
-    c.L(end);
-    c.mov(dst, scratch);
-
-    RestoreRegisters(c, {scratch});
-}
-
-static __attribute__((sysv_abi)) void PerformVCVTPH2PS(float* out, const half_float::half* in,
-                                                       const u32 count) {
-    for (u32 i = 0; i < count; i++) {
-        out[i] = half_float::half_cast<float>(in[i]);
-    }
-}
-
-static void GenerateVCVTPH2PS(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
-    const auto src = ZydisToXbyakOperand(operands[1]);
-
-    const auto float_count = dst.getBit() / 32;
-    const auto byte_count = float_count * 4;
-
-    SaveContext(c, true);
-
-    // Allocate stack space for outputs and load into first parameter.
-    c.sub(rsp, byte_count);
-    c.mov(rdi, rsp);
-
-    if (src->isXMM()) {
-        // Allocate stack space for inputs and load into second parameter.
-        c.sub(rsp, byte_count);
-        c.mov(rsi, rsp);
-
-        // Move input to the allocated space.
-        c.movdqu(ptr[rsp], *reinterpret_cast<Xbyak::Xmm*>(src.get()));
-    } else {
-        c.lea(rsi, src->getAddress());
-    }
-
-    // Load float count into third parameter.
-    c.mov(rdx, float_count);
-
-    c.mov(rax, reinterpret_cast<u64>(PerformVCVTPH2PS));
-    c.call(rax);
-
-    if (src->isXMM()) {
-        // Clean up after inputs space.
-        c.add(rsp, byte_count);
-    }
-
-    // Load outputs into destination register and clean up space.
-    if (dst.isYMM()) {
-        c.vmovdqu(*reinterpret_cast<const Xbyak::Ymm*>(&dst), ptr[rsp]);
-    } else {
-        c.movdqu(*reinterpret_cast<const Xbyak::Xmm*>(&dst), ptr[rsp]);
-    }
-    c.add(rsp, byte_count);
-
-    RestoreContext(c, dst, true);
-}
-
-using SingleToHalfFloatConverter = half_float::half (*)(float);
-static const SingleToHalfFloatConverter SingleToHalfFloatConverters[4] = {
-    half_float::half_cast<half_float::half, std::round_to_nearest, float>,
-    half_float::half_cast<half_float::half, std::round_toward_neg_infinity, float>,
-    half_float::half_cast<half_float::half, std::round_toward_infinity, float>,
-    half_float::half_cast<half_float::half, std::round_toward_zero, float>,
-};
-
-static __attribute__((sysv_abi)) void PerformVCVTPS2PH(half_float::half* out, const float* in,
-                                                       const u32 count, const u8 rounding_mode) {
-    const auto conversion_func = SingleToHalfFloatConverters[rounding_mode];
-
-    for (u32 i = 0; i < count; i++) {
-        out[i] = conversion_func(in[i]);
-    }
-}
-
-static void GenerateVCVTPS2PH(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
-    const auto dst = ZydisToXbyakOperand(operands[0]);
-    const auto src = ZydisToXbyakRegisterOperand(operands[1]);
-    const auto ctrl = ZydisToXbyakImmediateOperand(operands[2]);
-
-    const auto float_count = src.getBit() / 32;
-    const auto byte_count = float_count * 4;
-
-    SaveContext(c, true);
-
-    if (dst->isXMM()) {
-        // Allocate stack space for outputs and load into first parameter.
-        c.sub(rsp, byte_count);
-        c.mov(rdi, rsp);
-    } else {
-        c.lea(rdi, dst->getAddress());
-    }
-
-    // Allocate stack space for inputs and load into second parameter.
-    c.sub(rsp, byte_count);
-    c.mov(rsi, rsp);
-
-    // Move input to the allocated space.
-    if (src.isYMM()) {
-        c.vmovdqu(ptr[rsp], *reinterpret_cast<const Xbyak::Ymm*>(&src));
-    } else {
-        c.movdqu(ptr[rsp], *reinterpret_cast<const Xbyak::Xmm*>(&src));
-    }
-
-    // Load float count into third parameter.
-    c.mov(rdx, float_count);
-
-    // Load rounding mode into fourth parameter.
-    if (ctrl & 4) {
-        // Load from MXCSR.RC.
-        c.stmxcsr(ptr[rsp - 4]);
-        c.mov(rcx, ptr[rsp - 4]);
-        c.shr(rcx, 13);
-        c.and_(rcx, 3);
-    } else {
-        c.mov(rcx, ctrl & 3);
-    }
-
-    c.mov(rax, reinterpret_cast<u64>(PerformVCVTPS2PH));
-    c.call(rax);
-
-    // Clean up after inputs space.
-    c.add(rsp, byte_count);
-
-    if (dst->isXMM()) {
-        // Load outputs into destination register and clean up space.
-        c.movdqu(*reinterpret_cast<Xbyak::Xmm*>(dst.get()), ptr[rsp]);
-        c.add(rsp, byte_count);
-    }
-
-    RestoreContext(c, *dst, true);
-}
-
-static bool FilterRosetta2Only(const ZydisDecodedOperand*) {
-    int ret = 0;
-    size_t size = sizeof(ret);
-    if (sysctlbyname("sysctl.proc_translated", &ret, &size, nullptr, 0) != 0) {
-        return false;
-    }
-    return ret;
-}
-
-#else // __APPLE__
-
 static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
     const auto& dst_op = operands[0];
     const auto& src_op = operands[1];
@@ -555,7 +88,8 @@ static bool FilterTcbAccess(const ZydisDecodedOperand* operands) {
            dst_op.reg.value <= ZYDIS_REGISTER_R15;
 }
 
-static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* operands,
+                              Xbyak::CodeGenerator& c) {
     const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
 
 #if defined(_WIN32)
@@ -588,14 +122,13 @@ static void GenerateTcbAccess(const ZydisDecodedOperand* operands, Xbyak::CodeGe
 #endif
 }
 
-#endif // __APPLE__
-
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
     Cpu cpu;
     return !cpu.has(Cpu::tSSE4a);
 }
 
-static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateEXTRQ(void* /* address */, const ZydisDecodedOperand* operands,
+                          Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -630,7 +163,9 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
             mask = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         // Get lower qword from xmm register
         c.vmovq(scratch1, xmm_dst);
@@ -644,8 +179,8 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
         c.mov(scratch2, mask);
         c.and_(scratch1, scratch2);
 
-        // Writeback to xmm register, extrq instruction says top 64-bits are undefined so we don't
-        // care to preserve them
+        // Writeback to xmm register, extrq instruction says top 64-bits are undefined but zeroed on
+        // AMD CPUs
         c.vmovq(xmm_dst, scratch1);
 
         c.pop(scratch2);
@@ -714,7 +249,8 @@ static void GenerateEXTRQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenera
     }
 }
 
-static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGenerator& c) {
+static void GenerateINSERTQ(void* /* address */, const ZydisDecodedOperand* operands,
+                            Xbyak::CodeGenerator& c) {
     bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
                          operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
 
@@ -753,7 +289,9 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
             mask_value = (1ULL << length) - 1;
         }
 
-        ASSERT_MSG(length + index <= 64, "length + index must be less than or equal to 64.");
+        if (length + index > 64) {
+            mask_value = 0xFFFF'FFFF'FFFF'FFFF;
+        }
 
         c.vmovq(scratch1, xmm_src);
         c.vmovq(scratch2, xmm_dst);
@@ -773,8 +311,9 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         // dst |= src
         c.or_(scratch2, scratch1);
 
-        // Insert scratch2 into low 64 bits of dst, upper 64 bits are unaffected
-        c.vpinsrq(xmm_dst, xmm_dst, scratch2, 0);
+        // Insert scratch2 into low 64 bits of dst, upper 64 bits are undefined but zeroed on AMD
+        // CPUs
+        c.vmovq(xmm_dst, scratch2);
 
         c.pop(mask);
         c.pop(scratch2);
@@ -840,7 +379,7 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
         c.and_(scratch2, mask);
         c.or_(scratch2, scratch1);
 
-        // Upper 64 bits are undefined in insertq
+        // Upper 64 bits are undefined in insertq but AMD CPUs zero them
         c.vmovq(xmm_dst, scratch2);
 
         c.pop(mask);
@@ -852,8 +391,44 @@ static void GenerateINSERTQ(const ZydisDecodedOperand* operands, Xbyak::CodeGene
     }
 }
 
+static void ReplaceMOVNT(void* address, u8 rep_prefix) {
+    // Find the opcode byte
+    // There can be any amount of prefixes but the instruction can't be more than 15 bytes
+    // And we know for sure this is a MOVNTSS/MOVNTSD
+    bool found = false;
+    bool rep_prefix_found = false;
+    int index = 0;
+    u8* ptr = reinterpret_cast<u8*>(address);
+    for (int i = 0; i < 15; i++) {
+        if (ptr[i] == rep_prefix) {
+            rep_prefix_found = true;
+        } else if (ptr[i] == 0x2B) {
+            index = i;
+            found = true;
+            break;
+        }
+    }
+
+    // Some sanity checks
+    ASSERT(found);
+    ASSERT(index >= 2);
+    ASSERT(ptr[index - 1] == 0x0F);
+    ASSERT(rep_prefix_found);
+
+    // This turns the MOVNTSS/MOVNTSD to a MOVSS/MOVSD m, xmm
+    ptr[index] = 0x11;
+}
+
+static void ReplaceMOVNTSS(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF3);
+}
+
+static void ReplaceMOVNTSD(void* address, const ZydisDecodedOperand*, Xbyak::CodeGenerator&) {
+    ReplaceMOVNT(address, 0xF2);
+}
+
 using PatchFilter = bool (*)(const ZydisDecodedOperand*);
-using InstructionGenerator = void (*)(const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
+using InstructionGenerator = void (*)(void*, const ZydisDecodedOperand*, Xbyak::CodeGenerator&);
 struct PatchInfo {
     /// Filter for more granular patch conditions past just the instruction mnemonic.
     PatchFilter filter;
@@ -866,27 +441,17 @@ struct PatchInfo {
 };
 
 static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
+    // SSE4a
+    {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
+    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
+    {ZYDIS_MNEMONIC_MOVNTSS, {FilterNoSSE4a, ReplaceMOVNTSS, false}},
+    {ZYDIS_MNEMONIC_MOVNTSD, {FilterNoSSE4a, ReplaceMOVNTSD, false}},
+
 #if defined(_WIN32)
     // Windows needs a trampoline.
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, true}},
 #elif !defined(__APPLE__)
     {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, false}},
-#endif
-
-    {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
-    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
-
-#ifdef __APPLE__
-    // Patches for instruction sets not supported by Rosetta 2.
-    // BMI1
-    {ZYDIS_MNEMONIC_ANDN, {FilterRosetta2Only, GenerateANDN, true}},
-    {ZYDIS_MNEMONIC_BEXTR, {FilterRosetta2Only, GenerateBEXTR, true}},
-    {ZYDIS_MNEMONIC_BLSI, {FilterRosetta2Only, GenerateBLSI, true}},
-    {ZYDIS_MNEMONIC_BLSMSK, {FilterRosetta2Only, GenerateBLSMSK, true}},
-    {ZYDIS_MNEMONIC_BLSR, {FilterRosetta2Only, GenerateBLSR, true}},
-    // F16C
-    {ZYDIS_MNEMONIC_VCVTPH2PS, {FilterRosetta2Only, GenerateVCVTPH2PS, true}},
-    {ZYDIS_MNEMONIC_VCVTPS2PH, {FilterRosetta2Only, GenerateVCVTPS2PH, true}},
 #endif
 };
 
@@ -945,9 +510,8 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
 
             if (needs_trampoline && instruction.length < 5) {
                 // Trampoline is needed but instruction is too short to patch.
-                // Return false and length to fall back to the illegal instruction handler,
-                // or to signal to AOT compilation that this instruction should be skipped and
-                // handled at runtime.
+                // Return false and length to signal to AOT compilation that this instruction
+                // should be skipped and handled at runtime.
                 return std::make_pair(false, instruction.length);
             }
 
@@ -959,7 +523,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                 auto& trampoline_gen = module->trampoline_gen;
                 const auto trampoline_ptr = trampoline_gen.getCurr();
 
-                patch_info.generator(operands, trampoline_gen);
+                patch_info.generator(code, operands, trampoline_gen);
 
                 // Return to the following instruction at the end of the trampoline.
                 trampoline_gen.jmp(code + instruction.length);
@@ -967,7 +531,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
                 // Replace instruction with near jump to the trampoline.
                 patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
             } else {
-                patch_info.generator(operands, patch_gen);
+                patch_info.generator(code, operands, patch_gen);
             }
 
             const auto patch_size = patch_gen.getCurr() - code;
@@ -993,136 +557,139 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
 
 #if defined(ARCH_X86_64)
 
+static bool Is4ByteExtrqOrInsertq(void* code_address) {
+    u8* bytes = (u8*)code_address;
+    if (bytes[0] == 0x66 && bytes[1] == 0x0F && bytes[2] == 0x79) {
+        return true; // extrq
+    } else if (bytes[0] == 0xF2 && bytes[1] == 0x0F && bytes[2] == 0x79) {
+        return true; // insertq
+    } else {
+        return false;
+    }
+}
+
 static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
-    ZydisDecodedInstruction instruction;
-    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status =
-        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+    // We need to decode the instruction to find out what it is. Normally we'd use a fully fleshed
+    // out decoder like Zydis, however Zydis does a bunch of stuff that impact performance that we
+    // don't care about. We can get information about the instruction a lot faster by writing a mini
+    // decoder here, since we know it is definitely an extrq or an insertq. If for some reason we
+    // need to interpret more instructions in the future (I don't see why we would), we can revert
+    // to using Zydis.
+    ZydisMnemonic mnemonic;
+    u8* bytes = (u8*)code_address;
+    if (bytes[0] == 0x66) {
+        mnemonic = ZYDIS_MNEMONIC_EXTRQ;
+    } else if (bytes[0] == 0xF2) {
+        mnemonic = ZYDIS_MNEMONIC_INSERTQ;
+    } else {
+        ZydisDecodedInstruction instruction;
+        ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+        const auto status =
+            Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+        LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
+                  fmt::ptr(code_address),
+                  ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
+                                       : "Failed to decode");
+        return false;
+    }
 
-    switch (instruction.mnemonic) {
+    ASSERT(bytes[1] == 0x0F && bytes[2] == 0x79);
+
+    // Note: It's guaranteed that there's no REX prefix in these instructions checked by
+    // Is4ByteExtrqOrInsertq
+    u8 modrm = bytes[3];
+    u8 rm = modrm & 0b111;
+    u8 reg = (modrm >> 3) & 0b111;
+    u8 mod = (modrm >> 6) & 0b11;
+
+    ASSERT(mod == 0b11); // Any instruction we interpret here uses reg/reg addressing only
+
+    int dstIndex = reg;
+    int srcIndex = rm;
+
+    switch (mnemonic) {
     case ZYDIS_MNEMONIC_EXTRQ: {
-        bool immediateForm = operands[1].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
-                             operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
-        if (immediateForm) {
-            LOG_CRITICAL(Core, "EXTRQ immediate form should have been patched at code address: {}",
-                         fmt::ptr(code_address));
-            return false;
+        const auto dst = Common::GetXmmPointer(ctx, dstIndex);
+        const auto src = Common::GetXmmPointer(ctx, srcIndex);
+
+        u64 lowQWordSrc;
+        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
+
+        u64 lowQWordDst;
+        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
+
+        u64 length = lowQWordSrc & 0x3F;
+        u64 mask;
+        if (length == 0) {
+            length = 64; // for the check below
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
         } else {
-            ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
-                           operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER &&
-                           operands[0].reg.value >= ZYDIS_REGISTER_XMM0 &&
-                           operands[0].reg.value <= ZYDIS_REGISTER_XMM15 &&
-                           operands[1].reg.value >= ZYDIS_REGISTER_XMM0 &&
-                           operands[1].reg.value <= ZYDIS_REGISTER_XMM15,
-                       "Unexpected operand types for EXTRQ instruction");
-
-            const auto dstIndex = operands[0].reg.value - ZYDIS_REGISTER_XMM0;
-            const auto srcIndex = operands[1].reg.value - ZYDIS_REGISTER_XMM0;
-
-            const auto dst = Common::GetXmmPointer(ctx, dstIndex);
-            const auto src = Common::GetXmmPointer(ctx, srcIndex);
-
-            u64 lowQWordSrc;
-            memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-
-            u64 lowQWordDst;
-            memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-            u64 length = lowQWordSrc & 0x3F;
-            u64 mask;
-            if (length == 0) {
-                length = 64; // for the check below
-                mask = 0xFFFF'FFFF'FFFF'FFFF;
-            } else {
-                mask = (1ULL << length) - 1;
-            }
-
-            u64 index = (lowQWordSrc >> 8) & 0x3F;
-            if (length + index > 64) {
-                // Undefined behavior if length + index is bigger than 64 according to the spec,
-                // we'll warn and continue execution.
-                LOG_WARNING(Core,
-                            "extrq at {} with length {} and index {} is bigger than 64, "
-                            "undefined behavior",
-                            fmt::ptr(code_address), length, index);
-            }
-
-            lowQWordDst >>= index;
-            lowQWordDst &= mask;
-
-            memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-            Common::IncrementRip(ctx, instruction.length);
-
-            return true;
+            mask = (1ULL << length) - 1;
         }
-        break;
+
+        u64 index = (lowQWordSrc >> 8) & 0x3F;
+        if (length + index > 64) {
+            // Undefined behavior if length + index is bigger than 64 according to the spec,
+            // we'll warn and continue execution.
+            LOG_TRACE(Core,
+                      "extrq at {} with length {} and index {} is bigger than 64, "
+                      "undefined behavior",
+                      fmt::ptr(code_address), length, index);
+        }
+
+        lowQWordDst >>= index;
+        lowQWordDst &= mask;
+
+        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
+        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
+
+        Common::IncrementRip(ctx, 4);
+
+        return true;
     }
     case ZYDIS_MNEMONIC_INSERTQ: {
-        bool immediateForm = operands[2].type == ZYDIS_OPERAND_TYPE_IMMEDIATE &&
-                             operands[3].type == ZYDIS_OPERAND_TYPE_IMMEDIATE;
-        if (immediateForm) {
-            LOG_CRITICAL(Core,
-                         "INSERTQ immediate form should have been patched at code address: {}",
-                         fmt::ptr(code_address));
-            return false;
+        const auto dst = Common::GetXmmPointer(ctx, dstIndex);
+        const auto src = Common::GetXmmPointer(ctx, srcIndex);
+
+        u64 lowQWordSrc, highQWordSrc;
+        memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
+        memcpy(&highQWordSrc, (u8*)src + 8, sizeof(highQWordSrc));
+
+        u64 lowQWordDst;
+        memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
+
+        u64 length = highQWordSrc & 0x3F;
+        u64 mask;
+        if (length == 0) {
+            length = 64; // for the check below
+            mask = 0xFFFF'FFFF'FFFF'FFFF;
         } else {
-            ASSERT_MSG(operands[2].type == ZYDIS_OPERAND_TYPE_UNUSED &&
-                           operands[3].type == ZYDIS_OPERAND_TYPE_UNUSED,
-                       "operands 2 and 3 must be unused for register form.");
-
-            ASSERT_MSG(operands[0].type == ZYDIS_OPERAND_TYPE_REGISTER &&
-                           operands[1].type == ZYDIS_OPERAND_TYPE_REGISTER,
-                       "operands 0 and 1 must be registers.");
-
-            const auto dstIndex = operands[0].reg.value - ZYDIS_REGISTER_XMM0;
-            const auto srcIndex = operands[1].reg.value - ZYDIS_REGISTER_XMM0;
-
-            const auto dst = Common::GetXmmPointer(ctx, dstIndex);
-            const auto src = Common::GetXmmPointer(ctx, srcIndex);
-
-            u64 lowQWordSrc, highQWordSrc;
-            memcpy(&lowQWordSrc, src, sizeof(lowQWordSrc));
-            memcpy(&highQWordSrc, (u8*)src + 8, sizeof(highQWordSrc));
-
-            u64 lowQWordDst;
-            memcpy(&lowQWordDst, dst, sizeof(lowQWordDst));
-
-            u64 length = highQWordSrc & 0x3F;
-            u64 mask;
-            if (length == 0) {
-                length = 64; // for the check below
-                mask = 0xFFFF'FFFF'FFFF'FFFF;
-            } else {
-                mask = (1ULL << length) - 1;
-            }
-
-            u64 index = (highQWordSrc >> 8) & 0x3F;
-            if (length + index > 64) {
-                // Undefined behavior if length + index is bigger than 64 according to the spec,
-                // we'll warn and continue execution.
-                LOG_WARNING(Core,
-                            "insertq at {} with length {} and index {} is bigger than 64, "
-                            "undefined behavior",
-                            fmt::ptr(code_address), length, index);
-            }
-
-            lowQWordSrc &= mask;
-            lowQWordDst &= ~(mask << index);
-            lowQWordDst |= lowQWordSrc << index;
-
-            memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
-
-            Common::IncrementRip(ctx, instruction.length);
-
-            return true;
+            mask = (1ULL << length) - 1;
         }
-        break;
+
+        u64 index = (highQWordSrc >> 8) & 0x3F;
+        if (length + index > 64) {
+            // Undefined behavior if length + index is bigger than 64 according to the spec,
+            // we'll warn and continue execution.
+            LOG_TRACE(Core,
+                      "insertq at {} with length {} and index {} is bigger than 64, "
+                      "undefined behavior",
+                      fmt::ptr(code_address), length, index);
+        }
+
+        lowQWordSrc &= mask;
+        lowQWordDst &= ~(mask << index);
+        lowQWordDst |= lowQWordSrc << index;
+
+        memset((u8*)dst + sizeof(u64), 0, sizeof(u64));
+        memcpy(dst, &lowQWordDst, sizeof(lowQWordDst));
+
+        Common::IncrementRip(ctx, 4);
+
+        return true;
     }
     default: {
-        LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
-                  fmt::ptr(code_address), ZydisMnemonicGetString(instruction.mnemonic));
-        return false;
+        UNREACHABLE();
     }
     }
 
@@ -1176,9 +743,26 @@ static bool PatchesAccessViolationHandler(void* context, void* /* fault_address 
 
 static bool PatchesIllegalInstructionHandler(void* context) {
     void* code_address = Common::GetRip(context);
-    if (!TryPatchJit(code_address)) {
+    if (Is4ByteExtrqOrInsertq(code_address)) {
+        // The instruction is not big enough for a relative jump, don't try to patch it and pass it
+        // to our illegal instruction interpreter directly
         return TryExecuteIllegalInstruction(context, code_address);
+    } else {
+        if (!TryPatchJit(code_address)) {
+            ZydisDecodedInstruction instruction;
+            ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+            const auto status =
+                Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+            if (ZYAN_SUCCESS(status) && instruction.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_UD2)
+                [[unlikely]] {
+                UNREACHABLE_MSG("ud2 at code address {:#x}", (u64)code_address);
+            }
+            LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}", (u64)code_address,
+                      ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
+                                           : "Failed to decode");
+        }
     }
+
     return true;
 }
 
@@ -1204,18 +788,7 @@ void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_are
 }
 
 void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
-#if defined(__APPLE__)
-    // HACK: For some reason patching in the signal handler at the start of a page does not work
-    // under Rosetta 2. Patch any instructions at the start of a page ahead of time.
-    if (!Patches.empty()) {
-        auto* code_page = reinterpret_cast<u8*>(Common::AlignUp(segment_addr, 0x1000));
-        const auto* end_page = code_page + Common::AlignUp(segment_size, 0x1000);
-        while (code_page < end_page) {
-            TryPatchJit(code_page);
-            code_page += 0x1000;
-        }
-    }
-#elif !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__APPLE__)
     // Linux and others have an FS segment pointing to valid memory, so continue to do full
     // ahead-of-time patching for now until a better solution is worked out.
     if (!Patches.empty()) {

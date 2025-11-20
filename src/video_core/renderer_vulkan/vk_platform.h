@@ -3,12 +3,11 @@
 
 #pragma once
 
-#include <memory>
-#include <variant>
 #include <fmt/format.h>
 
-#include "common/config.h"
+#include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/string_literal.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -19,7 +18,7 @@ class WindowSDL;
 
 namespace Vulkan {
 
-constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_2;
+constexpr u32 TargetVulkanApiVersion = VK_API_VERSION_1_3;
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& emu_window);
 
@@ -33,9 +32,6 @@ concept VulkanHandleType = vk::isVulkanHandleType<T>::value;
 
 template <VulkanHandleType HandleType>
 void SetObjectName(vk::Device device, const HandleType& handle, std::string_view debug_name) {
-    if (!Config::getVkHostMarkersEnabled()) {
-        return;
-    }
     const vk::DebugUtilsObjectNameInfoEXT name_info = {
         .objectType = HandleType::objectType,
         .objectHandle = reinterpret_cast<u64>(static_cast<typename HandleType::NativeType>(handle)),
@@ -50,11 +46,29 @@ void SetObjectName(vk::Device device, const HandleType& handle, std::string_view
 template <VulkanHandleType HandleType, typename... Args>
 void SetObjectName(vk::Device device, const HandleType& handle, const char* format,
                    const Args&... args) {
-    if (!Config::getVkHostMarkersEnabled()) {
-        return;
-    }
     const std::string debug_name = fmt::vformat(format, fmt::make_format_args(args...));
     SetObjectName(device, handle, debug_name);
+}
+
+template <StringLiteral msg = "">
+static void Check(vk::Result r) {
+    if constexpr (msg.len <= 1) {
+        ASSERT_MSG(r == vk::Result::eSuccess, "vk::Result={}", vk::to_string(r));
+    } else {
+        ASSERT_MSG(r == vk::Result::eSuccess, "Failed to {}: vk::Result={}", msg.value,
+                   vk::to_string(r));
+    }
+}
+
+template <StringLiteral msg = "", typename T>
+static T Check(vk::ResultValue<T> r) {
+    if constexpr (msg.len <= 1) {
+        ASSERT_MSG(r.result == vk::Result::eSuccess, "vk::Result={}", vk::to_string(r.result));
+    } else {
+        ASSERT_MSG(r.result == vk::Result::eSuccess, "Failed to {}: vk::Result={}", msg.value,
+                   vk::to_string(r.result));
+    }
+    return std::move(r.value);
 }
 
 } // namespace Vulkan

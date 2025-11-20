@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -10,6 +10,7 @@
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
 #include "imgui/renderer/imgui_core.h"
+#include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
@@ -63,6 +64,7 @@ void VideoOutDriver::Close(s32 handle) {
 
     main_port.is_open = false;
     main_port.flip_rate = 0;
+    main_port.prev_index = -1;
     ASSERT(main_port.flip_events.empty());
 }
 
@@ -133,6 +135,10 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
             .address_right = 0,
         };
 
+        // Reset flip label also when registering buffer
+        port->buffer_labels[startIndex + i] = 0;
+        port->SignalVoLabel();
+
         presenter->RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
@@ -160,11 +166,11 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 }
 
 void VideoOutDriver::Flip(const Request& req) {
-    // Whatever the game is rendering show splash if it is active
-    if (!presenter->ShowSplash(req.frame)) {
-        // Present the frame.
-        presenter->Present(req.frame);
-    }
+    // Update HDR status before presenting.
+    presenter->SetHDR(req.port->is_hdr);
+
+    // Present the frame.
+    presenter->Present(req.frame);
 
     // Update flip status.
     auto* port = req.port;
@@ -193,17 +199,16 @@ void VideoOutDriver::Flip(const Request& req) {
         }
     }
 
-    // Reset flip label
-    if (req.index != -1) {
-        port->buffer_labels[req.index] = 0;
+    // Reset prev flip label
+    if (port->prev_index != -1) {
+        port->buffer_labels[port->prev_index] = 0;
         port->SignalVoLabel();
     }
+    // save to prev buf index
+    port->prev_index = req.index;
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    if (presenter->ShowSplash(nullptr)) {
-        return;
-    }
     const auto empty_frame = presenter->PrepareBlankFrame(false);
     presenter->Present(empty_frame);
 }
@@ -232,13 +237,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     }
 
     if (!is_eop) {
-        // Before processing the flip we need to ask GPU thread to flush command list as at this
-        // point VO surface is ready to be presented, and we will need have an actual state of
-        // Vulkan image at the time of frame presentation.
-        liverpool->SendCommand([=, this]() {
-            presenter->FlushDraw();
-            SubmitFlipInternal(port, index, flip_arg, is_eop);
-        });
+        // Non EOP flips can arrive from any thread so ask GPU thread to perform them
+        liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
     } else {
         SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
@@ -246,15 +246,14 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     return true;
 }
 
-void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg,
-                                        bool is_eop /*= false*/) {
+void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = presenter->PrepareBlankFrame(is_eop);
+        frame = presenter->PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left, is_eop);
+        frame = presenter->PrepareFrame(group, buffer.address_left);
     }
 
     std::scoped_lock lock{mutex};
@@ -268,8 +267,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    static constexpr std::chrono::nanoseconds VblankPeriod{16666667};
-    const auto vblank_period = VblankPeriod / Config::vblankDiv();
+    const std::chrono::nanoseconds vblank_period(1000000000 / Config::vblankFreq());
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);

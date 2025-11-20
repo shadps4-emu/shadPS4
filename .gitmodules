@@ -1,15 +1,3 @@
-[submodule "externals/cryptopp-cmake"]
-	path = externals/cryptopp-cmake
-	url = https://github.com/shadps4-emu/ext-cryptopp-cmake.git
-	shallow = true
-[submodule "externals/cryptopp"]
-	path = externals/cryptopp
-	url = https://github.com/shadps4-emu/ext-cryptopp.git
-	shallow = true
-[submodule "externals/cryptoppwin"]
-	path = externals/cryptoppwin
-	url = https://github.com/shadps4-emu/ext-cryptoppwin.git
-	shallow = true
 [submodule "externals/zlib-ng"]
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
@@ -41,10 +29,6 @@
 [submodule "externals/xbyak"]
 	path = externals/xbyak
 	url = https://github.com/herumi/xbyak.git
-	shallow = true
-[submodule "externals/winpthreads"]
-	path = externals/winpthreads
-	url = https://github.com/shadps4-emu/winpthreads.git
 	shallow = true
 [submodule "externals/magic_enum"]
 	path = externals/magic_enum
@@ -107,15 +91,29 @@
 	path = externals/libpng
 	url = https://github.com/pnggroup/libpng
 	shallow = true
-[submodule "externals/MoltenVK/SPIRV-Cross"]
-	path = externals/MoltenVK/SPIRV-Cross
-	url = https://github.com/KhronosGroup/SPIRV-Cross
+[submodule "externals/ext-libusb"]
+	path = externals/ext-libusb
+	url = https://github.com/shadps4-emu/ext-libusb.git
+[submodule "externals/epoll-shim"]
+	path = externals/epoll-shim
+	url = https://github.com/jiixyj/epoll-shim.git
+[submodule "externals/hwinfo"]
+	path = externals/hwinfo
+	url = https://github.com/shadps4-emu/ext-hwinfo
 	shallow = true
-[submodule "externals/MoltenVK/MoltenVK"]
-	path = externals/MoltenVK/MoltenVK
-	url = https://github.com/KhronosGroup/MoltenVK
+[submodule "externals/ext-wepoll"]
+	path = externals/ext-wepoll
+	url = https://github.com/shadps4-emu/ext-wepoll.git
 	shallow = true
-[submodule "externals/MoltenVK/cereal"]
-	path = externals/MoltenVK/cereal
-	url = https://github.com/USCiLab/cereal
+	branch = dist
+[submodule "externals/MoltenVK"]
+	path = externals/MoltenVK
+	url = https://github.com/shadPS4-emu/ext-MoltenVK.git
+	shallow = true
+[submodule "externals/json"]
+	path = externals/json
+	url = https://github.com/nlohmann/json.git
+[submodule "externals/sdl3_mixer"]
+	path = externals/sdl3_mixer
+	url = https://github.com/libsdl-org/SDL_mixer
 	shallow = true

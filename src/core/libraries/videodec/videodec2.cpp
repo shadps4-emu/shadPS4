@@ -17,9 +17,11 @@ sceVideodec2QueryComputeMemoryInfo(OrbisVideodec2ComputeMemoryInfo* computeMemIn
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!computeMemInfo) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (computeMemInfo->thisSize != sizeof(OrbisVideodec2ComputeMemoryInfo)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
@@ -47,10 +49,12 @@ sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decode
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!decoderCfgInfo || !decoderMemInfo) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (decoderCfgInfo->thisSize != sizeof(OrbisVideodec2DecoderConfigInfo) ||
         decoderMemInfo->thisSize != sizeof(OrbisVideodec2DecoderMemoryInfo)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
@@ -74,10 +78,12 @@ s32 PS4_SYSV_ABI sceVideodec2CreateDecoder(const OrbisVideodec2DecoderConfigInfo
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!decoderCfgInfo || !decoderMemInfo || !decoder) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (decoderCfgInfo->thisSize != sizeof(OrbisVideodec2DecoderConfigInfo) ||
         decoderMemInfo->thisSize != sizeof(OrbisVideodec2DecoderMemoryInfo)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
@@ -89,6 +95,7 @@ s32 PS4_SYSV_ABI sceVideodec2DeleteDecoder(OrbisVideodec2Decoder decoder) {
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!decoder) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_DECODER_INSTANCE;
     }
 
@@ -103,13 +110,16 @@ s32 PS4_SYSV_ABI sceVideodec2Decode(OrbisVideodec2Decoder decoder,
     LOG_TRACE(Lib_Vdec2, "called");
 
     if (!decoder) {
+        LOG_ERROR(Lib_Vdec2, "Invalid decoder instance");
         return ORBIS_VIDEODEC2_ERROR_DECODER_INSTANCE;
     }
     if (!inputData || !frameBuffer || !outputInfo) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (inputData->thisSize != sizeof(OrbisVideodec2InputData) ||
         frameBuffer->thisSize != sizeof(OrbisVideodec2FrameBuffer)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
@@ -122,13 +132,16 @@ s32 PS4_SYSV_ABI sceVideodec2Flush(OrbisVideodec2Decoder decoder,
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!decoder) {
+        LOG_ERROR(Lib_Vdec2, "Invalid decoder instance");
         return ORBIS_VIDEODEC2_ERROR_DECODER_INSTANCE;
     }
     if (!frameBuffer || !outputInfo) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
     if (frameBuffer->thisSize != sizeof(OrbisVideodec2FrameBuffer) ||
-        outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+        (outputInfo->thisSize | 8) != sizeof(OrbisVideodec2OutputInfo)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
 
@@ -139,6 +152,7 @@ s32 PS4_SYSV_ABI sceVideodec2Reset(OrbisVideodec2Decoder decoder) {
     LOG_INFO(Lib_Vdec2, "called");
 
     if (!decoder) {
+        LOG_ERROR(Lib_Vdec2, "Invalid decoder instance");
         return ORBIS_VIDEODEC2_ERROR_DECODER_INSTANCE;
     }
 
@@ -150,22 +164,47 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
     LOG_TRACE(Lib_Vdec2, "called");
 
     if (!outputInfo) {
+        LOG_ERROR(Lib_Vdec2, "Invalid arguments");
         return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
     }
-    if (outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+    if ((outputInfo->thisSize | 8) != sizeof(OrbisVideodec2OutputInfo)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
-    if (outputInfo->pictureCount == 0 || gPictureInfos.empty()) {
+    if (outputInfo->pictureCount == 0) {
+        LOG_ERROR(Lib_Vdec2, "No picture info available");
         return ORBIS_OK;
     }
 
-    if (p1stPictureInfoOut) {
-        OrbisVideodec2AvcPictureInfo* picInfo =
-            static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
-        if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
-            return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+    // If the game uses the older Videodec2 structs, we need to accomodate that.
+    if (outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
+        if (gLegacyPictureInfos.empty()) {
+            LOG_ERROR(Lib_Vdec2, "No picture info available");
+            return ORBIS_OK;
         }
-        *picInfo = gPictureInfos.back();
+        if (p1stPictureInfoOut) {
+            OrbisVideodec2LegacyAvcPictureInfo* picInfo =
+                static_cast<OrbisVideodec2LegacyAvcPictureInfo*>(p1stPictureInfoOut);
+            if (picInfo->thisSize != sizeof(OrbisVideodec2LegacyAvcPictureInfo)) {
+                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
+                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+            }
+            *picInfo = gLegacyPictureInfos.back();
+        }
+    } else {
+        if (gPictureInfos.empty()) {
+            LOG_ERROR(Lib_Vdec2, "No picture info available");
+            return ORBIS_OK;
+        }
+        if (p1stPictureInfoOut) {
+            OrbisVideodec2AvcPictureInfo* picInfo =
+                static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
+            if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
+                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
+                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+            }
+            *picInfo = gPictureInfos.back();
+        }
     }
 
     if (outputInfo->pictureCount > 1) {
@@ -175,24 +214,22 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
     return ORBIS_OK;
 }
 
-void RegisterlibSceVdec2(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("RnDibcGCPKw", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("RnDibcGCPKw", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2QueryComputeMemoryInfo);
-    LIB_FUNCTION("eD+X2SmxUt4", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
+    LIB_FUNCTION("eD+X2SmxUt4", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2AllocateComputeQueue);
-    LIB_FUNCTION("UvtA3FAiF4Y", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
+    LIB_FUNCTION("UvtA3FAiF4Y", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2ReleaseComputeQueue);
 
-    LIB_FUNCTION("qqMCwlULR+E", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
+    LIB_FUNCTION("qqMCwlULR+E", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2QueryDecoderMemoryInfo);
-    LIB_FUNCTION("CNNRoRYd8XI", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
-                 sceVideodec2CreateDecoder);
-    LIB_FUNCTION("jwImxXRGSKA", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
-                 sceVideodec2DeleteDecoder);
-    LIB_FUNCTION("852F5+q6+iM", "libSceVideodec2", 1, "libSceVideodec2", 1, 1, sceVideodec2Decode);
-    LIB_FUNCTION("l1hXwscLuCY", "libSceVideodec2", 1, "libSceVideodec2", 1, 1, sceVideodec2Flush);
-    LIB_FUNCTION("wJXikG6QFN8", "libSceVideodec2", 1, "libSceVideodec2", 1, 1, sceVideodec2Reset);
-    LIB_FUNCTION("NtXRa3dRzU0", "libSceVideodec2", 1, "libSceVideodec2", 1, 1,
+    LIB_FUNCTION("CNNRoRYd8XI", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2CreateDecoder);
+    LIB_FUNCTION("jwImxXRGSKA", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2DeleteDecoder);
+    LIB_FUNCTION("852F5+q6+iM", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Decode);
+    LIB_FUNCTION("l1hXwscLuCY", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Flush);
+    LIB_FUNCTION("wJXikG6QFN8", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Reset);
+    LIB_FUNCTION("NtXRa3dRzU0", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2GetPictureInfo);
 }
 

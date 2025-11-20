@@ -18,8 +18,6 @@ endif()
 
 # Boost
 if (NOT TARGET Boost::headers)
-    set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/externals/ext-boost" CACHE STRING "")
-    set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "")
     add_subdirectory(ext-boost)
 endif()
 
@@ -28,24 +26,7 @@ if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND MSVC)
-    # If it is clang and MSVC we will add a static lib
-    # CryptoPP
-    add_subdirectory(cryptoppwin)
-    target_include_directories(cryptoppwin INTERFACE cryptoppwin/include)
-else()
-    # CryptoPP
-    if (NOT TARGET cryptopp::cryptopp)
-        set(CRYPTOPP_INSTALL OFF)
-        set(CRYPTOPP_BUILD_TESTING OFF)
-        set(CRYPTOPP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cryptopp)
-        add_subdirectory(cryptopp-cmake)
-        file(COPY cryptopp DESTINATION cryptopp FILES_MATCHING PATTERN "*.h")
-        # remove externals/cryptopp from include directories because it contains a conflicting zlib.h file
-        set_target_properties(cryptopp PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/cryptopp")
-    endif()
-endif()
-
+# FFmpeg
 if (NOT TARGET FFmpeg::ffmpeg)
     add_subdirectory(ffmpeg-core)
     add_library(FFmpeg::ffmpeg ALIAS ffmpeg)
@@ -77,8 +58,21 @@ endif()
 
 # SDL3
 if (NOT TARGET SDL3::SDL3)
+    set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
     add_subdirectory(sdl3)
+endif()
+
+# SDL3_mixer
+if (NOT TARGET SDL3_mixer::SDL3_mixer)
+    set(SDLMIXER_FLAC OFF)
+    set(SDLMIXER_OGG OFF)
+    set(SDLMIXER_MOD OFF)
+    set(SDLMIXER_MIDI OFF)
+    set(SDLMIXER_OPUS OFF)
+    set(SDLMIXER_WAVPACK OFF)
+    set(BUILD_SHARED_LIBS OFF)
+    add_subdirectory(sdl3_mixer)
 endif()
 
 # vulkan-headers
@@ -131,6 +125,14 @@ endif()
 # Toml11
 if (NOT TARGET toml11::toml11)
     add_subdirectory(toml11)
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+      if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        get_target_property(_toml11_compile_options toml11 INTERFACE_COMPILE_OPTIONS)
+        list(REMOVE_ITEM _toml11_compile_options "/Zc:preprocessor")
+        set_target_properties(toml11 PROPERTIES INTERFACE_COMPILE_OPTIONS ${_toml11_compile_options})
+      endif()
+    endif()
 endif()
 
 # xxHash
@@ -145,12 +147,6 @@ if (NOT TARGET Zydis::Zydis)
     option(ZYDIS_BUILD_TOOLS "" OFF)
     option(ZYDIS_BUILD_EXAMPLES "" OFF)
     add_subdirectory(zydis)
-endif()
-
-# Winpthreads
-if (WIN32)
-    add_subdirectory(winpthreads)
-    target_include_directories(winpthreads INTERFACE winpthreads/include)
 endif()
 
 # sirit
@@ -211,6 +207,12 @@ if (NOT TARGET pugixml::pugixml)
     add_subdirectory(pugixml)
 endif()
 
+# libusb
+if (NOT TARGET libusb::usb)
+    add_subdirectory(ext-libusb)
+    add_library(libusb::usb ALIAS usb-1.0)
+endif()
+
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
     add_subdirectory(discord-rpc)
@@ -226,6 +228,10 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+# hwinfo
+set(HWINFO_STATIC ON)
+add_subdirectory(hwinfo)
+
 # Apple-only dependencies
 if (APPLE)
     # date
@@ -237,6 +243,21 @@ if (APPLE)
 
     # MoltenVK
     if (NOT TARGET MoltenVK)
+        set(MVK_EXCLUDE_SPIRV_TOOLS ON)
+        set(MVK_USE_METAL_PRIVATE_API ON)
         add_subdirectory(MoltenVK)
     endif()
+
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
+    endif()
 endif()
+
+#windows only
+if (WIN32)
+add_subdirectory(ext-wepoll)
+endif()
+
+#nlohmann json 
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+add_subdirectory(json)

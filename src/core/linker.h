@@ -83,7 +83,10 @@ public:
     }
 
     Module* GetModule(s32 index) const {
-        return m_modules.at(index).get();
+        if (index >= 0 && index < m_modules.size()) {
+            return m_modules.at(index).get();
+        }
+        return nullptr;
     }
 
     u32 FindByName(const std::filesystem::path& name) const {
@@ -108,6 +111,8 @@ public:
     }
 
     void RelocateAnyImports(Module* m) {
+        std::scoped_lock lk{mutex};
+
         Relocate(m);
         const auto exports = m->GetExportModules();
         for (auto& export_mod : exports) {
@@ -141,12 +146,14 @@ public:
     void FreeTlsForNonPrimaryThread(void* pointer);
 
     s32 LoadModule(const std::filesystem::path& elf_name, bool is_dynamic = false);
+    s32 LoadAndStartModule(const std::filesystem::path& path, u64 args, const void* argp,
+                           int* pRes);
     Module* FindByAddress(VAddr address);
 
     void Relocate(Module* module);
     bool Resolve(const std::string& name, Loader::SymbolType type, Module* module,
                  Loader::SymbolRecord* return_info);
-    void Execute(const std::vector<std::string> args = {});
+    void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
 private:

@@ -19,6 +19,10 @@ struct std::hash<vk::ShaderModule> {
     }
 };
 
+namespace AmdGpu {
+class Liverpool;
+}
+
 namespace Shader {
 struct Info;
 }
@@ -68,8 +72,13 @@ public:
     static std::string GetShaderName(Shader::Stage stage, u64 hash,
                                      std::optional<size_t> perm = {});
 
+    auto& GetProfile() const {
+        return profile;
+    }
+
 private:
     bool RefreshGraphicsKey();
+    bool RefreshGraphicsStages();
     bool RefreshComputeKey();
 
     void DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage, size_t perm_idx,

@@ -5,8 +5,10 @@
 
 #include <condition_variable>
 
-#include "imgui/imgui_config.h"
-#include "video_core/amdgpu/liverpool.h"
+#include "core/libraries/videoout/buffer.h"
+#include "imgui/imgui_texture.h"
+#include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
+#include "video_core/renderer_vulkan/host_passes/pp_pass.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
@@ -31,6 +33,8 @@ struct Frame {
     vk::Fence present_done;
     vk::Semaphore ready_semaphore;
     u64 ready_tick;
+    bool is_hdr{false};
+    u8 id{};
 
     ImTextureID imgui_texture;
 };
@@ -44,75 +48,74 @@ enum SchedulerType {
 class Rasterizer;
 
 class Presenter {
-    struct PostProcessSettings {
-        float gamma = 1.0f;
-    };
-
 public:
     Presenter(Frontend::WindowSDL& window, AmdGpu::Liverpool* liverpool);
     ~Presenter();
 
-    float& GetGammaRef() {
-        return pp_settings.gamma;
+    HostPasses::PostProcessingPass::Settings& GetPPSettingsRef() {
+        return pp_settings;
+    }
+
+    HostPasses::FsrPass::Settings& GetFsrSettingsRef() {
+        return fsr_settings;
     }
 
     Frontend::WindowSDL& GetWindow() const {
         return window;
     }
 
-    Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                        VAddr cpu_address, bool is_eop) {
-        auto desc = VideoCore::TextureCache::VideoOutDesc{attribute, cpu_address};
-        const auto image_id = texture_cache.FindImage(desc);
-        texture_cache.UpdateImage(image_id, is_eop ? nullptr : &flip_scheduler);
-        return PrepareFrameInternal(image_id, is_eop);
+    Rasterizer& GetRasterizer() const {
+        return *rasterizer.get();
     }
 
-    Frame* PrepareBlankFrame(bool is_eop) {
-        return PrepareFrameInternal(VideoCore::NULL_IMAGE_ID, is_eop);
+    bool IsHDRSupported() const {
+        return swapchain.HasHDR();
+    }
+
+    void SetHDR(bool enable) {
+        if (!IsHDRSupported()) {
+            return;
+        }
+        swapchain.SetHDR(enable);
+        pp_settings.hdr = enable ? 1 : 0;
     }
 
     VideoCore::Image& RegisterVideoOutSurface(
         const Libraries::VideoOut::BufferAttributeGroup& attribute, VAddr cpu_address) {
         vo_buffers_addr.emplace_back(cpu_address);
-        auto desc = VideoCore::TextureCache::VideoOutDesc{attribute, cpu_address};
+        auto desc = VideoCore::TextureCache::ImageDesc{attribute, cpu_address};
         const auto image_id = texture_cache.FindImage(desc);
         auto& image = texture_cache.GetImage(image_id);
         image.usage.vo_surface = 1u;
         return image;
     }
 
-    bool IsVideoOutSurface(const AmdGpu::Liverpool::ColorBuffer& color_buffer) {
-        return std::ranges::find_if(vo_buffers_addr, [&](VAddr vo_buffer) {
-                   return vo_buffer == color_buffer.Address();
-               }) != vo_buffers_addr.cend();
-    }
+    bool IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const;
 
-    bool ShowSplash(Frame* frame = nullptr);
+    Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
+                        VAddr cpu_address);
+
+    Frame* PrepareBlankFrame(bool present_thread);
+
     void Present(Frame* frame, bool is_reusing_frame = false);
-    void RecreateFrame(Frame* frame, u32 width, u32 height);
     Frame* PrepareLastFrame();
 
-    void FlushDraw() {
-        SubmitInfo info{};
-        draw_scheduler.Flush(info);
-    }
-
-    Rasterizer& GetRasterizer() const {
-        return *rasterizer.get();
-    }
-
 private:
-    void CreatePostProcessPipeline();
-    Frame* PrepareFrameInternal(VideoCore::ImageId image_id, bool is_eop = true);
     Frame* GetRenderFrame();
 
+    void RecreateFrame(Frame* frame, u32 width, u32 height);
+
+    void SetExpectedGameSize(s32 width, s32 height);
+
 private:
-    PostProcessSettings pp_settings{};
-    vk::UniquePipeline pp_pipeline{};
-    vk::UniquePipelineLayout pp_pipeline_layout{};
-    vk::UniqueDescriptorSetLayout pp_desc_set_layout{};
-    vk::UniqueSampler pp_sampler{};
+    float expected_ratio{1920.0 / 1080.0f};
+    u32 expected_frame_width{1920};
+    u32 expected_frame_height{1080};
+
+    HostPasses::FsrPass fsr_pass;
+    HostPasses::FsrPass::Settings fsr_settings{};
+    HostPasses::PostProcessingPass::Settings pp_settings{};
+    HostPasses::PostProcessingPass pp_pass;
     Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
     Instance instance;
@@ -129,7 +132,7 @@ private:
     std::mutex free_mutex;
     std::condition_variable free_cv;
     std::condition_variable_any frame_cv;
-    std::optional<VideoCore::Image> splash_img;
+    std::optional<ImGui::RefCountedTexture> splash_img;
     std::vector<VAddr> vo_buffers_addr;
 };
 

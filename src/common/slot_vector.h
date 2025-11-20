@@ -14,6 +14,9 @@ namespace Common {
 struct SlotId {
     static constexpr u32 INVALID_INDEX = std::numeric_limits<u32>::max();
 
+    SlotId() noexcept = default;
+    constexpr SlotId(u32 index) noexcept : index(index) {}
+
     constexpr auto operator<=>(const SlotId&) const noexcept = default;
 
     constexpr explicit operator bool() const noexcept {
@@ -28,6 +31,63 @@ class SlotVector {
     constexpr static std::size_t InitialCapacity = 2048;
 
 public:
+    template <typename ValueType, typename Pointer, typename Reference>
+    class Iterator {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = ValueType;
+        using difference_type = std::ptrdiff_t;
+        using pointer = Pointer;
+        using reference = Reference;
+
+        Iterator(SlotVector& vector_, SlotId index_) : vector(vector_), slot(index_) {
+            AdvanceToValid();
+        }
+
+        reference operator*() const {
+            return vector[slot];
+        }
+
+        pointer operator->() const {
+            return &vector[slot];
+        }
+
+        Iterator& operator++() {
+            ++slot.index;
+            AdvanceToValid();
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+
+        bool operator==(const Iterator& other) const {
+            return slot == other.slot;
+        }
+
+        bool operator!=(const Iterator& other) const {
+            return !(*this == other);
+        }
+
+    private:
+        void AdvanceToValid() {
+            while (slot < vector.values_capacity && !vector.ReadStorageBit(slot.index)) {
+                ++slot.index;
+            }
+        }
+
+        SlotVector& vector;
+        SlotId slot;
+    };
+
+    using iterator = Iterator<T, T*, T&>;
+    using const_iterator = Iterator<const T, const T*, const T&>;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
     SlotVector() {
         Reserve(InitialCapacity);
     }
@@ -60,7 +120,7 @@ public:
     }
 
     template <typename... Args>
-    [[nodiscard]] SlotId insert(Args&&... args) noexcept {
+    SlotId insert(Args&&... args) noexcept {
         const u32 index = FreeValueIndex();
         new (&values[index].object) T(std::forward<Args>(args)...);
         SetStorageBit(index);
@@ -76,6 +136,54 @@ public:
 
     std::size_t size() const noexcept {
         return values_capacity - free_list.size();
+    }
+
+    iterator begin() noexcept {
+        return iterator(*this, 0);
+    }
+
+    const_iterator begin() const noexcept {
+        return const_iterator(*this, 0);
+    }
+
+    const_iterator cbegin() const noexcept {
+        return begin();
+    }
+
+    iterator end() noexcept {
+        return iterator(*this, values_capacity);
+    }
+
+    const_iterator end() const noexcept {
+        return const_iterator(*this, values_capacity);
+    }
+
+    const_iterator cend() const noexcept {
+        return end();
+    }
+
+    reverse_iterator rbegin() noexcept {
+        return reverse_iterator(end());
+    }
+
+    const_reverse_iterator rbegin() const noexcept {
+        return const_reverse_iterator(end());
+    }
+
+    const_reverse_iterator crbegin() const noexcept {
+        return rbegin();
+    }
+
+    reverse_iterator rend() noexcept {
+        return reverse_iterator(begin());
+    }
+
+    const_reverse_iterator rend() const noexcept {
+        return const_reverse_iterator(begin());
+    }
+
+    const_reverse_iterator crend() const noexcept {
+        return rend();
     }
 
 private:

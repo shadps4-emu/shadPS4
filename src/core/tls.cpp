@@ -5,7 +5,6 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/types.h"
-#include "core/cpu_patches.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/tls.h"
 
@@ -18,6 +17,10 @@
 #include <sys/mman.h>
 #elif !defined(ARCH_X86_64)
 #include <pthread.h>
+#endif
+#if defined(__linux__) && defined(ARCH_X86_64)
+#include <asm/prctl.h>
+#include <sys/prctl.h>
 #endif
 
 namespace Core {
@@ -52,7 +55,7 @@ Tcb* GetTcbBase() {
 // Apple x86_64
 
 // Reserve space in the 32-bit address range for allocating TCB pages.
-asm(".zerofill TCB_SPACE,TCB_SPACE,__guest_system,0x3FC000");
+asm(".zerofill TCB_SPACE,TCB_SPACE,__tcb_space,0x3FC000");
 
 struct LdtPage {
     void* tcb;
@@ -157,13 +160,15 @@ Tcb* GetTcbBase() {
 // Other POSIX x86_64
 
 void SetTcbBase(void* image_address) {
-    asm volatile("wrgsbase %0" ::"r"(image_address) : "memory");
+    const int ret = syscall(SYS_arch_prctl, ARCH_SET_GS, (unsigned long)image_address);
+    ASSERT_MSG(ret == 0, "Failed to set GS base: errno {}", errno);
 }
 
 Tcb* GetTcbBase() {
-    Tcb* tcb;
-    asm volatile("rdgsbase %0" : "=r"(tcb)::"memory");
-    return tcb;
+    void* tcb = nullptr;
+    const int ret = syscall(SYS_arch_prctl, ARCH_GET_GS, &tcb);
+    ASSERT_MSG(ret == 0, "Failed to get GS base: errno {}", errno);
+    return static_cast<Tcb*>(tcb);
 }
 
 #else
@@ -197,12 +202,7 @@ Tcb* GetTcbBase() {
 thread_local std::once_flag init_tls_flag;
 
 void EnsureThreadInitialized() {
-    std::call_once(init_tls_flag, [] {
-#ifdef ARCH_X86_64
-        InitializeThreadPatchStack();
-#endif
-        SetTcbBase(Libraries::Kernel::g_curthread->tcb);
-    });
+    std::call_once(init_tls_flag, [] { SetTcbBase(Libraries::Kernel::g_curthread->tcb); });
 }
 
 } // namespace Core

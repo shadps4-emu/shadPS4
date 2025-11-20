@@ -60,7 +60,7 @@ Id EmitIAdd64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIAdd(ctx.U64, a, b);
 }
 
-Id EmitIAddCary32(EmitContext& ctx, Id a, Id b) {
+Id EmitIAddCarry32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpIAddCarry(ctx.full_result_u32x2, a, b);
 }
 
@@ -72,12 +72,17 @@ Id EmitISub64(EmitContext& ctx, Id a, Id b) {
     return ctx.OpISub(ctx.U64, a, b);
 }
 
-Id EmitSMulExt(EmitContext& ctx, Id a, Id b) {
-    return ctx.OpSMulExtended(ctx.full_result_i32x2, a, b);
+Id EmitSMulHi(EmitContext& ctx, Id a, Id b) {
+    const auto signed_a{ctx.OpBitcast(ctx.S32[1], a)};
+    const auto signed_b{ctx.OpBitcast(ctx.S32[1], b)};
+    const auto mul_ext{ctx.OpSMulExtended(ctx.full_result_i32x2, signed_a, signed_b)};
+    const auto signed_hi{ctx.OpCompositeExtract(ctx.S32[1], mul_ext, 1)};
+    return ctx.OpBitcast(ctx.U32[1], signed_hi);
 }
 
-Id EmitUMulExt(EmitContext& ctx, Id a, Id b) {
-    return ctx.OpUMulExtended(ctx.full_result_u32x2, a, b);
+Id EmitUMulHi(EmitContext& ctx, Id a, Id b) {
+    const auto mul_ext{ctx.OpUMulExtended(ctx.full_result_u32x2, a, b)};
+    return ctx.OpCompositeExtract(ctx.U32[1], mul_ext, 1);
 }
 
 Id EmitIMul32(EmitContext& ctx, Id a, Id b) {
@@ -224,6 +229,20 @@ Id EmitFindUMsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindUMsb(ctx.U32[1], value);
 }
 
+Id EmitFindUMsb64(EmitContext& ctx, Id value) {
+    // Vulkan restricts some bitwise operations to 32-bit only, so decompose into
+    // two 32-bit values and select the correct result.
+    const Id unpacked{ctx.OpBitcast(ctx.U32[2], value)};
+    const Id hi{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1U)};
+    const Id lo{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 0U)};
+    const Id hi_msb{ctx.OpFindUMsb(ctx.U32[1], hi)};
+    const Id lo_msb{ctx.OpFindUMsb(ctx.U32[1], lo)};
+    const Id found_hi{ctx.OpINotEqual(ctx.U1[1], hi_msb, ctx.ConstU32(u32(-1)))};
+    const Id shifted_hi{ctx.OpIAdd(ctx.U32[1], hi_msb, ctx.ConstU32(32u))};
+    // value == 0 case is checked in IREmitter
+    return ctx.OpSelect(ctx.U32[1], found_hi, shifted_hi, lo_msb);
+}
+
 Id EmitFindILsb32(EmitContext& ctx, Id value) {
     return ctx.OpFindILsb(ctx.U32[1], value);
 }
@@ -236,7 +255,7 @@ Id EmitFindILsb64(EmitContext& ctx, Id value) {
     const Id hi{ctx.OpCompositeExtract(ctx.U32[1], unpacked, 1U)};
     const Id lo_lsb{ctx.OpFindILsb(ctx.U32[1], lo)};
     const Id hi_lsb{ctx.OpFindILsb(ctx.U32[1], hi)};
-    const Id found_lo{ctx.OpINotEqual(ctx.U32[1], lo_lsb, ctx.ConstU32(u32(-1)))};
+    const Id found_lo{ctx.OpINotEqual(ctx.U1[1], lo_lsb, ctx.ConstU32(u32(-1)))};
     return ctx.OpSelect(ctx.U32[1], found_lo, lo_lsb, hi_lsb);
 }
 
@@ -254,6 +273,50 @@ Id EmitSMax32(EmitContext& ctx, Id a, Id b) {
 
 Id EmitUMax32(EmitContext& ctx, Id a, Id b) {
     return ctx.OpUMax(ctx.U32[1], a, b);
+}
+
+Id EmitSMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMin3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpSMin(ctx.U32[1], a, ctx.OpSMin(ctx.U32[1], b, c));
+}
+
+Id EmitUMinTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMin3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpUMin(ctx.U32[1], a, ctx.OpUMin(ctx.U32[1], b, c));
+}
+
+Id EmitSMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMax3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpSMax(ctx.U32[1], a, ctx.OpSMax(ctx.U32[1], b, c));
+}
+
+Id EmitUMaxTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMax3AMD(ctx.U32[1], a, b, c);
+    }
+    return ctx.OpUMax(ctx.U32[1], a, ctx.OpUMax(ctx.U32[1], b, c));
+}
+
+Id EmitSMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpSMid3AMD(ctx.U32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpSMin(ctx.U32[1], ctx.OpSMax(ctx.U32[1], a, b), c)};
+    return ctx.OpSMax(ctx.U32[1], ctx.OpSMin(ctx.U32[1], a, b), mmx);
+}
+
+Id EmitUMedTri32(EmitContext& ctx, Id a, Id b, Id c) {
+    if (ctx.profile.supports_trinary_minmax) {
+        return ctx.OpUMid3AMD(ctx.U32[1], a, b, c);
+    }
+    const Id mmx{ctx.OpUMin(ctx.U32[1], ctx.OpUMax(ctx.U32[1], a, b), c)};
+    return ctx.OpUMax(ctx.U32[1], ctx.OpUMin(ctx.U32[1], a, b), mmx);
 }
 
 Id EmitSClamp32(EmitContext& ctx, IR::Inst* inst, Id value, Id min, Id max) {
@@ -308,19 +371,35 @@ Id EmitIEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpIEqual(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitSLessThanEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSLessThanEqual32(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpSLessThanEqual(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitULessThanEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSLessThanEqual64(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpSLessThanEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitULessThanEqual32(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpULessThanEqual(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitSGreaterThan(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitULessThanEqual64(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpULessThanEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitSGreaterThan32(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpSGreaterThan(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitUGreaterThan(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSGreaterThan64(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpSGreaterThan(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitUGreaterThan32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpUGreaterThan(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitUGreaterThan64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpUGreaterThan(ctx.U1[1], lhs, rhs);
 }
 
@@ -332,11 +411,19 @@ Id EmitINotEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpINotEqual(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitSGreaterThanEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSGreaterThanEqual32(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpSGreaterThanEqual(ctx.U1[1], lhs, rhs);
 }
 
-Id EmitUGreaterThanEqual(EmitContext& ctx, Id lhs, Id rhs) {
+Id EmitSGreaterThanEqual64(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpSGreaterThanEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitUGreaterThanEqual32(EmitContext& ctx, Id lhs, Id rhs) {
+    return ctx.OpUGreaterThanEqual(ctx.U1[1], lhs, rhs);
+}
+
+Id EmitUGreaterThanEqual64(EmitContext& ctx, Id lhs, Id rhs) {
     return ctx.OpUGreaterThanEqual(ctx.U1[1], lhs, rhs);
 }
 

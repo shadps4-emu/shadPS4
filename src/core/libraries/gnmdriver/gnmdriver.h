@@ -51,7 +51,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexIndirectCountMulti(u32* cmdbuf, u32 size, u32 da
                                                    u32 max_count, u64 count_addr, u32 shader_stage,
                                                    u32 vertex_sgpr_offset, u32 instance_sgpr_offset,
                                                    u32 flags);
-int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti();
+int PS4_SYSV_ABI sceGnmDrawIndexIndirectMulti(u32* cmdbuf, u32 size, u32 data_offset, u32 max_count,
+                                              u32 shader_stage, u32 vertex_sgpr_offset,
+                                              u32 instance_sgpr_offset, u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndexMultiInstanced();
 s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, u32 index_count,
                                        u32 flags);
@@ -67,15 +69,15 @@ u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitToDefaultContextState400(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawOpaqueAuto();
 bool PS4_SYSV_ABI sceGnmDriverCaptureInProgress();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuDebugger();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuException();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForHDRScopes();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForReplay();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForResourceRegistration();
-int PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterface();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuDebugger();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForGpuException();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForHDRScopes();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForReplay();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForResourceRegistration();
+u32 PS4_SYSV_ABI sceGnmDriverInternalRetrieveGnmInterfaceForValidation();
 int PS4_SYSV_ABI sceGnmDriverInternalVirtualQuery();
-int PS4_SYSV_ABI sceGnmDriverTraceInProgress();
+bool PS4_SYSV_ABI sceGnmDriverTraceInProgress();
 int PS4_SYSV_ABI sceGnmDriverTriggerCapture();
 int PS4_SYSV_ABI sceGnmEndWorkload(u64 workload);
 s32 PS4_SYSV_ABI sceGnmFindResourcesPublic();
@@ -95,7 +97,7 @@ int PS4_SYSV_ABI sceGnmGetNumTcaUnits();
 int PS4_SYSV_ABI sceGnmGetOffChipTessellationBufferSize();
 int PS4_SYSV_ABI sceGnmGetOwnerName();
 int PS4_SYSV_ABI sceGnmGetPhysicalCounterFromVirtualized();
-int PS4_SYSV_ABI sceGnmGetProtectionFaultTimeStamp();
+u32 PS4_SYSV_ABI sceGnmGetProtectionFaultTimeStamp();
 int PS4_SYSV_ABI sceGnmGetResourceBaseAddressAndSizeInBytes();
 int PS4_SYSV_ABI sceGnmGetResourceName();
 int PS4_SYSV_ABI sceGnmGetResourceShaderGuid();
@@ -104,8 +106,8 @@ int PS4_SYSV_ABI sceGnmGetResourceUserData();
 int PS4_SYSV_ABI sceGnmGetShaderProgramBaseAddress();
 int PS4_SYSV_ABI sceGnmGetShaderStatus();
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
-int PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
-int PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
+void PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
+void PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
 int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
 s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color);
@@ -115,7 +117,7 @@ s32 PS4_SYSV_ABI sceGnmInsertSetMarker(u32* cmdbuf, u32 size, const char* marker
 int PS4_SYSV_ABI sceGnmInsertThreadTraceMarker();
 s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, u32 buf_idx);
 int PS4_SYSV_ABI sceGnmIsCoredumpValid();
-int PS4_SYSV_ABI sceGnmIsUserPaEnabled();
+bool PS4_SYSV_ABI sceGnmIsUserPaEnabled();
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex();
 int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask();
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical();
@@ -130,7 +132,7 @@ int PS4_SYSV_ABI sceGnmPaHeartbeat();
 int PS4_SYSV_ABI sceGnmQueryResourceRegistrationUserMemoryRequirements();
 int PS4_SYSV_ABI sceGnmRaiseUserExceptionEvent();
 int PS4_SYSV_ABI sceGnmRegisterGdsResource();
-int PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig();
+void PS4_SYSV_ABI sceGnmRegisterGnmLiveCallbackConfig();
 s32 PS4_SYSV_ABI sceGnmRegisterOwner(void* handle, const char* name);
 s32 PS4_SYSV_ABI sceGnmRegisterResource(void* res_handle, void* owner_handle, const void* addr,
                                         size_t size, const char* name, int res_type, u64 user_data);
@@ -222,12 +224,12 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                        const u32* ccb_gpu_addrs[],
                                                        u32* ccb_sizes_in_bytes);
 int PS4_SYSV_ABI sceGnmSubmitDone();
-int PS4_SYSV_ABI sceGnmUnmapComputeQueue();
+int PS4_SYSV_ABI sceGnmUnmapComputeQueue(u32 vqid);
 int PS4_SYSV_ABI sceGnmUnregisterAllResourcesForOwner();
 int PS4_SYSV_ABI sceGnmUnregisterOwnerAndResources();
 int PS4_SYSV_ABI sceGnmUnregisterResource();
 s32 PS4_SYSV_ABI sceGnmUpdateGsShader(u32* cmdbuf, u32 size, const u32* gs_regs);
-int PS4_SYSV_ABI sceGnmUpdateHsShader();
+int PS4_SYSV_ABI sceGnmUpdateHsShader(u32* cmdbuf, u32 size, const u32* ps_regs, u32 ls_hs_config);
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmUpdatePsShader350(u32* cmdbuf, u32 size, const u32* ps_regs);
 s32 PS4_SYSV_ABI sceGnmUpdateVsShader(u32* cmdbuf, u32 size, const u32* vs_regs,
@@ -240,14 +242,14 @@ int PS4_SYSV_ABI sceGnmValidateDrawCommandBuffers();
 int PS4_SYSV_ABI sceGnmValidateGetDiagnosticInfo();
 int PS4_SYSV_ABI sceGnmValidateGetDiagnostics();
 int PS4_SYSV_ABI sceGnmValidateGetVersion();
-int PS4_SYSV_ABI sceGnmValidateOnSubmitEnabled();
+bool PS4_SYSV_ABI sceGnmValidateOnSubmitEnabled();
 int PS4_SYSV_ABI sceGnmValidateResetState();
 int PS4_SYSV_ABI sceGnmValidationRegisterMemoryCheckCallback();
 int PS4_SYSV_ABI sceRazorCaptureCommandBuffersOnlyImmediate();
 int PS4_SYSV_ABI sceRazorCaptureCommandBuffersOnlySinceLastFlip();
 int PS4_SYSV_ABI sceRazorCaptureImmediate();
 int PS4_SYSV_ABI sceRazorCaptureSinceLastFlip();
-int PS4_SYSV_ABI sceRazorIsLoaded();
+bool PS4_SYSV_ABI sceRazorIsLoaded();
 int PS4_SYSV_ABI Func_063D065A2D6359C3();
 int PS4_SYSV_ABI Func_0CABACAFB258429D();
 int PS4_SYSV_ABI Func_150CF336FC2E99A3();
@@ -284,7 +286,7 @@ int PS4_SYSV_ABI Func_ECB4C6BA41FE3350();
 int PS4_SYSV_ABI sceGnmDebugModuleReset();
 int PS4_SYSV_ABI sceGnmDebugReset();
 int PS4_SYSV_ABI Func_C4C328B7CF3B4171();
-int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand();
+int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size);
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize();
 int PS4_SYSV_ABI sceGnmFindResources();
 int PS4_SYSV_ABI sceGnmGetResourceRegistrationBuffers();
@@ -295,5 +297,5 @@ int PS4_SYSV_ABI Func_BFB41C057478F0BF();
 int PS4_SYSV_ABI Func_E51D44DB8151238C();
 int PS4_SYSV_ABI Func_F916890425496553();
 
-void RegisterlibSceGnmDriver(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::GnmDriver

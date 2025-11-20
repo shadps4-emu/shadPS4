@@ -53,3 +53,24 @@ body:
       placeholder: "Example: Windows 11, Arch Linux, MacOS 15"
     validations:
       required: true
+  - type: input
+    id: cpu
+    attributes:
+      label: CPU
+      placeholder: "Example: Intel Core i7-8700"
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: "Example: nVidia GTX 1650"
+    validations:
+      required: true
+  - type: input
+    id: ram
+    attributes:
+      label: Amount of RAM in GB
+      placeholder: "Example: 16 GB"
+    validations:
+      required: true

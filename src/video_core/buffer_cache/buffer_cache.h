@@ -3,13 +3,12 @@
 
 #pragma once
 
-#include <shared_mutex>
 #include <boost/container/small_vector.hpp>
-#include "common/div_ceil.h"
+#include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/buffer.h"
-#include "video_core/buffer_cache/memory_tracker_base.h"
+#include "video_core/buffer_cache/fault_manager.h"
 #include "video_core/buffer_cache/range_set.h"
 #include "video_core/multi_level_page_table.h"
 
@@ -17,12 +16,9 @@ namespace AmdGpu {
 struct Liverpool;
 }
 
-namespace Shader {
-namespace Gcn {
-struct FetchShaderData;
+namespace Core {
+class MemoryManager;
 }
-struct Info;
-} // namespace Shader
 
 namespace Vulkan {
 class GraphicsPipeline;
@@ -35,17 +31,30 @@ using BufferId = Common::SlotId;
 static constexpr BufferId NULL_BUFFER_ID{0};
 
 class TextureCache;
+class MemoryTracker;
+class PageManager;
 
 class BufferCache {
 public:
-    static constexpr u32 CACHING_PAGEBITS = 12;
+    static constexpr u32 CACHING_PAGEBITS = 14;
     static constexpr u64 CACHING_PAGESIZE = u64{1} << CACHING_PAGEBITS;
-    static constexpr u64 DEVICE_PAGESIZE = 4_KB;
+    static constexpr u64 DEVICE_PAGESIZE = 16_KB;
+    static constexpr u64 CACHING_NUMPAGES = u64{1} << (40 - CACHING_PAGEBITS);
+    static constexpr u64 BDA_PAGETABLE_SIZE = CACHING_NUMPAGES * sizeof(vk::DeviceAddress);
+
+    // Default values for garbage collection
+    static constexpr s64 DEFAULT_TRIGGER_GC_MEMORY = 1_GB;
+    static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 2_GB;
+    static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
+
+    struct PageData {
+        BufferId buffer_id{};
+    };
 
     struct Traits {
-        using Entry = BufferId;
+        using Entry = PageData;
         static constexpr size_t AddressSpaceBits = 40;
-        static constexpr size_t FirstLevelBits = 14;
+        static constexpr size_t FirstLevelBits = 16;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
     };
     using PageTable = MultiLevelPageTable<Traits>;
@@ -68,9 +77,14 @@ public:
         return &gds_buffer;
     }
 
-    /// Returns a pointer to LDS device local buffer.
-    [[nodiscard]] const Buffer* GetLdsBuffer() const noexcept {
-        return &lds_buffer;
+    /// Retrieves the device local DBA page table buffer.
+    [[nodiscard]] Buffer* GetBdaPageTableBuffer() noexcept {
+        return &bda_pagetable_buffer;
+    }
+
+    /// Retrieves the fault buffer.
+    [[nodiscard]] Buffer* GetFaultBuffer() noexcept {
+        return fault_manager.GetFaultBuffer();
     }
 
     /// Retrieves the buffer with the specified id.
@@ -78,8 +92,24 @@ public:
         return slot_buffers[id];
     }
 
+    /// Retrieves a utility buffer optimized for specified memory usage.
+    StreamBuffer& GetUtilityBuffer(MemoryUsage usage) noexcept {
+        if (usage == MemoryUsage::Stream) {
+            return stream_buffer;
+        } else if (usage == MemoryUsage::Download) {
+            return download_buffer;
+        } else if (usage == MemoryUsage::DeviceLocal) {
+            return device_buffer;
+        } else {
+            return staging_buffer;
+        }
+    }
+
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size);
+
+    /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
+    void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
 
     /// Binds host vertex buffers for the current draw.
     void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
@@ -87,10 +117,11 @@ public:
     /// Bind host index buffer for the current draw.
     void BindIndexBuffer(u32 index_offset);
 
-    /// Writes a value to GPU buffer.
+    /// Writes a value to GPU buffer. (uses command buffer to temporarily store the data)
     void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
 
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainHostUBO(std::span<const u32> data);
+    /// Performs buffer to buffer data copy on the GPU.
+    void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
     /// Obtains a buffer for the specified region.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
@@ -98,8 +129,7 @@ public:
                                                        BufferId buffer_id = {});
 
     /// Attempts to obtain a buffer without modifying the cache contents.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainViewBuffer(VAddr gpu_addr, u32 size,
-                                                           bool prefer_gpu);
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferForImage(VAddr gpu_addr, u32 size);
 
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
@@ -110,33 +140,43 @@ public:
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
 
-    [[nodiscard]] BufferId FindBuffer(VAddr device_addr, u32 size);
+    /// Return buffer id for the specified region
+    BufferId FindBuffer(VAddr device_addr, u32 size);
+
+    /// Processes the fault buffer.
+    void ProcessFaultBuffer();
+
+    /// Synchronizes all buffers in the specified range.
+    void SynchronizeBuffersInRange(VAddr device_addr, u64 size);
+
+    /// Synchronizes all buffers neede for DMA.
+    void SynchronizeDmaBuffers();
+
+    /// Runs the garbage collector.
+    void RunGarbageCollector();
 
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
-        const u64 page_end = Common::DivCeil(device_addr + size, CACHING_PAGESIZE);
-        for (u64 page = device_addr >> CACHING_PAGEBITS; page < page_end;) {
-            const BufferId buffer_id = page_table[page];
-            if (!buffer_id) {
-                ++page;
-                continue;
-            }
-            Buffer& buffer = slot_buffers[buffer_id];
-            func(buffer_id, buffer);
-
-            const VAddr end_addr = buffer.CpuAddr() + buffer.SizeBytes();
-            page = Common::DivCeil(end_addr, CACHING_PAGESIZE);
-        }
+        buffer_ranges.ForEachInRange(device_addr, size,
+                                     [&](u64 page_start, u64 page_end, BufferId id) {
+                                         Buffer& buffer = slot_buffers[id];
+                                         func(id, buffer);
+                                     });
     }
 
-    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size);
+    inline bool IsBufferInvalid(BufferId buffer_id) const {
+        return !buffer_id || slot_buffers[buffer_id].is_deleted;
+    }
+
+    template <bool async>
+    void DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write);
 
     [[nodiscard]] OverlapResult ResolveOverlaps(VAddr device_addr, u32 wanted_size);
 
     void JoinOverlap(BufferId new_buffer_id, BufferId overlap_id, bool accumulate_stream_score);
 
-    [[nodiscard]] BufferId CreateBuffer(VAddr device_addr, u32 wanted_size);
+    BufferId CreateBuffer(VAddr device_addr, u32 wanted_size);
 
     void Register(BufferId buffer_id);
 
@@ -145,25 +185,43 @@ private:
     template <bool insert>
     void ChangeRegister(BufferId buffer_id);
 
-    void SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_texel_buffer);
+    bool SynchronizeBuffer(Buffer& buffer, VAddr device_addr, u32 size, bool is_written,
+                           bool is_texel_buffer);
+
+    vk::Buffer UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> copies,
+                            size_t total_size_bytes);
 
     bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
+
+    void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
+
+    void WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
+
+    void TouchBuffer(const Buffer& buffer);
 
     void DeleteBuffer(BufferId buffer_id);
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
+    Core::MemoryManager* memory;
     TextureCache& texture_cache;
-    PageManager& tracker;
+    FaultManager fault_manager;
+    std::unique_ptr<MemoryTracker> memory_tracker;
     StreamBuffer staging_buffer;
     StreamBuffer stream_buffer;
+    StreamBuffer download_buffer;
+    StreamBuffer device_buffer;
     Buffer gds_buffer;
-    Buffer lds_buffer;
-    std::shared_mutex mutex;
+    Buffer bda_pagetable_buffer;
     Common::SlotVector<Buffer> slot_buffers;
+    u64 total_used_memory = 0;
+    u64 trigger_gc_memory = 0;
+    u64 critical_gc_memory = 0;
+    u64 gc_tick = 0;
+    Common::LeastRecentlyUsedCache<BufferId, u64> lru_cache;
     RangeSet gpu_modified_ranges;
-    MemoryTracker memory_tracker;
+    SplitRangeMap<BufferId> buffer_ranges;
     PageTable page_table;
 };
 

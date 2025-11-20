@@ -7,7 +7,6 @@
 #include "common/endian.h"
 #include "common/io_file.h"
 #include "common/types.h"
-#include "core/crypto/crypto.h"
 
 struct TrpHeader {
     u32_be magic; // (0xDCA24D00)
@@ -37,7 +36,6 @@ public:
     void GetNPcommID(const std::filesystem::path& trophyPath, int index);
 
 private:
-    Crypto crypto;
     std::vector<u8> NPcommID = std::vector<u8>(12);
     std::array<u8, 16> np_comm_id{};
     std::array<u8, 16> esfmIv{};

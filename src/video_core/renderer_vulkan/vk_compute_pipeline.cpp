@@ -3,19 +3,19 @@
 
 #include <boost/container/small_vector.hpp>
 
-#include "video_core/buffer_cache/buffer_cache.h"
+#include "shader_recompiler/info.h"
 #include "video_core/renderer_vulkan/vk_compute_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/texture_cache/texture_cache.h"
 
 namespace Vulkan {
 
-ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler_,
-                                 DescriptorHeap& desc_heap_, vk::PipelineCache pipeline_cache,
-                                 ComputePipelineKey compute_key_, const Shader::Info& info_,
-                                 vk::ShaderModule module)
-    : Pipeline{instance_, scheduler_, desc_heap_, pipeline_cache, true}, compute_key{compute_key_} {
+ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
+                                 DescriptorHeap& desc_heap, const Shader::Profile& profile,
+                                 vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key_,
+                                 const Shader::Info& info_, vk::ShaderModule module)
+    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache, true},
+      compute_key{compute_key_} {
     auto& info = stages[int(Shader::LogicalStage::Compute)];
     info = &info_;
     const auto debug_str = GetDebugString();
@@ -28,38 +28,12 @@ ComputePipeline::ComputePipeline(const Instance& instance_, Scheduler& scheduler
 
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
-
-    if (info->has_emulated_shared_memory) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = vk::DescriptorType::eStorageBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
-    if (info->has_readconst) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
     for (const auto& buffer : info->buffers) {
         const auto sharp = buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer
                                                       : vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eCompute,
-        });
-    }
-    for (const auto& tex_buffer : info->texture_buffers) {
-        bindings.push_back({
-            .binding = binding++,
-            .descriptorType = tex_buffer.is_written ? vk::DescriptorType::eStorageTexelBuffer
-                                                    : vk::DescriptorType::eUniformTexelBuffer,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eCompute,
         });

@@ -12,153 +12,176 @@ using namespace Libraries::Kernel;
 
 namespace Libraries::Ngs2 {
 
-s32 Ngs2::ReportInvalid(Ngs2Handle* handle, u32 handle_type) const {
-    uintptr_t hAddress = reinterpret_cast<uintptr_t>(handle);
-    switch (handle_type) {
+s32 HandleReportInvalid(OrbisNgs2Handle handle, u32 handleType) {
+    switch (handleType) {
     case 1:
-        LOG_ERROR(Lib_Ngs2, "Invalid system handle {}", hAddress);
+        LOG_ERROR(Lib_Ngs2, "Invalid system handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     case 2:
-        LOG_ERROR(Lib_Ngs2, "Invalid rack handle {}", hAddress);
+        LOG_ERROR(Lib_Ngs2, "Invalid rack handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     case 4:
-        LOG_ERROR(Lib_Ngs2, "Invalid voice handle {}", hAddress);
+        LOG_ERROR(Lib_Ngs2, "Invalid voice handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
     case 8:
-        LOG_ERROR(Lib_Ngs2, "Invalid report handle {}", hAddress);
+        LOG_ERROR(Lib_Ngs2, "Invalid report handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
     default:
-        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", hAddress);
+        LOG_ERROR(Lib_Ngs2, "Invalid handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
 }
 
-s32 Ngs2::HandleSetup(Ngs2Handle* handle, void* data, std::atomic<u32>* atomic, u32 type,
-                      u32 flags) {
-    handle->dataPointer = data;
-    handle->atomicPtr = atomic;
-    handle->handleType = type;
-    handle->flags_unk = flags;
-    return ORBIS_OK;
+void* MemoryClear(void* buffer, size_t size) {
+    return memset(buffer, 0, size);
 }
 
-s32 Ngs2::HandleCleanup(Ngs2Handle* handle, u32 hType, void* dataOut) {
-    if (handle && handle->selfPointer == handle) {
-        std::atomic<u32>* tmp_atomic = handle->atomicPtr;
-        if (tmp_atomic && handle->handleType == hType) {
-            while (tmp_atomic->load() != 0) {
-                u32 expected = 1;
-                if (tmp_atomic->compare_exchange_strong(expected, 0)) {
-                    if (dataOut) {
-                        dataOut = handle->dataPointer;
-                    }
-                    // sceNgs2MemoryClear(handle, 32);
-                    return ORBIS_OK;
-                }
-                tmp_atomic = handle->atomicPtr;
-            }
-        }
-    }
-    return this->ReportInvalid(handle, hType);
-}
-
-s32 Ngs2::HandleEnter(Ngs2Handle* handle, u32 hType, Ngs2Handle* handleOut) {
-    if (!handle) {
-        return this->ReportInvalid(handle, 0);
-    }
-
-    if (handle->selfPointer != handle || !handle->atomicPtr || !handle->dataPointer ||
-        (~hType & handle->handleType)) {
-        return this->ReportInvalid(handle, handle->handleType);
-    }
-
-    std::atomic<u32>* atomic = handle->atomicPtr;
-    while (true) {
-        u32 i = atomic->load();
-        if (i == 0) {
-            return this->ReportInvalid(handle, handle->handleType);
-        }
-        if (atomic->compare_exchange_strong(i, i + 1)) {
-            break;
-        }
-    }
-
-    if (handleOut) {
-        handleOut = handle;
+s32 StackBufferClose(StackBuffer* stackBuffer, size_t* outTotalSize) {
+    if (outTotalSize) {
+        *outTotalSize = stackBuffer->usedSize + stackBuffer->alignment;
     }
     return ORBIS_OK;
 }
 
-s32 Ngs2::HandleLeave(Ngs2Handle* handle) {
-    std::atomic<u32>* tmp_atomic;
-    u32 i;
-    do {
-        tmp_atomic = handle->atomicPtr;
-        i = tmp_atomic->load();
-    } while (!tmp_atomic->compare_exchange_strong(i, i - 1));
-    return ORBIS_OK;
-}
+s32 StackBufferOpen(StackBuffer* stackBuffer, void* bufferStart, size_t bufferSize,
+                    void** outBuffer, u8 flags) {
+    stackBuffer->top = outBuffer;
+    stackBuffer->base = bufferStart;
+    stackBuffer->size = (size_t)bufferStart;
+    stackBuffer->currentOffset = (size_t)bufferStart;
+    stackBuffer->usedSize = 0;
+    stackBuffer->totalSize = bufferSize;
+    stackBuffer->alignment = 8; // this is a fixed value
+    stackBuffer->flags = flags;
 
-s32 Ngs2::StackBufferOpen(StackBuffer* buf, void* base_addr, size_t size, void** stackTop,
-                          bool verify) {
-    buf->top = stackTop;
-    buf->base = base_addr;
-    buf->curr = base_addr;
-    buf->usedSize = 0;
-    buf->totalSize = size;
-    buf->alignment = 8;
-    buf->isVerifyEnabled = verify;
-
-    if (stackTop) {
-        *stackTop = nullptr;
+    if (outBuffer != NULL) {
+        *outBuffer = NULL;
     }
 
     return ORBIS_OK;
 }
 
-s32 Ngs2::StackBufferClose(StackBuffer* buf, size_t* usedSize) {
-    if (usedSize) {
-        *usedSize = buf->usedSize + buf->alignment;
+s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outInfo) {
+    if (!systemHandle) {
+        return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
+
+    // TODO
 
     return ORBIS_OK;
 }
 
-s32 Ngs2::SystemSetupCore(StackBuffer* buf, SystemOptions* options, Ngs2Handle** sysOut) {
+s32 SystemSetupCore(StackBuffer* stackBuffer, const OrbisNgs2SystemOption* option,
+                    SystemInternal* outSystem) {
     u32 maxGrainSamples = 512;
     u32 numGrainSamples = 256;
     u32 sampleRate = 48000;
 
-    if (options) {
-        maxGrainSamples = options->maxGrainSamples;
-        numGrainSamples = options->numGrainSamples;
-        sampleRate = options->sampleRate;
+    if (option) {
+        sampleRate = option->sampleRate;
+        maxGrainSamples = option->maxGrainSamples;
+        numGrainSamples = option->numGrainSamples;
     }
 
-    // Validate maxGrainSamples
-    if (maxGrainSamples < 64 || maxGrainSamples > 1024 || (maxGrainSamples & 0x3F) != 0) {
+    if (maxGrainSamples < 64 || maxGrainSamples > 1024 || (maxGrainSamples & 63) != 0) {
         LOG_ERROR(Lib_Ngs2, "Invalid system option (maxGrainSamples={},x64)", maxGrainSamples);
         return ORBIS_NGS2_ERROR_INVALID_MAX_GRAIN_SAMPLES;
     }
 
-    // Validate numGrainSamples
-    if (numGrainSamples < 64 || numGrainSamples > 1024 || (numGrainSamples & 0x3F) != 0) {
+    if (numGrainSamples < 64 || numGrainSamples > 1024 || (numGrainSamples & 63) != 0) {
         LOG_ERROR(Lib_Ngs2, "Invalid system option (numGrainSamples={},x64)", numGrainSamples);
         return ORBIS_NGS2_ERROR_INVALID_NUM_GRAIN_SAMPLES;
     }
 
-    // Validate sampleRate
     if (sampleRate != 11025 && sampleRate != 12000 && sampleRate != 22050 && sampleRate != 24000 &&
-        sampleRate != 44100 && sampleRate != 48000 && sampleRate != 88200 && sampleRate != 96000) {
+        sampleRate != 44100 && sampleRate != 48000 && sampleRate != 88200 && sampleRate != 96000 &&
+        sampleRate != 176400 && sampleRate != 192000) {
         LOG_ERROR(Lib_Ngs2, "Invalid system option(sampleRate={}:44.1/48kHz series)", sampleRate);
         return ORBIS_NGS2_ERROR_INVALID_SAMPLE_RATE;
     }
 
-    int result = ORBIS_OK;
+    if (outSystem) {
+        // dummy handle
+        outSystem->systemHandle = 1;
+    }
 
+    return ORBIS_OK;
+}
+
+s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* hostBufferInfo,
+                OrbisNgs2BufferFreeHandler hostFree, OrbisNgs2Handle* outHandle) {
+    u8 optionFlags = 0;
+    StackBuffer stackBuffer;
+    SystemInternal setupResult;
+    void* systemList = NULL;
+    size_t requiredBufferSize = 0;
+    u32 result = ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
+
+    if (option) {
+        if (option->size != 64) {
+            LOG_ERROR(Lib_Ngs2, "Invalid system option size ({})", option->size);
+            return ORBIS_NGS2_ERROR_INVALID_OPTION_SIZE;
+        }
+        optionFlags = option->flags >> 31;
+    }
+
+    // Init
+    StackBufferOpen(&stackBuffer, NULL, 0, NULL, optionFlags);
+    result = SystemSetupCore(&stackBuffer, option, 0);
+
+    if (result < 0) {
+        return result;
+    }
+
+    StackBufferClose(&stackBuffer, &requiredBufferSize);
+
+    // outHandle unprovided
+    if (!outHandle) {
+        hostBufferInfo->hostBuffer = NULL;
+        hostBufferInfo->hostBufferSize = requiredBufferSize;
+        MemoryClear(&hostBufferInfo->reserved, sizeof(hostBufferInfo->reserved));
+        return ORBIS_OK;
+    }
+
+    if (!hostBufferInfo->hostBuffer) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system buffer address ({})", hostBufferInfo->hostBuffer);
+        return ORBIS_NGS2_ERROR_INVALID_BUFFER_ADDRESS;
+    }
+
+    if (hostBufferInfo->hostBufferSize < requiredBufferSize) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])",
+                  hostBufferInfo->hostBufferSize, requiredBufferSize);
+        return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
+    }
+
+    // Setup
+    StackBufferOpen(&stackBuffer, hostBufferInfo->hostBuffer, hostBufferInfo->hostBufferSize,
+                    &systemList, optionFlags);
+    result = SystemSetupCore(&stackBuffer, option, &setupResult);
+
+    if (result < 0) {
+        return result;
+    }
+
+    StackBufferClose(&stackBuffer, &requiredBufferSize);
+
+    // Copy buffer results
+    setupResult.bufferInfo = *hostBufferInfo;
+    setupResult.hostFree = hostFree;
     // TODO
+    // setupResult.systemList = systemList;
 
-    return result; // Success
+    OrbisNgs2Handle systemHandle = setupResult.systemHandle;
+    if (hostBufferInfo->hostBufferSize >= requiredBufferSize) {
+        *outHandle = systemHandle;
+        return ORBIS_OK;
+    }
+
+    SystemCleanup(systemHandle, 0);
+
+    LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])", hostBufferInfo->hostBufferSize,
+              requiredBufferSize);
+    return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
 }
 
 } // namespace Libraries::Ngs2

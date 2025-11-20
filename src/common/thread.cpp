@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <ctime>
 #include <string>
 #include <thread>
 
@@ -41,7 +42,7 @@ void SetCurrentThreadRealtime(const std::chrono::nanoseconds period_ns) {
     const std::chrono::nanoseconds computation_ns = period_ns / 2;
 
     // Determine the timebase for converting time to ticks.
-    struct mach_timebase_info timebase {};
+    struct mach_timebase_info timebase{};
     mach_timebase_info(&timebase);
     const auto ticks_per_ns =
         static_cast<double>(timebase.denom) / static_cast<double>(timebase.numer);
@@ -104,14 +105,24 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     SetThreadPriority(handle, windows_priority);
 }
 
-static void AccurateSleep(std::chrono::nanoseconds duration) {
+bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
+                   const bool interruptible) {
+    const auto begin_sleep = std::chrono::high_resolution_clock::now();
+
     LARGE_INTEGER interval{
         .QuadPart = -1 * (duration.count() / 100u),
     };
     HANDLE timer = ::CreateWaitableTimer(NULL, TRUE, NULL);
     SetWaitableTimer(timer, &interval, 0, NULL, NULL, 0);
-    WaitForSingleObject(timer, INFINITE);
+    const auto ret = WaitForSingleObjectEx(timer, INFINITE, interruptible);
     ::CloseHandle(timer);
+
+    if (remaining) {
+        const auto end_sleep = std::chrono::high_resolution_clock::now();
+        const auto sleep_time = end_sleep - begin_sleep;
+        *remaining = duration > sleep_time ? duration - sleep_time : std::chrono::nanoseconds(0);
+    }
+    return ret == WAIT_OBJECT_0;
 }
 
 #else
@@ -134,8 +145,24 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
     pthread_setschedparam(this_thread, scheduling_type, &params);
 }
 
-static void AccurateSleep(std::chrono::nanoseconds duration) {
-    std::this_thread::sleep_for(duration);
+bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
+                   const bool interruptible) {
+    timespec request = {
+        .tv_sec = duration.count() / 1'000'000'000,
+        .tv_nsec = duration.count() % 1'000'000'000,
+    };
+    timespec remain;
+    int ret;
+    while ((ret = nanosleep(&request, &remain)) < 0 && errno == EINTR) {
+        if (interruptible) {
+            break;
+        }
+        request = remain;
+    }
+    if (remaining) {
+        *remaining = std::chrono::nanoseconds(remain.tv_sec * 1'000'000'000 + remain.tv_nsec);
+    }
+    return ret == 0 || errno != EINTR;
 }
 
 #endif
@@ -196,9 +223,9 @@ AccurateTimer::AccurateTimer(std::chrono::nanoseconds target_interval)
     : target_interval(target_interval) {}
 
 void AccurateTimer::Start() {
-    auto begin_sleep = std::chrono::high_resolution_clock::now();
+    const auto begin_sleep = std::chrono::high_resolution_clock::now();
     if (total_wait.count() > 0) {
-        AccurateSleep(total_wait);
+        AccurateSleep(total_wait, nullptr, false);
     }
     start_time = std::chrono::high_resolution_clock::now();
     total_wait -= std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - begin_sleep);

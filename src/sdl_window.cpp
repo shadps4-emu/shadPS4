@@ -10,7 +10,8 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/elf_info.h"
-#include "common/version.h"
+#include "core/debug_state.h"
+#include "core/devtools/layer.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
@@ -97,6 +98,7 @@ void SDLInputEngine::Init() {
         SDL_CloseGamepad(m_gamepad);
         m_gamepad = nullptr;
     }
+
     int gamepad_count;
     SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
     if (!gamepads) {
@@ -108,28 +110,77 @@ void SDLInputEngine::Init() {
         SDL_free(gamepads);
         return;
     }
-    LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-    if (!(m_gamepad = SDL_OpenGamepad(gamepads[0]))) {
-        LOG_ERROR(Input, "Failed to open gamepad 0: {}", SDL_GetError());
-        SDL_free(gamepads);
-        return;
+
+    int selectedIndex = GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count,
+                                                        GamepadSelect::GetSelectedGamepad());
+    int defaultIndex =
+        GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count, Config::getDefaultControllerID());
+
+    // If user selects a gamepad in the GUI, use that, otherwise try the default
+    if (!m_gamepad) {
+        if (selectedIndex != -1) {
+            m_gamepad = SDL_OpenGamepad(gamepads[selectedIndex]);
+            LOG_INFO(Input, "Opening gamepad selected in GUI.");
+        } else if (defaultIndex != -1) {
+            m_gamepad = SDL_OpenGamepad(gamepads[defaultIndex]);
+            LOG_INFO(Input, "Opening default gamepad.");
+        } else {
+            m_gamepad = SDL_OpenGamepad(gamepads[0]);
+            LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
+        }
     }
+
+    if (!m_gamepad) {
+        if (!m_gamepad) {
+            LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
+            SDL_free(gamepads);
+            return;
+        }
+    }
+
+    SDL_Joystick* joystick = SDL_GetGamepadJoystick(m_gamepad);
+    Uint16 vendor = SDL_GetJoystickVendor(joystick);
+    Uint16 product = SDL_GetJoystickProduct(joystick);
+
+    bool isDualSense = (vendor == 0x054C && product == 0x0CE6);
+
+    LOG_INFO(Input, "Gamepad Vendor: {:04X}, Product: {:04X}", vendor, product);
+    if (isDualSense) {
+        LOG_INFO(Input, "Detected DualSense Controller");
+    }
+
     if (Config::getIsMotionControlsEnabled()) {
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, true)) {
             m_gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_GYRO);
             LOG_INFO(Input, "Gyro initialized, poll rate: {}", m_gyro_poll_rate);
         } else {
-            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad");
+            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad, error: {}",
+                      SDL_GetError());
+            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, false);
         }
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, true)) {
             m_accel_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_ACCEL);
             LOG_INFO(Input, "Accel initialized, poll rate: {}", m_accel_poll_rate);
         } else {
-            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad");
-        };
+            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad, error: {}",
+                      SDL_GetError());
+            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, false);
+        }
     }
+
     SDL_free(gamepads);
-    SetLightBarRGB(0, 0, 255);
+
+    int* rgb = Config::GetControllerCustomColor();
+
+    if (isDualSense) {
+        if (SDL_SetJoystickLED(joystick, rgb[0], rgb[1], rgb[2]) == 0) {
+            LOG_INFO(Input, "Set DualSense LED to R:{} G:{} B:{}", rgb[0], rgb[1], rgb[2]);
+        } else {
+            LOG_ERROR(Input, "Failed to set DualSense LED: {}", SDL_GetError());
+        }
+    } else {
+        SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
+    }
 }
 
 void SDLInputEngine::SetLightBarRGB(u8 r, u8 g, u8 b) {
@@ -263,8 +314,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         error = true;
     }
     if (!error) {
-        SDL_SetWindowFullscreenMode(window,
-                                    Config::getFullscreenMode() == "True" ? displayMode : NULL);
+        SDL_SetWindowFullscreenMode(
+            window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
     }
     SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
 
@@ -297,6 +348,10 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     Input::ControllerOutput::SetControllerOutputController(controller);
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+
+    if (Config::getBackgroundControllerInput()) {
+        SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    }
 }
 
 WindowSDL::~WindowSDL() = default;
@@ -365,6 +420,46 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
+    case SDL_EVENT_QUIT_DIALOG:
+        Overlay::ToggleQuitWindow();
+        break;
+    case SDL_EVENT_TOGGLE_FULLSCREEN: {
+        if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
+            SDL_SetWindowFullscreen(window, 0);
+        } else {
+            SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+        }
+        break;
+    }
+    case SDL_EVENT_TOGGLE_PAUSE:
+        if (DebugState.IsGuestThreadsPaused()) {
+            LOG_INFO(Frontend, "Game Resumed");
+            DebugState.ResumeGuestThreads();
+        } else {
+            LOG_INFO(Frontend, "Game Paused");
+            DebugState.PauseGuestThreads();
+        }
+        break;
+    case SDL_EVENT_CHANGE_CONTROLLER:
+        controller->GetEngine()->Init();
+        break;
+    case SDL_EVENT_TOGGLE_SIMPLE_FPS:
+        Overlay::ToggleSimpleFps();
+        break;
+    case SDL_EVENT_RELOAD_INPUTS:
+        Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+        break;
+    case SDL_EVENT_MOUSE_TO_JOYSTICK:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Joystick));
+        break;
+    case SDL_EVENT_MOUSE_TO_GYRO:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
+        break;
+    case SDL_EVENT_RDOC_CAPTURE:
+        VideoCore::TriggerCapture();
+        break;
     default:
         break;
     }
@@ -416,35 +511,6 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
                             event->type == SDL_EVENT_MOUSE_WHEEL;
     Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
 
-    // Handle window controls outside of the input maps
-    if (event->type == SDL_EVENT_KEY_DOWN) {
-        u32 input_id = input_event.input.sdl_id;
-        // Reparse kbm inputs
-        if (input_id == SDLK_F8) {
-            Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-            return;
-        }
-        // Toggle mouse capture and movement input
-        else if (input_id == SDLK_F7) {
-            Input::ToggleMouseEnabled();
-            SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
-                                           !SDL_GetWindowRelativeMouseMode(this->GetSDLWindow()));
-            return;
-        }
-        // Toggle fullscreen
-        else if (input_id == SDLK_F11) {
-            SDL_WindowFlags flag = SDL_GetWindowFlags(window);
-            bool is_fullscreen = flag & SDL_WINDOW_FULLSCREEN;
-            SDL_SetWindowFullscreen(window, !is_fullscreen);
-            return;
-        }
-        // Trigger rdoc capture
-        else if (input_id == SDLK_F12) {
-            VideoCore::TriggerCapture();
-            return;
-        }
-    }
-
     // if it's a wheel event, make a timer that turns it off after a set time
     if (event->type == SDL_EVENT_MOUSE_WHEEL) {
         const SDL_Event* copy = new SDL_Event(*event);
@@ -461,7 +527,6 @@ void WindowSDL::OnKeyboardMouseInput(const SDL_Event* event) {
 }
 
 void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
-
     bool input_down = event->type == SDL_EVENT_GAMEPAD_AXIS_MOTION ||
                       event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN;
     Input::InputEvent input_event = Input::InputBinding::GetInputEventFromSDLEvent(*event);
@@ -477,8 +542,8 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // add/remove it from the list
     bool inputs_changed = Input::UpdatePressedKeys(input_event);
 
-    // update bindings
     if (inputs_changed) {
+        // update bindings
         Input::ActivateOutputsFromInputs();
     }
 }

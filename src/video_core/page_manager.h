@@ -4,12 +4,9 @@
 #pragma once
 
 #include <memory>
-#include <boost/icl/interval_map.hpp>
-#ifdef __linux__
-#include "common/adaptive_mutex.h"
-#endif
-#include "common/spin_lock.h"
+#include "common/alignment.h"
 #include "common/types.h"
+#include "video_core/buffer_cache//region_definitions.h"
 
 namespace Vulkan {
 class Rasterizer;
@@ -18,6 +15,14 @@ class Rasterizer;
 namespace VideoCore {
 
 class PageManager {
+    // Use the same page size as the tracker.
+    static constexpr size_t PAGE_BITS = TRACKER_PAGE_BITS;
+    static constexpr size_t PAGE_SIZE = TRACKER_BYTES_PER_PAGE;
+
+    // Keep the lock granularity the same as region granularity. (since each regions has
+    // itself a lock)
+    static constexpr size_t PAGES_PER_LOCK = NUM_PAGES_PER_REGION;
+
 public:
     explicit PageManager(Vulkan::Rasterizer* rasterizer);
     ~PageManager();
@@ -28,22 +33,27 @@ public:
     /// Unregister a range of gpu memory that was unmapped.
     void OnGpuUnmap(VAddr address, size_t size);
 
-    /// Increase/decrease the number of surface in pages touching the specified region
-    void UpdatePagesCachedCount(VAddr addr, u64 size, s32 delta);
+    /// Updates watches in the pages touching the specified region.
+    template <bool track>
+    void UpdatePageWatchers(VAddr addr, u64 size) const;
 
-    static VAddr GetPageAddr(VAddr addr);
-    static VAddr GetNextPageAddr(VAddr addr);
+    /// Updates watches in the pages touching the specified region using a mask.
+    template <bool track, bool is_read = false>
+    void UpdatePageWatchersForRegion(VAddr base_addr, RegionBits& mask) const;
+
+    /// Returns page aligned address.
+    static constexpr VAddr GetPageAddr(VAddr addr) {
+        return Common::AlignDown(addr, PAGE_SIZE);
+    }
+
+    /// Returns address of the next page.
+    static constexpr VAddr GetNextPageAddr(VAddr addr) {
+        return Common::AlignUp(addr + 1, PAGE_SIZE);
+    }
 
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;
-    Vulkan::Rasterizer* rasterizer;
-    boost::icl::interval_map<VAddr, s32> cached_pages;
-#ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
-    Common::AdaptiveMutex lock;
-#else
-    Common::SpinLock lock;
-#endif
 };
 
 } // namespace VideoCore

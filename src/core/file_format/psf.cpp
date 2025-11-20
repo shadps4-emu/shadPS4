@@ -99,7 +99,7 @@ bool PSF::Open(const std::vector<u8>& psf_buffer) {
 }
 
 bool PSF::Encode(const std::filesystem::path& filepath) const {
-    Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Write);
+    Common::FS::IOFile file(filepath, Common::FS::FileAccessMode::Create);
     if (!file.IsOpen()) {
         return false;
     }

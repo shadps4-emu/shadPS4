@@ -13,7 +13,6 @@
 #include <boost/intrusive/list.hpp>
 
 #include "common/assert.h"
-#include "shader_recompiler/exception.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/opcodes.h"
 #include "shader_recompiler/ir/patch.h"
@@ -105,7 +104,7 @@ public:
 
     explicit TypedValue(const Value& value) : Value(value) {
         if ((value.Type() & type_) == IR::Type::Void) {
-            throw InvalidArgument("Incompatible types {} and {}", type_, value.Type());
+            UNREACHABLE_MSG("Incompatible types {} and {}", type_, value.Type());
         }
     }
 
@@ -265,6 +264,7 @@ using U32F32 = TypedValue<Type::U32 | Type::F32>;
 using U64F64 = TypedValue<Type::U64 | Type::F64>;
 using U32U64 = TypedValue<Type::U32 | Type::U64>;
 using U16U32U64 = TypedValue<Type::U16 | Type::U32 | Type::U64>;
+using U8U16U32U64 = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;
 using F32F64 = TypedValue<Type::F32 | Type::F64>;
 using F16F32F64 = TypedValue<Type::F16 | Type::F32 | Type::F64>;
 using UAny = TypedValue<Type::U8 | Type::U16 | Type::U32 | Type::U64>;

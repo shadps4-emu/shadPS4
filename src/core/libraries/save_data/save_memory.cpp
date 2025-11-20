@@ -10,15 +10,14 @@
 #include <utility>
 #include <fmt/format.h>
 
-#include <core/libraries/system/msgdialog_ui.h>
-
-#include "common/assert.h"
+#include "boost/icl/concept/interval.hpp"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"
 
 using Common::FS::IOFile;
@@ -35,11 +34,12 @@ namespace Libraries::SaveData::SaveMemory {
 static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
 struct SlotData {
-    OrbisUserServiceUserId user_id;
+    OrbisUserServiceUserId user_id{};
     std::string game_serial;
     std::filesystem::path folder_path;
     PSF sfo;
     std::vector<u8> memory_cache;
+    size_t memory_cache_size{};
 };
 
 static std::mutex g_slot_mtx;
@@ -59,7 +59,7 @@ void PersistMemory(u32 slot_id, bool lock) {
     while (n++ < 10) {
         try {
             IOFile f;
-            int r = f.Open(memoryPath, Common::FS::FileAccessMode::Write);
+            int r = f.Open(memoryPath, Common::FS::FileAccessMode::Create);
             if (f.IsOpen()) {
                 f.WriteRaw<u8>(data.memory_cache.data(), data.memory_cache.size());
                 f.Close();
@@ -94,10 +94,11 @@ std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
     if (slot_id > 0) {
         dir += std::to_string(slot_id);
     }
-    return SaveInstance::MakeDirSavePath(user_id, Common::ElfInfo::Instance().GameSerial(), dir);
+    return SaveInstance::MakeDirSavePath(user_id, game_serial, dir);
 }
 
-size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial) {
+size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial,
+                       size_t memory_size) {
     std::lock_guard lck{g_slot_mtx};
 
     const auto save_dir = GetSavePath(user_id, slot_id, game_serial);
@@ -109,6 +110,7 @@ size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_
         .folder_path = save_dir,
         .sfo = {},
         .memory_cache = {},
+        .memory_cache_size = memory_size,
     };
 
     SaveInstance::SetupDefaultParamSFO(data.sfo, GetSaveDir(slot_id), std::string{game_serial});
@@ -146,7 +148,7 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
             fs::copy_file(src_icon, icon_path);
         }
     } else {
-        IOFile file(icon_path, Common::FS::FileAccessMode::Write);
+        IOFile file(icon_path, Common::FS::FileAccessMode::Create);
         file.WriteRaw<u8>(buf, buf_size);
         file.Close();
     }
@@ -196,9 +198,9 @@ void ReadMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     auto& data = g_attached_slots[slot_id];
     auto& memory = data.memory_cache;
     if (memory.empty()) { // Load file
+        memory.resize(data.memory_cache_size);
         IOFile f{data.folder_path / FilenameSaveDataMemory, Common::FS::FileAccessMode::Read};
         if (f.IsOpen()) {
-            memory.resize(f.GetSize());
             f.Seek(0);
             f.ReadSpan(std::span{memory});
         }
@@ -222,5 +224,4 @@ void WriteMemory(u32 slot_id, void* buf, size_t buf_size, int64_t offset) {
     Backup::NewRequest(data.user_id, data.game_serial, GetSaveDir(slot_id),
                        Backup::OrbisSaveDataEventType::__DO_NOT_SAVE);
 }
-
 } // namespace Libraries::SaveData::SaveMemory

@@ -100,22 +100,50 @@ std::string NameOf(Attribute attribute) {
         return "Param30";
     case Attribute::Param31:
         return "Param31";
+    case Attribute::ClipDistance:
+        return "ClipDistanace";
+    case Attribute::CullDistance:
+        return "CullDistance";
+    case Attribute::RenderTargetIndex:
+        return "RenderTargetIndex";
+    case Attribute::ViewportIndex:
+        return "ViewportIndex";
     case Attribute::VertexId:
         return "VertexId";
-    case Attribute::InstanceId:
-        return "InstanceId";
     case Attribute::PrimitiveId:
         return "PrimitiveId";
-    case Attribute::FragCoord:
-        return "FragCoord";
+    case Attribute::InstanceId:
+        return "InstanceId";
     case Attribute::IsFrontFace:
         return "IsFrontFace";
+    case Attribute::SampleIndex:
+        return "SampleIndex";
+    case Attribute::GlobalInvocationId:
+        return "GlobalInvocationId";
     case Attribute::WorkgroupId:
         return "WorkgroupId";
+    case Attribute::WorkgroupIndex:
+        return "WorkgroupIndex";
     case Attribute::LocalInvocationId:
         return "LocalInvocationId";
     case Attribute::LocalInvocationIndex:
         return "LocalInvocationIndex";
+    case Attribute::FragCoord:
+        return "FragCoord";
+    case Attribute::BaryCoordNoPersp:
+        return "BaryCoordNoPersp";
+    case Attribute::BaryCoordNoPerspCentroid:
+        return "BaryCoordNoPerspCentroid";
+    case Attribute::BaryCoordNoPerspSample:
+        return "BaryCoordNoPerspSample";
+    case Attribute::BaryCoordSmooth:
+        return "BaryCoordSmooth";
+    case Attribute::BaryCoordSmoothCentroid:
+        return "BaryCoordSmoothCentroid";
+    case Attribute::BaryCoordSmoothSample:
+        return "BaryCoordSmoothSample";
+    case Attribute::BaryCoordPullModel:
+        return "BaryCoordPullModel";
     case Attribute::InvocationId:
         return "InvocationId";
     case Attribute::PatchVertices:
@@ -125,7 +153,19 @@ std::string NameOf(Attribute attribute) {
     case Attribute::TessellationEvaluationPointV:
         return "TessellationEvaluationPointV";
     case Attribute::PackedHullInvocationInfo:
+        return "OffChipLdsBase";
+    case Attribute::OffChipLdsBase:
         return "PackedHullInvocationInfo";
+    case Attribute::TessFactorsBufferBase:
+        return "TessFactorsBufferBase";
+    case Attribute::PointSize:
+        return "PointSize";
+    case Attribute::StencilRef:
+        return "StencilRef";
+    case Attribute::SampleMask:
+        return "SampleMask";
+    case Attribute::PackedAncillary:
+        return "PackedAncillary";
     default:
         break;
     }

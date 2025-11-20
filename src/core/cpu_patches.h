@@ -7,12 +7,6 @@
 
 namespace Core {
 
-/// Initializes a stack for the current thread for use by patch implementations.
-void InitializeThreadPatchStack();
-
-/// Cleans up the patch stack for the current thread.
-void CleanupThreadPatchStack();
-
 /// Registers a module for patching, providing an area to generate trampoline code.
 void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
                          u64 trampoline_area_size);

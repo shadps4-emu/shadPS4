@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "frame_graph.h"
@@ -13,7 +13,6 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
-constexpr float TARGET_FPS = 60.0f;
 constexpr float BAR_WIDTH_MULT = 1.4f;
 constexpr float BAR_HEIGHT_MULT = 1.25f;
 constexpr float FRAME_GRAPH_PADDING_Y = 3.0f;
@@ -30,7 +29,7 @@ void FrameGraph::DrawFrameGraph() {
         return;
     }
 
-    float target_dt = 1.0f / (TARGET_FPS * (float)Config::vblankDiv());
+    float target_dt = 1.0f / (float)Config::vblankFreq();
     float cur_pos_x = pos.x + full_width;
     pos.y += FRAME_GRAPH_PADDING_Y;
     const float final_pos_y = pos.y + FRAME_GRAPH_HEIGHT;
@@ -74,7 +73,7 @@ void FrameGraph::Draw() {
     if (!is_open) {
         return;
     }
-    SetNextWindowSize({340.0, 185.0f}, ImGuiCond_FirstUseEver);
+    SetNextWindowSize({308.0, 270.0f}, ImGuiCond_FirstUseEver);
     if (Begin("Video debug info", &is_open)) {
         const auto& ctx = *GImGui;
         const auto& io = ctx.IO;
@@ -88,13 +87,20 @@ void FrameGraph::Draw() {
             frameRate = 1000.0f / deltaTime;
         }
 
+        SeparatorText("Frame graph");
+        DrawFrameGraph();
+
+        SeparatorText("Renderer info");
+
         Text("Frame time: %.3f ms (%.1f FPS)", deltaTime, frameRate);
         Text("Presenter time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, 1.0f / io.DeltaTime);
         Text("Flip frame: %d Gnm submit frame: %d", DebugState.flip_frame_count.load(),
              DebugState.gnm_frame_count.load());
-
-        SeparatorText("Frame graph");
-        DrawFrameGraph();
+        Text("Game Res: %dx%d", DebugState.game_resolution.first,
+             DebugState.game_resolution.second);
+        Text("Output Res: %dx%d", DebugState.output_resolution.first,
+             DebugState.output_resolution.second);
+        Text("FSR: %s", DebugState.is_using_fsr ? "on" : "off");
     }
     End();
 }

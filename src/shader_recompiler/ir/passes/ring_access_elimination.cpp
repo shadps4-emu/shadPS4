@@ -4,6 +4,8 @@
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
+#include "shader_recompiler/ir/position.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/recompiler.h"
@@ -11,8 +13,7 @@
 
 namespace Shader::Optimization {
 
-void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info,
-                           Stage stage) {
+void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info) {
     auto& info = program.info;
 
     const auto& ForEachInstruction = [&](auto func) {
@@ -24,7 +25,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         }
     };
 
-    switch (stage) {
+    switch (program.info.stage) {
     case Stage::Local: {
         ForEachInstruction([=](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
@@ -34,17 +35,16 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 bool is_composite = opcode == IR::Opcode::WriteSharedU64;
                 u32 num_components = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
 
-                u32 offset = 0;
-                const auto* addr = inst.Arg(0).InstRecursive();
-                if (addr->GetOpcode() == IR::Opcode::IAdd32) {
-                    ASSERT(addr->Arg(1).IsImmediate());
-                    offset = addr->Arg(1).U32();
-                }
-                IR::Value data = inst.Arg(1).Resolve();
+                ASSERT(inst.Arg(0).IsImmediate());
+
+                u32 offset = inst.Arg(0).U32();
+                IR::Value data = is_composite ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
+                                              : inst.Arg(1).Resolve();
                 for (s32 i = 0; i < num_components; i++) {
                     const auto attrib = IR::Attribute::Param0 + (offset / 16);
                     const auto comp = (offset / 4) % 4;
-                    const IR::U32 value = IR::U32{is_composite ? data.Inst()->Arg(i) : data};
+                    const IR::U32 value =
+                        IR::U32{is_composite ? ir.CompositeExtract(data, i) : data};
                     ir.SetAttribute(attrib, ir.BitCast<IR::F32, IR::U32>(value), comp);
                     offset += 4;
                 }
@@ -92,6 +92,19 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
         const auto& gs_info = runtime_info.gs_info;
         info.gs_copy_data = Shader::ParseCopyShader(gs_info.vs_copy);
 
+        u32 output_vertices = gs_info.output_vertices;
+        if (info.gs_copy_data.output_vertices &&
+            info.gs_copy_data.output_vertices != output_vertices) {
+            ASSERT_MSG(output_vertices > info.gs_copy_data.output_vertices &&
+                           gs_info.mode == AmdGpu::GsScenario::ScenarioG,
+                       "Invalid geometry shader vertex configuration scenario = {}, max_vert_out = "
+                       "{}, output_vertices = {}",
+                       u32(gs_info.mode), output_vertices, info.gs_copy_data.output_vertices);
+            LOG_WARNING(Render_Vulkan, "MAX_VERT_OUT {} is larger than actual output vertices {}",
+                        output_vertices, info.gs_copy_data.output_vertices);
+            output_vertices = info.gs_copy_data.output_vertices;
+        }
+
         ForEachInstruction([&](IR::IREmitter& ir, IR::Inst& inst) {
             const auto opcode = inst.GetOpcode();
             switch (opcode) {
@@ -101,10 +114,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                     break;
                 }
 
-                const auto shl_inst = inst.Arg(1).TryInstRecursive();
-                const auto vertex_id = ir.Imm32(shl_inst->Arg(0).Resolve().U32() >> 2);
-                const auto offset = inst.Arg(1).TryInstRecursive()->Arg(1);
-                const auto bucket = offset.Resolve().U32() / 256u;
+                const auto vertex_id = (info.index_enable ? IR::GetBufferIndexArg(&inst)
+                                                          : IR::GetBufferVOffsetArg(&inst))
+                                           .U32() >>
+                                       2;
+                const auto soffset = IR::GetBufferSOffsetArg(&inst);
+                const auto bucket = soffset.Resolve().U32() / 256u;
                 const auto attrib = bucket < 4 ? IR::Attribute::Position0
                                                : IR::Attribute::Param0 + (bucket / 4 - 1);
                 const auto comp = bucket % 4;
@@ -123,7 +138,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
 
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
-                const auto comp_ofs = gs_info.output_vertices * 4u;
+                const auto comp_ofs = output_vertices * 4u;
                 const auto output_size = comp_ofs * gs_info.out_vertex_data_size;
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
@@ -131,11 +146,12 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 ASSERT(it != info.gs_copy_data.attr_map.cend());
                 const auto& [attr, comp] = it->second;
 
-                inst.ReplaceOpcode(IR::Opcode::SetAttribute);
-                inst.ClearArgs();
-                inst.SetArg(0, IR::Value{attr});
-                inst.SetArg(1, data);
-                inst.SetArg(2, ir.Imm32(comp));
+                inst.Invalidate();
+                if (IsPosition(attr)) {
+                    ExportPosition(ir, runtime_info.gs_info, attr, comp, data);
+                } else {
+                    ir.SetAttribute(attr, data, comp);
+                }
                 break;
             }
             default:

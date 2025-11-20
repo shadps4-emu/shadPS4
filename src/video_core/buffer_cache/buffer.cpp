@@ -70,8 +70,11 @@ UniqueBuffer::~UniqueBuffer() {
 
 void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usage,
                           VmaAllocationInfo* out_alloc_info) {
+    const bool with_bda = bool(buffer_ci.usage & vk::BufferUsageFlagBits::eShaderDeviceAddress);
+    const VmaAllocationCreateFlags bda_flag =
+        with_bda ? VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT : 0;
     const VmaAllocationCreateInfo alloc_ci = {
-        .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | MemoryUsageVmaFlags(usage),
+        .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | bda_flag | MemoryUsageVmaFlags(usage),
         .usage = MemoryUsageVma(usage),
         .requiredFlags = 0,
         .preferredFlags = MemoryUsagePreferredVmaFlags(usage),
@@ -86,6 +89,15 @@ void UniqueBuffer::Create(const vk::BufferCreateInfo& buffer_ci, MemoryUsage usa
     ASSERT_MSG(result == VK_SUCCESS, "Failed allocating buffer with error {}",
                vk::to_string(vk::Result{result}));
     buffer = vk::Buffer{unsafe_buffer};
+
+    if (with_bda) {
+        vk::BufferDeviceAddressInfo bda_info{
+            .buffer = buffer,
+        };
+        auto bda_result = device.getBufferAddress(bda_info);
+        ASSERT_MSG(bda_result != 0, "Failed to get buffer device address");
+        bda_addr = bda_result;
+    }
 }
 
 Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_, MemoryUsage usage_,
@@ -95,8 +107,7 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     // Create buffer object.
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
-        // When maintenance5 is not supported, use all flags since we can't add flags to views.
-        .usage = instance->IsMaintenance5Supported() ? flags : AllFlags,
+        .usage = flags,
     };
     VmaAllocationInfo alloc_info{};
     buffer.Create(buffer_ci, usage, &alloc_info);
@@ -113,27 +124,40 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
     is_coherent = property_flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 }
 
-vk::BufferView Buffer::View(u32 offset, u32 size, bool is_written, AmdGpu::DataFormat dfmt,
-                            AmdGpu::NumberFormat nfmt) {
-    const vk::BufferUsageFlags2CreateInfoKHR usage_flags = {
-        .usage = is_written ? vk::BufferUsageFlagBits2KHR::eStorageTexelBuffer
-                            : vk::BufferUsageFlagBits2KHR::eUniformTexelBuffer,
-    };
-    const vk::BufferViewCreateInfo view_ci = {
-        .pNext = instance->IsMaintenance5Supported() ? &usage_flags : nullptr,
-        .buffer = buffer.buffer,
-        .format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt),
+void Buffer::Fill(u64 offset, u32 num_bytes, u32 value) {
+    scheduler->EndRendering();
+    ASSERT_MSG(offset % 4 == 0 && num_bytes % 4 == 0,
+               "FillBuffer size must be a multiple of 4 bytes");
+    const auto cmdbuf = scheduler->CommandBuffer();
+    const vk::BufferMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .srcAccessMask = vk::AccessFlagBits2::eMemoryRead,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .buffer = buffer,
         .offset = offset,
-        .range = size,
+        .size = num_bytes,
     };
-    const auto [view_result, view] = instance->GetDevice().createBufferView(view_ci);
-    ASSERT_MSG(view_result == vk::Result::eSuccess, "Failed to create buffer view: {}",
-               vk::to_string(view_result));
-    scheduler->DeferOperation(
-        [view, device = instance->GetDevice()] { device.destroyBufferView(view); });
-    Vulkan::SetObjectName(instance->GetDevice(), view, "BufferView {:#x}:{:#x}", cpu_addr + offset,
-                          size);
-    return view;
+    const vk::BufferMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllCommands,
+        .dstAccessMask = vk::AccessFlagBits2::eMemoryRead | vk::AccessFlagBits2::eMemoryWrite,
+        .buffer = buffer,
+        .offset = offset,
+        .size = num_bytes,
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &pre_barrier,
+    });
+    cmdbuf.fillBuffer(buffer, offset, num_bytes, value);
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+        .bufferMemoryBarrierCount = 1,
+        .pBufferMemoryBarriers = &post_barrier,
+    });
 }
 
 constexpr u64 WATCHES_INITIAL_RESERVE = 0x4000;
@@ -149,12 +173,15 @@ StreamBuffer::StreamBuffer(const Vulkan::Instance& instance, Vulkan::Scheduler& 
                           size_bytes);
 }
 
-std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment) {
+std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment, bool allow_wait) {
     if (!is_coherent && usage == MemoryUsage::Stream) {
         size = Common::AlignUp(size, instance->NonCoherentAtomSize());
     }
 
-    ASSERT(size <= this->size_bytes);
+    if (size > this->size_bytes) {
+        return {nullptr, 0};
+    }
+
     mapped_size = size;
 
     if (alignment > 0) {
@@ -174,8 +201,11 @@ std::pair<u8*, u64> StreamBuffer::Map(u64 size, u64 alignment) {
     }
 
     const u64 mapped_upper_bound = offset + size;
-    WaitPendingOperations(mapped_upper_bound);
-    return std::make_pair(mapped_data.data() + offset, offset);
+    if (!WaitPendingOperations(mapped_upper_bound, allow_wait)) {
+        return {nullptr, 0};
+    }
+
+    return {mapped_data.data() + offset, offset};
 }
 
 void StreamBuffer::Commit() {
@@ -189,6 +219,12 @@ void StreamBuffer::Commit() {
     }
 
     offset += mapped_size;
+    if (current_watch_cursor != 0 &&
+        current_watches[current_watch_cursor].tick == scheduler->CurrentTick()) {
+        current_watches[current_watch_cursor].upper_bound = offset;
+        return;
+    }
+
     if (current_watch_cursor + 1 >= current_watches.size()) {
         // Ensure that there are enough watches.
         ReserveWatches(current_watches, WATCHES_RESERVE_CHUNK);
@@ -203,16 +239,20 @@ void StreamBuffer::ReserveWatches(std::vector<Watch>& watches, std::size_t grow_
     watches.resize(watches.size() + grow_size);
 }
 
-void StreamBuffer::WaitPendingOperations(u64 requested_upper_bound) {
+bool StreamBuffer::WaitPendingOperations(u64 requested_upper_bound, bool allow_wait) {
     if (!invalidation_mark) {
-        return;
+        return true;
     }
     while (requested_upper_bound > wait_bound && wait_cursor < *invalidation_mark) {
         auto& watch = previous_watches[wait_cursor];
-        wait_bound = watch.upper_bound;
+        if (!scheduler->IsFree(watch.tick) && !allow_wait) {
+            return false;
+        }
         scheduler->Wait(watch.tick);
+        wait_bound = watch.upper_bound;
         ++wait_cursor;
     }
+    return true;
 }
 
 } // namespace VideoCore

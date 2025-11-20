@@ -41,7 +41,7 @@ using CallocFun = void* (*)(size_t, size_t);
 
 static int MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, const char* name) {
     const PthreadMutexAttr* attr;
-    if (mutex_attr == NULL) {
+    if (mutex_attr == nullptr) {
         attr = &PthreadMutexattrDefault;
     } else {
         attr = mutex_attr;
@@ -52,7 +52,7 @@ static int MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
             return POSIX_EINVAL;
         }
     }
-    auto* pmutex = new PthreadMutex{};
+    auto* pmutex = new (std::nothrow) PthreadMutex{};
     if (pmutex == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -282,13 +282,13 @@ int PthreadMutex::Unlock() {
     if (Type() == PthreadMutexType::Recursive && m_count > 0) [[unlikely]] {
         m_count--;
     } else {
-        int defered = True(m_flags & PthreadMutexFlags::Defered);
-        m_flags &= ~PthreadMutexFlags::Defered;
+        const bool deferred = True(m_flags & PthreadMutexFlags::Deferred);
+        m_flags &= ~PthreadMutexFlags::Deferred;
 
         m_owner = nullptr;
         m_lock.unlock();
 
-        if (curthread->will_sleep == 0 && defered) {
+        if (curthread->will_sleep == 0 && deferred) {
             curthread->WakeAll();
         }
     }
@@ -350,7 +350,7 @@ int PthreadMutex::IsOwned(Pthread* curthread) const {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_init(PthreadMutexAttrT* attr) {
-    PthreadMutexAttrT pattr = new PthreadMutexAttr{};
+    auto pattr = new (std::nothrow) PthreadMutexAttr{};
     if (pattr == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -424,48 +424,44 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_setprotocol(PthreadMutexAttrT* mattr,
 
 void RegisterMutex(Core::Loader::SymbolsResolver* sym) {
     // Posix
-    LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
-    LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
-    LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
-    LIB_FUNCTION("ltCfaGr2JGE", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_destroy);
-    LIB_FUNCTION("dQHWEsJtoE4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
-    LIB_FUNCTION("mDmgMOGVUqg", "libScePosix", 1, "libkernel", 1, 1,
-                 posix_pthread_mutexattr_settype);
-    LIB_FUNCTION("5txKfcMUAok", "libScePosix", 1, "libkernel", 1, 1,
-                 posix_pthread_mutexattr_setprotocol);
-    LIB_FUNCTION("HF7lK46xzjY", "libScePosix", 1, "libkernel", 1, 1,
-                 posix_pthread_mutexattr_destroy);
-    LIB_FUNCTION("K-jXhbt2gn4", "libScePosix", 1, "libkernel", 1, 1, posix_pthread_mutex_trylock);
+    LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", posix_pthread_mutex_init);
+    LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", posix_pthread_mutex_lock);
+    LIB_FUNCTION("Io9+nTKXZtA", "libScePosix", 1, "libkernel", posix_pthread_mutex_timedlock);
+    LIB_FUNCTION("2Z+PpY6CaJg", "libScePosix", 1, "libkernel", posix_pthread_mutex_unlock);
+    LIB_FUNCTION("ltCfaGr2JGE", "libScePosix", 1, "libkernel", posix_pthread_mutex_destroy);
+    LIB_FUNCTION("dQHWEsJtoE4", "libScePosix", 1, "libkernel", posix_pthread_mutexattr_init);
+    LIB_FUNCTION("mDmgMOGVUqg", "libScePosix", 1, "libkernel", posix_pthread_mutexattr_settype);
+    LIB_FUNCTION("5txKfcMUAok", "libScePosix", 1, "libkernel", posix_pthread_mutexattr_setprotocol);
+    LIB_FUNCTION("HF7lK46xzjY", "libScePosix", 1, "libkernel", posix_pthread_mutexattr_destroy);
+    LIB_FUNCTION("K-jXhbt2gn4", "libScePosix", 1, "libkernel", posix_pthread_mutex_trylock);
 
     // Posix-Kernel
-    LIB_FUNCTION("ttHNfU+qDBU", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_init);
-    LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_lock);
-    LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutex_unlock);
-    LIB_FUNCTION("dQHWEsJtoE4", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutexattr_init);
-    LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", 1, 1, posix_pthread_mutexattr_settype);
+    LIB_FUNCTION("ttHNfU+qDBU", "libkernel", 1, "libkernel", posix_pthread_mutex_init);
+    LIB_FUNCTION("7H0iTOciTLo", "libkernel", 1, "libkernel", posix_pthread_mutex_lock);
+    LIB_FUNCTION("2Z+PpY6CaJg", "libkernel", 1, "libkernel", posix_pthread_mutex_unlock);
+    LIB_FUNCTION("ltCfaGr2JGE", "libkernel", 1, "libkernel", posix_pthread_mutex_destroy);
+    LIB_FUNCTION("dQHWEsJtoE4", "libkernel", 1, "libkernel", posix_pthread_mutexattr_init);
+    LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", posix_pthread_mutexattr_settype);
+    LIB_FUNCTION("HF7lK46xzjY", "libkernel", 1, "libkernel", posix_pthread_mutexattr_destroy);
+    LIB_FUNCTION("K-jXhbt2gn4", "libkernel", 1, "libkernel", posix_pthread_mutex_trylock);
 
     // Orbis
-    LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", 1, 1, ORBIS(scePthreadMutexInit));
-    LIB_FUNCTION("2Of0f+3mhhE", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_mutex_destroy));
-    LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_mutexattr_init));
-    LIB_FUNCTION("smWEktiyyG0", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", ORBIS(scePthreadMutexInit));
+    LIB_FUNCTION("2Of0f+3mhhE", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutex_destroy));
+    LIB_FUNCTION("F8bUHwAG284", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutexattr_init));
+    LIB_FUNCTION("smWEktiyyG0", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_mutexattr_destroy));
-    LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("iMp8QpE+XO4", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_mutexattr_settype));
-    LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("1FGvU0i9saQ", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_mutexattr_setprotocol));
-    LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_mutex_lock));
-    LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_mutex_unlock));
-    LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_mutex_trylock));
-    LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel", 1, 1,
+    LIB_FUNCTION("9UK1vLZQft4", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutex_lock));
+    LIB_FUNCTION("tn3VlD0hG60", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutex_unlock));
+    LIB_FUNCTION("upoVrzMHFeE", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutex_trylock));
+    LIB_FUNCTION("IafI2PxcPnQ", "libkernel", 1, "libkernel",
                  ORBIS(posix_pthread_mutex_reltimedlock_np));
-    LIB_FUNCTION("qH1gXoq71RY", "libkernel", 1, "libkernel", 1, 1, ORBIS(posix_pthread_mutex_init));
-    LIB_FUNCTION("n2MMpvU8igI", "libkernel", 1, "libkernel", 1, 1,
-                 ORBIS(posix_pthread_mutexattr_init));
+    LIB_FUNCTION("qH1gXoq71RY", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutex_init));
+    LIB_FUNCTION("n2MMpvU8igI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_mutexattr_init));
 }
 
 } // namespace Libraries::Kernel

@@ -1,20 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <array>
 #include <half.hpp>
-
 #include "common/number_utils.h"
-#include "video_core/amdgpu/pixel_format.h"
-#include "video_core/amdgpu/types.h"
 
-#define UF11_EXPONENT_SHIFT 6
-#define UF10_EXPONENT_SHIFT 5
-
-#define RGB9E5_MANTISSA_BITS 9
-#define RGB9E5_EXP_BIAS 1
-
-#define F32_INFINITY 0x7f800000
+constexpr u32 UF11_EXPONENT_SHIFT = 6;
+constexpr u32 UF10_EXPONENT_SHIFT = 5;
+constexpr u32 RGB9E5_MANTISSA_BITS = 9;
+constexpr u32 RGB9E5_EXP_BIAS = 1;
+constexpr u32 F32_INFINITY = 0x7f800000;
 
 namespace NumberUtils {
 

@@ -51,7 +51,7 @@ void ZlibTaskThread(const std::stop_token& stop) {
             if (!task_queue_cv.wait(lock, stop, [&] { return !task_queue.empty(); })) {
                 break;
             }
-            task = task_queue.back();
+            task = task_queue.front();
             task_queue.pop();
         }
 
@@ -136,7 +136,7 @@ s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout) {
         } else {
             done_queue_cv.wait(lock, pred);
         }
-        *request_id = done_queue.back();
+        *request_id = done_queue.front();
         done_queue.pop();
     }
     return ORBIS_OK;
@@ -172,12 +172,12 @@ s32 PS4_SYSV_ABI sceZlibFinalize() {
     return ORBIS_OK;
 }
 
-void RegisterlibSceZlib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInitialize);
-    LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibFinalize);
-    LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibInflate);
-    LIB_FUNCTION("uB8VlDD4e0s", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibWaitForDone);
-    LIB_FUNCTION("2eDcGHC0YaM", "libSceZlib", 1, "libSceZlib", 1, 1, sceZlibGetResult);
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", sceZlibInitialize);
+    LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", sceZlibFinalize);
+    LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", sceZlibInflate);
+    LIB_FUNCTION("uB8VlDD4e0s", "libSceZlib", 1, "libSceZlib", sceZlibWaitForDone);
+    LIB_FUNCTION("2eDcGHC0YaM", "libSceZlib", 1, "libSceZlib", sceZlibGetResult);
 };
 
 } // namespace Libraries::Zlib

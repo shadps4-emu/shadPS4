@@ -7,6 +7,7 @@
 #include "common/bit_field.h"
 #include "common/enum.h"
 #include "common/types.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader::IR {
 
@@ -24,6 +25,7 @@ enum class FloatClassFunc : u32 {
 
     NaN = SignalingNan | QuietNan,
     Infinity = PositiveInfinity | NegativeInfinity,
+    Negative = NegativeInfinity | NegativeNormal | NegativeDenorm | NegativeZero,
     Finite = NegativeNormal | NegativeDenorm | NegativeZero | PositiveNormal | PositiveDenorm |
              PositiveZero,
 };
@@ -42,15 +44,20 @@ union TextureInstInfo {
     BitField<9, 1, u32> is_array;
     BitField<10, 1, u32> is_unnormalized;
     BitField<11, 1, u32> is_gather;
+    BitField<12, 1, u32> is_r128;
+    BitField<16, 16, u32> pc;
 };
 
 union BufferInstInfo {
     u32 raw;
     BitField<0, 1, u32> index_enable;
-    BitField<1, 1, u32> offset_enable;
+    BitField<1, 1, u32> voffset_enable;
     BitField<2, 12, u32> inst_offset;
     BitField<14, 1, u32> system_coherent;
     BitField<15, 1, u32> globally_coherent;
+    BitField<16, 1, u32> typed;
+    BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
+    BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
 };
 
 enum class ScalarReg : u32 {

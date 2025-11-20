@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-#include <boost/container/static_vector.hpp>
 #include "common/assert.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -34,23 +32,34 @@ namespace Shader::Gcn {
  * We take the reverse way, extract the original input semantics from these instructions.
  **/
 
+static bool IsTypedBufferLoad(const Gcn::GcnInst& inst) {
+    return inst.opcode == Opcode::TBUFFER_LOAD_FORMAT_X ||
+           inst.opcode == Opcode::TBUFFER_LOAD_FORMAT_XY ||
+           inst.opcode == Opcode::TBUFFER_LOAD_FORMAT_XYZ ||
+           inst.opcode == Opcode::TBUFFER_LOAD_FORMAT_XYZW;
+}
+
+const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base) {
+    const u32* code;
+    std::memcpy(&code, &info.user_data[sgpr_base], sizeof(code));
+    return code;
+}
+
 std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
     if (!info.has_fetch_shader) {
         return std::nullopt;
     }
-    const u32* code;
-    std::memcpy(&code, &info.user_data[info.fetch_shader_sgpr_base], sizeof(code));
 
+    const auto* code = GetFetchShaderCode(info, info.fetch_shader_sgpr_base);
     FetchShaderData data{.code = code};
     GcnCodeSlice code_slice(code, code + std::numeric_limits<u32>::max());
     GcnDecodeContext decoder;
 
     struct VsharpLoad {
         u32 dword_offset{};
-        s32 base_sgpr{};
-        s32 dst_reg{-1};
+        u32 base_sgpr{};
     };
-    boost::container::static_vector<VsharpLoad, 16> loads;
+    std::array<VsharpLoad, 104> loads{};
 
     u32 semantic_index = 0;
     while (!code_slice.atEnd()) {
@@ -62,7 +71,7 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
         }
 
         if (inst.inst_class == InstClass::ScalarMemRd) {
-            loads.emplace_back(inst.control.smrd.offset, inst.src[0].code * 2, inst.dst[0].code);
+            loads[inst.dst[0].code] = VsharpLoad{inst.control.smrd.offset, inst.src[0].code * 2};
             continue;
         }
 
@@ -84,24 +93,18 @@ std::optional<FetchShaderData> ParseFetchShader(const Shader::Info& info) {
         if (inst.inst_class == InstClass::VectorMemBufFmt) {
             // SRSRC is in units of 4 SPGRs while SBASE is in pairs of SGPRs
             const u32 base_sgpr = inst.src[2].code * 4;
-
-            // Find the load instruction that loaded the V# to the SPGR.
-            // This is so we can determine its index in the vertex table.
-            const auto it = std::ranges::find_if(
-                loads, [&](VsharpLoad& load) { return load.dst_reg == base_sgpr; });
-
             auto& attrib = data.attributes.emplace_back();
             attrib.semantic = semantic_index++;
             attrib.dest_vgpr = inst.src[1].code;
             attrib.num_elements = inst.control.mubuf.count;
-            attrib.sgpr_base = it->base_sgpr;
-            attrib.dword_offset = it->dword_offset;
-
-            // Store instance id rate
+            attrib.sgpr_base = loads[base_sgpr].base_sgpr;
+            attrib.dword_offset = loads[base_sgpr].dword_offset;
+            attrib.inst_offset = inst.control.mtbuf.offset;
             attrib.instance_data = inst.src[0].code;
-
-            // Mark load as used.
-            it->dst_reg = -1;
+            if (IsTypedBufferLoad(inst)) {
+                attrib.data_format = inst.control.mtbuf.dfmt;
+                attrib.num_format = inst.control.mtbuf.nfmt;
+            }
         }
     }
 

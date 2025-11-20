@@ -61,8 +61,9 @@ private:
  */
 class FileBackend {
 public:
-    explicit FileBackend(const std::filesystem::path& filename)
-        : file{filename, FS::FileAccessMode::Write, FS::FileType::TextFile} {}
+    explicit FileBackend(const std::filesystem::path& filename, bool should_append = false)
+        : file{filename, should_append ? FS::FileAccessMode::Append : FS::FileAccessMode::Create,
+               FS::FileType::TextFile} {}
 
     ~FileBackend() = default;
 
@@ -139,9 +140,15 @@ public:
         std::filesystem::create_directory(log_dir);
         Filter filter;
         filter.ParseFilterString(Config::getLogFilter());
-        instance = std::unique_ptr<Impl, decltype(&Deleter)>(new Impl(log_dir / LOG_FILE, filter),
-                                                             Deleter);
+        const auto& log_file_path = log_file.empty() ? LOG_FILE : log_file;
+        instance = std::unique_ptr<Impl, decltype(&Deleter)>(
+            new Impl(log_dir / log_file_path, filter), Deleter);
         initialization_in_progress_suppress_logging = false;
+    }
+
+    static void ResetInstance() {
+        initialization_in_progress_suppress_logging = true;
+        instance.reset();
     }
 
     static bool IsActive() {
@@ -154,6 +161,10 @@ public:
 
     static void Stop() {
         instance->StopBackendThread();
+    }
+
+    static void SetAppend() {
+        should_append = true;
     }
 
     Impl(const Impl&) = delete;
@@ -171,7 +182,13 @@ public:
     }
 
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
-                   const char* function, std::string message) {
+                   const char* function, const char* format, const fmt::format_args& args) {
+        if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
+            return;
+        }
+
+        const auto message = fmt::vformat(format, args);
+
         // Propagate important log messages to the profiler
         if (IsProfilerConnected()) {
             const auto& msg_str = fmt::format("[{}] {}", GetLogClassName(log_class), message);
@@ -188,10 +205,6 @@ public:
             default:
                 break;
             }
-        }
-
-        if (!filter.CheckMessage(log_class, log_level)) {
-            return;
         }
 
         using std::chrono::duration_cast;
@@ -217,7 +230,7 @@ public:
 
 private:
     Impl(const std::filesystem::path& file_backend_filename, const Filter& filter_)
-        : filter{filter_}, file_backend{file_backend_filename} {}
+        : filter{filter_}, file_backend{file_backend_filename, should_append} {}
 
     ~Impl() = default;
 
@@ -263,6 +276,7 @@ private:
     }
 
     static inline std::unique_ptr<Impl, decltype(&Deleter)> instance{nullptr, Deleter};
+    static inline bool should_append{false};
 
     Filter filter;
     DebuggerBackend debugger_backend{};
@@ -291,6 +305,11 @@ void Stop() {
     Impl::Stop();
 }
 
+void Denitializer() {
+    Impl::Stop();
+    Impl::ResetInstance();
+}
+
 void SetGlobalFilter(const Filter& filter) {
     Impl::Instance().SetGlobalFilter(filter);
 }
@@ -299,12 +318,16 @@ void SetColorConsoleBackendEnabled(bool enabled) {
     Impl::Instance().SetColorConsoleBackendEnabled(enabled);
 }
 
+void SetAppend() {
+    Impl::SetAppend();
+}
+
 void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
                        unsigned int line_num, const char* function, const char* format,
                        const fmt::format_args& args) {
     if (!initialization_in_progress_suppress_logging) [[likely]] {
-        Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function,
-                                   fmt::vformat(format, args));
+        Impl::Instance().PushEntry(log_class, log_level, filename, line_num, function, format,
+                                   args);
     }
 }
 } // namespace Common::Log

@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
 #include "common/assert.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/pattern_matching.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/runtime_info.h"
@@ -75,10 +78,12 @@ namespace Shader::Optimization {
  *
  * output_patch_stride and output_cp_stride are usually compile time constants in the gcn
  *
- * Hull shaders can probably also read output control points corresponding to other threads, like
- * shared memory (but we havent seen this yet).
- * ^ This is an UNREACHABLE for now. We may need to insert additional barriers if this happens.
- * They should also be able to read PatchConst values,
+ * Hull shaders can also read output control points corresponding to other threads.
+ * In HLSL style, this should only be possible in the Patch Constant function.
+ * TODO we may need to insert additional barriers if sync is free/more permissive
+ * on AMD LDS HW
+
+ * They should also be able to read output PatchConst values,
  * although not sure if this happens in practice.
  *
  * To determine which type of attribute (input, output, patchconst) we the check the users of
@@ -101,22 +106,22 @@ namespace Shader::Optimization {
  * layout (location = 0) in vec4 in_attrs[][NUM_INPUT_ATTRIBUTES];
  *
  * Here the NUM_INPUT_ATTRIBUTES is derived from the ls_stride member of the TessConstants V#.
- * We divide ls_stride (in bytes) by 16 to get the number of vec4 attributes.
- * For TES, the number of attributes comes from hs_cp_stride / 16.
+ * We take ALIGN_UP(ls_stride, 16) / 16 to get the number of vec4 attributes.
+ * For TES, NUM_INPUT_ATTRIBUTES is ALIGN_UP(hs_cp_stride, 16) / 16.
  * The first (outer) dimension is unsized but corresponds to the number of vertices in the hs input
  * patch (for Hull) or the hs output patch (for Domain).
  *
  * For input reads in TCS or TES, we emit SPIR-V like:
- * float value = in_attrs[addr / ls_stride][(addr % ls_stride) >> 4][(addr & 0xF) >> 2];
+ * float value = in_attrs[addr / ls_stride][(addr % ls_stride) >> 4][(addr % ls_stride) >> 2];
  *
  * For output writes, we assume the control point index is InvocationId, since high level languages
  * impose that restriction (although maybe it's technically possible on hardware). So SPIR-V looks
  * like this:
  * layout (location = 0) in vec4 in_attrs[][NUM_OUTPUT_ATTRIBUTES];
- * out_attrs[InvocationId][(addr % hs_cp_stride) >> 4][(addr & 0xF) >> 2] = value;
+ * out_attrs[InvocationId][(addr % hs_cp_stride) >> 4][(addr % hs_cp_stride) >> 2] = value;
  *
- * NUM_OUTPUT_ATTRIBUTES is derived by hs_cp_stride / 16, so it can link with the TES in_attrs
- * variable.
+ * NUM_OUTPUT_ATTRIBUTES is derived by ALIGN_UP(hs_cp_stride, 16) / 16, so it matches
+ * NUM_INPUT_ATTRIBUTES of the TES.
  *
  * Another challenge is the fact that the GCN shader needs to address attributes from LDS as a whole
  * which contains the attributes from many patches. On the other hand, higher level shading
@@ -225,10 +230,8 @@ private:
         switch (use.user->GetOpcode()) {
         case IR::Opcode::LoadSharedU32:
         case IR::Opcode::LoadSharedU64:
-        case IR::Opcode::LoadSharedU128:
         case IR::Opcode::WriteSharedU32:
-        case IR::Opcode::WriteSharedU64:
-        case IR::Opcode::WriteSharedU128: {
+        case IR::Opcode::WriteSharedU64: {
             u32 counter = inst->Flags<u32>();
             inst->SetFlags<u32>(counter + inc);
             // Stop here
@@ -237,12 +240,11 @@ private:
         case IR::Opcode::Phi: {
             struct PhiCounter {
                 u16 seq_num;
-                u8 unique_edge;
-                u8 counter;
+                u16 unique_edge;
             };
 
             PhiCounter count = inst->Flags<PhiCounter>();
-            ASSERT_MSG(count.counter == 0 || count.unique_edge == use.operand);
+            ASSERT_MSG(count.seq_num == 0 || count.unique_edge == use.operand);
             // the point of seq_num is to tell us if we've already traversed this
             // phi on the current walk. Alternatively we could keep a set of phi's
             // seen on the current walk. This is to handle phi cycles
@@ -251,13 +253,11 @@ private:
                 count.seq_num = seq_num;
                 // Mark the phi as having been traversed originally through this edge
                 count.unique_edge = use.operand;
-                count.counter = inc;
             } else if (count.seq_num < seq_num) {
                 count.seq_num = seq_num;
                 // For now, assume we are visiting this phi via the same edge
                 // as on other walks. If not, some dataflow analysis might be necessary
                 ASSERT(count.unique_edge == use.operand);
-                count.counter += inc;
             } else {
                 // count.seq_num == seq_num
                 // there's a cycle, and we've already been here on this walk
@@ -374,11 +374,27 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             case IR::Opcode::StoreBufferU32x2:
             case IR::Opcode::StoreBufferU32x3:
             case IR::Opcode::StoreBufferU32x4: {
-                const auto info = inst.Flags<IR::BufferInstInfo>();
-                if (!info.globally_coherent) {
+                IR::Value soffset = IR::GetBufferSOffsetArg(&inst);
+                if (!M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::TessFactorsBufferBase),
+                                       MatchIgnore())
+                         .Match(soffset)) {
                     break;
                 }
+
+                const auto info = inst.Flags<IR::BufferInstInfo>();
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+
+                IR::Value voffset;
+                bool success =
+                    M_COMPOSITECONSTRUCTU32X3(MatchU32(0), MatchImm(voffset), MatchIgnore())
+                        .Match(inst.Arg(IR::StoreBufferArgs::Address));
+                ASSERT_MSG(success, "unhandled pattern in tess factor store");
+
+                const u32 gcn_factor_idx = (info.inst_offset.Value() + voffset.U32()) >> 2;
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
+
+                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
+
                 const auto GetValue = [&](IR::Value data) -> IR::F32 {
                     if (auto* inst = data.TryInstRecursive();
                         inst && inst->GetOpcode() == IR::Opcode::BitCastU32F32) {
@@ -386,12 +402,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                     }
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
-                const u32 num_dwords = u32(opcode) - u32(IR::Opcode::StoreBufferU32) + 1;
-                IR::U32 index = IR::U32{inst.Arg(1)};
-                ASSERT(index.IsImmediate());
-                const u32 gcn_factor_idx = (info.inst_offset.Value() + index.U32()) >> 2;
 
-                const IR::Value data = inst.Arg(2);
                 auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,
@@ -435,14 +446,13 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             }
 
             case IR::Opcode::WriteSharedU32:
-            case IR::Opcode::WriteSharedU64:
-            case IR::Opcode::WriteSharedU128: {
+            case IR::Opcode::WriteSharedU64: {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
-                const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::WriteSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::WriteSharedU32 ? 1 : 2;
                 const IR::U32 addr{inst.Arg(0)};
-                const IR::U32 data{inst.Arg(1).Resolve()};
+                const IR::Value data = num_dwords == 2
+                                           ? ir.UnpackUint2x32(IR::U64{inst.Arg(1).Resolve()})
+                                           : inst.Arg(1).Resolve();
 
                 const auto SetOutput = [&](IR::U32 addr, IR::U32 value, AttributeRegion output_kind,
                                            u32 off_dw) {
@@ -470,25 +480,22 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
 
                 AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
                 if (num_dwords == 1) {
-                    SetOutput(addr, data, region, 0);
+                    SetOutput(addr, IR::U32{data}, region, 0);
                 } else {
                     for (auto i = 0; i < num_dwords; i++) {
-                        SetOutput(addr, IR::U32{data.Inst()->Arg(i)}, region, i);
+                        SetOutput(addr, IR::U32{ir.CompositeExtract(data, i)}, region, i);
                     }
                 }
                 inst.Invalidate();
                 break;
             }
 
-            case IR::Opcode::LoadSharedU32: {
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
+            case IR::Opcode::LoadSharedU32:
+            case IR::Opcode::LoadSharedU64: {
                 IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
                 const IR::U32 addr{inst.Arg(0)};
                 const AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
-                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32 ? 1 : 2;
                 ASSERT_MSG(region == AttributeRegion::InputCP ||
                                region == AttributeRegion::OutputCP,
                            "Unhandled read of patchconst attribute in hull shader");
@@ -506,7 +513,7 @@ void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                             ReadTessControlPointAttribute(addr, stride, ir, i, is_tcs_output_read);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;
@@ -562,14 +569,11 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
             IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
             const auto opcode = inst.GetOpcode();
             switch (inst.GetOpcode()) {
-            case IR::Opcode::LoadSharedU32: {
-            case IR::Opcode::LoadSharedU64:
-            case IR::Opcode::LoadSharedU128:
+            case IR::Opcode::LoadSharedU32:
+            case IR::Opcode::LoadSharedU64: {
                 const IR::U32 addr{inst.Arg(0)};
                 AttributeRegion region = GetAttributeRegionKind(&inst, info, runtime_info);
-                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32
-                                           ? 1
-                                           : (opcode == IR::Opcode::LoadSharedU64 ? 2 : 4);
+                const u32 num_dwords = opcode == IR::Opcode::LoadSharedU32 ? 1 : 2;
                 const auto GetInput = [&](IR::U32 addr, u32 off_dw) -> IR::F32 {
                     if (region == AttributeRegion::OutputCP) {
                         return ReadTessControlPointAttribute(
@@ -588,7 +592,7 @@ void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info) {
                         const IR::F32 component = GetInput(addr, i);
                         read_components.push_back(ir.BitCast<IR::U32>(component));
                     }
-                    attr_read = ir.CompositeConstruct(read_components);
+                    attr_read = ir.PackUint2x32(ir.CompositeConstruct(read_components));
                 }
                 inst.ReplaceUsesWithAndRemove(attr_read);
                 break;
@@ -611,10 +615,8 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                 switch (inst.GetOpcode()) {
                 case IR::Opcode::LoadSharedU32:
                 case IR::Opcode::LoadSharedU64:
-                case IR::Opcode::LoadSharedU128:
                 case IR::Opcode::WriteSharedU32:
-                case IR::Opcode::WriteSharedU64:
-                case IR::Opcode::WriteSharedU128: {
+                case IR::Opcode::WriteSharedU64: {
                     IR::Value addr = inst.Arg(0);
                     auto read_const_buffer = IR::BreadthFirstSearch(
                         addr, [](IR::Inst* maybe_tess_const) -> std::optional<IR::Inst*> {
@@ -748,6 +750,8 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
             }
         }
     }
+
+    ConstantPropagationPass(program.post_order_blocks);
 }
 
 } // namespace Shader::Optimization

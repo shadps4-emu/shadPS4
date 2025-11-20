@@ -40,28 +40,30 @@ namespace {
         switch (mode) {
         case FileAccessMode::Read:
             return L"rb";
-        case FileAccessMode::Write:
-            return L"wb";
         case FileAccessMode::Append:
             return L"ab";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return L"r+b";
         case FileAccessMode::ReadAppend:
             return L"a+b";
+        case FileAccessMode::Create:
+            return L"wb";
         }
         break;
     case FileType::TextFile:
         switch (mode) {
         case FileAccessMode::Read:
             return L"r";
-        case FileAccessMode::Write:
-            return L"w";
         case FileAccessMode::Append:
             return L"a";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return L"r+";
         case FileAccessMode::ReadAppend:
             return L"a+";
+        case FileAccessMode::Create:
+            return L"w";
         }
         break;
     }
@@ -91,28 +93,30 @@ namespace {
         switch (mode) {
         case FileAccessMode::Read:
             return "rb";
-        case FileAccessMode::Write:
-            return "wb";
         case FileAccessMode::Append:
             return "ab";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return "r+b";
         case FileAccessMode::ReadAppend:
             return "a+b";
+        case FileAccessMode::Create:
+            return "wb";
         }
         break;
     case FileType::TextFile:
         switch (mode) {
         case FileAccessMode::Read:
             return "r";
-        case FileAccessMode::Write:
-            return "w";
         case FileAccessMode::Append:
             return "a";
+        case FileAccessMode::Write:
         case FileAccessMode::ReadWrite:
             return "r+";
         case FileAccessMode::ReadAppend:
             return "a+";
+        case FileAccessMode::Create:
+            return "w";
         }
         break;
     }
@@ -125,12 +129,13 @@ namespace {
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:
-    default:
         return SEEK_SET;
     case SeekOrigin::CurrentPosition:
         return SEEK_CUR;
     case SeekOrigin::End:
         return SEEK_END;
+    default:
+        UNREACHABLE_MSG("Impossible SeekOrigin {}", static_cast<u32>(origin));
     }
 }
 
@@ -375,20 +380,6 @@ u64 IOFile::GetSize() const {
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
     if (!IsOpen()) {
         return false;
-    }
-
-    if (False(file_access_mode & (FileAccessMode::Write | FileAccessMode::Append))) {
-        u64 size = GetSize();
-        if (origin == SeekOrigin::CurrentPosition && Tell() + offset > size) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        } else if (origin == SeekOrigin::SetOrigin && (u64)offset > size) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        } else if (origin == SeekOrigin::End && offset > 0) {
-            LOG_ERROR(Common_Filesystem, "Seeking past the end of the file");
-            return false;
-        }
     }
 
     errno = 0;

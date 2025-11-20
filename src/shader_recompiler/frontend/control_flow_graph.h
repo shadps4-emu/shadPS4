@@ -23,7 +23,6 @@ using Hook =
 enum class EndClass {
     Branch, ///< Block ends with a (un)conditional branch.
     Exit,   ///< Block ends with an exit instruction.
-    Kill,   ///< Block ends with a discard instruction.
 };
 
 /// A block represents a linear range of instructions.
@@ -38,7 +37,6 @@ struct Block : Hook {
     u32 end;
     u32 begin_index;
     u32 end_index;
-    u32 num_predecessors{};
     IR::Condition cond{};
     GcnInst end_inst{};
     EndClass end_class{};
@@ -57,9 +55,9 @@ public:
 
 private:
     void EmitLabels();
-    void EmitDivergenceLabels();
     void EmitBlocks();
     void LinkBlocks();
+    void SplitDivergenceScopes();
 
     void AddLabel(Label address) {
         const auto it = std::ranges::find(labels, address);

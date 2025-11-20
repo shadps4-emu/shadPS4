@@ -32,13 +32,12 @@ enum class MemoryUsage {
 };
 
 constexpr vk::BufferUsageFlags ReadFlags =
-    vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformTexelBuffer |
-    vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eIndexBuffer |
-    vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eIndirectBuffer;
+    vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eUniformBuffer |
+    vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer |
+    vk::BufferUsageFlagBits::eIndirectBuffer;
 
-constexpr vk::BufferUsageFlags AllFlags = ReadFlags | vk::BufferUsageFlagBits::eTransferDst |
-                                          vk::BufferUsageFlagBits::eStorageTexelBuffer |
-                                          vk::BufferUsageFlagBits::eStorageBuffer;
+constexpr vk::BufferUsageFlags AllFlags =
+    ReadFlags | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer;
 
 struct UniqueBuffer {
     explicit UniqueBuffer(vk::Device device, VmaAllocator allocator);
@@ -69,6 +68,7 @@ struct UniqueBuffer {
     VmaAllocator allocator;
     VmaAllocation allocation;
     vk::Buffer buffer{};
+    vk::DeviceAddress bda_addr = 0;
 };
 
 class Buffer {
@@ -83,52 +83,57 @@ public:
     Buffer& operator=(Buffer&&) = default;
     Buffer(Buffer&&) = default;
 
-    vk::BufferView View(u32 offset, u32 size, bool is_written, AmdGpu::DataFormat dfmt,
-                        AmdGpu::NumberFormat nfmt);
-
-    /// Increases the likeliness of this being a stream buffer
     void IncreaseStreamScore(int score) noexcept {
         stream_score += score;
     }
 
-    /// Returns the likeliness of this being a stream buffer
     [[nodiscard]] int StreamScore() const noexcept {
         return stream_score;
     }
 
-    /// Returns true when vaddr -> vaddr+size is fully contained in the buffer
     [[nodiscard]] bool IsInBounds(VAddr addr, u64 size) const noexcept {
         return addr >= cpu_addr && addr + size <= cpu_addr + SizeBytes();
     }
 
-    /// Returns the base CPU address of the buffer
     [[nodiscard]] VAddr CpuAddr() const noexcept {
         return cpu_addr;
     }
 
-    /// Returns the offset relative to the given CPU address
-    [[nodiscard]] u32 Offset(VAddr other_cpu_addr) const noexcept {
-        return static_cast<u32>(other_cpu_addr - cpu_addr);
+    [[nodiscard]] u64 Offset(VAddr other_cpu_addr) const noexcept {
+        return other_cpu_addr - cpu_addr;
     }
 
     size_t SizeBytes() const {
         return size_bytes;
     }
 
+    void SetLRUId(u64 id) noexcept {
+        lru_id = id;
+    }
+
+    u64 LRUId() const noexcept {
+        return lru_id;
+    }
+
     vk::Buffer Handle() const noexcept {
         return buffer;
     }
 
-    std::optional<vk::BufferMemoryBarrier2> GetBarrier(
-        vk::Flags<vk::AccessFlagBits2> dst_acess_mask, vk::PipelineStageFlagBits2 dst_stage,
-        u32 offset = 0) {
+    vk::DeviceAddress BufferDeviceAddress() const noexcept {
+        ASSERT_MSG(buffer.bda_addr != 0, "Can't get BDA from a non BDA buffer");
+        return buffer.bda_addr;
+    }
+
+    std::optional<vk::BufferMemoryBarrier2> GetBarrier(vk::AccessFlags2 dst_acess_mask,
+                                                       vk::PipelineStageFlagBits2 dst_stage,
+                                                       u32 offset = 0) {
         if (dst_acess_mask == access_mask && stage == dst_stage) {
             return {};
         }
 
         DEBUG_ASSERT(offset < size_bytes);
 
-        auto barrier = vk::BufferMemoryBarrier2{
+        const auto barrier = vk::BufferMemoryBarrier2{
             .srcStageMask = stage,
             .srcAccessMask = access_mask,
             .dstStageMask = dst_stage,
@@ -142,6 +147,8 @@ public:
         return barrier;
     }
 
+    void Fill(u64 offset, u32 num_bytes, u32 value);
+
 public:
     VAddr cpu_addr = 0;
     bool is_picked{};
@@ -149,6 +156,7 @@ public:
     bool is_deleted{};
     int stream_score = 0;
     size_t size_bytes = 0;
+    u64 lru_id = 0;
     std::span<u8> mapped_data;
     const Vulkan::Instance* instance;
     Vulkan::Scheduler* scheduler;
@@ -166,21 +174,17 @@ public:
                           MemoryUsage usage, u64 size_bytes_);
 
     /// Reserves a region of memory from the stream buffer.
-    std::pair<u8*, u64> Map(u64 size, u64 alignment = 0);
+    std::pair<u8*, u64> Map(u64 size, u64 alignment = 0, bool allow_wait = true);
 
     /// Ensures that reserved bytes of memory are available to the GPU.
     void Commit();
 
     /// Maps and commits a memory region with user provided data
-    u64 Copy(VAddr src, size_t size, size_t alignment = 0) {
+    u64 Copy(auto src, size_t size, size_t alignment = 0) {
         const auto [data, offset] = Map(size, alignment);
         std::memcpy(data, reinterpret_cast<const void*>(src), size);
         Commit();
         return offset;
-    }
-
-    u64 GetFreeSize() const {
-        return size_bytes - offset - mapped_size;
     }
 
 private:
@@ -193,7 +197,7 @@ private:
     void ReserveWatches(std::vector<Watch>& watches, std::size_t grow_size);
 
     /// Waits pending watches until requested upper bound.
-    void WaitPendingOperations(u64 requested_upper_bound);
+    bool WaitPendingOperations(u64 requested_upper_bound, bool allow_wait);
 
 private:
     u64 offset{};

@@ -3,7 +3,12 @@
 
 #pragma once
 
+#include <string>
+
 namespace Common {
+
+extern const char g_version[];
+extern const bool g_is_release;
 
 extern const char g_scm_rev[];
 extern const char g_scm_branch[];
@@ -11,5 +16,7 @@ extern const char g_scm_desc[];
 extern const char g_scm_remote_name[];
 extern const char g_scm_remote_url[];
 extern const char g_scm_date[];
+
+const std::string GetRemoteNameFromLink();
 
 } // namespace Common

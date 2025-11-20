@@ -60,8 +60,8 @@ enum class Attribute : u64 {
     // System values
     ClipDistance = 64,
     CullDistance = 65,
-    RenderTargetId = 66,
-    ViewportId = 67,
+    RenderTargetIndex = 66,
+    ViewportIndex = 67,
     VertexId = 68,
     PrimitiveId = 69,
     InstanceId = 70,
@@ -69,16 +69,28 @@ enum class Attribute : u64 {
     SampleIndex = 72,
     GlobalInvocationId = 73,
     WorkgroupId = 74,
-    LocalInvocationId = 75,
-    LocalInvocationIndex = 76,
-    FragCoord = 77,
-    InstanceId0 = 78,  // step rate 0
-    InstanceId1 = 79,  // step rate 1
-    InvocationId = 80, // TCS id in output patch and instanced geometry shader id
-    PatchVertices = 81,
-    TessellationEvaluationPointU = 82,
-    TessellationEvaluationPointV = 83,
-    PackedHullInvocationInfo = 84, // contains patch id within the VGT and invocation ID
+    WorkgroupIndex = 75,
+    LocalInvocationId = 76,
+    LocalInvocationIndex = 77,
+    FragCoord = 78,
+    BaryCoordNoPersp = 79,
+    BaryCoordNoPerspCentroid = 80,
+    BaryCoordNoPerspSample = 81,
+    BaryCoordSmooth = 82,
+    BaryCoordSmoothCentroid = 83,
+    BaryCoordSmoothSample = 84,
+    BaryCoordPullModel = 85,
+    InvocationId = 86, // TCS id in output patch and instanced geometry shader id
+    PatchVertices = 87,
+    TessellationEvaluationPointU = 88,
+    TessellationEvaluationPointV = 89,
+    PackedHullInvocationInfo = 90, // contains patch id within the VGT and invocation ID
+    OffChipLdsBase = 91,
+    TessFactorsBufferBase = 92,
+    PointSize = 93,
+    StencilRef = 94,
+    SampleMask = 95,
+    PackedAncillary = 96,
     Max,
 };
 
@@ -101,6 +113,11 @@ constexpr bool IsParam(Attribute attribute) noexcept {
 
 constexpr bool IsMrt(Attribute attribute) noexcept {
     return attribute >= Attribute::RenderTarget0 && attribute <= Attribute::RenderTarget7;
+}
+
+constexpr bool IsBarycentricCoord(Attribute attribute) noexcept {
+    return attribute >= Attribute::BaryCoordNoPersp &&
+           attribute <= Attribute::BaryCoordSmoothSample;
 }
 
 [[nodiscard]] std::string NameOf(Attribute attribute);

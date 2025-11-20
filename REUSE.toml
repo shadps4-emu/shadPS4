@@ -3,7 +3,12 @@ version = 1
 [[annotations]]
 path = [
     "REUSE.toml",
+    "crowdin.yml",
     "CMakeSettings.json",
+    "CMakeDarwinPresets.json",
+    "CMakeLinuxPresets.json",
+    "CMakeWindowsPresets.json",
+    "CMakePresets.json",
     ".github/FUNDING.yml",
     ".github/shadps4.png",
     ".gitmodules",
@@ -17,12 +22,17 @@ path = [
     "documents/Screenshots/Linux/*",
     "externals/MoltenVK/MoltenVK_icd.json",
     "scripts/ps4_names.txt",
+    "src/images/bronze.png",
+    "src/images/gold.png",
+    "src/images/platinum.png",
+    "src/images/silver.png",
     "src/images/about_icon.png",
     "src/images/controller_icon.png",
     "src/images/discord.png",
     "src/images/dump_icon.png",
     "src/images/exit_icon.png",
-    "src/images/file_icon.png",
+    "src/images/favorite_icon.png",
+    "src/images/trophy_icon.png",
     "src/images/flag_china.png",
     "src/images/flag_eu.png",
     "src/images/flag_jp.png",
@@ -32,25 +42,38 @@ path = [
     "src/images/folder_icon.png",
     "src/images/github.png",
     "src/images/grid_icon.png",
+    "src/images/keyboard_icon.png",
     "src/images/iconsize_icon.png",
+    "src/images/KBM.png",
     "src/images/ko-fi.png",
     "src/images/list_icon.png",
     "src/images/list_mode_icon.png",
     "src/images/pause_icon.png",
     "src/images/play_icon.png",
     "src/images/ps4_controller.png",
-    "src/images/refresh_icon.png",
+    "src/images/restart_game_icon.png",
+    "src/images/refreshlist_icon.png",
     "src/images/settings_icon.png",
+    "src/images/fullscreen_icon.png",
     "src/images/stop_icon.png",
     "src/images/utils_icon.png",
     "src/images/shadPS4.icns",
     "src/images/shadps4.ico",
+    "src/images/shadps4.png",
     "src/images/net.shadps4.shadPS4.svg",
     "src/images/themes_icon.png",
     "src/images/update_icon.png",
     "src/images/youtube.png",
     "src/images/website.png",
-    "src/shadps4.qrc",
+    "src/images/discord.svg",
+    "src/images/github.svg",
+    "src/images/ko-fi.svg",
+    "src/images/shadps4.svg",
+    "src/images/website.svg",
+    "src/images/youtube.svg",
+    "src/images/trophy.wav",
+    "src/images/hotkey.png",
+    "src/images/game_settings.png",
     "src/shadps4.rc",
 ]
 precedence = "aggregate"
@@ -98,3 +121,12 @@ path = "externals/gcn/include/**"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
 
+[[annotations]]
+path = "cmake/CMakeRC.cmake"
+SPDX-FileCopyrightText = "Copyright (c) 2017 vector-of-bool <vectorofbool@gmail.com>"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "src/video_core/host_shaders/fsr/*"
+SPDX-FileCopyrightText = "Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved."
+SPDX-License-Identifier = "MIT"

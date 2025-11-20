@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -67,7 +68,11 @@ class ElfInfo {
     std::string app_ver{};
     u32 firmware_ver = 0;
     u32 raw_firmware_ver = 0;
+    u32 sdk_ver = 0;
     PSFAttributes psf_attributes{};
+
+    std::filesystem::path splash_path{};
+    std::filesystem::path game_folder{};
 
 public:
     static constexpr u32 FW_15 = 0x1500000;
@@ -81,6 +86,7 @@ public:
     static constexpr u32 FW_45 = 0x4500000;
     static constexpr u32 FW_50 = 0x5000000;
     static constexpr u32 FW_55 = 0x5500000;
+    static constexpr u32 FW_60 = 0x6000000;
     static constexpr u32 FW_80 = 0x8000000;
 
     static ElfInfo& Instance() {
@@ -112,9 +118,22 @@ public:
         return raw_firmware_ver;
     }
 
+    [[nodiscard]] u32 CompiledSdkVer() const {
+        ASSERT(initialized);
+        return sdk_ver;
+    }
+
     [[nodiscard]] const PSFAttributes& GetPSFAttributes() const {
         ASSERT(initialized);
         return psf_attributes;
+    }
+
+    [[nodiscard]] const std::filesystem::path& GetSplashPath() const {
+        return splash_path;
+    }
+
+    [[nodiscard]] const std::filesystem::path& GetGameFolder() const {
+        return game_folder;
     }
 };
 

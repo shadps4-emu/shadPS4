@@ -3,10 +3,11 @@
 
 #pragma once
 
+#include <string>
+
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 #include "input/controller.h"
-#include "string"
 
 struct SDL_Window;
 struct SDL_Gamepad;
@@ -25,10 +26,8 @@ public:
     State ReadState() override;
 
 private:
-    SDL_Gamepad* m_gamepad = nullptr;
-
-    float m_gyro_poll_rate{};
-    float m_accel_poll_rate{};
+    float m_gyro_poll_rate = 0.0f;
+    float m_accel_poll_rate = 0.0f;
 };
 
 } // namespace Input

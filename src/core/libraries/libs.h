@@ -3,40 +3,31 @@
 
 #pragma once
 
-#include <functional>
-
-#include "common/logging/log.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
+#include "core/tls.h"
 
-#define W(foo) foo
-
-#define LIB_FUNCTION(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)  \
+#define LIB_FUNCTION(nid, lib, libversion, mod, function)                                          \
     {                                                                                              \
         Core::Loader::SymbolResolver sr{};                                                         \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
         sr.module = mod;                                                                           \
-        sr.module_version_major = moduleVersionMajor;                                              \
-        sr.module_version_minor = moduleVersionMinor;                                              \
         sr.type = Core::Loader::SymbolType::Function;                                              \
-        auto func = reinterpret_cast<u64>(function);                                               \
+        auto func = reinterpret_cast<u64>(HOST_CALL(function));                                    \
         sym->AddSymbol(sr, func);                                                                  \
     }
 
-#define LIB_OBJ(nid, lib, libversion, mod, moduleVersionMajor, moduleVersionMinor, function)       \
+#define LIB_OBJ(nid, lib, libversion, mod, obj)                                                    \
     {                                                                                              \
         Core::Loader::SymbolResolver sr{};                                                         \
         sr.name = nid;                                                                             \
         sr.library = lib;                                                                          \
         sr.library_version = libversion;                                                           \
         sr.module = mod;                                                                           \
-        sr.module_version_major = moduleVersionMajor;                                              \
-        sr.module_version_minor = moduleVersionMinor;                                              \
         sr.type = Core::Loader::SymbolType::Object;                                                \
-        auto func = reinterpret_cast<u64>(function);                                               \
-        sym->AddSymbol(sr, func);                                                                  \
+        sym->AddSymbol(sr, reinterpret_cast<u64>(obj));                                            \
     }
 
 namespace Libraries {

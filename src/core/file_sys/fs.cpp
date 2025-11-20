@@ -1,14 +1,16 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
 #include "common/config.h"
 #include "common/string_util.h"
-#include "core/devices/logger.h"
-#include "core/devices/nop_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
+
+bool MntPoints::ignore_game_patches = false;
 
 std::string RemoveTrailingSlashes(const std::string& path) {
     // Remove trailing slashes to make comparisons simpler.
@@ -70,10 +72,14 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     std::filesystem::path host_path = mount->host_path / rel_path;
     std::filesystem::path patch_path = mount->host_path;
     patch_path += "-UPDATE";
+    if (!std::filesystem::exists(patch_path)) {
+        patch_path = mount->host_path;
+        patch_path += "-patch";
+    }
     patch_path /= rel_path;
 
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && std::filesystem::exists(patch_path)) {
+        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
         return patch_path;
     }
 
@@ -133,7 +139,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path) {
+    if (!force_base_path && !ignore_game_patches) {
         if (const auto path = search(patch_path)) {
             return *path;
         }
@@ -154,6 +160,10 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
     const auto patch_path = GetHostPath(guest_directory, nullptr, false);
     // Only need to consider patch path if it exists and does not resolve to the same as base.
     const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
+
+    // Prepend entries for . and .., as both are treated as files on PS4.
+    callback(base_path / ".", false);
+    callback(base_path / "..", false);
 
     // Pass 1: Any files that existed in the base directory, using patch directory if needed.
     if (std::filesystem::exists(base_path)) {
@@ -211,6 +221,42 @@ File* HandleTable::GetFile(int d) {
         return nullptr;
     }
     return m_files.at(d);
+}
+
+File* HandleTable::GetSocket(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Socket) {
+        return nullptr;
+    }
+    return file;
+}
+
+File* HandleTable::GetEpoll(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Epoll) {
+        return nullptr;
+    }
+    return file;
+}
+
+File* HandleTable::GetResolver(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || d >= m_files.size()) {
+        return nullptr;
+    }
+    auto file = m_files.at(d);
+    if (file->type != Core::FileSys::FileType::Resolver) {
+        return nullptr;
+    }
+    return file;
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {

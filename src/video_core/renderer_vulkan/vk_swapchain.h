@@ -82,9 +82,22 @@ public:
         return present_ready[image_index];
     }
 
+    bool HasHDR() const {
+        return supports_hdr;
+    }
+
+    void SetHDR(bool hdr);
+
+    bool GetHDR() const {
+        return needs_hdr;
+    }
+
 private:
     /// Selects the best available swapchain image format
     void FindPresentFormat();
+
+    /// Selects the best available present mode
+    void FindPresentMode();
 
     /// Sets the surface properties according to device capabilities
     void SetSurfaceProperties();
@@ -100,10 +113,12 @@ private:
 
 private:
     const Instance& instance;
+    const Frontend::WindowSDL& window;
     vk::SwapchainKHR swapchain{};
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
     vk::Format view_format;
+    vk::PresentModeKHR present_mode;
     vk::Extent2D extent;
     vk::SurfaceTransformFlagBitsKHR transform;
     vk::CompositeAlphaFlagBitsKHR composite_alpha;
@@ -117,6 +132,8 @@ private:
     u32 image_index = 0;
     u32 frame_index = 0;
     bool needs_recreation = true;
+    bool needs_hdr = false;    // The game requested HDR swapchain
+    bool supports_hdr = false; // SC supports HDR output
 };
 
 } // namespace Vulkan

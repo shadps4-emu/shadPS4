@@ -73,8 +73,10 @@ struct OrbisVideodec2OutputInfo {
     u32 frameHeight;
     void* frameBuffer;
     u64 frameBufferSize;
+    u32 frameFormat;
+    u32 framePitchInBytes;
 };
-static_assert(sizeof(OrbisVideodec2OutputInfo) == 0x30);
+static_assert(sizeof(OrbisVideodec2OutputInfo) == 0x38);
 
 struct OrbisVideodec2FrameBuffer {
     u64 thisSize;
@@ -135,5 +137,5 @@ s32 PS4_SYSV_ABI sceVideodec2Reset(OrbisVideodec2Decoder decoder);
 s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outputInfo,
                                             void* p1stPictureInfo, void* p2ndPictureInfo);
 
-void RegisterlibSceVdec2(Core::Loader::SymbolsResolver* sym);
+void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Vdec2

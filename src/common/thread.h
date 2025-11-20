@@ -25,6 +25,9 @@ void SetCurrentThreadName(const char* name);
 
 void SetThreadName(void* thread, const char* name);
 
+bool AccurateSleep(std::chrono::nanoseconds duration, std::chrono::nanoseconds* remaining,
+                   bool interruptible);
+
 class AccurateTimer {
     std::chrono::nanoseconds target_interval{};
     std::chrono::nanoseconds total_wait{};
