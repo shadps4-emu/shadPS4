@@ -4,8 +4,8 @@
 #include <string>
 
 #include "common/alignment.h"
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
+#include "core/libraries/kernel/posix_error.h"
 
 // PFS is a bit different from regular dirents, see comments below
 // Although it's pretty simple, every tested game (sample size: 1) reads it exclusively with

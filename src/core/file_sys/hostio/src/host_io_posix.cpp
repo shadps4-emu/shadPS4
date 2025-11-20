@@ -18,6 +18,7 @@
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 #include "host_io_base.h"
+#include "host_io_linux2bsd.h"
 
 namespace HostIODriver {
 
@@ -259,6 +260,6 @@ s32 HostIO_POSIX::FChmod(const s32 fd, u16 mode) {
     return 0 == status ? status : -errno;
 }
 
-// s32 HostIO_POSIX::GetDents(void* buf, u32 count, s64* basep) { return -QUASI_ENOSYS; }
+// s32 HostIO_POSIX::GetDents(void* buf, u32 count, s64* basep) { return -POSIX_ENOSYS; }
 
 } // namespace HostIODriver

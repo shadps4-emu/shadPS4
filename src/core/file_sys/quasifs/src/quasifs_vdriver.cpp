@@ -4,7 +4,6 @@
 
 #include "common/logging/log.h"
 
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
@@ -12,6 +11,7 @@
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
 
@@ -21,9 +21,9 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     int resolve_status = qfs.Resolve(path, res);
 
     // enoent on last element in the path is good
-    if (-QUASI_ENOENT == resolve_status) {
+    if (-POSIX_ENOENT == resolve_status) {
         if (nullptr == res.parent)
-            return -QUASI_ENOENT;
+            return -POSIX_ENOENT;
     } else if (0 != resolve_status)
         return resolve_status;
 
@@ -41,26 +41,26 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
     //
 
     if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     // if it doesn't exist, check the parent
     inode_ptr checked_node = nullptr == res.node ? parent_node : res.node;
 
     if ((request_read && !checked_node->CanRead()) || (request_write && !checked_node->CanWrite()))
-        return -QUASI_EACCES;
+        return -POSIX_EACCES;
 
     if ((request_write || request_append) && qfs.IsPartitionRO(part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     if (flags & QUASI_O_DIRECTORY && flags & QUASI_O_CREAT)
-        return -QUASI_ENOTDIR;
+        return -POSIX_ENOTDIR;
 
     // O_TRUNC | O_RDONLY - throw einval but touch a file
     // TODO: find out what happens when can't create file before throwing einval
     if ((flags & (QUASI_O_TRUNC | QUASI_O_WRONLY | QUASI_O_RDWR)) == QUASI_O_TRUNC) {
         if (int status = this->Close(this->Creat(path, mode)); status != 0)
             return status;
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
     }
 
     //
@@ -124,11 +124,11 @@ s32 QFS::OperationImpl::Creat(const fs::path& path, u16 mode) {
 
 s32 QFS::OperationImpl::Close(s32 fd) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (fd <= 2)
         LOG_ERROR(Kernel_Fs, "Closing std stream, this will have consequences fd={}", fd);
@@ -164,16 +164,16 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     // source may not exist and can point wherever it wants, so we skip checks for it
 
     if (0 == status_where)
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
     // destination parent directory must exist though
     if (0 != status_where && nullptr == dst_res.parent)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     partition_ptr src_part = src_res.mountpoint;
     partition_ptr dst_part = dst_res.mountpoint;
 
     if (qfs.IsPartitionRO(dst_part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     bool host_used = false;
     int hio_status = 0;
@@ -184,7 +184,7 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     if (src_part->IsHostMounted() && dst_part->IsHostMounted()) {
         // if target partition doesn't exist or is not mounted, we can'tqfs.Resolve host path
         if (nullptr == src_part)
-            return -QUASI_ENOENT;
+            return -POSIX_ENOENT;
 
         fs::path host_path_src{};
         fs::path host_path_dst{};
@@ -203,7 +203,7 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     } else if (dst_part->IsHostMounted() ^ src_part->IsHostMounted()) {
         LOG_ERROR(Kernel_Fs,
                   "Symlinks can be only created on the same type of partition (virtual/host)");
-        return -QUASI_ENOSYS;
+        return -POSIX_ENOSYS;
     }
 
     {
@@ -230,11 +230,11 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     if (0 != status_what)
         return status_what;
     if (0 == status_where)
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
 
     // cross-partition linking is not supported
     if (src_res.mountpoint != dst_res.mountpoint)
-        return -QUASI_EXDEV;
+        return -POSIX_EXDEV;
 
     partition_ptr src_part = src_res.mountpoint;
     partition_ptr dst_part = dst_res.mountpoint;
@@ -242,11 +242,11 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
     if (src_part != dst_part) {
         LOG_ERROR(Kernel_Fs, "Hard links can only be created within one partition");
         // I think this is the right error
-        return -QUASI_ENOSYS;
+        return -POSIX_ENOSYS;
     }
 
     if (qfs.IsPartitionRO(dst_part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     bool host_used = false;
     int hio_status = 0;
@@ -298,17 +298,17 @@ s32 QFS::OperationImpl::Unlink(const fs::path& path) {
         return resolve_status;
 
     if (!res.node->is_dir())
-        return -QUASI_ENOTDIR;
+        return -POSIX_ENOTDIR;
 
     partition_ptr part = res.mountpoint;
     if (qfs.IsPartitionRO(part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     dir_ptr parent = std::static_pointer_cast<Directory>(res.node);
     inode_ptr target = parent->lookup(leaf);
 
     if (nullptr == target)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     // fix upqfs.Resolve result for VIO
     res.parent = parent;
@@ -348,14 +348,14 @@ s32 QFS::OperationImpl::Unlink(const fs::path& path) {
 
 s32 QFS::OperationImpl::Flush(const s32 fd) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -385,11 +385,11 @@ s32 QFS::OperationImpl::Flush(const s32 fd) {
 
 s32 QFS::OperationImpl::FSync(const s32 fd) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -426,7 +426,7 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
 
     partition_ptr part = res.mountpoint;
     if (qfs.IsPartitionRO(part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     bool host_used = false;
     int hio_status = 0;
@@ -459,14 +459,14 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
 
 s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->write)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     // EROFS is guarded by Open()
 
@@ -498,11 +498,11 @@ s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
 
 s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -546,14 +546,14 @@ void UpdateStatFromHost(Libraries::Kernel::OrbisKernelStat* vfs,
 
 s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -583,14 +583,14 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
 
 s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -620,14 +620,14 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
 
 s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -658,14 +658,14 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec*
 s64 QFS::OperationImpl::PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
                                s64 offset) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -695,14 +695,14 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec
 
 s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->write)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -732,14 +732,14 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
 
 s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->write)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -770,14 +770,14 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
 s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
                                u32 iovcnt) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->write)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -808,14 +808,14 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
 s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
                                 u32 iovcnt, s64 offset) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->write)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     bool host_used = false;
     int hio_status = 0;
@@ -848,18 +848,18 @@ s32 QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
     int resolve_status = qfs.Resolve(path, res);
 
     if (0 == resolve_status)
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
 
-    if (-QUASI_ENOENT == resolve_status) {
+    if (-POSIX_ENOENT == resolve_status) {
         if (nullptr == res.parent)
-            return -QUASI_ENOENT;
+            return -POSIX_ENOENT;
     } else if (0 != resolve_status)
         return resolve_status;
 
     partition_ptr part = res.mountpoint;
 
     if (qfs.IsPartitionRO(part))
-        return -QUASI_EROFS;
+        return -POSIX_EROFS;
 
     bool host_used = false;
     int hio_status = 0;
@@ -949,11 +949,11 @@ s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
 
 s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     // too short to justify a separate block
     std::lock_guard<std::mutex> lock(c_mutex);
@@ -984,14 +984,14 @@ s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
 
 s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     // too short to justify a separate block
     std::lock_guard<std::mutex> lock(c_mutex);
@@ -1004,14 +1004,14 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
 
 s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
     if (fd < 0)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     fd_handle_ptr handle = qfs.GetHandle(fd);
     if (nullptr == handle)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     if (!handle->read)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     // too short to justify a separate block
     std::lock_guard<std::mutex> lock(c_mutex);

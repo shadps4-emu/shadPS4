@@ -9,8 +9,8 @@
 #include "common/types.h"
 #include "common/va_ctx.h"
 #include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/posix_error.h"
 
-#include "quasi_errno.h"
 #include "quasi_sys_stat.h"
 #include "quasi_types.h"
 
@@ -39,15 +39,15 @@ public:
     virtual ~Inode() = default;
 
     virtual s32 ioctl(u64 cmd, Common::VaCtx* args) {
-        return -QUASI_ENOTTY;
+        return -POSIX_ENOTTY;
     }
 
     virtual s64 pread(void* buf, u64 count, s64 offset) {
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
     }
 
     virtual s64 pwrite(const void* buf, u64 count, s64 offset) {
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
     }
 
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
@@ -84,15 +84,15 @@ public:
     }
 
     virtual s32 fsync() {
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
     }
 
     virtual s32 ftruncate(s64 length) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     }
 
     virtual s64 getdents(void* buf, u32 count, s64 offset, s64* basep) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     }
 
     // type helpers

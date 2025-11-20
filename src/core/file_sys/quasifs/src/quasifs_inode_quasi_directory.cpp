@@ -4,8 +4,8 @@
 #include <string>
 
 #include "common/alignment.h"
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
 
@@ -37,7 +37,7 @@ s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
 }
 
 s32 QuasiDirectory::ftruncate(s64 length) {
-    return -QUASI_EISDIR;
+    return -POSIX_EISDIR;
 }
 
 s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
@@ -77,9 +77,9 @@ inode_ptr QuasiDirectory::lookup(const std::string& name) {
 
 int QuasiDirectory::link(const std::string& name, inode_ptr child) {
     if (name.empty())
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
     if (entries.count(name))
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
     entries[name] = child;
     if (!child->is_link())
         child->st.st_nlink++;
@@ -90,7 +90,7 @@ int QuasiDirectory::link(const std::string& name, inode_ptr child) {
 int QuasiDirectory::unlink(const std::string& name) {
     auto it = entries.find(name);
     if (it == entries.end())
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     inode_ptr target = it->second;
     // if directory and not empty -> EBUSY or ENOTEMPTY
@@ -100,7 +100,7 @@ int QuasiDirectory::unlink(const std::string& name) {
         children.erase(std::remove(children.begin(), children.end(), "."), children.end());
         children.erase(std::remove(children.begin(), children.end(), ".."), children.end());
         if (!children.empty())
-            return -QUASI_ENOTEMPTY;
+            return -POSIX_ENOTEMPTY;
 
         // parent loses reference from subdir [ .. ]
         this->st.st_nlink--;

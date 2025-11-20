@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
+#include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
 
@@ -40,7 +40,7 @@ s64 VirtualFile::pwrite(const void* buf, size_t count, s64 offset) {
 
 s32 VirtualFile::ftruncate(s64 length) {
     if (length < 0)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     this->data.resize(length, 0);
     this->st.st_size = length;
     st.st_mtim.tv_sec = time(0);

@@ -11,7 +11,7 @@
 #define DEVICE_STUB()                                                                              \
     {                                                                                              \
         LOG_ERROR(Kernel_Fs, "(STUBBED) called");                                                  \
-        return -QUASI_ENOSYS;                                                                      \
+        return -POSIX_ENOSYS;                                                                      \
     }
 
 namespace Core::Devices {

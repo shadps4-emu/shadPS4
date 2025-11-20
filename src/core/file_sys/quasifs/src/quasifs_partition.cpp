@@ -2,13 +2,13 @@
 
 #include "common/logging/log.h"
 
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
 
@@ -39,17 +39,17 @@ fs::path Partition::SanitizePath(const fs::path& path) {
 
 int Partition::GetHostPath(fs::path& output_path, const fs::path& local_path) {
     if (this->host_root.empty())
-        return -QUASI_ENODEV;
+        return -POSIX_ENODEV;
 
     // must be relative to root, otherwise lvalue is overwritten
     fs::path host_path_target = (this->host_root / local_path.lexically_relative("/"));
     if (host_path_target.empty())
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     fs::path host_path_target_sanitized = SanitizePath(host_path_target);
     if (host_path_target_sanitized.empty()) {
         LOG_ERROR(Kernel_Fs, "Malicious path detected: {}", host_path_target.string());
-        return -QUASI_EACCES;
+        return -POSIX_EACCES;
     }
     output_path = host_path_target_sanitized;
 
@@ -88,13 +88,13 @@ inode_ptr Partition::GetInodeByFileno(fileno_t fileno) {
 // Debugging it is a royal PITA
 int Partition::Resolve(fs::path& path, Resolved& res) {
     if (path.empty() || !path.string().starts_with("/"))
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     // if (path.is_relative())
-    //     return -QUASI_EBADF;
+    //     return -POSIX_EBADF;
 
     if (path.string().size() >= 256)
-        return -QUASI_ENAMETOOLONG;
+        return -POSIX_ENAMETOOLONG;
 
     res.mountpoint = shared_from_this();
     res.local_path = "/";
@@ -129,21 +129,21 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
 
             if (!(current->is_link() || current->is_dir()))
                 // trailing slash after a file
-                return -QUASI_ENOTDIR;
+                return -POSIX_ENOTDIR;
 
             return 0;
         }
 
         if (!(current->is_link() || current->is_dir()) && !is_final) {
             // path elements must be a dir or a symlink
-            return -QUASI_ENOTDIR;
+            return -POSIX_ENOTDIR;
         }
 
         //
 
         if (current->is_dir()) {
             if (!current->CanRead())
-                return -QUASI_EACCES;
+                return -POSIX_EACCES;
 
             dir_ptr dir = std::static_pointer_cast<Directory>(current);
             parent = dir;
@@ -165,7 +165,7 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
                 res.node = nullptr;
                 res.parent = nullptr;
             }
-            return -QUASI_ENOENT;
+            return -POSIX_ENOENT;
         }
 
         //
@@ -223,7 +223,7 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
 
 int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
     if (nullptr == parent)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     auto ret = parent->link(name, child);
     if (ret == 0)
@@ -233,7 +233,7 @@ int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
 
 int Partition::mkdir(dir_ptr parent, const std::string& name) {
     if (nullptr == parent)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
     dir_ptr child = real_parent->Spawn();
@@ -251,16 +251,16 @@ int Partition::mkdir(dir_ptr parent, const std::string& name) {
 
 int Partition::rmdir(dir_ptr parent, const std::string& name) {
     if (nullptr == parent)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
     if (name.empty())
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     inode_ptr target = parent->lookup(name);
     if (nullptr == target)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     if (!target->is_dir())
-        return -QUASI_ENOTDIR;
+        return -POSIX_ENOTDIR;
 
     int status = parent->unlink(name);
     if (0 != status)
@@ -271,29 +271,29 @@ int Partition::rmdir(dir_ptr parent, const std::string& name) {
 
 int Partition::link(inode_ptr source, dir_ptr destination_parent, const std::string& name) {
     if (nullptr == source || nullptr == destination_parent)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
     if (name.empty())
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     if (destination_parent->lookup(name) != nullptr)
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
     if (source->is_dir())
-        return -QUASI_EPERM;
+        return -POSIX_EPERM;
 
     return destination_parent->link(name, source);
 }
 
 int Partition::unlink(dir_ptr parent, const std::string& name) {
     if (nullptr == parent)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
     if (name.empty())
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     inode_ptr target = parent->lookup(name);
     if (nullptr == target)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     if (target->is_dir())
-        return -QUASI_EISDIR;
+        return -POSIX_EISDIR;
 
     int status = parent->unlink(name);
     if (0 != status)
@@ -304,7 +304,7 @@ int Partition::unlink(dir_ptr parent, const std::string& name) {
 
 int Partition::chmod(inode_ptr target, u16 mode) {
     if (nullptr == target)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     return target->chmod(mode);
 }
@@ -312,20 +312,20 @@ int Partition::chmod(inode_ptr target, u16 mode) {
 int Partition::rmInode(fileno_t fileno) {
     inode_ptr target = GetInodeByFileno(fileno);
     if (nullptr == target)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     return rmInode(target);
 }
 
 int Partition::rmInode(inode_ptr node) {
     if (nullptr == node)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     // truly remove if there are no hardlinks
     if (node->st.st_nlink > 0)
         return 0;
 
-    // TODO: check for open file handles, return -QUASI_EEBUSY
+    // TODO: check for open file handles, return -POSIX_EEBUSY
 
     this->inode_table.erase(node->GetFileno());
     return 0;

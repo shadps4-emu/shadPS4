@@ -6,9 +6,9 @@
 #include <unordered_map>
 
 #include "common/types.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "src/core/file_sys/hostio/host_io.h"
 
-#include "quasi_errno.h"
 #include "quasi_types.h"
 #include "quasifs_inode.h"
 
@@ -188,22 +188,22 @@ public:
     //
 
     int64_t GetSize(const fs::path& path) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     int64_t GetSize(const fs::path& path, std::error_code& ec) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool Exists(const fs::path& path) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool Exists(const fs::path& path, std::error_code& ec) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool IsDirectory(const fs::path& path) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool IsDirectory(const fs::path& path, std::error_code& ec) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     fs::path AbsolutePath(const fs::path& path) {
         return "";
@@ -212,10 +212,10 @@ public:
         return "";
     };
     bool Remove(const fs::path& path) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool Remove(const fs::path& path, std::error_code& ec) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     uint64_t RemoveAll(const fs::path& path) = delete;
     uint64_t RemoveAll(const fs::path& path, std::error_code& ec) noexcept = delete;
@@ -231,20 +231,20 @@ public:
 
     // 0777 to mimic default C++ mode (std::filesystem::perms::all)
     bool CreateDirectory(const fs::path& path, int mode = 0777) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool CreateDirectory(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool CreateDirectory(const fs::path& path, const fs::path& existing_path,
                          int mode = 0777) = delete;
     bool CreateDirectory(const fs::path& path, const fs::path& existing_path, std::error_code& ec,
                          int mode = 0777) noexcept = delete;
     bool CreateDirectories(const fs::path& path, int mode = 0777) {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
     bool CreateDirectories(const fs::path& path, std::error_code& ec, int mode = 0777) noexcept {
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     };
 
     fd_handle_ptr GetHandle(s32 fd);

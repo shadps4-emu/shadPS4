@@ -4,7 +4,6 @@
 
 #include "common/logging/log.h"
 
-#include "core/file_sys/quasifs/quasi_errno.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
@@ -13,6 +12,7 @@
 #include "core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
 std::string file_mode(u16 mode) {
@@ -140,10 +140,10 @@ int QFS::SyncHost(fs::path path) {
     int status = Resolve(path, res);
 
     if (0 != status)
-        return -QUASI_ENOENT;
+        return -POSIX_ENOENT;
 
     if (nullptr == res.mountpoint)
-        return -QUASI_ENOMEDIUM;
+        return -POSIX_ENODEV;
 
     SyncHostImpl(res.mountpoint);
 
@@ -159,14 +159,14 @@ int QFS::Mount(const fs::path& path, partition_ptr fs, unsigned int options) {
         return status;
 
     if (!res.node->is_dir())
-        return -QUASI_ENOTDIR;
+        return -POSIX_ENOTDIR;
 
     mount_t* existing_fs_options = GetPartitionInfo(fs);
 
     if (options & MountOptions::MOUNT_REMOUNT) {
         if (nullptr == existing_fs_options) {
             LOG_ERROR(Kernel_Fs, "Can't remount {}: Not mounted", path.string());
-            return -QUASI_EINVAL;
+            return -POSIX_EINVAL;
         }
 
         auto curopt = &existing_fs_options->options;
@@ -178,7 +178,7 @@ int QFS::Mount(const fs::path& path, partition_ptr fs, unsigned int options) {
     if (nullptr != existing_fs_options || dir->mounted_root) {
         // fs_options exists or there's something (else?) mounted there already
         LOG_ERROR(Kernel_Fs, "Can't mount {}: Already mounted", path.string());
-        return -QUASI_EEXIST;
+        return -POSIX_EEXIST;
     }
 
     if (options & MountOptions::MOUNT_BIND)
@@ -209,7 +209,7 @@ int QFS::Unmount(const fs::path& path) {
     mount_t* part_opts = GetPartitionInfo(part);
 
     if (nullptr == part_opts)
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     dir_ptr options_parentdir = part_opts->parentdir;
     dir_ptr res_parentdir = res.parent;
@@ -221,7 +221,7 @@ int QFS::Unmount(const fs::path& path) {
 
     if (nullptr == res_rootdir)
         // mounted but rootdir disappeared O.o
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
 
     options_parentdir->mounted_root = nullptr;
     this->block_devices.erase(part);
@@ -236,7 +236,7 @@ int QFS::ForceInsert(const fs::path& path, const std::string& name, inode_ptr no
     if (0 != resolve_status)
         return resolve_status;
     if (!res.node->is_dir())
-        return -QUASI_ENOTDIR;
+        return -POSIX_ENOTDIR;
     return res.mountpoint->touch(std::static_pointer_cast<Directory>(res.node), name, node);
 }
 
@@ -244,9 +244,9 @@ int QFS::ForceInsert(const fs::path& path, const std::string& name, inode_ptr no
 // Debugging it is a royal PITA
 int QFS::Resolve(const fs::path& path, Resolved& res) {
     if (path.empty() || !path.string().starts_with("/"))
-        return -QUASI_EINVAL;
+        return -POSIX_EINVAL;
     // if (path.is_relative())
-    //     return -QUASI_EINVAL;
+    //     return -POSIX_EINVAL;
 
     // on return:
     // node - last element of the path (if exists)
@@ -312,7 +312,7 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
 
                 if (nullptr == mounted_partition) {
                     res.mountpoint = nullptr;
-                    return -QUASI_ENOENT;
+                    return -POSIX_ENOENT;
                 }
 
                 res.mountpoint = mounted_partition;
@@ -331,7 +331,7 @@ int QFS::Resolve(const fs::path& path, Resolved& res) {
     } while (--safety_counter > 0);
 
     if (0 == safety_counter)
-        return -QUASI_ELOOP;
+        return -POSIX_ELOOP;
 
     return 0;
 }
@@ -355,23 +355,23 @@ bool QFS::IsOpen(const s32 fd) noexcept {
 int QFS::SetSize(const s32 fd, uint64_t size) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
     return this->Operation.FTruncate(fd, size);
 }
 
 s64 QFS::GetSize(const s32 fd) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
     if (nullptr == fh->node)
-        return -QUASI_EBADF;
+        return -POSIX_EBADF;
 
     return fh->node->st.st_size;
 };
 
 s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
     UNIMPLEMENTED();
-    return -QUASI_ENOSYS;
+    return -POSIX_ENOSYS;
 };
 
 //
@@ -489,7 +489,7 @@ partition_ptr QFS::GetPartitionByParent(const dir_ptr dir) {
 int QFS::IsPartitionRO(partition_ptr part) {
     mount_t* part_info = GetPartitionInfo(part);
     if (nullptr == part_info)
-        return -QUASI_ENODEV;
+        return -POSIX_ENODEV;
     if (part_info->options & MountOptions::MOUNT_RW)
         return 0;
     return 1;
