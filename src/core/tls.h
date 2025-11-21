@@ -36,9 +36,6 @@ u32 GetTcbKey();
 /// Sets the data pointer to the TCB block.
 void SetTcbBase(void* image_address);
 
-/// Retrieves Tcb structure for the calling thread.
-Tcb* GetTcbBase();
-
 /// Makes sure TLS is initialized for the thread before entering guest.
 void EnsureThreadInitialized();
 

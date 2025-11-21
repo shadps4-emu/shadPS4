@@ -178,10 +178,6 @@ void SetTcbBase(void* image_address) {
 
 #endif
 
-Tcb* GetTcbBase() {
-    return Libraries::Kernel::g_curthread->tcb;
-}
-
 thread_local std::once_flag init_tls_flag;
 
 void EnsureThreadInitialized() {
