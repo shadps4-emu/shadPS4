@@ -138,9 +138,12 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt() {
 const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value) {
     if (!g_library_selected) {
         g_library_selected = true;
-        LOG_INFO(Lib_FontFt, "SelectLibraryFt: using default FreeType shim");
+        LOG_INFO(Lib_FontFt, "library selection requested (FreeType shim)");
     }
-    LOG_INFO(Lib_FontFt, "SelectLibraryFt: value={}", value);
+    LOG_DEBUG(Lib_FontFt,
+              "library selection params:\n"
+              " value={}\n",
+              value);
     if (value == 0) {
         return &kDefaultLibrarySelection;
     }
@@ -150,9 +153,12 @@ const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value) 
 const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value) {
     if (!g_renderer_selected) {
         g_renderer_selected = true;
-        LOG_INFO(Lib_FontFt, "SelectRendererFt: using stb_truetype renderer backend");
+        LOG_INFO(Lib_FontFt, "renderer selection requested (stb_truetype backend)");
     }
-    LOG_INFO(Lib_FontFt, "SelectRendererFt: value={}", value);
+    LOG_DEBUG(Lib_FontFt,
+              "renderer selection params:\n"
+              " value={}\n",
+              value);
     if (value == 0) {
         return &kDefaultRendererSelection;
     }
