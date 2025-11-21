@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "fiber.h"
@@ -6,8 +6,8 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
-#include "core/tls.h"
 
 namespace Libraries::Fiber {
 
@@ -20,7 +20,7 @@ static constexpr u64 kFiberStackSizeCheck = 0xdeadbeefdeadbeef;
 static std::atomic<u32> context_size_check = false;
 
 OrbisFiberContext* GetFiberContext() {
-    return Core::GetTcbBase()->tcb_fiber;
+    return Libraries::Kernel::g_curthread->tcb->tcb_fiber;
 }
 
 extern "C" s32 PS4_SYSV_ABI _sceFiberSetJmp(OrbisFiberContext* ctx) asm("_sceFiberSetJmp");
@@ -269,7 +269,7 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         return ORBIS_FIBER_ERROR_INVALID;
     }
 
-    Core::Tcb* tcb = Core::GetTcbBase();
+    Core::Tcb* tcb = Libraries::Kernel::g_curthread->tcb;
     if (tcb->tcb_fiber) {
         return ORBIS_FIBER_ERROR_PERMISSION;
     }
