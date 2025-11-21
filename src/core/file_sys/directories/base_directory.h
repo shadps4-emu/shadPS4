@@ -36,6 +36,18 @@ public:
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
+    virtual s64 write(const void* buf, u64 nbytes) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
     virtual s64 lseek(s64 offset, s32 whence) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
