@@ -6,8 +6,8 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/kernel/threads/pthread.h"
+#include "core/libraries/libs.h"
 
 namespace Libraries::Fiber {
 
