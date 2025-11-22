@@ -831,7 +831,8 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         perms |= Core::MemoryPermission::ReadWrite;
     }
 
-    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled || vma_base.type == VMAType::File) {
+    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
+        vma_base.type == VMAType::File) {
         // On PS4, execute permissions are hidden from direct memory and file mappings.
         // Tests show that execute permissions still apply, so handle this after reading perms.
         prot &= ~MemoryProt::CpuExec;
