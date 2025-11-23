@@ -46,7 +46,7 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
     if constexpr (std::is_same_v<T, int>) {
         if (it->second.is_integer()) {
-            return static_cast<int>(toml::get<int>(it->second));
+            return static_cast<s32>(toml::get<int>(it->second));
         }
     } else if constexpr (std::is_same_v<T, unsigned int>) {
         if (it->second.is_integer()) {
@@ -54,15 +54,19 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
         }
     } else if constexpr (std::is_same_v<T, double>) {
         if (it->second.is_floating()) {
-            return toml::get<double>(it->second);
+            return toml::get<T>(it->second);
         }
     } else if constexpr (std::is_same_v<T, std::string>) {
         if (it->second.is_string()) {
-            return toml::get<std::string>(it->second);
+            return toml::get<T>(it->second);
         }
     } else if constexpr (std::is_same_v<T, bool>) {
         if (it->second.is_boolean()) {
-            return toml::get<bool>(it->second);
+            return toml::get<T>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::array<string, 4>>) {
+        if (it->second.is_array()) {
+            return toml::get<T>(it->second);
         }
     } else {
         static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
@@ -114,6 +118,9 @@ public:
     void set(const T value, bool is_game_specific = false) {
         is_game_specific ? game_specific_value = value : base_value = value;
     }
+    void setDefault(bool is_game_specific = false) {
+        is_game_specific ? game_specific_value = default_value : base_value = default_value;
+    }
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false) {
         if (is_game_specific) {
@@ -138,10 +145,12 @@ static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
-// static ConfigEntry<string> userName("shadPS4");
-static std::array<std::string, 4> userNames = {"shadPS4"
-                                               "shadps4-2",
-                                               "shadPS4-3", "shadPS4-4"}; // TODO
+static ConfigEntry<std::array<std::string, 4>> userNames({
+    "shadPS4"
+    "shadps4-2",
+    "shadPS4-3",
+    "shadPS4-4",
+});
 static ConfigEntry<bool> isShowSplash(false);
 static ConfigEntry<string> isSideTrophy("right");
 static ConfigEntry<bool> isConnectedToNetwork(false);
@@ -391,8 +400,12 @@ string getLogType() {
     return logType.get();
 }
 
-string getUserName() {
-    return userNames[0];
+string getUserName(int id) {
+    return userNames.get()[id];
+}
+
+std::array<string, 4> const getUserNames() {
+    return userNames.get();
 }
 
 bool getUseSpecialPad() {
@@ -678,10 +691,6 @@ void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific) {
     isSeparateLogFilesEnabled.set(enabled, is_game_specific);
 }
 
-void setUserName(const string& name, bool is_game_specific) {
-    userNames[0] = name;
-}
-
 void setUseSpecialPad(bool use) {
     useSpecialPad.base_value = use;
 }
@@ -876,7 +885,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
         logFilter.setFromToml(general, "logFilter", is_game_specific);
         logType.setFromToml(general, "logType", is_game_specific);
-        // userName.setFromToml(general, "userName", is_game_specific); // TODO
+        userNames.setFromToml(general, "userNames", is_game_specific);
         isShowSplash.setFromToml(general, "showSplash", is_game_specific);
         isSideTrophy.setFromToml(general, "sideTrophy", is_game_specific);
 
@@ -1061,7 +1070,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                             is_game_specific);
     logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
     logType.setTomlValue(data, "General", "logType", is_game_specific);
-    // userName.setTomlValue(data, "General", "userName", is_game_specific); // TODO
+    userNames.setTomlValue(data, "General", "userNames", is_game_specific);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
     isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific);
@@ -1184,71 +1193,71 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
-        readbacksEnabled.set(false, is_game_specific);
-        readbackLinearImagesEnabled.set(false, is_game_specific);
-        isNeo.set(false, is_game_specific);
-        isDevKit.set(false, is_game_specific);
-        isPSNSignedIn.set(false, is_game_specific);
-        isConnectedToNetwork.set(false, is_game_specific);
-        directMemoryAccessEnabled.set(false, is_game_specific);
-        extraDmemInMbytes.set(0, is_game_specific);
+        readbacksEnabled.setDefault(is_game_specific);
+        readbackLinearImagesEnabled.setDefault(is_game_specific);
+        isNeo.setDefault( is_game_specific);
+        isDevKit.setDefault( is_game_specific);
+        isPSNSignedIn.setDefault(is_game_specific);
+        isConnectedToNetwork.setDefault(is_game_specific);
+        directMemoryAccessEnabled.setDefault(is_game_specific);
+        extraDmemInMbytes.setDefault(is_game_specific);
     }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
-    volumeSlider.set(100, is_game_specific);
-    isTrophyPopupDisabled.set(false, is_game_specific);
-    trophyNotificationDuration.set(6.0, is_game_specific);
-    logFilter.set("", is_game_specific);
-    logType.set("sync", is_game_specific);
-    // userName.set("shadPS4", is_game_specific); // TODO
-    isShowSplash.set(false, is_game_specific);
-    isSideTrophy.set("right", is_game_specific);
+    volumeSlider.setDefault( is_game_specific);
+    isTrophyPopupDisabled.setDefault(is_game_specific);
+    trophyNotificationDuration.setDefault( is_game_specific);
+    logFilter.setDefault( is_game_specific);
+    logType.setDefault( is_game_specific);
+    userNames.setDefault(is_game_specific);
+    isShowSplash.setDefault(is_game_specific);
+    isSideTrophy.setDefault(is_game_specific);
 
     // GS - Input
-    cursorState.set(HideCursorState::Idle, is_game_specific);
-    cursorHideTimeout.set(5, is_game_specific);
-    isMotionControlsEnabled.set(true, is_game_specific);
-    backgroundControllerInput.set(false, is_game_specific);
-    usbDeviceBackend.set(UsbBackendType::Real, is_game_specific);
+    cursorState.setDefault(is_game_specific);
+    cursorHideTimeout.setDefault( is_game_specific);
+    isMotionControlsEnabled.setDefault( is_game_specific);
+    backgroundControllerInput.setDefault(is_game_specific);
+    usbDeviceBackend.setDefault( is_game_specific);
 
     // GS - Audio
-    micDevice.set("Default Device", is_game_specific);
+    micDevice.setDefault( is_game_specific);
 
     // GS - GPU
-    windowWidth.set(1280, is_game_specific);
-    windowHeight.set(720, is_game_specific);
-    isNullGpu.set(false, is_game_specific);
-    shouldCopyGPUBuffers.set(false, is_game_specific);
-    shouldDumpShaders.set(false, is_game_specific);
-    vblankFrequency.set(60, is_game_specific);
-    isFullscreen.set(false, is_game_specific);
-    fullscreenMode.set("Windowed", is_game_specific);
-    presentMode.set("Mailbox", is_game_specific);
-    isHDRAllowed.set(false, is_game_specific);
-    fsrEnabled.set(true, is_game_specific);
-    rcasEnabled.set(true, is_game_specific);
-    rcasAttenuation.set(250, is_game_specific);
+    windowWidth.setDefault(is_game_specific);
+    windowHeight.setDefault(is_game_specific);
+    isNullGpu.setDefault(is_game_specific);
+    shouldCopyGPUBuffers.setDefault( is_game_specific);
+    shouldDumpShaders.setDefault( is_game_specific);
+    vblankFrequency.setDefault(is_game_specific);
+    isFullscreen.setDefault( is_game_specific);
+    fullscreenMode.setDefault( is_game_specific);
+    presentMode.setDefault(is_game_specific);
+    isHDRAllowed.setDefault(is_game_specific);
+    fsrEnabled.setDefault( is_game_specific);
+    rcasEnabled.setDefault(is_game_specific);
+    rcasAttenuation.setDefault( is_game_specific);
 
     // GS - Vulkan
-    gpuId.set(-1, is_game_specific);
-    vkValidation.set(false, is_game_specific);
-    vkValidationCore.set(true, is_game_specific);
-    vkValidationSync.set(false, is_game_specific);
-    vkValidationGpu.set(false, is_game_specific);
-    vkCrashDiagnostic.set(false, is_game_specific);
-    vkHostMarkers.set(false, is_game_specific);
-    vkGuestMarkers.set(false, is_game_specific);
-    rdocEnable.set(false, is_game_specific);
+    gpuId.setDefault( is_game_specific);
+    vkValidation.setDefault( is_game_specific);
+    vkValidationCore.setDefault( is_game_specific);
+    vkValidationSync.setDefault( is_game_specific);
+    vkValidationGpu.setDefault(is_game_specific);
+    vkCrashDiagnostic.setDefault(is_game_specific);
+    vkHostMarkers.setDefault(is_game_specific);
+    vkGuestMarkers.setDefault(is_game_specific);
+    rdocEnable.setDefault(is_game_specific);
 
     // GS - Debug
-    isDebugDump.set(false, is_game_specific);
-    isShaderDebug.set(false, is_game_specific);
-    isSeparateLogFilesEnabled.set(false, is_game_specific);
-    logEnabled.set(true, is_game_specific);
+    isDebugDump.setDefault(is_game_specific);
+    isShaderDebug.setDefault(is_game_specific);
+    isSeparateLogFilesEnabled.setDefault(is_game_specific);
+    logEnabled.setDefault(is_game_specific);
 
     // GS - Settings
-    m_language.set(1, is_game_specific);
+    m_language.setDefault(is_game_specific);
 
     // All other entries
     if (!is_game_specific) {
@@ -1289,6 +1298,8 @@ hotkey_pause = f9
 hotkey_reload_inputs = f8
 hotkey_toggle_mouse_to_joystick = f7
 hotkey_toggle_mouse_to_gyro = f6
+hotkey_add_virtual_user = f5
+hotkey_remove_virtual_user = f4
 hotkey_quit = lctrl, lshift, end
 )";
 }

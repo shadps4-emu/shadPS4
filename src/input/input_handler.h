@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -37,6 +38,8 @@
 #define SDL_EVENT_RDOC_CAPTURE SDL_EVENT_USER + 8
 #define SDL_EVENT_QUIT_DIALOG SDL_EVENT_USER + 9
 #define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
+#define SDL_EVENT_ADD_VIRTUAL_USER SDL_EVENT_USER + 11
+#define SDL_EVENT_REMOVE_VIRTUAL_USER SDL_EVENT_USER + 12
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
@@ -53,6 +56,8 @@
 #define HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK 0xf0000006
 #define HOTKEY_TOGGLE_MOUSE_TO_GYRO 0xf0000007
 #define HOTKEY_RENDERDOC 0xf0000008
+#define HOTKEY_ADD_VIRTUAL_USER 0xf0000009
+#define HOTKEY_REMOVE_VIRTUAL_USER 0xf000000a
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -145,6 +150,8 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"hotkey_toggle_mouse_to_joystick", HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK},
     {"hotkey_toggle_mouse_to_gyro", HOTKEY_TOGGLE_MOUSE_TO_GYRO},
     {"hotkey_renderdoc_capture", HOTKEY_RENDERDOC},
+    {"hotkey_add_virtual_user", HOTKEY_ADD_VIRTUAL_USER},
+    {"hotkey_remove_virtual_user", HOTKEY_REMOVE_VIRTUAL_USER},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {
@@ -511,7 +518,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    std::array<ControllerOutput, 33> data = {
+    std::array<ControllerOutput, 35> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
         ControllerOutput(RIGHTJOYSTICK_HALFMODE),
@@ -555,6 +562,8 @@ public:
         ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK),
         ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
         ControllerOutput(HOTKEY_RENDERDOC),
+        ControllerOutput(HOTKEY_ADD_VIRTUAL_USER),
+        ControllerOutput(HOTKEY_REMOVE_VIRTUAL_USER),
 
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
     };

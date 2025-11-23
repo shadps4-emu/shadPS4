@@ -150,13 +150,13 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
 }
-// using namespace Libraries::UserService; // TODO
 
 WindowSDL::~WindowSDL() = default;
+SDL_Event* e = nullptr;
 
 void WindowSDL::WaitEvent() {
     // Called on main thread
-    SDL_Event event;
+    SDL_Event& event = *(e = new SDL_Event[200]{0});
 
     if (!SDL_WaitEvent(&event)) {
         return;
@@ -193,6 +193,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
         OnGamepadEvent(&event);
         break;
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
@@ -249,6 +252,29 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_MOUSE_TO_GYRO:
         SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
                                        Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
+        break;
+    case SDL_EVENT_ADD_VIRTUAL_USER:
+        for (int i = 0; i < 4; i++) {
+            if (controllers[i]->user_id == -1) {
+                controllers[i]->user_id = i + 1;
+                Libraries::UserService::AddUserServiceEvent(
+                    {Libraries::UserService::OrbisUserServiceEventType::Login,
+                     (s32)controllers[i]->user_id});
+                break;
+            }
+        }
+        break;
+    case SDL_EVENT_REMOVE_VIRTUAL_USER:
+        LOG_INFO(Input, "Remove user");
+        for (int i = 3; i >= 0; i--) {
+            if (controllers[i]->user_id != -1) {
+                Libraries::UserService::AddUserServiceEvent(
+                    {Libraries::UserService::OrbisUserServiceEventType::Logout,
+                     (s32)controllers[i]->user_id});
+                controllers[i]->user_id = -1;
+                break;
+            }
+        }
         break;
     case SDL_EVENT_RDOC_CAPTURE:
         VideoCore::TriggerCapture();

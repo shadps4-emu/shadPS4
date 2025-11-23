@@ -594,6 +594,12 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         case HOTKEY_RENDERDOC:
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
+        case HOTKEY_ADD_VIRTUAL_USER:
+            PushSDLEvent(SDL_EVENT_ADD_VIRTUAL_USER);
+            break;
+        case HOTKEY_REMOVE_VIRTUAL_USER:
+            PushSDLEvent(SDL_EVENT_REMOVE_VIRTUAL_USER);
+            break;
         case HOTKEY_QUIT:
             PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
             break;

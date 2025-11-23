@@ -145,7 +145,6 @@ int getRcasAttenuation();
 void setRcasAttenuation(int value, bool is_game_specific = false);
 bool getIsConnectedToNetwork();
 void setConnectedToNetwork(bool enable, bool is_game_specific = false);
-void setUserName(const std::string& name, bool is_game_specific = false);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
 bool getLoadAutoPatches();
@@ -157,7 +156,8 @@ void setUsbDeviceBackend(int value, bool is_game_specific = false);
 
 // TODO
 std::filesystem::path GetSaveDataPath();
-std::string getUserName();
+std::string getUserName(int id);
+std::array<std::string, 4> const getUserNames();
 bool GetUseUnifiedInputConfig();
 void SetUseUnifiedInputConfig(bool use);
 bool GetOverrideControllerColor();
