@@ -1195,8 +1195,8 @@ void setDefaultValues(bool is_game_specific) {
     if (is_game_specific) {
         readbacksEnabled.setDefault(is_game_specific);
         readbackLinearImagesEnabled.setDefault(is_game_specific);
-        isNeo.setDefault( is_game_specific);
-        isDevKit.setDefault( is_game_specific);
+        isNeo.setDefault(is_game_specific);
+        isDevKit.setDefault(is_game_specific);
         isPSNSignedIn.setDefault(is_game_specific);
         isConnectedToNetwork.setDefault(is_game_specific);
         directMemoryAccessEnabled.setDefault(is_game_specific);
@@ -1205,45 +1205,45 @@ void setDefaultValues(bool is_game_specific) {
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
-    volumeSlider.setDefault( is_game_specific);
+    volumeSlider.setDefault(is_game_specific);
     isTrophyPopupDisabled.setDefault(is_game_specific);
-    trophyNotificationDuration.setDefault( is_game_specific);
-    logFilter.setDefault( is_game_specific);
-    logType.setDefault( is_game_specific);
+    trophyNotificationDuration.setDefault(is_game_specific);
+    logFilter.setDefault(is_game_specific);
+    logType.setDefault(is_game_specific);
     userNames.setDefault(is_game_specific);
     isShowSplash.setDefault(is_game_specific);
     isSideTrophy.setDefault(is_game_specific);
 
     // GS - Input
     cursorState.setDefault(is_game_specific);
-    cursorHideTimeout.setDefault( is_game_specific);
-    isMotionControlsEnabled.setDefault( is_game_specific);
+    cursorHideTimeout.setDefault(is_game_specific);
+    isMotionControlsEnabled.setDefault(is_game_specific);
     backgroundControllerInput.setDefault(is_game_specific);
-    usbDeviceBackend.setDefault( is_game_specific);
+    usbDeviceBackend.setDefault(is_game_specific);
 
     // GS - Audio
-    micDevice.setDefault( is_game_specific);
+    micDevice.setDefault(is_game_specific);
 
     // GS - GPU
     windowWidth.setDefault(is_game_specific);
     windowHeight.setDefault(is_game_specific);
     isNullGpu.setDefault(is_game_specific);
-    shouldCopyGPUBuffers.setDefault( is_game_specific);
-    shouldDumpShaders.setDefault( is_game_specific);
+    shouldCopyGPUBuffers.setDefault(is_game_specific);
+    shouldDumpShaders.setDefault(is_game_specific);
     vblankFrequency.setDefault(is_game_specific);
-    isFullscreen.setDefault( is_game_specific);
-    fullscreenMode.setDefault( is_game_specific);
+    isFullscreen.setDefault(is_game_specific);
+    fullscreenMode.setDefault(is_game_specific);
     presentMode.setDefault(is_game_specific);
     isHDRAllowed.setDefault(is_game_specific);
-    fsrEnabled.setDefault( is_game_specific);
+    fsrEnabled.setDefault(is_game_specific);
     rcasEnabled.setDefault(is_game_specific);
-    rcasAttenuation.setDefault( is_game_specific);
+    rcasAttenuation.setDefault(is_game_specific);
 
     // GS - Vulkan
-    gpuId.setDefault( is_game_specific);
-    vkValidation.setDefault( is_game_specific);
-    vkValidationCore.setDefault( is_game_specific);
-    vkValidationSync.setDefault( is_game_specific);
+    gpuId.setDefault(is_game_specific);
+    vkValidation.setDefault(is_game_specific);
+    vkValidationCore.setDefault(is_game_specific);
+    vkValidationSync.setDefault(is_game_specific);
     vkValidationGpu.setDefault(is_game_specific);
     vkCrashDiagnostic.setDefault(is_game_specific);
     vkHostMarkers.setDefault(is_game_specific);
