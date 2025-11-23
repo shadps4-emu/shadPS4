@@ -1079,8 +1079,8 @@ void Rasterizer::UpdateViewportScissorState() const {
         regs.generic_scissor.bottom_right_y,
         enable_offset ? regs.window_offset.window_y_offset : 0);
 
-    boost::container::static_vector<vk::Viewport, AmdGpu::NUM_VIEWPORTS> viewports;
-    boost::container::static_vector<vk::Rect2D, AmdGpu::NUM_VIEWPORTS> scissors;
+    std::array<vk::Viewport, AmdGpu::NUM_VIEWPORTS> viewports;
+    std::array<vk::Rect2D, AmdGpu::NUM_VIEWPORTS> scissors;
 
     if (regs.polygon_control.enable_window_offset &&
         (regs.window_offset.window_x_offset != 0 || regs.window_offset.window_y_offset != 0)) {
@@ -1092,19 +1092,16 @@ void Rasterizer::UpdateViewportScissorState() const {
     for (u32 i = 0; i < AmdGpu::NUM_VIEWPORTS; i++) {
         const auto& vp = regs.viewports[i];
         const auto& vp_d = regs.viewport_depths[i];
-        if (vp.xscale == 0) {
-            continue;
-        }
 
-        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
-        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
-
-        vk::Viewport viewport{};
+        auto& viewport = viewports[i];
+        auto& scissor = scissors[i];
 
         // https://gitlab.freedesktop.org/mesa/mesa/-/blob/209a0ed/src/amd/vulkan/radv_pipeline_graphics.c#L688-689
         // https://gitlab.freedesktop.org/mesa/mesa/-/blob/209a0ed/src/amd/vulkan/radv_cmd_buffer.c#L3103-3109
         // When the clip space is ranged [-1...1], the zoffset is centered.
         // By reversing the above viewport calculations, we get the following:
+        const auto zoffset = vp_ctl.zoffset_enable ? vp.zoffset : 0.f;
+        const auto zscale = vp_ctl.zscale_enable ? vp.zscale : 1.f;
         if (regs.clipper_control.clip_space == AmdGpu::ClipSpace::MinusWToW) {
             viewport.minDepth = zoffset - zscale;
             viewport.maxDepth = zoffset + zscale;
@@ -1139,8 +1136,6 @@ void Rasterizer::UpdateViewportScissorState() const {
             viewport.height = yscale * 2.0f;
         }
 
-        viewports.push_back(viewport);
-
         auto vp_scsr = scsr;
         if (regs.mode_control.vport_scissor_enable) {
             vp_scsr.top_left_x =
@@ -1152,28 +1147,10 @@ void Rasterizer::UpdateViewportScissorState() const {
             vp_scsr.bottom_right_y = std::min(AmdGpu::Scissor::Clamp(vp_scsr.bottom_right_y),
                                               regs.viewport_scissors[i].bottom_right_y);
         }
-        scissors.push_back({
+        scissor = vk::Rect2D{
             .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},
             .extent = {vp_scsr.GetWidth(), vp_scsr.GetHeight()},
-        });
-    }
-
-    if (viewports.empty()) {
-        // Vulkan requires providing at least one viewport.
-        constexpr vk::Viewport empty_viewport = {
-            .x = -1.0f,
-            .y = -1.0f,
-            .width = 1.0f,
-            .height = 1.0f,
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f,
         };
-        constexpr vk::Rect2D empty_scissor = {
-            .offset = {0, 0},
-            .extent = {1, 1},
-        };
-        viewports.push_back(empty_viewport);
-        scissors.push_back(empty_scissor);
     }
 
     auto& dynamic_state = scheduler.GetDynamicState();

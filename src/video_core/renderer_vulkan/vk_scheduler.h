@@ -69,8 +69,8 @@ struct SubmitInfo {
     }
 };
 
-using Viewports = boost::container::static_vector<vk::Viewport, AmdGpu::NUM_VIEWPORTS>;
-using Scissors = boost::container::static_vector<vk::Rect2D, AmdGpu::NUM_VIEWPORTS>;
+using Viewports = std::array<vk::Viewport, AmdGpu::NUM_VIEWPORTS>;
+using Scissors = std::array<vk::Rect2D, AmdGpu::NUM_VIEWPORTS>;
 using ColorWriteMasks = std::array<vk::ColorComponentFlags, AmdGpu::NUM_COLOR_BUFFERS>;
 struct StencilOps {
     vk::StencilOp fail_op{};
