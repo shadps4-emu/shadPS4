@@ -40,24 +40,26 @@ class ShaderCache;
 struct Program {
     struct Module {
         vk::ShaderModule module;
-        u64 spec_hash;
+        Shader::StageSpecialization spec;
     };
-    using ModuleList = boost::container::small_vector<Module, 8>;
+    static constexpr size_t MaxPermutations = 8;
+    using ModuleList = boost::container::small_vector<Module, MaxPermutations>;
 
     Shader::Info info;
-    ModuleList modules;
+    ModuleList modules{};
 
     Program() = default;
     Program(Shader::Stage stage, Shader::LogicalStage l_stage, Shader::ShaderParams params)
         : info{stage, l_stage, params} {}
 
-    void AddPermut(vk::ShaderModule module, u64 spec_hash) {
-        modules.emplace_back(module, spec_hash);
+    void AddPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec) {
+        modules.emplace_back(module, std::move(spec));
     }
 
-    void InsertPermut(vk::ShaderModule module, u64 spec_hash, size_t perm_idx) {
-        modules.resize(std::max(modules.size(), perm_idx + 1));
-        modules[perm_idx] = {module, spec_hash};
+    void InsertPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec,
+                      size_t perm_idx) {
+        modules.resize(std::max(modules.size(), perm_idx + 1)); // <-- beware of realloc
+        modules[perm_idx] = {module, std::move(spec)};
     }
 };
 
@@ -107,6 +109,10 @@ private:
                                    Shader::Backend::Bindings& binding);
     const Shader::RuntimeInfo& BuildRuntimeInfo(Shader::Stage stage, Shader::LogicalStage l_stage);
 
+    [[nodiscard]] bool IsPipelineCacheDirty() const {
+        return num_new_pipelines > 0;
+    }
+
 private:
     const Instance& instance;
     Scheduler& scheduler;
@@ -125,6 +131,7 @@ private:
     std::optional<Shader::Gcn::FetchShaderData> fetch_shader{};
     GraphicsPipelineKey graphics_key{};
     ComputePipelineKey compute_key{};
+    u32 num_new_pipelines{}; // new pipelines added to the cache since the game start
 
     // Only if Config::collectShadersForDebug()
     tsl::robin_map<vk::ShaderModule,

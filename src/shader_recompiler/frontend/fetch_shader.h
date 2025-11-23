@@ -66,7 +66,6 @@ struct FetchShaderData {
 
     void Serialize(Serialization::Archive& ar) const;
     bool Deserialize(Serialization::Archive& buffer);
-    u64 Hash() const;
 };
 
 const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base);

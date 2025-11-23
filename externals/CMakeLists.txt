@@ -261,3 +261,6 @@ endif()
 #nlohmann json 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
+
+# miniz
+add_subdirectory(miniz)

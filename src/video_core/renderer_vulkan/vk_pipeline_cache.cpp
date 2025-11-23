@@ -13,11 +13,10 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
-#include "video_core/renderer_vulkan/vk_pipeline_storage.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
@@ -225,6 +224,13 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
+        // When binding a UBO, we calculate its size considering the offset in the larger buffer
+        // cache underlying resource. In some cases, it may produce sizes exceeding the system
+        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
+        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
+        .max_viewport_width = instance.GetMaxViewportWidth(),
+        .max_viewport_height = instance.GetMaxViewportHeight(),
+        .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
         .support_int8 = instance.IsShaderInt8Supported(),
@@ -260,13 +266,6 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
         .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk,
-        // When binding a UBO, we calculate its size considering the offset in the larger buffer
-        // cache underlying resource. In some cases, it may produce sizes exceeding the system
-        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
-        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
-        .max_viewport_width = instance.GetMaxViewportWidth(),
-        .max_viewport_height = instance.GetMaxViewportHeight(),
-        .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
     };
 
     WarmUp();
@@ -294,6 +293,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
             runtime_infos, fetch_shader, modules, sdata, false);
 
         RegisterPipelineData(graphics_key, pipeline_hash, sdata);
+        ++num_new_pipelines;
 
         if (Config::collectShadersForDebug()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
@@ -322,6 +322,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
                                                        *pipeline_cache, compute_key, *infos[0],
                                                        modules[0], sdata, false);
         RegisterPipelineData(compute_key, sdata);
+        ++num_new_pipelines;
 
         if (Config::collectShadersForDebug()) {
             auto& m = modules[0];
@@ -571,13 +572,13 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
         auto& program = it_pgm.value();
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
-        const auto spec_hash = spec.Hash();
+        auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
         const auto perm_hash = HashCombine(params.hash, 0);
 
-        program->AddPermut(module, spec_hash);
-        RegisterShaderMeta(program->info, spec.fetch_shader_data, perm_hash, spec_hash, 0);
-        return std::make_tuple(&program->info, module, spec.fetch_shader_data, perm_hash);
+        RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
+        program->AddPermut(module, std::move(spec));
+        return std::make_tuple(&program->info, module, program->modules[0].spec.fetch_shader_data,
+                               perm_hash);
     }
 
     auto& program = it_pgm.value();
@@ -585,27 +586,28 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
     info.pgm_base = params.Base(); // Needs to be actualized for inline cbuffer address fixup
     info.user_data = params.user_data;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
-    const auto spec_hash = spec.Hash();
+    auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
 
     size_t perm_idx = program->modules.size();
     u64 perm_hash = HashCombine(params.hash, perm_idx);
 
     vk::ShaderModule module{};
 
-    const auto it = std::ranges::find(program->modules, spec_hash, &Program::Module::spec_hash);
+    const auto it = std::ranges::find(program->modules, spec, &Program::Module::spec);
     if (it == program->modules.end()) {
         auto new_info = Shader::Info(stage, l_stage, params);
         module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding);
-        program->AddPermut(module, spec_hash);
-        RegisterShaderMeta(info, spec.fetch_shader_data, perm_hash, spec_hash, perm_idx);
+
+        RegisterShaderMeta(info, spec.fetch_shader_data, spec, perm_hash, perm_idx);
+        program->AddPermut(module, std::move(spec));
     } else {
         info.AddBindings(binding);
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
         perm_hash = HashCombine(params.hash, perm_idx);
     }
-    return std::make_tuple(&program->info, module, spec.fetch_shader_data, perm_hash);
+    return std::make_tuple(&program->info, module,
+                           program->modules[perm_idx].spec.fetch_shader_data, perm_hash);
 }
 
 std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,
@@ -636,4 +638,47 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
     return new_module;
 }
 
+std::string PipelineCache::GetShaderName(Shader::Stage stage, u64 hash,
+                                         std::optional<size_t> perm) {
+    if (perm) {
+        return fmt::format("{}_{:#018x}_{}", stage, hash, *perm);
+    }
+    return fmt::format("{}_{:#018x}", stage, hash);
+}
+
+void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
+                               size_t perm_idx, std::string_view ext) {
+    if (!Config::dumpShaders()) {
+        return;
+    }
+
+    using namespace Common::FS;
+    const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
+    if (!std::filesystem::exists(dump_dir)) {
+        std::filesystem::create_directories(dump_dir);
+    }
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto file = IOFile{dump_dir / filename, FileAccessMode::Create};
+    file.WriteSpan(code);
+}
+
+std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::Stage stage,
+                                                              size_t perm_idx,
+                                                              std::string_view ext) {
+
+    using namespace Common::FS;
+    const auto patch_dir = GetUserPath(PathType::ShaderDir) / "patch";
+    if (!std::filesystem::exists(patch_dir)) {
+        std::filesystem::create_directories(patch_dir);
+    }
+    const auto filename = fmt::format("{}.{}", GetShaderName(stage, hash, perm_idx), ext);
+    const auto filepath = patch_dir / filename;
+    if (!std::filesystem::exists(filepath)) {
+        return {};
+    }
+    const auto file = IOFile{patch_dir / filename, FileAccessMode::Read};
+    std::vector<u32> code(file.GetSize() / sizeof(u32));
+    file.Read(code);
+    return code;
+}
 } // namespace Vulkan

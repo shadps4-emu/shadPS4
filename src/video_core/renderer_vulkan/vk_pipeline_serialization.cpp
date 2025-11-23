@@ -2,124 +2,19 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
-#include "common/hash.h"
+#include "common/serdes.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/info.h"
+#include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
-#include "video_core/renderer_vulkan/vk_pipeline_storage.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
 namespace Serialization {
-
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 0u;
-static constexpr u32 ShaderMetaVersion = 0u;
-static constexpr u32 PipelineKeyVersion = 0u;
-
-struct Archive {
-    void Alloc(size_t size) {
-        container.resize(size);
-    }
-
-    void Grow(size_t size) {
-        container.resize(container.size() + size);
-    }
-
-    void Merge(const Archive& ar) {
-        container.insert(container.end(), ar.container.cbegin(), ar.container.cend());
-        offset = container.size();
-    }
-
-    [[nodiscard]] size_t SizeBytes() const {
-        return container.size();
-    }
-
-    u8* CurrPtr() {
-        return container.data() + offset;
-    }
-
-    void Advance(size_t size) {
-        ASSERT(offset + size <= container.size());
-        offset += size;
-    }
-
-    std::vector<u8>&& TakeOff() {
-        offset = 0;
-        return std::move(container);
-    }
-
-    [[nodiscard]] bool IsEoS() const {
-        return offset >= container.size();
-    }
-
-    Archive() = default;
-    explicit Archive(std::vector<u8>&& v) : container{v} {}
-
-    u32 offset{};
-    std::vector<u8> container{};
-};
-
-struct Writer {
-    template <typename T>
-    void Write(const T* ptr, size_t size) {
-        if ((ar.offset + size) >= ar.container.size()) {
-            ar.Grow(size);
-        }
-        std::memcpy(ar.CurrPtr(), reinterpret_cast<const void*>(ptr), size);
-        ar.Advance(size);
-    }
-
-    template <typename T>
-    void Write(const T& value) {
-        const auto size = sizeof(value);
-        Write(&value, size);
-    }
-
-    template <typename T>
-    void Write(const std::vector<T>& v) {
-        Write(v.size());
-        for (const auto& elem : v) {
-            Write(elem);
-        }
-    }
-
-    Writer() = delete;
-    explicit Writer(Archive& ar_) : ar{ar_} {}
-
-    Archive& ar;
-};
-
-struct Reader {
-    template <typename T>
-    void Read(T* ptr, size_t size) {
-        ASSERT(ar.offset + size <= ar.container.size());
-        std::memcpy(reinterpret_cast<void*>(ptr), ar.CurrPtr(), size);
-        ar.Advance(size);
-    }
-
-    template <typename T>
-    void Read(T& value) {
-        const auto size = sizeof(T);
-        Read(&value, size);
-    }
-
-    template <typename T>
-    void Read(std::vector<T>& v) {
-        size_t num_elements{};
-        Read(num_elements);
-        v.resize(num_elements);
-        for (auto& elem : v) {
-            Read(elem);
-        }
-    }
-
-    Reader() = delete;
-    explicit Reader(Archive& ar_) : ar{ar_} {}
-
-    Archive& ar;
-};
-
+static constexpr u32 ShaderBinaryVersion = 1u;
+static constexpr u32 ShaderMetaVersion = 1u;
+static constexpr u32 PipelineKeyVersion = 1u;
 } // namespace Serialization
 
 namespace Vulkan {
@@ -164,7 +59,8 @@ void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
 
 void RegisterShaderMeta(const Shader::Info& info,
                         const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader_data,
-                        u64 perm_hash, u64 spec_hash, size_t perm_idx) {
+                        const Shader::StageSpecialization& spec, size_t perm_hash,
+                        size_t perm_idx) {
     if (!Storage::DataBase::Instance().IsOpened()) {
         return;
     }
@@ -173,19 +69,13 @@ void RegisterShaderMeta(const Shader::Info& info,
     Serialization::Writer meta{ar};
 
     meta.Write(Serialization::ShaderMetaVersion);
+    meta.Write(Serialization::ShaderBinaryVersion);
 
     meta.Write(perm_hash);
     meta.Write(perm_idx);
-    meta.Write(spec_hash);
 
+    spec.Serialize(ar);
     info.Serialize(ar);
-
-    if (fetch_shader_data) {
-        meta.Write(sizeof(*fetch_shader_data));
-        fetch_shader_data->Serialize(ar);
-    } else {
-        meta.Write(size_t{0});
-    }
 
     Storage::DataBase::Instance().Save(Storage::BlobType::ShaderMeta,
                                        fmt::format("{:#018x}", perm_hash), ar.TakeOff());
@@ -203,25 +93,29 @@ void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx)
 
 bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
                     std::optional<Shader::Gcn::FetchShaderData>& fetch_shader_data,
-                    size_t& spec_hash, size_t& perm_idx) {
+                    Shader::StageSpecialization& spec, size_t& perm_idx) {
     Serialization::Reader meta{ar};
+
+    u32 meta_version{};
+    meta.Read(meta_version);
+    if (meta_version != Serialization::ShaderMetaVersion) {
+        return false;
+    }
+
+    u32 binary_version{};
+    meta.Read(binary_version);
+    if (binary_version != Serialization::ShaderBinaryVersion) {
+        return false;
+    }
 
     u64 perm_hash_ar{};
     meta.Read(perm_hash_ar);
     meta.Read(perm_idx);
-    meta.Read(spec_hash);
 
+    spec.Deserialize(ar);
     info.Deserialize(ar);
 
-    u64 fetch_data_size{};
-    meta.Read(fetch_data_size);
-
-    if (fetch_data_size) {
-        Shader::Gcn::FetchShaderData fetch_data;
-        fetch_data.Deserialize(ar);
-        fetch_shader_data = fetch_data;
-    }
-
+    fetch_shader_data = spec.fetch_shader_data;
     return true;
 }
 
@@ -260,13 +154,6 @@ bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
     }
 
     Serialization::Archive meta_ar{std::move(meta_blob)};
-    Serialization::Reader meta{meta_ar};
-
-    u32 meta_version{};
-    meta.Read(meta_version);
-    if (meta_version != Serialization::ShaderMetaVersion) {
-        return false;
-    }
 
     if (!LoadPipelineStage(meta_ar, 0)) {
         return false;
@@ -279,7 +166,7 @@ bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
         std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile, *pipeline_cache,
                                           compute_key, *infos[0], modules[0], sdata, true);
 
-    infos.fill(0);
+    infos.fill(nullptr);
     modules.fill(nullptr);
 
     return true;
@@ -301,9 +188,9 @@ bool GraphicsPipelineKey::Deserialize(Serialization::Archive& ar) {
 void GraphicsPipeline::SerializationSupport::Serialize(Serialization::Archive& ar) const {
     Serialization::Writer sdata{ar};
 
-    sdata.Write(vertex_attributes);
-    sdata.Write(vertex_bindings);
-    sdata.Write(divisors);
+    sdata.Write(&vertex_attributes, sizeof(vertex_attributes));
+    sdata.Write(&vertex_bindings, sizeof(vertex_bindings));
+    sdata.Write(&divisors, sizeof(divisors));
     sdata.Write(multisampling);
     sdata.Write(tcs);
     sdata.Write(tes);
@@ -312,11 +199,10 @@ void GraphicsPipeline::SerializationSupport::Serialize(Serialization::Archive& a
 bool GraphicsPipeline::SerializationSupport::Deserialize(Serialization::Archive& ar) {
     Serialization::Reader sdata{ar};
 
-    sdata.Read(vertex_attributes);
-    sdata.Read(vertex_bindings);
-    sdata.Read(divisors);
+    sdata.Read(&vertex_attributes, sizeof(vertex_attributes));
+    sdata.Read(&vertex_bindings, sizeof(vertex_bindings));
+    sdata.Read(&divisors, sizeof(divisors));
     sdata.Read(multisampling);
-
     sdata.Read(tcs);
     sdata.Read(tes);
     return true;
@@ -342,13 +228,6 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
         }
 
         Serialization::Archive meta_ar{std::move(meta_blob)};
-        Serialization::Reader meta{meta_ar};
-
-        u32 meta_version{};
-        meta.Read(meta_version);
-        if (meta_version != Serialization::ShaderMetaVersion) {
-            return false;
-        }
 
         if (!LoadPipelineStage(meta_ar, stage_idx)) {
             return false;
@@ -362,7 +241,7 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
         instance, scheduler, desc_heap, profile, graphics_key, *pipeline_cache, infos,
         runtime_infos, fetch_shader, modules, sdata, true);
 
-    infos.fill(0);
+    infos.fill(nullptr);
     modules.fill(nullptr);
     fetch_shader.reset();
 
@@ -370,13 +249,11 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
 }
 
 bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) {
-    Shader::Backend::Bindings binding{}; // not needed?
-    size_t spec_hash{};
-    size_t perm_idx;
-
     auto program = std::make_unique<Program>();
-
-    if (!LoadShaderMeta(ar, program->info, fetch_shader, spec_hash, perm_idx)) {
+    Shader::StageSpecialization spec{};
+    spec.info = &program->info;
+    size_t perm_idx{};
+    if (!LoadShaderMeta(ar, program->info, fetch_shader, spec, perm_idx)) {
         return false;
     }
 
@@ -398,18 +275,18 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         module = CompileSPV(spv, instance.GetDevice());
         it_pgm.value() = std::move(program);
     } else {
-        const auto& it =
-            std::ranges::find(it_pgm.value()->modules, spec_hash, &Program::Module::spec_hash);
+        const auto& it = std::ranges::find(it_pgm.value()->modules, spec, &Program::Module::spec);
         if (it != it_pgm.value()->modules.end()) {
             // If the permutation is already preloaded, make sure it has the same permutation index
             const auto idx = std::distance(it_pgm.value()->modules.begin(), it);
-            ASSERT(perm_idx == idx);
+            ASSERT_MSG(perm_idx == idx, "Permutation {} is already inserted at {}! ({}_{:x})",
+                       perm_idx, idx, program->info.stage, program->info.pgm_hash);
             module = it->module;
         } else {
             module = CompileSPV(spv, instance.GetDevice());
         }
     }
-    it_pgm.value()->InsertPermut(module, spec_hash, perm_idx);
+    it_pgm.value()->InsertPermut(module, std::move(spec), perm_idx);
 
     infos[stage] = &it_pgm.value()->info;
     modules[stage] = module;
@@ -423,6 +300,24 @@ void PipelineCache::WarmUp() {
     }
 
     Storage::DataBase::Instance().Open();
+
+    // Check if cache is compatible
+    std::vector<u8> profile_data{};
+    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
+    if (profile_data.empty()) {
+        Storage::DataBase::Instance().FinishPreload();
+
+        profile_data.resize(sizeof(profile));
+        std::memcpy(profile_data.data(), &profile, sizeof(profile));
+        Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
+                                           std::move(profile_data));
+        return;
+    }
+    if (std::memcmp(profile_data.data(), &profile, sizeof(profile)) != 0) {
+        LOG_WARNING(Render,
+                    "Pipeline cache isn't compatible with current system. Ignoring the cache");
+        return;
+    }
 
     u32 num_pipelines{};
     u32 num_total_pipelines{};
@@ -460,6 +355,8 @@ void PipelineCache::WarmUp() {
         LOG_WARNING(Render, "{} stale pipelines were found. Consider re-generating the cache",
                     num_total_pipelines - num_pipelines);
     }
+
+    Storage::DataBase::Instance().FinishPreload();
 }
 
 void PipelineCache::Sync() {
@@ -508,56 +405,7 @@ bool Gcn::FetchShaderData::Deserialize(Serialization::Archive& ar) {
     return true;
 }
 
-u64 Shader::Gcn::FetchShaderData::Hash() const {
-    XXH64_state_t* const state = XXH64_createState();
-    XXH64_reset(state, 0);
-    XXH64_update(state, &size, sizeof(size));
-    XXH64_update(state, &vertex_offset_sgpr, sizeof(vertex_offset_sgpr));
-    XXH64_update(state, &instance_offset_sgpr, sizeof(instance_offset_sgpr));
-    for (const auto& attrib : attributes) {
-        XXH64_update(state, &attrib, sizeof(attrib));
-    }
-
-    const u64 hash = XXH64_digest(state);
-    XXH64_freeState(state);
-
-    return hash;
-}
-
-u64 StageSpecialization::Hash() const {
-    XXH64_state_t* const state = XXH64_createState();
-    XXH64_reset(state, 0);
-    XXH64_update(state, &start, sizeof(start));
-    XXH64_update(state, &runtime_info,
-                 sizeof(runtime_info)); // maybe broken because of union + span in GS
-
-    for (const auto& attrib : vs_attribs) {
-        XXH64_update(state, &attrib, sizeof(attrib));
-    }
-    for (const auto& buffer : buffers) {
-        XXH64_update(state, &buffer, sizeof(buffer));
-    }
-    for (const auto& image : images) {
-        XXH64_update(state, &image, sizeof(image));
-    }
-    for (const auto& sampler : samplers) {
-        XXH64_update(state, &sampler, sizeof(sampler));
-    }
-    for (const auto& fmask : fmasks) {
-        XXH64_update(state, &fmask, sizeof(fmask));
-    }
-
-    u64 hash = XXH64_digest(state);
-    XXH64_freeState(state);
-
-    if (fetch_shader_data) {
-        hash = HashCombine(hash, fetch_shader_data->Hash());
-    }
-
-    return hash;
-}
-
-void Shader::PersistentSrtInfo::Serialize(Serialization::Archive& ar) const {
+void PersistentSrtInfo::Serialize(Serialization::Archive& ar) const {
     Serialization::Writer srt{ar};
 
     srt.Write(this, sizeof(*this));
@@ -566,7 +414,7 @@ void Shader::PersistentSrtInfo::Serialize(Serialization::Archive& ar) const {
     }
 }
 
-bool Shader::PersistentSrtInfo::Deserialize(Serialization::Archive& ar) {
+bool PersistentSrtInfo::Deserialize(Serialization::Archive& ar) {
     Serialization::Reader srt{ar};
 
     srt.Read(this, sizeof(*this));
@@ -575,6 +423,56 @@ bool Shader::PersistentSrtInfo::Deserialize(Serialization::Archive& ar) {
         walker_func = RegisterWalkerCode(ar.CurrPtr(), walker_func_size);
         ar.Advance(walker_func_size);
     }
+
+    return true;
+}
+
+void StageSpecialization::Serialize(Serialization::Archive& ar) const {
+    Serialization::Writer spec{ar};
+
+    spec.Write(start);
+    spec.Write(runtime_info);
+
+    spec.Write(bitset.to_string());
+
+    if (fetch_shader_data) {
+        spec.Write(sizeof(*fetch_shader_data));
+        fetch_shader_data->Serialize(ar);
+    } else {
+        spec.Write(size_t{0});
+    }
+
+    spec.Write(vs_attribs);
+    spec.Write(buffers);
+    spec.Write(images);
+    spec.Write(fmasks);
+    spec.Write(samplers);
+}
+
+bool StageSpecialization::Deserialize(Serialization::Archive& ar) {
+    Serialization::Reader spec{ar};
+
+    spec.Read(start);
+    spec.Read(runtime_info);
+
+    std::string bits{};
+    spec.Read(bits);
+    bitset = std::bitset<MaxStageResources>(bits);
+
+    u64 fetch_data_size{};
+    spec.Read(fetch_data_size);
+
+    if (fetch_data_size) {
+        Gcn::FetchShaderData fetch_data;
+        fetch_data.Deserialize(ar);
+        fetch_shader_data = fetch_data;
+    }
+
+    spec.Read(vs_attribs);
+    spec.Read(buffers);
+    spec.Read(images);
+    spec.Read(fmasks);
+    spec.Read(samplers);
 
     return true;
 }
