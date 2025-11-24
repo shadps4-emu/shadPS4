@@ -14,6 +14,7 @@
 #include <miniz.h>
 
 #include <condition_variable>
+#include <functional>
 #include <future>
 #include <mutex>
 #include <queue>
@@ -23,7 +24,7 @@ namespace {
 std::mutex submit_mutex{};
 u32 num_requests{};
 std::condition_variable_any request_cv{};
-std::queue<std::future<void>> req_queue{};
+std::queue<std::packaged_task<void()>> req_queue{};
 std::mutex m_request{};
 
 mz_zip_archive zip_ar{};
@@ -47,7 +48,7 @@ void ProcessIO(const std::stop_token& stoken) {
         }
 
         while (num_requests) {
-            std::future<void> request{};
+            std::packaged_task<void()> request{};
             {
                 std::scoped_lock lock{m_request};
                 if (req_queue.empty()) {
@@ -58,7 +59,8 @@ void ProcessIO(const std::stop_token& stoken) {
             }
 
             if (request.valid()) {
-                request.wait();
+                request();
+                request.get_future().wait();
             }
 
             --num_requests;
@@ -135,10 +137,10 @@ void DataBase::Close() {
 }
 
 template <typename T>
-bool WriteVector(BlobType type, std::filesystem::path&& path_, std::vector<T>&& v) {
-    auto request = std::async(
-        Config::isPipelineCacheArchived() ? std::launch::deferred : std::launch::async,
-        [=](std::filesystem::path&& path) {
+bool WriteVector(const BlobType type, std::filesystem::path&& path_, std::vector<T>&& v) {
+    {
+        auto request = std::packaged_task<void()>{[=]() {
+            auto path{path_};
             path.replace_extension(GetBlobFileExtension(type));
             if (Config::isPipelineCacheArchived()) {
                 ASSERT_MSG(!ar_is_read_only,
@@ -152,10 +154,7 @@ bool WriteVector(BlobType type, std::filesystem::path&& path_, std::vector<T>&& 
                 const auto file = IOFile{path, FileAccessMode::Create};
                 file.Write(v);
             }
-        },
-        path_);
-
-    {
+        }};
         std::scoped_lock lock{m_request};
         req_queue.emplace(std::move(request));
     }
