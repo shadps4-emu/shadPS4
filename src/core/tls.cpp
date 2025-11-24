@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
@@ -44,10 +44,6 @@ u32 GetTcbKey() {
 void SetTcbBase(void* image_address) {
     const BOOL result = TlsSetValue(GetTcbKey(), image_address);
     ASSERT(result != 0);
-}
-
-Tcb* GetTcbBase() {
-    return reinterpret_cast<Tcb*>(TlsGetValue(GetTcbKey()));
 }
 
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
@@ -149,12 +145,6 @@ void SetTcbBase(void* image_address) {
                "Failed to store thread LDT page pointer: {}", errno);
 }
 
-Tcb* GetTcbBase() {
-    Tcb* tcb;
-    asm volatile("mov %%fs:0x0, %0" : "=r"(tcb));
-    return tcb;
-}
-
 #elif defined(ARCH_X86_64)
 
 // Other POSIX x86_64
@@ -162,13 +152,6 @@ Tcb* GetTcbBase() {
 void SetTcbBase(void* image_address) {
     const int ret = syscall(SYS_arch_prctl, ARCH_SET_GS, (unsigned long)image_address);
     ASSERT_MSG(ret == 0, "Failed to set GS base: errno {}", errno);
-}
-
-Tcb* GetTcbBase() {
-    void* tcb = nullptr;
-    const int ret = syscall(SYS_arch_prctl, ARCH_GET_GS, &tcb);
-    ASSERT_MSG(ret == 0, "Failed to get GS base: errno {}", errno);
-    return static_cast<Tcb*>(tcb);
 }
 
 #else
@@ -191,10 +174,6 @@ pthread_key_t GetTcbKey() {
 
 void SetTcbBase(void* image_address) {
     ASSERT(pthread_setspecific(GetTcbKey(), image_address) == 0);
-}
-
-Tcb* GetTcbBase() {
-    return static_cast<Tcb*>(pthread_getspecific(GetTcbKey()));
 }
 
 #endif

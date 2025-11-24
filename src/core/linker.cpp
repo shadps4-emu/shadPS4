@@ -368,7 +368,7 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     std::scoped_lock lk{mutex};
 
-    DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
+    DtvEntry* dtv_table = Libraries::Kernel::g_curthread->tcb->tcb_dtv;
     if (dtv_table[0].counter != dtv_generation_counter) {
         // Generation counter changed, a dynamic module was either loaded or unloaded.
         const u32 old_num_dtvs = dtv_table[1].counter;
@@ -381,7 +381,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         delete[] dtv_table;
 
         // Update TCB pointer.
-        GetTcbBase()->tcb_dtv = new_dtv_table;
+        Libraries::Kernel::g_curthread->tcb->tcb_dtv = new_dtv_table;
         dtv_table = new_dtv_table;
     }
 
