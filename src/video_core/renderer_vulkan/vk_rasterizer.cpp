@@ -976,8 +976,8 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
     ScopeMarkerEnd();
 }
 
-void Rasterizer::InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds) {
-    buffer_cache.InlineData(address, value, num_bytes, is_gds);
+void Rasterizer::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds) {
+    buffer_cache.FillBuffer(address, num_bytes, value, is_gds);
 }
 
 void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds) {

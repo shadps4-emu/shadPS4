@@ -118,7 +118,7 @@ public:
     void BindIndexBuffer(u32 index_offset);
 
     /// Writes a value to GPU buffer. (uses command buffer to temporarily store the data)
-    void InlineData(VAddr address, const void* value, u32 num_bytes, bool is_gds);
+    void FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gds);
 
     /// Performs buffer to buffer data copy on the GPU.
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
@@ -192,8 +192,6 @@ private:
                             size_t total_size_bytes);
 
     bool SynchronizeBufferFromImage(Buffer& buffer, VAddr device_addr, u32 size);
-
-    void InlineDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
 
     void WriteDataBuffer(Buffer& buffer, VAddr address, const void* value, u32 num_bytes);
 
