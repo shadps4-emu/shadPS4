@@ -228,8 +228,10 @@ find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.7 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3 3.1.2 CONFIG)
 find_package(SDL3_mixer 2.8.1 CONFIG)
+if (SDL3_mixer_FOUND)
+    find_package(SDL3 3.1.2 CONFIG)
+endif()
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -553,6 +555,8 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
               src/core/libraries/fiber/fiber.h
               src/core/libraries/fiber/fiber_error.h
 )
+
+set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
@@ -1122,22 +1126,22 @@ if (APPLE)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore wepoll)
+    target_link_libraries(shadps4 PRIVATE mincore wepoll wbemuuid)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
-        add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+        add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE _SCL_SECURE_NO_WARNINGS)
     endif()
 
-    add_definitions(-DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+    add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN)
 
     if (MSVC)
         # Needed for conflicts with time.h of windows.h
-        add_definitions(-D_TIMESPEC_DEFINED)
+        add_compile_definitions(_TIMESPEC_DEFINED)
     endif()
 
     # Target Windows 10 RS5
-    add_definitions(-DNTDDI_VERSION=0x0A000006 -D_WIN32_WINNT=0x0A00 -DWINVER=0x0A00)
+    add_compile_definitions(NTDDI_VERSION=0x0A000006 _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 
     if (MSVC)
         target_link_libraries(shadps4 PRIVATE clang_rt.builtins-x86_64.lib)
@@ -1169,7 +1173,7 @@ if (WIN32)
     target_sources(shadps4 PRIVATE src/shadps4.rc)
 endif()
 
-add_definitions(-DBOOST_ASIO_STANDALONE)
+add_compile_definitions(BOOST_ASIO_STANDALONE)
 
 target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
