@@ -25,37 +25,43 @@ namespace HostIODriver {
 s32 HostIO_POSIX::Open(const fs::path& path, s32 flags, u16 mode) {
     errno = 0;
     s32 status = open(path.c_str(), ToPOSIXOpenFlags(flags), mode);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::Creat(const fs::path& path, u16 mode) {
     errno = 0;
     s32 status = creat(path.c_str(), mode);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::Close(const s32 fd) {
     errno = 0;
     s32 status = close(fd);
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::Link(const fs::path& src, const fs::path& dst) {
     errno = 0;
     s32 status = link(src.c_str(), dst.c_str());
-    return 0 == status ? status : -errno;
-}
-
-s32 HostIO_POSIX::Unlink(const fs::path& path) {
-    errno = 0;
-    s32 status = unlink(path.c_str());
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     errno = 0;
     s32 status = symlink(src.c_str(), dst.c_str());
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
+}
+
+s32 HostIO_POSIX::Unlink(const fs::path& path) {
+    errno = 0;
+    s32 status = unlink(path.c_str());
+    return 0 == status ? status : -unix2bsd(errno);
+}
+
+s32 HostIO_POSIX::Remove(const fs::path& path) {
+    errno = 0;
+    s32 status = remove(path.c_str());
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::Flush(const s32 fd) {
@@ -66,13 +72,13 @@ s32 HostIO_POSIX::Flush(const s32 fd) {
 s32 HostIO_POSIX::FSync(const s32 fd) {
     errno = 0;
     s32 status = fsync(fd);
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::LSeek(const s32 fd, s64 offset, s32 whence) {
     errno = 0;
     s32 status = lseek(fd, offset, ToPOSIXSeekOrigin(whence));
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::Tell(const s32 fd) {
@@ -82,25 +88,25 @@ s64 HostIO_POSIX::Tell(const s32 fd) {
 s32 HostIO_POSIX::Truncate(const fs::path& path, u64 size) {
     errno = 0;
     s32 status = truncate(path.c_str(), size);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::FTruncate(const s32 fd, u64 size) {
     errno = 0;
     s32 status = ftruncate(fd, size);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::Read(const s32 fd, void* buf, u64 count) {
     errno = 0;
     s32 status = read(fd, buf, count);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     errno = 0;
     s32 status = pread(fd, buf, count, offset);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
@@ -132,13 +138,13 @@ s64 HostIO_POSIX::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 of
 s64 HostIO_POSIX::Write(const s32 fd, const void* buf, u64 count) {
     errno = 0;
     s32 status = write(fd, buf, count);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
     errno = 0;
     s32 status = pwrite(fd, buf, count, offset);
-    return status >= 0 ? status : -errno;
+    return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s64 HostIO_POSIX::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
@@ -170,13 +176,13 @@ s64 HostIO_POSIX::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt,
 s32 HostIO_POSIX::MKDir(const fs::path& path, u16 mode) {
     errno = 0;
     s32 status = mkdir(path.c_str(), mode);
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::RMDir(const fs::path& path) {
     errno = 0;
     s32 status = rmdir(path.c_str());
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
@@ -251,13 +257,21 @@ s32 HostIO_POSIX::FStat(const s32 fd, OrbisKernelStat* statbuf) {
 s32 HostIO_POSIX::Chmod(const fs::path& path, u16 mode) {
     errno = 0;
     s32 status = chmod(path.c_str(), mode);
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_POSIX::FChmod(const s32 fd, u16 mode) {
     errno = 0;
     s32 status = fchmod(fd, mode);
-    return 0 == status ? status : -errno;
+    return 0 == status ? status : -unix2bsd(errno);
+}
+
+s32 HostIO_POSIX::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return -unix2bsd(ENOSYS);
+}
+
+s32 HostIO_POSIX::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return -unix2bsd(ENOSYS);
 }
 
 // s32 HostIO_POSIX::GetDents(void* buf, u32 count, s64* basep) { return -POSIX_ENOSYS; }

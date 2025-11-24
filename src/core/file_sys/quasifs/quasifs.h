@@ -66,9 +66,12 @@ private:
         s32 Open(const fs::path& path, int flags, u16 mode = 0755) override;
         s32 Creat(const fs::path& path, u16 mode = 0755) override;
         s32 Close(const s32 fd) override;
-        s32 LinkSymbolic(const fs::path& src, const fs::path& dst) override;
+
         s32 Link(const fs::path& src, const fs::path& dst) override;
+        s32 LinkSymbolic(const fs::path& src, const fs::path& dst) override;
         s32 Unlink(const fs::path& path) override;
+        s32 Remove(const fs::path& path) override;
+
         s32 Flush(const s32 fd) override;
         s32 FSync(const s32 fd) override;
         s32 Truncate(const fs::path& path, u64 size) override;
@@ -99,6 +102,9 @@ private:
         s32 FChmod(const s32 fd, u16 mode) override;
 
         s64 GetDents(const s32 fd, void* buf, u64 count, s64* basep) override;
+
+        s32 Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
+        s32 Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
     };
 
 public:
@@ -211,23 +217,11 @@ public:
     fs::path AbsolutePath(const fs::path& path, std::error_code& ec) noexcept {
         return "";
     };
-    bool Remove(const fs::path& path) {
-        return -POSIX_EINVAL;
-    };
-    bool Remove(const fs::path& path, std::error_code& ec) noexcept {
-        return -POSIX_EINVAL;
-    };
-    uint64_t RemoveAll(const fs::path& path) = delete;
-    uint64_t RemoveAll(const fs::path& path, std::error_code& ec) noexcept = delete;
-    uint64_t CurrentPath(const fs::path& path) = delete;
-    uint64_t CurrentPath(const fs::path& path, std::error_code& ec) noexcept = delete;
 
-    bool Copy(const fs::path& from, const fs::path& to) = delete;
-    bool Copy(const fs::path& from, const fs::path& to, std::error_code& ec) noexcept = delete;
-    bool Copy(const fs::path& from, const fs::path& to,
-              std::filesystem::copy_options options) = delete;
-    bool Copy(const fs::path& from, const fs::path& to, std::filesystem::copy_options options,
-              std::error_code& ec) noexcept = delete;
+    // uint64_t RemoveAll(const fs::path& path) = delete;
+    // uint64_t RemoveAll(const fs::path& path, std::error_code& ec) noexcept = delete;
+    // uint64_t CurrentPath(const fs::path& path) = delete;
+    // uint64_t CurrentPath(const fs::path& path, std::error_code& ec) noexcept = delete;
 
     // 0777 to mimic default C++ mode (std::filesystem::perms::all)
     bool CreateDirectory(const fs::path& path, int mode = 0777) {

@@ -134,14 +134,19 @@ s32 QFS::OperationImpl::Close(s32 fd) {
         LOG_ERROR(Kernel_Fs, "Closing std stream, this will have consequences fd={}", fd);
 
     // if it fails, it fails
+    bool host_used = false;
     int hio_status = 0;
-    if (handle->host_fd >= 0)
+    if (handle->host_fd >= 0) {
         hio_status = qfs.hio_driver.Close(handle->host_fd);
+        host_used = true;
+    }
 
     {
         std::lock_guard<std::mutex> lock(c_mutex);
         // no further action is required, this is pro-forma
+        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
         qfs.vio_driver.Close(fd);
+        qfs.vio_driver.ClearCtx();
     }
 
     // if it's the last entry, remove it to avoid blowing up fd table
@@ -153,6 +158,68 @@ s32 QFS::OperationImpl::Close(s32 fd) {
         qfs.open_fd.pop_back();
 
     return hio_status;
+}
+
+s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
+    Resolved src_res;
+    Resolved dst_res;
+    int status_what = qfs.Resolve(src, src_res);
+    int status_where = qfs.Resolve(dst, dst_res);
+
+    if (0 != status_what)
+        return status_what;
+    if (0 == status_where)
+        return -POSIX_EEXIST;
+
+    // cross-partition linking is not supported
+    if (src_res.mountpoint != dst_res.mountpoint)
+        return -POSIX_EXDEV;
+
+    partition_ptr src_part = src_res.mountpoint;
+    partition_ptr dst_part = dst_res.mountpoint;
+
+    if (src_part != dst_part) {
+        LOG_ERROR(Kernel_Fs, "Hard links can only be created within one partition");
+        // I think this is the right error
+        return -POSIX_ENOSYS;
+    }
+
+    if (qfs.IsPartitionRO(dst_part))
+        return -POSIX_EROFS;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    if (dst_part->IsHostMounted()) {
+        fs::path host_path_src{};
+        fs::path host_path_dst{};
+
+        if (int hostpath_status = src_part->GetHostPath(host_path_src, src_res.local_path);
+            hostpath_status != 0)
+            return hostpath_status;
+        if (int hostpath_status = dst_part->GetHostPath(host_path_dst, dst_res.local_path);
+            hostpath_status != 0)
+            return hostpath_status;
+
+        if (hio_status = qfs.hio_driver.Link(host_path_src, host_path_dst); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(c_mutex);
+        qfs.vio_driver.SetCtx(&src_res, host_used, nullptr);
+        vio_status = qfs.vio_driver.Link(src_res.local_path, dst_res.local_path);
+        qfs.vio_driver.ClearCtx();
+    }
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
 }
 
 s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
@@ -211,68 +278,6 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
         qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
         // src stays 1:1
         vio_status = qfs.vio_driver.LinkSymbolic(src, dst_res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
-
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
-
-    return vio_status;
-}
-
-s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
-    Resolved src_res;
-    Resolved dst_res;
-    int status_what = qfs.Resolve(src, src_res);
-    int status_where = qfs.Resolve(dst, dst_res);
-
-    if (0 != status_what)
-        return status_what;
-    if (0 == status_where)
-        return -POSIX_EEXIST;
-
-    // cross-partition linking is not supported
-    if (src_res.mountpoint != dst_res.mountpoint)
-        return -POSIX_EXDEV;
-
-    partition_ptr src_part = src_res.mountpoint;
-    partition_ptr dst_part = dst_res.mountpoint;
-
-    if (src_part != dst_part) {
-        LOG_ERROR(Kernel_Fs, "Hard links can only be created within one partition");
-        // I think this is the right error
-        return -POSIX_ENOSYS;
-    }
-
-    if (qfs.IsPartitionRO(dst_part))
-        return -POSIX_EROFS;
-
-    bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
-
-    if (dst_part->IsHostMounted()) {
-        fs::path host_path_src{};
-        fs::path host_path_dst{};
-
-        if (int hostpath_status = src_part->GetHostPath(host_path_src, src_res.local_path);
-            hostpath_status != 0)
-            return hostpath_status;
-        if (int hostpath_status = dst_part->GetHostPath(host_path_dst, dst_res.local_path);
-            hostpath_status != 0)
-            return hostpath_status;
-
-        if (hio_status = qfs.hio_driver.Link(host_path_src, host_path_dst); hio_status < 0)
-            // hosts operation must succeed in order to continue
-            return hio_status;
-        host_used = true;
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&src_res, host_used, nullptr);
-        vio_status = qfs.vio_driver.Link(src_res.local_path, dst_res.local_path);
         qfs.vio_driver.ClearCtx();
     }
 
@@ -344,6 +349,10 @@ s32 QFS::OperationImpl::Unlink(const fs::path& path) {
                   vio_status);
 
     return vio_status;
+}
+
+s32 QFS::OperationImpl::Remove(const fs::path& path) {
+    return -POSIX_ENOSYS;
 }
 
 s32 QFS::OperationImpl::Flush(const s32 fd) {
@@ -1020,6 +1029,14 @@ s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep)
     qfs.vio_driver.ClearCtx();
 
     return vio_status;
+}
+
+s32 QFS::OperationImpl::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return -POSIX_ENOSYS;
+}
+
+s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return -POSIX_ENOSYS;
 }
 
 } // namespace QuasiFS

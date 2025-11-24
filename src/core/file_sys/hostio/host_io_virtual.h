@@ -50,8 +50,9 @@ public:
     s32 Close(const s32 fd) override;
 
     s32 Link(const fs::path& src, const fs::path& dst) override;
-    s32 Unlink(const fs::path& path) override;
     s32 LinkSymbolic(const fs::path& src, const fs::path& dst) override;
+    s32 Unlink(const fs::path& path) override;
+    s32 Remove(const fs::path& path) override;
 
     s32 Flush(const s32 fd) override;
     s32 FSync(const s32 fd) override;
@@ -81,8 +82,8 @@ public:
     s32 FChmod(const s32 fd, u16 mode) override;
 
     s64 GetDents(const s32 fd, void* buf, u64 count, s64* basep) override;
-    //
-    // Derived, complex functions are to be handled by main FS class
-    //
+
+    s32 Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
+    s32 Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
 };
 } // namespace HostIODriver

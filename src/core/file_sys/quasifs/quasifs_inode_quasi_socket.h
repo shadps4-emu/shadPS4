@@ -18,6 +18,13 @@ public:
     static socket_ptr Create() {
         return std::make_shared<Socket>();
     }
+
+    socket_ptr Clone() const {
+        auto _out = std::make_shared<Socket>(*this);
+        _out->fileno = -1;
+        _out->st.st_nlink = 0;
+        return _out;
+    }
 };
 
 } // namespace QuasiFS

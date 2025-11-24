@@ -4,10 +4,7 @@
 
 #ifdef _WIN32
 
-// #error unimplemented
-
 #include <cstdint>
-#include <unordered_map>
 #include <fcntl.h>
 #include <windows.h>
 
@@ -79,9 +76,10 @@ public:
     s32 Creat(const fs::path& path, u16 mode = 0755) override;
     s32 Close(const s32 fd) override;
 
-    // s32 Link(const fs::path& src, const fs::path& dst) override;
-    // s32 Unlink(const fs::path& path) override;
+    s32 Link(const fs::path& src, const fs::path& dst) override;
     // s32 LinkSymbolic(const fs::path& src, const fs::path& dst) override;
+    s32 Unlink(const fs::path& path) override;
+    s32 Remove(const fs::path& path) override;
 
     s32 Flush(const s32 fd) override;
     s32 FSync(const s32 fd) override;
@@ -109,6 +107,9 @@ public:
 
     // s32 Chmod(const fs::path& path, u16 mode) override;
     // s32 FChmod(const s32 fd, u16 mode) override;
+
+    s32 Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
+    s32 Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) override;
 };
 
 } // namespace HostIODriver

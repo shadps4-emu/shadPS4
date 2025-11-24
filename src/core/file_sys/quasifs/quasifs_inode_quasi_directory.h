@@ -56,6 +56,13 @@ public:
         return std::make_shared<QuasiDirectory>();
     }
 
+    dir_ptr Clone() const {
+        auto _out = std::make_shared<QuasiDirectory>(*this);
+        _out->fileno = -1;
+        _out->st.st_nlink = 0;
+        return _out;
+    }
+
     //
     // Inode overrides
     //

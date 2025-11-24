@@ -21,8 +21,9 @@ s32 HostIO_Base::Creat(const fs::path& path, u16 mode) { STUB(); }
 s32 HostIO_Base::Close(const s32 fd) { STUB(); }
 
 s32 HostIO_Base::Link(const fs::path& src, const fs::path& dst) { STUB(); }
-s32 HostIO_Base::Unlink(const fs::path& path) { STUB(); }
 s32 HostIO_Base::LinkSymbolic(const fs::path& src, const fs::path& dst) { STUB(); }
+s32 HostIO_Base::Unlink(const fs::path& path) { STUB(); }
+s32 HostIO_Base::Remove(const fs::path& path) { STUB(); }
 
 s32 HostIO_Base::Flush(const s32 fd) { STUB(); }
 s32 HostIO_Base::FSync(const s32 fd) { STUB(); }
@@ -54,6 +55,13 @@ s32 HostIO_Base::Chmod(const fs::path& path, u16 mode) { STUB(); }
 s32 HostIO_Base::FChmod(const s32 fd, u16 mode) { STUB(); }
 
 s64 HostIO_Base::GetDents(const s32 fd, void* buf, u64 count, s64* basep) { STUB(); }
+
+s32 HostIO_Base::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) { STUB(); }
+s32 HostIO_Base::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) { STUB(); }
 // clang-format on
+
+s32 HostIO_Base::Rename(const fs::path& src, const fs::path& dst_name, bool fail_if_exists) {
+    return Move(src, src.parent_path() / dst_name, fail_if_exists);
+}
 
 } // namespace HostIODriver

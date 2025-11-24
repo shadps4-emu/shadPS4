@@ -27,9 +27,11 @@ public:
     virtual s32 Creat(const fs::path& path, u16 mode = 0755);
     virtual s32 Close(const s32 fd);
 
-    virtual s32 LinkSymbolic(const fs::path& src, const fs::path& dst);
     virtual s32 Link(const fs::path& src, const fs::path& dst);
+    virtual s32 LinkSymbolic(const fs::path& src, const fs::path& dst);
     virtual s32 Unlink(const fs::path& path);
+    virtual s32 Remove(const fs::path& path);
+
     virtual s32 Flush(const s32 fd);
     virtual s32 FSync(const s32 fd);
     virtual s32 Truncate(const fs::path& path, u64 size);
@@ -57,6 +59,10 @@ public:
     virtual s32 FChmod(const s32 fd, u16 mode);
 
     virtual s64 GetDents(const s32 fd, void* buf, u64 count, s64* basep);
+
+    virtual s32 Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists);
+    virtual s32 Move(const fs::path& src, const fs::path& dst, bool fail_if_exists);
+    s32 Rename(const fs::path& src, const fs::path& dst_name, bool fail_if_exists);
     //
     // Derived, complex functions are to be handled by main FS class
     //

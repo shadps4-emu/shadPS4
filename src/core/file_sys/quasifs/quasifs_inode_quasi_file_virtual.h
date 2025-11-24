@@ -20,9 +20,13 @@ public:
         return std::make_shared<VirtualFile>();
     }
 
-    //
-    // Working functions
-    //
+    file_ptr Clone() const {
+        auto _out = std::make_shared<VirtualFile>(*this);
+        _out->fileno = -1;
+        _out->st.st_nlink = 0;
+        return _out;
+    }
+
     s64 pread(void* buf, size_t count, s64 offset) override;
     s64 pwrite(const void* buf, size_t count, s64 offset) override;
     s32 ftruncate(s64 length) override;

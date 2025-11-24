@@ -104,6 +104,17 @@ s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
     return part->link(src_node, dst_parent, dst_name);
 }
 
+s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+    if (nullptr == this->res)
+        return -POSIX_EINVAL;
+
+    symlink_ptr sym = Symlink::Create(src);
+    // symlink counter is never increased
+    sym->st.st_nlink = 1;
+
+    return this->res->mountpoint->touch(this->res->parent, dst.filename().string(), sym);
+}
+
 s32 HostIO_Virtual::Unlink(const fs::path& path) {
     if (nullptr == this->res)
         return -POSIX_EINVAL;
@@ -118,15 +129,8 @@ s32 HostIO_Virtual::Unlink(const fs::path& path) {
     return part->unlink(parent, this->res->leaf);
 }
 
-s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
-    if (nullptr == this->res)
-        return -POSIX_EINVAL;
-
-    symlink_ptr sym = Symlink::Create(src);
-    // symlink counter is never increased
-    sym->st.st_nlink = 1;
-
-    return this->res->mountpoint->touch(this->res->parent, dst.filename().string(), sym);
+s32 HostIO_Virtual::Remove(const fs::path& path) {
+    return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Flush(const s32 fd) {
@@ -387,8 +391,7 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
     // In most cases it's 512 bytes
     // Not sure yet if other partitions share the same size
     if (count < 512) {
-        LOG_ERROR(Kernel_Fs,
-                  "(Partial STUB) check for block size associated. Read size must be greater");
+        LOG_ERROR(Kernel_Fs, "Read size must be greater than sector size (512B)");
         return -POSIX_EINVAL;
     }
 
@@ -398,6 +401,14 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
         handle->pos += br;
 
     return br;
+}
+
+s32 HostIO_Virtual::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return POSIX_ENOSYS;
+}
+
+s32 HostIO_Virtual::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    return POSIX_ENOSYS;
 }
 
 } // namespace HostIODriver

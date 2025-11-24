@@ -44,6 +44,13 @@ public:
         return std::make_shared<DirectoryPFS>();
     }
 
+    dir_ptr Clone() const {
+        auto _out = std::make_shared<DirectoryPFS>(*this);
+        _out->fileno = -1;
+        _out->st.st_nlink = 0;
+        return _out;
+    }
+
     s64 pread(void* buf, u64 count, s64 offset) override;
     s64 lseek(s64 current, s64 offset, s32 whence) override;
 

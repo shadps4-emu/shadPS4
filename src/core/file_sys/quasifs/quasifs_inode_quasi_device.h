@@ -19,6 +19,13 @@ public:
         return std::make_shared<Device>();
     }
 
+    dev_ptr Clone() const {
+        auto _out = std::make_shared<Device>(*this);
+        _out->fileno = -1;
+        _out->st.st_nlink = 0;
+        return _out;
+    }
+
     virtual s64 read(void* buf, u64 count);
     virtual s64 write(const void* buf, u64 count);
 
