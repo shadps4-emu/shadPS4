@@ -76,6 +76,7 @@ struct FontState {
     std::filesystem::path system_font_path;
     Libraries::Font::OrbisFontLib library = nullptr;
     bool ext_face_ready = false;
+    bool is_otf_cff = false;
     std::vector<unsigned char> ext_face_data;
     stbtt_fontinfo ext_face{};
     float ext_scale_for_height = 0.0f;
@@ -120,6 +121,8 @@ static std::filesystem::path g_system_font_path;
 static bool EnsureSystemFontBlob();
 static bool HasTrueTypeGlyf(const std::vector<unsigned char>& bytes);
 static FontState* TryGetState(Libraries::Font::OrbisFontHandle h);
+static std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHandle handle,
+                                           bool& attached_out);
 
 struct GeneratedGlyph {
     OrbisFontGlyphOpaque glyph{};
@@ -342,73 +345,74 @@ static bool LoadGuestFileBytes(const std::filesystem::path& host_path,
     return true;
 }
 
-enum class ScaleMode {
-    AscenderHeight,
-    EmSquare,
-};
-
-static ScaleMode GetScaleMode() {
-    static int inited = 0;
-    static ScaleMode mode = ScaleMode::AscenderHeight;
-    if (!inited) {
-        inited = 1;
-        if (const char* env = std::getenv("SHADPS4_FONT_SCALE_MODE")) {
-            std::string v = env;
-            for (auto& c : v)
-                c = static_cast<char>(std::tolower(c));
-            if (v == "em" || v == "emsquare" || v == "em_square") {
-                mode = ScaleMode::EmSquare;
-            }
-        }
-        LOG_INFO(Lib_Font, "scale mode initialized");
-        LOG_DEBUG(Lib_Font,
-                  "scale mode params:\n"
-                  " mode={}\n",
-                  mode == ScaleMode::EmSquare ? "em-square" : "ascender-height");
-    }
-    return mode;
-}
-
-static float GetScaleBias() {
-    static int inited = 0;
-    static float bias = 1.0f;
-    if (!inited) {
-        inited = 1;
-        if (const char* env = std::getenv("SHADPS4_FONT_SCALE_BIAS")) {
-            try {
-                bias = std::max(0.01f, std::min(10.0f, std::stof(env)));
-            } catch (...) {
-                bias = 1.0f;
-            }
-        }
-        if (bias != 1.0f) {
-            LOG_INFO(Lib_Font, "scale bias initialized");
-            LOG_DEBUG(Lib_Font,
-                      "scale bias params:\n"
-                      " bias={}\n",
-                      bias);
-        }
-    }
-    return bias;
-}
-
-static float ComputeScale(const stbtt_fontinfo* face, float pixel_h) {
-    if (!face)
-        return 0.0f;
-    float s = 0.0f;
-    if (GetScaleMode() == ScaleMode::EmSquare)
-        s = stbtt_ScaleForMappingEmToPixels(face, pixel_h);
-    else
-        s = stbtt_ScaleForPixelHeight(face, pixel_h);
-    return s * GetScaleBias();
-}
-
-// External face scale: keep legacy ascender-height mapping to avoid regressions
-// in titles that ship their own fonts (e.g., CUSA47038). No EM toggle, no bias.
-static float ComputeScaleExt(const stbtt_fontinfo* face, float pixel_h) {
+// External face scale helpers.
+// - Point scaling (sceFontSetScalePoint): match stbtt_ScaleForPixelHeight semantics.
+// - Pixel scaling (sceFontSetScalePixel): match stbtt_ScaleForMappingEmToPixels / FreeType EM.
+static float ComputeScaleExtPoint(const stbtt_fontinfo* face, float pixel_h) {
     if (!face)
         return 0.0f;
     return stbtt_ScaleForPixelHeight(face, pixel_h);
+}
+
+static float ComputeScaleExtPixel(const stbtt_fontinfo* face, float pixel_h) {
+    if (!face)
+        return 0.0f;
+    return stbtt_ScaleForMappingEmToPixels(face, pixel_h);
+}
+
+// Heuristic: identify external TrueType fonts that expect EM-based mapping
+// (stbtt_ScaleForMappingEmToPixels) rather than ascender-height mapping.
+// This is derived from observed ascent/descent/lineGap and blob sizes, but
+// does not depend on the calling title.
+static bool IsEmProfileExternalFont(const FontState& st) {
+    if (!st.ext_face_ready || st.ext_face_data.empty()) {
+        return false;
+    }
+    const std::size_t bytes = st.ext_face_data.size();
+    const int asc = st.ext_ascent;
+    const int desc = st.ext_descent;
+    const int gap = st.ext_lineGap;
+    if (gap != 0) {
+        return false;
+    }
+    // Fonts observed in logs:
+    //  - 81968 bytes, ascent=1989, descent=-469
+    //  - 3534360 bytes, ascent=901, descent=-123
+    //  - 1868660 bytes, ascent=800, descent=-200
+    if (bytes == 81968 && asc == 1989 && desc == -469) {
+        return true;
+    }
+    if (bytes == 3534360 && asc == 901 && desc == -123) {
+        return true;
+    }
+    if (bytes == 1868660 && asc == 800 && desc == -200) {
+        return true;
+    }
+    return false;
+}
+
+// Per-font-state external scale:
+// - System fonts (font sets / fallbacks): ascender-height mapping (PixelHeight).
+// - External CFF / point APIs: ascender-height mapping.
+// - External TrueType + pixel scaling for certain profiles: EM-based mapping.
+static float ComputeScaleExtForState(const FontState& st, const stbtt_fontinfo* face,
+                                     float pixel_h) {
+    if (!face)
+        return 0.0f;
+    const bool is_system_font = (st.font_set_type != 0) || !st.system_font_path.empty();
+    if (is_system_font) {
+        return ComputeScaleExtPoint(face, pixel_h);
+    }
+    if (st.is_otf_cff || st.scale_point_active) {
+        return ComputeScaleExtPoint(face, pixel_h);
+    }
+    // Only a small subset of external TrueType fonts (Driveclub) require
+    // EM-based mapping; all others stay on ascender-height mapping to
+    // avoid regressions (Metaphor, etc.).
+    if (IsEmProfileExternalFont(st)) {
+        return ComputeScaleExtPixel(face, pixel_h);
+    }
+    return ComputeScaleExtPoint(face, pixel_h);
 }
 
 static constexpr float kPointsPerInch = 72.0f;
@@ -518,15 +522,13 @@ static void UpdateCachedLayout(FontState& st) {
         return;
     }
     if (st.ext_scale_for_height == 0.0f)
-        st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+        st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
     int asc = 0, desc = 0, gap = 0;
     stbtt_GetFontVMetrics(&st.ext_face, &asc, &desc, &gap);
     const float scale = st.ext_scale_for_height;
     st.cached_baseline_y = static_cast<float>(asc) * scale;
     st.layout_cached = true;
 }
-
-static std::unordered_set<u32> g_logged_pua;
 
 static inline std::uint64_t MakeGlyphKey(u32 code, int pixel_h) {
     return (static_cast<std::uint64_t>(code) << 32) | static_cast<std::uint32_t>(pixel_h);
@@ -546,6 +548,62 @@ static inline void LogStrideOnce(const Libraries::Font::OrbisFontRenderSurface* 
                  key, surf->buffer, surf->width, surf->height, bpp, surf->widthByte, expected,
                  match);
     }
+}
+
+static void ClearRenderOutputs(Libraries::Font::OrbisFontGlyphMetrics* metrics,
+                               Libraries::Font::OrbisFontRenderOutput* result) {
+    if (metrics) {
+        *metrics = {};
+    }
+    if (result) {
+        *result = {};
+    }
+}
+
+static const GlyphEntry* GetGlyphEntry(FontState& st, Libraries::Font::OrbisFontHandle handle,
+                                       u32 code, const stbtt_fontinfo*& face_out,
+                                       float& scale_out) {
+    face_out = nullptr;
+    scale_out = 0.0f;
+    if (st.ext_face_ready) {
+        face_out = &st.ext_face;
+    }
+    if (!face_out) {
+        bool system_attached = false;
+        const std::string sys_log = ReportSystemFaceRequest(st, handle, system_attached);
+        if (!sys_log.empty()) {
+            LOG_ERROR(Lib_Font, "{}", sys_log);
+        }
+        if (system_attached) {
+            face_out = &st.ext_face;
+        }
+    }
+    if (!face_out) {
+        return nullptr;
+    }
+    if (st.ext_scale_for_height == 0.0f) {
+        st.ext_scale_for_height = ComputeScaleExtForState(st, face_out, st.scale_h);
+    }
+    scale_out = st.ext_scale_for_height;
+    const int pixel_h = std::max(1, static_cast<int>(std::lround(st.scale_h)));
+    const std::uint64_t key = MakeGlyphKey(code, pixel_h);
+    GlyphEntry* ge = nullptr;
+    if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
+        ge = &it->second;
+    }
+    if (!ge) {
+        GlyphEntry entry{};
+        int aw = 0, lsb = 0;
+        stbtt_GetCodepointHMetrics(face_out, static_cast<int>(code), &aw, &lsb);
+        stbtt_GetCodepointBitmapBox(face_out, static_cast<int>(code), scale_out, scale_out,
+                                    &entry.x0, &entry.y0, &entry.x1, &entry.y1);
+        entry.w = std::max(0, entry.x1 - entry.x0);
+        entry.h = std::max(0, entry.y1 - entry.y0);
+        entry.advance = static_cast<float>(aw) * scale_out;
+        entry.bearingX = static_cast<float>(lsb) * scale_out;
+        ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
+    }
+    return ge;
 }
 
 // Font-set ID bit layout:
@@ -1005,21 +1063,25 @@ static u32 g_device_cache_stub{};
 
 s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buffer, u32 size) {
     if (!library) {
+        LOG_ERROR(Lib_Font, "invalid library");
         return ORBIS_FONT_ERROR_INVALID_LIBRARY;
     }
     auto* lib = static_cast<FontLibOpaque*>(library);
     if (lib->magic != 0x0F01) {
+        LOG_ERROR(Lib_Font, "invalid library (bad magic)");
         return ORBIS_FONT_ERROR_INVALID_LIBRARY;
     }
     constexpr u32 kMinCacheSize = 0x1020u;
     if (size < kMinCacheSize) {
         LOG_WARNING(Lib_Font, "AttachDeviceCacheBuffer: size {} too small (min {})", size,
                     kMinCacheSize);
+        LOG_ERROR(Lib_Font, "size too small");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     if (lib->device_cache_buf && lib->device_cache_buf != &g_device_cache_stub) {
         LOG_WARNING(Lib_Font, "AttachDeviceCacheBuffer: library={} already attached",
                     static_cast<const void*>(library));
+        LOG_ERROR(Lib_Font, "already attached");
         return ORBIS_FONT_ERROR_ALREADY_ATTACHED;
     }
 
@@ -1027,6 +1089,7 @@ s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buff
     if (!buffer) {
         owned_buffer = new (std::nothrow) std::uint8_t[size];
         if (!owned_buffer) {
+            LOG_ERROR(Lib_Font, "allocation failed");
             return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
         }
         buffer = owned_buffer;
@@ -1040,6 +1103,7 @@ s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buff
         if (owned_buffer) {
             delete[] owned_buffer;
         }
+        LOG_ERROR(Lib_Font, "page_count == 0");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     header[1] = page_count;
@@ -1076,13 +1140,14 @@ s32 PS4_SYSV_ABI sceFontAttachDeviceCacheBuffer(OrbisFontLib library, void* buff
 
 s32 PS4_SYSV_ABI sceFontBindRenderer(OrbisFontHandle fontHandle, OrbisFontRenderer renderer) {
     if (!fontHandle || !renderer) {
+        LOG_ERROR(Lib_Font, "invalid parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto& st = GetState(fontHandle);
     st.bound_renderer = renderer;
-    LOG_INFO(Lib_Font, "renderer bind requested");
+    LOG_INFO(Lib_Font, "called");
     LOG_DEBUG(Lib_Font,
-              "renderer bind params:\n"
+              "parameters:\n"
               " handle={}\n"
               " renderer={}\n",
               static_cast<const void*>(fontHandle), static_cast<const void*>(renderer));
@@ -1092,7 +1157,7 @@ s32 PS4_SYSV_ABI sceFontBindRenderer(OrbisFontHandle fontHandle, OrbisFontRender
 s32 PS4_SYSV_ABI sceFontCharacterGetBidiLevel(OrbisFontTextCharacter* textCharacter,
                                               int* bidiLevel) {
     if (!textCharacter || !bidiLevel) {
-        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        LOG_ERROR(Lib_Font, "invalid parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
@@ -1113,12 +1178,12 @@ s32 PS4_SYSV_ABI sceFontCharacterGetTextFontCode() {
 s32 PS4_SYSV_ABI sceFontCharacterGetTextOrder(OrbisFontTextCharacter* textCharacter,
                                               void** pTextOrder) {
     if (!pTextOrder) {
-        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        LOG_ERROR(Lib_Font, "invalid parameter (pTextOrder)");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
 
     if (!textCharacter) {
-        LOG_DEBUG(Lib_Font, "Invalid parameter");
+        LOG_ERROR(Lib_Font, "invalid parameter (textCharacter)");
         *pTextOrder = NULL;
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
@@ -1529,7 +1594,7 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphCode() {
 s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code,
                                             OrbisFontGlyphMetrics* metrics) {
     if (!metrics) {
-        LOG_DEBUG(Lib_Font, "sceFontGetCharGlyphMetrics: invalid params");
+        LOG_ERROR(Lib_Font, "invalid metrics pointer");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto& st = GetState(fontHandle);
@@ -1560,7 +1625,7 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
         if (system_attached) {
             face = &st.ext_face;
             if (st.ext_scale_for_height == 0.0f)
-                st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+                st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
             scale = st.ext_scale_for_height;
         }
     }
@@ -1655,10 +1720,12 @@ s32 PS4_SYSV_ABI sceFontGetGlyphExpandBufferState() {
 s32 PS4_SYSV_ABI sceFontGetHorizontalLayout(OrbisFontHandle fontHandle,
                                             OrbisFontHorizontalLayout* layout) {
     if (!fontHandle || !layout) {
+        LOG_ERROR(Lib_Font, "invalid parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto* st_ptr = TryGetState(fontHandle);
     if (!st_ptr) {
+        LOG_ERROR(Lib_Font, "invalid font handle");
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     auto& st = *st_ptr;
@@ -1699,7 +1766,7 @@ s32 PS4_SYSV_ABI sceFontGetHorizontalLayout(OrbisFontHandle fontHandle,
 s32 PS4_SYSV_ABI sceFontGetKerning(OrbisFontHandle fontHandle, u32 preCode, u32 code,
                                    OrbisFontKerning* kerning) {
     if (!kerning) {
-        LOG_DEBUG(Lib_Font, "sceFontGetKerning: invalid params");
+        LOG_DEBUG(Lib_Font, "invalid parameters");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto& st = GetState(fontHandle);
@@ -1815,7 +1882,7 @@ s32 PS4_SYSV_ABI sceFontGetResolutionDpi() {
 
 s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* out_w, float* out_h) {
     if (!fontHandle || (!out_w && !out_h)) {
-        LOG_DEBUG(Lib_Font, "sceFontGetScalePixel: invalid params");
+        LOG_DEBUG(Lib_Font, "invalid parameters");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto* st = TryGetState(fontHandle);
@@ -1833,7 +1900,7 @@ s32 PS4_SYSV_ABI sceFontGetScalePixel(OrbisFontHandle fontHandle, float* out_w, 
 
 s32 PS4_SYSV_ABI sceFontGetScalePoint(OrbisFontHandle fontHandle, float* out_w, float* out_h) {
     if (!fontHandle || (!out_w && !out_h)) {
-        LOG_DEBUG(Lib_Font, "sceFontGetScalePoint: invalid params");
+        LOG_DEBUG(Lib_Font, "invalid parameters");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto* st = TryGetState(fontHandle);
@@ -1878,7 +1945,7 @@ s32 PS4_SYSV_ABI sceFontGetVerticalLayout(OrbisFontHandle fontHandle,
     }
     if (st.ext_face_ready) {
         if (st.ext_scale_for_height == 0.0f)
-            st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+            st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
         int asc = 0, desc = 0, gap = 0;
         stbtt_GetFontVMetrics(&st.ext_face, &asc, &desc, &gap);
         layout->baselineOffsetX = 0.0f;
@@ -2305,39 +2372,43 @@ s32 PS4_SYSV_ABI sceFontOpenFontFile(OrbisFontLib library, const char* guest_pat
 s32 PS4_SYSV_ABI sceFontOpenFontInstance(OrbisFontHandle fontHandle, OrbisFontHandle templateFont,
                                          OrbisFontHandle* pFontHandle) {
     if ((!templateFont && !fontHandle) || !pFontHandle) {
-        LOG_ERROR(Lib_Font, "OpenFontInstance: invalid params base={} template={} out_ptr={}",
+        LOG_ERROR(Lib_Font, "invalid parameter base={} template={} out_ptr={}",
                   static_cast<const void*>(fontHandle), static_cast<const void*>(templateFont),
                   static_cast<const void*>(pFontHandle));
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    LOG_INFO(Lib_Font, "OpenFontInstance(begin): base={} template={} out_ptr={}",
-             static_cast<const void*>(fontHandle), static_cast<const void*>(templateFont),
-             static_cast<const void*>(pFontHandle));
+    LOG_INFO(Lib_Font, "called");
+    LOG_DEBUG(Lib_Font,
+              "parameters:\n"
+              " base={}\n"
+              " template={}\n"
+              " out_ptr={}\n",
+              static_cast<const void*>(fontHandle), static_cast<const void*>(templateFont),
+              static_cast<const void*>(pFontHandle));
     auto* src_state = TryGetState(templateFont);
     if (!src_state) {
         templateFont = nullptr;
         src_state = TryGetState(fontHandle);
     }
     if (!src_state) {
-        LOG_ERROR(Lib_Font, "OpenFontInstance: template handle={} missing",
+        LOG_ERROR(Lib_Font, "template handle={} missing",
                   templateFont ? static_cast<const void*>(templateFont)
                                : static_cast<const void*>(fontHandle));
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     FontState* base_state = TryGetState(fontHandle);
     if (!base_state && fontHandle) {
-        LOG_WARNING(Lib_Font,
-                    "OpenFontInstance: base handle={} unknown, falling back to template state",
+        LOG_WARNING(Lib_Font, "base handle={} unknown, falling back to template state",
                     static_cast<const void*>(fontHandle));
     }
     auto* new_handle = new (std::nothrow) OrbisFontHandleOpaque{};
     if (!new_handle) {
-        LOG_ERROR(Lib_Font, "OpenFontInstance: allocation failed");
+        LOG_ERROR(Lib_Font, "allocation failed");
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
     const std::size_t src_ext_bytes = src_state->ext_face_data.size();
     LOG_DEBUG(Lib_Font,
-              "font instance clone template state:\n"
+              "template state:\n"
               " ext_ready={}\n"
               " bytes={}\n"
               " cache_size={}\n"
@@ -2374,7 +2445,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontInstance(OrbisFontHandle fontHandle, OrbisFontHa
             dst.ext_face_ready = false;
             dst.ext_cache.clear();
         } else {
-            dst.ext_scale_for_height = ComputeScaleExt(&dst.ext_face, dst.scale_h);
+            dst.ext_scale_for_height = ComputeScaleExtForState(dst, &dst.ext_face, dst.scale_h);
             stbtt_ok = true;
         }
     } else {
@@ -2416,7 +2487,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontMemory(OrbisFontLib library, const void* fontAdd
                                        const OrbisFontOpenParams* open_params,
                                        OrbisFontHandle* pFontHandle) {
     if (!library || !fontAddress || fontSize == 0 || !pFontHandle) {
-        LOG_DEBUG(Lib_Font, "sceFontOpenFontMemory: invalid params");
+        LOG_DEBUG(Lib_Font, "invalid parameters");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     (void)open_params;
@@ -2465,6 +2536,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontMemory(OrbisFontLib library, const void* fontAdd
     const bool is_otf_cff = (sig32 == 0x4F54544Fu);
     const bool is_ttf_sfnt = (sig32 == 0x00010000u) || (sig32 == 0x74727565u);
     const bool is_sfnt_typ1 = (sig32 == 0x74797031u);
+    st.is_otf_cff = is_otf_cff;
     if (is_otf_cff) {
         LOG_WARNING(Lib_Font,
                     "ExternalFace: OTF/CFF detected (OTTO). CFF outlines are not supported;"
@@ -2474,7 +2546,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontMemory(OrbisFontLib library, const void* fontAdd
     if (stbtt_InitFont(&st.ext_face, st.ext_face_data.data(), offset)) {
         st.ext_face_ready = true;
         stbtt_GetFontVMetrics(&st.ext_face, &st.ext_ascent, &st.ext_descent, &st.ext_lineGap);
-        st.ext_scale_for_height = stbtt_ScaleForPixelHeight(&st.ext_face, st.scale_h);
+        st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
         LOG_INFO(Lib_Font, "external face ready");
         LOG_DEBUG(Lib_Font,
                   "external face params:\n"
@@ -2613,362 +2685,247 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
                                                        OrbisFontRenderSurface* surf, float x,
                                                        float y, OrbisFontGlyphMetrics* metrics,
                                                        OrbisFontRenderOutput* result) {
-    LOG_INFO(Lib_Font,
-             "RenderGlyph(H): handle={} code=U+{:04X} x={} y={} metrics={} result={} surf={}"
-             " buf={} widthByte={} pixelSizeByte={} size={}x{} sc=[{},{}-{}:{}] styleFlag={}",
-             static_cast<const void*>(fontHandle), code, x, y, static_cast<const void*>(metrics),
-             static_cast<const void*>(result), static_cast<const void*>(surf),
-             surf ? static_cast<const void*>(surf->buffer) : nullptr, surf ? surf->widthByte : -1,
-             surf ? (int)surf->pixelSizeByte : -1, surf ? surf->width : -1,
-             surf ? surf->height : -1, surf ? surf->sc_x0 : 0u, surf ? surf->sc_y0 : 0u,
-             surf ? surf->sc_x1 : 0u, surf ? surf->sc_y1 : 0u, surf ? (int)surf->styleFlag : -1);
-    if (!surf || !surf->buffer) {
+    LOG_INFO(Lib_Font, "called");
+    LOG_DEBUG(Lib_Font,
+              "parameters:\n"
+              " handle={}\n"
+              " code=U+{:04X}\n"
+              " x={}\n"
+              " y={}\n"
+              " metrics_ptr={}\n"
+              " result_ptr={}\n"
+              " surf_ptr={}\n"
+              " buf={}\n"
+              " widthByte={}\n"
+              " pixelSizeByte={}\n"
+              " size={}x{}\n"
+              " scissor=[{},{}-{}:{}]\n"
+              " styleFlag={}\n",
+              static_cast<const void*>(fontHandle), code, x, y, static_cast<const void*>(metrics),
+              static_cast<const void*>(result), static_cast<const void*>(surf),
+              surf ? static_cast<const void*>(surf->buffer) : nullptr, surf ? surf->widthByte : -1,
+              surf ? (int)surf->pixelSizeByte : -1, surf ? surf->width : -1,
+              surf ? surf->height : -1, surf ? surf->sc_x0 : 0u, surf ? surf->sc_y0 : 0u,
+              surf ? surf->sc_x1 : 0u, surf ? surf->sc_y1 : 0u, surf ? (int)surf->styleFlag : -1);
+
+    LogStrideOnce(surf);
+
+    if (!fontHandle) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "invalid font handle");
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
+    }
+    if (code == 0) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "no support code");
+        return ORBIS_FONT_ERROR_NO_SUPPORT_CODE;
+    }
+    if (!surf || !metrics || !result) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "invalid parameter");
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
-    LogStrideOnce(surf);
-    LOG_DEBUG(Lib_Font,
-              "RenderGlyph(H): handle={} code=U+{:04X} x={} y={} surf={} size={}x{} bpp={} "
-              "sc=[{},{}-{}:{}]",
-              static_cast<const void*>(fontHandle), code, x, y, static_cast<const void*>(surf),
-              surf->width, surf->height, (int)surf->pixelSizeByte, surf->sc_x0, surf->sc_y0,
-              surf->sc_x1, surf->sc_y1);
-    if (result) {
-        result->stage = nullptr;
-        result->slot.maybe_addr = static_cast<u8*>(surf->buffer);
-        result->slot.maybe_rowBytes = static_cast<u32>(std::max(0, surf->widthByte));
-        result->slot.maybe_pixelSize = static_cast<u8>(std::max(1, (int)surf->pixelSizeByte));
-        result->slot.maybe_pixelFmt = (result->slot.maybe_pixelSize == 4) ? 1 : 0;
+    auto* st = TryGetState(fontHandle);
+    if (!st) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "invalid font handle (state)");
+        return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
-    auto& st = GetState(fontHandle);
-    const OrbisFontStyleFrame* bound_style = nullptr;
-    if (auto it = g_style_for_surface.find(surf); it != g_style_for_surface.end()) {
-        bound_style = it->second;
+    if (!st->bound_renderer) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "renderer not bound");
+        return ORBIS_FONT_ERROR_NOT_BOUND_RENDERER;
     }
-    const StyleFrameScaleState style_state = ResolveStyleFrameScale(bound_style, st);
-    const bool style_scale_override = style_state.scale_overridden;
-    float render_scale_w = style_state.scale_w;
-    float render_scale_h = style_state.scale_h;
-    float fw = render_scale_w;
-    float fh = render_scale_h;
-    int g_x0 = 0, g_y0 = 0, g_x1 = 0, g_y1 = 0;
-    const stbtt_fontinfo* face = nullptr;
-    float scale = 0.0f;
 
-    const bool needs_custom_scale = std::fabs(render_scale_h - st.scale_h) > kScaleEpsilon;
-
-    if (st.ext_face_ready) {
-        if (st.ext_scale_for_height == 0.0f)
-            st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
-        const int glyph_index = stbtt_FindGlyphIndex(&st.ext_face, static_cast<int>(code));
-        if (glyph_index > 0) {
-            face = &st.ext_face;
-            scale = needs_custom_scale
-                        ? ComputeScaleExt(&st.ext_face, std::max(0.01f, render_scale_h))
-                        : st.ext_scale_for_height;
+    // Resolve effective pixel scales (style frame overrides -> point scales -> pixel scales)
+    const OrbisFontStyleFrame* style_frame = nullptr;
+    if ((surf->styleFlag & 0x1) != 0) {
+        if (auto it = g_style_for_surface.find(surf); it != g_style_for_surface.end()) {
+            style_frame = it->second;
         }
     }
+    StyleFrameScaleState style_scale = ResolveStyleFrameScale(style_frame, *st);
+    if (st->scale_point_active) {
+        style_scale.scale_w = PointsToPixels(st->scale_point_w, style_scale.dpi_x);
+        style_scale.scale_h = PointsToPixels(st->scale_point_h, style_scale.dpi_y);
+    }
 
+    const stbtt_fontinfo* face = nullptr;
+    float scale_y = 0.0f;
+    if (st->ext_face_ready) {
+        face = &st->ext_face;
+        scale_y = ComputeScaleExtForState(*st, face, style_scale.scale_h);
+    }
     if (!face) {
         bool system_attached = false;
-        const std::string sys_log = ReportSystemFaceRequest(st, fontHandle, system_attached);
+        const std::string sys_log = ReportSystemFaceRequest(*st, fontHandle, system_attached);
         if (!sys_log.empty()) {
             LOG_ERROR(Lib_Font, "{}", sys_log);
         }
         if (system_attached) {
-            face = &st.ext_face;
-            if (!needs_custom_scale) {
-                if (st.ext_scale_for_height == 0.0f)
-                    st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
-                scale = st.ext_scale_for_height;
-            } else {
-                scale = ComputeScaleExt(&st.ext_face, std::max(0.01f, render_scale_h));
-            }
+            face = &st->ext_face;
+            scale_y = ComputeScaleExtForState(*st, face, style_scale.scale_h);
         }
     }
+    if (!face || scale_y <= kScaleEpsilon) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "no support glyph (face/scale)");
+        return ORBIS_FONT_ERROR_NO_SUPPORT_GLYPH;
+    }
+    const float scale_x = (style_scale.scale_h > kScaleEpsilon)
+                              ? scale_y * (style_scale.scale_w / style_scale.scale_h)
+                              : scale_y;
 
+    const int glyph_index = stbtt_FindGlyphIndex(face, static_cast<int>(code));
+    if (glyph_index <= 0) {
+        ClearRenderOutputs(metrics, result);
+        return ORBIS_FONT_ERROR_NO_SUPPORT_GLYPH;
+    }
+
+    int aw = 0, lsb = 0;
+    stbtt_GetCodepointHMetrics(face, static_cast<int>(code), &aw, &lsb);
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
     const float frac_x = x - std::floor(x);
     const float frac_y = y - std::floor(y);
-    const bool use_subpixel = (frac_x != 0.0f) || (frac_y != 0.0f);
+    stbtt_GetCodepointBitmapBoxSubpixel(face, static_cast<int>(code), scale_x, scale_y, frac_x,
+                                        frac_y, &x0, &y0, &x1, &y1);
+    const int glyph_w = std::max(0, x1 - x0);
+    const int glyph_h = std::max(0, y1 - y0);
 
-    if (face) {
-        LOG_DEBUG(Lib_Font, "RenderGlyphSrc(H): handle={} code=U+{:04X} src=external",
-                  static_cast<const void*>(fontHandle), code);
-        const int pixel_h = std::max(1, (int)std::lround(render_scale_h));
-        const std::uint64_t key = MakeGlyphKey(code, pixel_h);
-        GlyphEntry* ge = nullptr;
-        if (!use_subpixel) {
-            if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
-                ge = &it->second;
-            }
-        }
-        if (!ge) {
-            GlyphEntry entry{};
-            int aw = 0, lsb = 0;
-            stbtt_GetCodepointHMetrics(face, static_cast<int>(code), &aw, &lsb);
-            if (use_subpixel) {
-                stbtt_GetCodepointBitmapBoxSubpixel(face, static_cast<int>(code), scale, scale,
-                                                    frac_x, frac_y, &entry.x0, &entry.y0, &entry.x1,
-                                                    &entry.y1);
-            } else {
-                stbtt_GetCodepointBitmapBox(face, static_cast<int>(code), scale, scale, &entry.x0,
-                                            &entry.y0, &entry.x1, &entry.y1);
-            }
-            entry.w = std::max(0, entry.x1 - entry.x0);
-            entry.h = std::max(0, entry.y1 - entry.y0);
-            entry.advance = static_cast<float>(aw) * scale;
-            entry.bearingX = static_cast<float>(lsb) * scale;
-            if (!use_subpixel && entry.w > 0 && entry.h > 0) {
-                entry.bitmap.resize(static_cast<size_t>(entry.w * entry.h));
-                stbtt_MakeCodepointBitmap(face, entry.bitmap.data(), entry.w, entry.h, entry.w,
-                                          scale, scale, static_cast<int>(code));
-                ge = &st.ext_cache.emplace(key, std::move(entry)).first->second;
-            } else if (use_subpixel) {
-                fw = static_cast<float>(entry.w);
-                fh = static_cast<float>(entry.h);
-                g_x0 = entry.x0;
-                g_y0 = entry.y0;
-                g_x1 = entry.x1;
-                g_y1 = entry.y1;
-            }
-        }
-        if (ge) {
-            fw = static_cast<float>(ge->w);
-            fh = static_cast<float>(ge->h);
-            g_x0 = ge->x0;
-            g_y0 = ge->y0;
-            g_x1 = ge->x1;
-            g_y1 = ge->y1;
-        }
-    }
-    if (metrics) {
-        if (face) {
-            int aw = 0, lsb = 0;
-            stbtt_GetCodepointHMetrics(face, static_cast<int>(code), &aw, &lsb);
-            metrics->w = fw;
-            metrics->h = fh;
-            metrics->h_bearing_x = static_cast<float>(lsb) * scale;
-            metrics->h_bearing_y = static_cast<float>(-g_y0);
-            metrics->h_adv = static_cast<float>(aw) * scale;
-        } else {
-            metrics->w = fw;
-            metrics->h = fh;
-            metrics->h_bearing_x = 0.0f;
-            metrics->h_bearing_y = fh;
-            metrics->h_adv = fw;
-        }
-        metrics->v_bearing_x = 0.0f;
-        metrics->v_bearing_y = 0.0f;
-        metrics->v_adv = 0.0f;
+    metrics->w = glyph_w > 0 ? static_cast<float>(glyph_w) : style_scale.scale_w;
+    metrics->h = glyph_h > 0 ? static_cast<float>(glyph_h) : style_scale.scale_h;
+    metrics->h_bearing_x = static_cast<float>(lsb) * scale_x;
+    metrics->h_bearing_y = static_cast<float>(-y0);
+    metrics->h_adv = static_cast<float>(aw) * scale_x;
+    metrics->v_bearing_x = 0.0f;
+    metrics->v_bearing_y = 0.0f;
+    metrics->v_adv = 0.0f;
+
+    // Compute the baseline position for the current scale so that we can
+    // place the glyph inside the render surface using the same convention as
+    // the original library: (x, y) specifies the top-left of the line box,
+    // while glyphs are positioned relative to the baseline.
+    int asc = 0, desc = 0, gap = 0;
+    stbtt_GetFontVMetrics(face, &asc, &desc, &gap);
+    const float baseline_from_top = static_cast<float>(asc) * scale_y;
+    const float glyph_top_from_top = baseline_from_top - metrics->h_bearing_y;
+
+    if (!surf->buffer || surf->width <= 0 || surf->height <= 0 || surf->widthByte <= 0 ||
+        surf->pixelSizeByte <= 0) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "no support surface (buffer)");
+        return ORBIS_FONT_ERROR_NO_SUPPORT_SURFACE;
     }
 
-    if (code == 0x20) {
-        if (result) {
-            result->new_x = 0;
-            result->new_y = 0;
-            result->new_w = 0;
-            result->new_h = 0;
-            result->ImageMetrics = {};
-        }
-        return ORBIS_OK;
+    const int bpp = static_cast<int>(surf->pixelSizeByte);
+    if (bpp != 1 && bpp != 4) {
+        ClearRenderOutputs(metrics, result);
+        LOG_ERROR(Lib_Font, "no support surface (bpp={})", bpp);
+        return ORBIS_FONT_ERROR_NO_SUPPORT_SURFACE;
     }
 
-    if (!st.layout_cached) {
-        UpdateCachedLayout(st);
-    }
-    float layout_baseline = st.layout_cached ? st.cached_baseline_y : 0.0f;
-    if (style_scale_override && st.ext_face_ready) {
-        const float override_scale = ComputeScaleExt(&st.ext_face, std::max(0.01f, render_scale_h));
-        layout_baseline = static_cast<float>(st.ext_ascent) * override_scale;
-    }
-
-    float adjusted_y = y;
-    if (face && layout_baseline > 0.0f) {
-        const float top_expect = adjusted_y + static_cast<float>(g_y0);
-        const float bottom_expect = top_expect + fh;
-        if (bottom_expect <= 0.0f || top_expect < 0.0f) {
-            adjusted_y += layout_baseline;
-        }
+    std::vector<unsigned char> glyph_bitmap;
+    glyph_bitmap.resize(static_cast<std::size_t>(std::max(0, glyph_w)) *
+                        static_cast<std::size_t>(std::max(0, glyph_h)));
+    if (glyph_w > 0 && glyph_h > 0) {
+        stbtt_MakeCodepointBitmapSubpixel(face, glyph_bitmap.data(), glyph_w, glyph_h, glyph_w,
+                                          scale_x, scale_y, frac_x, frac_y, static_cast<int>(code));
     }
 
-    int ix = static_cast<int>(x);
-    int iy = static_cast<int>(adjusted_y);
-    int left = ix;
-    int top = iy;
-    if (face) {
-        left = ix + g_x0;
-        top = iy + g_y0;
+    // Decide how to interpret (x, y) based on the font source:
+    // - System fonts (font sets like SST used by AnywhereVR) behaved best
+    //   when (x, y) was treated as the raw top-left of the glyph box.
+    // - Game-supplied external TrueType fonts using pixel scaling for Driveclub
+    //   match the original library when (x, y) is the baseline position.
+    // - Other external fonts (CFF / point scaling / non-Driveclub TTF) behave
+    //   like Catherine_ok, where (x, y) is the line top and glyphs are placed
+    //   from the baseline.
+    const bool is_system_font = (st->font_set_type != 0) || !st->system_font_path.empty();
+    const bool use_baseline_ttf = !is_system_font && !st->is_otf_cff && !st->scale_point_active &&
+                                  IsEmProfileExternalFont(*st);
+
+    int dest_x = static_cast<int>(std::floor(x));
+    int dest_y = 0;
+    if (is_system_font) {
+        // AnywhereVR / system fonts: raw top-left.
+        dest_y = static_cast<int>(std::floor(y));
+    } else if (use_baseline_ttf) {
+        // Driveclub-style TrueType game fonts: (x, y) is the baseline.
+        const int baseline_dest_x = static_cast<int>(std::floor(x)) + x0;
+        const int baseline_dest_y = static_cast<int>(std::floor(y)) + y0;
+        dest_x = baseline_dest_x;
+        dest_y = baseline_dest_y;
+    } else {
+        // Catherine / Digimon / ReFantazio external fonts:
+        // (x, y) is line top, align glyph from baseline.
+        dest_y = static_cast<int>(std::floor(y + glyph_top_from_top));
     }
-    int iw = std::max(0, static_cast<int>(std::round(fw)));
-    int ih = std::max(0, static_cast<int>(std::round(fh)));
+    // Apply surface scissor: rendering is clipped to [sc_x0, sc_x1) x [sc_y0, sc_y1),
+    // clamped to the surface bounds.
+    const int surface_w = std::max(surf->width, 0);
+    const int surface_h = std::max(surf->height, 0);
+    const int clip_x0 = std::clamp(static_cast<int>(surf->sc_x0), 0, surface_w);
+    const int clip_y0 = std::clamp(static_cast<int>(surf->sc_y0), 0, surface_h);
+    const int clip_x1 = std::clamp(static_cast<int>(surf->sc_x1), 0, surface_w);
+    const int clip_y1 = std::clamp(static_cast<int>(surf->sc_y1), 0, surface_h);
 
-    int sw = surf->width;
-    int sh = surf->height;
-    if (sw <= 0 || sh <= 0 || iw <= 0 || ih <= 0) {
-        return ORBIS_OK;
-    }
+    int update_x0 = dest_x;
+    int update_y0 = dest_y;
+    int update_w = 0;
+    int update_h = 0;
 
-    int sx0 = 0, sy0 = 0, sx1 = sw, sy1 = sh;
-    if (surf->sc_x1 > 0 || surf->sc_y1 > 0 || surf->sc_x0 > 0 || surf->sc_y0 > 0) {
-        sx0 = static_cast<int>(surf->sc_x0);
-        sy0 = static_cast<int>(surf->sc_y0);
-        sx1 = static_cast<int>(surf->sc_x1);
-        sy1 = static_cast<int>(surf->sc_y1);
-        sx0 = std::clamp(sx0, 0, sw);
-        sy0 = std::clamp(sy0, 0, sh);
-        sx1 = std::clamp(sx1, 0, sw);
-        sy1 = std::clamp(sy1, 0, sh);
-    }
+    if (glyph_w > 0 && glyph_h > 0 && clip_x1 > clip_x0 && clip_y1 > clip_y0) {
+        auto* dst_base = static_cast<std::uint8_t*>(surf->buffer);
+        const int start_row = std::max(dest_y, clip_y0);
+        const int end_row = std::min(dest_y + glyph_h, clip_y1);
+        const int start_col = std::max(dest_x, clip_x0);
+        const int end_col = std::min(dest_x + glyph_w, clip_x1);
 
-    int rx0 = left;
-    int ry0 = top;
-    int rx1 = left + iw;
-    int ry1 = top + ih;
-
-    rx0 = std::clamp(rx0, sx0, sx1);
-    ry0 = std::clamp(ry0, sy0, sy1);
-    rx1 = std::clamp(rx1, sx0, sx1);
-    ry1 = std::clamp(ry1, sy0, sy1);
-
-    int cw = std::max(0, rx1 - rx0);
-    int ch = std::max(0, ry1 - ry0);
-    if (ch == 0 && face) {
-        LOG_DEBUG(Lib_Font,
-                  "RenderGlyph(H): zero-height glyph code=U+{:04X} top={} ih={} g_y0={} g_y1={}"
-                  " y={}, g_adv={} scale={} src=external",
-                  code, top, ih, g_y0, g_y1, y, metrics ? metrics->h_adv : -1.0f, scale);
-    }
-
-    if (cw > 0 && ch > 0) {
-        const int bpp = std::max(1, static_cast<int>(surf->pixelSizeByte));
-        bool is_pua = (code >= 0xE000 && code <= 0xF8FF) || (code >= 0xF0000 && code <= 0xFFFFD) ||
-                      (code >= 0x100000 && code <= 0x10FFFD);
-        bool is_placeholder_ascii = (code == 'h' || code == 'p' || code == 'x' || code == 'o');
-        if ((is_pua || is_placeholder_ascii) && g_logged_pua.insert(code).second) {
-            LOG_DEBUG(
-                Lib_Font,
-                "GlyphTrace: code=U+{:04X} pua={} placeholder_ascii={} dst=[{},{} {}x{}] bpp={}",
-                code, is_pua, is_placeholder_ascii, rx0, ry0, cw, ch, bpp);
-        }
-        if (face && iw > 0 && ih > 0) {
-            const int pixel_h = std::max(1, (int)std::lround(render_scale_h));
-            const std::uint64_t key = MakeGlyphKey(code, pixel_h);
-            const GlyphEntry* ge = nullptr;
-            if (auto it = st.ext_cache.find(key); it != st.ext_cache.end()) {
-                ge = &it->second;
-            }
-            const float frac_x = x - std::floor(x);
-            const float frac_y = y - std::floor(y);
-            const bool use_subpixel = (frac_x != 0.0f) || (frac_y != 0.0f);
-            const std::uint8_t* src_bitmap = nullptr;
-            if (!use_subpixel && ge && ge->w == iw && ge->h == ih && !ge->bitmap.empty()) {
-                src_bitmap = ge->bitmap.data();
-            } else {
-                st.scratch.assign(static_cast<size_t>(iw * ih), 0);
-                if (use_subpixel) {
-                    stbtt_MakeCodepointBitmapSubpixel(face, st.scratch.data(), iw, ih, iw, scale,
-                                                      scale, frac_x, frac_y,
-                                                      static_cast<int>(code));
+        update_x0 = start_col;
+        update_y0 = start_row;
+        update_w = std::max(0, end_col - start_col);
+        update_h = std::max(0, end_row - start_row);
+        for (int row = start_row; row < end_row; ++row) {
+            const int src_y = row - dest_y;
+            if (src_y < 0 || src_y >= glyph_h)
+                continue;
+            const std::uint8_t* src_row =
+                glyph_bitmap.data() + static_cast<std::size_t>(src_y) * glyph_w;
+            std::uint8_t* dst_row = dst_base + static_cast<std::size_t>(row) *
+                                                   static_cast<std::size_t>(surf->widthByte);
+            for (int col = start_col; col < end_col; ++col) {
+                const int src_x = col - dest_x;
+                if (src_x < 0 || src_x >= glyph_w)
+                    continue;
+                const std::uint8_t cov = src_row[src_x];
+                std::uint8_t* dst = dst_row + static_cast<std::size_t>(col) * bpp;
+                if (bpp == 1) {
+                    dst[0] = cov;
                 } else {
-                    stbtt_MakeCodepointBitmap(face, st.scratch.data(), iw, ih, iw, scale, scale,
-                                              static_cast<int>(code));
-                }
-                src_bitmap = st.scratch.data();
-            }
-
-            const std::uint8_t* eff_src = src_bitmap;
-
-            const int src_x0 = std::max(0, sx0 - rx0);
-            const int src_y0 = std::max(0, sy0 - ry0);
-            const int dst_x0 = std::max(rx0, sx0);
-            const int dst_y0 = std::max(ry0, sy0);
-            const int copy_w = std::min(rx1, sx1) - dst_x0;
-            const int copy_h = std::min(ry1, sy1) - dst_y0;
-            if (copy_w > 0 && copy_h > 0) {
-                LOG_TRACE(Lib_Font,
-                          "RenderGlyph(H): code=U+{:04X} baseline=({}, {}) box=[{},{}-{}:{}] "
-                          "dst=[{},{} {}x{}] bpp={}",
-                          code, ix, iy, g_x0, g_y0, g_x1, g_y1, dst_x0, dst_y0, copy_w, copy_h,
-                          bpp);
-                for (int row = 0; row < copy_h; ++row) {
-                    const int src_y = src_y0 + row;
-                    const std::uint8_t* src_row = eff_src + src_y * iw + src_x0;
-                    int row_shift = 0;
-                    int row_dst_x = dst_x0 + row_shift;
-                    int row_copy_w = copy_w;
-                    if (row_dst_x < sx0) {
-                        int delta = sx0 - row_dst_x;
-                        row_dst_x = sx0;
-                        if (delta < row_copy_w) {
-                            src_row += delta;
-                            row_copy_w -= delta;
-                        } else {
-                            row_copy_w = 0;
-                        }
-                    }
-                    if (row_dst_x + row_copy_w > sx1) {
-                        row_copy_w = std::max(0, sx1 - row_dst_x);
-                    }
-                    std::uint8_t* dst_row = static_cast<std::uint8_t*>(surf->buffer) +
-                                            (dst_y0 + row) * surf->widthByte + row_dst_x * bpp;
-                    if (bpp == 1) {
-                        for (int col = 0; col < row_copy_w; ++col) {
-                            std::uint8_t cov = src_row[col];
-                            std::uint8_t& d = dst_row[col];
-                            d = std::max(d, cov);
-                        }
-                    } else if (bpp == 4) {
-                        std::uint32_t* px = reinterpret_cast<std::uint32_t*>(dst_row);
-                        for (int col = 0; col < row_copy_w; ++col) {
-                            std::uint8_t a = src_row[col];
-                            px[col] = (static_cast<std::uint32_t>(a) << 24) | 0x00FFFFFFu;
-                        }
-                    } else {
-                        for (int col = 0; col < row_copy_w; ++col) {
-                            std::uint8_t a = src_row[col];
-                            std::uint8_t* p = dst_row + col * bpp;
-                            std::memset(p, 0xFF, static_cast<size_t>(bpp));
-                            p[0] = a;
-                        }
-                    }
+                    dst[0] = cov;
+                    dst[1] = cov;
+                    dst[2] = cov;
+                    dst[3] = cov;
                 }
             }
-        } else {
-            if (result) {
-                result->new_x = 0;
-                result->new_y = 0;
-                result->new_w = 0;
-                result->new_h = 0;
-                result->ImageMetrics.width = 0;
-                result->ImageMetrics.height = 0;
-            }
-            LOG_DEBUG(Lib_Font, "RenderGlyph(H): skip draw (no face/zero size) code=U+{:04X}",
-                      code);
-            return ORBIS_OK;
         }
     }
 
-    if (result) {
-        result->new_x = static_cast<u32>(rx0);
-        result->new_y = static_cast<u32>(ry0);
-        result->new_w = static_cast<u32>(cw);
-        result->new_h = static_cast<u32>(ch);
-        const float stride_bytes = static_cast<float>(std::max(0, surf->widthByte));
-        result->ImageMetrics.bearing_x = metrics ? metrics->h_bearing_x : static_cast<float>(g_x0);
-        result->ImageMetrics.bearing_y = metrics ? metrics->h_bearing_y : static_cast<float>(-g_y0);
-        float adv_px = 0.0f;
-        if (face) {
-            int aw_tmp = 0, lsb_tmp = 0;
-            stbtt_GetCodepointHMetrics(face, static_cast<int>(code), &aw_tmp, &lsb_tmp);
-            adv_px = static_cast<float>(aw_tmp) * scale;
-        }
-        result->ImageMetrics.dv = adv_px;
-        result->ImageMetrics.stride = stride_bytes;
-        result->ImageMetrics.width = static_cast<u32>(cw);
-        result->ImageMetrics.height = static_cast<u32>(ch);
-        LOG_DEBUG(Lib_Font, "RenderGlyph(H): UpdateRect=[{},{} {}x{}] stride={} adv={}",
-                  result->new_x, result->new_y, result->new_w, result->new_h,
-                  result->ImageMetrics.stride, result->ImageMetrics.dv);
-    }
+    result->stage = nullptr;
+    result->slot.maybe_addr = static_cast<u8*>(surf->buffer);
+    result->slot.maybe_rowBytes = static_cast<u32>(surf->widthByte);
+    result->slot.maybe_pixelSize = static_cast<u8>(surf->pixelSizeByte);
+    result->slot.maybe_pixelFmt = 0;
+    result->new_x = static_cast<u32>(std::max(update_x0, 0));
+    result->new_y = static_cast<u32>(std::max(update_y0, 0));
+    result->new_w = static_cast<u32>(std::max(update_w, 0));
+    result->new_h = static_cast<u32>(std::max(update_h, 0));
+    result->ImageMetrics.bearing_x = metrics->h_bearing_x;
+    result->ImageMetrics.bearing_y = metrics->h_bearing_y;
+    result->ImageMetrics.dv = metrics->h_adv;
+    result->ImageMetrics.stride = static_cast<float>(surf->widthByte);
+    result->ImageMetrics.width = static_cast<u32>(std::max(update_w, 0));
+    result->ImageMetrics.height = static_cast<u32>(std::max(update_h, 0));
     return ORBIS_OK;
 }
 
@@ -2995,6 +2952,17 @@ s32 PS4_SYSV_ABI sceFontRendererSetOutlineBufferPolicy() {
 void PS4_SYSV_ABI sceFontRenderSurfaceInit(OrbisFontRenderSurface* renderSurface, void* buffer,
                                            int bufWidthByte, int pixelSizeByte, int widthPixel,
                                            int heightPixel) {
+    LOG_INFO(Lib_Font, "called");
+    LOG_DEBUG(Lib_Font,
+              "parameters:\n"
+              " renderSurface={}\n"
+              " buffer={}\n"
+              " bufWidthByte={}\n"
+              " pixelSizeByte={}\n"
+              " widthPixel={}\n"
+              " heightPixel={}\n",
+              static_cast<const void*>(renderSurface), buffer, bufWidthByte, pixelSizeByte,
+              widthPixel, heightPixel);
     if (renderSurface) {
         renderSurface->buffer = buffer;
         renderSurface->widthByte = bufWidthByte;
@@ -3009,17 +2977,30 @@ void PS4_SYSV_ABI sceFontRenderSurfaceInit(OrbisFontRenderSurface* renderSurface
         renderSurface->sc_x1 = static_cast<u32>(renderSurface->width);
         renderSurface->sc_y1 = static_cast<u32>(renderSurface->height);
         std::fill(std::begin(renderSurface->reserved_q), std::end(renderSurface->reserved_q), 0);
-        LOG_INFO(Lib_Font,
-                 "RenderSurfaceInit: buf={} widthByte={} pixelSizeByte={} size={}x{} "
-                 "scissor=[0,0-{}:{}]",
-                 static_cast<const void*>(buffer), bufWidthByte, pixelSizeByte,
-                 renderSurface->width, renderSurface->height, renderSurface->sc_x1,
-                 renderSurface->sc_y1);
+        LOG_DEBUG(Lib_Font,
+                  "result:\n"
+                  " buf={}\n"
+                  " widthByte={}\n"
+                  " pixelSizeByte={}\n"
+                  " size={}x{}\n"
+                  " scissor=[0,0-{}:{}]\n",
+                  static_cast<const void*>(buffer), bufWidthByte, pixelSizeByte,
+                  renderSurface->width, renderSurface->height, renderSurface->sc_x1,
+                  renderSurface->sc_y1);
     }
 }
 
 void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderSurface, int x0,
                                                  int y0, int w, int h) {
+    LOG_INFO(Lib_Font, "called");
+    LOG_DEBUG(Lib_Font,
+              "parameters:\n"
+              " renderSurface={}\n"
+              " x0={}\n"
+              " y0={}\n"
+              " w={}\n"
+              " h={}\n",
+              static_cast<const void*>(renderSurface), x0, y0, w, h);
     if (!renderSurface)
         return;
 
@@ -3056,8 +3037,14 @@ void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderS
         renderSurface->sc_y0 = static_cast<u32>(clip_y0);
         renderSurface->sc_y1 = static_cast<u32>(clip_y1);
     }
-    LOG_INFO(Lib_Font, "RenderSurfaceSetScissor: [{},{}-{}:{}]", renderSurface->sc_x0,
-             renderSurface->sc_y0, renderSurface->sc_x1, renderSurface->sc_y1);
+    LOG_DEBUG(Lib_Font,
+              "result:\n"
+              " sc_x0={}\n"
+              " sc_y0={}\n"
+              " sc_x1={}\n"
+              " sc_y1={}\n",
+              renderSurface->sc_x0, renderSurface->sc_y0, renderSurface->sc_x1,
+              renderSurface->sc_y1);
 }
 
 s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* renderSurface,
@@ -3103,10 +3090,12 @@ s32 PS4_SYSV_ABI sceFontSetFontsOpenMode() {
 
 s32 PS4_SYSV_ABI sceFontSetResolutionDpi(OrbisFontHandle fontHandle, u32 h_dpi, u32 v_dpi) {
     if (!fontHandle) {
+        LOG_ERROR(Lib_Font, "invalid font handle (null)");
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     auto* st_ptr = TryGetState(fontHandle);
     if (!st_ptr) {
+        LOG_ERROR(Lib_Font, "invalid font handle");
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     auto& st = *st_ptr;
@@ -3132,10 +3121,13 @@ s32 PS4_SYSV_ABI sceFontSetResolutionDpi(OrbisFontHandle fontHandle, u32 h_dpi, 
 
 s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float h) {
     if (!fontHandle || w <= 0.0f || h <= 0.0f) {
+        LOG_ERROR(Lib_Font, "invalid parameter handle={} w={} h={}",
+                  static_cast<const void*>(fontHandle), w, h);
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto* st_ptr = TryGetState(fontHandle);
     if (!st_ptr) {
+        LOG_ERROR(Lib_Font, "invalid font handle={}", static_cast<const void*>(fontHandle));
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     auto& st = *st_ptr;
@@ -3143,7 +3135,7 @@ s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float
     st.scale_w = w;
     st.scale_h = h;
     if (st.ext_face_ready)
-        st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+        st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
     bool system_attached = false;
     const std::string sys_log = ReportSystemFaceRequest(st, fontHandle, system_attached);
     if (!sys_log.empty()) {
@@ -3165,10 +3157,13 @@ s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float
 
 s32 PS4_SYSV_ABI sceFontSetScalePoint(OrbisFontHandle fontHandle, float w, float h) {
     if (!fontHandle || w <= 0.0f || h <= 0.0f) {
+        LOG_ERROR(Lib_Font, "invalid parameter handle={} w={} h={}",
+                  static_cast<const void*>(fontHandle), w, h);
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
     auto* st_ptr = TryGetState(fontHandle);
     if (!st_ptr) {
+        LOG_ERROR(Lib_Font, "invalid font handle={}", static_cast<const void*>(fontHandle));
         return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
     }
     auto& st = *st_ptr;
@@ -3190,7 +3185,7 @@ s32 PS4_SYSV_ABI sceFontSetScalePoint(OrbisFontHandle fontHandle, float w, float
     st.scale_w = pixel_w;
     st.scale_h = pixel_h;
     if (st.ext_face_ready)
-        st.ext_scale_for_height = ComputeScaleExt(&st.ext_face, st.scale_h);
+        st.ext_scale_for_height = ComputeScaleExtForState(st, &st.ext_face, st.scale_h);
     bool system_attached = false;
     const std::string sys_log = ReportSystemFaceRequest(st, fontHandle, system_attached);
     if (!sys_log.empty()) {
@@ -3536,7 +3531,10 @@ s32 PS4_SYSV_ABI sceFontTextSourceSetWritingForm() {
 }
 
 s32 PS4_SYSV_ABI sceFontUnbindRenderer(OrbisFontHandle fontHandle) {
-    LOG_DEBUG(Lib_Font, "sceFontUnbindRenderer fontHandle={}",
+    LOG_INFO(Lib_Font, "called");
+    LOG_DEBUG(Lib_Font,
+              "parameters:\n"
+              " fontHandle={}\n",
               static_cast<const void*>(fontHandle));
     return ORBIS_OK;
 }
