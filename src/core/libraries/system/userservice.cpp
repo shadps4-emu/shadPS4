@@ -1096,12 +1096,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         LOG_ERROR(Lib_UserService, "buffer is too short");
         return ORBIS_USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
     }
-    if (user_id == 1) {
-        snprintf(user_name, size, "%s", name.c_str());
-    } else {
-        snprintf(user_name, size, "%s - %d", name.c_str(), user_id);
-        // todo add list of names to config
-    }
+    snprintf(user_name, size, "%s", name.c_str());
     return ORBIS_OK;
 }
 

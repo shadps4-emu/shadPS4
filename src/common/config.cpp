@@ -146,7 +146,7 @@ static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
 static ConfigEntry<std::array<std::string, 4>> userNames({
-    "shadPS4"
+    "shadPS4",
     "shadps4-2",
     "shadPS4-3",
     "shadPS4-4",
@@ -402,6 +402,12 @@ string getLogType() {
 
 string getUserName(int id) {
     return userNames.get()[id];
+}
+
+void setUserName(int id, string name) {
+    auto temp = userNames.get();
+    temp[id] = name;
+    userNames.set(temp);
 }
 
 std::array<string, 4> const getUserNames() {
