@@ -1043,20 +1043,25 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    const IR::U64 src0{GetSrc64(inst.src[0])};
-    const IR::U64 src1{GetSrc64(inst.src[1])};
+    ASSERT(inst.src[1].field == OperandField::ConstZero);
+    const IR::U1 src0 = [&] {
+        switch (inst.src[0].field) {
+        case OperandField::ScalarGPR:
+            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+        case OperandField::VccLo:
+            return ir.GetVcc();
+        default:
+            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
+        }
+    }();
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::EQ:
-            return ir.IEqual(src0, src1);
+            return ir.LogicalNot(src0);
         case ConditionOp::LG: // NE
-            return ir.INotEqual(src0, src1);
+            return src0;
         case ConditionOp::GT:
-            if (src1.IsImmediate() && src1.U64() == 0) {
-                ASSERT(inst.src[0].field == OperandField::ScalarGPR);
-                return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
-            }
-            return ir.IGreaterThan(src0, src1, is_signed);
+            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
