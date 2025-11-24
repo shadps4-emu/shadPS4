@@ -177,7 +177,7 @@ static ConfigEntry<bool> isFullscreen(false);
 static ConfigEntry<string> fullscreenMode("Windowed");
 static ConfigEntry<string> presentMode("Mailbox");
 static ConfigEntry<bool> isHDRAllowed(false);
-static ConfigEntry<bool> fsrEnabled(true);
+static ConfigEntry<bool> fsrEnabled(false);
 static ConfigEntry<bool> rcasEnabled(true);
 static ConfigEntry<int> rcasAttenuation(250);
 
