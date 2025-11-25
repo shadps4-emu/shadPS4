@@ -201,6 +201,7 @@ public:
     void V_CVT_F32_F64(const GcnInst& inst);
     void V_CVT_F64_F32(const GcnInst& inst);
     void V_CVT_F32_UBYTE(u32 index, const GcnInst& inst);
+    void V_FLOOR_F64(const GcnInst& inst);
     void V_FRACT_F32(const GcnInst& inst);
     void V_TRUNC_F32(const GcnInst& inst);
     void V_CEIL_F32(const GcnInst& inst);
