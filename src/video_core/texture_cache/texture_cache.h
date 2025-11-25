@@ -35,6 +35,7 @@ class TextureCache {
     static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
+    static constexpr u64 DELAYED_DESTRUCTION_SAFETY_PERIOD = 24;
 
     using ImageIds = boost::container::small_vector<ImageId, 16>;
 
@@ -235,6 +236,12 @@ public:
     }
 
 private:
+    struct DeathRowEntry {
+        u64 fence_tick;
+        ImageId image_id;
+    };
+
+private:
     /// Iterate over all page indices in a range
     template <typename Func>
     static void ForEachPage(PAddr addr, size_t size, Func&& func) {
@@ -292,6 +299,7 @@ private:
         UnregisterImage(image_id);
         DeleteImage(image_id);
     }
+    void RegisterDelayedDestruction(ImageId image_id);
 
 private:
     const Vulkan::Instance& instance;
@@ -334,6 +342,7 @@ private:
         s32 clear_mask = -1;
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
+    std::vector<DeathRowEntry> death_row;
 };
 
 } // namespace VideoCore

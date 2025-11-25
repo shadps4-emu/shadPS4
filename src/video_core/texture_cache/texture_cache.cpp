@@ -30,7 +30,6 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
-
     // Set up garbage collection parameters.
     if (!instance.CanReportMemoryUsage()) {
         trigger_gc_memory = 0;
@@ -358,8 +357,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are greater, expand the image.
         if (image_info.type == cache_image.info.type &&
-            image_info.resources > cache_image.info.resources) {
-            return {ExpandImage(image_info, cache_image_id), -1, -1};
+            (image_info.resources > cache_image.info.resources ||
+             image_info.guest_size > cache_image.info.guest_size)) {
+            return {ExpandImageWithDelayedDestruction(image_info, cache_image_id), -1, -1};
         }
 
         // Size is greater but resources are not, because the tiling mode is different.
@@ -431,8 +431,7 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     if (src_image.binding.is_bound || src_image.binding.is_target) {
         src_image.binding.needs_rebind = 1u;
     }
-
-    FreeImage(image_id);
+    RegisterDelayedDestruction(image_id);
 
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
@@ -880,6 +879,19 @@ void TextureCache::RunGarbageCollector() {
     SCOPE_EXIT {
         ++gc_tick;
     };
+
+    // This checks death_row and removes all images processed with
+    // ExpandImageWithDelayedDestruction
+    if (!death_row.empty()) {
+        std::erase_if(death_row, [&](const DeathRowEntry& entry) {
+            if (scheduler.IsFree(entry.fence_tick)) {
+                DeleteImage(entry.image_id);
+                return true;
+            }
+            return false;
+        });
+    }
+
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
     }
@@ -974,6 +986,17 @@ void TextureCache::DeleteImage(ImageId image_id) {
         }
         slot_images.erase(image_id);
     });
+}
+
+void TextureCache::RegisterDelayedDestruction(ImageId image_id) {
+    // Untracks and unregisters images
+    UntrackImage(image_id);
+    UnregisterImage(image_id);
+
+    // Pushes image to death row. Garbage collector will remove it when current tick +
+    // DELAYED_DESTRUCTION_SAFETY_PERIOD is finished.
+    const u64 fence_tick = scheduler.CurrentTick() + DELAYED_DESTRUCTION_SAFETY_PERIOD;
+    death_row.push_back({fence_tick, image_id});
 }
 
 } // namespace VideoCore
