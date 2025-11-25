@@ -302,14 +302,15 @@ int PS4_SYSV_ABI scePadOutputReport() {
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "handle: {}", handle);
-    if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE || handle != std::clamp(handle, 1, 4)) {
+    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
+    if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     int connected_count = 0;
     bool connected = false;
     Input::State states[64];
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-    auto const& controller = controllers[handle - 1];
+    auto const& controller = controllers[*controller_id];
     int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
 
     if (!connected) {
@@ -435,14 +436,15 @@ int PS4_SYSV_ABI scePadReadHistory() {
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     LOG_TRACE(Lib_Pad, "handle: {}", handle);
-    if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE || handle != std::clamp(handle, 1, 4)) {
+    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
+    if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;
-    auto const& controller = controllers[handle - 1];
+    auto const& controller = controllers[*controller_id];
     controller->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
     pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
@@ -537,12 +539,13 @@ int PS4_SYSV_ABI scePadReadStateExt() {
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
     LOG_INFO(Lib_Pad, "(DUMMY) called");
-    if (handle != 1) {
+    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
+    if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
     int* rgb = Config::GetControllerCustomColor();
-    controllers[0]->SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
+    controllers[*controller_id]->SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
     return ORBIS_OK;
 }
 
@@ -559,7 +562,8 @@ int PS4_SYSV_ABI scePadResetLightBarAllByPortType() {
 int PS4_SYSV_ABI scePadResetOrientation(s32 handle) {
     LOG_INFO(Lib_Pad, "scePadResetOrientation called handle = {}", handle);
 
-    if (handle != 1) {
+    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
+    if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
 
@@ -614,6 +618,10 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
     if (Config::GetOverrideControllerColor()) {
         return ORBIS_OK;
+    }
+    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
+    if (!controller_id) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "called handle = {} rgb = {} {} {}", handle, pParam->r, pParam->g,

@@ -6,6 +6,7 @@
 #include <common/singleton.h>
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "controller.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
@@ -257,33 +258,30 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
 
         for (int i = 0; i < 4; i++) {
             if (!slot_taken[i]) {
-                controllers[i]->m_sdl_gamepad = pad;
+                auto* c = controllers[i];
+                c->m_sdl_gamepad = pad;
                 LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
                          SDL_GetGamepadID(pad));
-                controllers[i]->user_id = i + 1;
+                c->user_id = i + 1;
                 slot_taken[i] = true;
-                controllers[i]->player_index = i;
+                c->player_index = i;
                 AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
 
-                if (SDL_SetGamepadSensorEnabled(controllers[i]->m_sdl_gamepad, SDL_SENSOR_GYRO,
-                                                true)) {
-                    controllers[i]->gyro_poll_rate = SDL_GetGamepadSensorDataRate(
-                        controllers[i]->m_sdl_gamepad, SDL_SENSOR_GYRO);
-                    LOG_INFO(Input, "Gyro initialized, poll rate: {}",
-                             controllers[i]->gyro_poll_rate);
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                    c->gyro_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                    LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
                 } else {
                     LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
-                              controllers[i]->user_id);
+                              c->user_id);
                 }
-                if (SDL_SetGamepadSensorEnabled(controllers[i]->m_sdl_gamepad, SDL_SENSOR_ACCEL,
-                                                true)) {
-                    controllers[i]->accel_poll_rate = SDL_GetGamepadSensorDataRate(
-                        controllers[i]->m_sdl_gamepad, SDL_SENSOR_ACCEL);
-                    LOG_INFO(Input, "Accel initialized, poll rate: {}",
-                             controllers[i]->accel_poll_rate);
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                    c->accel_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                    LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
                 } else {
                     LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
-                              controllers[i]->user_id);
+                              c->user_id);
                 }
                 break;
             }
@@ -402,6 +400,12 @@ int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
         }
     }
     return -1;
+}
+
+std::optional<u8> GetControllerIndexFromUserID(s32 user_id) {
+    if (user_id < 1 || user_id > 4)
+        return std::nullopt;
+    return static_cast<u8>(user_id - 1);
 }
 
 int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID) {

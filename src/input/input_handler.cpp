@@ -611,7 +611,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             SetMouseGyroRollMode(new_button_state);
             break;
         default: // is a normal key (hopefully)
-            controllers[gamepad_index]->CheckButton(0, SDLGamepadToOrbisButton(button),
+            controller->CheckButton(0, SDLGamepadToOrbisButton(button),
                                                     new_button_state);
             break;
         }
