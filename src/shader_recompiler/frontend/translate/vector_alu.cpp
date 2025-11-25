@@ -142,6 +142,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_F32_UBYTE(2, inst);
     case Opcode::V_CVT_F32_UBYTE3:
         return V_CVT_F32_UBYTE(3, inst);
+    case Opcode::V_FLOOR_F64:
+        return V_FLOOR_F64(inst);
     case Opcode::V_FRACT_F32:
         return V_FRACT_F32(inst);
     case Opcode::V_TRUNC_F32:
@@ -804,6 +806,11 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     const IR::U32 byte = ir.BitFieldExtract(src0, ir.Imm32(8 * index), ir.Imm32(8));
     SetDst(inst.dst[0], ir.ConvertUToF(32, 32, byte));
+}
+
+void Translator::V_FLOOR_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFloor(src0));
 }
 
 void Translator::V_FRACT_F32(const GcnInst& inst) {
