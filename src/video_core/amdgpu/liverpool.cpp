@@ -655,8 +655,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     break;
                 }
                 if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
-                    rasterizer->InlineData(dma_data->dst_addr_lo, &dma_data->data, sizeof(u32),
-                                           true);
+                    rasterizer->FillBuffer(dma_data->dst_addr_lo, dma_data->NumBytes(),
+                                           dma_data->data, true);
                 } else if ((dma_data->src_sel == DmaDataSrc::Memory ||
                             dma_data->src_sel == DmaDataSrc::MemoryUsingL2) &&
                            dma_data->dst_sel == DmaDataDst::Gds) {
@@ -665,8 +665,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 } else if (dma_data->src_sel == DmaDataSrc::Data &&
                            (dma_data->dst_sel == DmaDataDst::Memory ||
                             dma_data->dst_sel == DmaDataDst::MemoryUsingL2)) {
-                    rasterizer->InlineData(dma_data->DstAddress<VAddr>(), &dma_data->data,
-                                           sizeof(u32), false);
+                    rasterizer->FillBuffer(dma_data->DstAddress<VAddr>(), dma_data->NumBytes(),
+                                           dma_data->data, false);
                 } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                            (dma_data->dst_sel == DmaDataDst::Memory ||
                             dma_data->dst_sel == DmaDataDst::MemoryUsingL2)) {
@@ -898,7 +898,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 break;
             }
             if (dma_data->src_sel == DmaDataSrc::Data && dma_data->dst_sel == DmaDataDst::Gds) {
-                rasterizer->InlineData(dma_data->dst_addr_lo, &dma_data->data, sizeof(u32), true);
+                rasterizer->FillBuffer(dma_data->dst_addr_lo, dma_data->NumBytes(), dma_data->data,
+                                       true);
             } else if ((dma_data->src_sel == DmaDataSrc::Memory ||
                         dma_data->src_sel == DmaDataSrc::MemoryUsingL2) &&
                        dma_data->dst_sel == DmaDataDst::Gds) {
@@ -907,8 +908,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             } else if (dma_data->src_sel == DmaDataSrc::Data &&
                        (dma_data->dst_sel == DmaDataDst::Memory ||
                         dma_data->dst_sel == DmaDataDst::MemoryUsingL2)) {
-                rasterizer->InlineData(dma_data->DstAddress<VAddr>(), &dma_data->data, sizeof(u32),
-                                       false);
+                rasterizer->FillBuffer(dma_data->DstAddress<VAddr>(), dma_data->NumBytes(),
+                                       dma_data->data, false);
             } else if (dma_data->src_sel == DmaDataSrc::Gds &&
                        (dma_data->dst_sel == DmaDataDst::Memory ||
                         dma_data->dst_sel == DmaDataDst::MemoryUsingL2)) {
