@@ -445,10 +445,13 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     controller->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
 
-    auto getAxisValue = [&state](Input::Axis a) {
-        return state.axes_smoothing_buf[static_cast<int>(a)] == -1
-                   ? state.axes[static_cast<int>(a)]
-                   : state.axes_smoothing_buf[static_cast<int>(a)];
+    auto getAxisValue = [&state, &controller](Input::Axis a) {
+        auto i = static_cast<int>(a);
+        if (controller->axis_smoothing_ticks[i] > 0) {
+            --controller->axis_smoothing_ticks[i];
+            return (state.axes[i] + controller->axis_smoothing_values[i]) / 2;
+        }
+        return state.axes[i];
     };
 
     pData->leftStick.x = getAxisValue(Input::Axis::LeftX);

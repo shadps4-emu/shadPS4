@@ -66,9 +66,6 @@ State GameController::GetLastState() const {
     }
     const u32 last = (m_first_state + m_states_num - 1) % MAX_STATES;
     auto copy = m_states[last];
-    for (int i = 0; i < static_cast<int>(Axis::AxisMax); i++) {
-        copy.axes_smoothing_buf[i] = -1;
-    }
     return copy;
 }
 
@@ -109,7 +106,8 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
     int axis_id = static_cast<int>(axis);
     if (std::abs(state.axes[axis_id] - value) > 120) {
         LOG_DEBUG(Input, "Keyboard axis change detected");
-        state.axes_smoothing_buf[axis_id] = (state.axes[axis_id] - value) / 2;
+        axis_smoothing_ticks[axis_id] = GameController::max_smoothing_ticks;
+        axis_smoothing_values[axis_id] = state.axes[axis_id];
     }
     state.axes[axis_id] = value;
 
