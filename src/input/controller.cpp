@@ -65,7 +65,11 @@ State GameController::GetLastState() const {
         return m_last_state;
     }
     const u32 last = (m_first_state + m_states_num - 1) % MAX_STATES;
-    return m_states[last];
+    auto copy = m_states[last];
+    for (int i = 0; i < static_cast<int>(Axis::AxisMax); i++) {
+        copy.axes_smoothing_buf[i] = -1;
+    }
+    return copy;
 }
 
 void GameController::AddState(const State& state) {
@@ -103,6 +107,10 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
 
     state.time = Libraries::Kernel::sceKernelGetProcessTime();
     int axis_id = static_cast<int>(axis);
+    if (std::abs(state.axes[axis_id] - value) > 120) {
+        LOG_DEBUG(Input, "Keyboard axis change detected");
+        state.axes_smoothing_buf[axis_id] = (state.axes[axis_id] - value) / 2;
+    }
     state.axes[axis_id] = value;
 
     if (axis == Input::Axis::TriggerLeft) {

@@ -325,9 +325,6 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].rightStick.y = states[i].axes[static_cast<int>(Input::Axis::RightY)];
         pData[i].analogButtons.l2 = states[i].axes[static_cast<int>(Input::Axis::TriggerLeft)];
         pData[i].analogButtons.r2 = states[i].axes[static_cast<int>(Input::Axis::TriggerRight)];
-        pData[i].acceleration.x = states[i].acceleration.x;
-        pData[i].acceleration.y = states[i].acceleration.y;
-        pData[i].acceleration.z = states[i].acceleration.z;
         pData[i].angularVelocity.x = states[i].angularVelocity.x;
         pData[i].angularVelocity.y = states[i].angularVelocity.y;
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
@@ -447,13 +444,19 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     auto const& controller = controllers[*controller_id];
     controller->ReadState(&state, &isConnected, &connectedCount);
     pData->buttons = state.buttonsState;
-    pData->leftStick.x = state.axes[static_cast<int>(Input::Axis::LeftX)];
-    pData->leftStick.y = state.axes[static_cast<int>(Input::Axis::LeftY)];
-    pData->rightStick.x = state.axes[static_cast<int>(Input::Axis::RightX)];
-    pData->rightStick.x = state.axes[static_cast<int>(Input::Axis::RightX)];
-    pData->rightStick.y = state.axes[static_cast<int>(Input::Axis::RightY)];
-    pData->analogButtons.l2 = state.axes[static_cast<int>(Input::Axis::TriggerLeft)];
-    pData->analogButtons.r2 = state.axes[static_cast<int>(Input::Axis::TriggerRight)];
+
+    auto getAxisValue = [&state](Input::Axis a) {
+        return state.axes_smoothing_buf[static_cast<int>(a)] == -1
+                   ? state.axes[static_cast<int>(a)]
+                   : state.axes_smoothing_buf[static_cast<int>(a)];
+    };
+
+    pData->leftStick.x = getAxisValue(Input::Axis::LeftX);
+    pData->leftStick.y = getAxisValue(Input::Axis::LeftY);
+    pData->rightStick.x = getAxisValue(Input::Axis::RightX);
+    pData->rightStick.y = getAxisValue(Input::Axis::RightY);
+    pData->analogButtons.l2 = getAxisValue(Input::Axis::TriggerLeft);
+    pData->analogButtons.r2 = getAxisValue(Input::Axis::TriggerRight);
     pData->acceleration.x = state.acceleration.x * 0.098;
     pData->acceleration.y = state.acceleration.y * 0.098;
     pData->acceleration.z = state.acceleration.z * 0.098;

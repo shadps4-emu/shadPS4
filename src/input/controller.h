@@ -36,6 +36,7 @@ struct State {
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
     int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
+    int axes_smoothing_buf[static_cast<int>(Axis::AxisMax)] = {-1, -1, -1, -1, -1, -1};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
     Libraries::Pad::OrbisFVector3 acceleration = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
