@@ -422,6 +422,7 @@ void ParseInputConfig(const std::string game_id = "") {
     while (std::getline(global_config_stream, line)) {
         ProcessLine();
     }
+    lineCount = 0;
     while (std::getline(config_stream, line)) {
         ProcessLine();
     }
@@ -553,7 +554,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     old_button_state = new_button_state;
     old_param = *new_param;
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
-        auto controller = controllers[0];
+        auto controller = controllers[gamepad_index];
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
             controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);

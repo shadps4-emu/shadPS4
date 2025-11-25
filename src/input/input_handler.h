@@ -402,7 +402,7 @@ public:
     inline bool IsEmpty() {
         return !(keys[0].IsValid() || keys[1].IsValid() || keys[2].IsValid());
     }
-    std::string ToString() { // todo add device type
+    std::string ToString() {
         switch (KeyCount()) {
         case 1:
             return fmt::format("({})", keys[0].ToString());
@@ -518,7 +518,8 @@ public:
 
 class ControllerAllOutputs {
 public:
-    std::array<ControllerOutput, 35> data = {
+    static constexpr u64 output_count = 37;
+    std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
         ControllerOutput(RIGHTJOYSTICK_HALFMODE),
@@ -526,20 +527,22 @@ public:
         ControllerOutput(MOUSE_GYRO_ROLL_MODE),
 
         // Button mappings
-        ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),          // Triangle
-        ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),           // Circle
-        ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),          // Cross
-        ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),           // Square
-        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),  // L1
-        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),     // L3
-        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER), // R1
-        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),    // R3
-        ControllerOutput(SDL_GAMEPAD_BUTTON_START),          // Options
-        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD),       // TouchPad
-        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),        // Up
-        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),      // Down
-        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),      // Left
-        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),     // Right
+        ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),           // Triangle
+        ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),            // Circle
+        ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),           // Cross
+        ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),            // Square
+        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),   // L1
+        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),      // L3
+        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),  // R1
+        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),     // R3
+        ControllerOutput(SDL_GAMEPAD_BUTTON_START),           // Options
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT),   // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER), // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT),  // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),         // Up
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
 
         // Axis mappings
         // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -568,7 +571,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
     };
     ControllerAllOutputs(u8 g) {
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < output_count; i++) {
             data[i].gamepad_id = g;
         }
     }
