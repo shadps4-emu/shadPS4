@@ -285,7 +285,7 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    for (auto i : std::views::iota(0, 4)) {
+    for (int i = 0; i < 4; ++i) {
         SDL_AddTimer(250, &PollController, controllers[i]);
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
