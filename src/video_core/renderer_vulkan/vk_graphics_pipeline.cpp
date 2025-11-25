@@ -94,10 +94,6 @@ GraphicsPipeline::GraphicsPipeline(
     const auto topology = LiverpoolToVK::PrimitiveType(key.prim_type);
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly = {
         .topology = topology,
-        // Avoid warning spam on all pipelines about unsupported restart disable, if not supported.
-        // However, must be false for list topologies to avoid validation errors.
-        .primitiveRestartEnable =
-            !instance.IsPrimitiveRestartDisableSupported() && !IsPrimitiveTopologyList(topology),
     };
 
     const bool is_rect_list = key.prim_type == AmdGpu::PrimitiveType::RectList;
@@ -156,12 +152,9 @@ GraphicsPipeline::GraphicsPipeline(
         vk::DynamicState::eStencilCompareMask, vk::DynamicState::eStencilWriteMask,
         vk::DynamicState::eStencilOp,          vk::DynamicState::eCullMode,
         vk::DynamicState::eFrontFace,          vk::DynamicState::eRasterizerDiscardEnable,
-        vk::DynamicState::eLineWidth,
+        vk::DynamicState::eLineWidth,          vk::DynamicState::ePrimitiveRestartEnable,
     };
 
-    if (instance.IsPrimitiveRestartDisableSupported()) {
-        dynamic_states.push_back(vk::DynamicState::ePrimitiveRestartEnable);
-    }
     if (instance.IsDepthBoundsSupported()) {
         dynamic_states.push_back(vk::DynamicState::eDepthBoundsTestEnable);
         dynamic_states.push_back(vk::DynamicState::eDepthBounds);
