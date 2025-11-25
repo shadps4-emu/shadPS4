@@ -35,7 +35,7 @@ class TextureCache {
     static constexpr s64 DEFAULT_PRESSURE_GC_MEMORY = 1_GB + 512_MB;
     static constexpr s64 DEFAULT_CRITICAL_GC_MEMORY = 3_GB;
     static constexpr s64 TARGET_GC_THRESHOLD = 8_GB;
-    static constexpr u64 DELAYED_DESTRUCTION_SAFETY_PERIOD = 24;
+    static constexpr u64 DELAYED_DESTRUCTION_SAFETY_PERIOD = 100;
 
     using ImageIds = boost::container::small_vector<ImageId, 16>;
 

@@ -30,6 +30,7 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
+
     // Set up garbage collection parameters.
     if (!instance.CanReportMemoryUsage()) {
         trigger_gc_memory = 0;
@@ -359,7 +360,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         if (image_info.type == cache_image.info.type &&
             (image_info.resources > cache_image.info.resources ||
              image_info.guest_size > cache_image.info.guest_size)) {
-            return {ExpandImageWithDelayedDestruction(image_info, cache_image_id), -1, -1};
+            return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
         // Size is greater but resources are not, because the tiling mode is different.
