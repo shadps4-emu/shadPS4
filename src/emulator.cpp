@@ -27,6 +27,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -180,7 +181,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                  true);
 
     // Initialize logging as soon as possible
-    if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
+    if (!id.empty() && EmulatorSettings::GetInstance()->IsSeparateLoggingEnabled()) {
         Common::Log::Initialize(id + ".log");
     } else {
         Common::Log::Initialize();
@@ -203,7 +204,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
+    LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());

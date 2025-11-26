@@ -81,68 +81,68 @@ struct GeneralSettings {
     Setting<std::filesystem::path> home_dir;
     Setting<std::filesystem::path> sys_modules_dir;
 
-    Setting<int> volumeSlider{100};
-    Setting<bool> isNeo{false};
-    Setting<bool> isDevKit{false};
-    Setting<int> extraDmemInMbytes{0};
-    Setting<bool> isPSNSignedIn{false};
-    Setting<bool> isTrophyPopupDisabled{false};
-    Setting<double> trophyNotificationDuration{6.0};
-    Setting<std::string> logFilter{""};
-    Setting<std::string> logType{"sync"};
-    Setting<bool> isShowSplash{false};
-    Setting<std::string> isSideTrophy{"right"};
-    Setting<bool> isConnectedToNetwork{false};
-    Setting<bool> isDiscordRPCEnabled{false};
+    Setting<int> volume_slider{100};
+    Setting<bool> neo_mode{false};
+    Setting<bool> dev_kit_mode{false};
+    Setting<int> extra_dmem_in_mbytes{0};
+    Setting<bool> psn_signed_in{false};
+    Setting<bool> trophy_popup_disabled{false};
+    Setting<double> trophy_notification_duration{6.0};
+    Setting<std::string> log_filter{""};
+    Setting<std::string> log_type{"sync"};
+    Setting<bool> show_splash{false};
+    Setting<std::string> side_trophy{"right"};
+    Setting<bool> connected_to_network{false};
+    Setting<bool> discord_rpc_enabled{false};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
-            make_override<GeneralSettings>("volumeSlider", &GeneralSettings::volumeSlider),
-            make_override<GeneralSettings>("isNeo", &GeneralSettings::isNeo),
-            make_override<GeneralSettings>("isDevKit", &GeneralSettings::isDevKit),
-            make_override<GeneralSettings>("extraDmemInMbytes",
-                                           &GeneralSettings::extraDmemInMbytes),
-            make_override<GeneralSettings>("isPSNSignedIn", &GeneralSettings::isPSNSignedIn),
-            make_override<GeneralSettings>("isTrophyPopupDisabled",
-                                           &GeneralSettings::isTrophyPopupDisabled),
-            make_override<GeneralSettings>("trophyNotificationDuration",
-                                           &GeneralSettings::trophyNotificationDuration),
-            make_override<GeneralSettings>("logFilter", &GeneralSettings::logFilter),
-            make_override<GeneralSettings>("logType", &GeneralSettings::logType),
-            make_override<GeneralSettings>("isShowSplash", &GeneralSettings::isShowSplash),
-            make_override<GeneralSettings>("isSideTrophy", &GeneralSettings::isSideTrophy),
-            make_override<GeneralSettings>("isConnectedToNetwork",
-                                           &GeneralSettings::isConnectedToNetwork)};
+            make_override<GeneralSettings>("volume_slider", &GeneralSettings::volume_slider),
+            make_override<GeneralSettings>("neo_mode", &GeneralSettings::neo_mode),
+            make_override<GeneralSettings>("dev_kit_mode", &GeneralSettings::dev_kit_mode),
+            make_override<GeneralSettings>("extra_dmem_in_mbytes",
+                                           &GeneralSettings::extra_dmem_in_mbytes),
+            make_override<GeneralSettings>("psn_signed_in", &GeneralSettings::psn_signed_in),
+            make_override<GeneralSettings>("trophy_popup_disabled",
+                                           &GeneralSettings::trophy_popup_disabled),
+            make_override<GeneralSettings>("trophy_notification_duration",
+                                           &GeneralSettings::trophy_notification_duration),
+            make_override<GeneralSettings>("log_filter", &GeneralSettings::log_filter),
+            make_override<GeneralSettings>("log_type", &GeneralSettings::log_type),
+            make_override<GeneralSettings>("show_splash", &GeneralSettings::show_splash),
+            make_override<GeneralSettings>("side_trophy", &GeneralSettings::side_trophy),
+            make_override<GeneralSettings>("connected_to_network",
+                                           &GeneralSettings::connected_to_network)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
-                                   sys_modules_dir, volumeSlider, isNeo, isDevKit,
-                                   extraDmemInMbytes, isPSNSignedIn, isTrophyPopupDisabled,
-                                   trophyNotificationDuration, logFilter, logType, isShowSplash,
-                                   isSideTrophy, isConnectedToNetwork, isDiscordRPCEnabled)
+                                   sys_modules_dir, volume_slider, neo_mode, dev_kit_mode,
+                                   extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
+                                   trophy_notification_duration, log_filter, log_type, show_splash,
+                                   side_trophy, connected_to_network, discord_rpc_enabled)
 
 // -------------------------------
 // Debug settings
 // -------------------------------
 struct DebugSettings {
     Setting<bool> separate_logging_enabled{false}; // specific
-    Setting<bool> DebugDump{false};                // specific
-    Setting<bool> ShaderDebug{false};              // specific
-    Setting<bool> FpsColor{true};
-    Setting<bool> logEnabled{true}; // specific
+    Setting<bool> debug_dump{false};               // specific
+    Setting<bool> shader_debug{false};             // specific
+    Setting<bool> fps_color{true};
+    Setting<bool> log_enabled{true}; // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
-            make_override<DebugSettings>("DebugDump", &DebugSettings::DebugDump),
-            make_override<DebugSettings>("ShaderDebug", &DebugSettings::ShaderDebug),
+            make_override<DebugSettings>("debug_dump", &DebugSettings::debug_dump),
+            make_override<DebugSettings>("shader_debug", &DebugSettings::shader_debug),
             make_override<DebugSettings>("separate_logging_enabled",
                                          &DebugSettings::separate_logging_enabled),
-            make_override<DebugSettings>("logEnabled", &DebugSettings::logEnabled)};
+            make_override<DebugSettings>("log_enabled", &DebugSettings::log_enabled)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, DebugDump, ShaderDebug,
-                                   FpsColor, logEnabled)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
+                                   shader_debug, fps_color, log_enabled)
 
 // -------------------------------
 // Input settings
@@ -150,76 +150,93 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, Debu
 enum HideCursorState : int { Never, Idle, Always };
 
 struct InputSettings {
-    Setting<int> cursorState{HideCursorState::Idle}; // specific
-    Setting<int> cursorHideTimeout{5};               // specific
-    Setting<bool> useSpecialPad{false};
-    Setting<int> specialPadClass{1};
-    Setting<bool> isMotionControlsEnabled{true}; // specific
-    Setting<bool> useUnifiedInputConfig{true};
-    Setting<std::string> defaultControllerID{""};
-    Setting<bool> backgroundControllerInput{false}; // specific
+    Setting<int> cursor_state{HideCursorState::Idle}; // specific
+    Setting<int> cursor_hide_timeout{5};              // specific
+    Setting<bool> use_special_pad{false};
+    Setting<int> special_pad_class{1};
+    Setting<bool> motion_controls_enabled{true}; // specific
+    Setting<bool> use_unified_Input_Config{true};
+    Setting<std::string> default_controller_id{""};
+    Setting<bool> background_controller_input{false}; // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
-            make_override<InputSettings>("cursorState", &InputSettings::cursorState),
-            make_override<InputSettings>("cursorHideTimeout", &InputSettings::cursorHideTimeout),
-            make_override<InputSettings>("isMotionControlsEnabled",
-                                         &InputSettings::isMotionControlsEnabled),
-            make_override<InputSettings>("backgroundControllerInput",
-                                         &InputSettings::backgroundControllerInput)};
+            make_override<InputSettings>("cursor_state", &InputSettings::cursor_state),
+            make_override<InputSettings>("cursor_hide_timeout",
+                                         &InputSettings::cursor_hide_timeout),
+            make_override<InputSettings>("motion_controls_enabled",
+                                         &InputSettings::motion_controls_enabled),
+            make_override<InputSettings>("background_controller_input",
+                                         &InputSettings::background_controller_input)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursorState, cursorHideTimeout, useSpecialPad,
-                                   specialPadClass, isMotionControlsEnabled, useUnifiedInputConfig,
-                                   defaultControllerID, backgroundControllerInput)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
+                                   use_special_pad, special_pad_class, motion_controls_enabled,
+                                   use_unified_Input_Config, default_controller_id,
+                                   background_controller_input)
 // -------------------------------
 // Audio settings
 // -------------------------------
 struct AudioSettings {
-    Setting<std::string> micDevice{"Default Device"};
-    Setting<std::string> mainOutputDevice{"Default Device"};
-    Setting<std::string> padSpkOutputDevice{"Default Device"};
+    Setting<std::string> mic_device{"Default Device"};
+    Setting<std::string> main_output_device{"Default Device"};
+    Setting<std::string> padSpk_output_device{"Default Device"};
 
     // TODO add overrides
+    std::vector<OverrideItem> GetOverrideableFields() const {
+        return std::vector<OverrideItem>{};
+    }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, micDevice, mainOutputDevice, padSpkOutputDevice)
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, mic_device, main_output_device,
+                                   padSpk_output_device)
 
 // -------------------------------
 // GPU settings
 // -------------------------------
 struct GPUSettings {
-    Setting<u32> windowWidth{1280};
-    Setting<u32> windowHeight{720};
-    Setting<u32> internalScreenWidth{1280};
-    Setting<u32> internalScreenHeight{720};
-    Setting<bool> isNullGpu{false};
-    Setting<bool> shouldCopyGPUBuffers{false};
-    Setting<bool> readbacksEnabled{false};
-    Setting<bool> readbackLinearImagesEnabled{false};
-    Setting<bool> directMemoryAccessEnabled{false};
-    Setting<bool> shouldDumpShaders{false};
-    Setting<bool> shouldPatchShaders{false};
-    Setting<u32> vblankFrequency{60};
-    Setting<bool> isFullscreen{false};
-    Setting<std::string> fullscreenMode{"Windowed"};
-    Setting<std::string> presentMode{"Mailbox"};
-    Setting<bool> isHDRAllowed{false};
-    Setting<bool> fsrEnabled{false};
-    Setting<bool> rcasEnabled{true};
-    Setting<int> rcasAttenuation{250};
+    Setting<u32> window_width{1280};
+    Setting<u32> window_height{720};
+    Setting<u32> internal_screen_width{1280};
+    Setting<u32> internal_screen_height{720};
+    Setting<bool> null_gpu{false};
+    Setting<bool> should_copy_gpu_buffers{false};
+    Setting<bool> readbacks_enabled{false};
+    Setting<bool> readback_linear_images_enabled{false};
+    Setting<bool> direct_memory_access_enabled{false};
+    Setting<bool> should_dump_shaders{false};
+    Setting<bool> should_patch_shaders{false};
+    Setting<u32> vblank_frequency{60};
+    Setting<bool> full_screen{false};
+    Setting<std::string> full_screen_mode{"Windowed"};
+    Setting<std::string> present_mode{"Mailbox"};
+    Setting<bool> hdr_allowed{false};
+    Setting<bool> fsr_enabled{false};
+    Setting<bool> rcas_enabled{true};
+    Setting<int> rcas_attenuation{250};
     // TODO add overrides
+    std::vector<OverrideItem> GetOverrideableFields() const {
+        return std::vector<OverrideItem>{};
+    }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, windowWidth, windowHeight, internalScreenWidth,
-                                   internalScreenHeight, isNullGpu, shouldCopyGPUBuffers,
-                                   readbacksEnabled, readbackLinearImagesEnabled,
-                                   directMemoryAccessEnabled, shouldDumpShaders, shouldPatchShaders,
-                                   vblankFrequency, isFullscreen, fullscreenMode, presentMode,
-                                   isHDRAllowed, fsrEnabled, rcasEnabled, rcasAttenuation)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, internal_screen_width,
+                                   internal_screen_height, null_gpu, should_copy_gpu_buffers,
+                                   readbacks_enabled, readback_linear_images_enabled,
+                                   direct_memory_access_enabled, should_dump_shaders,
+                                   should_patch_shaders, vblank_frequency, full_screen,
+                                   full_screen_mode, present_mode, hdr_allowed, fsr_enabled,
+                                   rcas_enabled, rcas_attenuation)
 // -------------------------------
 // Vulkan settings
 // -------------------------------
-struct VulkanSettings {};
-
+struct VulkanSettings {
+    Setting<s32> gpu_id{-1};
+    // TODO
+    std::vector<OverrideItem> GetOverrideableFields() const {
+        return std::vector<OverrideItem>{};
+    }
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id)
 // -------------------------------
 // User settings
 // -------------------------------
@@ -239,6 +256,7 @@ public:
 
     bool Save(const std::string& serial = "") const;
     bool Load(const std::string& serial = "");
+    void setDefaultValues();
 
     // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
@@ -260,6 +278,10 @@ public:
 private:
     GeneralSettings m_general{};
     DebugSettings m_debug{};
+    InputSettings m_input{};
+    AudioSettings m_audio{};
+    GPUSettings m_gpu{};
+    VulkanSettings m_vulkan{};
     UserManager m_userManager;
 
     static std::shared_ptr<EmulatorSettings> s_instance;
@@ -294,8 +316,8 @@ public:
         group.field.value = v;                                                                     \
     }
     // General settings
-    SETTING_FORWARD(m_general, VolumeSlider, volumeSlider)
-    SETTING_FORWARD_BOOL(m_general, Neo, isNeo)
+    SETTING_FORWARD(m_general, VolumeSlider, volume_slider)
+    SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
 
     // Debug settings
