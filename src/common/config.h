@@ -110,8 +110,6 @@ void setPadSpkOutputDevice(std::string device, bool is_game_specific = false);
 std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
 void setMicDevice(std::string device, bool is_game_specific = false);
-void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific = false);
-bool getSeparateLogFilesEnabled();
 u32 GetLanguage();
 void setLanguage(u32 language, bool is_game_specific = false);
 void setUseSpecialPad(bool use);
@@ -122,8 +120,6 @@ bool getPSNSignedIn();
 void setPSNSignedIn(bool sign, bool is_game_specific = false);
 bool patchShaders(); // no set
 bool fpsColor();     // no set
-bool isNeoModeConsole();
-void setNeoMode(bool enable, bool is_game_specific = false);
 bool isDevKitConsole();
 void setDevKitConsole(bool enable, bool is_game_specific = false);
 

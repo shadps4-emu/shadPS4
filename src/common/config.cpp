@@ -130,7 +130,6 @@ public:
 
 // General
 static ConfigEntry<int> volumeSlider(100);
-static ConfigEntry<bool> isNeo(false);
 static ConfigEntry<bool> isDevKit(false);
 static ConfigEntry<int> extraDmemInMbytes(0);
 static ConfigEntry<bool> isPSNSignedIn(false);
@@ -195,7 +194,6 @@ static ConfigEntry<bool> rdocEnable(false);
 // Debug
 static ConfigEntry<bool> isDebugDump(false);
 static ConfigEntry<bool> isShaderDebug(false);
-static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
 static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> logEnabled(true);
 
@@ -296,10 +294,6 @@ std::filesystem::path GetSaveDataPath() {
 
 void setVolumeSlider(int volumeValue, bool is_game_specific) {
     volumeSlider.set(volumeValue, is_game_specific);
-}
-
-bool isNeoModeConsole() {
-    return isNeo.get();
 }
 
 bool isDevKitConsole() {
@@ -655,10 +649,6 @@ void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
 }
 
-void setNeoMode(bool enable, bool is_game_specific) {
-    isNeo.set(enable, is_game_specific);
-}
-
 void setDevKitConsole(bool enable, bool is_game_specific) {
     isDevKit.set(enable, is_game_specific);
 }
@@ -669,10 +659,6 @@ void setLogType(const string& type, bool is_game_specific) {
 
 void setLogFilter(const string& type, bool is_game_specific) {
     logFilter.set(type, is_game_specific);
-}
-
-void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific) {
-    isSeparateLogFilesEnabled.set(enabled, is_game_specific);
 }
 
 void setUserName(const string& name, bool is_game_specific) {
@@ -768,10 +754,6 @@ u32 GetLanguage() {
     return m_language.get();
 }
 
-bool getSeparateLogFilesEnabled() {
-    return isSeparateLogFilesEnabled.get();
-}
-
 bool getPSNSignedIn() {
     return isPSNSignedIn.get();
 }
@@ -861,7 +843,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& general = data.at("General");
 
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
-        isNeo.setFromToml(general, "isPS4Pro", is_game_specific);
         isDevKit.setFromToml(general, "isDevKit", is_game_specific);
         if (is_game_specific) { // do not get this value from the base config
             extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
@@ -946,7 +927,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& debug = data.at("Debug");
 
         isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
-        isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
         isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
@@ -1061,7 +1041,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     userName.setTomlValue(data, "General", "userName", is_game_specific);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
-    isNeo.setTomlValue(data, "General", "isPS4Pro", is_game_specific);
     isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
     if (is_game_specific) {
         extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
@@ -1110,8 +1089,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     isDebugDump.setTomlValue(data, "Debug", "DebugDump", is_game_specific);
     isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
-    isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
-                                           is_game_specific);
     logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
@@ -1183,7 +1160,6 @@ void setDefaultValues(bool is_game_specific) {
     if (is_game_specific) {
         readbacksEnabled.set(false, is_game_specific);
         readbackLinearImagesEnabled.set(false, is_game_specific);
-        isNeo.set(false, is_game_specific);
         isDevKit.set(false, is_game_specific);
         isPSNSignedIn.set(false, is_game_specific);
         isConnectedToNetwork.set(false, is_game_specific);
@@ -1241,7 +1217,6 @@ void setDefaultValues(bool is_game_specific) {
     // GS - Debug
     isDebugDump.set(false, is_game_specific);
     isShaderDebug.set(false, is_game_specific);
-    isSeparateLogFilesEnabled.set(false, is_game_specific);
     logEnabled.set(true, is_game_specific);
 
     // GS - Settings
