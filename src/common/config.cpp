@@ -661,7 +661,6 @@ void setLogFilter(const string& type, bool is_game_specific) {
     logFilter.set(type, is_game_specific);
 }
 
-
 void setUserName(const string& name, bool is_game_specific) {
     userName.set(name, is_game_specific);
 }
