@@ -78,6 +78,10 @@ std::vector<std::filesystem::path> EmulatorSettings::GetGameInstallDirs() const 
     return out;
 }
 
+const std::vector<GameInstallDir>& EmulatorSettings::GetAllGameInstallDirs() const {
+    return m_general.install_dirs.value;
+}
+
 void EmulatorSettings::SetAllGameInstallDirs(const std::vector<GameInstallDir>& dirs) {
     m_general.install_dirs.value = dirs;
 }

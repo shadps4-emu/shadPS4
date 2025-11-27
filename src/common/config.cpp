@@ -180,8 +180,6 @@ static ConfigEntry<bool> vkGuestMarkers(false);
 static ConfigEntry<bool> rdocEnable(false);
 
 // Debug
-static ConfigEntry<bool> isDebugDump(false);
-static ConfigEntry<bool> isShaderDebug(false);
 static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> logEnabled(true);
 
@@ -340,14 +338,6 @@ bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
 }
 
-bool debugDump() {
-    return isDebugDump.get();
-}
-
-bool collectShadersForDebug() {
-    return isShaderDebug.get();
-}
-
 bool nullGpu() {
     return isNullGpu.get();
 }
@@ -455,16 +445,8 @@ void setInternalScreenHeight(u32 height) {
     internalScreenHeight.base_value = height;
 }
 
-void setDebugDump(bool enable, bool is_game_specific) {
-    isDebugDump.set(enable, is_game_specific);
-}
-
 void setLoggingEnabled(bool enable, bool is_game_specific) {
     logEnabled.set(enable, is_game_specific);
-}
-
-void setCollectShaderForDebug(bool enable, bool is_game_specific) {
-    isShaderDebug.set(enable, is_game_specific);
 }
 
 void setNullGpu(bool enable, bool is_game_specific) {
@@ -727,8 +709,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
 
-        isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
-        isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
@@ -871,8 +851,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific);
     rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
 
-    isDebugDump.setTomlValue(data, "Debug", "DebugDump", is_game_specific);
-    isShaderDebug.setTomlValue(data, "Debug", "CollectShader", is_game_specific);
     logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
@@ -985,8 +963,6 @@ void setDefaultValues(bool is_game_specific) {
     rdocEnable.set(false, is_game_specific);
 
     // GS - Debug
-    isDebugDump.set(false, is_game_specific);
-    isShaderDebug.set(false, is_game_specific);
     logEnabled.set(true, is_game_specific);
 
     // GS - Settings

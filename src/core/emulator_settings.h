@@ -130,21 +130,21 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
 struct DebugSettings {
     Setting<bool> separate_logging_enabled{false}; // specific
     Setting<bool> debug_dump{false};               // specific
-    Setting<bool> shader_debug{false};             // specific
+    Setting<bool> shader_dump{false};              // specific
     Setting<bool> fps_color{true};
     Setting<bool> log_enabled{true}; // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<DebugSettings>("debug_dump", &DebugSettings::debug_dump),
-            make_override<DebugSettings>("shader_debug", &DebugSettings::shader_debug),
+            make_override<DebugSettings>("shader_dump", &DebugSettings::shader_dump),
             make_override<DebugSettings>("separate_logging_enabled",
                                          &DebugSettings::separate_logging_enabled),
             make_override<DebugSettings>("log_enabled", &DebugSettings::log_enabled)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
-                                   shader_debug, fps_color, log_enabled)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump, shader_dump,
+                                   fps_color, log_enabled)
 
 // -------------------------------
 // Input settings
@@ -268,6 +268,7 @@ public:
     void SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
     void SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
     const std::vector<bool> GetGameInstallDirsEnabled();
+    const std::vector<GameInstallDir>& GetAllGameInstallDirs() const;
 
     std::filesystem::path GetHomeDir();
     void SetHomeDir(const std::filesystem::path& dir);
@@ -340,6 +341,8 @@ public:
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
+    SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
+    SETTING_FORWARD_BOOL(m_debug, ShaderDump, shader_dump)
 
 #undef SETTING_FORWARD
 #undef SETTING_FORWARD_BOOL

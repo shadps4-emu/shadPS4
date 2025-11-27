@@ -8,6 +8,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/recompiler.h"
@@ -286,7 +287,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, profile,
                                                         graphics_key, *pipeline_cache, infos,
                                                         runtime_infos, fetch_shader, modules);
-        if (Config::collectShadersForDebug()) {
+        if (EmulatorSettings::GetInstance()->IsShaderDump()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
                     auto& m = modules[stage];
@@ -310,7 +311,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
         it.value() =
             std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
                                               *pipeline_cache, compute_key, *infos[0], modules[0]);
-        if (Config::collectShadersForDebug()) {
+        if (EmulatorSettings::GetInstance()->IsShaderDump()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
         }
@@ -538,7 +539,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
-    if (Config::collectShadersForDebug()) {
+    if (EmulatorSettings::GetInstance()->IsShaderDump()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
     }
