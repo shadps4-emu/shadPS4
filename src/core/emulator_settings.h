@@ -333,6 +333,10 @@ public:
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
+    SETTING_FORWARD(m_general, LogFilter, log_filter)
+    SETTING_FORWARD(m_general, LogType, log_type)
+    SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)
+    SETTING_FORWARD_BOOL(m_general, DiscorRPCEnabled, discord_rpc_enabled)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)

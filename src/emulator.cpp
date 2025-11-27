@@ -203,10 +203,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+    LOG_INFO(Config, "General LogType: {}", EmulatorSettings::GetInstance()->GetLogType());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings::GetInstance()->IsDevKit());
-    LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
+    LOG_INFO(Config, "General isConnectedToNetwork: {}",
+             EmulatorSettings::GetInstance()->IsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings::GetInstance()->IsPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
@@ -358,7 +359,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
-    if (Config::getEnableDiscordRPC()) {
+    if (EmulatorSettings::GetInstance()->IsDiscorRPCEnabled()) {
         auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
         if (rpc->getRPCEnabled() == false) {
             rpc->init();

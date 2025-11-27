@@ -130,11 +130,7 @@ public:
 
 // General
 static ConfigEntry<int> volumeSlider(100);
-static ConfigEntry<string> logFilter("");
-static ConfigEntry<string> logType("sync");
 static ConfigEntry<string> userName("shadPS4");
-static ConfigEntry<bool> isConnectedToNetwork(false);
-static bool enableDiscordRPC = false;
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -288,10 +284,6 @@ std::string getPresentMode() {
     return presentMode.get();
 }
 
-bool getEnableDiscordRPC() {
-    return enableDiscordRPC;
-}
-
 s16 getCursorState() {
     return cursorState.get();
 }
@@ -330,14 +322,6 @@ u32 getInternalScreenHeight() {
 
 s32 getGpuId() {
     return gpuId.get();
-}
-
-string getLogFilter() {
-    return logFilter.get();
-}
-
-string getLogType() {
-    return logType.get();
 }
 
 string getUserName() {
@@ -451,14 +435,6 @@ void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
     vkGuestMarkers.set(enable, is_game_specific);
 }
 
-bool getIsConnectedToNetwork() {
-    return isConnectedToNetwork.get();
-}
-
-void setConnectedToNetwork(bool enable, bool is_game_specific) {
-    isConnectedToNetwork.set(enable, is_game_specific);
-}
-
 void setGpuId(s32 selectedGpuId, bool is_game_specific) {
     gpuId.set(selectedGpuId, is_game_specific);
 }
@@ -555,10 +531,6 @@ void setPresentMode(std::string mode, bool is_game_specific) {
     presentMode.set(mode, is_game_specific);
 }
 
-void setEnableDiscordRPC(bool enable) {
-    enableDiscordRPC = enable;
-}
-
 void setCursorState(s16 newCursorState, bool is_game_specific) {
     cursorState.set(newCursorState, is_game_specific);
 }
@@ -581,14 +553,6 @@ void setPadSpkOutputDevice(std::string device, bool is_game_specific) {
 
 void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
-}
-
-void setLogType(const string& type, bool is_game_specific) {
-    logType.set(type, is_game_specific);
-}
-
-void setLogFilter(const string& type, bool is_game_specific) {
-    logFilter.set(type, is_game_specific);
 }
 
 void setUserName(const string& name, bool is_game_specific) {
@@ -696,11 +660,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& general = data.at("General");
 
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
-        enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
-        logFilter.setFromToml(general, "logFilter", is_game_specific);
-        logType.setFromToml(general, "logType", is_game_specific);
         userName.setFromToml(general, "userName", is_game_specific);
-        isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
     }
 
@@ -870,10 +830,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     }
     // Entries saved by the game-specific settings GUI
     volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
-    logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
-    logType.setTomlValue(data, "General", "logType", is_game_specific);
     userName.setTomlValue(data, "General", "userName", is_game_specific);
-    isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
@@ -951,7 +908,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         }
 
         // Non game-specific entries
-        data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
@@ -984,15 +940,12 @@ void setDefaultValues(bool is_game_specific) {
     if (is_game_specific) {
         readbacksEnabled.set(false, is_game_specific);
         readbackLinearImagesEnabled.set(false, is_game_specific);
-        isConnectedToNetwork.set(false, is_game_specific);
         directMemoryAccessEnabled.set(false, is_game_specific);
     }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
     volumeSlider.set(100, is_game_specific);
-    logFilter.set("", is_game_specific);
-    logType.set("sync", is_game_specific);
     userName.set("shadPS4", is_game_specific);
 
     // GS - Input
@@ -1041,10 +994,6 @@ void setDefaultValues(bool is_game_specific) {
 
     // All other entries
     if (!is_game_specific) {
-
-        // General
-        enableDiscordRPC = false;
-
         // Input
         useSpecialPad.base_value = false;
         specialPadClass.base_value = 1;
