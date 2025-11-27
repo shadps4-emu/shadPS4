@@ -8,12 +8,12 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
-#include "core/emulator_settings.h"
 
 namespace Libraries::AppContent {
 
