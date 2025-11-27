@@ -508,7 +508,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
-    const auto& sys_module_path = Config::getSysModulesPath();
+    const auto& sys_module_path = EmulatorSettings::GetInstance()->GetSysModulesDir();
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
         found_modules.push_back(entry.path());
     }

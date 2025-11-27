@@ -506,7 +506,7 @@ enum PosixPageProtection {
 
 struct AddressSpace::Impl {
     Impl() {
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
+        BackingSize += EmulatorSettings::GetInstance()->GetExtraDmemInMBytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         system_managed_size = SystemManagedSize;
         system_reserved_size = SystemReservedSize;

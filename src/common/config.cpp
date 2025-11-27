@@ -133,10 +133,8 @@ static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
 static ConfigEntry<string> userName("shadPS4");
-static ConfigEntry<bool> isShowSplash(false);
 static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
-static std::filesystem::path sys_modules_path = {};
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -194,7 +192,6 @@ static ConfigEntry<bool> logEnabled(true);
 // GUI
 static std::vector<GameInstallDir> settings_install_dirs = {};
 std::vector<bool> install_dirs_enabled = {};
-std::filesystem::path settings_addon_install_dir = {};
 std::filesystem::path save_data_path = {};
 
 // Settings
@@ -221,17 +218,6 @@ bool getGameRunning() {
 
 void setGameRunning(bool running) {
     isGameRunning = running;
-}
-
-std::filesystem::path getSysModulesPath() {
-    if (sys_modules_path.empty()) {
-        return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
-    }
-    return sys_modules_path;
-}
-
-void setSysModulesPath(const std::filesystem::path& path) {
-    sys_modules_path = path;
 }
 
 int getVolumeSlider() {
@@ -378,10 +364,6 @@ bool collectShadersForDebug() {
     return isShaderDebug.get();
 }
 
-bool showSplash() {
-    return isShowSplash.get();
-}
-
 bool nullGpu() {
     return isNullGpu.get();
 }
@@ -509,10 +491,6 @@ void setCollectShaderForDebug(bool enable, bool is_game_specific) {
     isShaderDebug.set(enable, is_game_specific);
 }
 
-void setShowSplash(bool enable, bool is_game_specific) {
-    isShowSplash.set(enable, is_game_specific);
-}
-
 void setNullGpu(bool enable, bool is_game_specific) {
     isNullGpu.set(enable, is_game_specific);
 }
@@ -577,7 +555,6 @@ void setPresentMode(std::string mode, bool is_game_specific) {
     presentMode.set(mode, is_game_specific);
 }
 
-
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
 }
@@ -630,77 +607,8 @@ void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
     isMotionControlsEnabled.set(use, is_game_specific);
 }
 
-bool addGameInstallDir(const std::filesystem::path& dir, bool enabled) {
-    for (const auto& install_dir : settings_install_dirs) {
-        if (install_dir.path == dir) {
-            return false;
-        }
-    }
-    settings_install_dirs.push_back({dir, enabled});
-    return true;
-}
-
-void removeGameInstallDir(const std::filesystem::path& dir) {
-    auto iterator =
-        std::find_if(settings_install_dirs.begin(), settings_install_dirs.end(),
-                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
-    if (iterator != settings_install_dirs.end()) {
-        settings_install_dirs.erase(iterator);
-    }
-}
-
-void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
-    auto iterator =
-        std::find_if(settings_install_dirs.begin(), settings_install_dirs.end(),
-                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
-    if (iterator != settings_install_dirs.end()) {
-        iterator->enabled = enabled;
-    }
-}
-
-void setAddonInstallDir(const std::filesystem::path& dir) {
-    settings_addon_install_dir = dir;
-}
-
-void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
-    settings_install_dirs.clear();
-    for (const auto& dir : dirs_config) {
-        settings_install_dirs.push_back({dir, true});
-    }
-}
-
-void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config) {
-    settings_install_dirs = dirs_config;
-}
-
 void setSaveDataPath(const std::filesystem::path& path) {
     save_data_path = path;
-}
-
-const std::vector<std::filesystem::path> getGameInstallDirs() {
-    std::vector<std::filesystem::path> enabled_dirs;
-    for (const auto& dir : settings_install_dirs) {
-        if (dir.enabled) {
-            enabled_dirs.push_back(dir.path);
-        }
-    }
-    return enabled_dirs;
-}
-
-const std::vector<bool> getGameInstallDirsEnabled() {
-    std::vector<bool> enabled_dirs;
-    for (const auto& dir : settings_install_dirs) {
-        enabled_dirs.push_back(dir.enabled);
-    }
-    return enabled_dirs;
-}
-
-std::filesystem::path getAddonInstallDir() {
-    if (settings_addon_install_dir.empty()) {
-        // Default for users without a config file or a config file from before this option existed
-        return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
-    }
-    return settings_addon_install_dir;
 }
 
 u32 GetLanguage() {
@@ -792,12 +700,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         logFilter.setFromToml(general, "logFilter", is_game_specific);
         logType.setFromToml(general, "logType", is_game_specific);
         userName.setFromToml(general, "userName", is_game_specific);
-        isShowSplash.setFromToml(general, "showSplash", is_game_specific);
-        
-
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
-        sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
     }
 
     if (data.contains("Input")) {
@@ -894,9 +798,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         }
 
         save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
-
-        settings_addon_install_dir =
-            toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
     }
 
     if (data.contains("Settings")) {
@@ -972,7 +873,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
     logType.setTomlValue(data, "General", "logType", is_game_specific);
     userName.setTomlValue(data, "General", "userName", is_game_specific);
-    isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
@@ -1052,12 +952,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         // Non game-specific entries
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
-        data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
-        data["GUI"]["addonInstallDir"] =
-            string{fmt::UTF(settings_addon_install_dir.u8string()).data};
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 
@@ -1097,8 +994,6 @@ void setDefaultValues(bool is_game_specific) {
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
     userName.set("shadPS4", is_game_specific);
-    isShowSplash.set(false, is_game_specific);
-    
 
     // GS - Input
     cursorState.set(HideCursorState::Idle, is_game_specific);

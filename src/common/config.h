@@ -55,8 +55,6 @@ bool allowHDR();
 void setAllowHDR(bool enable, bool is_game_specific = false);
 bool collectShadersForDebug();
 void setCollectShaderForDebug(bool enable, bool is_game_specific = false);
-bool showSplash();
-void setShowSplash(bool enable, bool is_game_specific = false);
 bool nullGpu();
 void setNullGpu(bool enable, bool is_game_specific = false);
 bool copyGPUCmdBuffers();
@@ -128,8 +126,6 @@ void setRcasAttenuation(int value, bool is_game_specific = false);
 bool getIsConnectedToNetwork();
 void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
-std::filesystem::path getSysModulesPath();
-void setSysModulesPath(const std::filesystem::path& path);
 bool getLoadAutoPatches();
 void setLoadAutoPatches(bool enable);
 
@@ -146,18 +142,7 @@ bool GetOverrideControllerColor();
 void SetOverrideControllerColor(bool enable);
 int* GetControllerCustomColor();
 void SetControllerCustomColor(int r, int b, int g);
-void setGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
-void setAllGameInstallDirs(const std::vector<GameInstallDir>& dirs_config);
 void setSaveDataPath(const std::filesystem::path& path);
-// Gui
-bool addGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
-void removeGameInstallDir(const std::filesystem::path& dir);
-void setGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
-void setAddonInstallDir(const std::filesystem::path& dir);
-
-const std::vector<std::filesystem::path> getGameInstallDirs();
-const std::vector<bool> getGameInstallDirsEnabled();
-std::filesystem::path getAddonInstallDir();
 
 void setDefaultValues(bool is_game_specific = false);
 

@@ -82,6 +82,39 @@ void EmulatorSettings::SetAllGameInstallDirs(const std::vector<GameInstallDir>& 
     m_general.install_dirs.value = dirs;
 }
 
+void EmulatorSettings::RemoveGameInstallDir(const std::filesystem::path& dir) {
+    auto iterator =
+        std::find_if(m_general.install_dirs.value.begin(), m_general.install_dirs.value.end(),
+                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
+    if (iterator != m_general.install_dirs.value.end()) {
+        m_general.install_dirs.value.erase(iterator);
+    }
+}
+
+void EmulatorSettings::SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
+    auto iterator =
+        std::find_if(m_general.install_dirs.value.begin(), m_general.install_dirs.value.end(),
+                     [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
+    if (iterator != m_general.install_dirs.value.end()) {
+        iterator->enabled = enabled;
+    }
+}
+
+void EmulatorSettings::SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
+    m_general.install_dirs.value.clear();
+    for (const auto& dir : dirs_config) {
+        m_general.install_dirs.value.push_back({dir, true});
+    }
+}
+
+const std::vector<bool> EmulatorSettings::GetGameInstallDirsEnabled() {
+    std::vector<bool> enabled_dirs;
+    for (const auto& dir : m_general.install_dirs.value) {
+        enabled_dirs.push_back(dir.enabled);
+    }
+    return enabled_dirs;
+}
+
 std::filesystem::path EmulatorSettings::GetHomeDir() {
     if (m_general.home_dir.value.empty()) {
         return Common::FS::GetUserPath(Common::FS::PathType::HomeDir);

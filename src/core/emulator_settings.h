@@ -264,6 +264,11 @@ public:
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
     std::vector<std::filesystem::path> GetGameInstallDirs() const;
     void SetAllGameInstallDirs(const std::vector<GameInstallDir>& dirs);
+    void RemoveGameInstallDir(const std::filesystem::path& dir);
+    void SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled);
+    void SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config);
+    const std::vector<bool> GetGameInstallDirsEnabled();
+
     std::filesystem::path GetHomeDir();
     void SetHomeDir(const std::filesystem::path& dir);
     std::filesystem::path GetSysModulesDir();
@@ -325,7 +330,8 @@ public:
     SETTING_FORWARD_BOOL(m_general, PSNSignedIn, psn_signed_in)
     SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
     SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
-    SETTING_FORWARD(m_general, GetTrophyNotificationSide, trophy_notification_side)
+    SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
+    SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
 
     // Debug settings
