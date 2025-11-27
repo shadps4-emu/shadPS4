@@ -32,9 +32,9 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                    const std::string_view& rarity)
     : trophy_name(trophyName), trophy_type(rarity) {
 
-    side = Config::sideTrophy();
+    side = EmulatorSettings::GetInstance()->GetTrophyNotificationSide();
 
-    trophy_timer = Config::getTrophyNotificationDuration();
+    trophy_timer = EmulatorSettings::GetInstance()->GetTrophyNotificationDuration();
 
     if (std::filesystem::exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);

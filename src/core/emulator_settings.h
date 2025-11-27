@@ -91,7 +91,7 @@ struct GeneralSettings {
     Setting<std::string> log_filter{""};
     Setting<std::string> log_type{"sync"};
     Setting<bool> show_splash{false};
-    Setting<std::string> side_trophy{"right"};
+    Setting<std::string> trophy_notification_side{"right"};
     Setting<bool> connected_to_network{false};
     Setting<bool> discord_rpc_enabled{false};
 
@@ -111,7 +111,8 @@ struct GeneralSettings {
             make_override<GeneralSettings>("log_filter", &GeneralSettings::log_filter),
             make_override<GeneralSettings>("log_type", &GeneralSettings::log_type),
             make_override<GeneralSettings>("show_splash", &GeneralSettings::show_splash),
-            make_override<GeneralSettings>("side_trophy", &GeneralSettings::side_trophy),
+            make_override<GeneralSettings>("trophy_notification_side",
+                                           &GeneralSettings::trophy_notification_side),
             make_override<GeneralSettings>("connected_to_network",
                                            &GeneralSettings::connected_to_network)};
     }
@@ -120,7 +121,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    sys_modules_dir, volume_slider, neo_mode, dev_kit_mode,
                                    extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
                                    trophy_notification_duration, log_filter, log_type, show_splash,
-                                   side_trophy, connected_to_network, discord_rpc_enabled)
+                                   trophy_notification_side, connected_to_network,
+                                   discord_rpc_enabled)
 
 // -------------------------------
 // Debug settings
@@ -322,6 +324,8 @@ public:
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
     SETTING_FORWARD_BOOL(m_general, PSNSignedIn, psn_signed_in)
     SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
+    SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
+    SETTING_FORWARD(m_general, GetTrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
 
     // Debug settings

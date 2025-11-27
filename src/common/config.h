@@ -57,8 +57,6 @@ bool collectShadersForDebug();
 void setCollectShaderForDebug(bool enable, bool is_game_specific = false);
 bool showSplash();
 void setShowSplash(bool enable, bool is_game_specific = false);
-std::string sideTrophy();
-void setSideTrophy(std::string side, bool is_game_specific = false);
 bool nullGpu();
 void setNullGpu(bool enable, bool is_game_specific = false);
 bool copyGPUCmdBuffers();
@@ -97,9 +95,6 @@ std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
 std::string getLogFilter();
 void setLogFilter(const std::string& type, bool is_game_specific = false);
-double getTrophyNotificationDuration();
-void setTrophyNotificationDuration(double newTrophyNotificationDuration,
-                                   bool is_game_specific = false);
 int getCursorHideTimeout();
 std::string getMainOutputDevice();
 void setMainOutputDevice(std::string device, bool is_game_specific = false);

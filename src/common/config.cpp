@@ -130,12 +130,10 @@ public:
 
 // General
 static ConfigEntry<int> volumeSlider(100);
-static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
 static ConfigEntry<string> userName("shadPS4");
 static ConfigEntry<bool> isShowSplash(false);
-static ConfigEntry<string> isSideTrophy("right");
 static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static std::filesystem::path sys_modules_path = {};
@@ -328,10 +326,6 @@ std::string getPadSpkOutputDevice() {
     return padSpkOutputDevice.get();
 }
 
-double getTrophyNotificationDuration() {
-    return trophyNotificationDuration.get();
-}
-
 u32 getWindowWidth() {
     return windowWidth.get();
 }
@@ -386,10 +380,6 @@ bool collectShadersForDebug() {
 
 bool showSplash() {
     return isShowSplash.get();
-}
-
-string sideTrophy() {
-    return isSideTrophy.get();
 }
 
 bool nullGpu() {
@@ -523,10 +513,6 @@ void setShowSplash(bool enable, bool is_game_specific) {
     isShowSplash.set(enable, is_game_specific);
 }
 
-void setSideTrophy(string side, bool is_game_specific) {
-    isSideTrophy.set(side, is_game_specific);
-}
-
 void setNullGpu(bool enable, bool is_game_specific) {
     isNullGpu.set(enable, is_game_specific);
 }
@@ -614,10 +600,6 @@ void setMainOutputDevice(std::string device, bool is_game_specific) {
 
 void setPadSpkOutputDevice(std::string device, bool is_game_specific) {
     padSpkOutputDevice.set(device, is_game_specific);
-}
-
-void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is_game_specific) {
-    trophyNotificationDuration.set(newTrophyNotificationDuration, is_game_specific);
 }
 
 void setLanguage(u32 language, bool is_game_specific) {
@@ -806,14 +788,12 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& general = data.at("General");
 
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
-        trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
-                                               is_game_specific);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
         logFilter.setFromToml(general, "logFilter", is_game_specific);
         logType.setFromToml(general, "logType", is_game_specific);
         userName.setFromToml(general, "userName", is_game_specific);
         isShowSplash.setFromToml(general, "showSplash", is_game_specific);
-        isSideTrophy.setFromToml(general, "sideTrophy", is_game_specific);
+        
 
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
@@ -989,13 +969,10 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     }
     // Entries saved by the game-specific settings GUI
     volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
-    trophyNotificationDuration.setTomlValue(data, "General", "trophyNotificationDuration",
-                                            is_game_specific);
     logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
     logType.setTomlValue(data, "General", "logType", is_game_specific);
     userName.setTomlValue(data, "General", "userName", is_game_specific);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
-    isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
@@ -1117,12 +1094,11 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
     volumeSlider.set(100, is_game_specific);
-    trophyNotificationDuration.set(6.0, is_game_specific);
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
     userName.set("shadPS4", is_game_specific);
     isShowSplash.set(false, is_game_specific);
-    isSideTrophy.set("right", is_game_specific);
+    
 
     // GS - Input
     cursorState.set(HideCursorState::Idle, is_game_specific);
