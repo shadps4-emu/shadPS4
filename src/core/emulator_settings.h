@@ -318,6 +318,10 @@ public:
     // General settings
     SETTING_FORWARD(m_general, VolumeSlider, volume_slider)
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
+    SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
+    SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
+    SETTING_FORWARD_BOOL(m_general, PSNSignedIn, psn_signed_in)
+    SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
 
     // Debug settings

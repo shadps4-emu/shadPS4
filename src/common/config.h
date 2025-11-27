@@ -73,8 +73,6 @@ bool dumpShaders();
 void setDumpShaders(bool enable, bool is_game_specific = false);
 u32 vblankFreq();
 void setVblankFreq(u32 value, bool is_game_specific = false);
-bool getisTrophyPopupDisabled();
-void setisTrophyPopupDisabled(bool disable, bool is_game_specific = false);
 s16 getCursorState();
 void setCursorState(s16 cursorState, bool is_game_specific = false);
 bool vkValidationEnabled();
@@ -116,15 +114,8 @@ void setUseSpecialPad(bool use);
 bool getUseSpecialPad();
 void setSpecialPadClass(int type);
 int getSpecialPadClass();
-bool getPSNSignedIn();
-void setPSNSignedIn(bool sign, bool is_game_specific = false);
 bool patchShaders(); // no set
 bool fpsColor();     // no set
-bool isDevKitConsole();
-void setDevKitConsole(bool enable, bool is_game_specific = false);
-
-int getExtraDmemInMbytes();
-void setExtraDmemInMbytes(int value, bool is_game_specific = false);
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 std::string getDefaultControllerID();

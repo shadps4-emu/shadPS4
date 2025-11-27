@@ -205,9 +205,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
-    LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
+    LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings::GetInstance()->IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
-    LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
+    LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings::GetInstance()->IsPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());

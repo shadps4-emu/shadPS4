@@ -130,10 +130,6 @@ public:
 
 // General
 static ConfigEntry<int> volumeSlider(100);
-static ConfigEntry<bool> isDevKit(false);
-static ConfigEntry<int> extraDmemInMbytes(0);
-static ConfigEntry<bool> isPSNSignedIn(false);
-static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
@@ -296,20 +292,6 @@ void setVolumeSlider(int volumeValue, bool is_game_specific) {
     volumeSlider.set(volumeValue, is_game_specific);
 }
 
-bool isDevKitConsole() {
-    return isDevKit.get();
-}
-
-int getExtraDmemInMbytes() {
-    return extraDmemInMbytes.get();
-}
-
-void setExtraDmemInMbytes(int value, bool is_game_specific) {
-    // Disable setting in global config
-    is_game_specific ? extraDmemInMbytes.game_specific_value = value
-                     : extraDmemInMbytes.base_value = 0;
-}
-
 bool getIsFullscreen() {
     return isFullscreen.get();
 }
@@ -320,10 +302,6 @@ string getFullscreenMode() {
 
 std::string getPresentMode() {
     return presentMode.get();
-}
-
-bool getisTrophyPopupDisabled() {
-    return isTrophyPopupDisabled.get();
 }
 
 bool getEnableDiscordRPC() {
@@ -613,9 +591,6 @@ void setPresentMode(std::string mode, bool is_game_specific) {
     presentMode.set(mode, is_game_specific);
 }
 
-void setisTrophyPopupDisabled(bool disable, bool is_game_specific) {
-    isTrophyPopupDisabled.set(disable, is_game_specific);
-}
 
 void setEnableDiscordRPC(bool enable) {
     enableDiscordRPC = enable;
@@ -647,10 +622,6 @@ void setTrophyNotificationDuration(double newTrophyNotificationDuration, bool is
 
 void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
-}
-
-void setDevKitConsole(bool enable, bool is_game_specific) {
-    isDevKit.set(enable, is_game_specific);
 }
 
 void setLogType(const string& type, bool is_game_specific) {
@@ -754,14 +725,6 @@ u32 GetLanguage() {
     return m_language.get();
 }
 
-bool getPSNSignedIn() {
-    return isPSNSignedIn.get();
-}
-
-void setPSNSignedIn(bool sign, bool is_game_specific) {
-    isPSNSignedIn.set(sign, is_game_specific);
-}
-
 string getDefaultControllerID() {
     return defaultControllerID.get();
 }
@@ -843,12 +806,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& general = data.at("General");
 
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
-        isDevKit.setFromToml(general, "isDevKit", is_game_specific);
-        if (is_game_specific) { // do not get this value from the base config
-            extraDmemInMbytes.setFromToml(general, "extraDmemInMbytes", is_game_specific);
-        }
-        isPSNSignedIn.setFromToml(general, "isPSNSignedIn", is_game_specific);
-        isTrophyPopupDisabled.setFromToml(general, "isTrophyPopupDisabled", is_game_specific);
         trophyNotificationDuration.setFromToml(general, "trophyNotificationDuration",
                                                is_game_specific);
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
@@ -1030,10 +987,8 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         }
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
-
     // Entries saved by the game-specific settings GUI
     volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
-    isTrophyPopupDisabled.setTomlValue(data, "General", "isTrophyPopupDisabled", is_game_specific);
     trophyNotificationDuration.setTomlValue(data, "General", "trophyNotificationDuration",
                                             is_game_specific);
     logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
@@ -1041,11 +996,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     userName.setTomlValue(data, "General", "userName", is_game_specific);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
-    isDevKit.setTomlValue(data, "General", "isDevKit", is_game_specific);
-    if (is_game_specific) {
-        extraDmemInMbytes.setTomlValue(data, "General", "extraDmemInMbytes", is_game_specific);
-    }
-    isPSNSignedIn.setTomlValue(data, "General", "isPSNSignedIn", is_game_specific);
     isConnectedToNetwork.setTomlValue(data, "General", "isConnectedToNetwork", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
@@ -1160,17 +1110,13 @@ void setDefaultValues(bool is_game_specific) {
     if (is_game_specific) {
         readbacksEnabled.set(false, is_game_specific);
         readbackLinearImagesEnabled.set(false, is_game_specific);
-        isDevKit.set(false, is_game_specific);
-        isPSNSignedIn.set(false, is_game_specific);
         isConnectedToNetwork.set(false, is_game_specific);
         directMemoryAccessEnabled.set(false, is_game_specific);
-        extraDmemInMbytes.set(0, is_game_specific);
     }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
     volumeSlider.set(100, is_game_specific);
-    isTrophyPopupDisabled.set(false, is_game_specific);
     trophyNotificationDuration.set(6.0, is_game_specific);
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);

@@ -7,15 +7,11 @@
 #include <mutex>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
-
-#ifdef ENABLE_QT_GUI
-#include <qt_gui/background_music_player.h>
-#endif
-
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "imgui/imgui_std.h"
 
@@ -284,7 +280,7 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
                       const std::string_view& rarity) {
     std::lock_guard<std::mutex> lock(queueMtx);
 
-    if (Config::getisTrophyPopupDisabled()) {
+    if (EmulatorSettings::GetInstance()->IsTrophyPopupDisabled()) {
         return;
     } else if (current_trophy_ui.has_value()) {
         current_trophy_ui.reset();
