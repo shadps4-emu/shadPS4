@@ -12,6 +12,7 @@
 #include "common/elf_info.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
@@ -317,7 +318,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         SDL_SetWindowFullscreenMode(
             window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
     }
-    SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
+    SDL_SetWindowFullscreen(window, EmulatorSettings::GetInstance()->IsFullScreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
     controller->SetEngine(std::make_unique<Input::SDLInputEngine>());

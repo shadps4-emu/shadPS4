@@ -348,7 +348,7 @@ bool EmulatorSettings::Load(const std::string& serial) {
     }
 }
 
-void EmulatorSettings::setDefaultValues() {
+void EmulatorSettings::SetDefaultValues() {
     m_general = GeneralSettings{};
     m_debug = DebugSettings{};
     m_input = InputSettings{};

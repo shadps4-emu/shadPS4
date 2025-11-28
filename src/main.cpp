@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
              // Set fullscreen mode without saving it to config file
-             Config::setIsFullscreen(is_fullscreen);
+             EmulatorSettings::GetInstance()->SetFullScreen(is_fullscreen);
          }},
         {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
         {"--add-game-folder",

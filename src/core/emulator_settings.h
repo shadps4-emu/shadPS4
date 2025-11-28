@@ -233,12 +233,15 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, int
 // -------------------------------
 struct VulkanSettings {
     Setting<s32> gpu_id{-1};
+    Setting<bool> full_screen{false};
     // TODO
     std::vector<OverrideItem> GetOverrideableFields() const {
-        return std::vector<OverrideItem>{};
+        return std::vector<OverrideItem>{
+            make_override<VulkanSettings>("gpu_id", &VulkanSettings::gpu_id),
+            make_override<VulkanSettings>("full_screen", &VulkanSettings::full_screen)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id,full_screen)
 // -------------------------------
 // User settings
 // -------------------------------
@@ -258,7 +261,7 @@ public:
 
     bool Save(const std::string& serial = "") const;
     bool Load(const std::string& serial = "");
-    void setDefaultValues();
+    void SetDefaultValues();
 
     // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
@@ -343,6 +346,10 @@ public:
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
     SETTING_FORWARD_BOOL(m_debug, ShaderDump, shader_dump)
+
+    // Vulkan settings
+    SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
+    SETTING_FORWARD_BOOL(m_vulkan, FullScreen, full_screen)
 
 #undef SETTING_FORWARD
 #undef SETTING_FORWARD_BOOL

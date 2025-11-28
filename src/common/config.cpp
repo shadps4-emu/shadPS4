@@ -160,7 +160,6 @@ static ConfigEntry<bool> directMemoryAccessEnabled(false);
 static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
-static ConfigEntry<bool> isFullscreen(false);
 static ConfigEntry<string> fullscreenMode("Windowed");
 static ConfigEntry<string> presentMode("Mailbox");
 static ConfigEntry<bool> isHDRAllowed(false);
@@ -169,7 +168,6 @@ static ConfigEntry<bool> rcasEnabled(true);
 static ConfigEntry<int> rcasAttenuation(250);
 
 // Vulkan
-static ConfigEntry<s32> gpuId(-1);
 static ConfigEntry<bool> vkValidation(false);
 static ConfigEntry<bool> vkValidationCore(true);
 static ConfigEntry<bool> vkValidationSync(false);
@@ -270,10 +268,6 @@ void setVolumeSlider(int volumeValue, bool is_game_specific) {
     volumeSlider.set(volumeValue, is_game_specific);
 }
 
-bool getIsFullscreen() {
-    return isFullscreen.get();
-}
-
 string getFullscreenMode() {
     return fullscreenMode.get();
 }
@@ -318,9 +312,6 @@ u32 getInternalScreenHeight() {
     return internalScreenHeight.get();
 }
 
-s32 getGpuId() {
-    return gpuId.get();
-}
 
 string getUserName() {
     return userName.get();
@@ -425,10 +416,6 @@ void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
     vkGuestMarkers.set(enable, is_game_specific);
 }
 
-void setGpuId(s32 selectedGpuId, bool is_game_specific) {
-    gpuId.set(selectedGpuId, is_game_specific);
-}
-
 void setWindowWidth(u32 width, bool is_game_specific) {
     windowWidth.set(width, is_game_specific);
 }
@@ -499,10 +486,6 @@ void setRdocEnabled(bool enable, bool is_game_specific) {
 
 void setVblankFreq(u32 value, bool is_game_specific) {
     vblankFrequency.set(value, is_game_specific);
-}
-
-void setIsFullscreen(bool enable, bool is_game_specific) {
-    isFullscreen.set(enable, is_game_specific);
 }
 
 void setFullscreenMode(string mode, bool is_game_specific) {
@@ -682,7 +665,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
         shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
         vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
-        isFullscreen.setFromToml(gpu, "Fullscreen", is_game_specific);
         fullscreenMode.setFromToml(gpu, "FullscreenMode", is_game_specific);
         presentMode.setFromToml(gpu, "presentMode", is_game_specific);
         isHDRAllowed.setFromToml(gpu, "allowHDR", is_game_specific);
@@ -694,7 +676,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("Vulkan")) {
         const toml::value& vk = data.at("Vulkan");
 
-        gpuId.setFromToml(vk, "gpuId", is_game_specific);
         vkValidation.setFromToml(vk, "validation", is_game_specific);
         vkValidationCore.setFromToml(vk, "validation_core", is_game_specific);
         vkValidationSync.setFromToml(vk, "validation_sync", is_game_specific);
@@ -832,7 +813,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    isFullscreen.setTomlValue(data, "GPU", "Fullscreen", is_game_specific);
     fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific);
     presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific);
     isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
@@ -841,7 +821,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific);
     directMemoryAccessEnabled.setTomlValue(data, "GPU", "directMemoryAccess", is_game_specific);
 
-    gpuId.setTomlValue(data, "Vulkan", "gpuId", is_game_specific);
     vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific);
     vkValidationSync.setTomlValue(data, "Vulkan", "validation_sync", is_game_specific);
     vkValidationCore.setTomlValue(data, "Vulkan", "validation_core", is_game_specific);
@@ -943,7 +922,6 @@ void setDefaultValues(bool is_game_specific) {
     shouldCopyGPUBuffers.set(false, is_game_specific);
     shouldDumpShaders.set(false, is_game_specific);
     vblankFrequency.set(60, is_game_specific);
-    isFullscreen.set(false, is_game_specific);
     fullscreenMode.set("Windowed", is_game_specific);
     presentMode.set("Mailbox", is_game_specific);
     isHDRAllowed.set(false, is_game_specific);
@@ -952,7 +930,6 @@ void setDefaultValues(bool is_game_specific) {
     rcasAttenuation.set(250, is_game_specific);
 
     // GS - Vulkan
-    gpuId.set(-1, is_game_specific);
     vkValidation.set(false, is_game_specific);
     vkValidationCore.set(true, is_game_specific);
     vkValidationSync.set(false, is_game_specific);
