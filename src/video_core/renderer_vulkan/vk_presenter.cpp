@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
@@ -578,7 +578,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
                 ImGui::Image(game_texture, size);
 
-                if (Config::nullGpu()) {
+                if (EmulatorSettings::GetInstance()->IsNullGPU()) {
                     Core::Devtools::Layer::DrawNullGpuNotice();
                 }
             }

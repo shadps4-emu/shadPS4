@@ -152,7 +152,6 @@ static ConfigEntry<u32> windowWidth(1280);
 static ConfigEntry<u32> windowHeight(720);
 static ConfigEntry<u32> internalScreenWidth(1280);
 static ConfigEntry<u32> internalScreenHeight(720);
-static ConfigEntry<bool> isNullGpu(false);
 static ConfigEntry<bool> shouldCopyGPUBuffers(false);
 static ConfigEntry<bool> readbacksEnabled(false);
 static ConfigEntry<bool> readbackLinearImagesEnabled(false);
@@ -160,8 +159,6 @@ static ConfigEntry<bool> directMemoryAccessEnabled(false);
 static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
-static ConfigEntry<string> fullscreenMode("Windowed");
-static ConfigEntry<string> presentMode("Mailbox");
 static ConfigEntry<bool> isHDRAllowed(false);
 static ConfigEntry<bool> fsrEnabled(false);
 static ConfigEntry<bool> rcasEnabled(true);
@@ -179,7 +176,6 @@ static ConfigEntry<bool> rdocEnable(false);
 
 // Debug
 static ConfigEntry<bool> isFpsColor(true);
-static ConfigEntry<bool> logEnabled(true);
 
 // GUI
 static std::vector<GameInstallDir> settings_install_dirs = {};
@@ -239,10 +235,6 @@ int* GetControllerCustomColor() {
     return controllerCustomColorRGB;
 }
 
-bool getLoggingEnabled() {
-    return logEnabled.get();
-}
-
 void SetControllerCustomColor(int r, int b, int g) {
     controllerCustomColorRGB[0] = r;
     controllerCustomColorRGB[1] = b;
@@ -266,14 +258,6 @@ std::filesystem::path GetSaveDataPath() {
 
 void setVolumeSlider(int volumeValue, bool is_game_specific) {
     volumeSlider.set(volumeValue, is_game_specific);
-}
-
-string getFullscreenMode() {
-    return fullscreenMode.get();
-}
-
-std::string getPresentMode() {
-    return presentMode.get();
 }
 
 s16 getCursorState() {
@@ -312,7 +296,6 @@ u32 getInternalScreenHeight() {
     return internalScreenHeight.get();
 }
 
-
 string getUserName() {
     return userName.get();
 }
@@ -327,10 +310,6 @@ int getSpecialPadClass() {
 
 bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
-}
-
-bool nullGpu() {
-    return isNullGpu.get();
 }
 
 bool copyGPUCmdBuffers() {
@@ -363,10 +342,6 @@ bool isRdocEnabled() {
 
 bool fpsColor() {
     return isFpsColor.get();
-}
-
-bool isLoggingEnabled() {
-    return logEnabled.get();
 }
 
 u32 vblankFreq() {
@@ -432,14 +407,6 @@ void setInternalScreenHeight(u32 height) {
     internalScreenHeight.base_value = height;
 }
 
-void setLoggingEnabled(bool enable, bool is_game_specific) {
-    logEnabled.set(enable, is_game_specific);
-}
-
-void setNullGpu(bool enable, bool is_game_specific) {
-    isNullGpu.set(enable, is_game_specific);
-}
-
 void setAllowHDR(bool enable, bool is_game_specific) {
     isHDRAllowed.set(enable, is_game_specific);
 }
@@ -486,14 +453,6 @@ void setRdocEnabled(bool enable, bool is_game_specific) {
 
 void setVblankFreq(u32 value, bool is_game_specific) {
     vblankFrequency.set(value, is_game_specific);
-}
-
-void setFullscreenMode(string mode, bool is_game_specific) {
-    fullscreenMode.set(mode, is_game_specific);
-}
-
-void setPresentMode(std::string mode, bool is_game_specific) {
-    presentMode.set(mode, is_game_specific);
 }
 
 void setCursorState(s16 newCursorState, bool is_game_specific) {
@@ -657,7 +616,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         windowHeight.setFromToml(gpu, "screenHeight", is_game_specific);
         internalScreenWidth.setFromToml(gpu, "internalScreenWidth", is_game_specific);
         internalScreenHeight.setFromToml(gpu, "internalScreenHeight", is_game_specific);
-        isNullGpu.setFromToml(gpu, "nullGpu", is_game_specific);
         shouldCopyGPUBuffers.setFromToml(gpu, "copyGPUBuffers", is_game_specific);
         readbacksEnabled.setFromToml(gpu, "readbacks", is_game_specific);
         readbackLinearImagesEnabled.setFromToml(gpu, "readbackLinearImages", is_game_specific);
@@ -665,8 +623,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
         shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
         vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
-        fullscreenMode.setFromToml(gpu, "FullscreenMode", is_game_specific);
-        presentMode.setFromToml(gpu, "presentMode", is_game_specific);
         isHDRAllowed.setFromToml(gpu, "allowHDR", is_game_specific);
         fsrEnabled.setFromToml(gpu, "fsrEnabled", is_game_specific);
         rcasEnabled.setFromToml(gpu, "rcasEnabled", is_game_specific);
@@ -691,7 +647,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& debug = data.at("Debug");
 
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
-        logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
@@ -807,14 +762,11 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
     windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
-    isNullGpu.setTomlValue(data, "GPU", "nullGpu", is_game_specific);
     shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific);
     readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific);
     readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific);
-    presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific);
     isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
     fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
     rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
@@ -829,8 +781,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     vkHostMarkers.setTomlValue(data, "Vulkan", "hostMarkers", is_game_specific);
     vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific);
     rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
-
-    logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
@@ -918,12 +868,9 @@ void setDefaultValues(bool is_game_specific) {
     // GS - GPU
     windowWidth.set(1280, is_game_specific);
     windowHeight.set(720, is_game_specific);
-    isNullGpu.set(false, is_game_specific);
     shouldCopyGPUBuffers.set(false, is_game_specific);
     shouldDumpShaders.set(false, is_game_specific);
     vblankFrequency.set(60, is_game_specific);
-    fullscreenMode.set("Windowed", is_game_specific);
-    presentMode.set("Mailbox", is_game_specific);
     isHDRAllowed.set(false, is_game_specific);
     fsrEnabled.set(true, is_game_specific);
     rcasEnabled.set(true, is_game_specific);
@@ -938,9 +885,6 @@ void setDefaultValues(bool is_game_specific) {
     vkHostMarkers.set(false, is_game_specific);
     vkGuestMarkers.set(false, is_game_specific);
     rdocEnable.set(false, is_game_specific);
-
-    // GS - Debug
-    logEnabled.set(true, is_game_specific);
 
     // GS - Settings
     m_language.set(1, is_game_specific);

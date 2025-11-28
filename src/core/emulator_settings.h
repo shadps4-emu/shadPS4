@@ -218,7 +218,10 @@ struct GPUSettings {
     Setting<int> rcas_attenuation{250};
     // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
-        return std::vector<OverrideItem>{};
+        return std::vector<OverrideItem>{
+            make_override<GPUSettings>("null_gpu", &GPUSettings::null_gpu),
+            make_override<GPUSettings>("full_screen", &GPUSettings::full_screen),
+            make_override<GPUSettings>("present_mode", &GPUSettings::present_mode)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, internal_screen_width,
@@ -241,7 +244,7 @@ struct VulkanSettings {
             make_override<VulkanSettings>("full_screen", &VulkanSettings::full_screen)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id,full_screen)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, full_screen)
 // -------------------------------
 // User settings
 // -------------------------------
@@ -346,6 +349,12 @@ public:
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
     SETTING_FORWARD_BOOL(m_debug, ShaderDump, shader_dump)
+    SETTING_FORWARD_BOOL(m_debug, LogEnabled, log_enabled)
+
+    // GPU Settings
+    SETTING_FORWARD_BOOL(m_gpu, NullGPU, null_gpu)
+    SETTING_FORWARD(m_gpu, FullScreenMode, full_screen_mode)
+    SETTING_FORWARD(m_gpu, PresentMode, present_mode)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)

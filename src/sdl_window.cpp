@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SDL3/SDL_events.h"
@@ -315,8 +315,10 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         error = true;
     }
     if (!error) {
-        SDL_SetWindowFullscreenMode(
-            window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
+        SDL_SetWindowFullscreenMode(window, EmulatorSettings::GetInstance()->GetFullScreenMode() ==
+                                                    "Fullscreen"
+                                                ? displayMode
+                                                : NULL);
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings::GetInstance()->IsFullScreen());
 
