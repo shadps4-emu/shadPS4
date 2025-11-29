@@ -11,6 +11,21 @@ class SymbolsResolver;
 
 namespace Libraries::FontFt {
 
+struct OrbisFontLibrarySelection {
+    u32 magic;
+    u32 reserved;
+    void* reserved_ptr1;
+    void* reserved_ptr2;
+};
+
+struct OrbisFontRendererSelection {
+    u32 magic;
+    u32 size;
+    uintptr_t create_fn;
+    uintptr_t query_fn;
+    uintptr_t destroy_fn;
+};
+
 s32 PS4_SYSV_ABI sceFontFtInitAliases();
 s32 PS4_SYSV_ABI sceFontFtSetAliasFont();
 s32 PS4_SYSV_ABI sceFontFtSetAliasPath();
@@ -30,8 +45,8 @@ s32 PS4_SYSV_ABI sceFontFtSupportType42();
 s32 PS4_SYSV_ABI sceFontFtSupportWinFonts();
 s32 PS4_SYSV_ABI sceFontFtTermAliases();
 s32 PS4_SYSV_ABI sceFontSelectGlyphsFt();
-s32 PS4_SYSV_ABI sceFontSelectLibraryFt();
-s32 PS4_SYSV_ABI sceFontSelectRendererFt();
+const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value);
+const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value);
 
 void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::FontFt
