@@ -297,9 +297,11 @@ bool EmulatorSettings::Load(const std::string& serial) {
             if (gj.contains("Users"))
                 m_userManager.GetUsers() = gj.at("Users").get<Users>();
         } else {
+            SetDefaultValues();
             // ensure a default user exists
             if (m_userManager.GetUsers().user.empty())
                 m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
+            Save();
         }
 
         // Load per-game overrides and apply
