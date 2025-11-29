@@ -24,8 +24,8 @@ void LowerBufferFormatToRaw(IR::Program& program);
 void LowerFp64ToFp32(IR::Program& program);
 void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtime_info);
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info);
-void HullShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
-void DomainShaderTransform(IR::Program& program, RuntimeInfo& runtime_info);
+void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info);
+void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtime_info);
 void SharedMemoryBarrierPass(IR::Program& program, const RuntimeInfo& runtime_info,
                              const Profile& profile);
 void SharedMemorySimplifyPass(IR::Program& program, const Profile& profile);
