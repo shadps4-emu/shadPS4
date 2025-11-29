@@ -4,46 +4,87 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/system/commondialog.h"
 
 namespace Libraries::Np::NpCommerce {
+
+using CommonDialog::Error;
+using CommonDialog::Result;
+using CommonDialog::Status;
+
+static Status g_dialog_status = Status::NONE;
+static Result g_dialog_result = Result::OK;
+
 s32 PS4_SYSV_ABI sceNpCommerceDialogClose() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
+    LOG_INFO(Lib_NpCommerce, "called");
+    if (g_dialog_status == Status::NONE) {
+        return static_cast<s32>(Error::NOT_INITIALIZED);
+    }
+    if (g_dialog_status != Status::FINISHED) {
+        return static_cast<s32>(Error::NOT_FINISHED);
+    }
+    g_dialog_status = Status::INITIALIZED;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceDialogGetResult(s32* result) {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
+    LOG_INFO(Lib_NpCommerce, "called");
+    if (result == nullptr) {
+        return static_cast<s32>(Error::ARG_NULL);
+    }
+    if (g_dialog_status != Status::FINISHED) {
+        return static_cast<s32>(Error::NOT_FINISHED);
+    }
+    *result = static_cast<s32>(g_dialog_result);
     return ORBIS_OK;
 }
 
 s8 PS4_SYSV_ABI sceNpCommerceDialogGetStatus() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpCommerce, "called, status = {}", static_cast<u32>(g_dialog_status));
+    return static_cast<s8>(g_dialog_status);
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceDialogInitialize() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
+    LOG_INFO(Lib_NpCommerce, "called");
+    if (g_dialog_status != Status::NONE) {
+        return static_cast<s32>(Error::ALREADY_INITIALIZED);
+    }
+    g_dialog_status = Status::INITIALIZED;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceDialogInitializeInternal() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpCommerce, "called");
+    return sceNpCommerceDialogInitialize();
 }
 
 s16 PS4_SYSV_ABI sceNpCommerceDialogOpen(s64 check) {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
+    LOG_INFO(Lib_NpCommerce, "called, check = {}", check);
+    if (g_dialog_status != Status::INITIALIZED) {
+        LOG_WARNING(Lib_NpCommerce, "Dialog not initialized");
+        return ORBIS_OK;
+    }
+
+    g_dialog_status = Status::FINISHED;
+    g_dialog_result = Result::USER_CANCELED;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceDialogTerminate() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
+    LOG_INFO(Lib_NpCommerce, "called");
+    if (g_dialog_status == Status::NONE) {
+        return static_cast<s32>(Error::NOT_INITIALIZED);
+    }
+    if (g_dialog_status == Status::RUNNING) {
+        return static_cast<s32>(Error::NOT_FINISHED);
+    }
+    g_dialog_status = Status::NONE;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceDialogUpdateStatus() {
-    LOG_ERROR(Lib_NpCommerce, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_NpCommerce, "called, status = {}", static_cast<u32>(g_dialog_status));
+    return static_cast<s32>(g_dialog_status);
 }
 
 s32 PS4_SYSV_ABI sceNpCommerceHidePsStoreIcon() {
