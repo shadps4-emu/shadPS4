@@ -512,7 +512,7 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad_errors.h
 )
 
-set(SYSTEM_GESTURE_LIB 
+set(SYSTEM_GESTURE_LIB
             src/core/libraries/system_gesture/system_gesture.cpp
             src/core/libraries/system_gesture/system_gesture.h
 )
@@ -693,7 +693,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/lru_cache.h
            src/common/error.cpp
            src/common/error.h
-           src/common/scope_exit.h
            src/common/fixed_value.h
            src/common/func_traits.h
            src/common/native_clock.cpp
@@ -707,6 +706,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/rdtsc.h
            src/common/recursive_lock.cpp
            src/common/recursive_lock.h
+           src/common/scope_exit.h
+           src/common/serdes.h
            src/common/sha1.h
            src/common/shared_first_mutex.h
            src/common/signal_context.h
@@ -986,6 +987,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_pipeline_cache.h
                src/video_core/renderer_vulkan/vk_pipeline_common.cpp
                src/video_core/renderer_vulkan/vk_pipeline_common.h
+               src/video_core/renderer_vulkan/vk_pipeline_serialization.cpp
+               src/video_core/renderer_vulkan/vk_pipeline_serialization.h
                src/video_core/renderer_vulkan/vk_platform.cpp
                src/video_core/renderer_vulkan/vk_platform.h
                src/video_core/renderer_vulkan/vk_presenter.cpp
@@ -1023,6 +1026,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/texture_cache/tile_manager.cpp
                src/video_core/texture_cache/tile_manager.h
                src/video_core/texture_cache/types.h
+               src/video_core/cache_storage.cpp
+               src/video_core/cache_storage.h
                src/video_core/page_manager.cpp
                src/video_core/page_manager.h
                src/video_core/multi_level_page_table.h
@@ -1077,7 +1082,8 @@ add_executable(shadps4
 create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

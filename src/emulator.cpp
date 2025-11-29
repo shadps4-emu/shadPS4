@@ -42,6 +42,7 @@
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
+#include "video_core/cache_storage.h"
 #include "video_core/renderdoc.h"
 
 #ifdef _WIN32
@@ -387,6 +388,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     UpdatePlayTime(id);
+    Storage::DataBase::Instance().Close();
 
     std::quick_exit(0);
 }

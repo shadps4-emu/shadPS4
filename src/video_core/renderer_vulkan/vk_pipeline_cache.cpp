@@ -13,9 +13,10 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 
@@ -223,6 +224,13 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
       desc_heap{instance, scheduler.GetMasterSemaphore(), DescriptorHeapSizes} {
     const auto& vk12_props = instance.GetVk12Properties();
     profile = Shader::Profile{
+        // When binding a UBO, we calculate its size considering the offset in the larger buffer
+        // cache underlying resource. In some cases, it may produce sizes exceeding the system
+        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
+        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
+        .max_viewport_width = instance.GetMaxViewportWidth(),
+        .max_viewport_height = instance.GetMaxViewportHeight(),
+        .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
         .support_int8 = instance.IsShaderInt8Supported(),
@@ -258,14 +266,10 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
                               instance.GetDriverID() == vk::DriverId::eMoltenvk,
         .needs_buffer_offsets = instance.StorageMinAlignment() > 4,
         .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMoltenvk,
-        // When binding a UBO, we calculate its size considering the offset in the larger buffer
-        // cache underlying resource. In some cases, it may produce sizes exceeding the system
-        // maximum allowed UBO range, so we need to reduce the threshold to prevent issues.
-        .max_ubo_size = instance.UniformMaxSize() - instance.UniformMinAlignment(),
-        .max_viewport_width = instance.GetMaxViewportWidth(),
-        .max_viewport_height = instance.GetMaxViewportHeight(),
-        .max_shared_memory_size = instance.MaxComputeSharedMemorySize(),
     };
+
+    WarmUp();
+
     auto [cache_result, cache] = instance.GetDevice().createPipelineCacheUnique({});
     ASSERT_MSG(cache_result == vk::Result::eSuccess, "Failed to create pipeline cache: {}",
                vk::to_string(cache_result));
@@ -283,9 +287,14 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         const auto pipeline_hash = std::hash<GraphicsPipelineKey>{}(graphics_key);
         LOG_INFO(Render_Vulkan, "Compiling graphics pipeline {:#x}", pipeline_hash);
 
-        it.value() = std::make_unique<GraphicsPipeline>(instance, scheduler, desc_heap, profile,
-                                                        graphics_key, *pipeline_cache, infos,
-                                                        runtime_infos, fetch_shader, modules);
+        GraphicsPipeline::SerializationSupport sdata{};
+        it.value() = std::make_unique<GraphicsPipeline>(
+            instance, scheduler, desc_heap, profile, graphics_key, *pipeline_cache, infos,
+            runtime_infos, fetch_shader, modules, sdata, false);
+
+        RegisterPipelineData(graphics_key, pipeline_hash, sdata);
+        ++num_new_pipelines;
+
         if (Config::collectShadersForDebug()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
@@ -294,6 +303,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
                 }
             }
         }
+        fetch_shader.reset();
     }
     return it->second.get();
 }
@@ -307,9 +317,13 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
         const auto pipeline_hash = std::hash<ComputePipelineKey>{}(compute_key);
         LOG_INFO(Render_Vulkan, "Compiling compute pipeline {:#x}", pipeline_hash);
 
-        it.value() =
-            std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
-                                              *pipeline_cache, compute_key, *infos[0], modules[0]);
+        ComputePipeline::SerializationSupport sdata{};
+        it.value() = std::make_unique<ComputePipeline>(instance, scheduler, desc_heap, profile,
+                                                       *pipeline_cache, compute_key, *infos[0],
+                                                       modules[0], sdata, false);
+        RegisterPipelineData(compute_key, sdata);
+        ++num_new_pipelines;
+
         if (Config::collectShadersForDebug()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
@@ -445,6 +459,7 @@ bool PipelineCache::RefreshGraphicsStages() {
     };
 
     infos.fill(nullptr);
+    modules.fill(nullptr);
     bind_stage(Stage::Fragment, LogicalStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(LogicalStage::Fragment)];
@@ -515,7 +530,7 @@ bool PipelineCache::RefreshComputeKey() {
 }
 
 vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::RuntimeInfo& runtime_info,
-                                              std::span<const u32> code, size_t perm_idx,
+                                              const std::span<const u32>& code, size_t perm_idx,
                                               Shader::Backend::Bindings& binding) {
     LOG_INFO(Render_Vulkan, "Compiling {} shader {:#x} {}", info.stage, info.pgm_hash,
              perm_idx != 0 ? "(permutation)" : "");
@@ -536,6 +551,8 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
         module = CompileSPV(spv, instance.GetDevice());
     }
 
+    RegisterShaderBinary(std::move(spv), info.pgm_hash, perm_idx);
+
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (Config::collectShadersForDebug()) {
@@ -546,7 +563,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 }
 
 PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stage,
-                                                Shader::ShaderParams params,
+                                                const Shader::ShaderParams& params,
                                                 Shader::Backend::Bindings& binding) {
     auto runtime_info = BuildRuntimeInfo(stage, l_stage);
     auto [it_pgm, new_program] = program_cache.try_emplace(params.hash);
@@ -555,32 +572,42 @@ PipelineCache::Result PipelineCache::GetProgram(Stage stage, LogicalStage l_stag
         auto& program = it_pgm.value();
         auto start = binding;
         const auto module = CompileModule(program->info, runtime_info, params.code, 0, binding);
-        const auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
+        auto spec = Shader::StageSpecialization(program->info, runtime_info, profile, start);
+        const auto perm_hash = HashCombine(params.hash, 0);
+
+        RegisterShaderMeta(program->info, spec.fetch_shader_data, spec, perm_hash, 0);
         program->AddPermut(module, std::move(spec));
-        return std::make_tuple(&program->info, module, spec.fetch_shader_data,
-                               HashCombine(params.hash, 0));
+        return std::make_tuple(&program->info, module, program->modules[0].spec.fetch_shader_data,
+                               perm_hash);
     }
-    it_pgm.value()->info.user_data = params.user_data;
 
     auto& program = it_pgm.value();
     auto& info = program->info;
+    info.pgm_base = params.Base(); // Needs to be actualized for inline cbuffer address fixup
+    info.user_data = params.user_data;
     info.RefreshFlatBuf();
-    const auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
+    auto spec = Shader::StageSpecialization(info, runtime_info, profile, binding);
+
     size_t perm_idx = program->modules.size();
+    u64 perm_hash = HashCombine(params.hash, perm_idx);
+
     vk::ShaderModule module{};
 
     const auto it = std::ranges::find(program->modules, spec, &Program::Module::spec);
     if (it == program->modules.end()) {
         auto new_info = Shader::Info(stage, l_stage, params);
         module = CompileModule(new_info, runtime_info, params.code, perm_idx, binding);
+
+        RegisterShaderMeta(info, spec.fetch_shader_data, spec, perm_hash, perm_idx);
         program->AddPermut(module, std::move(spec));
     } else {
         info.AddBindings(binding);
         module = it->module;
         perm_idx = std::distance(program->modules.begin(), it);
+        perm_hash = HashCombine(params.hash, perm_idx);
     }
-    return std::make_tuple(&info, module, spec.fetch_shader_data,
-                           HashCombine(params.hash, perm_idx));
+    return std::make_tuple(&program->info, module,
+                           program->modules[perm_idx].spec.fetch_shader_data, perm_hash);
 }
 
 std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule module,
@@ -654,5 +681,4 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     file.Read(code);
     return code;
 }
-
 } // namespace Vulkan
