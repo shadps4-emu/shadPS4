@@ -46,7 +46,7 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
     if constexpr (std::is_same_v<T, int>) {
         if (it->second.is_integer()) {
-            return static_cast<int>(toml::get<int>(it->second));
+            return static_cast<s32>(toml::get<int>(it->second));
         }
     } else if constexpr (std::is_same_v<T, unsigned int>) {
         if (it->second.is_integer()) {
@@ -54,15 +54,19 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
         }
     } else if constexpr (std::is_same_v<T, double>) {
         if (it->second.is_floating()) {
-            return toml::get<double>(it->second);
+            return toml::get<T>(it->second);
         }
     } else if constexpr (std::is_same_v<T, std::string>) {
         if (it->second.is_string()) {
-            return toml::get<std::string>(it->second);
+            return toml::get<T>(it->second);
         }
     } else if constexpr (std::is_same_v<T, bool>) {
         if (it->second.is_boolean()) {
-            return toml::get<bool>(it->second);
+            return toml::get<T>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::array<string, 4>>) {
+        if (it->second.is_array()) {
+            return toml::get<T>(it->second);
         }
     } else {
         static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
@@ -114,6 +118,9 @@ public:
     void set(const T value, bool is_game_specific = false) {
         is_game_specific ? game_specific_value = value : base_value = value;
     }
+    void setDefault(bool is_game_specific = false) {
+        is_game_specific ? game_specific_value = default_value : base_value = default_value;
+    }
     void setTomlValue(toml::ordered_value& data, const std::string& header, const std::string& key,
                       bool is_game_specific = false) {
         if (is_game_specific) {
@@ -130,7 +137,12 @@ public:
 
 // General
 static ConfigEntry<int> volumeSlider(100);
-static ConfigEntry<string> userName("shadPS4");
+static ConfigEntry<std::array<std::string, 4>> userNames({
+    "shadPS4",
+    "shadps4-2",
+    "shadPS4-3",
+    "shadPS4-4",
+});
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -296,8 +308,18 @@ u32 getInternalScreenHeight() {
     return internalScreenHeight.get();
 }
 
-string getUserName() {
-    return userName.get();
+void setUserName(int id, string name) {
+    auto temp = userNames.get();
+    temp[id] = name;
+    userNames.set(temp);
+}
+
+std::array<string, 4> const getUserNames() {
+    return userNames.get();
+}
+
+std::string getUserName(int id) {
+    return userNames.get()[id];
 }
 
 bool getUseSpecialPad() {
@@ -479,10 +501,6 @@ void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
 }
 
-void setUserName(const string& name, bool is_game_specific) {
-    userName.set(name, is_game_specific);
-}
-
 void setUseSpecialPad(bool use) {
     useSpecialPad.base_value = use;
 }
@@ -584,7 +602,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& general = data.at("General");
 
         volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
-        userName.setFromToml(general, "userName", is_game_specific);
+        userNames.setFromToml(general, "userNames", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
     }
 
@@ -746,7 +764,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     }
     // Entries saved by the game-specific settings GUI
     volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
-    userName.setTomlValue(data, "General", "userName", is_game_specific);
+    userNames.setTomlValue(data, "General", "userNames", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
@@ -845,36 +863,36 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
-        readbacksEnabled.set(false, is_game_specific);
-        readbackLinearImagesEnabled.set(false, is_game_specific);
-        directMemoryAccessEnabled.set(false, is_game_specific);
+        readbacksEnabled.setDefault(is_game_specific);
+        readbackLinearImagesEnabled.setDefault(is_game_specific);
+        directMemoryAccessEnabled.setDefault(is_game_specific);
     }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
-    volumeSlider.set(100, is_game_specific);
-    userName.set("shadPS4", is_game_specific);
+    volumeSlider.setDefault(is_game_specific);
+    userNames.setDefault(is_game_specific);
 
     // GS - Input
-    cursorState.set(HideCursorState::Idle, is_game_specific);
-    cursorHideTimeout.set(5, is_game_specific);
-    isMotionControlsEnabled.set(true, is_game_specific);
-    backgroundControllerInput.set(false, is_game_specific);
-    usbDeviceBackend.set(UsbBackendType::Real, is_game_specific);
+    cursorState.setDefault(is_game_specific);
+    cursorHideTimeout.setDefault(is_game_specific);
+    isMotionControlsEnabled.setDefault(is_game_specific);
+    backgroundControllerInput.setDefault(is_game_specific);
+    usbDeviceBackend.setDefault(is_game_specific);
 
     // GS - Audio
-    micDevice.set("Default Device", is_game_specific);
+    micDevice.setDefault(is_game_specific);
 
     // GS - GPU
-    windowWidth.set(1280, is_game_specific);
-    windowHeight.set(720, is_game_specific);
-    shouldCopyGPUBuffers.set(false, is_game_specific);
-    shouldDumpShaders.set(false, is_game_specific);
-    vblankFrequency.set(60, is_game_specific);
-    isHDRAllowed.set(false, is_game_specific);
-    fsrEnabled.set(true, is_game_specific);
-    rcasEnabled.set(true, is_game_specific);
-    rcasAttenuation.set(250, is_game_specific);
+    windowWidth.setDefault(is_game_specific);
+    windowHeight.setDefault(is_game_specific);
+    shouldCopyGPUBuffers.setDefault(is_game_specific);
+    shouldDumpShaders.setDefault(is_game_specific);
+    vblankFrequency.setDefault(is_game_specific);
+    isHDRAllowed.setDefault(is_game_specific);
+    fsrEnabled.setDefault(is_game_specific);
+    rcasEnabled.setDefault(is_game_specific);
+    rcasAttenuation.setDefault(is_game_specific);
 
     // GS - Vulkan
     vkValidation.set(false, is_game_specific);
@@ -887,7 +905,7 @@ void setDefaultValues(bool is_game_specific) {
     rdocEnable.set(false, is_game_specific);
 
     // GS - Settings
-    m_language.set(1, is_game_specific);
+    m_language.setDefault(is_game_specific);
 
     // All other entries
     if (!is_game_specific) {
@@ -924,6 +942,8 @@ hotkey_pause = f9
 hotkey_reload_inputs = f8
 hotkey_toggle_mouse_to_joystick = f7
 hotkey_toggle_mouse_to_gyro = f6
+hotkey_add_virtual_user = f5
+hotkey_remove_virtual_user = f4
 hotkey_quit = lctrl, lshift, end
 )";
 }
