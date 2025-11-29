@@ -306,7 +306,6 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     bool connected = false;
     Input::State states[64];
     auto* controller = Common::Singleton<GameController>::Instance();
-    const auto* engine = controller->GetEngine();
     int ret_num = controller->ReadStates(states, num, &connected, &connected_count);
 
     if (!connected) {
@@ -335,9 +334,8 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
         pData[i].angularVelocity.y = states[i].angularVelocity.y;
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
 
-        if (engine && handle == 1) {
-            const auto gyro_poll_rate = engine->GetAccelPollRate();
-            if (gyro_poll_rate != 0.0f) {
+        if (handle == 1) {
+            if (controller->m_accel_poll_rate != 0.0f) {
                 auto now = std::chrono::steady_clock::now();
                 float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(
                                       now - controller->GetLastUpdate())
@@ -436,7 +434,6 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto* controller = Common::Singleton<GameController>::Instance();
-    const auto* engine = controller->GetEngine();
     int connectedCount = 0;
     bool isConnected = false;
     Input::State state;
@@ -458,7 +455,7 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     pData->orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
     // Only do this on handle 1 for now
-    if (engine && handle == 1) {
+    if (handle == 1) {
         auto now = std::chrono::steady_clock::now();
         float deltaTime =
             std::chrono::duration_cast<std::chrono::microseconds>(now - controller->GetLastUpdate())

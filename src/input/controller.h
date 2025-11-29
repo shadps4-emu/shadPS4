@@ -47,18 +47,6 @@ public:
     Libraries::Pad::OrbisFQuaternion orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 };
 
-class Engine {
-public:
-    virtual ~Engine() = default;
-    virtual void Init() = 0;
-    virtual void SetLightBarRGB(u8 r, u8 g, u8 b) = 0;
-    virtual void SetVibration(u8 smallMotor, u8 largeMotor) = 0;
-    virtual State ReadState() = 0;
-    virtual float GetAccelPollRate() const = 0;
-    virtual float GetGyroPollRate() const = 0;
-    SDL_Gamepad* m_gamepad;
-};
-
 inline int GetAxis(int min, int max, int value) {
     return std::clamp((255 * (value - min)) / (max - min), 0, 255);
 }
@@ -81,8 +69,7 @@ public:
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     void SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
-    void SetEngine(std::unique_ptr<Engine>);
-    Engine* GetEngine();
+    void TryOpenSDLController();
     u32 Poll();
 
     u8 GetTouchCount();
@@ -103,6 +90,9 @@ public:
                                      float deltaTime,
                                      Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
+    SDL_Gamepad* m_sdl_gamepad = nullptr;
+    float m_gyro_poll_rate;
+    float m_accel_poll_rate;
 
 private:
     struct StateInternal {
@@ -124,8 +114,6 @@ private:
     std::array<StateInternal, MAX_STATES> m_private;
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
-
-    std::unique_ptr<Engine> m_engine = nullptr;
 };
 
 } // namespace Input
