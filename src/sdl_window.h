@@ -6,31 +6,11 @@
 #include <string>
 
 #include "common/types.h"
-#include "core/libraries/pad/pad.h"
 #include "input/controller.h"
 
 struct SDL_Window;
 struct SDL_Gamepad;
 union SDL_Event;
-
-namespace Input {
-
-class SDLInputEngine : public Engine {
-public:
-    ~SDLInputEngine() override;
-    void Init() override;
-    void SetLightBarRGB(u8 r, u8 g, u8 b) override;
-    void SetVibration(u8 smallMotor, u8 largeMotor) override;
-    float GetGyroPollRate() const override;
-    float GetAccelPollRate() const override;
-    State ReadState() override;
-
-private:
-    float m_gyro_poll_rate = 0.0f;
-    float m_accel_poll_rate = 0.0f;
-};
-
-} // namespace Input
 
 namespace Frontend {
 
