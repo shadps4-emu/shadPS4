@@ -63,17 +63,33 @@ struct GraphicsPipelineKey {
     bool operator==(const GraphicsPipelineKey& key) const noexcept {
         return std::memcmp(this, &key, sizeof(key)) == 0;
     }
+
+    void Serialize(Serialization::Archive& ar) const;
+    bool Deserialize(Serialization::Archive& ar);
 };
 
 class GraphicsPipeline : public Pipeline {
 public:
+    struct SerializationSupport {
+        VertexInputs<vk::VertexInputAttributeDescription> vertex_attributes{};
+        VertexInputs<vk::VertexInputBindingDescription> vertex_bindings{};
+        VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT> divisors{};
+        vk::PipelineMultisampleStateCreateInfo multisampling{};
+        std::vector<u32> tcs{};
+        std::vector<u32> tes{};
+
+        void Serialize(Serialization::Archive& ar) const;
+        bool Deserialize(Serialization::Archive& ar);
+    };
+
     GraphicsPipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
                      const Shader::Profile& profile, const GraphicsPipelineKey& key,
                      vk::PipelineCache pipeline_cache,
                      std::span<const Shader::Info*, MaxShaderStages> stages,
                      std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
                      std::optional<const Shader::Gcn::FetchShaderData> fetch_shader,
-                     std::span<const vk::ShaderModule> modules);
+                     std::span<const vk::ShaderModule> modules, SerializationSupport& sdata,
+                     bool preloading);
     ~GraphicsPipeline();
 
     const std::optional<const Shader::Gcn::FetchShaderData>& GetFetchShader() const noexcept {
@@ -92,7 +108,7 @@ public:
                          u32 step_rate_1) const;
 
 private:
-    void BuildDescSetLayout();
+    void BuildDescSetLayout(bool preloading);
 
 private:
     GraphicsPipelineKey key;

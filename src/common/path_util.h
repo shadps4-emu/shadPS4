@@ -25,6 +25,7 @@ enum class PathType {
     CustomTrophy,   // Where custom files for trophies are stored.
     CustomConfigs,  // Where custom files for different games are stored.
     HomeDir,        // PS4 home directory
+    CacheDir,       // Where pipeline and shader cache is stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -44,6 +45,7 @@ constexpr auto METADATA_DIR = "game_data";
 constexpr auto CUSTOM_TROPHY = "custom_trophy";
 constexpr auto CUSTOM_CONFIGS = "custom_configs";
 constexpr auto HOME_DIR = "home";
+constexpr auto CACHE_DIR = "cache";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
