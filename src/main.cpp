@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
     // Load configurations
     std::shared_ptr<EmulatorSettings> emu_settings = std::make_shared<EmulatorSettings>();
     EmulatorSettings::SetInstance(emu_settings);
+    emu_settings->Load();
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 

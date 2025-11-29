@@ -41,7 +41,7 @@ void EmulatorSettings::PrintChangedSummary(const std::vector<std::string>& chang
 // ctor/dtor + singleton
 // --------------------
 EmulatorSettings::EmulatorSettings() {
-    Load();
+    // Load();
 }
 EmulatorSettings::~EmulatorSettings() {
     Save();
