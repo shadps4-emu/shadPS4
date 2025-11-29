@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
              }
 
              EmulatorSettings::GetInstance()->AddGameInstallDir(config_path);
-             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             EmulatorSettings::GetInstance()->Save();
              std::cout << "Game folder successfully saved.\n";
              exit(0);
          }},
