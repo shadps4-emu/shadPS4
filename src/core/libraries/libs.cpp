@@ -32,6 +32,7 @@
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
 #include "core/libraries/np/np_auth.h"
+#include "core/libraries/np/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_party.h"
@@ -93,6 +94,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::SysModule::RegisterLib(sym);
     Libraries::Posix::RegisterLib(sym);
     Libraries::AudioIn::RegisterLib(sym);
+    Libraries::Np::NpCommerce::RegisterLib(sym);
     Libraries::Np::NpCommon::RegisterLib(sym);
     Libraries::Np::NpManager::RegisterLib(sym);
     Libraries::Np::NpScore::RegisterLib(sym);

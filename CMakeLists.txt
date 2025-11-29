@@ -573,6 +573,8 @@ set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
 set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_common.cpp
             src/core/libraries/np/np_common.h
+            src/core/libraries/np/np_commerce.cpp
+            src/core/libraries/np/np_commerce.h
             src/core/libraries/np/np_manager.cpp
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_score.cpp
