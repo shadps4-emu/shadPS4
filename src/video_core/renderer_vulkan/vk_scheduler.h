@@ -360,6 +360,12 @@ public:
     /// Attempts to execute operations whose tick the GPU has caught up with.
     void PopPendingOperations();
 
+    /// Attempts to execute operations until specified tick whose tick the GPU has caught up with.
+    void PopPendingOperations(u64 tick);
+
+    /// Waits until at lest one pending operation is able to be executed.
+    void WaitForPendingOperation();
+
     /// Starts a new rendering scope with provided state.
     void BeginRendering(const RenderState& new_state);
 
@@ -402,7 +408,9 @@ public:
 
     /// Defers an operation until the gpu has reached the current cpu tick.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
+        std::unique_lock lk(pending_mutex);
         pending_ops.emplace(std::move(func), CurrentTick());
+        pending_cv.notify_all();
     }
 
     static std::mutex submit_mutex;
@@ -424,6 +432,8 @@ private:
         u64 gpu_tick;
     };
     std::queue<PendingOp> pending_ops;
+    std::condition_variable_any pending_cv;
+    std::mutex pending_mutex;
     RenderState render_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};

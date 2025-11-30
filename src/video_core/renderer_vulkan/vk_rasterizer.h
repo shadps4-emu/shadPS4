@@ -68,6 +68,8 @@ public:
     u64 Flush();
     void Finish();
     void OnSubmit();
+    void WaitForPendingOperation();
+    void PopPendingOpèrations();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;

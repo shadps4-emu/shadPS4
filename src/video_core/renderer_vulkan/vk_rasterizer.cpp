@@ -379,6 +379,14 @@ void Rasterizer::OnSubmit() {
     buffer_cache.RunGarbageCollector();
 }
 
+void Rasterizer::WaitForPendingOperation() {
+    scheduler.WaitForPendingOperation();
+}
+
+void Rasterizer::PopPendingOpèrations() {
+    scheduler.PopPendingOperations();
+}
+
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
     if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
         IsComputeImageClear(pipeline)) {

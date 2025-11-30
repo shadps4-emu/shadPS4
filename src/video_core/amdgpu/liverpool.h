@@ -185,6 +185,7 @@ private:
 
     void ProcessCommands();
     void Process(std::stop_token stoken);
+    void Watchdog(std::stop_token stoken);
 
     struct GpuQueue {
         std::mutex m_access{};
@@ -223,9 +224,11 @@ private:
     Vulkan::Rasterizer* rasterizer{};
     Libraries::VideoOut::VideoOutPort* vo_port{};
     std::jthread process_thread{};
+    std::jthread watchdog_thread{};
     std::atomic<u32> num_submits{};
     std::atomic<u32> num_commands{};
     std::atomic<bool> submit_done{};
+    std::atomic<bool> pop_pending{};
     std::mutex submit_mutex;
     std::condition_variable_any submit_cv;
     std::queue<Common::UniqueFunction<void>> command_queue{};

@@ -88,10 +88,38 @@ void Scheduler::Wait(u64 tick) {
 
 void Scheduler::PopPendingOperations() {
     master_semaphore.Refresh();
+    std::unique_lock lk(pending_mutex);
     while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
         pending_ops.pop();
     }
+    pending_cv.notify_all();
+}
+
+void Scheduler::PopPendingOperations(u64 tick) {
+    if (CurrentTick() < tick) {
+        master_semaphore.Refresh();
+    }
+    std::unique_lock lk(pending_mutex);
+    while (!pending_ops.empty()) {
+        auto& op = pending_ops.front();
+        if (op.gpu_tick > tick || !master_semaphore.IsFree(op.gpu_tick)) {
+            break;
+        }
+        op.callback();
+        pending_ops.pop();
+    }
+    pending_cv.notify_all();
+}
+
+void Scheduler::WaitForPendingOperation() {
+    u64 tick{};
+    {
+        std::unique_lock lk(pending_mutex);
+        pending_cv.wait(lk, [this] { return !pending_ops.empty(); });
+        tick = pending_ops.front().gpu_tick;
+    }
+    master_semaphore.Wait(tick);
 }
 
 void Scheduler::AllocateWorkerCommandBuffers() {

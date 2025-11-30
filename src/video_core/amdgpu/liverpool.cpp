@@ -68,10 +68,13 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
 Liverpool::Liverpool() {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
+    watchdog_thread = std::jthread(std::bind_front(&Liverpool::Watchdog, this));
 }
 
 Liverpool::~Liverpool() {
+    watchdog_thread.request_stop();
     process_thread.request_stop();
+    watchdog_thread.join();
     process_thread.join();
 }
 
@@ -97,10 +100,16 @@ void Liverpool::Process(std::stop_token stoken) {
         {
             std::unique_lock lk{submit_mutex};
             Common::CondvarWait(submit_cv, lk, stoken,
-                                [this] { return num_commands || num_submits || submit_done; });
+                                [this] { return num_commands || num_submits || submit_done || pop_pending; });
         }
         if (stoken.stop_requested()) {
             break;
+        }
+
+        if (pop_pending) {
+            rasterizer->PopPendingOpèrations();
+            pop_pending = false;
+            continue;
         }
 
         VideoCore::StartCapture();
@@ -146,6 +155,29 @@ void Liverpool::Process(std::stop_token stoken) {
         }
 
         Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
+    }
+}
+
+void Liverpool::Watchdog(std::stop_token stoken) {
+    Common::SetCurrentThreadName("shadPS4:GpuWatchdog");
+
+    while (!stoken.stop_requested()) {
+        {
+            std::unique_lock lk(submit_mutex);
+            Common::CondvarWait(submit_cv, lk, stoken,
+                                [this] {return !submit_done && !pop_pending; });
+        }
+
+        if (stoken.stop_requested()) {
+            return;
+        }
+
+        rasterizer->WaitForPendingOperation();
+
+        if (!submit_done && !pop_pending) {
+            pop_pending = true;
+            submit_cv.notify_all();
+        }
     }
 }
 
