@@ -12,6 +12,7 @@ enum MouseMode {
     Off = 0,
     Joystick,
     Gyro,
+    Touchpad,
 };
 
 bool ToggleMouseModeTo(MouseMode m);
