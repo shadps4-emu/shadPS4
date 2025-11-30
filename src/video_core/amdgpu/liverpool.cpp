@@ -99,8 +99,9 @@ void Liverpool::Process(std::stop_token stoken) {
     while (!stoken.stop_requested()) {
         {
             std::unique_lock lk{submit_mutex};
-            Common::CondvarWait(submit_cv, lk, stoken,
-                                [this] { return num_commands || num_submits || submit_done || pop_pending; });
+            Common::CondvarWait(submit_cv, lk, stoken, [this] {
+                return num_commands || num_submits || submit_done || pop_pending;
+            });
         }
         if (stoken.stop_requested()) {
             break;
@@ -165,7 +166,7 @@ void Liverpool::Watchdog(std::stop_token stoken) {
         {
             std::unique_lock lk(submit_mutex);
             Common::CondvarWait(submit_cv, lk, stoken,
-                                [this] {return !submit_done && !pop_pending; });
+                                [this] { return !submit_done && !pop_pending; });
         }
 
         if (stoken.stop_requested()) {
