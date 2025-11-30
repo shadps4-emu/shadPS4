@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <coroutine>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <semaphore>
 #include <span>
@@ -92,7 +93,11 @@ public:
     }
 
     void BindRasterizer(Vulkan::Rasterizer* rasterizer_) {
+        const bool start_watchdog = !rasterizer;
         rasterizer = rasterizer_;
+        if (start_watchdog) {
+            watchdog_thread = std::jthread(std::bind_front(&Liverpool::Watchdog, this));
+        }
     }
 
     template <bool wait_done = false>

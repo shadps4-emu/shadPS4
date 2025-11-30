@@ -68,13 +68,14 @@ static std::span<const u32> NextPacket(std::span<const u32> span, size_t offset)
 Liverpool::Liverpool() {
     num_counter_pairs = Libraries::Kernel::sceKernelIsNeoMode() ? 16 : 8;
     process_thread = std::jthread{std::bind_front(&Liverpool::Process, this)};
-    watchdog_thread = std::jthread(std::bind_front(&Liverpool::Watchdog, this));
 }
 
 Liverpool::~Liverpool() {
-    watchdog_thread.request_stop();
+    if (!rasterizer) {
+        watchdog_thread.request_stop();
+        watchdog_thread.join();
+    }
     process_thread.request_stop();
-    watchdog_thread.join();
     process_thread.join();
 }
 
@@ -162,14 +163,14 @@ void Liverpool::Process(std::stop_token stoken) {
 void Liverpool::Watchdog(std::stop_token stoken) {
     Common::SetCurrentThreadName("shadPS4:GpuWatchdog");
 
-    while (!stoken.stop_requested()) {
+    while (!stoken.stop_requested() || !rasterizer) {
         {
             std::unique_lock lk(submit_mutex);
             Common::CondvarWait(submit_cv, lk, stoken,
                                 [this] { return !submit_done && !pop_pending; });
         }
 
-        if (stoken.stop_requested()) {
+        if (stoken.stop_requested() || !rasterizer) {
             return;
         }
 
