@@ -77,7 +77,8 @@ public:
 
 public:
     TextureCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
-                 AmdGpu::Liverpool* liverpool, BufferCache& buffer_cache, PageManager& tracker);
+                 AmdGpu::Liverpool* liverpool, BufferCache& buffer_cache,
+                 PageManager& page_manager);
     ~TextureCache();
 
     TileManager& GetTileManager() noexcept {
@@ -89,6 +90,9 @@ public:
 
     /// Marks an image as dirty if it exists at the provided address.
     void InvalidateMemoryFromGPU(VAddr address, size_t max_size);
+
+    /// Marks an image as maybe reused if it exists within the provided range.
+    void MarkAsMaybeReused(VAddr addr, size_t size);
 
     /// Evicts any images that overlap the unmapped range.
     void UnmapMemory(VAddr cpu_addr, size_t size);
@@ -285,7 +289,7 @@ private:
     void DeleteImage(ImageId image_id);
 
     /// Touch the image in the LRU cache.
-    void TouchImage(const Image& image);
+    void TouchImage(Image& image);
 
     void FreeImage(ImageId image_id) {
         UntrackImage(image_id);
@@ -298,7 +302,7 @@ private:
     Vulkan::Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
     BufferCache& buffer_cache;
-    PageManager& tracker;
+    PageManager& page_manager;
     BlitHelper blit_helper;
     TileManager tile_manager;
     Common::SlotVector<Image> slot_images;
