@@ -10,8 +10,6 @@
 #include <tsl/robin_map.h>
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
-#include "core/file_sys/devices/base_device.h"
-#include "core/file_sys/directories/base_directory.h"
 
 namespace Libraries::Net {
 struct Socket;
@@ -40,8 +38,8 @@ public:
 
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                bool read_only = false);
-    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
-    void UnmountAll();
+    // void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    // void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
                                       bool* is_read_only = nullptr, bool force_base_path = false);
@@ -49,14 +47,6 @@ public:
         std::function<void(const std::filesystem::path& host_path, bool is_file)>;
     void IterateDirectory(std::string_view guest_directory,
                           const IterateDirectoryCallback& callback);
-
-    const MntPair* GetMountFromHostPath(const std::string& host_path) {
-        std::scoped_lock lock{m_mutex};
-        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
-        });
-        return it == m_mnt_pairs.end() ? nullptr : &*it;
-    }
 
     const MntPair* GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
@@ -77,7 +67,6 @@ private:
 
 enum class FileType {
     Regular, // standard file
-    Directory,
     Device,
     Socket,
     Epoll,
@@ -91,11 +80,9 @@ struct File {
     std::string m_guest_name;
     Common::FS::IOFile f;
     std::mutex m_mutex;
-    std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
-    std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
-    std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
-    std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
-    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
+    std::shared_ptr<Libraries::Net::Socket> socket;     // only valid for type == Socket
+    std::shared_ptr<Libraries::Net::Epoll> epoll;       // only valid for type == Epoll
+    std::shared_ptr<Libraries::Net::Resolver> resolver; // only valid for type == Resolver
 };
 
 class HandleTable {
@@ -104,15 +91,11 @@ public:
     virtual ~HandleTable() = default;
 
     int CreateHandle();
-    void DeleteHandle(int d);
     File* GetFile(int d);
     File* GetSocket(int d);
     File* GetEpoll(int d);
     File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
-    int GetFileDescriptor(File* file);
-
-    void CreateStdHandles();
 
 private:
     std::vector<File*> m_files;
