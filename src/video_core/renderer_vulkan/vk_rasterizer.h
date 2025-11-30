@@ -69,7 +69,7 @@ public:
     void Finish();
     void OnSubmit();
     void WaitForPendingOperation();
-    void PopPendingOpèrations();
+    void PopPendingOperations();
 
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;

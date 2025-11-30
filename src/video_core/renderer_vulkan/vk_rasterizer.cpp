@@ -383,7 +383,7 @@ void Rasterizer::WaitForPendingOperation() {
     scheduler.WaitForPendingOperation();
 }
 
-void Rasterizer::PopPendingOpèrations() {
+void Rasterizer::PopPendingOperations() {
     scheduler.PopPendingOperations();
 }
 

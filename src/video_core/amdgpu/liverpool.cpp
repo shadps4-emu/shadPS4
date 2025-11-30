@@ -108,7 +108,7 @@ void Liverpool::Process(std::stop_token stoken) {
         }
 
         if (pop_pending) {
-            rasterizer->PopPendingOpèrations();
+            rasterizer->PopPendingOperations();
             pop_pending = false;
             continue;
         }
