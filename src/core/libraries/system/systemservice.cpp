@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
@@ -1874,6 +1875,10 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
     auto emu = Common::Singleton<Core::Emulator>::Instance();
     auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto hostPath = mnt->GetHostPath(std::string_view(path));
+    if (hostPath.empty()) {
+        LOG_INFO(Lib_SystemService, "Restart called with invalid file '{}', exiting.", path);
+        std::quick_exit(0);
+    }
     std::vector<std::string> args;
     if (argv != nullptr) {
         for (const char** ptr = argv; *ptr != nullptr; ptr++) {
