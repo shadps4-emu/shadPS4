@@ -412,7 +412,7 @@ public:
     void DeferPriorityOperation(Common::UniqueFunction<void>&& func) {
         {
             std::unique_lock lk(priority_pending_ops_mutex);
-            pending_ops.emplace(std::move(func), CurrentTick());
+            priority_pending_ops.emplace(std::move(func), CurrentTick());
         }
         priority_pending_ops_cv.notify_one();
     }
