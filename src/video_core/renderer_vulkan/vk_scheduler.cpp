@@ -20,7 +20,8 @@ Scheduler::Scheduler(const Instance& instance)
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
 #endif
     AllocateWorkerCommandBuffers();
-    priority_pending_ops_thread = std::jthread(std::bind_front(&Scheduler::PriorityPendingOpsThread, this));
+    priority_pending_ops_thread =
+        std::jthread(std::bind_front(&Scheduler::PriorityPendingOpsThread, this));
 }
 
 Scheduler::~Scheduler() {
@@ -174,7 +175,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
     Common::SetCurrentThreadName("shadPS4:GpuSchedPriorityPendingOpsRunner");
     boost::container::small_vector<Common::UniqueFunction<void>, 16> callbacks;
-    
+
     while (!stoken.stop_requested()) {
         u64 tick;
         {
