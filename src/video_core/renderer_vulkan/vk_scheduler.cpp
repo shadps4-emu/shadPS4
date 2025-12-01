@@ -1,8 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <boost/container/small_vector.hpp>
+
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/thread.h"
 #include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -17,6 +20,7 @@ Scheduler::Scheduler(const Instance& instance)
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
 #endif
     AllocateWorkerCommandBuffers();
+    priority_pending_ops_thread = std::jthread(std::bind_front(&Scheduler::PriorityPendingOpsThread, this));
 }
 
 Scheduler::~Scheduler() {
@@ -165,6 +169,43 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 
     // Apply pending operations
     PopPendingOperations();
+}
+
+void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
+    Common::SetCurrentThreadName("shadPS4:GpuSchedPriorityPendingOpsRunner");
+    boost::container::small_vector<Common::UniqueFunction<void>, 16> callbacks;
+    
+    while (!stoken.stop_requested()) {
+        u64 tick;
+        {
+            std::unique_lock lk(priority_pending_ops_mutex);
+            priority_pending_ops_cv.wait(lk, stoken,
+                                         [this] { !priority_pending_ops.empty(); });
+            if (stoken.stop_requested()) {
+                break;
+            }
+
+            tick = priority_pending_ops.front().gpu_tick;
+        }
+
+        master_semaphore.Wait(tick);
+        if (stoken.stop_requested()) {
+            break;
+        }
+
+        {
+            std::unique_lock lk(priority_pending_ops_mutex);
+            while (!priority_pending_ops.empty() && priority_pending_ops.front().gpu_tick <= tick) {
+                callbacks.emplace_back(std::move(priority_pending_ops.front().callback));
+                priority_pending_ops.pop();
+            }
+        }
+
+        for (const auto& cb : callbacks) {
+            cb();
+        }
+        callbacks.clear();
+    }
 }
 
 void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf) {
