@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <boost/container/small_vector.hpp>
-
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/thread.h"
@@ -174,10 +172,9 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 
 void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
     Common::SetCurrentThreadName("shadPS4:GpuSchedPriorityPendingOpsRunner");
-    boost::container::small_vector<Common::UniqueFunction<void>, 16> callbacks;
 
     while (!stoken.stop_requested()) {
-        u64 tick;
+        PendingOp op;
         {
             std::unique_lock lk(priority_pending_ops_mutex);
             priority_pending_ops_cv.wait(lk, stoken,
@@ -186,26 +183,16 @@ void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
                 break;
             }
 
-            tick = priority_pending_ops.front().gpu_tick;
+            op = std::move(priority_pending_ops.front());
+            priority_pending_ops.pop();
         }
 
-        master_semaphore.Wait(tick);
+        master_semaphore.Wait(op.gpu_tick);
         if (stoken.stop_requested()) {
             break;
         }
 
-        {
-            std::unique_lock lk(priority_pending_ops_mutex);
-            while (!priority_pending_ops.empty() && priority_pending_ops.front().gpu_tick <= tick) {
-                callbacks.emplace_back(std::move(priority_pending_ops.front().callback));
-                priority_pending_ops.pop();
-            }
-        }
-
-        for (const auto& cb : callbacks) {
-            cb();
-        }
-        callbacks.clear();
+        op.callback();
     }
 }
 
