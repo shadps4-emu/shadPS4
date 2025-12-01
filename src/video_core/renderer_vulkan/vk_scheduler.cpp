@@ -180,7 +180,7 @@ void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
         {
             std::unique_lock lk(priority_pending_ops_mutex);
             priority_pending_ops_cv.wait(lk, stoken,
-                                         [this] { !priority_pending_ops.empty(); });
+                                         [this] { return !priority_pending_ops.empty(); });
             if (stoken.stop_requested()) {
                 break;
             }
