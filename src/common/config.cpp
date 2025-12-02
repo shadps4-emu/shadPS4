@@ -968,6 +968,7 @@ hotkey_toggle_mouse_to_joystick = f7
 hotkey_toggle_mouse_to_gyro = f6
 hotkey_add_virtual_user = f5
 hotkey_remove_virtual_user = f4
+hotkey_toggle_mouse_to_touchpad = delete
 hotkey_quit = lctrl, lshift, end
 )";
 }

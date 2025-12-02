@@ -592,6 +592,9 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
             PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
             break;
+        case HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_TOUCHPAD);
+            break;
         case HOTKEY_RENDERDOC:
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
@@ -797,6 +800,9 @@ void ActivateOutputsFromInputs() {
         for (auto& it : output_arrays[i].data) {
             it.ResetUpdate();
         }
+
+        // Check for input blockers
+        ApplyMouseInputBlockers();
 
         // Iterate over all inputs, and update their respecive outputs accordingly
         for (auto& it : connections) {

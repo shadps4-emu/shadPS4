@@ -255,6 +255,11 @@ void WindowSDL::WaitEvent() {
         SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
                                        Input::ToggleMouseModeTo(Input::MouseMode::Gyro));
         break;
+    case SDL_EVENT_MOUSE_TO_TOUCHPAD:
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),
+                                       Input::ToggleMouseModeTo(Input::MouseMode::Touchpad));
+        SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(), false);
+        break;
     case SDL_EVENT_ADD_VIRTUAL_USER:
         for (int i = 0; i < 4; i++) {
             if (controllers[i]->user_id == -1) {
@@ -277,7 +282,6 @@ void WindowSDL::WaitEvent() {
                 break;
             }
         }
-        break;
     case SDL_EVENT_RDOC_CAPTURE:
         VideoCore::TriggerCapture();
         break;
