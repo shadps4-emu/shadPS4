@@ -8,7 +8,11 @@
 #include "input/controller.h"
 #include "input_mouse.h"
 
+#include <common/singleton.h>
+#include <emulator.h>
 #include "SDL3/SDL.h"
+
+extern Frontend::WindowSDL* g_window;
 
 namespace Input {
 
@@ -80,7 +84,6 @@ void EmulateJoystick(GameController* controller, u32 interval) {
 
 constexpr float constant_down_accel[3] = {0.0f, 10.0f, 0.0f};
 void EmulateGyro(GameController* controller, u32 interval) {
-    // LOG_INFO(Input, "todo gyro");
     float d_x = 0, d_y = 0;
     SDL_GetRelativeMouseState(&d_x, &d_y);
     controller->Acceleration(1, constant_down_accel);
@@ -92,6 +95,16 @@ void EmulateGyro(GameController* controller, u32 interval) {
     controller->Gyro(1, gyro_from_mouse);
 }
 
+void EmulateTouchpad(GameController* controller, u32 interval) {
+    float x, y;
+    SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&x, &y);
+    controller->SetTouchpadState(0, (mouse_buttons & SDL_BUTTON_LMASK) != 0,
+                                 std::clamp(x / g_window->GetWidth(), 0.0f, 1.0f),
+                                 std::clamp(y / g_window->GetHeight(), 0.0f, 1.0f));
+    controller->CheckButton(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
+                            (mouse_buttons & SDL_BUTTON_RMASK) != 0);
+}
+
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
     auto* controller = (GameController*)param;
     switch (mouse_mode) {
@@ -100,6 +113,9 @@ Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {
         break;
     case MouseMode::Gyro:
         EmulateGyro(controller, interval);
+        break;
+    case MouseMode::Touchpad:
+        EmulateTouchpad(controller, interval);
         break;
 
     default:
