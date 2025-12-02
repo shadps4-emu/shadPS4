@@ -5,6 +5,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 #include <queue>
 
 #include "common/unique_function.h"
@@ -401,8 +402,19 @@ public:
     }
 
     /// Defers an operation until the gpu has reached the current cpu tick.
+    /// Will be run when submitting or calling PopPendingOperations.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
         pending_ops.emplace(std::move(func), CurrentTick());
+    }
+
+    /// Defers an operation until the gpu has reached the current cpu tick.
+    /// Runs as soon as possible in another thread.
+    void DeferPriorityOperation(Common::UniqueFunction<void>&& func) {
+        {
+            std::unique_lock lk(priority_pending_ops_mutex);
+            priority_pending_ops.emplace(std::move(func), CurrentTick());
+        }
+        priority_pending_ops_cv.notify_one();
     }
 
     static std::mutex submit_mutex;
@@ -411,6 +423,8 @@ private:
     void AllocateWorkerCommandBuffers();
 
     void SubmitExecution(SubmitInfo& info);
+
+    void PriorityPendingOpsThread(std::stop_token stoken);
 
 private:
     const Instance& instance;
@@ -424,6 +438,10 @@ private:
         u64 gpu_tick;
     };
     std::queue<PendingOp> pending_ops;
+    std::queue<PendingOp> priority_pending_ops;
+    std::mutex priority_pending_ops_mutex;
+    std::condition_variable_any priority_pending_ops_cv;
+    std::jthread priority_pending_ops_thread;
     RenderState render_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};
