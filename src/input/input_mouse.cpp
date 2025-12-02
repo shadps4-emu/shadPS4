@@ -111,7 +111,6 @@ void EmulateTouchpad(GameController* controller, u32 interval) {
 void ApplyMouseInputBlockers() {
     switch (mouse_mode) {
     case MouseMode::Touchpad:
-        LOG_INFO(Input, "Blocking mouse inputs");
         for (auto& k : pressed_keys) {
             if (k.first.input.sdl_id == SDL_BUTTON_LEFT ||
                 k.first.input.sdl_id == SDL_BUTTON_RIGHT) {
