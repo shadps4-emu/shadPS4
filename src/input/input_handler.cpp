@@ -777,6 +777,9 @@ void ActivateOutputsFromInputs() {
         it.ResetUpdate();
     }
 
+    // Check for input blockers
+    ApplyMouseInputBlockers();
+
     // Iterate over all inputs, and update their respecive outputs accordingly
     for (auto& it : connections) {
         it.output->AddUpdate(it.ProcessBinding());

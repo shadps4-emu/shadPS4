@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/types.h"
 #include "input/controller.h"
+#include "input/input_handler.h"
 #include "input_mouse.h"
 
 #include <common/singleton.h>
@@ -15,6 +16,8 @@
 extern Frontend::WindowSDL* g_window;
 
 namespace Input {
+
+extern std::list<std::pair<InputEvent, bool>> pressed_keys;
 
 int mouse_joystick_binding = 0;
 float mouse_deadzone_offset = 0.5, mouse_speed = 1, mouse_speed_offset = 0.1250;
@@ -103,6 +106,22 @@ void EmulateTouchpad(GameController* controller, u32 interval) {
                                  std::clamp(y / g_window->GetHeight(), 0.0f, 1.0f));
     controller->CheckButton(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
                             (mouse_buttons & SDL_BUTTON_RMASK) != 0);
+}
+
+void ApplyMouseInputBlockers() {
+    switch (mouse_mode) {
+    case MouseMode::Touchpad:
+        LOG_INFO(Input, "Blocking mouse inputs");
+        for (auto& k : pressed_keys) {
+            if (k.first.input.sdl_id == SDL_BUTTON_LEFT ||
+                k.first.input.sdl_id == SDL_BUTTON_RIGHT) {
+                k.second = true;
+            }
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval) {

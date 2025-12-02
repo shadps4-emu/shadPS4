@@ -23,6 +23,8 @@ void SetMouseGyroRollMode(bool mode);
 void EmulateJoystick(GameController* controller, u32 interval);
 void EmulateGyro(GameController* controller, u32 interval);
 
+void ApplyMouseInputBlockers();
+
 // Polls the mouse for changes
 Uint32 MousePolling(void* param, Uint32 id, Uint32 interval);
 
