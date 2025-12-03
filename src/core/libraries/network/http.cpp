@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cctype>
+#include <cstdlib>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -712,8 +715,61 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriEscape() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpUriEscape(char* out, u64* require, u64 prepare, const char* in) {
+    LOG_TRACE(Lib_Http, "called");
+
+    if (!in) {
+        LOG_ERROR(Lib_Http, "Invalid input string");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    auto IsUnreserved = [](unsigned char c) -> bool {
+        return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~';
+    };
+
+    u64 needed = 0;
+    const char* src = in;
+    while (*src) {
+        unsigned char c = static_cast<unsigned char>(*src);
+        if (IsUnreserved(c)) {
+            needed++;
+        } else {
+            needed += 3; // %XX format
+        }
+        src++;
+    }
+    needed++; // null terminator
+
+    if (require) {
+        *require = needed;
+    }
+
+    // If only calculating size, return success
+    if (!out) {
+        return ORBIS_OK;
+    }
+
+    if (prepare < needed) {
+        LOG_ERROR(Lib_Http, "Buffer too small: need {} but only {} available", needed, prepare);
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    static const char hex_chars[] = "0123456789ABCDEF";
+    src = in;
+    char* dst = out;
+    while (*src) {
+        unsigned char c = static_cast<unsigned char>(*src);
+        if (IsUnreserved(c)) {
+            *dst++ = *src;
+        } else {
+            *dst++ = '%';
+            *dst++ = hex_chars[(c >> 4) & 0x0F];
+            *dst++ = hex_chars[c & 0x0F];
+        }
+        src++;
+    }
+    *dst = '\0';
+
     return ORBIS_OK;
 }
 
@@ -1077,7 +1133,54 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
 }
 
 int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const char* in) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+    LOG_TRACE(Lib_Http, "called");
+
+    if (!in) {
+        LOG_ERROR(Lib_Http, "Invalid input string");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    u64 needed = 0;
+    const char* src = in;
+    while (*src) {
+        if (*src == '%' && std::isxdigit(static_cast<unsigned char>(src[1])) &&
+            std::isxdigit(static_cast<unsigned char>(src[2]))) {
+            src += 3;
+        } else {
+            src++;
+        }
+        needed++;
+    }
+    needed++; // null terminator
+
+    if (require) {
+        *require = needed;
+    }
+
+    // If only calculating size, return success
+    if (!out) {
+        return ORBIS_OK;
+    }
+
+    if (prepare < needed) {
+        LOG_ERROR(Lib_Http, "Buffer too small: need {} but only {} available", needed, prepare);
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    src = in;
+    char* dst = out;
+    while (*src) {
+        if (*src == '%' && std::isxdigit(static_cast<unsigned char>(src[1])) &&
+            std::isxdigit(static_cast<unsigned char>(src[2]))) {
+            char hex[3] = {src[1], src[2], '\0'};
+            *dst++ = static_cast<char>(std::strtol(hex, nullptr, 16));
+            src += 3;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+
     return ORBIS_OK;
 }
 
