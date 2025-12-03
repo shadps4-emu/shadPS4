@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cctype>
-#include <cstdlib>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -723,7 +721,8 @@ int PS4_SYSV_ABI sceHttpUriEscape(char* out, u64* require, u64 prepare, const ch
     }
 
     auto IsUnreserved = [](unsigned char c) -> bool {
-        return std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~';
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+               c == '-' || c == '_' || c == '.' || c == '~';
     };
 
     u64 needed = 0;
@@ -743,7 +742,6 @@ int PS4_SYSV_ABI sceHttpUriEscape(char* out, u64* require, u64 prepare, const ch
         *require = needed;
     }
 
-    // If only calculating size, return success
     if (!out) {
         return ORBIS_OK;
     }
@@ -1139,11 +1137,31 @@ int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const 
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
+    // Locale-independent hex digit check
+    auto IsHex = [](char c) -> bool {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    };
+
+    // Convert hex char to int value
+    auto HexToInt = [](char c) -> int {
+        if (c >= '0' && c <= '9')
+            return c - '0';
+        if (c >= 'A' && c <= 'F')
+            return c - 'A' + 10;
+        if (c >= 'a' && c <= 'f')
+            return c - 'a' + 10;
+        return 0;
+    };
+
+    // Check for valid percent-encoded sequence (%XX)
+    auto IsValidPercentSequence = [&](const char* s) -> bool {
+        return s[0] == '%' && s[1] != '\0' && s[2] != '\0' && IsHex(s[1]) && IsHex(s[2]);
+    };
+
     u64 needed = 0;
     const char* src = in;
     while (*src) {
-        if (*src == '%' && std::isxdigit(static_cast<unsigned char>(src[1])) &&
-            std::isxdigit(static_cast<unsigned char>(src[2]))) {
+        if (IsValidPercentSequence(src)) {
             src += 3;
         } else {
             src++;
@@ -1156,7 +1174,6 @@ int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const 
         *require = needed;
     }
 
-    // If only calculating size, return success
     if (!out) {
         return ORBIS_OK;
     }
@@ -1169,10 +1186,8 @@ int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const 
     src = in;
     char* dst = out;
     while (*src) {
-        if (*src == '%' && std::isxdigit(static_cast<unsigned char>(src[1])) &&
-            std::isxdigit(static_cast<unsigned char>(src[2]))) {
-            char hex[3] = {src[1], src[2], '\0'};
-            *dst++ = static_cast<char>(std::strtol(hex, nullptr, 16));
+        if (IsValidPercentSequence(src)) {
+            *dst++ = static_cast<char>((HexToInt(src[1]) << 4) | HexToInt(src[2]));
             src += 3;
         } else {
             *dst++ = *src++;
