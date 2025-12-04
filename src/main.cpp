@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
          }},
         {"--patch", [&](int& i) { arg_map["-p"](i); }},
 
-        {"-i", [&](int&) { Core::FileSys::MntPoints::ignore_game_patches = true; }},
+        {"-i", [&](int&) { Core::Emulator::ignore_game_patches = true; }},
         {"--ignore-game-patch", [&](int& i) { arg_map["-i"](i); }},
         {"-f",
          [&](int& i) {
