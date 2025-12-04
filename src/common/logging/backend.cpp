@@ -22,6 +22,7 @@
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "common/thread.h"
+#include "core/emulator_settings.h"
 
 namespace Common::Log {
 
@@ -139,7 +140,7 @@ public:
         const auto& log_dir = GetUserPath(PathType::LogDir);
         std::filesystem::create_directory(log_dir);
         Filter filter;
-        filter.ParseFilterString(Config::getLogFilter());
+        filter.ParseFilterString(EmulatorSettings::GetInstance()->GetLogFilter());
         const auto& log_file_path = log_file.empty() ? LOG_FILE : log_file;
         instance = std::unique_ptr<Impl, decltype(&Deleter)>(
             new Impl(log_dir / log_file_path, filter), Deleter);
@@ -183,7 +184,8 @@ public:
 
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
                    const char* function, const char* format, const fmt::format_args& args) {
-        if (!filter.CheckMessage(log_class, log_level) || !Config::getLoggingEnabled()) {
+        if (!filter.CheckMessage(log_class, log_level) ||
+            !EmulatorSettings::GetInstance()->IsLogEnabled()) {
             return;
         }
 
@@ -220,7 +222,7 @@ public:
             .function = function,
             .message = std::move(message),
         };
-        if (Config::getLogType() == "async") {
+        if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
             message_queue.EmplaceWait(entry);
         } else {
             ForEachBackend([&entry](auto& backend) { backend.Write(entry); });

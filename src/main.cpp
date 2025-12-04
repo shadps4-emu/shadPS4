@@ -21,6 +21,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <core/emulator_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -29,6 +30,9 @@ int main(int argc, char* argv[]) {
     IPC::Instance().Init();
 
     // Load configurations
+    std::shared_ptr<EmulatorSettings> emu_settings = std::make_shared<EmulatorSettings>();
+    EmulatorSettings::SetInstance(emu_settings);
+    emu_settings->Load();
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
@@ -115,7 +119,7 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
              // Set fullscreen mode without saving it to config file
-             Config::setIsFullscreen(is_fullscreen);
+             EmulatorSettings::GetInstance()->SetFullScreen(is_fullscreen);
          }},
         {"--fullscreen", [&](int& i) { arg_map["-f"](i); }},
         {"--add-game-folder",
@@ -132,8 +136,8 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
 
-             Config::addGameInstallDir(config_path);
-             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             EmulatorSettings::GetInstance()->AddGameInstallDir(config_path);
+             EmulatorSettings::GetInstance()->Save();
              std::cout << "Game folder successfully saved.\n";
              exit(0);
          }},
@@ -151,8 +155,8 @@ int main(int argc, char* argv[]) {
                  exit(1);
              }
 
-             Config::setAddonInstallDir(config_path);
-             Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml");
+             EmulatorSettings::GetInstance()->SetAddonInstallDir(config_path);
+             EmulatorSettings::GetInstance()->Save();
              std::cout << "Addon folder successfully saved.\n";
              exit(0);
          }},
@@ -222,7 +226,7 @@ int main(int argc, char* argv[]) {
     }
 
     // If no game directory is set and no command line argument, prompt for it
-    if (Config::getGameInstallDirs().empty()) {
+    if (EmulatorSettings::GetInstance()->GetGameInstallDirs().empty()) {
         std::cerr << "Warning: No game folder set, please set it by calling shadps4"
                      " with the --add-game-folder <folder_name> argument\n";
     }
@@ -240,7 +244,7 @@ int main(int argc, char* argv[]) {
         // If not a file, treat it as a game ID and search in install directories recursively
         bool game_found = false;
         const int max_depth = 5;
-        for (const auto& install_dir : Config::getGameInstallDirs()) {
+        for (const auto& install_dir : EmulatorSettings::GetInstance()->GetGameInstallDirs()) {
             if (auto found_path = Common::FS::FindGameByID(install_dir, game_path, max_depth)) {
                 eboot_path = *found_path;
                 game_found = true;
