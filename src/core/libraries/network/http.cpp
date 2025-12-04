@@ -1125,7 +1125,94 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 }
 
 int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+    LOG_TRACE(Lib_Http, "called");
+
+    if (!dst || !src) {
+        LOG_ERROR(Lib_Http, "Invalid parameters");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    if (srcSize == 0) {
+        dst[0] = '\0';
+        return ORBIS_OK;
+    }
+
+    u64 len = 0;
+    while (len < srcSize && src[len] != '\0') {
+        len++;
+    }
+
+    for (u64 i = 0; i < len; i++) {
+        dst[i] = src[i];
+    }
+    dst[len] = '\0';
+
+    char* read = dst;
+    char* write = dst;
+
+    while (*read) {
+        if (read[0] == '.' && read[1] == '.' && read[2] == '/') {
+            read += 3;
+            continue;
+        }
+
+        if (read[0] == '.' && read[1] == '/') {
+            read += 2;
+            continue;
+        }
+
+        if (read[0] == '/' && read[1] == '.' && read[2] == '/') {
+            read += 2;
+            continue;
+        }
+
+        if (read[0] == '/' && read[1] == '.' && read[2] == '\0') {
+            if (write == dst) {
+                *write++ = '/';
+            }
+            break;
+        }
+
+        bool is_dotdot_mid = (read[0] == '/' && read[1] == '.' && read[2] == '.' && read[3] == '/');
+        bool is_dotdot_end =
+            (read[0] == '/' && read[1] == '.' && read[2] == '.' && read[3] == '\0');
+
+        if (is_dotdot_mid || is_dotdot_end) {
+            if (write > dst) {
+                if (*(write - 1) == '/') {
+                    write--;
+                }
+                while (write > dst && *(write - 1) != '/') {
+                    write--;
+                }
+
+                if (is_dotdot_mid && write > dst) {
+                    write--;
+                }
+            }
+
+            if (is_dotdot_mid) {
+                read += 3;
+            } else {
+                break;
+            }
+            continue;
+        }
+
+        if ((read[0] == '.' && read[1] == '\0') ||
+            (read[0] == '.' && read[1] == '.' && read[2] == '\0')) {
+            break;
+        }
+
+        if (read[0] == '/') {
+            *write++ = *read++;
+        }
+        while (*read && *read != '/') {
+            *write++ = *read++;
+        }
+    }
+
+    *write = '\0';
     return ORBIS_OK;
 }
 
