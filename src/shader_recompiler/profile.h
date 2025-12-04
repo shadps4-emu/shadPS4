@@ -8,6 +8,10 @@
 namespace Shader {
 
 struct Profile {
+    u64 max_ubo_size{};
+    u32 max_viewport_width{};
+    u32 max_viewport_height{};
+    u32 max_shared_memory_size{};
     u32 supported_spirv{0x00010000};
     u32 subgroup_size{};
     bool support_int8{};
@@ -37,10 +41,7 @@ struct Profile {
     bool needs_lds_barriers{};
     bool needs_buffer_offsets{};
     bool needs_unorm_fixup{};
-    u64 max_ubo_size{};
-    u32 max_viewport_width{};
-    u32 max_viewport_height{};
-    u32 max_shared_memory_size{};
+    bool _pad0{};
 };
 
 } // namespace Shader

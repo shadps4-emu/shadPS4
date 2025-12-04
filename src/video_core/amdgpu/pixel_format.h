@@ -79,10 +79,10 @@ enum class NumberFormat : u32 {
     Ubscaled = 13,
 };
 
-enum class NumberClass {
-    Float,
-    Sint,
-    Uint,
+enum class NumberClass : u8 {
+    Float = 0,
+    Sint = 1,
+    Uint = 2,
 };
 
 enum class CompSwizzle : u8 {

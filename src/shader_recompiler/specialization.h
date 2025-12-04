@@ -79,8 +79,8 @@ struct SamplerSpecialization {
 struct StageSpecialization {
     static constexpr size_t MaxStageResources = 128;
 
-    const Shader::Info* info;
-    RuntimeInfo runtime_info;
+    const Info* info{};
+    RuntimeInfo runtime_info{};
     std::bitset<MaxStageResources> bitset{};
     std::optional<Gcn::FetchShaderData> fetch_shader_data{};
     boost::container::small_vector<VsAttribSpecialization, 32> vs_attribs;
@@ -90,6 +90,7 @@ struct StageSpecialization {
     boost::container::small_vector<SamplerSpecialization, 16> samplers;
     Backend::Bindings start{};
 
+    StageSpecialization() = default;
     StageSpecialization(const Info& info_, RuntimeInfo runtime_info_, const Profile& profile_,
                         Backend::Bindings start_)
         : info{&info_}, runtime_info{runtime_info_}, start{start_} {
@@ -158,7 +159,7 @@ struct StageSpecialization {
         // Initialize runtime_info fields that rely on analysis in tessellation passes
         if (info->l_stage == LogicalStage::TessellationControl ||
             info->l_stage == LogicalStage::TessellationEval) {
-            Shader::TessellationDataConstantBuffer tess_constants;
+            TessellationDataConstantBuffer tess_constants{};
             info->ReadTessConstantBuffer(tess_constants);
             if (info->l_stage == LogicalStage::TessellationControl) {
                 runtime_info.hs_info.InitFromTessConstants(tess_constants);
@@ -192,21 +193,43 @@ struct StageSpecialization {
         }
     }
 
+    [[nodiscard]] bool Valid() const {
+        return info != nullptr;
+    }
+
     bool operator==(const StageSpecialization& other) const {
-        if (start != other.start) {
+        if (!Valid()) {
             return false;
         }
+
+        if (vs_attribs != other.vs_attribs) {
+            return false;
+        }
+
         if (runtime_info != other.runtime_info) {
             return false;
         }
+
         if (fetch_shader_data != other.fetch_shader_data) {
             return false;
         }
-        for (u32 i = 0; i < vs_attribs.size(); i++) {
-            if (vs_attribs[i] != other.vs_attribs[i]) {
-                return false;
-            }
+
+        if (fmasks != other.fmasks) {
+            return false;
         }
+
+        // For VS which only generates geometry and doesn't have any inputs, its start
+        // bindings still may change as they depend on previously processed FS. The check below
+        // handles this case and prevents generation of redundant permutations. This is also safe
+        // for other types of shaders with no bindings.
+        if (bitset.none() && other.bitset.none()) {
+            return true;
+        }
+
+        if (start != other.start) {
+            return false;
+        }
+
         u32 binding{};
         for (u32 i = 0; i < buffers.size(); i++) {
             if (other.bitset[binding++] && buffers[i] != other.buffers[i]) {
@@ -218,11 +241,7 @@ struct StageSpecialization {
                 return false;
             }
         }
-        for (u32 i = 0; i < fmasks.size(); i++) {
-            if (other.bitset[binding++] && fmasks[i] != other.fmasks[i]) {
-                return false;
-            }
-        }
+
         for (u32 i = 0; i < samplers.size(); i++) {
             if (samplers[i] != other.samplers[i]) {
                 return false;
@@ -230,6 +249,9 @@ struct StageSpecialization {
         }
         return true;
     }
+
+    void Serialize(Serialization::Archive& ar) const;
+    bool Deserialize(Serialization::Archive& ar);
 };
 
 } // namespace Shader

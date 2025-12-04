@@ -117,3 +117,6 @@
 	path = externals/sdl3_mixer
 	url = https://github.com/libsdl-org/SDL_mixer
 	shallow = true
+[submodule "externals/miniz"]
+	path = externals/miniz
+	url = https://github.com/richgel999/miniz

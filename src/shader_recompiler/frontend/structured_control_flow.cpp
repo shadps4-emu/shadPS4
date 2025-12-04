@@ -596,9 +596,8 @@ public:
                   IR::AbstractSyntaxList& syntax_list_, std::span<const GcnInst> inst_list_,
                   Info& info_, const RuntimeInfo& runtime_info_, const Profile& profile_)
         : stmt_pool{stmt_pool_}, inst_pool{inst_pool_}, block_pool{block_pool_},
-          syntax_list{syntax_list_}, inst_list{inst_list_}, info{info_},
-          runtime_info{runtime_info_}, profile{profile_},
-          translator{info_, runtime_info_, profile_} {
+          syntax_list{syntax_list_}, inst_list{inst_list_}, runtime_info{runtime_info_},
+          profile{profile_}, translator{info_, runtime_info_, profile_} {
         Visit(root_stmt, nullptr, nullptr);
 
         IR::Block* first_block = syntax_list.front().data.block;
@@ -782,7 +781,7 @@ private:
         }
     }
 
-    IR::Block* MergeBlock(Statement& parent, Statement& stmt) {
+    IR::Block* MergeBlock(Statement& parent, Statement& stmt) const {
         Statement* merge_stmt{TryFindForwardBlock(stmt)};
         if (!merge_stmt) {
             // Create a merge block we can visit later
@@ -798,7 +797,6 @@ private:
     IR::AbstractSyntaxList& syntax_list;
     const Block dummy_flow_block{.is_dummy = true};
     std::span<const GcnInst> inst_list;
-    Info& info;
     const RuntimeInfo& runtime_info;
     const Profile& profile;
     Translator translator;
