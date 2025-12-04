@@ -3,6 +3,7 @@
 
 #include "core/libraries/ajm/ajm_at9.h"
 #include "core/libraries/ajm/ajm_instance.h"
+#include "core/libraries/ajm/ajm_m4aac.h"
 #include "core/libraries/ajm/ajm_mp3.h"
 
 #include <magic_enum/magic_enum.hpp>
@@ -45,6 +46,11 @@ AjmInstance::AjmInstance(AjmCodecType codec_type, AjmInstanceFlags flags) : m_fl
     case AjmCodecType::Mp3Dec: {
         m_codec = std::make_unique<AjmMp3Decoder>(AjmFormatEncoding(flags.format),
                                                   AjmMp3CodecFlags(flags.codec));
+        break;
+    }
+    case AjmCodecType::M4aacDec: {
+        m_codec = std::make_unique<AjmM4aacDecoder>(AjmFormatEncoding(flags.format),
+                                                    AjmM4aacCodecFlags(flags.codec));
         break;
     }
     default:
