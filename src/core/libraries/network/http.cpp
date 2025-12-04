@@ -712,8 +712,61 @@ int PS4_SYSV_ABI sceHttpUriCopy() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpUriEscape() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpUriEscape(char* out, u64* require, u64 prepare, const char* in) {
+    LOG_TRACE(Lib_Http, "called");
+
+    if (!in) {
+        LOG_ERROR(Lib_Http, "Invalid input string");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    auto IsUnreserved = [](unsigned char c) -> bool {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+               c == '-' || c == '_' || c == '.' || c == '~';
+    };
+
+    u64 needed = 0;
+    const char* src = in;
+    while (*src) {
+        unsigned char c = static_cast<unsigned char>(*src);
+        if (IsUnreserved(c)) {
+            needed++;
+        } else {
+            needed += 3; // %XX format
+        }
+        src++;
+    }
+    needed++; // null terminator
+
+    if (require) {
+        *require = needed;
+    }
+
+    if (!out) {
+        return ORBIS_OK;
+    }
+
+    if (prepare < needed) {
+        LOG_ERROR(Lib_Http, "Buffer too small: need {} but only {} available", needed, prepare);
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    static const char hex_chars[] = "0123456789ABCDEF";
+    src = in;
+    char* dst = out;
+    while (*src) {
+        unsigned char c = static_cast<unsigned char>(*src);
+        if (IsUnreserved(c)) {
+            *dst++ = *src;
+        } else {
+            *dst++ = '%';
+            *dst++ = hex_chars[(c >> 4) & 0x0F];
+            *dst++ = hex_chars[c & 0x0F];
+        }
+        src++;
+    }
+    *dst = '\0';
+
     return ORBIS_OK;
 }
 
@@ -1077,7 +1130,71 @@ int PS4_SYSV_ABI sceHttpUriSweepPath(char* dst, const char* src, u64 srcSize) {
 }
 
 int PS4_SYSV_ABI sceHttpUriUnescape(char* out, u64* require, u64 prepare, const char* in) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+    LOG_TRACE(Lib_Http, "called");
+
+    if (!in) {
+        LOG_ERROR(Lib_Http, "Invalid input string");
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    // Locale-independent hex digit check
+    auto IsHex = [](char c) -> bool {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    };
+
+    // Convert hex char to int value
+    auto HexToInt = [](char c) -> int {
+        if (c >= '0' && c <= '9')
+            return c - '0';
+        if (c >= 'A' && c <= 'F')
+            return c - 'A' + 10;
+        if (c >= 'a' && c <= 'f')
+            return c - 'a' + 10;
+        return 0;
+    };
+
+    // Check for valid percent-encoded sequence (%XX)
+    auto IsValidPercentSequence = [&](const char* s) -> bool {
+        return s[0] == '%' && s[1] != '\0' && s[2] != '\0' && IsHex(s[1]) && IsHex(s[2]);
+    };
+
+    u64 needed = 0;
+    const char* src = in;
+    while (*src) {
+        if (IsValidPercentSequence(src)) {
+            src += 3;
+        } else {
+            src++;
+        }
+        needed++;
+    }
+    needed++; // null terminator
+
+    if (require) {
+        *require = needed;
+    }
+
+    if (!out) {
+        return ORBIS_OK;
+    }
+
+    if (prepare < needed) {
+        LOG_ERROR(Lib_Http, "Buffer too small: need {} but only {} available", needed, prepare);
+        return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
+    }
+
+    src = in;
+    char* dst = out;
+    while (*src) {
+        if (IsValidPercentSequence(src)) {
+            *dst++ = static_cast<char>((HexToInt(src[1]) << 4) | HexToInt(src[2]));
+            src += 3;
+        } else {
+            *dst++ = *src++;
+        }
+    }
+    *dst = '\0';
+
     return ORBIS_OK;
 }
 
