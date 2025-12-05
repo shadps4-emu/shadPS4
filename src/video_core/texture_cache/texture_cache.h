@@ -3,12 +3,9 @@
 
 #pragma once
 
-#include <condition_variable>
 #include <mutex>
-#include <thread>
 #include <unordered_set>
 #include <boost/container/small_vector.hpp>
-#include <queue>
 #include <tsl/robin_map.h>
 
 #include "common/lru_cache.h"
@@ -259,6 +256,7 @@ private:
     ImageId GetNullImage(vk::Format format);
 
     /// Copies image memory back to CPU.
+    template <bool priority>
     void DownloadImageMemory(ImageId image_id);
 
     /// Thread function for copying downloaded images out to CPU memory.
