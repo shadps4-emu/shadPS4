@@ -587,6 +587,10 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         // On real hardware, GPU file mmaps cause a full system crash due to an internal error.
         ASSERT_MSG(false, "Files cannot be mapped to GPU memory");
     }
+    if (True(prot & MemoryProt::CpuExec)) {
+        // On real hardware, execute permissions are silently removed.
+        prot &= ~MemoryProt::CpuExec;
+    }
 
     // Add virtual memory area
     auto& new_vma = CarveVMA(mapped_addr, size)->second;
@@ -793,10 +797,9 @@ s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
 s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 size,
                                 MemoryProt prot) {
     const auto start_in_vma = addr - vma_base.base;
-    const auto adjusted_size =
-        vma_base.size - start_in_vma < size ? vma_base.size - start_in_vma : size;
+    const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
 
-    if (vma_base.type == VMAType::Free) {
+    if (vma_base.type == VMAType::Free || vma_base.type == VMAType::PoolReserved) {
         // On PS4, protecting freed memory does nothing.
         return adjusted_size;
     }
@@ -828,14 +831,21 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         perms |= Core::MemoryPermission::ReadWrite;
     }
 
-    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled) {
-        // On PS4, execute permissions are hidden from direct memory mappings.
+    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
+        vma_base.type == VMAType::File) {
+        // On PS4, execute permissions are hidden from direct memory and file mappings.
         // Tests show that execute permissions still apply, so handle this after reading perms.
         prot &= ~MemoryProt::CpuExec;
     }
 
     // Change protection
     vma_base.prot = prot;
+
+    if (vma_base.type == VMAType::Reserved) {
+        // On PS4, protections change vma_map, but don't apply.
+        // Return early to avoid protecting memory that isn't mapped in address space.
+        return adjusted_size;
+    }
 
     impl.Protect(addr, size, perms);
 
@@ -853,22 +863,20 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     // Ensure the range to modify is valid
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
-    // Validate protection flags
-    constexpr static MemoryProt valid_flags =
-        MemoryProt::NoAccess | MemoryProt::CpuRead | MemoryProt::CpuWrite | MemoryProt::CpuExec |
-        MemoryProt::GpuRead | MemoryProt::GpuWrite | MemoryProt::GpuReadWrite;
-
-    MemoryProt invalid_flags = prot & ~valid_flags;
-    if (invalid_flags != MemoryProt::NoAccess) {
-        LOG_ERROR(Kernel_Vmm, "Invalid protection flags");
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
+    // Appropriately restrict flags.
+    constexpr static MemoryProt flag_mask =
+        MemoryProt::CpuReadWrite | MemoryProt::CpuExec | MemoryProt::GpuReadWrite;
+    MemoryProt valid_flags = prot & flag_mask;
 
     // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;
     while (protected_bytes < size) {
         auto it = FindVMA(addr + protected_bytes);
         auto& vma_base = it->second;
+        if (vma_base.base > addr + protected_bytes) {
+            // Account for potential gaps in memory map.
+            protected_bytes += vma_base.base - (addr + protected_bytes);
+        }
         auto result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
@@ -904,13 +912,21 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     const auto& vma = it->second;
     info->start = vma.base;
     info->end = vma.base + vma.size;
-    info->offset = vma.type == VMAType::Flexible ? 0 : vma.phys_base;
+    info->offset = 0;
     info->protection = static_cast<s32>(vma.prot);
     info->is_flexible = vma.type == VMAType::Flexible ? 1 : 0;
     info->is_direct = vma.type == VMAType::Direct ? 1 : 0;
     info->is_stack = vma.type == VMAType::Stack ? 1 : 0;
     info->is_pooled = vma.type == VMAType::PoolReserved || vma.type == VMAType::Pooled ? 1 : 0;
     info->is_committed = vma.IsMapped() ? 1 : 0;
+    if (vma.type == VMAType::Direct || vma.type == VMAType::Pooled) {
+        // Offset is only assigned for direct and pooled mappings.
+        info->offset = vma.phys_base;
+    }
+    if (vma.type == VMAType::Reserved || vma.type == VMAType::PoolReserved) {
+        // Protection is hidden from reserved mappings.
+        info->protection = 0;
+    }
 
     strncpy(info->name, vma.name.data(), ::Libraries::Kernel::ORBIS_KERNEL_MAXIMUM_NAME_LENGTH);
 

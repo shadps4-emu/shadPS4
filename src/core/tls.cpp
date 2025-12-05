@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
@@ -165,10 +165,7 @@ void SetTcbBase(void* image_address) {
 }
 
 Tcb* GetTcbBase() {
-    void* tcb = nullptr;
-    const int ret = syscall(SYS_arch_prctl, ARCH_GET_GS, &tcb);
-    ASSERT_MSG(ret == 0, "Failed to get GS base: errno {}", errno);
-    return static_cast<Tcb*>(tcb);
+    return Libraries::Kernel::g_curthread->tcb;
 }
 
 #else

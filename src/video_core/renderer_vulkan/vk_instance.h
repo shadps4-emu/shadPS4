@@ -411,11 +411,6 @@ public:
                properties.limits.framebufferStencilSampleCounts;
     }
 
-    /// Returns whether disabling primitive restart is supported.
-    bool IsPrimitiveRestartDisableSupported() const {
-        return driver_id != vk::DriverId::eMoltenvk;
-    }
-
     /// Returns true if logic ops are supported by the device.
     bool IsLogicOpSupported() const {
         return features.logicOp;

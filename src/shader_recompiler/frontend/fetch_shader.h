@@ -8,6 +8,10 @@
 #include "common/types.h"
 #include "shader_recompiler/info.h"
 
+namespace Serialization {
+struct Archive;
+}
+
 namespace Shader::Gcn {
 
 struct VertexAttribute {
@@ -50,7 +54,6 @@ struct VertexAttribute {
 };
 
 struct FetchShaderData {
-    const u32* code;
     u32 size = 0;
     std::vector<VertexAttribute> attributes;
     s8 vertex_offset_sgpr = -1;   ///< SGPR of vertex offset from VADDR
@@ -60,6 +63,9 @@ struct FetchShaderData {
         return attributes == other.attributes && vertex_offset_sgpr == other.vertex_offset_sgpr &&
                instance_offset_sgpr == other.instance_offset_sgpr;
     }
+
+    void Serialize(Serialization::Archive& ar) const;
+    bool Deserialize(Serialization::Archive& buffer);
 };
 
 const u32* GetFetchShaderCode(const Info& info, u32 sgpr_base);

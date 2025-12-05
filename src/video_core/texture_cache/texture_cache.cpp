@@ -52,9 +52,6 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
         std::max<u64>(std::min(device_local_memory - min_vacancy_critical, min_spacing_critical),
                       DEFAULT_CRITICAL_GC_MEMORY));
     trigger_gc_memory = static_cast<u64>((device_local_memory - mem_threshold) / 2);
-
-    downloaded_images_thread =
-        std::jthread([&](const std::stop_token& token) { DownloadedImagesThread(token); });
 }
 
 TextureCache::~TextureCache() = default;
@@ -88,11 +85,12 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
 
 void TextureCache::ProcessDownloadImages() {
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id);
+        DownloadImageMemory<true>(image_id);
     }
     download_images.clear();
 }
 
+template <bool priority>
 void TextureCache::DownloadImageMemory(ImageId image_id) {
     Image& image = slot_images[image_id];
     if (False(image.flags & ImageFlagBits::GpuModified)) {
@@ -136,33 +134,20 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     tile_manager.TileImage(image, buffer_copies, mapping.Buffer()->Handle(), mapping.Offset(),
                            copy_size);
-    {
-        std::unique_lock lock(downloaded_images_mutex);
-        downloaded_images_queue.emplace(scheduler.CurrentTick(), image_addr, mapping.Data(),
-                                        image_size);
-        downloaded_images_cv.notify_one();
-    }
-}
 
-void TextureCache::DownloadedImagesThread(const std::stop_token& token) {
-    auto* memory = Core::Memory::Instance();
-    while (!token.stop_requested()) {
-        DownloadedImage image;
-        {
-            std::unique_lock lock{downloaded_images_mutex};
-            downloaded_images_cv.wait(lock, token,
-                                      [this] { return !downloaded_images_queue.empty(); });
-            if (token.stop_requested()) {
-                break;
-            }
-            image = downloaded_images_queue.front();
-            downloaded_images_queue.pop();
+    const auto operation = [this, device_addr = image.info.guest_address, download = mapping.Data(),
+                            image_size] {
+        Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
+                                                  image_size);
+        if constexpr (!priority) {
+            buffer_cache.InvalidateMemory(device_addr, image_size, false);
         }
+    };
 
-        scheduler.GetMasterSemaphore()->Wait(image.tick);
-        memory->TryWriteBacking(std::bit_cast<u8*>(image.device_addr), image.download,
-                                image.download_size);
-        buffer_cache.InvalidateMemory(image.device_addr, image.download_size, false);
+    if constexpr (priority) {
+        scheduler.DeferPriorityOperation(operation);
+    } else {
+        scheduler.DeferOperation(operation);
     }
 }
 
@@ -967,7 +952,7 @@ void TextureCache::RunGarbageCollector() {
     }
 
     for (const auto& image_id : download_pending) {
-        DownloadImageMemory(image_id);
+        DownloadImageMemory<false>(image_id);
         DeleteImage(image_id);
     }
 
@@ -976,6 +961,7 @@ void TextureCache::RunGarbageCollector() {
         // of the image are requested before they are downloaded in which case
         // outdated buffer cache contents are used instead.
         scheduler.Finish();
+        scheduler.PopPendingOperations();
     }
 }
 

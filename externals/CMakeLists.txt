@@ -152,7 +152,7 @@ endif()
 # sirit
 add_subdirectory(sirit)
 if (WIN32)
-    target_compile_options(sirit PUBLIC "-Wno-error=unused-command-line-argument")
+    target_compile_options(sirit PRIVATE "-Wno-error=unused-command-line-argument")
 endif()
 
 # half
@@ -261,3 +261,6 @@ endif()
 #nlohmann json 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
+
+# miniz
+add_subdirectory(miniz)

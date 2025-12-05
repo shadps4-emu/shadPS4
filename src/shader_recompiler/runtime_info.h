@@ -159,7 +159,8 @@ struct GeometryRuntimeInfo {
         return num_outputs == other.num_outputs && outputs == other.outputs && num_invocations &&
                other.num_invocations && output_vertices == other.output_vertices &&
                in_primitive == other.in_primitive &&
-               std::ranges::equal(out_primitive, other.out_primitive);
+               std::ranges::equal(out_primitive, other.out_primitive) &&
+               vs_copy_hash == other.vs_copy_hash;
     }
 };
 
