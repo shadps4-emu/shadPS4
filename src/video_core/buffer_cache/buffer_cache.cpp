@@ -337,7 +337,8 @@ void BufferCache::FillBuffer(VAddr address, u32 num_bytes, u32 value, bool is_gd
         if (is_gds) {
             return &gds_buffer;
         }
-        const auto [buffer, offset] = ObtainBuffer(address, num_bytes, ObtainBufferFlags::IsWritten);
+        const auto [buffer, offset] =
+            ObtainBuffer(address, num_bytes, ObtainBufferFlags::IsWritten);
         return buffer;
     }();
     buffer->Fill(buffer->Offset(address), num_bytes, value);
