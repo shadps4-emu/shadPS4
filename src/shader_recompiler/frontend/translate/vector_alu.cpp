@@ -1050,7 +1050,14 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    ASSERT(inst.src[1].field == OperandField::ConstZero);
+    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
+    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
+    ASSERT(is_zero || is_neg_one);
+    if (is_neg_one) {
+        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
+                   "SignedConstIntNeg must be -1");
+    }
+
     const IR::U1 src0 = [&] {
         switch (inst.src[0].field) {
         case OperandField::ScalarGPR:
@@ -1064,10 +1071,11 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::EQ:
-            return ir.LogicalNot(src0);
+            return is_zero ? ir.LogicalNot(src0) : src0;
         case ConditionOp::LG: // NE
-            return src0;
+            return is_zero ? src0 : ir.LogicalNot(src0);
         case ConditionOp::GT:
+            ASSERT(is_zero);
             return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
