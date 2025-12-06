@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <vector>
 #include <Zydis/Zydis.h>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
