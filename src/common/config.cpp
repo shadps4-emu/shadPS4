@@ -1310,6 +1310,7 @@ hotkey_pause = f9
 hotkey_reload_inputs = f8
 hotkey_toggle_mouse_to_joystick = f7
 hotkey_toggle_mouse_to_gyro = f6
+hotkey_toggle_mouse_to_touchpad = delete
 hotkey_quit = lctrl, lshift, end
 )";
 }

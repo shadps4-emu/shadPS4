@@ -314,16 +314,6 @@ private:
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;
-    struct DownloadedImage {
-        u64 tick;
-        VAddr device_addr;
-        void* download;
-        size_t download_size;
-    };
-    std::queue<DownloadedImage> downloaded_images_queue;
-    std::mutex downloaded_images_mutex;
-    std::condition_variable_any downloaded_images_cv;
-    std::jthread downloaded_images_thread;
     struct MetaDataInfo {
         enum class Type {
             CMask,
