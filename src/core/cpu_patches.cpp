@@ -484,8 +484,8 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
 #else
       {FilterTcbAccess, GenerateTcbAccess, false}
 #endif
-#endif
      }},
+#endif
 };
 
 static std::once_flag init_flag;
