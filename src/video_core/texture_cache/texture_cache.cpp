@@ -145,9 +145,9 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     };
 
     if constexpr (priority) {
-        scheduler.DeferPriorityOperation(operation);
+        scheduler.DeferPriorityOperation(std::move(operation));
     } else {
-        scheduler.DeferOperation(operation);
+        scheduler.DeferOperation(std::move(operation));
     }
 }
 
