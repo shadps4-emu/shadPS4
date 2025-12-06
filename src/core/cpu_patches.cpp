@@ -472,15 +472,18 @@ static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches =
     {ZYDIS_MNEMONIC_MOVNTSS, {{FilterNoSSE4a, ReplaceMOVNTSS, false}}},
     {ZYDIS_MNEMONIC_MOVNTSD, {{FilterNoSSE4a, ReplaceMOVNTSD, false}}},
 
-    // fs[0x28]
+#if !defined(__APPLE__)
+    // FS segment patches
+    // These first two patches are for accesses to the stack canary, fs:[0x28]
     {ZYDIS_MNEMONIC_XOR, {{FilterStackCheck, GenerateStackCheck, false}}},
     {ZYDIS_MNEMONIC_MOV,
      {{FilterStackCheck, GenerateStackCanary, false},
 #if defined(_WIN32)
       // Windows needs a trampoline for Tcb accesses.
       {FilterTcbAccess, GenerateTcbAccess, true}
-#elif !defined(__APPLE__)
+#else
       {FilterTcbAccess, GenerateTcbAccess, false}
+#endif
 #endif
      }},
 };
