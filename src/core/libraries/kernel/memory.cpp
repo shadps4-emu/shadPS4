@@ -668,10 +668,12 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     }
 
     s32 result = ORBIS_OK;
-    if (True(mem_flags & Core::MemoryMapFlags::Anon) ||
-        True(mem_flags & Core::MemoryMapFlags::Stack)) {
+    if (True(mem_flags & Core::MemoryMapFlags::Anon)) {
         result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Flexible, "anon", false);
+    } else if (True(mem_flags & Core::MemoryMapFlags::Stack)) {
+        result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
+                                   Core::VMAType::Stack, "anon", false);
     } else if (True(mem_flags & Core::MemoryMapFlags::Void)) {
         result =
             memory->MapMemory(&addr_out, aligned_addr, aligned_size, Core::MemoryProt::NoAccess,
