@@ -20,11 +20,15 @@
 #include <sys/mman.h>
 #endif
 
-#if defined(__APPLE__) && defined(ARCH_X86_64)
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
 // Reserve space for the system address space using a zerofill section.
+// Note: These assembly directives are x86_64-specific, but the memory layout constants
+// below apply to both x86_64 and ARM64 on macOS.
+#if defined(ARCH_X86_64)
 asm(".zerofill SYSTEM_MANAGED,SYSTEM_MANAGED,__SYSTEM_MANAGED,0x7FFBFC000");
 asm(".zerofill SYSTEM_RESERVED,SYSTEM_RESERVED,__SYSTEM_RESERVED,0x7C0004000");
 asm(".zerofill USER_AREA,USER_AREA,__USER_AREA,0x5F9000000000");
+#endif
 #endif
 
 namespace Core {
@@ -33,7 +37,7 @@ namespace Core {
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x7FFFFBFFFULL;
 constexpr VAddr SYSTEM_RESERVED_MIN = 0x7FFFFC000ULL;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
 // Commpage ranges from 0xFC0000000 - 0xFFFFFFFFF, so decrease the system reserved maximum.
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
 // GPU-reserved memory ranges from 0x1000000000 - 0x6FFFFFFFFF, so increase the user minimum.
@@ -512,11 +516,13 @@ struct AddressSpace::Impl {
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
+        // On macOS (both x86_64 and ARM64), we run into limitations due to the commpage from
+        // 0xFC0000000 - 0xFFFFFFFFF and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF.
+        // Because this creates gaps in the available virtual memory region, we map memory space
+        // using three distinct parts.
+#if defined(ARCH_X86_64)
         constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
-        // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
-        // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. Because this creates gaps
-        // in the available virtual memory region, we map memory space using three distinct parts.
         system_managed_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
                                        system_managed_size, protection_flags, map_flags, -1, 0));
@@ -525,6 +531,58 @@ struct AddressSpace::Impl {
                                        system_reserved_size, protection_flags, map_flags, -1, 0));
         user_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
+#elif defined(ARCH_ARM64)
+        // On ARM64 macOS, MAP_FIXED may not work at these addresses due to system restrictions.
+        // We need these exact addresses for the PS4 memory layout, so we try multiple approaches.
+        int map_flags_fixed = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+        
+        system_managed_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
+                                       system_managed_size, protection_flags, map_flags_fixed, -1, 0));
+        if (system_managed_base == MAP_FAILED) {
+            // Try without MAP_NORESERVE
+            int map_flags_noreserve = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+            system_managed_base =
+                reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
+                                           system_managed_size, protection_flags, map_flags_noreserve, -1, 0));
+            if (system_managed_base == MAP_FAILED) {
+                LOG_CRITICAL(Kernel_Vmm, "mmap failed for system_managed_base at {}: {}. "
+                            "ARM64 macOS does not allow mapping at address 0x400000. "
+                            "The PS4 memory layout requires exact addresses. "
+                            "Consider using x86_64 mode or implementing address translation for ARM64.", 
+                            fmt::ptr(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN)), strerror(errno));
+                throw std::bad_alloc{};
+            }
+        }
+        
+        system_reserved_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN),
+                                       system_reserved_size, protection_flags, map_flags_fixed, -1, 0));
+        if (system_reserved_base == MAP_FAILED) {
+            int map_flags_noreserve = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+            system_reserved_base =
+                reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN),
+                                           system_reserved_size, protection_flags, map_flags_noreserve, -1, 0));
+            if (system_reserved_base == MAP_FAILED) {
+                LOG_CRITICAL(Kernel_Vmm, "mmap failed for system_reserved_base at {}: {}", 
+                            fmt::ptr(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN)), strerror(errno));
+                throw std::bad_alloc{};
+            }
+        }
+        
+        user_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags_fixed, -1, 0));
+        if (user_base == MAP_FAILED) {
+            int map_flags_noreserve = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED;
+            user_base = reinterpret_cast<u8*>(
+                mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags_noreserve, -1, 0));
+            if (user_base == MAP_FAILED) {
+                LOG_CRITICAL(Kernel_Vmm, "mmap failed for user_base at {}: {}", 
+                            fmt::ptr(reinterpret_cast<void*>(USER_MIN)), strerror(errno));
+                throw std::bad_alloc{};
+            }
+        }
+#endif
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
 #if defined(ARCH_X86_64)
