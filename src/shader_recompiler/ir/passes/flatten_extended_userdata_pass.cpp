@@ -81,11 +81,12 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
 
 static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
 #ifdef ARCH_X86_64
+    // Only handle if the fault address is within the SRT code range
     const u8* code_start = g_srt_codegen_start;
     const u8* code_end = code_start + g_srt_codegen.getSize();
     const void* code = Common::GetRip(context);
     if (code < code_start || code >= code_end) {
-        return false;
+        return false; // Not in SRT code range
     }
 
     // Patch instruction to zero register
@@ -184,12 +185,18 @@ static inline void PushPtr(Xbyak::CodeGenerator& c, u32 off_dw) {
 static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 };
+
 static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
     PushPtr(c, off_dw);
     PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
     ASSERT(use_list);
 
+    // First copy all the src data from this tree level
+    // That way, all data that was contiguous in the guest SRT is also contiguous in the
+    // flattened buffer.
+    // TODO src and dst are contiguous. Optimize with wider loads/stores
+    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
     for (auto [src_off_dw, use] : *use_list) {
         c.mov(r10d, ptr[rdi + (src_off_dw << 2)]);
         c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
@@ -198,6 +205,7 @@ static void VisitPointer(u32 off_dw, IR::Inst* subtree, PassInfo& pass_info,
         pass_info.dst_off_dw++;
     }
 
+    // Then visit any children used as pointers
     for (const auto [src_off_dw, use] : *use_list) {
         if (pass_info.GetUsesAsPointer(use)) {
             VisitPointer(src_off_dw, use, pass_info, c);
