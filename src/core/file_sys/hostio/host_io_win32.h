@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
 #pragma once
@@ -9,7 +11,9 @@
 #include <fcntl.h>
 #include <windows.h>
 
+#include "common/logging/log.h"
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+
 #include "src/host_io_base.h"
 
 namespace HostIODriver {
