@@ -56,7 +56,10 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
     auto* jit = Core::Jit::JitEngine::Instance();
     if (jit) {
-        jit->Initialize();
+        // JIT should already be initialized in Emulator::Run(), but check just in case
+        if (!jit->IsInitialized()) {
+            jit->Initialize();
+        }
         jit->ExecuteBlock(params->entry_addr);
     } else {
         LOG_CRITICAL(Core_Linker, "JIT engine not available");

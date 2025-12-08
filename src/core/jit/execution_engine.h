@@ -28,6 +28,9 @@ public:
 
     void Initialize();
     void Shutdown();
+    bool IsInitialized() const {
+        return code_buffer != nullptr;
+    }
 
 private:
     CodeBlock* TranslateBasicBlock(VAddr start_address, size_t max_instructions = 100);

@@ -55,6 +55,11 @@ ExecutionEngine::~ExecutionEngine() {
 }
 
 void ExecutionEngine::Initialize() {
+    if (IsInitialized()) {
+        LOG_DEBUG(Core, "JIT Execution Engine already initialized");
+        return;
+    }
+
     code_buffer = AllocateExecutableMemory(code_buffer_size);
     if (!code_buffer) {
         throw std::bad_alloc();

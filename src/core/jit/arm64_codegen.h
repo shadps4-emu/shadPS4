@@ -114,11 +114,12 @@ public:
     void sub_v(int vdst, int vsrc1, int vsrc2);
     void mul_v(int vdst, int vsrc1, int vsrc2);
 
+    void makeExecutable();
+
 private:
     void emit32(u32 instruction);
     void emit64(u64 instruction);
     void* allocateCode(size_t size);
-    void makeExecutable();
 
     void* code_buffer;
     void* code_ptr;
