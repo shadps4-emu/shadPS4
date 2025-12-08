@@ -19,9 +19,15 @@ struct CodeBlock {
     std::set<VAddr> dependencies;
     bool is_linked;
 
+    // Control flow targets for linking
+    VAddr fallthrough_target;    // Next sequential address (if block doesn't end with branch)
+    VAddr branch_target;         // Direct branch target (JMP)
+    void* branch_patch_location; // Location in ARM64 code to patch for direct branch
+
     CodeBlock(VAddr addr, void* code, size_t size, size_t count)
         : ps4_address(addr), arm64_code(code), code_size(size), instruction_count(count),
-          is_linked(false) {}
+          is_linked(false), fallthrough_target(0), branch_target(0),
+          branch_patch_location(nullptr) {}
 };
 
 class BlockManager {

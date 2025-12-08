@@ -112,6 +112,9 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
     VAddr current_address = start_address;
     size_t instruction_count = 0;
     bool block_end = false;
+    VAddr fallthrough_target = 0;
+    VAddr branch_target = 0;
+    void* branch_patch_location = nullptr;
 
     while (instruction_count < max_instructions && !block_end) {
         ZydisDecodedInstruction instruction;
@@ -129,6 +132,14 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
             break;
         }
 
+        // Track branch target before translation
+        if (instruction.mnemonic == ZYDIS_MNEMONIC_JMP &&
+            operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+            s64 offset = static_cast<s64>(operands[0].imm.value.s);
+            branch_target = current_address + instruction.length + offset;
+            branch_patch_location = code_generator->getCurr();
+        }
+
         bool translated = translator->TranslateInstruction(instruction, operands, current_address);
         if (!translated) {
             LOG_WARNING(Core, "Failed to translate instruction at {:#x}", current_address);
@@ -136,21 +147,36 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
         }
 
         instruction_count++;
-        current_address += instruction.length;
+        VAddr next_address = current_address + instruction.length;
 
         switch (instruction.mnemonic) {
         case ZYDIS_MNEMONIC_RET:
-        case ZYDIS_MNEMONIC_JMP:
         case ZYDIS_MNEMONIC_CALL:
             block_end = true;
             break;
+        case ZYDIS_MNEMONIC_JMP:
+            block_end = true;
+            break;
         default:
+            // Check for conditional branches (they don't end the block, but we track them)
+            if (instruction.mnemonic >= ZYDIS_MNEMONIC_JO &&
+                instruction.mnemonic <= ZYDIS_MNEMONIC_JZ) {
+                // Conditional branch - block continues with fallthrough
+                // TODO: Track conditional branch targets for linking
+            }
             break;
         }
+
+        current_address = next_address;
     }
 
     if (instruction_count == 0) {
         return nullptr;
+    }
+
+    // Set fallthrough target if block doesn't end with unconditional branch/ret
+    if (!block_end || branch_target == 0) {
+        fallthrough_target = current_address;
     }
 
     size_t code_size = code_generator->getSize();
@@ -158,8 +184,36 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
     CodeBlock* block =
         block_manager->CreateBlock(start_address, block_start, code_size, instruction_count);
 
-    LOG_DEBUG(Core, "Translated basic block at {:#x}, {} instructions, {} bytes", start_address,
-              instruction_count, code_size);
+    // Store control flow information
+    block->fallthrough_target = fallthrough_target;
+    block->branch_target = branch_target;
+    block->branch_patch_location = branch_patch_location;
+
+    LOG_DEBUG(Core,
+              "Translated basic block at {:#x}, {} instructions, {} bytes, fallthrough: {:#x}, "
+              "branch: {:#x}",
+              start_address, instruction_count, code_size, fallthrough_target, branch_target);
+
+    // Try to link blocks if targets are available
+    if (branch_target != 0) {
+        CodeBlock* target_block = block_manager->GetBlock(branch_target);
+        if (target_block) {
+            LinkBlock(block, branch_target);
+        } else {
+            // Add dependency for later linking
+            block_manager->AddDependency(start_address, branch_target);
+        }
+    }
+
+    if (fallthrough_target != 0 && branch_target == 0) {
+        // Try to link fallthrough
+        CodeBlock* target_block = block_manager->GetBlock(fallthrough_target);
+        if (target_block) {
+            // For fallthrough, we need to append a branch at the end
+            // This will be handled by linking logic
+            block_manager->AddDependency(start_address, fallthrough_target);
+        }
+    }
 
     return block;
 }
@@ -170,17 +224,82 @@ CodeBlock* ExecutionEngine::TranslateBlock(VAddr ps4_address) {
         return existing;
     }
 
-    return TranslateBasicBlock(ps4_address);
+    CodeBlock* new_block = TranslateBasicBlock(ps4_address);
+    if (!new_block) {
+        return nullptr;
+    }
+
+    // After creating a new block, check if any existing blocks can link to it
+    // This handles the case where we translate a target block after the source
+    for (auto& [addr, block] : block_manager->blocks) {
+        if (block->branch_target == ps4_address && !block->is_linked) {
+            LinkBlock(block.get(), ps4_address);
+        }
+        if (block->fallthrough_target == ps4_address && block->branch_target == 0 &&
+            !block->is_linked) {
+            LinkBlock(block.get(), ps4_address);
+        }
+    }
+
+    return new_block;
 }
 
 void ExecutionEngine::LinkBlock(CodeBlock* block, VAddr target_address) {
     CodeBlock* target_block = block_manager->GetBlock(target_address);
-    if (target_block && !block->is_linked) {
-        void* link_location = static_cast<u8*>(block->arm64_code) + block->code_size - 4;
-        code_generator->setSize(reinterpret_cast<u8*>(link_location) -
-                                static_cast<u8*>(code_generator->getCode()));
-        code_generator->b(target_block->arm64_code);
+    if (!target_block) {
+        return;
+    }
+
+    // Patch the branch instruction if we have a patch location
+    if (block->branch_patch_location && block->branch_target == target_address) {
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        pthread_jit_write_protect_np(0);
+#endif
+        // Calculate offset from patch location to target
+        s64 offset = reinterpret_cast<s64>(target_block->arm64_code) -
+                     reinterpret_cast<s64>(block->branch_patch_location);
+
+        // Check if we can use a relative branch (within ±128MB)
+        if (offset >= -0x8000000 && offset < 0x8000000) {
+            s32 imm26 = static_cast<s32>(offset / 4);
+            u32* patch_ptr = reinterpret_cast<u32*>(block->branch_patch_location);
+            // Patch the branch instruction: 0x14000000 | (imm26 & 0x3FFFFFF)
+            *patch_ptr = 0x14000000 | (imm26 & 0x3FFFFFF);
+        } else {
+            // Far branch - need to use indirect branch
+            // For now, leave as-is (will use the placeholder branch)
+            LOG_DEBUG(Core, "Branch target too far for direct linking: offset={}", offset);
+        }
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        pthread_jit_write_protect_np(1);
+        __builtin___clear_cache(static_cast<char*>(block->branch_patch_location),
+                                static_cast<char*>(block->branch_patch_location) + 4);
+#endif
         block->is_linked = true;
+        LOG_DEBUG(Core, "Linked block {:#x} to {:#x}", block->ps4_address, target_address);
+    } else if (block->fallthrough_target == target_address && block->branch_target == 0) {
+        // For fallthrough, append a branch at the end of the block
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        pthread_jit_write_protect_np(0);
+#endif
+        void* link_location = static_cast<u8*>(block->arm64_code) + block->code_size;
+        s64 offset =
+            reinterpret_cast<s64>(target_block->arm64_code) - reinterpret_cast<s64>(link_location);
+
+        if (offset >= -0x8000000 && offset < 0x8000000) {
+            s32 imm26 = static_cast<s32>(offset / 4);
+            u32* patch_ptr = reinterpret_cast<u32*>(link_location);
+            *patch_ptr = 0x14000000 | (imm26 & 0x3FFFFFF);
+            block->code_size += 4; // Update block size
+        }
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        pthread_jit_write_protect_np(1);
+        __builtin___clear_cache(static_cast<char*>(link_location),
+                                static_cast<char*>(link_location) + 4);
+#endif
+        block->is_linked = true;
+        LOG_DEBUG(Core, "Linked fallthrough from block {:#x} to {:#x}", block->ps4_address,
+                  target_address);
     }
 }
 

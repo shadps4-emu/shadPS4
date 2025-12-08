@@ -571,8 +571,47 @@ bool X86_64Translator::TranslateRet(const ZydisDecodedInstruction& instruction,
 
 bool X86_64Translator::TranslateJmp(const ZydisDecodedInstruction& instruction,
                                     const ZydisDecodedOperand* operands, VAddr address) {
-    LOG_WARNING(Core, "JMP instruction translation needs execution engine integration");
-    return false;
+    const auto& target = operands[0];
+    VAddr target_address = 0;
+
+    // Calculate target address based on operand type
+    if (target.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+        // Direct relative jump: JMP rel32
+        // Target = current_address + instruction.length + offset
+        s64 offset = static_cast<s64>(target.imm.value.s);
+        target_address = address + instruction.length + offset;
+    } else if (target.type == ZYDIS_OPERAND_TYPE_MEMORY) {
+        // Indirect jump: JMP [mem]
+        // Load address from memory into scratch register
+        LoadMemoryOperand(RegisterMapper::SCRATCH_REG, target, 8);
+        // TODO: don't use a dispatcher
+        codegen.br(RegisterMapper::SCRATCH_REG);
+        return true;
+    } else if (target.type == ZYDIS_OPERAND_TYPE_REGISTER) {
+        // Indirect jump: JMP reg
+        int reg = GetArm64Register(target);
+        if (reg == -1) {
+            LOG_ERROR(Core, "Invalid register for JMP");
+            return false;
+        }
+        codegen.br(reg);
+        return true;
+    } else {
+        LOG_ERROR(Core, "Unsupported JMP operand type");
+        return false;
+    }
+
+    // For direct jumps, we need to branch to the target address
+    // Since the target block may not be translated yet, we'll generate
+    // a placeholder that can be patched later during block linking
+    // For now, generate a branch to a dispatcher function
+    // TODO: Implement proper block linking to patch this with direct branch
+
+    // Calculate offset from current code position
+    void* placeholder_target = reinterpret_cast<void*>(target_address);
+    codegen.b(placeholder_target);
+
+    return true;
 }
 
 bool X86_64Translator::TranslateCmp(const ZydisDecodedInstruction& instruction,
