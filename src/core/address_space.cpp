@@ -574,6 +574,7 @@ struct AddressSpace::Impl {
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
 #if defined(ARCH_X86_64)
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, map_flags, -1, 0));
@@ -581,6 +582,7 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
 #else
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
         const auto virtual_base =
@@ -732,7 +734,7 @@ struct AddressSpace::Impl {
         if (write) {
             flags |= PROT_WRITE;
         }
-#ifdef ARCH_X86_64
+#if defined(ARCH_X86_64)
         if (execute) {
             flags |= PROT_EXEC;
         }
@@ -786,7 +788,7 @@ AddressSpace::~AddressSpace() = default;
 
 void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr,
                         bool is_exec) {
-#if ARCH_X86_64
+#if defined(ARCH_X86_64)
     const auto prot = is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
 #else
     // On non-native architectures, we can simplify things by ignoring the execute flag for the
@@ -857,7 +859,7 @@ boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
 }
 
 void* AddressSpace::TranslateAddress(VAddr ps4_addr) const {
-#ifdef ARCH_X86_64
+#if defined(ARCH_X86_64)
     // On x86_64, PS4 addresses are directly mapped, so we can cast them
     return reinterpret_cast<void*>(ps4_addr);
 #elif defined(ARCH_ARM64) && defined(__APPLE__)
