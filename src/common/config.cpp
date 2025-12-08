@@ -978,7 +978,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
         isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
-        showFpsCounter.setFromToml(debug, "ShowFpsCounter", is_game_specific);
+        showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
@@ -1198,7 +1198,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
-        data["Debug"]["ShowFpsCounter"] = showFpsCounter.base_value;
+        data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
     // Sorting of TOML sections
