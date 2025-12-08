@@ -5,6 +5,7 @@
 
 #include <array>
 #include "common/types.h"
+#include "core/jit/arm64_codegen.h"
 
 namespace Core::Jit {
 
@@ -97,6 +98,14 @@ enum class Arm64Register : u8 {
     COUNT = 48
 };
 
+struct RegisterContext {
+    u64 gp_regs[16];
+    u64 xmm_regs[16][2];
+    u64 flags;
+    u64 rsp;
+    u64 rbp;
+};
+
 class RegisterMapper {
 public:
     RegisterMapper();
@@ -109,8 +118,10 @@ public:
     void ReloadRegister(X86_64Register x86_reg);
     bool IsRegisterSpilled(X86_64Register x86_reg) const;
 
-    void SaveAllRegisters();
-    void RestoreAllRegisters();
+    void SaveAllRegisters(Arm64CodeGenerator& codegen, RegisterContext* ctx);
+    void RestoreAllRegisters(Arm64CodeGenerator& codegen, RegisterContext* ctx);
+    void SaveRegister(Arm64CodeGenerator& codegen, X86_64Register x86_reg, RegisterContext* ctx);
+    void RestoreRegister(Arm64CodeGenerator& codegen, X86_64Register x86_reg, RegisterContext* ctx);
 
     static constexpr int SCRATCH_REG = 9;
     static constexpr int SCRATCH_REG2 = 10;
