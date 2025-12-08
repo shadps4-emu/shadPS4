@@ -39,11 +39,11 @@
     (ctx).va_list.overflow_arg_area = &overflow_arg_area;
 #elif defined(ARCH_ARM64)
 #define VA_ARGS ...
-#define VA_CTX(ctx) \
-    alignas(16)::Common::VaCtx ctx{}; \
-    (ctx).va_list.reg_save_area = nullptr; \
-    (ctx).va_list.gp_offset = 0; \
-    (ctx).va_list.fp_offset = 0; \
+#define VA_CTX(ctx)                                                                                \
+    alignas(16)::Common::VaCtx ctx{};                                                              \
+    (ctx).va_list.reg_save_area = nullptr;                                                         \
+    (ctx).va_list.gp_offset = 0;                                                                   \
+    (ctx).va_list.fp_offset = 0;                                                                   \
     (ctx).va_list.overflow_arg_area = nullptr;
 #else
 #error "Unsupported architecture"

@@ -253,8 +253,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
 }
 #else
-static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
-}
+static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {}
 #endif
 
 }; // namespace

@@ -32,8 +32,7 @@ extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data,
 #elif defined(ARCH_ARM64)
 extern "C" s32 PS4_SYSV_ABI _sceFiberSetJmp(OrbisFiberContext* ctx);
 extern "C" s32 PS4_SYSV_ABI _sceFiberLongJmp(OrbisFiberContext* ctx);
-extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data,
-                                                  bool set_fpu);
+extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data, bool set_fpu);
 #endif
 extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) asm("_sceFiberForceQuit");
 
