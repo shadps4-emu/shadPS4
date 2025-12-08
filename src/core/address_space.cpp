@@ -650,8 +650,32 @@ struct AddressSpace::Impl {
         const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
         const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
         const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
+        
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (virtual_addr >= SYSTEM_MANAGED_MIN && virtual_addr <= SYSTEM_MANAGED_MAX) {
+            // System managed region
+            u64 offset = virtual_addr - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (virtual_addr >= SYSTEM_RESERVED_MIN && virtual_addr <= SYSTEM_RESERVED_MAX) {
+            // System reserved region
+            u64 offset = virtual_addr - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (virtual_addr >= USER_MIN && virtual_addr <= USER_MAX) {
+            // User region
+            u64 offset = virtual_addr - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for mapping: {:#x}", virtual_addr);
+            return MAP_FAILED;
+        }
+        
+        void* ret = mmap(host_addr, size, prot, MAP_FIXED | flag, handle, host_offset);
+#else
         void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
                          handle, host_offset);
+#endif
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
         return ret;
     }
@@ -671,9 +695,29 @@ struct AddressSpace::Impl {
         // Free the relevant region.
         m_free_regions.insert({start_address, end_address});
 
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (start_address >= SYSTEM_MANAGED_MIN && start_address <= SYSTEM_MANAGED_MAX) {
+            u64 offset = start_address - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (start_address >= SYSTEM_RESERVED_MIN && start_address <= SYSTEM_RESERVED_MAX) {
+            u64 offset = start_address - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (start_address >= USER_MIN && start_address <= USER_MAX) {
+            u64 offset = start_address - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for unmapping: {:#x}", start_address);
+            return;
+        }
+        void* ret = mmap(host_addr, end_address - start_address,
+                         PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#else
         // Return the adjusted pointers.
         void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
                          PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#endif
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
     }
 
@@ -690,7 +734,26 @@ struct AddressSpace::Impl {
             flags |= PROT_EXEC;
         }
 #endif
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (virtual_addr >= SYSTEM_MANAGED_MIN && virtual_addr <= SYSTEM_MANAGED_MAX) {
+            u64 offset = virtual_addr - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (virtual_addr >= SYSTEM_RESERVED_MIN && virtual_addr <= SYSTEM_RESERVED_MAX) {
+            u64 offset = virtual_addr - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (virtual_addr >= USER_MIN && virtual_addr <= USER_MAX) {
+            u64 offset = virtual_addr - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for protection: {:#x}", virtual_addr);
+            return;
+        }
+        int ret = mprotect(host_addr, size, flags);
+#else
         int ret = mprotect(reinterpret_cast<void*>(virtual_addr), size, flags);
+#endif
         ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
 
