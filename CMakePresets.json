@@ -30,6 +30,30 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
+    },
+    {
+      "name": "arm64-Clang-Debug",
+      "displayName": "Clang ARM64 Debug",
+      "inherits": ["arm64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "arm64-Clang-Release",
+      "displayName": "Clang ARM64 Release",
+      "inherits": ["arm64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "arm64-Clang-RelWithDebInfo",
+      "displayName": "Clang ARM64 RelWithDebInfo",
+      "inherits": ["arm64-Clang-Base"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
     }
   ]
 }

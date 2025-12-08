@@ -3,6 +3,7 @@
 
 #include "fiber.h"
 
+#include "common/arch.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
@@ -23,11 +24,34 @@ OrbisFiberContext* GetFiberContext() {
     return Core::GetTcbBase()->tcb_fiber;
 }
 
+#ifdef ARCH_X86_64
 extern "C" s32 PS4_SYSV_ABI _sceFiberSetJmp(OrbisFiberContext* ctx) asm("_sceFiberSetJmp");
 extern "C" s32 PS4_SYSV_ABI _sceFiberLongJmp(OrbisFiberContext* ctx) asm("_sceFiberLongJmp");
 extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data,
                                                   bool set_fpu) asm("_sceFiberSwitchEntry");
+#elif defined(ARCH_ARM64)
+extern "C" s32 PS4_SYSV_ABI _sceFiberSetJmp(OrbisFiberContext* ctx);
+extern "C" s32 PS4_SYSV_ABI _sceFiberLongJmp(OrbisFiberContext* ctx);
+extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data,
+                                                  bool set_fpu);
+#endif
 extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) asm("_sceFiberForceQuit");
+
+#ifdef ARCH_ARM64
+extern "C" s32 PS4_SYSV_ABI _sceFiberSetJmp(OrbisFiberContext* ctx) {
+    UNREACHABLE_MSG("ARM64 fiber implementation not yet complete");
+    return 0;
+}
+
+extern "C" s32 PS4_SYSV_ABI _sceFiberLongJmp(OrbisFiberContext* ctx) {
+    UNREACHABLE_MSG("ARM64 fiber implementation not yet complete");
+    return 0;
+}
+
+extern "C" void PS4_SYSV_ABI _sceFiberSwitchEntry(OrbisFiberData* data, bool set_fpu) {
+    UNREACHABLE_MSG("ARM64 fiber implementation not yet complete");
+}
+#endif
 
 extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) {
     OrbisFiberContext* g_ctx = GetFiberContext();

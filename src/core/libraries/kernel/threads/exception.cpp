@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/arch.h"
 #include "common/assert.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/threads/exception.h"
@@ -23,6 +24,7 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
     if (handler) {
         auto ctx = Ucontext{};
 #ifdef __APPLE__
+#ifdef ARCH_X86_64
         const auto& regs = raw_context->uc_mcontext->__ss;
         ctx.uc_mcontext.mc_r8 = regs.__r8;
         ctx.uc_mcontext.mc_r9 = regs.__r9;
@@ -42,7 +44,13 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         ctx.uc_mcontext.mc_rsp = regs.__rsp;
         ctx.uc_mcontext.mc_fs = regs.__fs;
         ctx.uc_mcontext.mc_gs = regs.__gs;
+#elif defined(ARCH_ARM64)
+        UNREACHABLE_MSG("ARM64 exception handling not yet implemented");
 #else
+#error "Unsupported architecture"
+#endif
+#else
+#ifdef ARCH_X86_64
         const auto& regs = raw_context->uc_mcontext.gregs;
         ctx.uc_mcontext.mc_r8 = regs[REG_R8];
         ctx.uc_mcontext.mc_r9 = regs[REG_R9];
@@ -62,6 +70,11 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         ctx.uc_mcontext.mc_rsp = regs[REG_RSP];
         ctx.uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
         ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
+#elif defined(ARCH_ARM64)
+        UNREACHABLE_MSG("ARM64 exception handling not yet implemented");
+#else
+#error "Unsupported architecture"
+#endif
 #endif
         handler(POSIX_SIGUSR1, &ctx);
     }

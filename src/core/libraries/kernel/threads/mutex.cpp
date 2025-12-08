@@ -18,7 +18,13 @@ static std::mutex MutxStaticLock;
 #define THR_ADAPTIVE_MUTEX_INITIALIZER ((PthreadMutex*)1)
 #define THR_MUTEX_DESTROYED ((PthreadMutex*)2)
 
+#ifdef ARCH_X86_64
 #define CPU_SPINWAIT __asm__ volatile("pause")
+#elif defined(ARCH_ARM64)
+#define CPU_SPINWAIT __asm__ volatile("yield")
+#else
+#define CPU_SPINWAIT
+#endif
 
 #define CHECK_AND_INIT_MUTEX                                                                       \
     if (PthreadMutex* m = *mutex; m <= THR_MUTEX_DESTROYED) [[unlikely]] {                         \

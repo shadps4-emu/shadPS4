@@ -19,6 +19,18 @@
         sym->AddSymbol(sr, func);                                                                  \
     }
 
+#define LIB_FUNCTION_VARIADIC(nid, lib, libversion, mod, function)                                 \
+    {                                                                                              \
+        Core::Loader::SymbolResolver sr{};                                                         \
+        sr.name = nid;                                                                             \
+        sr.library = lib;                                                                          \
+        sr.library_version = libversion;                                                           \
+        sr.module = mod;                                                                           \
+        sr.type = Core::Loader::SymbolType::Function;                                              \
+        auto func = reinterpret_cast<u64>(function);                                               \
+        sym->AddSymbol(sr, func);                                                                  \
+    }
+
 #define LIB_OBJ(nid, lib, libversion, mod, obj)                                                    \
     {                                                                                              \
         Core::Loader::SymbolResolver sr{};                                                         \

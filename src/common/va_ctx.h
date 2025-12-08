@@ -2,9 +2,16 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 #pragma once
 
-#include <xmmintrin.h>
+#include "common/arch.h"
 #include "common/types.h"
 
+#ifdef ARCH_X86_64
+#include <xmmintrin.h>
+#elif defined(ARCH_ARM64)
+#include <cstdarg>
+#endif
+
+#ifdef ARCH_X86_64
 #define VA_ARGS                                                                                    \
     uint64_t rdi, uint64_t rsi, uint64_t rdx, uint64_t rcx, uint64_t r8, uint64_t r9,              \
         uint64_t overflow_arg_area, __m128 xmm0, __m128 xmm1, __m128 xmm2, __m128 xmm3,            \
@@ -30,6 +37,17 @@
     (ctx).va_list.gp_offset = offsetof(::Common::VaRegSave, gp);                                   \
     (ctx).va_list.fp_offset = offsetof(::Common::VaRegSave, fp);                                   \
     (ctx).va_list.overflow_arg_area = &overflow_arg_area;
+#elif defined(ARCH_ARM64)
+#define VA_ARGS ...
+#define VA_CTX(ctx) \
+    alignas(16)::Common::VaCtx ctx{}; \
+    (ctx).va_list.reg_save_area = nullptr; \
+    (ctx).va_list.gp_offset = 0; \
+    (ctx).va_list.fp_offset = 0; \
+    (ctx).va_list.overflow_arg_area = nullptr;
+#else
+#error "Unsupported architecture"
+#endif
 
 namespace Common {
 
@@ -44,7 +62,9 @@ struct VaList {
 
 struct VaRegSave {
     u64 gp[6];
+#ifdef ARCH_X86_64
     __m128 fp[8];
+#endif
 };
 
 struct VaCtx {
