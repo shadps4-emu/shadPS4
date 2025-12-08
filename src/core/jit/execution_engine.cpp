@@ -7,11 +7,33 @@
 #include "common/logging/log.h"
 #include "core/memory.h"
 #include "execution_engine.h"
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+#include <pthread.h>
+#endif
 
 namespace Core::Jit {
 
+static size_t alignUp(size_t value, size_t alignment) {
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
 static void* AllocateExecutableMemory(size_t size) {
-    size = (size + 4095) & ~4095;
+    size = alignUp(size, 4096);
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+    // On macOS ARM64:
+    // 1. Allocate with PROT_READ | PROT_WRITE (no PROT_EXEC initially)
+    // 2. Use pthread_jit_write_protect_np to allow writing
+    // 3. After writing, use mprotect to add PROT_EXEC
+    void* ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (ptr == MAP_FAILED) {
+        LOG_CRITICAL(Core, "Failed to allocate executable memory: {} (errno={})", strerror(errno),
+                     errno);
+        return nullptr;
+    }
+    // Initially disable write protection so we can write code
+    pthread_jit_write_protect_np(0);
+    return ptr;
+#else
     void* ptr =
         mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (ptr == MAP_FAILED) {
@@ -19,6 +41,7 @@ static void* AllocateExecutableMemory(size_t size) {
         return nullptr;
     }
     return ptr;
+#endif
 }
 
 ExecutionEngine::ExecutionEngine()
@@ -45,6 +68,10 @@ void ExecutionEngine::Initialize() {
 
 void ExecutionEngine::Shutdown() {
     if (code_buffer) {
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On macOS ARM64, ensure write protection is enabled before unmapping
+        pthread_jit_write_protect_np(1);
+#endif
         munmap(code_buffer, code_buffer_size);
         code_buffer = nullptr;
     }
@@ -122,6 +149,7 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
     }
 
     size_t code_size = code_generator->getSize();
+    code_generator->makeExecutable();
     CodeBlock* block =
         block_manager->CreateBlock(start_address, block_start, code_size, instruction_count);
 
