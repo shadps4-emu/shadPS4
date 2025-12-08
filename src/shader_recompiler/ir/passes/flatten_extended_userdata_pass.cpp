@@ -2,13 +2,13 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/arch.h"
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
 #ifdef ARCH_X86_64
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
 #endif
-#include "common/arch.h"
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
@@ -23,8 +23,7 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
-#include "src/common/arch.h"
-#include "src/common/decoder.h"
+#include "common/decoder.h"
 
 #ifdef ARCH_X86_64
 using namespace Xbyak::util;
