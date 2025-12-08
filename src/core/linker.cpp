@@ -20,6 +20,9 @@
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+#ifdef ARCH_ARM64
+#include "core/jit/execution_engine.h"
+#endif
 
 namespace Core {
 
@@ -51,22 +54,13 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #elif defined(ARCH_ARM64)
 static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
-    void* entry = reinterpret_cast<void*>(params->entry_addr);
-    asm volatile("mov x2, sp\n"
-                 "and x2, x2, #0xFFFFFFFFFFFFFFF0\n"
-                 "sub x2, x2, #8\n"
-                 "mov sp, x2\n"
-                 "ldr x0, [%1, #8]\n"
-                 "sub sp, sp, #16\n"
-                 "str x0, [sp]\n"
-                 "ldr x0, [%1]\n"
-                 "str x0, [sp, #8]\n"
-                 "mov x0, %1\n"
-                 "mov x1, %2\n"
-                 "br %0\n"
-                 :
-                 : "r"(entry), "r"(params), "r"(ProgramExitFunc)
-                 : "x0", "x1", "x2", "memory");
+    auto* jit = Core::Jit::JitEngine::Instance();
+    if (jit) {
+        jit->Initialize();
+        jit->ExecuteBlock(params->entry_addr);
+    } else {
+        LOG_CRITICAL(Core_Linker, "JIT engine not available");
+    }
     UNREACHABLE();
 }
 #endif

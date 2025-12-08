@@ -6,6 +6,9 @@
 #include "common/decoder.h"
 #include "common/signal_context.h"
 #include "core/signals.h"
+#ifdef ARCH_ARM64
+#include "core/jit/execution_engine.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -79,6 +82,15 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGSEGV:
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
+#ifdef ARCH_ARM64
+        auto* jit = Core::Jit::JitEngine::Instance();
+        if (jit && jit->IsJitCode(code_address)) {
+            VAddr ps4_addr = jit->GetPs4AddressForJitCode(code_address);
+            if (ps4_addr != 0) {
+                jit->InvalidateBlock(ps4_addr);
+            }
+        }
+#endif
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             UNREACHABLE_MSG(
                 "Unhandled access violation in thread '{}' at code address {}: {} address {}",
@@ -87,13 +99,20 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         }
         break;
     }
-    case SIGILL:
+    case SIGILL: {
+#ifdef ARCH_ARM64
+        auto* jit = Core::Jit::JitEngine::Instance();
+        if (jit && jit->IsJitCode(code_address)) {
+            LOG_ERROR(Core, "Illegal instruction in JIT code at {}", fmt::ptr(code_address));
+        }
+#endif
         if (!signals->DispatchIllegalInstruction(raw_context)) {
             UNREACHABLE_MSG("Unhandled illegal instruction in thread '{}' at code address {}: {}",
                             GetThreadName(), fmt::ptr(code_address),
                             DisassembleInstruction(code_address));
         }
         break;
+    }
     case SIGUSR1: { // Sleep thread until signal is received
         sigset_t sigset;
         sigemptyset(&sigset);

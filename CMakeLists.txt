@@ -19,6 +19,8 @@ endif()
 
 project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
@@ -846,6 +848,24 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
+if (ARCHITECTURE STREQUAL "arm64")
+    set(CORE ${CORE}
+             src/core/jit/arm64_codegen.cpp
+             src/core/jit/arm64_codegen.h
+             src/core/jit/register_mapping.cpp
+             src/core/jit/register_mapping.h
+             src/core/jit/x86_64_translator.cpp
+             src/core/jit/x86_64_translator.h
+             src/core/jit/block_manager.cpp
+             src/core/jit/block_manager.h
+             src/core/jit/execution_engine.cpp
+             src/core/jit/execution_engine.h
+             src/core/jit/calling_convention.cpp
+             src/core/jit/calling_convention.h
+             src/core/jit/simd_translator.cpp
+             src/core/jit/simd_translator.h)
+endif()
+
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
@@ -1220,3 +1240,22 @@ endif()
 
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+# Testing
+option(BUILD_TESTS "Build test suite" OFF)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.17.0
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    add_subdirectory(tests)
+endif()
