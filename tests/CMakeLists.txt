@@ -8,6 +8,7 @@ add_executable(jit_tests
     test_execution_engine.cpp
     test_block_linking.cpp
     test_call_ret.cpp
+    test_hle_bridge.cpp
     main.cpp
 )
 
@@ -25,6 +26,8 @@ if (ARCHITECTURE STREQUAL "arm64")
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/core/jit/simd_translator.h
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/core/jit/calling_convention.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/core/jit/calling_convention.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/core/jit/hle_bridge.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/core/jit/hle_bridge.h
     )
 endif()
 
