@@ -192,11 +192,6 @@ static ConfigEntry<bool> pipelineCacheArchive(false);
 static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> showFpsCounter(false);
 
-// GUI
-static std::vector<GameInstallDir> settings_install_dirs = {};
-std::vector<bool> install_dirs_enabled = {};
-std::filesystem::path save_data_path = {};
-
 // Settings
 ConfigEntry<u32> m_language(1); // english
 
@@ -262,13 +257,6 @@ string getTrophyKey() {
 
 void setTrophyKey(string key) {
     trophyKey = key;
-}
-
-std::filesystem::path GetSaveDataPath() {
-    if (save_data_path.empty()) {
-        return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata";
-    }
-    return save_data_path;
 }
 
 void setVolumeSlider(int volumeValue, bool is_game_specific) {
@@ -540,10 +528,6 @@ void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
     isMotionControlsEnabled.set(use, is_game_specific);
 }
 
-void setSaveDataPath(const std::filesystem::path& path) {
-    save_data_path = path;
-}
-
 u32 GetLanguage() {
     return m_language.get();
 }
@@ -697,32 +681,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
-    if (data.contains("GUI")) {
-        const toml::value& gui = data.at("GUI");
-
-        const auto install_dir_array =
-            toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
-
-        try {
-            install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
-        } catch (...) {
-            // If it does not exist, assume that all are enabled.
-            install_dirs_enabled.resize(install_dir_array.size(), true);
-        }
-
-        if (install_dirs_enabled.size() < install_dir_array.size()) {
-            install_dirs_enabled.resize(install_dir_array.size(), true);
-        }
-
-        settings_install_dirs.clear();
-        for (size_t i = 0; i < install_dir_array.size(); i++) {
-            settings_install_dirs.push_back(
-                {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
-        }
-
-        save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
-    }
-
     if (data.contains("Settings")) {
         const toml::value& settings = data.at("Settings");
         m_language.setFromToml(settings, "consoleLanguage", is_game_specific);
@@ -834,39 +792,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
     if (!is_game_specific) {
-        std::vector<std::string> install_dirs;
-        std::vector<bool> install_dirs_enabled;
-
-        // temporary structure for ordering
-        struct DirEntry {
-            string path_str;
-            bool enabled;
-        };
-
-        std::vector<DirEntry> sorted_dirs;
-        for (const auto& dirInfo : settings_install_dirs) {
-            sorted_dirs.push_back(
-                {string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
-        }
-
-        // Sort directories alphabetically
-        std::sort(sorted_dirs.begin(), sorted_dirs.end(), [](const DirEntry& a, const DirEntry& b) {
-            return std::lexicographical_compare(
-                a.path_str.begin(), a.path_str.end(), b.path_str.begin(), b.path_str.end(),
-                [](char a_char, char b_char) {
-                    return std::tolower(a_char) < std::tolower(b_char);
-                });
-        });
-
-        for (const auto& entry : sorted_dirs) {
-            install_dirs.push_back(entry.path_str);
-            install_dirs_enabled.push_back(entry.enabled);
-        }
-
         // Non game-specific entries
-        data["GUI"]["installDirs"] = install_dirs;
-        data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
-        data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 

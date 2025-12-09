@@ -116,7 +116,6 @@ int getUsbDeviceBackend();
 void setUsbDeviceBackend(int value, bool is_game_specific = false);
 
 // TODO
-std::filesystem::path GetSaveDataPath();
 std::string getUserName(int id);
 std::array<std::string, 4> const getUserNames();
 bool GetUseUnifiedInputConfig();
@@ -125,7 +124,6 @@ bool GetOverrideControllerColor();
 void SetOverrideControllerColor(bool enable);
 int* GetControllerCustomColor();
 void SetControllerCustomColor(int r, int b, int g);
-void setSaveDataPath(const std::filesystem::path& path);
 
 void setDefaultValues(bool is_game_specific = false);
 
