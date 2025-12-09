@@ -285,9 +285,6 @@ public:
     UserManager& GetUserManager() {
         return m_userManager;
     }
-    const UserManager& GetUserManager() const {
-        return m_userManager;
-    }
 
 private:
     GeneralSettings m_general{};

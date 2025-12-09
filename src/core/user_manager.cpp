@@ -24,6 +24,7 @@ bool UserManager::AddUser(const User& user) {
         std::filesystem::create_directory(user_dir, ec);
         std::filesystem::create_directory(user_dir / "savedata", ec);
         std::filesystem::create_directory(user_dir / "trophy", ec);
+        std::filesystem::create_directory(user_dir / "trophy/data", ec);
     }
 
     return true;
@@ -86,6 +87,7 @@ std::vector<User> UserManager::CreateDefaultUser() {
         std::filesystem::create_directory(user_dir);
         std::filesystem::create_directory(user_dir / "savedata");
         std::filesystem::create_directory(user_dir / "trophy");
+        std::filesystem::create_directory(user_dir / "trophy/data");
     }
 
     return {default_user};
@@ -109,4 +111,20 @@ void UserManager::SetControllerPort(u32 user_id, int port) {
         if (u.user_id == user_id)
             u.controller_port = port;
     }
+}
+// Returns a list of users that have valid home directories
+std::vector<User> UserManager::GetValidUsers() const {
+    std::vector<User> result;
+    result.reserve(m_users.user.size());
+
+    const auto home_dir = EmulatorSettings::GetInstance()->GetHomeDir();
+
+    for (const auto& user : m_users.user) {
+        const auto user_dir = home_dir / std::to_string(user.user_id);
+        if (std::filesystem::exists(user_dir)) {
+            result.push_back(user);
+        }
+    }
+
+    return result;
 }

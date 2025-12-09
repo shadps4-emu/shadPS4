@@ -31,6 +31,7 @@ public:
     std::vector<User> CreateDefaultUser();
     bool SetDefaultUser(u32 user_id);
     void SetControllerPort(u32 user_id, int port);
+    std::vector<User> GetValidUsers() const;
 
     Users& GetUsers() {
         return m_users;
