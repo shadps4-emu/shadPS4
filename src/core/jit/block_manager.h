@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <atomic>
+#include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -10,6 +13,30 @@
 #include "common/types.h"
 
 namespace Core::Jit {
+
+struct ExitFunctionLinkData {
+    void* host_code;
+    VAddr guest_rip;
+    void* caller_address;
+    u32 original_instruction;
+};
+
+using BlockDelinkerFunc = std::function<void(ExitFunctionLinkData*)>;
+
+struct BlockLinkTag {
+    VAddr guest_destination;
+    ExitFunctionLinkData* host_link;
+
+    bool operator<(const BlockLinkTag& other) const {
+        if (guest_destination < other.guest_destination) {
+            return true;
+        } else if (guest_destination == other.guest_destination) {
+            return host_link < other.host_link;
+        } else {
+            return false;
+        }
+    }
+};
 
 struct CodeBlock {
     VAddr ps4_address;
@@ -41,6 +68,8 @@ public:
     void InvalidateBlock(VAddr ps4_address);
     void InvalidateRange(VAddr start, VAddr end);
     void AddDependency(VAddr block_address, VAddr dependency);
+    void AddBlockLink(VAddr guest_dest, ExitFunctionLinkData* link_data,
+                      BlockDelinkerFunc delinker);
     void Clear();
 
     size_t GetBlockCount() const {
@@ -49,6 +78,7 @@ public:
     size_t GetTotalCodeSize() const;
 
     std::unordered_map<VAddr, std::unique_ptr<CodeBlock>> blocks;
+    std::map<BlockLinkTag, BlockDelinkerFunc> block_links;
     mutable std::mutex mutex;
 };
 

@@ -43,6 +43,7 @@ public:
 
     // Arithmetic operations
     void add(int dst, int src1, int src2);
+    void add(int dst, int src1, int src2, int shift);
     void add_imm(int dst, int src1, s32 imm);
     void sub(int dst, int src1, int src2);
     void sub_imm(int dst, int src1, s32 imm);

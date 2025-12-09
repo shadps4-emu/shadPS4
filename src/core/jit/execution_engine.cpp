@@ -250,6 +250,18 @@ CodeBlock* ExecutionEngine::TranslateBlock(VAddr ps4_address) {
     return new_block;
 }
 
+static void DirectBlockDelinker(ExitFunctionLinkData* record, bool is_call) {
+    void* caller_addr = record->caller_address;
+    u32 original_inst = record->original_instruction;
+
+    std::atomic_ref<u32>(*reinterpret_cast<u32*>(caller_addr))
+        .store(original_inst, std::memory_order::relaxed);
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+    __builtin___clear_cache(static_cast<char*>(caller_addr), static_cast<char*>(caller_addr) + 4);
+#endif
+    delete record;
+}
+
 void ExecutionEngine::LinkBlock(CodeBlock* block, VAddr target_address) {
     CodeBlock* target_block = block_manager->GetBlock(target_address);
     if (!target_block) {
@@ -261,25 +273,33 @@ void ExecutionEngine::LinkBlock(CodeBlock* block, VAddr target_address) {
 #if defined(__APPLE__) && defined(ARCH_ARM64)
         pthread_jit_write_protect_np(0);
 #endif
-        // Calculate offset from patch location to target
-        s64 offset = reinterpret_cast<s64>(target_block->arm64_code) -
-                     reinterpret_cast<s64>(block->branch_patch_location);
+        void* caller_address = block->branch_patch_location;
+        s64 offset =
+            reinterpret_cast<s64>(target_block->arm64_code) - reinterpret_cast<s64>(caller_address);
 
         // Check if we can use a relative branch (within ±128MB)
         if (offset >= -0x8000000 && offset < 0x8000000) {
             s32 imm26 = static_cast<s32>(offset / 4);
-            u32* patch_ptr = reinterpret_cast<u32*>(block->branch_patch_location);
-            // Patch the branch instruction: 0x14000000 | (imm26 & 0x3FFFFFF)
-            *patch_ptr = 0x14000000 | (imm26 & 0x3FFFFFF);
+            u32* patch_ptr = reinterpret_cast<u32*>(caller_address);
+            u32 branch_inst = 0x14000000 | (imm26 & 0x3FFFFFF);
+
+            u32 original_inst = *patch_ptr;
+            std::atomic_ref<u32>(*patch_ptr).store(branch_inst, std::memory_order::relaxed);
+
+            // Register delinker
+            ExitFunctionLinkData* link_data = new ExitFunctionLinkData{
+                target_block->arm64_code, target_address, caller_address, original_inst};
+            block_manager->AddBlockLink(target_address, link_data, [](ExitFunctionLinkData* r) {
+                DirectBlockDelinker(r, false);
+            });
         } else {
-            // Far branch - need to use indirect branch
-            // For now, leave as-is (will use the placeholder branch)
+            // Far branch - need to use indirect branch via thunk
             LOG_DEBUG(Core, "Branch target too far for direct linking: offset={}", offset);
         }
 #if defined(__APPLE__) && defined(ARCH_ARM64)
         pthread_jit_write_protect_np(1);
-        __builtin___clear_cache(static_cast<char*>(block->branch_patch_location),
-                                static_cast<char*>(block->branch_patch_location) + 4);
+        __builtin___clear_cache(static_cast<char*>(caller_address),
+                                static_cast<char*>(caller_address) + 4);
 #endif
         block->is_linked = true;
         LOG_DEBUG(Core, "Linked block {:#x} to {:#x}", block->ps4_address, target_address);
@@ -295,8 +315,19 @@ void ExecutionEngine::LinkBlock(CodeBlock* block, VAddr target_address) {
         if (offset >= -0x8000000 && offset < 0x8000000) {
             s32 imm26 = static_cast<s32>(offset / 4);
             u32* patch_ptr = reinterpret_cast<u32*>(link_location);
-            *patch_ptr = 0x14000000 | (imm26 & 0x3FFFFFF);
-            block->code_size += 4; // Update block size
+            u32 branch_inst = 0x14000000 | (imm26 & 0x3FFFFFF);
+            u32 original_inst = 0x14000002;
+
+            std::atomic_ref<u32>(*patch_ptr).store(branch_inst, std::memory_order::relaxed);
+
+            // Register delinker
+            ExitFunctionLinkData* link_data = new ExitFunctionLinkData{
+                target_block->arm64_code, target_address, link_location, original_inst};
+            block_manager->AddBlockLink(target_address, link_data, [](ExitFunctionLinkData* r) {
+                DirectBlockDelinker(r, false);
+            });
+
+            block->code_size += 4;
         }
 #if defined(__APPLE__) && defined(ARCH_ARM64)
         pthread_jit_write_protect_np(1);

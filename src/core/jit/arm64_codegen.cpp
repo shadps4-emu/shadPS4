@@ -228,6 +228,11 @@ void Arm64CodeGenerator::add(int dst, int src1, int src2) {
     emit32(0x8B000000 | (dst << 0) | (src1 << 5) | (src2 << 16));
 }
 
+void Arm64CodeGenerator::add(int dst, int src1, int src2, int shift) {
+    ASSERT_MSG(shift >= 0 && shift <= 3, "Invalid shift amount");
+    emit32(0x8B000000 | (dst << 0) | (src1 << 5) | (src2 << 16) | (shift << 12));
+}
+
 void Arm64CodeGenerator::add_imm(int dst, int src1, s32 imm) {
     if (imm >= 0 && imm < 4096) {
         emit32(0x91000000 | (dst << 0) | (src1 << 5) | (imm << 10));

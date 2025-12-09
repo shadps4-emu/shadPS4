@@ -37,12 +37,33 @@ CodeBlock* BlockManager::CreateBlock(VAddr ps4_address, void* arm64_code, size_t
 
 void BlockManager::InvalidateBlock(VAddr ps4_address) {
     std::lock_guard<std::mutex> lock(mutex);
+
+    // Delink all links pointing to this block
+    auto lower = block_links.lower_bound({ps4_address, nullptr});
+    auto upper = block_links.upper_bound(
+        {ps4_address, reinterpret_cast<ExitFunctionLinkData*>(UINTPTR_MAX)});
+    for (auto it = lower; it != upper;) {
+        it->second(it->first.host_link);
+        it = block_links.erase(it);
+    }
+
     blocks.erase(ps4_address);
     LOG_DEBUG(Core, "Invalidated code block at PS4 address {:#x}", ps4_address);
 }
 
 void BlockManager::InvalidateRange(VAddr start, VAddr end) {
     std::lock_guard<std::mutex> lock(mutex);
+
+    // Delink all links pointing to blocks in this range
+    auto link_it = block_links.begin();
+    while (link_it != block_links.end()) {
+        if (link_it->first.guest_destination >= start && link_it->first.guest_destination < end) {
+            link_it->second(link_it->first.host_link);
+            link_it = block_links.erase(link_it);
+        } else {
+            ++link_it;
+        }
+    }
 
     auto it = blocks.begin();
     while (it != blocks.end()) {
@@ -77,8 +98,19 @@ void BlockManager::AddDependency(VAddr block_address, VAddr dependency) {
     }
 }
 
+void BlockManager::AddBlockLink(VAddr guest_dest, ExitFunctionLinkData* link_data,
+                                BlockDelinkerFunc delinker) {
+    std::lock_guard<std::mutex> lock(mutex);
+    block_links[{guest_dest, link_data}] = delinker;
+}
+
 void BlockManager::Clear() {
     std::lock_guard<std::mutex> lock(mutex);
+    // Delink all links before clearing
+    for (auto& [tag, delinker] : block_links) {
+        delinker(tag.host_link);
+    }
+    block_links.clear();
     blocks.clear();
 }
 

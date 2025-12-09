@@ -116,29 +116,77 @@ void X86_64Translator::CalculateMemoryAddress(int dst_reg, const ZydisDecodedOpe
         }
     }
 
-    if (base_reg == -1 && index_reg == -1 && mem.disp.value == 0) {
+    s64 displacement = mem.disp.value;
+
+    if (base_reg == -1 && index_reg == -1 && displacement == 0) {
         codegen.mov(dst_reg, 0);
         return;
     }
 
-    if (base_reg != -1) {
-        codegen.mov(dst_reg, base_reg);
-    } else {
-        codegen.mov(dst_reg, 0);
-    }
-
-    if (index_reg != -1) {
-        if (mem.scale > 0 && mem.scale <= 8) {
-            codegen.mov(RegisterMapper::SCRATCH_REG, static_cast<s64>(mem.scale));
-            codegen.mul(RegisterMapper::SCRATCH_REG, index_reg, RegisterMapper::SCRATCH_REG);
-            codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+    if (index_reg == -1) {
+        if (base_reg != -1) {
+            if (displacement == 0) {
+                codegen.mov(dst_reg, base_reg);
+            } else if (displacement >= -256 && displacement < 256) {
+                codegen.mov(dst_reg, base_reg);
+                codegen.add_imm(dst_reg, dst_reg, static_cast<s32>(displacement));
+            } else {
+                codegen.mov(dst_reg, base_reg);
+                codegen.mov_imm(RegisterMapper::SCRATCH_REG, displacement);
+                codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+            }
         } else {
-            codegen.add(dst_reg, dst_reg, index_reg);
+            codegen.mov_imm(dst_reg, displacement);
         }
+        return;
     }
 
-    if (mem.disp.value != 0) {
-        codegen.add(dst_reg, dst_reg, static_cast<s32>(mem.disp.value));
+    if (base_reg == -1) {
+        base_reg = 0;
+    }
+
+    int scale = mem.scale;
+    if (scale == 0) {
+        scale = 1;
+    }
+
+    if (scale == 1) {
+        if (displacement == 0) {
+            codegen.add(dst_reg, base_reg, index_reg);
+        } else if (displacement >= -256 && displacement < 256) {
+            codegen.add(dst_reg, base_reg, index_reg);
+            codegen.add_imm(dst_reg, dst_reg, static_cast<s32>(displacement));
+        } else {
+            codegen.add(dst_reg, base_reg, index_reg);
+            codegen.mov_imm(RegisterMapper::SCRATCH_REG, displacement);
+            codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+        }
+    } else if (scale == 2 || scale == 4 || scale == 8) {
+        int shift = (scale == 2) ? 1 : (scale == 4) ? 2 : 3;
+        if (displacement == 0) {
+            codegen.add(dst_reg, base_reg, index_reg, shift);
+        } else {
+            codegen.add(dst_reg, base_reg, index_reg, shift);
+            if (displacement >= -256 && displacement < 256) {
+                codegen.add_imm(dst_reg, dst_reg, static_cast<s32>(displacement));
+            } else {
+                codegen.mov_imm(RegisterMapper::SCRATCH_REG, displacement);
+                codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+            }
+        }
+    } else {
+        codegen.mov(dst_reg, base_reg);
+        codegen.mov_imm(RegisterMapper::SCRATCH_REG, scale);
+        codegen.mul(RegisterMapper::SCRATCH_REG, index_reg, RegisterMapper::SCRATCH_REG);
+        codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+        if (displacement != 0) {
+            if (displacement >= -256 && displacement < 256) {
+                codegen.add_imm(dst_reg, dst_reg, static_cast<s32>(displacement));
+            } else {
+                codegen.mov_imm(RegisterMapper::SCRATCH_REG, displacement);
+                codegen.add(dst_reg, dst_reg, RegisterMapper::SCRATCH_REG);
+            }
+        }
     }
 }
 
