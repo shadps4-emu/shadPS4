@@ -862,7 +862,10 @@ if (ARCHITECTURE STREQUAL "arm64")
              src/core/jit/calling_convention.cpp
              src/core/jit/calling_convention.h
              src/core/jit/simd_translator.cpp
-             src/core/jit/simd_translator.h)
+             src/core/jit/simd_translator.h
+             src/core/jit/hle_bridge.cpp
+             src/core/jit/hle_bridge.h
+    )
 endif()
 
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h

@@ -120,3 +120,6 @@
 [submodule "externals/miniz"]
 	path = externals/miniz
 	url = https://github.com/richgel999/miniz
+[submodule "externals/FEX"]
+	path = externals/FEX
+	url = https://github.com/FEX-Emu/FEX
