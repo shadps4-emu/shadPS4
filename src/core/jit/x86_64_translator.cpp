@@ -559,13 +559,75 @@ bool X86_64Translator::TranslatePop(const ZydisDecodedInstruction& instruction,
 
 bool X86_64Translator::TranslateCall(const ZydisDecodedInstruction& instruction,
                                      const ZydisDecodedOperand* operands, VAddr address) {
-    LOG_WARNING(Core, "CALL instruction translation needs execution engine integration");
-    return false;
+    const auto& target = operands[0];
+    VAddr target_address = 0;
+    VAddr return_address = address + instruction.length;
+
+    // Calculate target address based on operand type
+    if (target.type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+        // Direct relative call: CALL rel32
+        // Target = current_address + instruction.length + offset
+        s64 offset = static_cast<s64>(target.imm.value.s);
+        target_address = address + instruction.length + offset;
+    } else if (target.type == ZYDIS_OPERAND_TYPE_MEMORY) {
+        // Indirect call: CALL [mem]
+        // Load address from memory into scratch register
+        LoadMemoryOperand(RegisterMapper::SCRATCH_REG, target, 8);
+        // Push return address
+        int sp_reg = RegisterMapper::STACK_POINTER;
+        codegen.sub_imm(sp_reg, sp_reg, 8); // Decrement stack by 8 bytes
+        codegen.mov_imm(RegisterMapper::SCRATCH_REG2, return_address);
+        codegen.str(RegisterMapper::SCRATCH_REG2, sp_reg, 0); // Store return address
+        // Call via register
+        codegen.blr(RegisterMapper::SCRATCH_REG);
+        return true;
+    } else if (target.type == ZYDIS_OPERAND_TYPE_REGISTER) {
+        // Indirect call: CALL reg
+        int reg = GetArm64Register(target);
+        if (reg == -1) {
+            LOG_ERROR(Core, "Invalid register for CALL");
+            return false;
+        }
+        // Push return address
+        int sp_reg = RegisterMapper::STACK_POINTER;
+        codegen.sub_imm(sp_reg, sp_reg, 8); // Decrement stack by 8 bytes
+        codegen.mov_imm(RegisterMapper::SCRATCH_REG, return_address);
+        codegen.str(RegisterMapper::SCRATCH_REG, sp_reg, 0); // Store return address
+        // Call via register
+        codegen.blr(reg);
+        return true;
+    } else {
+        LOG_ERROR(Core, "Unsupported CALL operand type");
+        return false;
+    }
+
+    // For direct calls, push return address and branch to target
+    // Push return address onto stack
+    int sp_reg = RegisterMapper::STACK_POINTER;
+    codegen.sub_imm(sp_reg, sp_reg, 8); // Decrement stack by 8 bytes (x86_64 stack grows down)
+    codegen.mov_imm(RegisterMapper::SCRATCH_REG, return_address);
+    codegen.str(RegisterMapper::SCRATCH_REG, sp_reg, 0); // Store return address at [SP]
+
+    // Branch to target (will be linked later if target block is available)
+    void* placeholder_target = reinterpret_cast<void*>(target_address);
+    codegen.bl(placeholder_target); // Use bl (branch with link) for calls
+
+    return true;
 }
 
 bool X86_64Translator::TranslateRet(const ZydisDecodedInstruction& instruction,
                                     const ZydisDecodedOperand* operands) {
-    codegen.ret();
+    // x86_64 RET pops return address from stack and jumps to it
+    int sp_reg = RegisterMapper::STACK_POINTER;
+    int scratch_reg = RegisterMapper::SCRATCH_REG;
+
+    // Load return address from stack
+    codegen.ldr(scratch_reg, sp_reg, 0); // Load return address from [SP]
+    codegen.add_imm(sp_reg, sp_reg, 8);  // Increment stack by 8 bytes (pop)
+
+    // Jump to return address
+    codegen.br(scratch_reg);
+
     return true;
 }
 

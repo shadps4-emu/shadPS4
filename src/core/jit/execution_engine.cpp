@@ -132,9 +132,15 @@ CodeBlock* ExecutionEngine::TranslateBasicBlock(VAddr start_address, size_t max_
             break;
         }
 
-        // Track branch target before translation
+        // Track branch/call target before translation
         if (instruction.mnemonic == ZYDIS_MNEMONIC_JMP &&
             operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+            s64 offset = static_cast<s64>(operands[0].imm.value.s);
+            branch_target = current_address + instruction.length + offset;
+            branch_patch_location = code_generator->getCurr();
+        } else if (instruction.mnemonic == ZYDIS_MNEMONIC_CALL &&
+                   operands[0].type == ZYDIS_OPERAND_TYPE_IMMEDIATE) {
+            // Track CALL target for potential linking (though CALL typically goes to HLE)
             s64 offset = static_cast<s64>(operands[0].imm.value.s);
             branch_target = current_address + instruction.length + offset;
             branch_patch_location = code_generator->getCurr();

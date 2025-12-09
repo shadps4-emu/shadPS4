@@ -7,6 +7,7 @@ add_executable(jit_tests
     test_block_manager.cpp
     test_execution_engine.cpp
     test_block_linking.cpp
+    test_call_ret.cpp
     main.cpp
 )
 
