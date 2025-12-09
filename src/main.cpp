@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 
     bool waitForDebugger = false;
     std::optional<int> waitPid;
-#if 0
+
     // Map of argument strings to lambda functions
     std::unordered_map<std::string, std::function<void(int&)>> arg_map = {
         {"-h",
@@ -263,12 +263,11 @@ int main(int argc, char* argv[]) {
     if (waitPid.has_value()) {
         Core::Debugger::WaitForPid(waitPid.value());
     }
-#endif
+
     // Run the emulator with the resolved eboot path
     Core::Emulator* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    const char* const eboot_path = "D:/ps4/shadps4games/CUSA18992/eboot.bin";
     emulator->Run(eboot_path, game_args, game_folder);
 
     return 0;
