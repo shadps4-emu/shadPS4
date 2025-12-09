@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <vector>
 #include <Zydis/Zydis.h>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
@@ -120,6 +121,30 @@ static void GenerateTcbAccess(void* /* address */, const ZydisDecodedOperand* op
     c.putSeg(gs);
     c.mov(dst, src);
 #endif
+}
+
+static bool FilterStackCheck(const ZydisDecodedOperand* operands) {
+    const auto& dst_op = operands[0];
+    const auto& src_op = operands[1];
+
+    // Some compilers emit stack checks by starting a function with
+    // 'mov (64-bit register), fs:[0x28]', then checking with `xor (64-bit register), fs:[0x28]`
+    return src_op.type == ZYDIS_OPERAND_TYPE_MEMORY && src_op.mem.segment == ZYDIS_REGISTER_FS &&
+           src_op.mem.base == ZYDIS_REGISTER_NONE && src_op.mem.index == ZYDIS_REGISTER_NONE &&
+           src_op.mem.disp.value == 0x28 && dst_op.reg.value >= ZYDIS_REGISTER_RAX &&
+           dst_op.reg.value <= ZYDIS_REGISTER_R15;
+}
+
+static void GenerateStackCheck(void* /* address */, const ZydisDecodedOperand* operands,
+                               Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    c.xor_(dst, 0);
+}
+
+static void GenerateStackCanary(void* /* address */, const ZydisDecodedOperand* operands,
+                                Xbyak::CodeGenerator& c) {
+    const auto dst = ZydisToXbyakRegisterOperand(operands[0]);
+    c.mov(dst, 0);
 }
 
 static bool FilterNoSSE4a(const ZydisDecodedOperand*) {
@@ -440,18 +465,26 @@ struct PatchInfo {
     bool trampoline;
 };
 
-static const std::unordered_map<ZydisMnemonic, PatchInfo> Patches = {
+static const std::unordered_map<ZydisMnemonic, std::vector<PatchInfo>> Patches = {
     // SSE4a
-    {ZYDIS_MNEMONIC_EXTRQ, {FilterNoSSE4a, GenerateEXTRQ, true}},
-    {ZYDIS_MNEMONIC_INSERTQ, {FilterNoSSE4a, GenerateINSERTQ, true}},
-    {ZYDIS_MNEMONIC_MOVNTSS, {FilterNoSSE4a, ReplaceMOVNTSS, false}},
-    {ZYDIS_MNEMONIC_MOVNTSD, {FilterNoSSE4a, ReplaceMOVNTSD, false}},
+    {ZYDIS_MNEMONIC_EXTRQ, {{FilterNoSSE4a, GenerateEXTRQ, true}}},
+    {ZYDIS_MNEMONIC_INSERTQ, {{FilterNoSSE4a, GenerateINSERTQ, true}}},
+    {ZYDIS_MNEMONIC_MOVNTSS, {{FilterNoSSE4a, ReplaceMOVNTSS, false}}},
+    {ZYDIS_MNEMONIC_MOVNTSD, {{FilterNoSSE4a, ReplaceMOVNTSD, false}}},
 
+#if !defined(__APPLE__)
+    // FS segment patches
+    // These first two patches are for accesses to the stack canary, fs:[0x28]
+    {ZYDIS_MNEMONIC_XOR, {{FilterStackCheck, GenerateStackCheck, false}}},
+    {ZYDIS_MNEMONIC_MOV,
+     {{FilterStackCheck, GenerateStackCanary, false},
 #if defined(_WIN32)
-    // Windows needs a trampoline.
-    {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, true}},
-#elif !defined(__APPLE__)
-    {ZYDIS_MNEMONIC_MOV, {FilterTcbAccess, GenerateTcbAccess, false}},
+      // Windows needs a trampoline for Tcb accesses.
+      {FilterTcbAccess, GenerateTcbAccess, true}
+#else
+      {FilterTcbAccess, GenerateTcbAccess, false}
+#endif
+     }},
 #endif
 };
 
@@ -503,51 +536,53 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     }
 
     if (Patches.contains(instruction.mnemonic)) {
-        const auto& patch_info = Patches.at(instruction.mnemonic);
-        bool needs_trampoline = patch_info.trampoline;
-        if (patch_info.filter(operands)) {
-            auto& patch_gen = module->patch_gen;
+        const auto& patches = Patches.at(instruction.mnemonic);
+        for (const auto& patch_info : patches) {
+            bool needs_trampoline = patch_info.trampoline;
+            if (patch_info.filter(operands)) {
+                auto& patch_gen = module->patch_gen;
 
-            if (needs_trampoline && instruction.length < 5) {
-                // Trampoline is needed but instruction is too short to patch.
-                // Return false and length to signal to AOT compilation that this instruction
-                // should be skipped and handled at runtime.
-                return std::make_pair(false, instruction.length);
-            }
+                if (needs_trampoline && instruction.length < 5) {
+                    // Trampoline is needed but instruction is too short to patch.
+                    // Return false and length to signal to AOT compilation that this instruction
+                    // should be skipped and handled at runtime.
+                    return std::make_pair(false, instruction.length);
+                }
 
-            // Reset state and move to current code position.
-            patch_gen.reset();
-            patch_gen.setSize(code - patch_gen.getCode());
+                // Reset state and move to current code position.
+                patch_gen.reset();
+                patch_gen.setSize(code - patch_gen.getCode());
 
-            if (needs_trampoline) {
-                auto& trampoline_gen = module->trampoline_gen;
-                const auto trampoline_ptr = trampoline_gen.getCurr();
+                if (needs_trampoline) {
+                    auto& trampoline_gen = module->trampoline_gen;
+                    const auto trampoline_ptr = trampoline_gen.getCurr();
 
-                patch_info.generator(code, operands, trampoline_gen);
+                    patch_info.generator(code, operands, trampoline_gen);
 
-                // Return to the following instruction at the end of the trampoline.
-                trampoline_gen.jmp(code + instruction.length);
+                    // Return to the following instruction at the end of the trampoline.
+                    trampoline_gen.jmp(code + instruction.length);
 
-                // Replace instruction with near jump to the trampoline.
-                patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
-            } else {
-                patch_info.generator(code, operands, patch_gen);
-            }
+                    // Replace instruction with near jump to the trampoline.
+                    patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
+                } else {
+                    patch_info.generator(code, operands, patch_gen);
+                }
 
-            const auto patch_size = patch_gen.getCurr() - code;
-            if (patch_size > 0) {
-                ASSERT_MSG(instruction.length >= patch_size,
-                           "Instruction {} with length {} is too short to replace at: {}",
-                           ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
-                           fmt::ptr(code));
+                const auto patch_size = patch_gen.getCurr() - code;
+                if (patch_size > 0) {
+                    ASSERT_MSG(instruction.length >= patch_size,
+                               "Instruction {} with length {} is too short to replace at: {}",
+                               ZydisMnemonicGetString(instruction.mnemonic), instruction.length,
+                               fmt::ptr(code));
 
-                // Fill remaining space with nops.
-                patch_gen.nop(instruction.length - patch_size);
+                    // Fill remaining space with nops.
+                    patch_gen.nop(instruction.length - patch_size);
 
-                module->patched.insert(code);
-                LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
-                          ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
-                return std::make_pair(true, instruction.length);
+                    module->patched.insert(code);
+                    LOG_DEBUG(Core, "Patched instruction '{}' at: {}",
+                              ZydisMnemonicGetString(instruction.mnemonic), fmt::ptr(code));
+                    return std::make_pair(true, instruction.length);
+                }
             }
         }
     }

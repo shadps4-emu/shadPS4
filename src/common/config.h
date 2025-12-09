@@ -93,6 +93,8 @@ void setSpecialPadClass(int type);
 int getSpecialPadClass();
 bool patchShaders(); // no set
 bool fpsColor();     // no set
+bool getShowFpsCounter();
+void setShowFpsCounter(bool enable, bool is_game_specific = false);
 bool getIsMotionControlsEnabled();
 void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 std::string getDefaultControllerID();

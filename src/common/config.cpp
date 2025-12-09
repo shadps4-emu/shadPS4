@@ -190,6 +190,7 @@ static ConfigEntry<bool> pipelineCacheArchive(false);
 
 // Debug
 static ConfigEntry<bool> isFpsColor(true);
+static ConfigEntry<bool> showFpsCounter(false);
 
 // GUI
 static std::vector<GameInstallDir> settings_install_dirs = {};
@@ -374,6 +375,14 @@ bool isPipelineCacheArchived() {
 
 bool fpsColor() {
     return isFpsColor.get();
+}
+
+bool getShowFpsCounter() {
+    return showFpsCounter.get();
+}
+
+void setShowFpsCounter(bool enable, bool is_game_specific) {
+    showFpsCounter.set(enable, is_game_specific);
 }
 
 u32 vblankFreq() {
@@ -683,8 +692,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
-
         isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
+        showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
 
@@ -870,6 +879,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
+        data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
     // Sorting of TOML sections
@@ -952,6 +962,7 @@ void setDefaultValues(bool is_game_specific) {
 
         // Debug
         isFpsColor.base_value = true;
+        showFpsCounter.base_value = false;
     }
 }
 

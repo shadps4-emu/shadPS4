@@ -311,6 +311,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
+    show_simple_fps = Config::getShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 
@@ -472,6 +473,11 @@ namespace Overlay {
 
 void ToggleSimpleFps() {
     show_simple_fps = !show_simple_fps;
+    visibility_toggled = true;
+}
+
+void SetSimpleFps(bool enabled) {
+    show_simple_fps = enabled;
     visibility_toggled = true;
 }
 
