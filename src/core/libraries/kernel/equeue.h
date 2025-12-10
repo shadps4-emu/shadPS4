@@ -180,6 +180,7 @@ private:
     std::vector<EqueueEvent> m_events;
     std::condition_variable m_cond;
     std::unordered_map<u64, SmallTimer> m_small_timers;
+    std::shared_ptr<void> m_life_token = std::make_shared<int>(0);
 };
 
 u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);

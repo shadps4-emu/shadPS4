@@ -65,8 +65,16 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
         it->timer->expires_at(it->timer->expiry() + event.timer_interval);
     }
 
+    std::weak_ptr weak_token = m_life_token;
+
     it->timer->async_wait(
-        [this, event_data = event.event, callback](const boost::system::error_code& ec) {
+        [this, event_data = event.event, callback, weak_token](const boost::system::error_code& ec) {
+
+            // If the token already expires return to avoid calling to callback with an invalid pointer.
+            if (weak_token.expired()) {
+                return;
+            }
+
             if (ec) {
                 if (ec != boost::system::errc::operation_canceled) {
                     LOG_ERROR(Kernel_Event, "Timer callback error: {}", ec.message());
