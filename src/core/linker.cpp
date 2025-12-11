@@ -104,9 +104,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    // Simulate sceKernelInternalMemory mapping, a mapping usually performed during libkernel init.
-    // Due to the large size of this mapping, failing to emulate it causes issues in some titles.
-    // This mapping belongs in the system reserved area, which starts at address 0x880000000.
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         if (auto& ipc = IPC::Instance()) {
