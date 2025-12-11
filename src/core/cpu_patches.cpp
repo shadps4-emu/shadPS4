@@ -755,11 +755,12 @@ static bool PatchesIllegalInstructionHandler(void* context) {
                 Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
             if (ZYAN_SUCCESS(status) && instruction.mnemonic == ZydisMnemonic::ZYDIS_MNEMONIC_UD2)
                 [[unlikely]] {
-                UNREACHABLE_MSG("ud2 at code address {:#x}", (u64)code_address);
+                UNREACHABLE_MSG("ud2 at code address {:#x}", reinterpret_cast<u64>(code_address));
             }
-            LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}", (u64)code_address,
-                      ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
-                                           : "Failed to decode");
+            UNREACHABLE_MSG("Failed to patch address {:x} -- mnemonic: {}",
+                            reinterpret_cast<u64>(code_address),
+                            ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
+                                                 : "Failed to decode");
         }
     }
 
