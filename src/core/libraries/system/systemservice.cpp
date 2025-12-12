@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
@@ -18,7 +19,7 @@ std::queue<OrbisSystemServiceEvent> g_event_queue;
 std::mutex g_event_queue_mutex;
 
 bool IsSplashVisible() {
-    return Config::showSplash() && g_splash_status;
+    return EmulatorSettings::GetInstance()->IsShowSplash() && g_splash_status;
 }
 
 int PS4_SYSV_ABI sceAppMessagingClearEventFlag() {
