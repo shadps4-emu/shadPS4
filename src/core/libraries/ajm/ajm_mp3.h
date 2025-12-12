@@ -70,9 +70,10 @@ public:
     void Initialize(const void* buffer, u32 buffer_size) override {}
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
+    u32 GetMinimumInputSize() const override;
     u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
-    std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                           AjmInstanceGapless& gapless) override;
+    DecoderResult ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                              AjmInstanceGapless& gapless) override;
 
     static int ParseMp3Header(const u8* buf, u32 stream_size, int parse_ofl,
                               AjmDecMp3ParseFrame* frame);
@@ -97,6 +98,7 @@ private:
     SwrContext* m_swr_context = nullptr;
     std::optional<u32> m_header;
     u32 m_frame_samples = 0;
+    u32 m_frame_size = 0;
 };
 
 } // namespace Libraries::Ajm
