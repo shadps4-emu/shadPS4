@@ -30,6 +30,7 @@
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
+#include "core/jit/execution_engine.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -260,6 +261,19 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
+
+#ifdef ARCH_ARM64
+    // Initialize JIT engine early for ARM64 builds
+    auto* jit = Core::Jit::JitEngine::Instance();
+    if (jit) {
+        try {
+            jit->Initialize();
+            LOG_INFO(Loader, "JIT Execution Engine initialized");
+        } catch (const std::bad_alloc& e) {
+            LOG_CRITICAL(Loader, "Failed to initialize JIT engine: {}", e.what());
+        }
+    }
+#endif
 
     // Load renderdoc module
     VideoCore::LoadRenderDoc();

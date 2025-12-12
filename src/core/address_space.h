@@ -88,6 +88,9 @@ public:
     // Returns an interval set containing all usable regions.
     boost::icl::interval_set<VAddr> GetUsableRegions();
 
+    // Translate PS4 virtual address to host address (for ARM64)
+    void* TranslateAddress(VAddr ps4_addr) const;
+
 private:
     struct Impl;
     std::unique_ptr<Impl> impl;

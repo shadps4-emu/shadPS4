@@ -6,6 +6,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "core/file_sys/fs.h"
+#include "core/jit/execution_engine.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
@@ -848,6 +849,15 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     }
 
     impl.Protect(addr, size, perms);
+
+#ifdef ARCH_ARM64
+    if (True(prot & MemoryProt::CpuWrite) && vma_base.type == VMAType::Code) {
+        auto* jit = Core::Jit::JitEngine::Instance();
+        if (jit) {
+            jit->InvalidateRange(addr, addr + adjusted_size);
+        }
+    }
+#endif
 
     return adjusted_size;
 }

@@ -20,11 +20,15 @@
 #include <sys/mman.h>
 #endif
 
-#if defined(__APPLE__) && defined(ARCH_X86_64)
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
 // Reserve space for the system address space using a zerofill section.
+// Note: These assembly directives are x86_64-specific, but the memory layout constants
+// below apply to both x86_64 and ARM64 on macOS.
+#if defined(ARCH_X86_64)
 asm(".zerofill SYSTEM_MANAGED,SYSTEM_MANAGED,__SYSTEM_MANAGED,0x7FFBFC000");
 asm(".zerofill SYSTEM_RESERVED,SYSTEM_RESERVED,__SYSTEM_RESERVED,0x7C0004000");
 asm(".zerofill USER_AREA,USER_AREA,__USER_AREA,0x5F9000000000");
+#endif
 #endif
 
 namespace Core {
@@ -33,7 +37,7 @@ namespace Core {
 constexpr VAddr SYSTEM_MANAGED_MIN = 0x400000ULL;
 constexpr VAddr SYSTEM_MANAGED_MAX = 0x7FFFFBFFFULL;
 constexpr VAddr SYSTEM_RESERVED_MIN = 0x7FFFFC000ULL;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
 // Commpage ranges from 0xFC0000000 - 0xFFFFFFFFF, so decrease the system reserved maximum.
 constexpr VAddr SYSTEM_RESERVED_MAX = 0xFBFFFFFFFULL;
 // GPU-reserved memory ranges from 0x1000000000 - 0x6FFFFFFFFF, so increase the user minimum.
@@ -512,11 +516,13 @@ struct AddressSpace::Impl {
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
+#if defined(__APPLE__) && (defined(ARCH_X86_64) || defined(ARCH_ARM64))
+        // On macOS (both x86_64 and ARM64), we run into limitations due to the commpage from
+        // 0xFC0000000 - 0xFFFFFFFFF and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF.
+        // Because this creates gaps in the available virtual memory region, we map memory space
+        // using three distinct parts.
+#if defined(ARCH_X86_64)
         constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
-#if defined(__APPLE__) && defined(ARCH_X86_64)
-        // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
-        // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. Because this creates gaps
-        // in the available virtual memory region, we map memory space using three distinct parts.
         system_managed_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
                                        system_managed_size, protection_flags, map_flags, -1, 0));
@@ -525,9 +531,50 @@ struct AddressSpace::Impl {
                                        system_reserved_size, protection_flags, map_flags, -1, 0));
         user_base = reinterpret_cast<u8*>(
             mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
+#elif defined(ARCH_ARM64)
+        // On ARM64 macOS, MAP_FIXED doesn't work at low addresses (0x400000) due to system
+        // restrictions. Map memory wherever possible and use offset calculations. This is a
+        // temporary solution until proper address translation is implemented for ARM64. Note: This
+        // means the PS4 virtual addresses won't match host addresses, so instruction
+        // translation/JIT will need to handle the offset.
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+
+        // Map the three regions separately, but let the system choose addresses
+        system_managed_base = reinterpret_cast<u8*>(
+            mmap(nullptr, system_managed_size, protection_flags, map_flags, -1, 0));
+        if (system_managed_base == MAP_FAILED) {
+            LOG_CRITICAL(Kernel_Vmm, "mmap failed for system_managed_base: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        system_reserved_base = reinterpret_cast<u8*>(
+            mmap(nullptr, system_reserved_size, protection_flags, map_flags, -1, 0));
+        if (system_reserved_base == MAP_FAILED) {
+            LOG_CRITICAL(Kernel_Vmm, "mmap failed for system_reserved_base: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        user_base =
+            reinterpret_cast<u8*>(mmap(nullptr, user_size, protection_flags, map_flags, -1, 0));
+        if (user_base == MAP_FAILED) {
+            LOG_CRITICAL(Kernel_Vmm, "mmap failed for user_base: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
+
+        LOG_WARNING(
+            Kernel_Vmm,
+            "ARM64 macOS: Using flexible memory layout. "
+            "PS4 addresses will be offset from host addresses. "
+            "system_managed: {} (expected {}), system_reserved: {} (expected {}), user: {} "
+            "(expected {})",
+            fmt::ptr(system_managed_base), fmt::ptr(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN)),
+            fmt::ptr(system_reserved_base), fmt::ptr(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN)),
+            fmt::ptr(user_base), fmt::ptr(reinterpret_cast<void*>(USER_MIN)));
+#endif
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
 #if defined(ARCH_X86_64)
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, map_flags, -1, 0));
@@ -535,6 +582,7 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
 #else
+        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
         const auto virtual_base =
@@ -560,7 +608,7 @@ struct AddressSpace::Impl {
                  fmt::ptr(user_base + user_size - 1));
 
         const VAddr system_managed_addr = reinterpret_cast<VAddr>(system_managed_base);
-        const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_managed_base);
+        const VAddr system_reserved_addr = reinterpret_cast<VAddr>(system_reserved_base);
         const VAddr user_addr = reinterpret_cast<VAddr>(user_base);
         m_free_regions.insert({system_managed_addr, system_managed_addr + system_managed_size});
         m_free_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
@@ -607,8 +655,32 @@ struct AddressSpace::Impl {
         const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
         const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
         const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
+
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (virtual_addr >= SYSTEM_MANAGED_MIN && virtual_addr <= SYSTEM_MANAGED_MAX) {
+            // System managed region
+            u64 offset = virtual_addr - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (virtual_addr >= SYSTEM_RESERVED_MIN && virtual_addr <= SYSTEM_RESERVED_MAX) {
+            // System reserved region
+            u64 offset = virtual_addr - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (virtual_addr >= USER_MIN && virtual_addr <= USER_MAX) {
+            // User region
+            u64 offset = virtual_addr - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for mapping: {:#x}", virtual_addr);
+            return MAP_FAILED;
+        }
+
+        void* ret = mmap(host_addr, size, prot, MAP_FIXED | flag, handle, host_offset);
+#else
         void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
                          handle, host_offset);
+#endif
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
         return ret;
     }
@@ -628,9 +700,29 @@ struct AddressSpace::Impl {
         // Free the relevant region.
         m_free_regions.insert({start_address, end_address});
 
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (start_address >= SYSTEM_MANAGED_MIN && start_address <= SYSTEM_MANAGED_MAX) {
+            u64 offset = start_address - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (start_address >= SYSTEM_RESERVED_MIN && start_address <= SYSTEM_RESERVED_MAX) {
+            u64 offset = start_address - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (start_address >= USER_MIN && start_address <= USER_MAX) {
+            u64 offset = start_address - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for unmapping: {:#x}", start_address);
+            return;
+        }
+        void* ret = mmap(host_addr, end_address - start_address, PROT_NONE,
+                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#else
         // Return the adjusted pointers.
         void* ret = mmap(reinterpret_cast<void*>(start_address), end_address - start_address,
                          PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+#endif
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
     }
 
@@ -642,12 +734,31 @@ struct AddressSpace::Impl {
         if (write) {
             flags |= PROT_WRITE;
         }
-#ifdef ARCH_X86_64
+#if defined(ARCH_X86_64)
         if (execute) {
             flags |= PROT_EXEC;
         }
 #endif
+#if defined(__APPLE__) && defined(ARCH_ARM64)
+        // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+        void* host_addr = nullptr;
+        if (virtual_addr >= SYSTEM_MANAGED_MIN && virtual_addr <= SYSTEM_MANAGED_MAX) {
+            u64 offset = virtual_addr - SYSTEM_MANAGED_MIN;
+            host_addr = system_managed_base + offset;
+        } else if (virtual_addr >= SYSTEM_RESERVED_MIN && virtual_addr <= SYSTEM_RESERVED_MAX) {
+            u64 offset = virtual_addr - SYSTEM_RESERVED_MIN;
+            host_addr = system_reserved_base + offset;
+        } else if (virtual_addr >= USER_MIN && virtual_addr <= USER_MAX) {
+            u64 offset = virtual_addr - USER_MIN;
+            host_addr = user_base + offset;
+        } else {
+            LOG_CRITICAL(Kernel_Vmm, "Invalid virtual address for protection: {:#x}", virtual_addr);
+            return;
+        }
+        int ret = mprotect(host_addr, size, flags);
+#else
         int ret = mprotect(reinterpret_cast<void*>(virtual_addr), size, flags);
+#endif
         ASSERT_MSG(ret == 0, "mprotect failed: {}", strerror(errno));
     }
 
@@ -677,7 +788,7 @@ AddressSpace::~AddressSpace() = default;
 
 void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr,
                         bool is_exec) {
-#if ARCH_X86_64
+#if defined(ARCH_X86_64)
     const auto prot = is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
 #else
     // On non-native architectures, we can simplify things by ignoring the execute flag for the
@@ -744,6 +855,29 @@ boost::icl::interval_set<VAddr> AddressSpace::GetUsableRegions() {
     reserved_regions.insert({system_reserved_addr, system_reserved_addr + system_reserved_size});
     reserved_regions.insert({user_addr, user_addr + user_size});
     return reserved_regions;
+#endif
+}
+
+void* AddressSpace::TranslateAddress(VAddr ps4_addr) const {
+#if defined(ARCH_X86_64)
+    // On x86_64, PS4 addresses are directly mapped, so we can cast them
+    return reinterpret_cast<void*>(ps4_addr);
+#elif defined(ARCH_ARM64) && defined(__APPLE__)
+    // On ARM64 macOS, translate PS4 virtual addresses to host addresses
+    if (ps4_addr >= SYSTEM_MANAGED_MIN && ps4_addr <= SYSTEM_MANAGED_MAX) {
+        u64 offset = ps4_addr - SYSTEM_MANAGED_MIN;
+        return system_managed_base + offset;
+    } else if (ps4_addr >= SYSTEM_RESERVED_MIN && ps4_addr <= SYSTEM_RESERVED_MAX) {
+        u64 offset = ps4_addr - SYSTEM_RESERVED_MIN;
+        return system_reserved_base + offset;
+    } else if (ps4_addr >= USER_MIN && ps4_addr <= USER_MAX) {
+        u64 offset = ps4_addr - USER_MIN;
+        return user_base + offset;
+    }
+    return nullptr;
+#else
+    // Generic ARM64 or other platforms
+    return reinterpret_cast<void*>(ps4_addr);
 #endif
 }
 

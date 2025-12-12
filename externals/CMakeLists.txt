@@ -112,9 +112,11 @@ if (NOT TARGET tsl::robin_map)
     add_subdirectory(robin-map)
 endif()
 
-# Xbyak
-if (NOT TARGET xbyak::xbyak)
-    add_subdirectory(xbyak)
+# Xbyak (x86_64 only)
+if (ARCHITECTURE STREQUAL "x86_64")
+    if (NOT TARGET xbyak::xbyak)
+        add_subdirectory(xbyak)
+    endif()
 endif()
 
 # MagicEnum

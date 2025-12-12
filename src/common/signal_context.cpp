@@ -19,14 +19,22 @@ void* GetXmmPointer(void* ctx, u8 index) {
     case index:                                                                                    \
         return (void*)(&((EXCEPTION_POINTERS*)ctx)->ContextRecord->Xmm##index.Low)
 #elif defined(__APPLE__)
+#if defined(ARCH_X86_64)
 #define CASE(index)                                                                                \
     case index:                                                                                    \
         return (void*)(&((ucontext_t*)ctx)->uc_mcontext->__fs.__fpu_xmm##index);
+#elif defined(ARCH_ARM64)
+    UNREACHABLE_MSG("XMM registers not available on ARM64");
+    return nullptr;
+#else
+#error "Unsupported architecture"
+#endif
 #else
 #define CASE(index)                                                                                \
     case index:                                                                                    \
         return (void*)(&((ucontext_t*)ctx)->uc_mcontext.fpregs->_xmm[index].element[0])
 #endif
+#if !defined(ARCH_ARM64) || !defined(__APPLE__)
     switch (index) {
         CASE(0);
         CASE(1);
@@ -50,13 +58,20 @@ void* GetXmmPointer(void* ctx, u8 index) {
     }
     }
 #undef CASE
+#endif
 }
 
 void* GetRip(void* ctx) {
 #if defined(_WIN32)
     return (void*)((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip;
 #elif defined(__APPLE__)
+#if defined(ARCH_X86_64)
     return (void*)((ucontext_t*)ctx)->uc_mcontext->__ss.__rip;
+#elif defined(ARCH_ARM64)
+    return (void*)((ucontext_t*)ctx)->uc_mcontext->__ss.__pc;
+#else
+#error "Unsupported architecture"
+#endif
 #else
     return (void*)((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP];
 #endif
@@ -66,7 +81,13 @@ void IncrementRip(void* ctx, u64 length) {
 #if defined(_WIN32)
     ((EXCEPTION_POINTERS*)ctx)->ContextRecord->Rip += length;
 #elif defined(__APPLE__)
+#if defined(ARCH_X86_64)
     ((ucontext_t*)ctx)->uc_mcontext->__ss.__rip += length;
+#elif defined(ARCH_ARM64)
+    ((ucontext_t*)ctx)->uc_mcontext->__ss.__pc += length;
+#else
+#error "Unsupported architecture"
+#endif
 #else
     ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP] += length;
 #endif

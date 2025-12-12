@@ -146,6 +146,57 @@ jobs:
         name: shadps4-macos-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: upload/
 
+  macos-sdl-arm64:
+    runs-on: macos-15
+    needs: get-info
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        submodules: recursive
+
+    - name: Setup latest Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest
+
+    - name: Cache CMake Configuration
+      uses: actions/cache@v4 
+      env: 
+          cache-name: ${{ runner.os }}-sdl-arm64-cache-cmake-configuration
+      with: 
+          path: |  
+            ${{github.workspace}}/build-arm64 
+          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }} 
+          restore-keys: | 
+            ${{ env.cache-name }}- 
+
+    - name: Cache CMake Build
+      uses: hendrikmuhs/ccache-action@v1.2.19
+      env:
+          cache-name: ${{runner.os}}-sdl-arm64-cache-cmake-build
+      with:
+        append-timestamp: false
+        create-symlink: true
+        key: ${{env.cache-name}}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
+        variant: sccache
+
+    - name: Configure CMake
+      run: cmake --fresh -B ${{github.workspace}}/build-arm64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build-arm64 --config ${{env.BUILD_TYPE}} --parallel $(sysctl -n hw.ncpu)
+
+    - name: Package and Upload macOS ARM64 SDL artifact
+      run: |
+        mkdir upload-arm64
+        mv ${{github.workspace}}/build-arm64/shadps4 upload-arm64
+        mv ${{github.workspace}}/build-arm64/MoltenVK_icd.json upload-arm64
+        mv ${{github.workspace}}/build-arm64/libMoltenVK.dylib upload-arm64
+    - uses: actions/upload-artifact@v4
+      with:
+        name: shadps4-macos-arm64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
+        path: upload-arm64/
+
   linux-sdl:
     runs-on: ubuntu-24.04
     needs: get-info
@@ -245,7 +296,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4' && github.event_name == 'push'
-    needs: [get-info, windows-sdl, macos-sdl, linux-sdl]
+    needs: [get-info, windows-sdl, macos-sdl, macos-sdl-arm64, linux-sdl]
     runs-on: ubuntu-latest
     steps:
     - name: Download all artifacts
