@@ -29,7 +29,7 @@ IR::BlockList GenerateBlocks(const IR::AbstractSyntaxList& syntax_list) {
     return blocks;
 }
 
-IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info,
+IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Info& info,
                              RuntimeInfo& runtime_info, const Profile& profile) {
     // Ensure first instruction is expected.
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
@@ -55,8 +55,8 @@ IR::Program TranslateProgram(std::span<const u32> code, Pools& pools, Info& info
     Gcn::CFG cfg{gcn_block_pool, program.ins_list};
 
     // Structurize control flow graph and create program.
-    program.syntax_list = Shader::Gcn::BuildASL(pools.inst_pool, pools.block_pool, cfg,
-                                                program.info, runtime_info, profile);
+    program.syntax_list =
+        Shader::Gcn::BuildASL(pools.inst_pool, pools.block_pool, cfg, info, runtime_info, profile);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = Shader::IR::PostOrder(program.syntax_list.front());
 

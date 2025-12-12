@@ -70,6 +70,7 @@ enum class Class : u8 {
     Lib_Http2,               ///< The LibSceHttp2 implementation.
     Lib_SysModule,           ///< The LibSceSysModule implementation
     Lib_NpCommon,            ///< The LibSceNpCommon implementation
+    Lib_NpCommerce,          ///< The LibSceNpCommerce implementation
     Lib_NpAuth,              ///< The LibSceNpAuth implementation
     Lib_NpManager,           ///< The LibSceNpManager implementation
     Lib_NpScore,             ///< The LibSceNpScore implementation

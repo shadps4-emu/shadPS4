@@ -45,7 +45,10 @@ enum class MemoryMapFlags : u32 {
     Private = 2,
     Fixed = 0x10,
     NoOverwrite = 0x80,
+    Void = 0x100,
+    Stack = 0x400,
     NoSync = 0x800,
+    Anon = 0x1000,
     NoCore = 0x20000,
     NoCoalesce = 0x400000,
 };

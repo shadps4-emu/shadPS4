@@ -104,17 +104,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    // Simulate sceKernelInternalMemory mapping, a mapping usually performed during libkernel init.
-    // Due to the large size of this mapping, failing to emulate it causes issues in some titles.
-    // This mapping belongs in the system reserved area, which starts at address 0x880000000.
-    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
-    static constexpr s64 InternalMemorySize = 0x1000000;
-    void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
-
-    s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(&addr_out, InternalMemorySize, 3,
-                                                                 0, "SceKernelInternalMemory");
-    ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
-
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("GAME_MainThread");
         if (auto& ipc = IPC::Instance()) {
@@ -368,7 +357,7 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
 void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     std::scoped_lock lk{mutex};
 
-    DtvEntry* dtv_table = Libraries::Kernel::g_curthread->tcb->tcb_dtv;
+    DtvEntry* dtv_table = GetTcbBase()->tcb_dtv;
     if (dtv_table[0].counter != dtv_generation_counter) {
         // Generation counter changed, a dynamic module was either loaded or unloaded.
         const u32 old_num_dtvs = dtv_table[1].counter;
@@ -381,7 +370,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
         delete[] dtv_table;
 
         // Update TCB pointer.
-        Libraries::Kernel::g_curthread->tcb->tcb_dtv = new_dtv_table;
+        GetTcbBase()->tcb_dtv = new_dtv_table;
         dtv_table = new_dtv_table;
     }
 
