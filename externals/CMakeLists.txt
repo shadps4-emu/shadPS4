@@ -173,6 +173,10 @@ if (NOT TARGET PNG::PNG)
     add_library(PNG::PNG ALIAS png_static)
 endif()
 
+# cpp-httplib
+add_library(Cpp_Httplib INTERFACE)
+target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
+
 # Dear ImGui
 add_library(Dear_ImGui
         dear_imgui/imgui.cpp

@@ -120,3 +120,6 @@
 [submodule "externals/miniz"]
 	path = externals/miniz
 	url = https://github.com/richgel999/miniz
+[submodule "externals/cpp-httplib"]
+	path = externals/cpp-httplib
+	url = https://github.com/yhirose/cpp-httplib

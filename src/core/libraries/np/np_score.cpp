@@ -45,7 +45,8 @@ int PS4_SYSV_ABI sceNpScoreCreateRequest() {
 
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
+    // Seems to return 1 on success
+    return 1;
 }
 
 int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx() {
