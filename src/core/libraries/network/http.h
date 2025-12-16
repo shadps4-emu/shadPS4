@@ -54,10 +54,6 @@ public:
     int id;
     RequestTemplate* req_template = nullptr;
 
-    char* result_body = nullptr;
-    u32 result_read_chunk_index = 0;
-    u32 result_body_size = 0;
-
     void SendRequest() {
         request_future = std::async(std::launch::async, [this] { _SendRequest(); });
         
@@ -78,15 +74,44 @@ public:
         }
     }
 
-    u64 GetContentLength() const {
-        return static_cast<u64>(result_body_size);
+    u32 ReadData(char* dest, u32 size) {
+
+        if (result_body == nullptr || dest == nullptr || size == 0 || result_body_size == 0) {
+
+            return 0;
+        }
+
+        size_t start_index = static_cast<size_t>(current_result_read_chunk_index) * size;
+
+        if (start_index >= result_body_size) {
+
+            return 0;
+        }
+
+        size_t remaining_bytes = result_body_size - start_index;
+
+        size_t bytes_to_copy = (remaining_bytes < size) ? remaining_bytes : size;
+
+        std::memcpy(dest, result_body + start_index, bytes_to_copy);
+
+        current_result_read_chunk_index++;
+
+        return static_cast<u32>(bytes_to_copy);
     }
 
-    bool IsSent() const {
-        return status_code != -1;
+    std::string GetUrl() const {
+        return url;
+    }
+
+    s32 GetMethod() const {
+        return static_cast<s32>(method);
     }
 
     void SetUrl(const std::string& new_url) {
+
+        if (new_url.empty()) {
+            return;
+        }
 
         //TODO checks
         url = new_url;
@@ -105,6 +130,13 @@ public:
 
     void SetPostData(const void* data, u64 size) {
         
+        if (data == nullptr || size == 0) {
+            
+            post_data = nullptr;
+            post_data_size = 0;
+            return;
+        }
+
         post_data_size = size;
 
         post_data = new u8[post_data_size];
@@ -117,24 +149,85 @@ public:
     }
 
     bool IsSuccessful() const {
-        
         return status_code / 100 == 2;
     }
 
     u32 GetStatusCode() const {
-        
         return status_code;
+    }
+
+    u64 GetContentLength() const {
+        return static_cast<u64>(result_body_size);
+    }
+
+    bool IsSent() const {
+        return is_sent;
+    }
+
+    bool IsCompleted() {
+        return status_code != -1;
+    }
+
+    void DebugPrint() const {
+        LOG_CRITICAL(Lib_Http, "===== HTTP Request Debug Info =====");
+
+        LOG_CRITICAL(Lib_Http, "Is Sent:        {}", (is_sent ? "true" : "false"));
+        LOG_CRITICAL(Lib_Http, "Future Valid:   {}", (request_future.valid() ? "true" : "false"));
+        LOG_CRITICAL(Lib_Http, "Status Code:    {}", status_code);
+        LOG_CRITICAL(Lib_Http, "Method (Enum):  {}", static_cast<int>(method));
+
+        LOG_CRITICAL(Lib_Http, "URL:            {}", (url.empty() ? "[Empty]" : url));
+        LOG_CRITICAL(Lib_Http, "Host:           {}", (host.empty() ? "[Empty]" : host));
+        LOG_CRITICAL(Lib_Http, "Path:           {}", (path.empty() ? "[Empty]" : path));
+
+        LOG_CRITICAL(Lib_Http, "Post Data Size: {} bytes", post_data_size);
+        LOG_CRITICAL(Lib_Http, "Post Data Ptr:  {}", post_data);
+
+        if (post_data && post_data_size > 0) {
+            std::string preview_str;
+            const char* preview = static_cast<const char*>(post_data);
+            for (size_t i = 0; i < std::min<size_t>(post_data_size, 20); ++i) {
+                char c = preview[i];
+                preview_str += (std::isprint(static_cast<unsigned char>(c)) ? c : '.');
+            }
+            LOG_CRITICAL(Lib_Http, "  -> Preview: {}...", preview_str);
+        }
+
+        LOG_CRITICAL(Lib_Http, "Content Length: {}", content_length);
+        LOG_CRITICAL(Lib_Http, "Body Size:      {} bytes", result_body_size);
+        LOG_CRITICAL(Lib_Http, "Read Chunk Idx: {}", current_result_read_chunk_index);
+        LOG_CRITICAL(Lib_Http, "Body Pointer:   {}", (void*)result_body);
+
+        if (result_body) {
+            std::string body_preview;
+            for (size_t i = 0; i < std::min<size_t>(result_body_size, 50); ++i) {
+                char c = result_body[i];
+                body_preview += (std::isprint(static_cast<unsigned char>(c)) ? c : '.');
+            }
+            LOG_CRITICAL(Lib_Http, "  -> Body Preview: {}...", body_preview);
+        }
+
+        LOG_CRITICAL(Lib_Http, "Request Headers ({})", req_headers.size());
+        if (req_headers.empty()) {
+            LOG_CRITICAL(Lib_Http, "  [None]");
+        } else {
+            for (const auto& pair : req_headers) {
+                LOG_CRITICAL(Lib_Http, "  [{}] : {}", pair.first, pair.second);
+            }
+        }
+
+        LOG_CRITICAL(Lib_Http, "===================================");
     }
 
     RequestObj()
         : id(0), req_template(nullptr), method(ORBIS_HTTP_REQUEST_METHOD_INVALID), url(""),
           content_length(0), status_code(-1), result_body(nullptr), result_body_size(-1),
-          result_read_chunk_index(0), post_data(nullptr) {}
+          current_result_read_chunk_index(0), post_data(nullptr), is_sent(false) {}
     explicit RequestObj(s32 req_id, RequestTemplate* req_template, s32 method, std::string url_str, u64 cntLen)
         : id(req_id), req_template(req_template), method(static_cast<OrbisHttpRequestMethod>(method)),
           content_length(cntLen), 
           status_code(-1), result_body(nullptr), result_body_size(-1),
-          result_read_chunk_index(0), post_data(nullptr) {
+          current_result_read_chunk_index(0), post_data(nullptr), is_sent(false) {
 
         SetUrl(url_str);
     }
@@ -142,12 +235,17 @@ public:
 private:
     std::future<void> request_future = {};
 
+    char* result_body = nullptr;
+    u32 current_result_read_chunk_index = 0;
+    u32 result_body_size = 0;
+
     OrbisHttpRequestMethod method = ORBIS_HTTP_REQUEST_METHOD_INVALID;
     std::string host = {};
     std::string path = {};
     u64 content_length = 0;
 
     u32 status_code = -1; // check
+    bool is_sent = false;
     
     std::map<std::string, std::string> req_headers;
     std::string url = {};
@@ -170,6 +268,8 @@ private:
         for (const auto& pair : req_headers) {
             headers.emplace(pair.first, pair.second);
         }
+
+        is_sent = true;
 
         switch (method) {
         case ORBIS_HTTP_REQUEST_METHOD_GET:
