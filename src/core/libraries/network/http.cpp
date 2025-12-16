@@ -15,19 +15,40 @@ static std::map<int, RequestObj> g_requests;
 static std::mutex g_templates_map_mutex;
 static std::mutex g_requests_map_mutex;
 
-//TODO remove
-char* url_override = "http://localhost:1337/";
-char* target = "/target";
+std::string host_override = "localhost";
 
 //TODO check ptrs
-//TODO cpp-httplib as submodule
+// TODO check return codes for send request, get content length, read data...
 
-bool ContainsEndpoint(const char* url, char* target) {
-    
-    if (url == nullptr || target == nullptr)
-        return false;
+std::string ReplaceHost(std::string url, const std::string& new_host, bool force_http = true) {
 
-    return std::strstr(url, target) != nullptr;
+    std::string separator = "://";
+    size_t protocol_pos = url.find(separator);
+
+    size_t host_start = 0;
+
+    if (protocol_pos != std::string::npos) {
+        host_start = protocol_pos + separator.length();
+    }
+
+    size_t host_end = url.find_first_of("/:?#", host_start);
+    if (host_end == std::string::npos) {
+        host_end = url.length();
+    }
+
+    url.replace(host_start, host_end - host_start, new_host);
+
+    if (force_http) {
+        if (protocol_pos != std::string::npos) {
+
+            url.replace(0, protocol_pos, "http");
+        } else {
+
+            url.insert(0, "http://");
+        }
+    }
+
+    return url;
 }
 
 void NormalizeAndAppendPath(char* dest, char* src) {
@@ -195,24 +216,28 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(s32 tmpl_id, s32 method, const char
     LOG_INFO(Lib_Http, "called template id = '{}' method = '{}' url = '{}', content length = '{}'", 
         tmpl_id, method, url, content_length);
     
-    static int request_id_counter = 0;        
-    int request_id = request_id_counter++;
-
-    std::string url_str;
-
-    //TODO more robust overrides
-    if (ContainsEndpoint(url, target)) {
-    
-        url_str = url_override;
-    } else {
-    
-        url_str = std::string(url);
+    if (url == nullptr) {
+        
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
-    std::lock_guard<std::mutex> lock(g_requests_map_mutex);
-    auto new_request = RequestObj(request_id, tmpl_id, method, url_str, content_length);
+    static s32 request_id_counter = 0;        
+    s32 request_id = request_id_counter++;
 
-    g_requests[request_id] = new_request;
+    std::string url_str = ReplaceHost(std::string(url), host_override);
+
+    std::lock_guard<std::mutex> lock_t(g_templates_map_mutex);
+
+    auto it = g_templates.find(tmpl_id);
+    if (it == g_templates.end()) {
+
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    auto new_request = RequestObj(request_id, &it->second, method, url_str, content_length);
+
+    std::lock_guard<std::mutex> lock_r(g_requests_map_mutex);
+    g_requests.emplace(request_id, std::move(new_request));
 
     return request_id;
 }
@@ -226,14 +251,15 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(s32 conn_id, const char* user_agent, s32 
     LOG_INFO(Lib_Http, "called, conn id: '{}', user agent: '{}', http version: '{}', flags: '{}'", 
         conn_id, user_agent, http_v, flags);
 
-    static int templateCounter = 0;
+    static s32 template_counter = 0;
     	
-    int template_id = templateCounter++;
+    s32 template_id = template_counter++;
 
     std::lock_guard<std::mutex> lock(g_templates_map_mutex);
-    auto new_template = RequestTemplate(template_id);
-    new_template.userAgent = std::string(user_agent);
-    g_templates[template_id] = new_template;
+
+    auto new_template = RequestTemplate(template_id, std::string(user_agent));
+    
+    g_templates.emplace(template_id, new_template);
     
     return template_id;
 }
@@ -382,8 +408,10 @@ int PS4_SYSV_ABI sceHttpGetResponseContentLength(u32 req_id, u64* out_content_le
     
     LOG_INFO(Lib_Http, "called request id: '{}'", req_id);
 
-    if (out_content_length == nullptr)
+    if (out_content_length == nullptr) {
+    
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
 
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
@@ -433,8 +461,13 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(s32 req_id, s32* status_code) {
     auto it = g_requests.find(req_id);
     if (it != g_requests.end()) {
 
-        if (!it->second.IsSent()) {
+        if (!it->second.IsSent() && !it->second.req_template->is_async) {
             return ORBIS_HTTP_ERROR_BEFORE_SEND;
+        }
+
+        if (!it->second.IsSent()) {
+        
+            return ORBIS_HTTP_ERROR_EAGAIN;
         }
 
         *status_code = it->second.GetStatusCode();
@@ -625,13 +658,9 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
 
     if (it != g_requests.end()) {
 
-        //TODO handle connections
+        it->second.SetPostData(postData, size);
 
-        g_requests[reqId].SetPostData(postData, size);
-
-        auto headers = g_templates[g_requests[reqId].template_id].headers;
-
-        g_requests[reqId].SendRequest(headers);
+        it->second.SendRequest();
 
         return ORBIS_OK;
     }
@@ -736,6 +765,17 @@ int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled() {
 
 int PS4_SYSV_ABI sceHttpSetNonblock(s32 tmpl_id, bool enable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+
+    std::lock_guard<std::mutex> lock_t(g_templates_map_mutex);
+
+    auto it = g_templates.find(tmpl_id);
+    if (it == g_templates.end()) {
+
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
+    it->second.is_async = enable;
+
     return ORBIS_OK;
 }
 
