@@ -76,11 +76,6 @@ namespace Libraries::Kernel {
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
 
-    if (strlen(raw_path) > 255) {
-        *__Error() = POSIX_ENAMETOOLONG;
-        return -1;
-    }
-
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
@@ -91,6 +86,11 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     if (!read && !write && !rdwr) {
         // Start by checking for invalid flags.
         *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    if (strlen(raw_path) > 255) {
+        *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
 
@@ -706,8 +706,7 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     if (strlen(path) > 255) {
-        *__Error() = POSIX_ENAMETOOLONG;
-        return -1;
+        return POSIX_ENAMETOOLONG;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::string_view guest_path{path};
