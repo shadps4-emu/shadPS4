@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
 #pragma once
@@ -5,15 +7,21 @@
 #ifdef _WIN32
 
 #include <cstdint>
+#include <unordered_map>
 #include <fcntl.h>
 #include <windows.h>
 
+#include "common/logging/log.h"
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+
 #include "src/host_io_base.h"
 
 namespace HostIODriver {
 
 class HostIO_Win32 final : public HostIO_Base {
+
+    std::unordered_map<fs::path, fs::path> symlinks;
+    fs::path GetSymlink(fs::path path);
 
 public:
     //
@@ -50,21 +58,13 @@ public:
         if (quasi_flags & QUASI_O_APPEND)
             flags |= _O_APPEND;
 
-        // No info, maybe there are some equivalents
-        // if (quasi_flags & QUASI_O_NONBLOCK)
-        //     flags |= _O_NONBLOCK;
-        // if (quasi_flags & QUASI_O_SYNC)
-        //     flags |= _O_SYNC;
-        // if (quasi_flags & QUASI_O_FSYNC)
-        //     flags |= _O_FSYNC;
-
         if (quasi_flags & QUASI_O_DIRECTORY)
             flags |= _O_OBTAIN_DIR; // I don't like how this one looks
 
-        // if (quasi_flags & QUASI_O_DIRECT)
-        //     flags |= _O_DIRECT;
-        // if (quasi_flags & QUASI_O_DSYNC)
-        //     flags |= _O_DSYNC;
+        if (int status = quasi_flags & (QUASI_O_NONBLOCK | QUASI_O_SYNC | QUASI_O_FSYNC |
+                                        QUASI_O_DIRECT | QUASI_O_DSYNC);
+            0 != status)
+            LOG_WARNING(Kernel_Fs, "Received unknown or unsupported flags: {:x}", status);
 
         return flags;
     }

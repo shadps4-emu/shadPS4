@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
 #include <errno.h>
@@ -12,18 +14,22 @@
 
 namespace HostIODriver {
 
-HostIO_Win32::HostIO_Win32() = default;
+HostIO_Win32::HostIO_Win32() {
+    this->symlinks.clear();
+    this->symlinks.reserve(16);
+}
+
 HostIO_Win32::~HostIO_Win32() = default;
 
 s32 HostIO_Win32::Open(const fs::path& path, s32 flags, u16 mode) {
     errno = 0;
-    s32 status = _wopen(path.c_str(), ToWIN32OpenFlags(flags), mode);
+    s32 status = _wopen(GetSymlink(path).c_str(), ToWIN32OpenFlags(flags), mode);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_Win32::Creat(const fs::path& path, u16 mode) {
     errno = 0;
-    s32 status = _wcreat(path.c_str(), mode);
+    s32 status = _wcreat(GetSymlink(path).c_str(), mode);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
@@ -35,7 +41,7 @@ s32 HostIO_Win32::Close(const s32 fd) {
 
 s32 HostIO_Win32::Link(const fs::path& src, const fs::path& dst) {
     errno = 0;
-    s32 status = CreateHardLinkW(dst.c_str(), src.c_str(), nullptr);
+    s32 status = CreateHardLinkW(dst.c_str(), GetSymlink(src).c_str(), nullptr);
     return 0 == status ? 0 : -win2bsd(GetLastError());
 }
 
@@ -47,14 +53,14 @@ s32 HostIO_Win32::Link(const fs::path& src, const fs::path& dst) {
 
 s32 HostIO_Win32::Unlink(const fs::path& path) {
     errno = 0;
-    s32 status = DeleteFileW(path.c_str());
+    s32 status = DeleteFileW(GetSymlink(path).c_str());
 
     return status > 0 ? status : -win2bsd(GetLastError());
 }
 
 s32 HostIO_Win32::Remove(const fs::path& path) {
     errno = 0;
-    if (int status = DeleteFileW(path.c_str()); status > 0)
+    if (int status = DeleteFileW(GetSymlink(path).c_str()); status > 0)
         return 0;
     auto last_error = GetLastError();
     // no idea if these are correlated (yet)
@@ -64,7 +70,7 @@ s32 HostIO_Win32::Remove(const fs::path& path) {
     if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
         return false;
 
-    return RemoveDirectoryW(path.c_str());
+    return RemoveDirectoryW(GetSymlink(path).c_str());
 }
 
 s32 HostIO_Win32::Flush(const s32 fd) {
@@ -90,7 +96,7 @@ s64 HostIO_Win32::Tell(const s32 fd) {
 
 int HostIO_Win32::Truncate(const fs::path& path, u64 size) {
     errno = 0;
-    s32 fd = _wopen(path.c_str(), _O_RDONLY);
+    s32 fd = _wopen(GetSymlink(path).c_str(), _O_RDONLY);
     if (fd < 0)
         return -unix2bsd(errno);
     s32 status = _chsize_s(fd, size);
@@ -158,13 +164,13 @@ s64 HostIO_Win32::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt,
 
 s32 HostIO_Win32::MKDir(const fs::path& path, u16 mode) {
     errno = 0;
-    s32 status = _wmkdir(path.c_str());
+    s32 status = _wmkdir(GetSymlink(path).c_str());
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
 s32 HostIO_Win32::RMDir(const fs::path& path) {
     errno = 0;
-    s32 status = _wrmdir(path.c_str());
+    s32 status = _wrmdir(GetSymlink(path).c_str());
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
@@ -176,13 +182,24 @@ s32 HostIO_Win32::RMDir(const fs::path& path) {
 
 s32 HostIO_Win32::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     errno = 0;
-    auto status = CopyFileW(src.c_str(), dst.c_str(), fail_if_exists);
+    auto status = CopyFileW(GetSymlink(src).c_str(), dst.c_str(), fail_if_exists);
     return status > 0 ? status : -unix2bsd(GetLastError());
 }
 
 s32 HostIO_Win32::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     errno = 0;
     return -unix2bsd(ENOSYS);
+}
+
+fs::path HostIO_Win32::GetSymlink(fs::path path) {
+    // this is a very, **very** bad implementation of symlinks
+    // may work for files, but certainly not for directories
+    // in fact, i am terribly ashamed of going this route, but
+    // since games don't use symlinks often, i can get away with this
+    auto sym = this->symlinks.find(path);
+    if (this->symlinks.end() == sym)
+        return path;
+    return sym->second;
 }
 
 } // namespace HostIODriver
