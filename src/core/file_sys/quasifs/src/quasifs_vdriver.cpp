@@ -18,6 +18,22 @@
 namespace QuasiFS {
 
 s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
+    bool request_read = !(flags & QUASI_O_WRONLY) || (flags & QUASI_O_RDWR);
+    bool request_write = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) != 0;
+    bool request_append = flags & QUASI_O_APPEND;
+
+    //
+    // Orbis-specific checks and order, or at least ones that differ between Linux and Orbis
+    // Universal checks are embedded into QFS
+    // Some of those are universal, but order matters (a lot)
+    //
+
+    if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
+        return -POSIX_EINVAL;
+
+    if (path.string().size() > 255)
+        return -POSIX_ENAMETOOLONG;
+
     Resolved res;
     // Resolve for parent dir to avoid treating ENOENT as missing just the end file
     int resolve_status = qfs.Resolve(path, res);
@@ -31,19 +47,6 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
 
     partition_ptr part = res.mountpoint;
     dir_ptr parent_node = std::static_pointer_cast<Directory>(res.parent);
-
-    bool request_read = !(flags & QUASI_O_WRONLY) || (flags & QUASI_O_RDWR);
-    bool request_write = (flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) != 0;
-    bool request_append = flags & QUASI_O_APPEND;
-
-    //
-    // Orbis-specific checks, or at least ones that differ between Linux and Orbis
-    // Universal checks are embedded into QFS
-    // Some of those are universal, but order matters (a lot)
-    //
-
-    if ((flags & (QUASI_O_WRONLY | QUASI_O_RDWR)) == (QUASI_O_WRONLY | QUASI_O_RDWR))
-        return -POSIX_EINVAL;
 
     // if it doesn't exist, check the parent
     inode_ptr checked_node = nullptr == res.node ? parent_node : res.node;
@@ -291,6 +294,9 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
 }
 
 s32 QFS::OperationImpl::Unlink(const fs::path& path) {
+    if (path.string().size() > 255)
+        return -POSIX_ENAMETOOLONG;
+
     Resolved res;
     int resolve_status;
 
@@ -1038,6 +1044,11 @@ s32 QFS::OperationImpl::Copy(const fs::path& src, const fs::path& dst, bool fail
 }
 
 s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    if (src.string().size() > 255)
+        return -POSIX_ENAMETOOLONG;
+    if (dst.string().size() > 255)
+        return -POSIX_ENAMETOOLONG;
+
     Resolved src_res;
     Resolved dst_res;
     int status_what = qfs.Resolve(src, src_res);
