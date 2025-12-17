@@ -706,8 +706,9 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     if (strlen(path) > 255) {
-        return POSIX_ENAMETOOLONG;
+        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
+
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     std::string_view guest_path{path};
     for (const auto& prefix : available_device | std::views::keys) {
