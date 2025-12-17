@@ -18,19 +18,19 @@
   <screenshots>
     <screenshot type="default">
       <image type="source" translate="no" >https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/1.png</image>
-      <caption>Bloodborne</caption>
+      <caption>Bloodborne by From Software</caption>
     </screenshot>
     <screenshot>
       <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/2.png</image>
-      <caption>Hatsune Miku: Project DIVA Future Tone</caption>
+      <caption>Hatsune Miku Project DIVA Future Tone by SEGA</caption>
     </screenshot>
     <screenshot>
       <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/3.png</image>
-      <caption>Yakuza 0</caption>
+      <caption>Yakuza 0 by SEGA</caption>
     </screenshot>
     <screenshot>
       <image type="source" translate="no">https://cdn.jsdelivr.net/gh/shadps4-emu/shadps4@main/documents/Screenshots/4.png</image>
-      <caption>Persona 4 Golden</caption>
+      <caption>DRIVECLUB™ by Evolution Studios</caption>
     </screenshot>
   </screenshots>
   <categories>

@@ -106,6 +106,7 @@ auto output_array = std::array{
     ControllerOutput(HOTKEY_RELOAD_INPUTS),
     ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK),
     ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
+    ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD),
     ControllerOutput(HOTKEY_RENDERDOC),
 
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
@@ -579,6 +580,9 @@ void ControllerOutput::FinalizeUpdate() {
         case HOTKEY_TOGGLE_MOUSE_TO_GYRO:
             PushSDLEvent(SDL_EVENT_MOUSE_TO_GYRO);
             break;
+        case HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD:
+            PushSDLEvent(SDL_EVENT_MOUSE_TO_TOUCHPAD);
+            break;
         case HOTKEY_RENDERDOC:
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
@@ -772,6 +776,9 @@ void ActivateOutputsFromInputs() {
     for (auto& it : output_array) {
         it.ResetUpdate();
     }
+
+    // Check for input blockers
+    ApplyMouseInputBlockers();
 
     // Iterate over all inputs, and update their respecive outputs accordingly
     for (auto& it : connections) {

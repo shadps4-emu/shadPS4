@@ -411,11 +411,6 @@ public:
                properties.limits.framebufferStencilSampleCounts;
     }
 
-    /// Returns whether disabling primitive restart is supported.
-    bool IsPrimitiveRestartDisableSupported() const {
-        return driver_id != vk::DriverId::eMoltenvk;
-    }
-
     /// Returns true if logic ops are supported by the device.
     bool IsLogicOpSupported() const {
         return features.logicOp;
@@ -498,6 +493,7 @@ private:
     bool amd_shader_trinary_minmax{};
     bool nv_framebuffer_mixed_samples{};
     bool amd_mixed_attachment_samples{};
+    bool shader_atomic_float{};
     bool shader_atomic_float2{};
     bool workgroup_memory_explicit_layout{};
     bool portability_subset{};

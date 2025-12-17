@@ -11,6 +11,10 @@ class BufferCache;
 class TextureCache;
 } // namespace VideoCore
 
+namespace Serialization {
+struct Archive;
+}
+
 namespace Vulkan {
 
 class Instance;
@@ -26,14 +30,24 @@ struct ComputePipelineKey {
     friend bool operator!=(const ComputePipelineKey& lhs, const ComputePipelineKey& rhs) {
         return !(lhs == rhs);
     }
+
+    void Serialize(Serialization::Archive& ar) const;
+    bool Deserialize(Serialization::Archive& ar);
 };
 
 class ComputePipeline : public Pipeline {
 public:
+    struct SerializationSupport {
+        u32 dummy{};
+
+        void Serialize(Serialization::Archive& ar) const;
+        bool Deserialize(Serialization::Archive& ar);
+    };
+
     ComputePipeline(const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
                     const Shader::Profile& profile, vk::PipelineCache pipeline_cache,
                     ComputePipelineKey compute_key, const Shader::Info& info,
-                    vk::ShaderModule module);
+                    vk::ShaderModule module, SerializationSupport& sdata, bool preloading);
     ~ComputePipeline();
 
 private:

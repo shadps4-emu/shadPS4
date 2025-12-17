@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/debug.h"
+#include "common/thread.h"
 #include "imgui/renderer/texture_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -17,6 +18,8 @@ Scheduler::Scheduler(const Instance& instance)
     profiler_scope = reinterpret_cast<tracy::VkCtxScope*>(std::malloc(sizeof(tracy::VkCtxScope)));
 #endif
     AllocateWorkerCommandBuffers();
+    priority_pending_ops_thread =
+        std::jthread(std::bind_front(&Scheduler::PriorityPendingOpsThread, this));
 }
 
 Scheduler::~Scheduler() {
@@ -167,6 +170,32 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     PopPendingOperations();
 }
 
+void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
+    Common::SetCurrentThreadName("shadPS4:GpuSchedPriorityPendingOpsRunner");
+
+    while (!stoken.stop_requested()) {
+        PendingOp op;
+        {
+            std::unique_lock lk(priority_pending_ops_mutex);
+            priority_pending_ops_cv.wait(lk, stoken,
+                                         [this] { return !priority_pending_ops.empty(); });
+            if (stoken.stop_requested()) {
+                break;
+            }
+
+            op = std::move(priority_pending_ops.front());
+            priority_pending_ops.pop();
+        }
+
+        master_semaphore.Wait(op.gpu_tick);
+        if (stoken.stop_requested()) {
+            break;
+        }
+
+        op.callback();
+    }
+}
+
 void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf) {
     if (dirty_state.viewports) {
         dirty_state.viewports = false;
@@ -290,9 +319,7 @@ void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmd
     }
     if (dirty_state.primitive_restart_enable) {
         dirty_state.primitive_restart_enable = false;
-        if (instance.IsPrimitiveRestartDisableSupported()) {
-            cmdbuf.setPrimitiveRestartEnable(primitive_restart_enable);
-        }
+        cmdbuf.setPrimitiveRestartEnable(primitive_restart_enable);
     }
     if (dirty_state.rasterizer_discard_enable) {
         dirty_state.rasterizer_discard_enable = false;

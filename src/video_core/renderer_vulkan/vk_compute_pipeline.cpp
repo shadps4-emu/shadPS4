@@ -13,7 +13,8 @@ namespace Vulkan {
 ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
                                  DescriptorHeap& desc_heap, const Shader::Profile& profile,
                                  vk::PipelineCache pipeline_cache, ComputePipelineKey compute_key_,
-                                 const Shader::Info& info_, vk::ShaderModule module)
+                                 const Shader::Info& info_, vk::ShaderModule module,
+                                 SerializationSupport& sdata, bool preloading /*=false*/)
     : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache, true},
       compute_key{compute_key_} {
     auto& info = stages[int(Shader::LogicalStage::Compute)];
@@ -29,7 +30,11 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
     u32 binding{};
     boost::container::small_vector<vk::DescriptorSetLayoutBinding, 32> bindings;
     for (const auto& buffer : info->buffers) {
-        const auto sharp = buffer.GetSharp(*info);
+        // During deserialization, we don't have access to the UD to fetch sharp data. To address
+        // this properly we need to track shaprs or portion of them in `sdata`, but since we're
+        // interested only in "is storage" flag (which is not even effective atm), we can take a
+        // shortcut there.
+        const auto sharp = preloading ? AmdGpu::Buffer{} : buffer.GetSharp(*info);
         bindings.push_back({
             .binding = binding++,
             .descriptorType = buffer.IsStorage(sharp) ? vk::DescriptorType::eStorageBuffer

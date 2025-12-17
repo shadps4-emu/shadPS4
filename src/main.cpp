@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <SDL3/SDL_messagebox.h>
 #include "functional"
 #include "iostream"
 #include "string"
@@ -66,6 +67,7 @@ int main(int argc, char* argv[]) {
                     "values, ignores the config file(s) entirely.\n"
                     "  --config-global               Run the emulator with the base config file "
                     "only, ignores game specific configs.\n"
+                    "  --show-fps                    Enable FPS counter display at startup\n"
                     "  -h, --help                    Display this help message\n";
              exit(0);
          }},
@@ -173,15 +175,21 @@ int main(int argc, char* argv[]) {
              game_folder = folder;
          }},
         {"--wait-for-debugger", [&](int& i) { waitForDebugger = true; }},
-        {"--wait-for-pid", [&](int& i) {
+        {"--wait-for-pid",
+         [&](int& i) {
              if (++i >= argc) {
                  std::cerr << "Error: Missing argument for --wait-for-pid\n";
                  exit(1);
              }
              waitPid = std::stoi(argv[i]);
-         }}};
+         }},
+        {"--show-fps", [&](int& i) { Config::setShowFpsCounter(true); }}};
 
     if (argc == 1) {
+        if (!SDL_ShowSimpleMessageBox(
+                SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+                "This is a CLI application. Please use the QTLauncher for a GUI.", nullptr))
+            std::cerr << "Could not display SDL message box! Error: " << SDL_GetError() << "\n";
         int dummy = 0; // one does not simply pass 0 directly
         arg_map.at("-h")(dummy);
         return -1;

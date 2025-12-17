@@ -142,6 +142,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_F32_UBYTE(2, inst);
     case Opcode::V_CVT_F32_UBYTE3:
         return V_CVT_F32_UBYTE(3, inst);
+    case Opcode::V_FLOOR_F64:
+        return V_FLOOR_F64(inst);
     case Opcode::V_FRACT_F32:
         return V_FRACT_F32(inst);
     case Opcode::V_TRUNC_F32:
@@ -806,6 +808,11 @@ void Translator::V_CVT_F32_UBYTE(u32 index, const GcnInst& inst) {
     SetDst(inst.dst[0], ir.ConvertUToF(32, 32, byte));
 }
 
+void Translator::V_FLOOR_F64(const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    SetDst64(inst.dst[0], ir.FPFloor(src0));
+}
+
 void Translator::V_FRACT_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     SetDst(inst.dst[0], ir.FPFract(src0));
@@ -1043,7 +1050,14 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    ASSERT(inst.src[1].field == OperandField::ConstZero);
+    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
+    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
+    ASSERT(is_zero || is_neg_one);
+    if (is_neg_one) {
+        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
+                   "SignedConstIntNeg must be -1");
+    }
+
     const IR::U1 src0 = [&] {
         switch (inst.src[0].field) {
         case OperandField::ScalarGPR:
@@ -1057,10 +1071,11 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::EQ:
-            return ir.LogicalNot(src0);
+            return is_zero ? ir.LogicalNot(src0) : src0;
         case ConditionOp::LG: // NE
-            return src0;
+            return is_zero ? src0 : ir.LogicalNot(src0);
         case ConditionOp::GT:
+            ASSERT(is_zero);
             return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
