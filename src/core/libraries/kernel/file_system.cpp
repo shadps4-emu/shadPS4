@@ -47,8 +47,10 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     int result = g_qfs->Operation.Open(raw_path, flags, mode);
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o} result = {}", raw_path, flags, mode,
              result);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -68,8 +70,10 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 s32 PS4_SYSV_ABI close(s32 fd) {
     int result = g_qfs->Operation.Close(fd);
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -88,8 +92,10 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     int result = g_qfs->Operation.Write(fd, buf, nbytes);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -167,8 +173,10 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     }
 
     int result = g_qfs->Operation.LSeek(fd, offset, origin);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -189,8 +197,10 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
     int result = g_qfs->Operation.Read(fd, buf, nbytes);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 
     // if (file->type == Core::FileSys::FileType::Directory) {
@@ -222,8 +232,10 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     int result = g_qfs->Operation.MKDir(path, mode);
     LOG_INFO(Kernel_Fs, "path = {} mode = {:#o} result = {}", path, mode, result);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 
     // CUSA02456: path = /aotl after sceSaveDataMount(mode = 1)
@@ -245,8 +257,11 @@ s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
 
 s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
     int result = g_qfs->Operation.RMDir(path);
-    if (result < 0)
+    LOG_INFO(Kernel_Fs, "{} result = {}", path, result);
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -263,7 +278,10 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     int result = g_qfs->Operation.Stat(path, sb);
     LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
-        *__Error() = -result;
+        {
+            *__Error() = -result;
+            result = -1;
+        }
         return -1;
     }
 
@@ -282,7 +300,10 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     QuasiFS::Resolved res;
     if (int result = g_qfs->Resolve(path, res); result != 0) {
-        *__Error() = -result;
+        {
+            *__Error() = -result;
+            result = -1;
+        }
         return ErrnoToSceKernelError(*__Error());
     }
 
@@ -293,7 +314,10 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     int result = g_qfs->Operation.FStat(fd, sb);
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
-        *__Error() = -result;
+        {
+            *__Error() = -result;
+            result = -1;
+        }
         return -1;
     }
     return ORBIS_OK;
@@ -353,8 +377,10 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
     int result = g_qfs->Operation.FTruncate(fd, length);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -369,8 +395,10 @@ s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
 
 s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
     int result = g_qfs->Operation.Truncate(path, length);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
@@ -384,51 +412,58 @@ s32 PS4_SYSV_ABI sceKernelTruncate(const char* path, s64 length) {
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
-    if (!std::filesystem::exists(src_path)) {
-        *__Error() = POSIX_ENOENT;
-        return -1;
+    int result = g_qfs->Operation.Move(from, to, false);
+    if (result < 0) {
+        *__Error() = -result;
+        result = -1;
     }
-    if (ro) {
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
-    const auto dst_path = mnt->GetHostPath(to, &ro);
-    if (ro) {
-        *__Error() = POSIX_EROFS;
-        return -1;
-    }
-    const bool src_is_dir = std::filesystem::is_directory(src_path);
-    const bool dst_is_dir = std::filesystem::is_directory(dst_path);
-    if (src_is_dir && !dst_is_dir) {
-        *__Error() = POSIX_ENOTDIR;
-        return -1;
-    }
-    if (!src_is_dir && dst_is_dir) {
-        *__Error() = POSIX_EISDIR;
-        return -1;
-    }
-    if (dst_is_dir && !std::filesystem::is_empty(dst_path)) {
-        *__Error() = POSIX_ENOTEMPTY;
-        return -1;
-    }
+    return result;
 
-    // On Windows, std::filesystem::rename will error if the file has been opened before.
-    std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto file = h->GetFile(src_path);
-    if (file) {
-        auto access_mode = file->f.GetAccessMode();
-        file->f.Close();
-        std::filesystem::remove(src_path);
-        file->f.Open(dst_path, access_mode);
-    } else {
-        std::filesystem::remove(src_path);
-    }
+    // auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    // bool ro = false;
+    // const auto src_path = mnt->GetHostPath(from, &ro);
+    // if (!std::filesystem::exists(src_path)) {
+    //     *__Error() = POSIX_ENOENT;
+    //     return -1;
+    // }
+    // if (ro) {
+    //     *__Error() = POSIX_EROFS;
+    //     return -1;
+    // }
+    // const auto dst_path = mnt->GetHostPath(to, &ro);
+    // if (ro) {
+    //     *__Error() = POSIX_EROFS;
+    //     return -1;
+    // }
+    // const bool src_is_dir = std::filesystem::is_directory(src_path);
+    // const bool dst_is_dir = std::filesystem::is_directory(dst_path);
+    // if (src_is_dir && !dst_is_dir) {
+    //     *__Error() = POSIX_ENOTDIR;
+    //     return -1;
+    // }
+    // if (!src_is_dir && dst_is_dir) {
+    //     *__Error() = POSIX_EISDIR;
+    //     return -1;
+    // }
+    // if (dst_is_dir && !std::filesystem::is_empty(dst_path)) {
+    //     *__Error() = POSIX_ENOTEMPTY;
+    //     return -1;
+    // }
 
-    return ORBIS_OK;
+    // // On Windows, std::filesystem::rename will error if the file has been opened before.
+    // std::filesystem::copy(src_path, dst_path, std::filesystem::copy_options::overwrite_existing);
+    // auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    // auto file = h->GetFile(src_path);
+    // if (file) {
+    //     auto access_mode = file->f.GetAccessMode();
+    //     file->f.Close();
+    //     std::filesystem::remove(src_path);
+    //     file->f.Open(dst_path, access_mode);
+    // } else {
+    //     std::filesystem::remove(src_path);
+    // }
+
+    // return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
@@ -471,13 +506,16 @@ s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
 
 s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
     int result = g_qfs->Operation.FSync(fd);
-    if (result < 0)
+    if (result < 0) {
         *__Error() = -result;
+        result = -1;
+    }
     return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
     s32 result = posix_fsync(fd);
+    LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -487,8 +525,12 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
 
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     int result = g_qfs->Operation.GetDents(fd, buf, nbytes, basep);
+    LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, nbytes, result);
     if (result < 0) {
-        *__Error() = -result;
+        {
+            *__Error() = -result;
+            result = -1;
+        }
         return -1;
     }
 
@@ -558,9 +600,11 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 
 s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     int result = g_qfs->Operation.Unlink(path);
-    if (result < 0)
+    LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
+    if (result < 0) {
         *__Error() = -result;
-    LOG_INFO(Kernel_Fs, "Unlinked {}", path);
+        result = -1;
+    }
     return result;
 }
 

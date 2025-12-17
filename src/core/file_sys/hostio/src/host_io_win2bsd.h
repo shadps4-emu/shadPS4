@@ -9,6 +9,7 @@
 #include <winerror.h>
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "core/libraries/kernel/posix_error.h"
 
 // Convert linux/unix errno to FreeBSD errno
@@ -17,6 +18,7 @@
 s32 win2bsd(s32 id) {
     switch (id) {
     default:
+        LOG_CRITICAL(Kernel_Fs, "Can't resolve POSIX errno: {}", id);
         return EIO;
     case ERROR_FILE_NOT_FOUND:
     case ERROR_PATH_NOT_FOUND:

@@ -6,6 +6,7 @@
 #include <errno.h>
 
 #include "common/assert.h"
+#include "common/logging/log.h"
 #include "core/libraries/kernel/posix_error.h"
 
 // Convert linux/unix errno to FreeBSD errno
@@ -14,7 +15,10 @@
 s32 unix2bsd(s32 id) {
     switch (id) {
     default:
-        UNREACHABLE_MSG("Unknown POSIX errno");
+        LOG_CRITICAL(Kernel_Fs, "Can't resolve POSIX errno: {}", id);
+        return EINVAL;
+    case 0:
+        return 0;
     case POSIX_EPERM:
         return EPERM;
     case POSIX_ENOENT:
@@ -109,7 +113,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_EPROTONOSUPPORT:
         return EPROTONOSUPPORT;
 
-#ifndef _WIN32
+#if !defined(_WIN32)
     case POSIX_ESOCKTNOSUPPORT:
         return ESOCKTNOSUPPORT;
 #endif
@@ -120,7 +124,7 @@ s32 unix2bsd(s32 id) {
         // case POSIX_ENOTSUP:
         //     return ENOTSUP;
 
-#ifndef _WIN32
+#if !defined(_WIN32)
     case POSIX_EPFNOSUPPORT:
         return EPFNOSUPPORT;
 #endif
@@ -148,7 +152,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_ENOTCONN:
         return ENOTCONN;
 
-#ifndef _WIN32
+#if !defined(_WIN32)
     case POSIX_ESHUTDOWN:
         return ESHUTDOWN;
     case POSIX_ETOOMANYREFS:
@@ -164,7 +168,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_ENAMETOOLONG:
         return ENAMETOOLONG;
 
-#ifndef _WIN32
+#if !defined(_WIN32)
     case POSIX_EHOSTDOWN:
         return EHOSTDOWN;
 #endif
@@ -174,9 +178,12 @@ s32 unix2bsd(s32 id) {
     case POSIX_ENOTEMPTY:
         return ENOTEMPTY;
 
-#ifndef _WIN32
+#if !(defined(_WIN32) || defined(__linux__))
     case POSIX_EPROCLIM:
         return EPROCLIM;
+#endif
+
+#if !defined(_WIN32)
     case POSIX_EUSERS:
         return EUSERS;
     case POSIX_EDQUOT:
@@ -185,6 +192,9 @@ s32 unix2bsd(s32 id) {
         return ESTALE;
     case POSIX_EREMOTE:
         return EREMOTE;
+#endif
+
+#if !(defined(_WIN32) || defined(__linux__))
     case POSIX_EBADRPC:
         return EBADRPC;
     case POSIX_ERPCMISMATCH:
@@ -202,7 +212,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_ENOSYS:
         return ENOSYS;
 
-#ifndef _WIN32
+#if !(defined(_WIN32) || defined(__linux__))
     case POSIX_EFTYPE:
         return EFTYPE;
     case POSIX_EAUTH:
@@ -222,7 +232,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_EILSEQ:
         return EILSEQ;
 
-#ifndef _WIN32
+#if !(defined(_WIN32) || defined(__linux__))
     case POSIX_ENOATTR:
         return ENOATTR;
     case POSIX_EDOOFUS:
@@ -242,7 +252,7 @@ s32 unix2bsd(s32 id) {
     case POSIX_EPROTO:
         return EPROTO;
 
-#ifndef _WIN32
+#if !(defined(_WIN32) || defined(__linux__))
     case POSIX_ENOTCAPABLE:
         return ENOTCAPABLE;
     case POSIX_ECAPMODE:
@@ -291,11 +301,14 @@ s32 unix2bsd(s32 id) {
         return ENOSTR;
     case POSIX_ENOTRECOVERABLE:
         return ENOTRECOVERABLE;
+#if !defined(__linux__)
     case POSIX_EOTHER:
         return EOTHER;
+#endif
     case POSIX_EOWNERDEAD:
         return EOWNERDEAD;
     case POSIX_ETIME:
         return ETIME;
     }
+    UNREACHABLE_MSG("Something went horribly wrong");
 }

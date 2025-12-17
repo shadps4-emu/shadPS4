@@ -1036,7 +1036,73 @@ s32 QFS::OperationImpl::Copy(const fs::path& src, const fs::path& dst, bool fail
 }
 
 s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
-    return -POSIX_ENOSYS;
+    Resolved src_res;
+    Resolved dst_res;
+    int status_what = qfs.Resolve(src, src_res);
+    int status_where = qfs.Resolve(dst, dst_res);
+
+    if (src_res.node == dst_res.node)
+        // hardlink to the same file, success
+        return 0;
+
+    // source may not exist and can point wherever it wants, so we skip checks for it
+
+    if (0 == status_where)
+        return -POSIX_EEXIST;
+    // destination parent directory must exist though
+    if (0 != status_where && nullptr == dst_res.parent)
+        return -POSIX_ENOENT;
+
+    partition_ptr src_part = src_res.mountpoint;
+    partition_ptr dst_part = dst_res.mountpoint;
+
+    if (qfs.IsPartitionRO(dst_part))
+        return -POSIX_EROFS;
+
+    bool host_used = false;
+    int hio_status = 0;
+    int vio_status = 0;
+
+    // for this to work, both files must be on host partition
+    // mixed source/destination will need a bit more effort
+    if (src_part->IsHostMounted() && dst_part->IsHostMounted()) {
+        // if target partition doesn't exist or is not mounted, we can'tqfs.Resolve host path
+        if (nullptr == src_part)
+            return -POSIX_ENOENT;
+
+        fs::path host_path_src{};
+        fs::path host_path_dst{};
+
+        if (int hostpath_status = src_part->GetHostPath(host_path_src, src_res.local_path);
+            hostpath_status != 0)
+            return hostpath_status;
+        if (int hostpath_status = dst_part->GetHostPath(host_path_dst, dst_res.local_path);
+            hostpath_status != 0)
+            return hostpath_status;
+
+        if (hio_status = qfs.hio_driver.LinkSymbolic(host_path_src, host_path_dst); hio_status < 0)
+            // hosts operation must succeed in order to continue
+            return hio_status;
+        host_used = true;
+    } else if (dst_part->IsHostMounted() ^ src_part->IsHostMounted()) {
+        LOG_ERROR(Kernel_Fs,
+                  "Symlinks can be only created on the same type of partition (virtual/host)");
+        return -POSIX_ENOSYS;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(c_mutex);
+        qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
+        // src stays 1:1
+        vio_status = qfs.vio_driver.LinkSymbolic(src, dst_res.local_path);
+        qfs.vio_driver.ClearCtx();
+    }
+
+    if (host_used && (hio_status != vio_status))
+        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
+                  vio_status);
+
+    return vio_status;
 }
 
 } // namespace QuasiFS
