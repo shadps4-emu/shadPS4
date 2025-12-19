@@ -33,9 +33,15 @@ struct OrbisHttpUriElement {
 };
 
 enum OrbisHttpRequestMethod : s32 {
-    ORBIS_HTTP_REQUEST_METHOD_INVALID = -1,
-    ORBIS_HTTP_REQUEST_METHOD_GET = 0,
-    ORBIS_HTTP_REQUEST_METHOD_POST = 1,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_GET = 0,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_POST = 1,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_HEAD = 2,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_OPTIONS = 3,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_PUT = 4,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_DELETE = 5,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_TRACE = 6,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_CONNECT = 7,
+    ORBIS_INTERNAL_HTTP_REQUEST_METHOD_INVALID = 8,
 };
 
 class RequestTemplate {
@@ -44,6 +50,11 @@ public:
     std::map<std::string, std::string> headers;
     std::string user_agent = {};
     bool is_async = false;
+
+    void AddHeader(const char* name, const char* value) {
+
+        headers[std::string(name)] = std::string(value);
+    }
 
     RequestTemplate() : id(0) {}
     explicit RequestTemplate(int tmpl_id, std::string user_agent = "")
@@ -221,7 +232,7 @@ public:
     }
 
     RequestObj()
-        : id(0), req_template(nullptr), method(ORBIS_HTTP_REQUEST_METHOD_INVALID), url(""),
+        : id(0), req_template(nullptr), method(ORBIS_INTERNAL_HTTP_REQUEST_METHOD_INVALID), url(""),
           content_length(0), status_code(-1), result_body(nullptr), result_body_size(-1),
           current_result_read_chunk_index(0), post_data(nullptr), is_sent(false) {}
     explicit RequestObj(s32 req_id, RequestTemplate* req_template, s32 method, std::string url_str,
@@ -241,7 +252,7 @@ private:
     u32 current_result_read_chunk_index = 0;
     u32 result_body_size = 0;
 
-    OrbisHttpRequestMethod method = ORBIS_HTTP_REQUEST_METHOD_INVALID;
+    OrbisHttpRequestMethod method = ORBIS_INTERNAL_HTTP_REQUEST_METHOD_INVALID;
     std::string host = {};
     std::string path = {};
     u64 content_length = 0;
@@ -271,21 +282,47 @@ private:
             headers.emplace(pair.first, pair.second);
         }
 
+        std::string content_type = "application/json";
+
+        auto it = headers.find("Content-Type");
+        if (it != headers.end()) {
+            content_type = it->second;
+        }
+
         is_sent = true;
 
         switch (method) {
-        case ORBIS_HTTP_REQUEST_METHOD_GET:
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_GET:
 
             response = cli.Get(path, headers);
             break;
-        case ORBIS_HTTP_REQUEST_METHOD_POST:
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_POST:
 
             response = cli.Post(path, headers, static_cast<char*>(post_data),
-                                static_cast<u64>(post_data_size), "application/octet-stream");
+                                static_cast<u64>(post_data_size), content_type);
             break;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_HEAD:
+            response = cli.Head(path, headers);
+            break;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_OPTIONS:
+            response = cli.Options(path, headers);
+            break;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_PUT:
+            response = cli.Put(path, headers, static_cast<char*>(post_data),
+                               static_cast<u64>(post_data_size), content_type);
+            break;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_DELETE:
+            response = cli.Delete(path, headers);
+            break;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_TRACE:
+            LOG_ERROR(Lib_Http, "TRACE HTTP method not implemented");
+            return;
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_CONNECT:
+            LOG_ERROR(Lib_Http, "CONNECT HTTP method not implemented");
+            return;
 
         default:
-        case ORBIS_HTTP_REQUEST_METHOD_INVALID:
+        case ORBIS_INTERNAL_HTTP_REQUEST_METHOD_INVALID:
             LOG_ERROR(Lib_Http, "Invalid HTTP method");
             return;
         }

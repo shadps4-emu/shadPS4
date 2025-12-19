@@ -104,20 +104,25 @@ int PS4_SYSV_ABI sceHttpAddQuery() {
 }
 
 int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode) {
-    
+
     LOG_INFO(Lib_Http, "called request id = '{}', name = '{}', value = '{}', mode = '{}'", id,
-              std::string(name), std::string(value), mode);
-    
-    std::lock_guard<std::mutex> lock(g_requests_map_mutex);
-    
-    auto it = g_requests.find(id);
-    if (it == g_requests.end()) {
-        
+             std::string(name), std::string(value), mode);
+
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
+    std::lock_guard<std::mutex> lock(g_templates_map_mutex);
+
+    auto it = g_templates.find(id);
+    if (it == g_templates.end()) {
+
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
-    
+
     it->second.AddHeader(name, value);
-    
+
     return ORBIS_OK;
 }
 
@@ -187,24 +192,28 @@ int PS4_SYSV_ABI sceHttpCreateRequest2() {
     return ORBIS_OK;
 }
 
-// TODO enum 0 GET 1 POST
 int PS4_SYSV_ABI sceHttpCreateRequestWithURL(s32 tmpl_id, s32 method, const char* url,
                                              u64 content_length) {
-    LOG_INFO(Lib_Http, "called template id = '{}' method = '{}' url = '{}', content length = '{}'", 
-        tmpl_id, method, url, content_length);
+    LOG_INFO(Lib_Http, "called template id = '{}' method = '{}' url = '{}', content length = '{}'",
+             tmpl_id, method, url, content_length);
+
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
 
     if (method != 0 && method != 1) {
-        
-        LOG_CRITICAL(Lib_Http, "Invalid HTTP method: {}", method);
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+
+        LOG_CRITICAL(Lib_Http, "Unhandled HTTP method: {}", method);
+        return ORBIS_HTTP_ERROR_UNKNOWN_METHOD;
     }
-    
+
     if (url == nullptr) {
-        
+
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
-    static s32 request_id_counter = 0;        
+    static s32 request_id_counter = 0;
     s32 request_id = request_id_counter++;
 
     std::string url_str = ReplaceHost(std::string(url), host_override);
@@ -214,7 +223,7 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(s32 tmpl_id, s32 method, const char
     auto it = g_templates.find(tmpl_id);
     if (it == g_templates.end()) {
 
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
 
     auto new_request = RequestObj(request_id, &it->second, method, url_str, content_length);
@@ -231,11 +240,21 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2() {
 }
 
 int PS4_SYSV_ABI sceHttpCreateTemplate(s32 conn_id, const char* user_agent, s32 http_v, s32 flags) {
-    LOG_INFO(Lib_Http, "called, conn id: '{}', user agent: '{}', http version: '{}', flags: '{}'", 
-        conn_id, user_agent, http_v, flags);
+    LOG_INFO(Lib_Http, "called, conn id: '{}', user agent: '{}', http version: '{}', flags: '{}'",
+             conn_id, user_agent, http_v, flags);
+
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
+    if (user_agent == nullptr) {
+
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
 
     static s32 template_counter = 0;
-    	
+
     s32 template_id = template_counter++;
 
     std::lock_guard<std::mutex> lock(g_templates_map_mutex);
@@ -243,7 +262,7 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(s32 conn_id, const char* user_agent, s32 
     auto new_template = RequestTemplate(template_id, std::string(user_agent));
 
     g_templates.emplace(template_id, new_template);
-    
+
     return template_id;
 }
 
@@ -295,11 +314,16 @@ int PS4_SYSV_ABI sceHttpDeleteConnection() {
 int PS4_SYSV_ABI sceHttpDeleteRequest(s32 req_id) {
     LOG_INFO(Lib_Http, "called, request id: '{}'", req_id);
 
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
     if (it == g_requests.end()) {
 
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
 
     g_requests.erase(it);
@@ -388,19 +412,34 @@ int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds() {
 }
 
 int PS4_SYSV_ABI sceHttpGetResponseContentLength(u32 req_id, u64* out_content_length, u32* _flag) {
-    
+
     LOG_INFO(Lib_Http, "called request id: '{}'", req_id);
 
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
     if (out_content_length == nullptr) {
-    
+
         return ORBIS_HTTP_ERROR_INVALID_VALUE;
     }
 
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
     if (it == g_requests.end()) {
-        
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    }
+
+    if (!it->second.IsSent() && !it->second.req_template->is_async) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+
+    if (!it->second.IsCompleted()) {
+
+        return ORBIS_HTTP_ERROR_EAGAIN;
     }
 
     *out_content_length = it->second.GetContentLength();
@@ -440,22 +479,29 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(s32 req_id, s32* status_code) {
     return ret;
 #else
 
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
-    if (it != g_requests.end()) {
+    if (it == g_requests.end()) {
 
-        if (!it->second.IsSent() && !it->second.req_template->is_async) {
-            
-                return ORBIS_HTTP_ERROR_BEFORE_SEND;
-        }
-
-        if (!it->second.IsCompleted()) {
-        
-            return ORBIS_HTTP_ERROR_EAGAIN;
-        }
-
-        *status_code = it->second.GetStatusCode();
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
+
+    if (!it->second.IsSent() && !it->second.req_template->is_async) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+
+    if (!it->second.IsCompleted()) {
+
+        return ORBIS_HTTP_ERROR_EAGAIN;
+    }
+
+    *status_code = it->second.GetStatusCode();
 
     return ORBIS_OK;
 #endif
@@ -464,6 +510,10 @@ int PS4_SYSV_ABI sceHttpGetStatusCode(s32 req_id, s32* status_code) {
 int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
     LOG_ERROR(Lib_Http, "(DUMMY) called libnetMemId = {} libsslCtxId = {} poolSize = {}",
               libnetMemId, libsslCtxId, poolSize);
+
+    // No ORBIS_HTTP_ERROR_ALREADY_INITED check since it could be
+    // initialized multiple times
+
     // return a value >1
     static int id = 0;
     return ++id;
@@ -570,23 +620,38 @@ int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int
 }
 
 int PS4_SYSV_ABI sceHttpReadData(u32 req_id, char* dest, u32 size) {
-    
+
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
+    if (dest == nullptr || size == 0) {
+
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
 
-    if (it != g_requests.end() && it->second.IsSent()) {
+    if (it == g_requests.end()) {
 
-        if (!it->second.IsSuccessful()) {
-
-            return ORBIS_HTTP_ERROR_BEFORE_SEND;
-        }
-
-        auto read_len = it->second.ReadData(dest, size); 
-
-        return read_len;
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
 
-    return ORBIS_OK;
+    if (!it->second.IsSent() && !it->second.req_template->is_async) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+
+    if (!it->second.IsCompleted()) {
+
+        return ORBIS_HTTP_ERROR_EAGAIN;
+    }
+
+    auto read_len = it->second.ReadData(dest, size);
+
+    return read_len;
 }
 
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush() {
@@ -614,7 +679,6 @@ int PS4_SYSV_ABI sceHttpsDisableOptionPrivate() {
     return ORBIS_OK;
 }
 
-
 int PS4_SYSV_ABI sceHttpsEnableOption(u32 options) {
     LOG_ERROR(Lib_Http, "(STUBBED) called, returning zero to {}", __builtin_return_address(0));
     return ORBIS_OK;
@@ -626,20 +690,30 @@ int PS4_SYSV_ABI sceHttpsEnableOptionPrivate() {
 }
 
 int PS4_SYSV_ABI sceHttpSendRequest(int req_id, const void* post_data, u64 size) {
-    
+
     LOG_INFO(Lib_Http, "called, request id = '{}', size = '{}'", req_id, size);
+
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
 
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
     auto it = g_requests.find(req_id);
 
-    if (it != g_requests.end()) {
+    if (it == g_requests.end()) {
 
-        it->second.SetPostData(post_data, size);
-
-        it->second.SendRequest();
-
-        return ORBIS_OK;
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
+
+    if (!it->second.IsSent() && !it->second.req_template->is_async) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_SEND;
+    }
+
+    it->second.SetPostData(post_data, size);
+
+    it->second.SendRequest();
 
     return ORBIS_OK;
 }
@@ -742,12 +816,17 @@ int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled() {
 int PS4_SYSV_ABI sceHttpSetNonblock(s32 tmpl_id, bool enable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
 
+    if (!g_isHttpInitialized) {
+
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    }
+
     std::lock_guard<std::mutex> lock_t(g_templates_map_mutex);
 
     auto it = g_templates.find(tmpl_id);
     if (it == g_templates.end()) {
 
-        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+        return ORBIS_HTTP_ERROR_INVALID_ID;
     }
 
     it->second.is_async = enable;
