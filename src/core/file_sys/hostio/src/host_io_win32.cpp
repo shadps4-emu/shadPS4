@@ -189,7 +189,7 @@ s32 HostIO_Win32::Copy(const fs::path& src, const fs::path& dst, bool fail_if_ex
 s32 HostIO_Win32::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     errno = 0;
     // TODO: this will fail if moving/merging directories
-    // check behaviour 
+    // check behaviour
     auto status = MoveFileWithProgressW(GetSymlink(src).c_str(), dst.c_str(), nullptr, nullptr,
                                         MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH |
                                             (MOVEFILE_REPLACE_EXISTING * !fail_if_exists));
