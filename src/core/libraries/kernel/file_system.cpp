@@ -306,7 +306,6 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         }
         return ErrnoToSceKernelError(*__Error());
     }
-
     return ORBIS_OK;
 }
 
