@@ -202,9 +202,8 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(s32 tmpl_id, s32 method, const char
         return ORBIS_HTTP_ERROR_BEFORE_INIT;
     }
 
-    if (method != 0 && method != 1) {
+    if (method >= ORBIS_INTERNAL_HTTP_REQUEST_METHOD_INVALID) {
 
-        LOG_CRITICAL(Lib_Http, "Unhandled HTTP method: {}", method);
         return ORBIS_HTTP_ERROR_UNKNOWN_METHOD;
     }
 
