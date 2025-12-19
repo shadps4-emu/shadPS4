@@ -14,17 +14,13 @@ class SymbolsResolver;
 namespace Libraries::Np::NpWebApi {
 
 struct __attribute__((packed)) SceNpWebApiContentParameter {
-	uint64_t content_length;
-	const char* p_content_type;
-	uint8_t reserved[16];
+    uint64_t content_length;
+    const char* p_content_type;
+    uint8_t reserved[16];
 };
 
 // For mocking responses
-enum SceNpWebApiMockRequestType {
-    REQ_INVALID = -1,
-    REQ_BLOCK_LIST = 110,
-    REQ_FRIEND_LIST = 120
-};
+enum SceNpWebApiMockRequestType { REQ_INVALID = -1, REQ_BLOCK_LIST = 110, REQ_FRIEND_LIST = 120 };
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext();
 s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter();

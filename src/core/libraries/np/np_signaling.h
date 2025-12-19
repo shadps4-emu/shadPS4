@@ -38,4 +38,4 @@ s32 PS4_SYSV_ABI sceNpSignalingTerminate();
 s32 PS4_SYSV_ABI sceNpSignalingTerminateConnection();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::NpSignaling
+} // namespace Libraries::Np::NpSignaling

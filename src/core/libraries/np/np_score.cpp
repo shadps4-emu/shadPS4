@@ -31,7 +31,6 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
 
-    //TODO
     static s32 title_ctx_id_counter = 0;
     s32 title_ctx_id = title_ctx_id_counter++;
 
@@ -239,8 +238,8 @@ int PS4_SYSV_ABI sceNpScoreRecordScoreAsync() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_string, 
-    char* output_buffer, s32 options) {
+int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_string,
+                                           char* output_buffer, s32 options) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
 
     if (output_buffer == nullptr || input_string == nullptr) {

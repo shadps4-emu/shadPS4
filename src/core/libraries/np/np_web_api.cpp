@@ -8,7 +8,7 @@
 
 namespace Libraries::Np::NpWebApi {
 
-static std::map<SceNpWebApiMockRequestType, std::string> g_templates {
+static std::map<SceNpWebApiMockRequestType, std::string> g_templates{
     {REQ_BLOCK_LIST, "{\"totalResults\": 0, \"blockList\": []}"},
     {REQ_FRIEND_LIST, "{\"totalResults\": 0, \"friendList\": []}"},
 };
@@ -140,7 +140,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 title_user_ctx_id, const char* p_a
     LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
 
     if (p_path == nullptr) {
-    
+
         return ORBIS_OK;
     }
 
@@ -154,15 +154,15 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 title_user_ctx_id, const char* p_a
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
 
     if (strstr(p_path, "blockList") != nullptr) {
-        
+
         type = REQ_BLOCK_LIST;
     } else if (strstr(p_path, "friendList") != nullptr) {
-        
+
         type = REQ_FRIEND_LIST;
     }
 
     if (type == REQ_INVALID) {
-    
+
         LOG_ERROR(Lib_NpWebApi, "No mock for request path: '{}'", p_path);
         return ORBIS_OK;
     }
@@ -225,7 +225,7 @@ s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode(s64 request_id, s32* out_status_co
     LOG_ERROR(Lib_NpWebApi, "(STUBBED) called, request_id: '{}'", request_id);
 
     if (out_status_code == nullptr) {
-    
+
         return ORBIS_OK;
     }
 
@@ -290,7 +290,7 @@ s32 PS4_SYSV_ABI sceNpWebApiReadData(s64 request_id, char* data, u64 size) {
     LOG_ERROR(Lib_NpWebApi, "(STUBBED) called, request_id: '{}'", request_id);
 
     if (data == nullptr || size == 0) {
-    
+
         return ORBIS_OK;
     }
 
@@ -303,7 +303,7 @@ s32 PS4_SYSV_ABI sceNpWebApiReadData(s64 request_id, char* data, u64 size) {
 
             const std::string& response = template_it->second;
             u64 to_copy = std::min(size, static_cast<u64>(response.size()));
-            
+
             memcpy(data, response.data(), to_copy);
             return static_cast<s32>(to_copy);
         }

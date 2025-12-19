@@ -183,4 +183,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpSignalingTerminateConnection);
 };
 
-} // namespace Libraries::NpSignaling
+} // namespace Libraries::Np::NpSignaling

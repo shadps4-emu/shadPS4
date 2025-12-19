@@ -3,10 +3,10 @@
 
 #pragma once
 
+#include <future>
 #include <map>
 #include <mutex>
 #include <string>
-#include <future>
 
 #include <httplib.h>
 
@@ -46,7 +46,8 @@ public:
     bool is_async = false;
 
     RequestTemplate() : id(0) {}
-    explicit RequestTemplate(int tmpl_id, std::string user_agent = "") : id(tmpl_id), user_agent(user_agent) {}
+    explicit RequestTemplate(int tmpl_id, std::string user_agent = "")
+        : id(tmpl_id), user_agent(user_agent) {}
 };
 
 class RequestObj {
@@ -56,7 +57,7 @@ public:
 
     void SendRequest() {
         request_future = std::async(std::launch::async, [this] { _SendRequest(); });
-        
+
         if (!req_template->is_async) {
             WaitForRequest();
         }
@@ -113,7 +114,7 @@ public:
             return;
         }
 
-        //TODO checks
+        // TODO checks
         url = new_url;
 
         size_t scheme_end = url.find("://");
@@ -129,9 +130,9 @@ public:
     }
 
     void SetPostData(const void* data, u64 size) {
-        
+
         if (data == nullptr || size == 0) {
-            
+
             post_data = nullptr;
             post_data_size = 0;
             return;
@@ -223,9 +224,10 @@ public:
         : id(0), req_template(nullptr), method(ORBIS_HTTP_REQUEST_METHOD_INVALID), url(""),
           content_length(0), status_code(-1), result_body(nullptr), result_body_size(-1),
           current_result_read_chunk_index(0), post_data(nullptr), is_sent(false) {}
-    explicit RequestObj(s32 req_id, RequestTemplate* req_template, s32 method, std::string url_str, u64 cntLen)
-        : id(req_id), req_template(req_template), method(static_cast<OrbisHttpRequestMethod>(method)),
-          content_length(cntLen), 
+    explicit RequestObj(s32 req_id, RequestTemplate* req_template, s32 method, std::string url_str,
+                        u64 cntLen)
+        : id(req_id), req_template(req_template),
+          method(static_cast<OrbisHttpRequestMethod>(method)), content_length(cntLen),
           status_code(-1), result_body(nullptr), result_body_size(-1),
           current_result_read_chunk_index(0), post_data(nullptr), is_sent(false) {
 
@@ -246,7 +248,7 @@ private:
 
     u32 status_code = -1; // check
     bool is_sent = false;
-    
+
     std::map<std::string, std::string> req_headers;
     std::string url = {};
     void* post_data = nullptr;
