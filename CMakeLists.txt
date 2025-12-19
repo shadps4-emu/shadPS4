@@ -663,15 +663,24 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
 )
 
 set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
+            src/core/file_sys/quasifs/quasifs.h
             src/core/file_sys/quasifs/src/quasifs_vdriver.cpp
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_device.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_device.h
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_directory.h
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory_pfs.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_file.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_file.h
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_socket.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_socket.h
             src/core/file_sys/quasifs/src/quasifs_inode_quasi_file_virtual.cpp
+            src/core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h
             src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
+            src/core/file_sys/quasifs/quasifs_inode_symlink.h
             src/core/file_sys/quasifs/src/quasifs_partition.cpp
+            src/core/file_sys/quasifs/quasifs_partition.h
 
             src/core/file_sys/devices/console_device.cpp
             src/core/file_sys/devices/console_device.h
@@ -693,14 +702,24 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/devices/zero_device.h
 )
 
-set(HOSTIO src/core/file_sys/hostio/src/host_io_base.cpp
-           src/core/file_sys/hostio/src/host_io_virtual.cpp
+set(HOSTIO  src/core/file_sys/hostio/src/host_io_base.cpp
+            src/core/file_sys/hostio/src/host_io_base.h
+            src/core/file_sys/hostio/src/host_io_virtual.cpp
+            src/core/file_sys/hostio/host_io_virtual.h
 )
 
 if(WIN32)
-    list(APPEND HOSTIO src/core/file_sys/hostio/src/host_io_win32.cpp)
-elseif(UNIX AND (NOT APPLE))
-    list(APPEND HOSTIO src/core/file_sys/hostio/src/host_io_posix.cpp)
+    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_win32.cpp
+                        src/core/file_sys/hostio/host_io_win32.h
+    )
+elseif(UNIX)
+    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_posix.cpp
+                        src/core/file_sys/hostio/host_io_posix.h
+    )
+elseif(APPLE)
+    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_macos.cpp
+                        src/core/file_sys/hostio/host_io_macos.h
+    )
 endif()
 
 set(COMMON src/common/logging/backend.cpp

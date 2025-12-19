@@ -52,3 +52,39 @@ Now run the emulator:
 ```
 ./shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
 ```
+
+### Using Xcode
+
+Clone the repository recursively:
+```
+git clone --recursive https://github.com/shadps4-emu/shadPS4.git
+cd shadPS4
+```
+
+Generate the build directory in the shadPS4 directory:
+```
+cmake -S . -B build/ -DCMAKE_OSX_ARCHITECTURES=x86_64 -G Xcode
+```
+
+At this point you may encounter an error `CMake Error at CMakeLists.txt:20 (project). No CMAKE_CXX_COMPILER could be found.`
+This may be caused by `homebrew` interfering with builtin toolset. To remedy this try entering this command:
+```
+sudo xcode-select --reset
+```
+Then retry running generator command above.
+
+Enter the directory:
+```
+cd build/
+```
+
+Use make to build the project:
+```
+cmake --build . --parallel$(sysctl -n hw.ncpu)
+```
+
+Now run the emulator:
+
+```
+./shadps4 /"PATH"/"TO"/"GAME"/"FOLDER"/eboot.bin
+```

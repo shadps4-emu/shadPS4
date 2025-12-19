@@ -4,11 +4,7 @@
 
 #pragma once
 
-#if defined(__linux__) || defined(__APPLE_CC__)
-
 #ifdef __APPLE_CC__
-#warning Linux HostIO used for MacOS
-#endif
 
 #include <sys/fcntl.h>
 
@@ -31,7 +27,7 @@ static_assert(std::is_same_v<decltype(OrbisKernelIovec::iov_len), decltype(iovec
  * However there is no indication that the function executed (because it doesn't have to)
  */
 
-class HostIO_POSIX final : public HostIO_Base {
+class HostIO_MACOS final : public HostIO_Base {
 
 public:
     //
