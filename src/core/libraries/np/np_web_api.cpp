@@ -227,7 +227,7 @@ s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode(s64 request_id, s32* out_status_co
 
     if (out_status_code == nullptr) {
 
-        return ORBIS_OK;
+        return ORBIS_NP_WEB_API_INVALID_ARGUMENT;
     }
 
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
