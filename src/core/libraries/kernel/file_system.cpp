@@ -49,7 +49,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
              result);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -72,7 +72,7 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -94,7 +94,7 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     int result = g_qfs->Operation.Write(fd, buf, nbytes);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -175,7 +175,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     int result = g_qfs->Operation.LSeek(fd, offset, origin);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -199,7 +199,7 @@ s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
     int result = g_qfs->Operation.Read(fd, buf, nbytes);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 
@@ -234,7 +234,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} mode = {:#o} result = {}", path, mode, result);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 
@@ -260,7 +260,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
     LOG_INFO(Kernel_Fs, "{} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -278,14 +278,10 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     int result = g_qfs->Operation.Stat(path, sb);
     LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
-        {
-            *__Error() = -result;
-            result = -1;
-        }
+        *__Error() = -result;
         return -1;
     }
-
-    return ORBIS_OK;
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
@@ -294,32 +290,38 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
+
+    // this is correct behaviour, courtesy of @red-prig
+    sb->st_dev = 0;
+    sb->st_ino = 0;
+    sb->st_nlink = 0;
+    sb->st_uid = 0;
+    sb->st_gid = 0;
+    sb->st_rdev = 0;
+    sb->st_flags = 0;
+    sb->st_gen = 0;
+    sb->st_lspare = 0;
     return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     QuasiFS::Resolved res;
-    if (int result = g_qfs->Resolve(path, res); result != 0) {
-        {
-            *__Error() = -result;
-            result = -1;
-        }
+    int result = g_qfs->Resolve(path, res);
+    if (result < 0) {
+        *__Error() = -result;
         return ErrnoToSceKernelError(*__Error());
     }
-    return ORBIS_OK;
+    return result;
 }
 
 s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     int result = g_qfs->Operation.FStat(fd, sb);
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
-        {
-            *__Error() = -result;
-            result = -1;
-        }
+        *__Error() = -result;
         return -1;
     }
-    return ORBIS_OK;
+    return result;
 
     // switch (file->type) {
     // case Core::FileSys::FileType::Device: {
@@ -378,7 +380,7 @@ s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
     int result = g_qfs->Operation.FTruncate(fd, length);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -396,7 +398,7 @@ s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
     int result = g_qfs->Operation.Truncate(path, length);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -414,7 +416,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     int result = g_qfs->Operation.Move(from, to, false);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 
@@ -507,7 +509,7 @@ s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
     int result = g_qfs->Operation.FSync(fd);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
@@ -526,13 +528,9 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     int result = g_qfs->Operation.GetDents(fd, buf, nbytes, basep);
     LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, nbytes, result);
     if (result < 0) {
-        {
-            *__Error() = -result;
-            result = -1;
-        }
+        *__Error() = -result;
         return -1;
     }
-
     return result;
 }
 
@@ -602,7 +600,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
-        result = -1;
+        return -1;
     }
     return result;
 }
