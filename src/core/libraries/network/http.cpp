@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -10,6 +11,8 @@
 namespace Libraries::Http {
 
 static bool g_isHttpInitialized = true; // TODO temp always inited
+static bool g_isConnectedToNetwork = false;
+
 static std::map<s32, RequestTemplate> g_templates;
 static std::map<s32, RequestObj> g_requests;
 static std::mutex g_templates_map_mutex;
@@ -17,21 +20,18 @@ static std::mutex g_requests_map_mutex;
 
 std::string host_override = "localhost";
 
-//TODO check ptrs
-// TODO check return codes for send request, get content length, read data...
-
 std::string ReplaceHost(std::string url, const std::string& new_host, bool force_http = true) {
 
     std::string separator = "://";
-    size_t protocol_pos = url.find(separator);
+    u64 protocol_pos = url.find(separator);
 
-    size_t host_start = 0;
+    u64 host_start = 0;
 
     if (protocol_pos != std::string::npos) {
         host_start = protocol_pos + separator.length();
     }
 
-    size_t host_end = url.find_first_of("/:?#", host_start);
+    u64 host_end = url.find_first_of("/:?#", host_start);
     if (host_end == std::string::npos) {
         host_end = url.length();
     }
@@ -105,7 +105,7 @@ int PS4_SYSV_ABI sceHttpAddQuery() {
 
 int PS4_SYSV_ABI sceHttpAddRequestHeader(int id, const char* name, const char* value, s32 mode) {
     
-    LOG_INFO(Lib_Http, "called template id = '{}', name = '{}', value = '{}', mode = '{}'", id,
+    LOG_INFO(Lib_Http, "called request id = '{}', name = '{}', value = '{}', mode = '{}'", id,
               std::string(name), std::string(value), mode);
     
     std::lock_guard<std::mutex> lock(g_requests_map_mutex);
@@ -241,7 +241,7 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(s32 conn_id, const char* user_agent, s32 
     std::lock_guard<std::mutex> lock(g_templates_map_mutex);
 
     auto new_template = RequestTemplate(template_id, std::string(user_agent));
-    
+
     g_templates.emplace(template_id, new_template);
     
     return template_id;
@@ -1471,6 +1471,8 @@ int PS4_SYSV_ABI sceHttpWaitRequest() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    g_isConnectedToNetwork = Config::getIsConnectedToNetwork();
+
     LIB_FUNCTION("hvG6GfBMXg8", "libSceHttp", 1, "libSceHttp", sceHttpAbortRequest);
     LIB_FUNCTION("JKl06ZIAl6A", "libSceHttp", 1, "libSceHttp", sceHttpAbortRequestForce);
     LIB_FUNCTION("sWQiqKvYTVA", "libSceHttp", 1, "libSceHttp", sceHttpAbortWaitRequest);

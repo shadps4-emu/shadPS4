@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_score.h"
+#include "np_error.h"
 
 namespace Libraries::Np::NpScore {
 
@@ -243,7 +244,8 @@ int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_strin
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
 
     if (output_buffer == nullptr || input_string == nullptr) {
-        return ORBIS_OK;
+        
+        return ORBIS_NP_SCORE_INVALID_ARGUMENT;
     }
 
     strcpy(output_buffer, input_string);

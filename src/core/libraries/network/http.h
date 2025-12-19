@@ -82,16 +82,16 @@ public:
             return 0;
         }
 
-        size_t start_index = static_cast<size_t>(current_result_read_chunk_index) * size;
+        u64 start_index = static_cast<u64>(current_result_read_chunk_index) * size;
 
         if (start_index >= result_body_size) {
 
             return 0;
         }
 
-        size_t remaining_bytes = result_body_size - start_index;
+        u64 remaining_bytes = result_body_size - start_index;
 
-        size_t bytes_to_copy = (remaining_bytes < size) ? remaining_bytes : size;
+        u64 bytes_to_copy = (remaining_bytes < size) ? remaining_bytes : size;
 
         std::memcpy(dest, result_body + start_index, bytes_to_copy);
 
@@ -117,8 +117,8 @@ public:
         // TODO checks
         url = new_url;
 
-        size_t scheme_end = url.find("://");
-        size_t path_start = url.find('/', scheme_end + 3);
+        u64 scheme_end = url.find("://");
+        u64 path_start = url.find('/', scheme_end + 3);
 
         if (path_start == std::string::npos) {
             host = url;
@@ -170,54 +170,54 @@ public:
     }
 
     void DebugPrint() const {
-        LOG_CRITICAL(Lib_Http, "===== HTTP Request Debug Info =====");
+        LOG_DEBUG(Lib_Http, "===== HTTP Request Debug Info =====");
 
-        LOG_CRITICAL(Lib_Http, "Is Sent:        {}", (is_sent ? "true" : "false"));
-        LOG_CRITICAL(Lib_Http, "Future Valid:   {}", (request_future.valid() ? "true" : "false"));
-        LOG_CRITICAL(Lib_Http, "Status Code:    {}", status_code);
-        LOG_CRITICAL(Lib_Http, "Method (Enum):  {}", static_cast<int>(method));
+        LOG_DEBUG(Lib_Http, "Is Sent:        {}", (is_sent ? "true" : "false"));
+        LOG_DEBUG(Lib_Http, "Future Valid:   {}", (request_future.valid() ? "true" : "false"));
+        LOG_DEBUG(Lib_Http, "Status Code:    {}", status_code);
+        LOG_DEBUG(Lib_Http, "Method (Enum):  {}", static_cast<int>(method));
 
-        LOG_CRITICAL(Lib_Http, "URL:            {}", (url.empty() ? "[Empty]" : url));
-        LOG_CRITICAL(Lib_Http, "Host:           {}", (host.empty() ? "[Empty]" : host));
-        LOG_CRITICAL(Lib_Http, "Path:           {}", (path.empty() ? "[Empty]" : path));
+        LOG_DEBUG(Lib_Http, "URL:            {}", (url.empty() ? "[Empty]" : url));
+        LOG_DEBUG(Lib_Http, "Host:           {}", (host.empty() ? "[Empty]" : host));
+        LOG_DEBUG(Lib_Http, "Path:           {}", (path.empty() ? "[Empty]" : path));
 
-        LOG_CRITICAL(Lib_Http, "Post Data Size: {} bytes", post_data_size);
-        LOG_CRITICAL(Lib_Http, "Post Data Ptr:  {}", post_data);
+        LOG_DEBUG(Lib_Http, "Post Data Size: {} bytes", post_data_size);
+        LOG_DEBUG(Lib_Http, "Post Data Ptr:  {}", post_data);
 
         if (post_data && post_data_size > 0) {
             std::string preview_str;
             const char* preview = static_cast<const char*>(post_data);
-            for (size_t i = 0; i < std::min<size_t>(post_data_size, 20); ++i) {
+            for (u64 i = 0; i < std::min<u64>(post_data_size, 20); ++i) {
                 char c = preview[i];
                 preview_str += (std::isprint(static_cast<unsigned char>(c)) ? c : '.');
             }
-            LOG_CRITICAL(Lib_Http, "  -> Preview: {}...", preview_str);
+            LOG_DEBUG(Lib_Http, "  -> Preview: {}...", preview_str);
         }
 
-        LOG_CRITICAL(Lib_Http, "Content Length: {}", content_length);
-        LOG_CRITICAL(Lib_Http, "Body Size:      {} bytes", result_body_size);
-        LOG_CRITICAL(Lib_Http, "Read Chunk Idx: {}", current_result_read_chunk_index);
-        LOG_CRITICAL(Lib_Http, "Body Pointer:   {}", (void*)result_body);
+        LOG_DEBUG(Lib_Http, "Content Length: {}", content_length);
+        LOG_DEBUG(Lib_Http, "Body Size:      {} bytes", result_body_size);
+        LOG_DEBUG(Lib_Http, "Read Chunk Idx: {}", current_result_read_chunk_index);
+        LOG_DEBUG(Lib_Http, "Body Pointer:   {}", (void*)result_body);
 
         if (result_body) {
             std::string body_preview;
-            for (size_t i = 0; i < std::min<size_t>(result_body_size, 50); ++i) {
+            for (u64 i = 0; i < std::min<u64>(result_body_size, 50); ++i) {
                 char c = result_body[i];
                 body_preview += (std::isprint(static_cast<unsigned char>(c)) ? c : '.');
             }
-            LOG_CRITICAL(Lib_Http, "  -> Body Preview: {}...", body_preview);
+            LOG_DEBUG(Lib_Http, "  -> Body Preview: {}...", body_preview);
         }
 
-        LOG_CRITICAL(Lib_Http, "Request Headers ({})", req_headers.size());
+        LOG_DEBUG(Lib_Http, "Request Headers ({})", req_headers.size());
         if (req_headers.empty()) {
-            LOG_CRITICAL(Lib_Http, "  [None]");
+            LOG_DEBUG(Lib_Http, "  [None]");
         } else {
             for (const auto& pair : req_headers) {
-                LOG_CRITICAL(Lib_Http, "  [{}] : {}", pair.first, pair.second);
+                LOG_DEBUG(Lib_Http, "  [{}] : {}", pair.first, pair.second);
             }
         }
 
-        LOG_CRITICAL(Lib_Http, "===================================");
+        LOG_DEBUG(Lib_Http, "===================================");
     }
 
     RequestObj()
@@ -281,7 +281,7 @@ private:
         case ORBIS_HTTP_REQUEST_METHOD_POST:
 
             response = cli.Post(path, headers, static_cast<char*>(post_data),
-                                static_cast<size_t>(post_data_size), "application/octet-stream");
+                                static_cast<u64>(post_data_size), "application/octet-stream");
             break;
 
         default:

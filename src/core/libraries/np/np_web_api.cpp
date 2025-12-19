@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_web_api.h"
+#include "np_error.h"
 
 namespace Libraries::Np::NpWebApi {
 
@@ -141,7 +142,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 title_user_ctx_id, const char* p_a
 
     if (p_path == nullptr) {
 
-        return ORBIS_OK;
+        return ORBIS_NP_WEB_API_INVALID_ARGUMENT;
     }
 
     static s64 request_id_counter = 0;
