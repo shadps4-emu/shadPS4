@@ -62,15 +62,15 @@ s32 HostIO_Win32::Remove(const fs::path& path) {
     errno = 0;
     if (int status = DeleteFileW(GetSymlink(path).c_str()); status > 0)
         return 0;
+
     auto last_error = GetLastError();
-    // no idea if these are correlated (yet)
-    LOG_CRITICAL(Kernel_Fs, "XDXDXDXD {} vs {}", errno, last_error);
 
-    // existence is found with both
+    // won't happen if file got removed correctly
     if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
-        return false;
+        return -win2bsd(last_error);
 
-    return RemoveDirectoryW(GetSymlink(path).c_str());
+    auto status = RemoveDirectoryW(GetSymlink(path).c_str());
+    return status > 0 ? status : -win2bsd(GetLastError());
 }
 
 s32 HostIO_Win32::Flush(const s32 fd) {
@@ -183,12 +183,17 @@ s32 HostIO_Win32::RMDir(const fs::path& path) {
 s32 HostIO_Win32::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     errno = 0;
     auto status = CopyFileW(GetSymlink(src).c_str(), dst.c_str(), fail_if_exists);
-    return status > 0 ? status : -unix2bsd(GetLastError());
+    return status > 0 ? 0 : -win2bsd(GetLastError());
 }
 
 s32 HostIO_Win32::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     errno = 0;
-    return -unix2bsd(ENOSYS);
+    // TODO: this will fail if moving/merging directories
+    // check behaviour 
+    auto status = MoveFileWithProgressW(GetSymlink(src).c_str(), dst.c_str(), nullptr, nullptr,
+                                        MOVEFILE_COPY_ALLOWED | MOVEFILE_WRITE_THROUGH |
+                                            (MOVEFILE_REPLACE_EXISTING * !fail_if_exists));
+    return status > 0 ? 0 : -win2bsd(GetLastError());
 }
 
 fs::path HostIO_Win32::GetSymlink(fs::path path) {

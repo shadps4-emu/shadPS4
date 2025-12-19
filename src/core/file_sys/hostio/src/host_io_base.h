@@ -64,7 +64,7 @@ public:
 
     virtual s32 Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists);
     virtual s32 Move(const fs::path& src, const fs::path& dst, bool fail_if_exists);
-    s32 Rename(const fs::path& src, const fs::path& dst_name, bool fail_if_exists);
+    // s32 Rename(const fs::path& src, const fs::path& dst_name, bool fail_if_exists);
     //
     // Derived, complex functions are to be handled by main FS class
     //

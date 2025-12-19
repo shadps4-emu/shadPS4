@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <filesystem>
+#include <mutex>
 
 #include "common/logging/log.h"
 #include "core/file_sys/hostio/host_io_posix.h"
@@ -26,9 +27,11 @@ HostIO_Virtual::HostIO_Virtual() = default;
 HostIO_Virtual::~HostIO_Virtual() = default;
 
 s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (path.string().size() > 255)
         return -POSIX_ENAMETOOLONG;
-        
+
     if (int remainder = flags & ~__QUASI_O_ALLFLAGS_AT_ONCE; remainder != 0)
         LOG_WARNING(Kernel_Fs, "open() received unknown flags: {:x}", remainder);
 
@@ -80,15 +83,19 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
 }
 
 s32 HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
+    // std::lock_guard<std::mutex> lock(ctx_mutex);
     return Open(path, QUASI_O_CREAT | QUASI_O_TRUNC | QUASI_O_WRONLY);
 }
 
 s32 HostIO_Virtual::Close(const s32 fd) {
+    // std::lock_guard<std::mutex> lock(ctx_mutex);
     // N/A
     return 0;
 }
 
 s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -110,6 +117,8 @@ s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
 }
 
 s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -121,6 +130,8 @@ s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
 }
 
 s32 HostIO_Virtual::Unlink(const fs::path& path) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
     if ("." == this->res->leaf)
@@ -135,15 +146,21 @@ s32 HostIO_Virtual::Unlink(const fs::path& path) {
 }
 
 s32 HostIO_Virtual::Remove(const fs::path& path) {
+    // std::lock_guard<std::mutex> lock(ctx_mutex);
+
     return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Flush(const s32 fd) {
+    // std::lock_guard<std::mutex> lock(ctx_mutex);
+
     // not applicable
     return 0;
 }
 
 s32 HostIO_Virtual::FSync(const s32 fd) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
         return -POSIX_EINVAL;
 
@@ -156,6 +173,8 @@ s32 HostIO_Virtual::FSync(const s32 fd) {
 }
 
 s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
         return -POSIX_EINVAL;
 
@@ -174,10 +193,14 @@ s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
 }
 
 s64 HostIO_Virtual::Tell(const s32 fd) {
+    // std::lock_guard<std::mutex> lock(ctx_mutex);
+
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
 s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -196,6 +219,8 @@ s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
 }
 
 s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
         return -POSIX_EINVAL;
 
@@ -286,6 +311,8 @@ s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
 }
 
 s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
         return -POSIX_EBADF;
 
@@ -301,6 +328,8 @@ s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcn
 }
 
 s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -308,6 +337,8 @@ s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
 }
 
 s32 HostIO_Virtual::RMDir(const fs::path& path) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -332,6 +363,8 @@ s32 HostIO_Virtual::RMDir(const fs::path& path) {
 }
 
 s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -346,6 +379,8 @@ s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
 }
 
 s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -360,6 +395,8 @@ s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
 }
 
 s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->res)
         return -POSIX_EINVAL;
 
@@ -372,6 +409,8 @@ s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
 }
 
 s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -384,6 +423,8 @@ s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
 }
 
 s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -409,10 +450,14 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
 }
 
 s32 HostIO_Virtual::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     return POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     return POSIX_ENOSYS;
 }
 

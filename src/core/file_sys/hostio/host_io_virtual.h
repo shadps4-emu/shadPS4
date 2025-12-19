@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <mutex>
+
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/libraries/kernel/file_system.h"
 
@@ -12,6 +14,7 @@
 namespace HostIODriver {
 class HostIO_Virtual final : public HostIO_Base {
 protected:
+    std::mutex ctx_mutex;
     Resolved* res{nullptr};
     fd_handle_ptr handle{nullptr};
     bool host_bound{false};
@@ -28,12 +31,14 @@ public:
     //
 
     void SetCtx(Resolved* res, bool host_bound, fd_handle_ptr handle) {
+        std::lock_guard<std::mutex> lock(ctx_mutex);
         this->res = res;
         this->host_bound = host_bound;
         this->handle = handle;
     }
 
     void ClearCtx(void) {
+        std::lock_guard<std::mutex> lock(ctx_mutex);
         this->res = nullptr;
         this->handle = nullptr;
         this->host_bound = false;

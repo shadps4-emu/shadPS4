@@ -93,12 +93,9 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
         }
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-        vio_status = qfs.vio_driver.Open(res.local_path, flags, mode);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
+    vio_status = qfs.vio_driver.Open(res.local_path, flags, mode);
+    qfs.vio_driver.ClearCtx();
 
     if (int tmp_hio_status = hio_status >= 0 ? 0 : hio_status;
         host_used && (tmp_hio_status != vio_status))
@@ -146,13 +143,10 @@ s32 QFS::OperationImpl::Close(s32 fd) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        // no further action is required, this is pro-forma
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        qfs.vio_driver.Close(fd);
-        qfs.vio_driver.ClearCtx();
-    }
+    // no further action is required, this is pro-forma
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    qfs.vio_driver.Close(fd);
+    qfs.vio_driver.ClearCtx();
 
     // if it's the last entry, remove it to avoid blowing up fd table
     // not really helping with fragmentation, but may save resources on burst opens
@@ -213,12 +207,9 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&src_res, host_used, nullptr);
-        vio_status = qfs.vio_driver.Link(src_res.local_path, dst_res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&src_res, host_used, nullptr);
+    vio_status = qfs.vio_driver.Link(src_res.local_path, dst_res.local_path);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -278,13 +269,10 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
         return -POSIX_ENOSYS;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
-        // src stays 1:1
-        vio_status = qfs.vio_driver.LinkSymbolic(src, dst_res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
+    // src stays 1:1
+    vio_status = qfs.vio_driver.LinkSymbolic(src, dst_res.local_path);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -345,12 +333,9 @@ s32 QFS::OperationImpl::Unlink(const fs::path& path) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-        vio_status = qfs.vio_driver.Unlink(res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
+    vio_status = qfs.vio_driver.Unlink(res.local_path);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -386,12 +371,9 @@ s32 QFS::OperationImpl::Flush(const s32 fd) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.Flush(fd);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.Flush(fd);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -420,12 +402,9 @@ s32 QFS::OperationImpl::FSync(const s32 fd) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.FSync(fd);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.FSync(fd);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -460,12 +439,9 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-        vio_status = qfs.vio_driver.Truncate(res.local_path, length);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
+    vio_status = qfs.vio_driver.Truncate(res.local_path, length);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -499,12 +475,9 @@ s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.FTruncate(fd, length);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.FTruncate(fd, length);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -533,12 +506,9 @@ s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.LSeek(fd, offset, whence);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.LSeek(fd, offset, whence);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -584,12 +554,9 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.Read(fd, buf, count);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.Read(fd, buf, count);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -621,12 +588,9 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.PRead(fd, buf, count, offset);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PRead(fd, buf, count, offset);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -658,12 +622,9 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec*
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.ReadV(fd, iov, iovcnt);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.ReadV(fd, iov, iovcnt);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -696,12 +657,9 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.PReadV(fd, iov, iovcnt, offset);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PReadV(fd, iov, iovcnt, offset);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -733,12 +691,9 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.Write(fd, buf, count);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.Write(fd, buf, count);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -770,12 +725,9 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.PWrite(fd, buf, count, offset);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PWrite(fd, buf, count, offset);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -808,12 +760,9 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.WriteV(fd, iov, iovcnt);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.WriteV(fd, iov, iovcnt);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -846,12 +795,9 @@ s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKern
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(nullptr, host_used, handle);
-        vio_status = qfs.vio_driver.PWriteV(fd, iov, iovcnt, offset);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(nullptr, host_used, handle);
+    vio_status = qfs.vio_driver.PWriteV(fd, iov, iovcnt, offset);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -894,12 +840,9 @@ s32 QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-        vio_status = qfs.vio_driver.MKDir(res.local_path, mode);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
+    vio_status = qfs.vio_driver.MKDir(res.local_path, mode);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -932,12 +875,9 @@ s32 QFS::OperationImpl::RMDir(const fs::path& path) {
         host_used = true;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&res, host_used, nullptr);
-        status = qfs.vio_driver.RMDir(res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&res, host_used, nullptr);
+    status = qfs.vio_driver.RMDir(res.local_path);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -955,8 +895,6 @@ s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
         return resolve_status;
     }
 
-    // too short to justify a separate block
-    std::lock_guard<std::mutex> lock(c_mutex);
     qfs.vio_driver.SetCtx(&res, false, nullptr);
     int vio_status = qfs.vio_driver.Stat(res.local_path, statbuf);
     qfs.vio_driver.ClearCtx();
@@ -972,8 +910,6 @@ s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* 
     if (nullptr == handle)
         return -POSIX_EBADF;
 
-    // too short to justify a separate block
-    std::lock_guard<std::mutex> lock(c_mutex);
     qfs.vio_driver.SetCtx(nullptr, false, handle);
     int vio_status = qfs.vio_driver.FStat(fd, statbuf);
     qfs.vio_driver.ClearCtx();
@@ -990,8 +926,6 @@ s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
         return resolve_status;
     }
 
-    // too short to justify a separate block
-    std::lock_guard<std::mutex> lock(c_mutex);
     qfs.vio_driver.SetCtx(&res, false, nullptr);
     int vio_status = qfs.vio_driver.Chmod(res.local_path, mode);
     qfs.vio_driver.ClearCtx();
@@ -1010,8 +944,6 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     if (!handle->read)
         return -POSIX_EBADF;
 
-    // too short to justify a separate block
-    std::lock_guard<std::mutex> lock(c_mutex);
     qfs.vio_driver.SetCtx(nullptr, false, handle);
     int vio_status = qfs.vio_driver.FChmod(fd, mode);
     qfs.vio_driver.ClearCtx();
@@ -1030,8 +962,6 @@ s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep)
     if (!handle->read)
         return -POSIX_EBADF;
 
-    // too short to justify a separate block
-    std::lock_guard<std::mutex> lock(c_mutex);
     qfs.vio_driver.SetCtx(nullptr, false, handle);
     int vio_status = qfs.vio_driver.GetDents(fd, buf, count, basep);
     qfs.vio_driver.ClearCtx();
@@ -1053,21 +983,24 @@ s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail
     Resolved dst_res;
     int status_what = qfs.Resolve(src, src_res);
     int status_where = qfs.Resolve(dst, dst_res);
+    partition_ptr src_part = src_res.mountpoint;
+    partition_ptr dst_part = dst_res.mountpoint;
 
+    if (nullptr == src_part) {
+        // source partition doesn't exist
+        return -POSIX_ENOENT;
+    }
+    if (src_part != dst_part) {
+        // moving between partitions is illegal
+        return -POSIX_EXDEV;
+    }
     if (src_res.node == dst_res.node)
         // hardlink to the same file, success
         return 0;
 
-    // source may not exist and can point wherever it wants, so we skip checks for it
-
-    if (0 == status_where)
-        return -POSIX_EEXIST;
     // destination parent directory must exist though
     if (0 != status_where && nullptr == dst_res.parent)
         return -POSIX_ENOENT;
-
-    partition_ptr src_part = src_res.mountpoint;
-    partition_ptr dst_part = dst_res.mountpoint;
 
     if (qfs.IsPartitionRO(dst_part))
         return -POSIX_EROFS;
@@ -1080,8 +1013,6 @@ s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail
     // mixed source/destination will need a bit more effort
     if (src_part->IsHostMounted() && dst_part->IsHostMounted()) {
         // if target partition doesn't exist or is not mounted, we can'tqfs.Resolve host path
-        if (nullptr == src_part)
-            return -POSIX_ENOENT;
 
         fs::path host_path_src{};
         fs::path host_path_dst{};
@@ -1093,23 +1024,16 @@ s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail
             hostpath_status != 0)
             return hostpath_status;
 
-        if (hio_status = qfs.hio_driver.LinkSymbolic(host_path_src, host_path_dst); hio_status < 0)
+        if (hio_status = qfs.hio_driver.Move(host_path_src, host_path_dst, false); hio_status < 0)
             // hosts operation must succeed in order to continue
             return hio_status;
         host_used = true;
-    } else if (dst_part->IsHostMounted() ^ src_part->IsHostMounted()) {
-        LOG_ERROR(Kernel_Fs,
-                  "Symlinks can be only created on the same type of partition (virtual/host)");
-        return -POSIX_ENOSYS;
     }
 
-    {
-        std::lock_guard<std::mutex> lock(c_mutex);
-        qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
-        // src stays 1:1
-        vio_status = qfs.vio_driver.LinkSymbolic(src, dst_res.local_path);
-        qfs.vio_driver.ClearCtx();
-    }
+    qfs.vio_driver.SetCtx(&dst_res, host_used, nullptr);
+    // src stays 1:1
+    vio_status = qfs.vio_driver.Move(src, dst_res.local_path, false);
+    qfs.vio_driver.ClearCtx();
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,

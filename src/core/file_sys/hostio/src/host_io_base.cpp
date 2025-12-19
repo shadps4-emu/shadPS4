@@ -57,13 +57,19 @@ s32 HostIO_Base::Chmod(const fs::path& path, u16 mode) { STUB(); }
 s32 HostIO_Base::FChmod(const s32 fd, u16 mode) { STUB(); }
 
 s64 HostIO_Base::GetDents(const s32 fd, void* buf, u64 count, s64* basep) { STUB(); }
-
-s32 HostIO_Base::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) { STUB(); }
-s32 HostIO_Base::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) { STUB(); }
 // clang-format on
 
-s32 HostIO_Base::Rename(const fs::path& src, const fs::path& dst_name, bool fail_if_exists) {
-    return Move(src, src.parent_path() / dst_name, fail_if_exists);
+s32 HostIO_Base::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    std::error_code ec{};
+    fs::copy(src, dst, fs::copy_options::recursive | fs::copy_options::overwrite_existing, ec);
+    if (ec)
+        return -ec.value();
+
+    return 0;
+}
+
+s32 HostIO_Base::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
+    STUB();
 }
 
 } // namespace HostIODriver
