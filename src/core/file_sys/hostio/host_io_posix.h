@@ -4,13 +4,10 @@
 
 #pragma once
 
-#if defined(__linux__) || defined(__APPLE_CC__)
-
-#ifdef __APPLE_CC__
-#warning Linux HostIO used for MacOS
-#endif
+#ifdef __linux__
 
 #include <sys/fcntl.h>
+#include     <sys/uio.h>
 
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasi_types.h"

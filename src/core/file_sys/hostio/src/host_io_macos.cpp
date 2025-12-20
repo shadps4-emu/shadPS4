@@ -9,7 +9,7 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
-#include <sys/unistd.h>
+#include <unistd.h>
 
 #include "core/file_sys/hostio/host_io_macos.h"
 #include "core/file_sys/quasifs/quasi_types.h"
@@ -203,10 +203,10 @@ s32 HostIO_MACOS::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
-    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
-    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
-    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
-    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;     //
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;     //
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;     //
+    statbuf->st_birthtim.tv_sec = st.st_ctimespec.tv_sec; // just assuming these are the same
     statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
 
     statbuf->st_size = st.st_size;
@@ -236,13 +236,13 @@ s32 HostIO_MACOS::FStat(const s32 fd, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
-    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;     //
     statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
-    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;     //
     statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
-    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;     //
     statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
-    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
+    statbuf->st_birthtim.tv_sec = st.st_ctimespec.tv_sec; // just assuming these are the same
     statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
 
     statbuf->st_size = st.st_size;

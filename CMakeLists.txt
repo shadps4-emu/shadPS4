@@ -712,7 +712,7 @@ if(WIN32)
     list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_win32.cpp
                         src/core/file_sys/hostio/host_io_win32.h
     )
-elseif(UNIX)
+elseif(UNIX AND NOT APPLE)
     list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_posix.cpp
                         src/core/file_sys/hostio/host_io_posix.h
     )

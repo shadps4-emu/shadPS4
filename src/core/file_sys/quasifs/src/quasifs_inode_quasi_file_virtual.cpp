@@ -9,7 +9,7 @@
 
 namespace QuasiFS {
 
-s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
+s64 VirtualFile::pread(void* buf, u64 count, s64 offset) {
     s64 read_amt = this->data.size() - offset - count;
 
     // if >= 0 - we're good to go
@@ -25,7 +25,7 @@ s64 VirtualFile::pread(void* buf, size_t count, s64 offset) {
     return read_amt;
 }
 
-s64 VirtualFile::pwrite(const void* buf, size_t count, s64 offset) {
+s64 VirtualFile::pwrite(const void* buf, u64 count, s64 offset) {
     auto& size = this->st.st_size;
     auto end_pos = offset + count;
     size = end_pos > size ? end_pos : size;
