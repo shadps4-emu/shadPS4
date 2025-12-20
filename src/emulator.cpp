@@ -163,7 +163,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
 
     qfs->SyncHost();
 
-    qfs::printTree(qfs->GetRoot(), "/");
+    // qfs::printTree(qfs->GetRoot(), "/");
 
     return;
 }

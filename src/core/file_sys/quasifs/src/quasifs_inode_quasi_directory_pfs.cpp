@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
 #include <map>
 #include <string>
+#include <bits/stdc++.h>
 
 #include "common/alignment.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
@@ -156,6 +159,23 @@ void DirectoryPFS::RebuildDirents(void) {
     this->st.st_size = 65536;
 
     return;
+}
+
+// PFS is case-insensitive
+inode_ptr DirectoryPFS::lookup(const std::string& name) {
+    st.st_atim.tv_sec = time(0);
+    std::string name_normalized = name;
+    transform(name_normalized.begin(), name_normalized.end(), name_normalized.begin(), ::toupper);
+
+    for (auto entry : entries) {
+        std::string entry_name = entry.first;
+        std::transform(entry_name.begin(), entry_name.end(), entry_name.begin(), ::toupper);
+
+        if (entry_name == name_normalized)
+            return entry.second;
+    }
+
+    return nullptr;
 }
 
 } // namespace QuasiFS

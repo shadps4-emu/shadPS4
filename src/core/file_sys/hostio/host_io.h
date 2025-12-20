@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "host_io_macos.h"
 #include "host_io_posix.h"
 #include "host_io_virtual.h"
 #include "host_io_win32.h"
-#include "host_io_macos.h"
 #include "src/host_io_base.h"
 
 using HostIOBase = HostIODriver::HostIO_Base;

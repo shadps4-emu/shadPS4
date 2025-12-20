@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include "common/assert.h"
 #include "common/logging/log.h"
 
 #include "core/file_sys/quasifs/quasi_types.h"
@@ -429,6 +430,10 @@ void QFS::SyncHostImpl(partition_ptr part) {
             }
 
             inode_ptr new_inode = parent_dir->lookup(leaf);
+            if (nullptr == new_inode) {
+                // idk, seems appropriate
+                UNREACHABLE_MSG("Newly created node not found in {} / {}", pp.string(), leaf);
+            }
 
             // this should populate **everything** immediately
             // this is a note to self TODO:

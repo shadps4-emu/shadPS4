@@ -82,7 +82,7 @@ public:
     //
 
     // Find an element with [name]
-    inode_ptr lookup(const std::string& name);
+    virtual inode_ptr lookup(const std::string& name);
 
     // Add hardlink to [child] with [name]
     int link(const std::string& name, inode_ptr child);
