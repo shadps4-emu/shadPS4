@@ -553,12 +553,7 @@ s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
 }
 
 s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 nbytes) {
-    s64 result = posix_getdents(fd, buf, nbytes);
-    if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
-        return ErrnoToSceKernelError(*__Error());
-    }
-    return result;
+    return sceKernelGetdirentries(fd, buf, nbytes, nullptr);
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
