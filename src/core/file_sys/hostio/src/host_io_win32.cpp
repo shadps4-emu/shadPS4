@@ -129,10 +129,10 @@ s64 HostIO_Win32::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_Win32::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_Win32::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     return 0;
 }
-s64 HostIO_Win32::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_Win32::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     return 0;
 }
 

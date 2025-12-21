@@ -592,14 +592,16 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     vio_status = qfs.vio_driver.PRead(fd, buf, count, offset);
     qfs.vio_driver.ClearCtx();
 
-    if (host_used && (hio_status != vio_status))
+    if (host_used && (hio_status != vio_status)) {
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
                   vio_status);
+    }
 
     return vio_status;
 };
 
-s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
+s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                              u32 iovcnt) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -633,8 +635,8 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec*
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
-                               s64 offset) {
+s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                               u32 iovcnt, s64 offset) {
     if (fd < 0)
         return -POSIX_EBADF;
 

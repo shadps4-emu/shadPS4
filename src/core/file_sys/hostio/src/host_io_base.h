@@ -43,8 +43,8 @@ public:
 
     virtual s64 Read(const s32 fd, void* buf, u64 count);
     virtual s64 PRead(const s32 fd, void* buf, u64 count, s64 offset);
-    virtual s64 ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt);
-    virtual s64 PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
+    virtual s64 ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt);
+    virtual s64 PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset);
 
     virtual s64 Write(const s32 fd, const void* buf, u64 count);
     virtual s64 PWrite(const s32 fd, const void* buf, u64 count, s64 offset);

@@ -19,7 +19,7 @@ namespace QuasiFS {
 namespace fs = std::filesystem;
 
 // internal
-using fileno_t = int64_t;
+using fileno_t = u32;
 using time_point = std::chrono::system_clock::time_point;
 using blkid_t = uint64_t;
 

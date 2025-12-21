@@ -83,8 +83,9 @@ private:
 
         s64 Read(const s32 fd, void* buf, u64 count) override;
         s64 PRead(const s32 fd, void* buf, u64 count, s64 offset) override;
-        s64 ReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) override;
-        s64 PReadV(const s32 fd, Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
+        s64 ReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
+                  u32 iovcnt) override;
+        s64 PReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt,
                    s64 offset) override;
 
         s64 Write(const s32 fd, const void* buf, u64 count) override;

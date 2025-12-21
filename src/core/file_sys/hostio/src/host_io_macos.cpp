@@ -111,7 +111,7 @@ s64 HostIO_MACOS::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_MACOS::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_MACOS::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];
@@ -124,7 +124,7 @@ s64 HostIO_MACOS::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
     return ret;
 }
 
-s64 HostIO_MACOS::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_MACOS::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];

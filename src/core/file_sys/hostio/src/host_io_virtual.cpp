@@ -253,7 +253,7 @@ s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     return node->pread(buf, count, offset);
 }
 
-s64 HostIO_Virtual::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     s64 br = PReadV(fd, iov, iovcnt, handle->pos);
 
     if (br > 0)
@@ -262,7 +262,7 @@ s64 HostIO_Virtual::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) {
     return br;
 }
 
-s64 HostIO_Virtual::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     if (nullptr == handle)
         return -POSIX_EBADF;
 

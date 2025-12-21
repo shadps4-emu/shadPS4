@@ -144,7 +144,7 @@ void QuasiDirectory::RebuildDirents(void) {
         std::string name = entry->first;
 
         // prepare dirent
-        tmp.d_fileno = node->fileno;
+        tmp.d_fileno = node->GetFileno();
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;

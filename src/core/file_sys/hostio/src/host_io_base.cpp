@@ -37,8 +37,8 @@ s32 HostIO_Base::FTruncate(const s32 fd, u64 size) { STUB(); }
 
 s64 HostIO_Base::Read(const s32 fd, void* buf, u64 count) { STUB(); }
 s64 HostIO_Base::PRead(const s32 fd, void* buf, u64 count, s64 offset) { STUB(); }
-s64 HostIO_Base::ReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt) { STUB(); }
-s64 HostIO_Base::PReadV(const s32 fd, OrbisKernelIovec* iov, u32 iovcnt,
+s64 HostIO_Base::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) { STUB(); }
+s64 HostIO_Base::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt,
                         s64 offset) { STUB(); }
 
 s64 HostIO_Base::Write(const s32 fd, const void* buf, u64 count) { STUB(); }

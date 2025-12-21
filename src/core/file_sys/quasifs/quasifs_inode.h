@@ -23,6 +23,7 @@ static_assert(sizeof(time_t) == 8, "Time is not stored in 64 bits");
 class Inode {
 public:
     Inode() {
+        st.st_ino = 0;
         st.st_mode = 0000755;
         st.st_nlink = 0;
         st.st_uid = 0;
@@ -42,7 +43,7 @@ public:
 
     inode_ptr Clone() const {
         auto _out = std::make_shared<Inode>(*this);
-        _out->fileno = -1;
+        _out->st.st_ino = 0;
         _out->st.st_nlink = 0;
         return _out;
     }
@@ -141,15 +142,13 @@ public:
         return this->st.st_mode & (QUASI_S_IXUSR | QUASI_S_IXGRP | QUASI_S_IXOTH);
     }
 
-    fileno_t GetFileno(void) {
-        return this->fileno;
+    u32 GetFileno(void) {
+        return this->st.st_ino;
     }
-    fileno_t SetFileno(fileno_t fileno) {
-        this->fileno = fileno;
-        return fileno;
-    };
+    void SetFileno(fileno_t fileno) {
+        this->st.st_ino = fileno;
+    }
 
-    fileno_t fileno{-1};
     struct Libraries::Kernel::OrbisKernelStat st{};
 
     int chmod(u16 mode) {

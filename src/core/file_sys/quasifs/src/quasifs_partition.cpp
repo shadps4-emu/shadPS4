@@ -339,8 +339,10 @@ bool Partition::IndexInode(inode_ptr node) {
 
     // Assign fileno and add it to the fs table
     fileno_t node_fileno = node->GetFileno();
-    if (node_fileno == -1)
-        node_fileno = node->SetFileno(this->NextFileno());
+    if (node_fileno == 0) {
+        node_fileno = this->NextFileno();
+        node->SetFileno(node_fileno);
+    }
 
     inode_table[node_fileno] = node;
     if (node->is_dir()) {
@@ -351,7 +353,6 @@ bool Partition::IndexInode(inode_ptr node) {
             IndexInode(dir->mounted_root);
     }
 
-    node->st.st_ino = node_fileno;
     node->st.st_dev = block_id;
     node->st.st_blksize = ioblock_size;
     node->st.st_blocks = Common::AlignUp(static_cast<u64>(node->st.st_size), ioblock_size) / 512;

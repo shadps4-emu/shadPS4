@@ -24,7 +24,7 @@ public:
 
     file_ptr Clone() const {
         auto _out = std::make_shared<VirtualFile>(*this);
-        _out->fileno = -1;
+        _out->st.st_ino = -1;
         _out->st.st_nlink = 0;
         return _out;
     }
