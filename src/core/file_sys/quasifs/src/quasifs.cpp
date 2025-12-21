@@ -68,7 +68,12 @@ void _printTree(const inode_ptr& node, const std::string& name, int depth) {
     if (!name.empty()) {
         auto st = node->st;
         char timebuf[64];
+#ifndef __APPLE_CC__
         std::tm* t = std::localtime(&st.st_mtim.tv_sec);
+#else
+#warning macOS hack
+        std::tm* t = std::localtime(0);
+#endif
         std::strftime(timebuf, sizeof(timebuf), "%EY-%m-%d %H:%M", t);
 
         // LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",

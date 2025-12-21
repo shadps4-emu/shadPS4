@@ -9,7 +9,7 @@
 
 namespace QuasiFS {
 
-s64 QuasiFile::pread(void* buf, size_t count, s64 offset) {
+s64 QuasiFile::pread(void* buf, u64 count, s64 offset) {
     auto size = &this->st.st_size;
     auto end_pos = offset + count;
 
@@ -17,7 +17,7 @@ s64 QuasiFile::pread(void* buf, size_t count, s64 offset) {
     return end_pos > *size ? *size - offset : count;
 }
 
-s64 QuasiFile::pwrite(const void* buf, size_t count, s64 offset) {
+s64 QuasiFile::pwrite(const void* buf, u64 count, s64 offset) {
     auto& size = this->st.st_size;
     auto end_pos = offset + count;
 

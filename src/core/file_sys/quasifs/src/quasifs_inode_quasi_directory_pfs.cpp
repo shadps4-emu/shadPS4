@@ -4,7 +4,6 @@
 
 #include <map>
 #include <string>
-#include <bits/stdc++.h>
 
 #include "common/alignment.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
