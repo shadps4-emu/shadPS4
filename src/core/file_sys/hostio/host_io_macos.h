@@ -7,7 +7,7 @@
 #ifdef __APPLE_CC__
 
 #include <sys/fcntl.h>
-#include     <sys/uio.h>
+#include <sys/uio.h>
 
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasi_types.h"

@@ -260,42 +260,42 @@ s32 unix2bsd(s32 id) {
 #ifndef __APPLE_CC__
     case POSIX_ECAPMODE:
         return ECAPMODE;
-        case POSIX_ENOBLK:
-            return ENOBLK;
-        case POSIX_EICV:
-            return EICV;
-        case POSIX_ENOPLAYGOENT:
-            return ENOPLAYGOENT;
-        case POSIX_EREVOKE:
-            return EREVOKE;
-        case POSIX_ESDKVERSION:
-            return ESDKVERSION;
-        case POSIX_ESTART:
-            return ESTART;
-        case POSIX_ESTOP:
-            return ESTOP;
-        case POSIX_EINVALID2MB:
-            return EINVALID2MB;
-#endif // !__APPLE_CC__
+    case POSIX_ENOBLK:
+        return ENOBLK;
+    case POSIX_EICV:
+        return EICV;
+    case POSIX_ENOPLAYGOENT:
+        return ENOPLAYGOENT;
+    case POSIX_EREVOKE:
+        return EREVOKE;
+    case POSIX_ESDKVERSION:
+        return ESDKVERSION;
+    case POSIX_ESTART:
+        return ESTART;
+    case POSIX_ESTOP:
+        return ESTOP;
+    case POSIX_EINVALID2MB:
+        return EINVALID2MB;
+#endif                // !__APPLE_CC__
     case POSIX_ELAST: // same as EINVALID2MB on macOS
         return ELAST;
 #ifndef __APPLE_CC__
     case POSIX_EADHOC:
         return EADHOC;
-        case POSIX_EINACTIVEDISABLED:
-            return EINACTIVEDISABLED;
-        case POSIX_ENETNODATA:
-            return ENETNODATA;
-        case POSIX_ENETDESC:
-            return ENETDESC;
-        case POSIX_ENETDESCTIMEDOUT:
-            return ENETDESCTIMEDOUT;
-        case POSIX_ENETINTR:
-            return ENETINTR;
-        case POSIX_ERETURN:
-            return ERETURN;
-        case POSIX_EFPOS:
-            return EFPOS;
+    case POSIX_EINACTIVEDISABLED:
+        return EINACTIVEDISABLED;
+    case POSIX_ENETNODATA:
+        return ENETNODATA;
+    case POSIX_ENETDESC:
+        return ENETDESC;
+    case POSIX_ENETDESCTIMEDOUT:
+        return ENETDESCTIMEDOUT;
+    case POSIX_ENETINTR:
+        return ENETINTR;
+    case POSIX_ERETURN:
+        return ERETURN;
+    case POSIX_EFPOS:
+        return EFPOS;
 #endif // !__APPLE_CC__
 #endif
 

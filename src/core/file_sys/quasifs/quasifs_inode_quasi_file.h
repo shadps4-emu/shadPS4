@@ -31,7 +31,7 @@ public:
         return _out;
     }
 
-   virtual s64 pread(void* buf, u64 count, s64 offset) override;
+    virtual s64 pread(void* buf, u64 count, s64 offset) override;
     virtual s64 pwrite(const void* buf, u64 count, s64 offset) override;
 
     s32 ftruncate(s64 length) override;

@@ -97,9 +97,8 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 // read
 s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 nbytes) {
     const auto* memory = Core::Memory::Instance();
-    // // Invalidate up to the actual number of bytes that could be read.
+    // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
-
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
     int result = g_qfs->Operation.Read(fd, buf, nbytes);
@@ -137,6 +136,14 @@ s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
 
 // preadv
 s64 PS4_SYSV_ABI posix_preadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
+    for (s32 iov_idx = 0; iov_idx < iovcnt; iov_idx++) {
+        memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[iov_idx].iov_base),
+                                 std::min<u64>(iov[iov_idx].iov_len, remaining));
+    }
+
     int result = g_qfs->Operation.PReadV(fd, iov, iovcnt, offset);
     if (result < 0) {
         *__Error() = -result;
@@ -167,6 +174,14 @@ s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
 
 // readv
 s64 PS4_SYSV_ABI posix_readv_impl(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    const auto* memory = Core::Memory::Instance();
+    // Invalidate up to the actual number of bytes that could be read.
+    const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
+    for (s32 iov_idx = 0; iov_idx < iovcnt; iov_idx++) {
+        memory->InvalidateMemory(reinterpret_cast<VAddr>(iov[iov_idx].iov_base),
+                                 std::min<u64>(iov[iov_idx].iov_len, remaining));
+    }
+
     int result = g_qfs->Operation.ReadV(fd, iov, iovcnt);
     if (result < 0) {
         *__Error() = -result;
@@ -930,7 +945,7 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("yTj62I7kw4s", "libkernel", 1, "libkernel", sceKernelPreadv);
     // pread
     LIB_FUNCTION("ezv-RSBNKqI", "libScePosix", 1, "libkernel", posix_pread);
-    LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", posix_pread); 
+    LIB_FUNCTION("ezv-RSBNKqI", "libkernel", 1, "libkernel", posix_pread);
     LIB_FUNCTION("+r3rMFwItV4", "libkernel", 1, "libkernel", sceKernelPread);
     // readv
     LIB_FUNCTION("+WRlkKjZvag", "libkernel", 1, "libkernel", posix_readv_impl);
