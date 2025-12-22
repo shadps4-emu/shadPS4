@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "common/assert.h"
@@ -29,7 +29,7 @@ protected:
         char d_name[256];
     } dirent_t;
 #pragma pack(pop)
-    std::map<std::string, inode_ptr> entries{};
+    std::unordered_map<std::string, inode_ptr> entries{};
 
     void RebuildDirents(void);
     bool dirents_changed{false};
@@ -89,7 +89,6 @@ public:
     // Remove hardlink to [name]
     int unlink(const std::string& name);
     // list entries
-    std::vector<std::string> list();
 };
 
 } // namespace QuasiFS

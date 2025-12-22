@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
+#include <chrono>
 #include <iostream>
 
 #include "common/assert.h"
@@ -18,112 +19,11 @@
 #include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
-std::string file_mode(u16 mode) {
-    std::string s;
-
-    if (QUASI_S_ISREG(mode))
-        s += '-';
-    else if (QUASI_S_ISDIR(mode))
-        s += 'd';
-    else if (QUASI_S_ISLNK(mode))
-        s += 'l';
-    else if (QUASI_S_ISCHR(mode))
-        s += 'c';
-    else if (QUASI_S_ISBLK(mode))
-        s += 'b';
-    else if (QUASI_S_ISFIFO(mode))
-        s += 'p';
-    else if (QUASI_S_ISSOCK(mode))
-        s += 's';
-    else
-        s += '?';
-
-    // owner
-    s += (mode & QUASI_S_IRUSR) ? 'r' : '-';
-    s += (mode & QUASI_S_IWUSR) ? 'w' : '-';
-    s += (mode & QUASI_S_IXUSR) ? 'x' : '-';
-
-    // group
-    s += (mode & QUASI_S_IRGRP) ? 'r' : '-';
-    s += (mode & QUASI_S_IWGRP) ? 'w' : '-';
-    s += (mode & QUASI_S_IXGRP) ? 'x' : '-';
-
-    // other
-    s += (mode & QUASI_S_IROTH) ? 'r' : '-';
-    s += (mode & QUASI_S_IWOTH) ? 'w' : '-';
-    s += (mode & QUASI_S_IXOTH) ? 'x' : '-';
-
-    return s;
-}
-
-void _printTree(const inode_ptr& node, const std::string& name, int depth) {
-
-    std::string depEnt = "";
-    for (uint8_t q = 0; q < depth; q++) {
-        depEnt = depEnt + "|--";
-    }
-    if (depth > 0)
-        depEnt[depEnt.length() - 1] = '>';
-
-    if (!name.empty()) {
-        auto st = node->st;
-        char timebuf[64];
-#ifndef __APPLE_CC__
-        std::tm* t = std::localtime(&st.st_mtim.tv_sec);
-#else
-#warning macOS hack
-        std::tm* t = std::localtime(0);
-#endif
-        std::strftime(timebuf, sizeof(timebuf), "%EY-%m-%d %H:%M", t);
-
-        // LOG_INFO(Kernel_Fs, "[ls -la] {} {:08} {:03d} {}:{} {:>08} {}\t{}{}\n",
-        //          file_mode(st.st_mode), st.st_mode, st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/
-        //          0, st.st_size, timebuf, depEnt, name);
-
-        std::string line = std::format(
-            "[ls -la] {} {:08o} {:03d} {}:{} {:>08} {}\t{}{}\n", file_mode(st.st_mode), st.st_mode,
-            st.st_nlink, /*st.st_uid*/ 0, /* st.st_gid*/ 0, st.st_size, timebuf, depEnt, name);
-
-        std::cout << "[FileSystem]" << line;
-    } else
-        depth--;
-
-    if (node->is_link()) {
-        // LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\tsymlinked to ->{}\n",
-        //          std::static_pointer_cast<Symlink>(node)->follow().string());
-        std::string line = std::format("[ls -la]\t\t\t\t\t\t\t\t[->{}]\n",
-                                       std::static_pointer_cast<Symlink>(node)->follow().string());
-        std::cout << "[FileSystem]" << line;
-    }
-    if (node->is_dir()) {
-        if ("." == name)
-            return;
-        if (".." == name)
-            return;
-
-        auto dir = std::dynamic_pointer_cast<Directory>(node);
-        if (dir->mounted_root) {
-            // LOG_INFO(Kernel_Fs, "[ls -la]\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
-            std::string line =
-                std::format("[ls -la]\t\t\t\t\t\t\t\t|--{}{}\n", depEnt, "[MOUNTPOINT]");
-            std::cout << "[FileSystem]" << line;
-            _printTree(dir->mounted_root, "", depth + 1);
-        } else {
-            for (auto& childName : dir->Entries()) {
-                inode_ptr child = dir->lookup(childName);
-                _printTree(child, childName, depth + 1);
-            }
-        }
-    }
-}
-
-void printTree(const dir_ptr& node, const std::string& name, int depth) {
-    _printTree(node, name, depth);
-}
 
 QFS::QFS(const fs::path& host_path) {
     this->rootfs = Partition::Create(Directory::Create(), host_path);
     this->root = rootfs->GetRoot();
+    this->open_fd.reserve(50);
 
     mount_t mount_options = {
         .mounted_at{"/"},
@@ -386,6 +286,11 @@ s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
 // Privates (don't touch)
 //
 
+u64 tick() {
+    using namespace std::chrono;
+    return duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
 void QFS::SyncHostImpl(partition_ptr part) {
     fs::path host_path{};
     if (0 != part->GetHostPath(host_path)) {
@@ -405,9 +310,30 @@ void QFS::SyncHostImpl(partition_ptr part) {
         return out;
     };
 
+    u64 counter = 1;
+
+    auto sync_start = tick();
+
+    u64 sync_1_start = 0;
+    u64 sync_2_resolve = 0;
+    u64 sync_3_create = 0;
+    u64 sync_4_readback = 0;
+    u64 sync_5_stat = 0;
+    u64 sync_6_end = tick();
+
+    u64 sync_0_rollover_total = 0; // avoid negatives
+    u64 sync_2_resolve_total = 0;
+    u64 sync_3_create_total = 0;
+    u64 sync_4_readback_total = 0;
+    u64 sync_5_stat_total = 0;
+    u64 sync_it_total = 0;
+
     try {
         for (auto entry = fs::recursive_directory_iterator(host_path);
              entry != fs::recursive_directory_iterator(); entry++) {
+            sync_0_rollover_total += tick() - sync_6_end;
+            sync_1_start = tick();
+
             fs::path entry_path = entry->path();
             fs::path pp = "/" / slice_path(entry->path());
             fs::path parent_path = pp.parent_path();
@@ -415,6 +341,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
 
             Resolved res;
             part->Resolve(parent_path, res);
+            sync_2_resolve = tick();
 
             if (nullptr == res.node) {
                 LOG_ERROR(Kernel_Fs, "Cannot resolve quasi-target for sync: {}",
@@ -433,27 +360,63 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 LOG_ERROR(Kernel_Fs, "Unsupported host file type: {}", entry_path.string());
                 continue;
             }
+            sync_3_create = tick();
 
+            // inode_ptr new_inode = RegularFile::Create();
             inode_ptr new_inode = parent_dir->lookup(leaf);
             if (nullptr == new_inode) {
                 // idk, seems appropriate
                 UNREACHABLE_MSG("Newly created node not found in {} / {}", pp.string(), leaf);
             }
-
+            // new_inode->st.st_blksize = 128;
+            sync_4_readback = tick();
             // this should populate **everything** immediately
             // this is a note to self TODO:
             if (0 != this->hio_driver.Stat(entry_path, &new_inode->st)) {
                 LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
                 continue;
             }
+            sync_5_stat = tick();
+
             new_inode->st.st_blocks =
                 Common::AlignUp(static_cast<u64>(new_inode->st.st_size), new_inode->st.st_blksize) /
                 512;
+            sync_6_end = tick();
+
+            sync_2_resolve_total += sync_2_resolve - sync_1_start;
+            sync_3_create_total += sync_3_create - sync_2_resolve;
+            sync_4_readback_total += sync_4_readback - sync_3_create;
+            sync_5_stat_total += sync_5_stat - sync_4_readback;
+            sync_it_total += sync_6_end - sync_1_start;
+            counter++;
         }
     } catch (const std::exception& e) {
         LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(),
                      e.what());
     }
+
+    auto sync_end = tick();
+
+    auto sync_total = sync_end - sync_start;
+    auto sync_2_resolve_avg = sync_2_resolve_total / counter;
+    auto sync_3_create_avg = sync_3_create_total / counter;
+    auto sync_4_readback_avg = sync_4_readback_total / counter;
+    auto sync_5_stat_avg = sync_5_stat_total / counter;
+    auto sync_it_avg = sync_it_total / counter;
+    auto sync_0_rollover_avg = sync_0_rollover_total / counter;
+
+    LOG_INFO(Kernel_Fs, "Execution time: {}/it ({} total)", sync_it_avg, sync_total);
+
+    LOG_INFO(Kernel_Fs, "Avg resolve time: {}/it ({} total) ", sync_2_resolve_avg,
+             sync_2_resolve_total);
+    LOG_INFO(Kernel_Fs, "Avg create time: {}/it ({} total) ", sync_3_create_avg,
+             sync_3_create_total);
+    LOG_INFO(Kernel_Fs, "Avg readback time: {}/it ({} total) ", sync_4_readback_avg,
+             sync_4_readback_total);
+    LOG_INFO(Kernel_Fs, "Avg stat time: {}/it ({} total) ", sync_5_stat_avg, sync_5_stat_total);
+    LOG_INFO(Kernel_Fs, "Avg it time: {}/it ({} total) ", sync_it_avg, sync_it_total);
+    LOG_INFO(Kernel_Fs, "Avg rollover time: {}/it ({} total) ", sync_0_rollover_avg,
+             sync_0_rollover_total);
 
     return; // true
 }

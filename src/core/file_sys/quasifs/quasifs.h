@@ -61,7 +61,6 @@ private:
     private:
         QFS& qfs;
         OperationImpl& operator=(const OperationImpl&) = delete;
-        std::mutex c_mutex;
 
     public:
         OperationImpl(QFS& qfs) : qfs(qfs) {}

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2025
 
-#include <map>
 #include <string>
 
 #include "common/alignment.h"
@@ -97,12 +96,14 @@ int QuasiDirectory::unlink(const std::string& name) {
     inode_ptr target = it->second;
     // if directory and not empty -> EBUSY or ENOTEMPTY
     if (target->is_dir()) {
-        dir_ptr dir = std::static_pointer_cast<QuasiDirectory>(target);
-        auto children = dir->list();
-        children.erase(std::remove(children.begin(), children.end(), "."), children.end());
-        children.erase(std::remove(children.begin(), children.end(), ".."), children.end());
-        if (!children.empty())
+        dir_ptr target_dir = std::reinterpret_pointer_cast<QuasiDirectory>(target);
+        for (auto entry : target_dir->entries) {
+            if (entry.first == ".")
+                continue;
+            if (entry.first == "..")
+                continue;
             return -POSIX_ENOTEMPTY;
+        }
 
         // parent loses reference from subdir [ .. ]
         this->st.st_nlink--;
@@ -115,14 +116,6 @@ int QuasiDirectory::unlink(const std::string& name) {
     entries.erase(it);
     st.st_mtim.tv_sec = time(0);
     return 0;
-}
-
-std::vector<std::string> QuasiDirectory::list() {
-    st.st_atim.tv_sec = time(0);
-    std::vector<std::string> r;
-    for (auto& p : entries)
-        r.push_back(p.first);
-    return r;
 }
 
 void QuasiDirectory::RebuildDirents(void) {
