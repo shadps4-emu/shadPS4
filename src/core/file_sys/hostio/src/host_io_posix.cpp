@@ -204,8 +204,11 @@ s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
     statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
+    statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
     statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
+    statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
     statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
+    statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
     statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
     statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
 
