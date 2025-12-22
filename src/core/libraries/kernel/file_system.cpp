@@ -966,14 +966,16 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Z2aKdxzS4KE", "libkernel", 1, "libkernel", posix_writev);
     LIB_FUNCTION("kAt6VDbHmro", "libkernel", 1, "libkernel", sceKernelWritev);
 
-    // link
-    // symlink
+    // LIB_FUNCTION("Pd7KtJ1gybk", "libScePosix", 1, "libkernel", posix_link);
+    // LIB_FUNCTION("Pd7KtJ1gybk", "libkernel", 1, "libkernel", posix_link);
+    // LIB_FUNCTION("waIF+5fE5HQ", "libScePosix", 1, "libkernel", posix_symlink);
+    // LIB_FUNCTION("waIF+5fE5HQ", "libkernel", 1, "libkernel", posix_symlink);
     LIB_FUNCTION("VAzswvTOCzI", "libScePosix", 1, "libkernel", posix_unlink);
     LIB_FUNCTION("VAzswvTOCzI", "libkernel", 1, "libkernel", posix_unlink);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
-    // remove
+    // LIB_FUNCTION("MZO7FXyAPU8", "libkernel", 1, "libkernel", posix_remove);
+    // LIB_FUNCTION("MUjC4lbHrK4", "libkernel", 1, "libkernel", posix_fflush); // stream flush
 
-    // flush
     LIB_FUNCTION("juWbTNM+8hw", "libScePosix", 1, "libkernel", posix_fsync);
     LIB_FUNCTION("juWbTNM+8hw", "libkernel", 1, "libkernel", posix_fsync);
     LIB_FUNCTION("fTx66l5iWIA", "libkernel", 1, "libkernel", sceKernelFsync);
