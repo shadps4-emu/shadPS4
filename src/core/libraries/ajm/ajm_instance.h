@@ -73,6 +73,14 @@ struct AjmInstanceGapless {
     }
 };
 
+struct DecoderResult {
+    s32 result = 0;
+    s32 internal_result = 0;
+    u32 frames_decoded = 0;
+    u32 samples_written = 0;
+    bool is_reset = false;
+};
+
 class AjmCodec {
 public:
     virtual ~AjmCodec() = default;
@@ -81,9 +89,10 @@ public:
     virtual void Reset() = 0;
     virtual void GetInfo(void* out_info) const = 0;
     virtual AjmSidebandFormat GetFormat() const = 0;
+    virtual u32 GetMinimumInputSize() const = 0;
     virtual u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const = 0;
-    virtual std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                                   AjmInstanceGapless& gapless) = 0;
+    virtual DecoderResult ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                                      AjmInstanceGapless& gapless) = 0;
 };
 
 class AjmInstance {
@@ -94,7 +103,6 @@ public:
 
 private:
     bool HasEnoughSpace(const SparseOutputBuffer& output) const;
-    std::optional<u32> GetNumRemainingSamples() const;
     void Reset();
 
     AjmInstanceFlags m_flags{};

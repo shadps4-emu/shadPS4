@@ -10,6 +10,7 @@ namespace Libraries::Ajm {
 class AjmInstanceStatistics {
 public:
     void ExecuteJob(AjmJob& job);
+    void Reset();
 
     static AjmInstanceStatistics& Getinstance();
 };
