@@ -68,7 +68,7 @@ s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
 // it could be just a pointer, but I don't have energy to poke around this
 // find a key, notify logs when this value should be set and pray nothing breaks in forseeable
 // future
-s64 DirectoryPFS::getdents(void* buf, u32 count, s64 offset, s64* basep) {
+s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 

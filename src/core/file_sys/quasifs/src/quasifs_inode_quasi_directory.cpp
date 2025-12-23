@@ -27,7 +27,6 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
 
 s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
     RebuildDirents();
-    this->dirents_changed = false;
     return Inode::lseek(current, offset, whence);
 }
 
@@ -41,7 +40,7 @@ s32 QuasiDirectory::ftruncate(s64 length) {
     return -POSIX_EISDIR;
 }
 
-s64 QuasiDirectory::getdents(void* buf, u32 count, s64 offset, s64* basep) {
+s64 QuasiDirectory::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 

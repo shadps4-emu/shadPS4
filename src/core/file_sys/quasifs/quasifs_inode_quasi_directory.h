@@ -75,7 +75,7 @@ public:
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override;
     s32 ftruncate(s64 length) final override;
 
-    virtual s64 getdents(void* buf, u32 count, s64 offset, s64* basep) override;
+    virtual s64 getdents(void* buf, u64 count, s64 offset, s64* basep) override;
 
     //
     // Dir-specific

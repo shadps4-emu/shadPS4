@@ -32,7 +32,7 @@ public:
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { DEVICE_STUB(); }
     s32 fsync() override { DEVICE_STUB(); }
     s32 ftruncate(s64 length) override { DEVICE_STUB(); }
-    s64 getdents(void* buf, u32 nbytes, s64 offset, s64* basep) override { DEVICE_STUB(); }
+    s64 getdents(void* buf, u64 nbytes, s64 offset, s64* basep) override { DEVICE_STUB(); }
     // clang-format on
 };
 
