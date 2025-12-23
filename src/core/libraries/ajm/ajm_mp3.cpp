@@ -122,6 +122,7 @@ void AjmMp3Decoder::Reset() {
     avcodec_flush_buffers(m_codec_context);
     m_header.reset();
     m_frame_samples = 0;
+    m_frame_size = 0;
 }
 
 void AjmMp3Decoder::GetInfo(void* out_info) const {
@@ -138,25 +139,34 @@ void AjmMp3Decoder::GetInfo(void* out_info) const {
     }
 }
 
-std::tuple<u32, u32, bool> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf,
-                                                      SparseOutputBuffer& output,
-                                                      AjmInstanceGapless& gapless) {
+u32 AjmMp3Decoder::GetMinimumInputSize() const {
+    // 4 bytes is for mp3 header that contains frame_size
+    return std::max<u32>(m_frame_size, 4);
+}
+
+DecoderResult AjmMp3Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
+                                         AjmInstanceGapless& gapless) {
+    DecoderResult result{};
     AVPacket* pkt = av_packet_alloc();
 
     if ((!m_header.has_value() || m_frame_samples == 0) && in_buf.size() >= 4) {
         m_header = std::byteswap(*reinterpret_cast<u32*>(in_buf.data()));
         AjmDecMp3ParseFrame info{};
-        ParseMp3Header(in_buf.data(), in_buf.size(), false, &info);
+        ParseMp3Header(in_buf.data(), in_buf.size(), true, &info);
         m_frame_samples = info.samples_per_channel;
+        m_frame_size = info.frame_size;
+        gapless.init = {
+            .total_samples = info.total_samples,
+            .skip_samples = static_cast<u16>(info.encoder_delay),
+            .skipped_samples = 0,
+        };
+        gapless.current = gapless.init;
     }
 
     int ret = av_parser_parse2(m_parser, m_codec_context, &pkt->data, &pkt->size, in_buf.data(),
                                in_buf.size(), AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
     ASSERT_MSG(ret >= 0, "Error while parsing {}", ret);
     in_buf = in_buf.subspan(ret);
-
-    u32 frames_decoded = 0;
-    u32 samples_decoded = 0;
 
     if (pkt->size) {
         // Send the packet with the compressed data to the decoder
@@ -177,9 +187,8 @@ std::tuple<u32, u32, bool> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf,
                 UNREACHABLE_MSG("Error during decoding");
             }
             frame = ConvertAudioFrame(frame);
-            samples_decoded += u32(frame->nb_samples);
 
-            frames_decoded += 1;
+            result.frames_decoded += 1;
             u32 skip_samples = 0;
             if (gapless.current.skip_samples > 0) {
                 skip_samples = std::min(u16(frame->nb_samples), gapless.current.skip_samples);
@@ -211,6 +220,7 @@ std::tuple<u32, u32, bool> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf,
             if (gapless.init.total_samples != 0) {
                 gapless.current.total_samples -= samples;
             }
+            result.samples_written += samples;
 
             av_frame_free(&frame);
         }
@@ -218,16 +228,16 @@ std::tuple<u32, u32, bool> AjmMp3Decoder::ProcessData(std::span<u8>& in_buf,
 
     av_packet_free(&pkt);
 
-    return {frames_decoded, samples_decoded, false};
+    return result;
 }
 
 u32 AjmMp3Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
-    const auto max_samples = gapless.init.total_samples != 0
-                                 ? std::min(gapless.current.total_samples, m_frame_samples)
-                                 : m_frame_samples;
-    const auto skip_samples = std::min(u32(gapless.current.skip_samples), max_samples);
-    return (max_samples - skip_samples) * m_codec_context->ch_layout.nb_channels *
-           GetPCMSize(m_format);
+    const auto skip_samples = std::min<u32>(gapless.current.skip_samples, m_frame_samples);
+    const auto samples =
+        gapless.init.total_samples != 0
+            ? std::min<u32>(gapless.current.total_samples, m_frame_samples - skip_samples)
+            : m_frame_samples - skip_samples;
+    return samples * m_codec_context->ch_layout.nb_channels * GetPCMSize(m_format);
 }
 
 class BitReader {
@@ -264,7 +274,7 @@ private:
 
 int AjmMp3Decoder::ParseMp3Header(const u8* p_begin, u32 stream_size, int parse_ofl,
                                   AjmDecMp3ParseFrame* frame) {
-    LOG_INFO(Lib_Ajm, "called stream_size = {} parse_ofl = {}", stream_size, parse_ofl);
+    LOG_TRACE(Lib_Ajm, "called stream_size = {} parse_ofl = {}", stream_size, parse_ofl);
 
     if (p_begin == nullptr || stream_size < 4 || frame == nullptr) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;

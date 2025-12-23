@@ -52,6 +52,7 @@ struct AjmBatch {
     u32 id{};
     std::atomic_bool waiting{};
     std::atomic_bool canceled{};
+    std::atomic_bool processed{};
     std::binary_semaphore finished{0};
     boost::container::small_vector<AjmJob, 16> jobs;
 

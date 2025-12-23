@@ -133,7 +133,7 @@ struct AjmSidebandGaplessDecode {
 
 struct AjmSidebandResampleParameters {
     float ratio;
-    uint32_t flags;
+    u32 flags;
 };
 
 struct AjmDecAt9InitializeParameters {

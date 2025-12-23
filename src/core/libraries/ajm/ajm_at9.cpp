@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "ajm_result.h"
 #include "common/assert.h"
 #include "core/libraries/ajm/ajm_at9.h"
 #include "error_codes.h"
@@ -85,8 +86,8 @@ void AjmAt9Decoder::GetInfo(void* out_info) const {
     auto* info = reinterpret_cast<AjmSidebandDecAt9CodecInfo*>(out_info);
     info->super_frame_size = m_codec_info.superframeSize;
     info->frames_in_super_frame = m_codec_info.framesInSuperframe;
+    info->next_frame_size = m_superframe_bytes_remain;
     info->frame_samples = m_codec_info.frameSamples;
-    info->next_frame_size = static_cast<Atrac9Handle*>(m_handle)->Config.FrameBytes;
 }
 
 u8 g_at9_guid[] = {0xD2, 0x42, 0xE1, 0x47, 0xBA, 0x36, 0x8D, 0x4D,
@@ -133,18 +134,22 @@ void AjmAt9Decoder::ParseRIFFHeader(std::span<u8>& in_buf, AjmInstanceGapless& g
     }
 }
 
-std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
-                                                      SparseOutputBuffer& output,
-                                                      AjmInstanceGapless& gapless) {
-    bool is_reset = false;
+u32 AjmAt9Decoder::GetMinimumInputSize() const {
+    return m_superframe_bytes_remain;
+}
+
+DecoderResult AjmAt9Decoder::ProcessData(std::span<u8>& in_buf, SparseOutputBuffer& output,
+                                         AjmInstanceGapless& gapless) {
+    DecoderResult result{};
     if (True(m_flags & AjmAt9CodecFlags::ParseRiffHeader) &&
         *reinterpret_cast<u32*>(in_buf.data()) == 'FFIR') {
         ParseRIFFHeader(in_buf, gapless);
-        is_reset = true;
+        result.is_reset = true;
     }
 
     if (!m_is_initialized) {
-        return {0, 0, is_reset};
+        result.result = ORBIS_AJM_RESULT_NOT_INITIALIZED;
+        return result;
     }
 
     int ret = 0;
@@ -166,7 +171,14 @@ std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
     default:
         UNREACHABLE();
     }
-    ASSERT_MSG(ret == At9Status::ERR_SUCCESS, "Atrac9Decode failed ret = {:#x}", ret);
+    if (ret != At9Status::ERR_SUCCESS) {
+        LOG_ERROR(Lib_Ajm, "Atrac9Decode failed ret = {:#x}", ret);
+        result.result = ORBIS_AJM_RESULT_CODEC_ERROR | ORBIS_AJM_RESULT_FATAL;
+        result.internal_result = ret;
+        return result;
+    }
+
+    result.frames_decoded += 1;
     in_buf = in_buf.subspan(bytes_used);
 
     m_superframe_bytes_remain -= bytes_used;
@@ -196,10 +208,10 @@ std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
         UNREACHABLE();
     }
 
-    const auto samples_written = pcm_written / m_codec_info.channels;
-    gapless.current.skipped_samples += m_codec_info.frameSamples - samples_written;
+    result.samples_written = pcm_written / m_codec_info.channels;
+    gapless.current.skipped_samples += m_codec_info.frameSamples - result.samples_written;
     if (gapless.init.total_samples != 0) {
-        gapless.current.total_samples -= samples_written;
+        gapless.current.total_samples -= result.samples_written;
     }
 
     m_num_frames += 1;
@@ -209,9 +221,23 @@ std::tuple<u32, u32, bool> AjmAt9Decoder::ProcessData(std::span<u8>& in_buf,
         }
         m_superframe_bytes_remain = m_codec_info.superframeSize;
         m_num_frames = 0;
+    } else if (gapless.IsEnd()) {
+        // Drain the remaining superframe
+        std::vector<s16> buf(m_codec_info.frameSamples * m_codec_info.channels, 0);
+        while ((m_num_frames % m_codec_info.framesInSuperframe) != 0) {
+            ret = Atrac9Decode(m_handle, in_buf.data(), buf.data(), &bytes_used,
+                               True(m_flags & AjmAt9CodecFlags::NonInterleavedOutput));
+            in_buf = in_buf.subspan(bytes_used);
+            m_superframe_bytes_remain -= bytes_used;
+            result.frames_decoded += 1;
+            m_num_frames += 1;
+        }
+        in_buf = in_buf.subspan(m_superframe_bytes_remain);
+        m_superframe_bytes_remain = m_codec_info.superframeSize;
+        m_num_frames = 0;
     }
 
-    return {1, m_codec_info.frameSamples, is_reset};
+    return result;
 }
 
 AjmSidebandFormat AjmAt9Decoder::GetFormat() const {
@@ -232,7 +258,7 @@ u32 AjmAt9Decoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
     const auto samples =
         gapless.init.total_samples != 0
             ? std::min<u32>(gapless.current.total_samples, m_codec_info.frameSamples - skip_samples)
-            : m_codec_info.frameSamples;
+            : m_codec_info.frameSamples - skip_samples;
     return samples * m_codec_info.channels * GetPCMSize(m_format);
 }
 
