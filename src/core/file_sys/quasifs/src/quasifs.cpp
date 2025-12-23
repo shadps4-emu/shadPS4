@@ -407,8 +407,6 @@ int QFS::IsPartitionRO(partition_ptr part) {
     mount_t* part_info = GetPartitionInfo(part);
     if (nullptr == part_info)
         return -POSIX_ENODEV;
-    if (part_info->options & MountOptions::MOUNT_RW)
-        return 0;
-    return 1;
+    return 0 == (part_info->options & MountOptions::MOUNT_RW);
 }
 }; // namespace QuasiFS

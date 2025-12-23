@@ -10,11 +10,11 @@
 namespace QuasiFS {
 
 s64 QuasiFile::pread(void* buf, u64 count, s64 offset) {
-    auto size = &this->st.st_size;
+    auto& size = this->st.st_size;
     auto end_pos = offset + count;
 
     st.st_atim.tv_sec = time(0);
-    return end_pos > *size ? *size - offset : count;
+    return end_pos > size ? size - offset : count;
 }
 
 s64 QuasiFile::pwrite(const void* buf, u64 count, s64 offset) {
@@ -25,6 +25,10 @@ s64 QuasiFile::pwrite(const void* buf, u64 count, s64 offset) {
 
     st.st_mtim.tv_sec = time(0);
     return count;
+}
+
+s32 QuasiFile::fsync() {
+    return 0;
 }
 
 s32 QuasiFile::ftruncate(s64 length) {

@@ -40,6 +40,10 @@ s64 VirtualFile::pwrite(const void* buf, u64 count, s64 offset) {
     return count;
 }
 
+s32 VirtualFile::fsync() {
+    return 0;
+}
+
 s32 VirtualFile::ftruncate(s64 length) {
     if (length < 0)
         return -POSIX_EINVAL;
