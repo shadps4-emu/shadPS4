@@ -19,6 +19,8 @@ endif()
 
 project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
     set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
@@ -237,7 +239,6 @@ find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
 find_package(VulkanHeaders 1.4.329 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
-find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(ZLIB 1.3 MODULE)
 find_package(Zydis 5.0.0 CONFIG)
@@ -550,13 +551,15 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/emulated/skylander.h
 )
 
-set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
-              src/core/libraries/fiber/fiber.cpp
+set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
               src/core/libraries/fiber/fiber.h
               src/core/libraries/fiber/fiber_error.h
 )
 
-set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if(ARCHITECTURE STREQUAL "x86_64")
+    list(APPEND FIBER_LIB src/core/libraries/fiber/fiber_context.s)
+    set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+endif()
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
@@ -844,6 +847,27 @@ if (ARCHITECTURE STREQUAL "x86_64")
              src/core/cpu_patches.h)
 endif()
 
+if (ARCHITECTURE STREQUAL "arm64")
+    set(CORE ${CORE}
+             src/core/jit/arm64_codegen.cpp
+             src/core/jit/arm64_codegen.h
+             src/core/jit/register_mapping.cpp
+             src/core/jit/register_mapping.h
+             src/core/jit/x86_64_translator.cpp
+             src/core/jit/x86_64_translator.h
+             src/core/jit/block_manager.cpp
+             src/core/jit/block_manager.h
+             src/core/jit/execution_engine.cpp
+             src/core/jit/execution_engine.h
+             src/core/jit/calling_convention.cpp
+             src/core/jit/calling_convention.h
+             src/core/jit/simd_translator.cpp
+             src/core/jit/simd_translator.h
+             src/core/jit/hle_bridge.cpp
+             src/core/jit/hle_bridge.h
+    )
+endif()
+
 set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/recompiler.cpp
                       src/shader_recompiler/recompiler.h
@@ -1083,7 +1107,10 @@ add_executable(shadps4
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+if(ARCHITECTURE STREQUAL "x86_64")
+    target_link_libraries(shadps4 PRIVATE xbyak::xbyak)
+endif()
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz)
 
@@ -1218,3 +1245,22 @@ endif()
 
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+# Testing
+option(BUILD_TESTS "Build test suite" OFF)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.17.0
+    )
+    # For Windows: Prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    add_subdirectory(tests)
+endif()

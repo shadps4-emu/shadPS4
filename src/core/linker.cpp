@@ -20,6 +20,9 @@
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+#ifdef ARCH_ARM64
+#include "core/jit/execution_engine.h"
+#endif
 
 namespace Core {
 
@@ -47,6 +50,20 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
                  :
                  : "r"(params->entry_addr), "r"(params), "r"(ProgramExitFunc)
                  : "rax", "rsi", "rdi");
+    UNREACHABLE();
+}
+#elif defined(ARCH_ARM64)
+static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
+    auto* jit = Core::Jit::JitEngine::Instance();
+    if (jit) {
+        // JIT should already be initialized in Emulator::Run(), but check just in case
+        if (!jit->IsInitialized()) {
+            jit->Initialize();
+        }
+        jit->ExecuteBlock(params->entry_addr);
+    } else {
+        LOG_CRITICAL(Core_Linker, "JIT engine not available");
+    }
     UNREACHABLE();
 }
 #endif
