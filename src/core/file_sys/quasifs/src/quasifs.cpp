@@ -293,8 +293,8 @@ u64 tick() {
 void QFS::SyncHostImpl(partition_ptr part) {
     fs::path host_path{};
     if (0 != part->GetHostPath(host_path)) {
-        LOG_ERROR(Kernel_Fs, "Cannot safely resolve host directory for blkdev {}",
-                  part->GetBlkId());
+        std::cout << "Cannot safely resolve host directory for blkdev: 0x" << std::hex
+                  << part->GetBlkId();
         return; // false
     }
 
@@ -321,8 +321,8 @@ void QFS::SyncHostImpl(partition_ptr part) {
             part->Resolve(parent_path, res);
 
             if (nullptr == res.node) {
-                LOG_ERROR(Kernel_Fs, "Cannot resolve quasi-target for sync: {}",
-                          parent_path.string());
+                std::cout << "Cannot resolve quasi-target for sync: " << parent_path.string()
+                          << std::endl;
                 continue;
             }
 
@@ -334,7 +334,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
             } else if (entry->is_regular_file()) {
                 part->touch<RegularFile>(parent_dir, leaf);
             } else {
-                LOG_ERROR(Kernel_Fs, "Unsupported host file type: {}", entry_path.string());
+                std::cout << "Unsupported host file type: " << entry_path.string() << std::endl;
                 continue;
             }
 
@@ -347,7 +347,7 @@ void QFS::SyncHostImpl(partition_ptr part) {
             // this should populate **everything** immediately
             // this is a note to self TODO:
             if (0 != this->hio_driver.Stat(entry_path, &new_inode->st)) {
-                LOG_ERROR(Kernel_Fs, "Cannot stat file: {}", entry_path.string());
+                std::cout << "Cannot stat file: " << entry_path.string() << std::endl;
                 continue;
             }
 
@@ -356,8 +356,8 @@ void QFS::SyncHostImpl(partition_ptr part) {
                 512;
         }
     } catch (const std::exception& e) {
-        LOG_CRITICAL(Kernel_Fs, "An error occurred when syncing [{}]: {}", host_path.string(),
-                     e.what());
+        std::cout << "An error occurred when syncing [" << host_path.string() << "]: " << e.what()
+                  << std::endl;
     }
 
     return; // true
