@@ -1,26 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/libraries/ajm/ajm_at9.h"
-#include "core/libraries/ajm/ajm_instance.h"
-#include "core/libraries/ajm/ajm_mp3.h"
+#include "ajm_at9.h"
+#include "ajm_instance.h"
+#include "ajm_mp3.h"
+#include "ajm_result.h"
 
 #include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Ajm {
-
-constexpr int ORBIS_AJM_RESULT_NOT_INITIALIZED = 0x00000001;
-constexpr int ORBIS_AJM_RESULT_INVALID_DATA = 0x00000002;
-constexpr int ORBIS_AJM_RESULT_INVALID_PARAMETER = 0x00000004;
-constexpr int ORBIS_AJM_RESULT_PARTIAL_INPUT = 0x00000008;
-constexpr int ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM = 0x00000010;
-constexpr int ORBIS_AJM_RESULT_STREAM_CHANGE = 0x00000020;
-constexpr int ORBIS_AJM_RESULT_TOO_MANY_CHANNELS = 0x00000040;
-constexpr int ORBIS_AJM_RESULT_UNSUPPORTED_FLAG = 0x00000080;
-constexpr int ORBIS_AJM_RESULT_SIDEBAND_TRUNCATED = 0x00000100;
-constexpr int ORBIS_AJM_RESULT_PRIORITY_PASSED = 0x00000200;
-constexpr int ORBIS_AJM_RESULT_CODEC_ERROR = 0x40000000;
-constexpr int ORBIS_AJM_RESULT_FATAL = 0x80000000;
 
 u8 GetPCMSize(AjmFormatEncoding format) {
     switch (format) {
@@ -60,6 +48,7 @@ void AjmInstance::Reset() {
 
 void AjmInstance::ExecuteJob(AjmJob& job) {
     const auto control_flags = job.flags.control_flags;
+    job.output.p_result->result = 0;
     if (True(control_flags & AjmJobControlFlags::Reset)) {
         LOG_TRACE(Lib_Ajm, "Resetting instance {}", job.instance_id);
         Reset();
@@ -91,8 +80,7 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
                 m_gapless.current.total_samples -= sample_difference;
             } else {
                 LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_INVALID_PARAMETER");
-                job.output.p_result->result = ORBIS_AJM_RESULT_INVALID_PARAMETER;
-                return;
+                job.output.p_result->result |= ORBIS_AJM_RESULT_INVALID_PARAMETER;
             }
         }
 
@@ -106,61 +94,59 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
                 m_gapless.current.skip_samples -= sample_difference;
             } else {
                 LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_INVALID_PARAMETER");
-                job.output.p_result->result = ORBIS_AJM_RESULT_INVALID_PARAMETER;
-                return;
+                job.output.p_result->result |= ORBIS_AJM_RESULT_INVALID_PARAMETER;
             }
         }
     }
 
-    if (!job.input.buffer.empty() && !job.output.buffers.empty()) {
-        std::span<u8> in_buf(job.input.buffer);
-        SparseOutputBuffer out_buf(job.output.buffers);
+    std::span<u8> in_buf(job.input.buffer);
+    SparseOutputBuffer out_buf(job.output.buffers);
+    auto in_size = in_buf.size();
+    auto out_size = out_buf.Size();
+    u32 frames_decoded = 0;
 
-        u32 frames_decoded = 0;
-        auto in_size = in_buf.size();
-        auto out_size = out_buf.Size();
-        while (!in_buf.empty() && !out_buf.IsEmpty() && !m_gapless.IsEnd()) {
-            if (!HasEnoughSpace(out_buf)) {
-                if (job.output.p_mframe == nullptr || frames_decoded == 0) {
-                    LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM ({} < {})",
-                                out_buf.Size(), m_codec->GetNextFrameSize(m_gapless));
-                    job.output.p_result->result = ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM;
-                    break;
-                }
-            }
-
-            const auto [nframes, nsamples, reset] =
-                m_codec->ProcessData(in_buf, out_buf, m_gapless);
-            if (reset) {
+    if (!job.input.buffer.empty()) {
+        for (;;) {
+            if (m_flags.gapless_loop && m_gapless.IsEnd()) {
+                m_gapless.Reset();
                 m_total_samples = 0;
             }
-            if (!nframes) {
-                LOG_WARNING(Lib_Ajm, "ORBIS_AJM_RESULT_NOT_INITIALIZED");
-                job.output.p_result->result = ORBIS_AJM_RESULT_NOT_INITIALIZED;
+            if (!HasEnoughSpace(out_buf)) {
+                LOG_TRACE(Lib_Ajm, "ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM ({} < {})", out_buf.Size(),
+                          m_codec->GetNextFrameSize(m_gapless));
+                job.output.p_result->result |= ORBIS_AJM_RESULT_NOT_ENOUGH_ROOM;
+            }
+            if (in_buf.size() < m_codec->GetMinimumInputSize()) {
+                job.output.p_result->result |= ORBIS_AJM_RESULT_PARTIAL_INPUT;
+            }
+            if (job.output.p_result->result != 0) {
                 break;
             }
-            frames_decoded += nframes;
-            m_total_samples += nsamples;
-
+            const auto result = m_codec->ProcessData(in_buf, out_buf, m_gapless);
+            if (result.is_reset) {
+                m_total_samples = 0;
+            } else {
+                m_total_samples += result.samples_written;
+            }
+            frames_decoded += result.frames_decoded;
+            if (result.result != 0) {
+                job.output.p_result->result |= result.result;
+                job.output.p_result->internal_result = result.internal_result;
+                break;
+            }
             if (False(job.flags.run_flags & AjmJobRunFlags::MultipleFrames)) {
                 break;
             }
         }
+    }
 
-        const auto total_decoded_samples = m_total_samples;
-        if (m_flags.gapless_loop && m_gapless.IsEnd()) {
-            in_buf = in_buf.subspan(in_buf.size());
-            m_gapless.Reset();
-            m_codec->Reset();
-        }
-        if (job.output.p_mframe) {
-            job.output.p_mframe->num_frames = frames_decoded;
-        }
-        if (job.output.p_stream) {
-            job.output.p_stream->input_consumed = in_size - in_buf.size();
-            job.output.p_stream->output_written = out_size - out_buf.Size();
-            job.output.p_stream->total_decoded_samples = total_decoded_samples;
-        }
+    if (job.output.p_mframe) {
+        job.output.p_mframe->num_frames = frames_decoded;
+    }
+    if (job.output.p_stream) {
+        job.output.p_stream->input_consumed = in_size - in_buf.size();
+        job.output.p_stream->output_written = out_size - out_buf.Size();
+        job.output.p_stream->total_decoded_samples = m_total_samples;
     }
 
     if (job.output.p_format != nullptr) {
@@ -175,6 +161,9 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
 }
 
 bool AjmInstance::HasEnoughSpace(const SparseOutputBuffer& output) const {
+    if (m_gapless.IsEnd()) {
+        return true;
+    }
     return output.Size() >= m_codec->GetNextFrameSize(m_gapless);
 }
 

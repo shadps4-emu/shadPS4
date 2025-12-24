@@ -39,7 +39,12 @@ s32 AjmContext::BatchCancel(const u32 batch_id) {
         batch = *p_batch;
     }
 
-    batch->canceled = true;
+    if (batch->processed) {
+        return ORBIS_OK;
+    }
+
+    bool expected = false;
+    batch->canceled.compare_exchange_strong(expected, true);
     return ORBIS_OK;
 }
 
@@ -58,7 +63,9 @@ void AjmContext::WorkerThread(std::stop_token stop) {
     Common::SetCurrentThreadName("shadPS4:AjmWorker");
     while (!stop.stop_requested()) {
         auto batch = batch_queue.PopWait(stop);
-        if (batch != nullptr) {
+        if (batch != nullptr && !batch->canceled) {
+            bool expected = false;
+            batch->processed.compare_exchange_strong(expected, true);
             ProcessBatch(batch->id, batch->jobs);
             batch->finished.release();
         }
