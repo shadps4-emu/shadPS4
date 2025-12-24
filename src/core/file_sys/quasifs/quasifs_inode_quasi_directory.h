@@ -91,4 +91,23 @@ public:
     // list entries
 };
 
+/**
+ * Data in buffer is contigious, i.e. everything is basically raw
+ * Dirents are divided into 512 byte segments, each containing full dirents only, i.e. dirent can't
+ leak between segments
+ *
+ * Read - similar to how files work, just raw read. If an offset is specified, any data beyond
+ *buffer* is not copied
+ *          return - min(n, available), basep = offset+return
+ *          if offset is specified, basep is shifted by its value up until last read, which should
+ even it out to 512B-aligned
+ *
+ * GetDents - dirents are aligned into 512B segments too, but they are **always** returned in 512B
+ chunks
+ *          if there is an offset, n-first bytes are cut out, segment is read up to 512 bytes and
+ remaining space is untouched. doesn't matter if it's 1 byte or entire dirents
+ *          return - min(n, available), basep is always aligned to 512
+
+ */
+
 } // namespace QuasiFS

@@ -16,13 +16,21 @@ QuasiDirectory::QuasiDirectory() {
 }
 
 s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
-    // complete dirents are divided into 512 (0-filled) byte blocks
-    // if more than 512 bytes are read, it draws bytes from the next block
-    // anything after last dirent is zeroed-out
-    // reclen of last complete dirent (in aligned segment) has size filling up to the end of the
-    // segment
+    // data is contiguous. read goes like any regular file would: start at offset, read n bytes
+    // output is always aligned up to 512 bytes with 0s
+    // offset - classic. however at the end of read any unused (exceeding dirent buffer size) buffer
+    // space will be left untouched
+    // reclen always sums up to end of current alignment
 
-    return getdents(buf, count, offset, nullptr);
+    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    if (0 >= bytes_available)
+        return 0;
+    bytes_available = bytes_available > count ? count : bytes_available;
+
+    // data
+    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
+
+    return bytes_available;
 }
 
 s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
@@ -44,7 +52,10 @@ s64 QuasiDirectory::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
-    // at this point count is ALWAYS >512 (checked in VIO Driver)
+    if (basep)
+        *basep = offset;
+
+    // at this point count is ALWAYS >=512 (checked in VIO Driver)
     // always returns up to 512 bytes
     // return always alignd final fptr to 512 bytes
     // doesn't zero-out remaining space in buffer
@@ -62,8 +73,6 @@ s64 QuasiDirectory::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     std::copy(dirent_cache_bin.data() + offset, dirent_cache_bin.data() + offset + to_read,
               static_cast<u8*>(buf));
 
-    if (basep)
-        *basep = to_read;
     return to_read;
 }
 
