@@ -12,12 +12,13 @@
 // PFS is a bit different from regular dirents, see comments below
 // Although it's pretty simple, every tested game (sample size: 1) reads it exclusively with
 // count=65536, so it doesn't need much mumbo-jambo like regular dirents
+// Except for (apparently) Minecraft which has larger directory size
 // I'll worry if a game uses something different than that count and offset=0
 
 namespace QuasiFS {
 
 DirectoryPFS::DirectoryPFS() {
-    this->st.st_size = 65536; // pro forma, gets erased on sync. TODO: fixme
+    this->st.st_size = 65536; // starting value, will get updated on rebuild
 }
 
 DirectoryPFS::~DirectoryPFS() = default;
@@ -152,10 +153,10 @@ void DirectoryPFS::RebuildDirents(void) {
         dirent_cache_bin.insert(dirent_cache_bin.end(), dirent_ptr, dirent_ptr + tmp.d_reclen);
     }
 
-    // directory size is always 65536 bytes
+    // directory size is always aligned to 65536 bytes
     // it gets erased on FS sync in QFS, but this fn is rarely called,
     // especially for PFS which is RO
-    this->st.st_size = 65536;
+    this->st.st_size = Common::AlignUp(dirent_cache_bin.size(), 0x10000);
 
     return;
 }
