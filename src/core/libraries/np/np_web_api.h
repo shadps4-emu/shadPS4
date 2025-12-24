@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <map>
+#include <mutex>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -10,6 +12,15 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Np::NpWebApi {
+
+struct __attribute__((packed)) SceNpWebApiContentParameter {
+    uint64_t content_length;
+    const char* p_content_type;
+    uint8_t reserved[16];
+};
+
+// For mocking responses
+enum SceNpWebApiMockRequestType { REQ_INVALID = -1, REQ_BLOCK_LIST = 110, REQ_FRIEND_LIST = 120 };
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext();
 s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter();
@@ -34,16 +45,19 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateContextA();
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter();
 s32 PS4_SYSV_ABI sceNpWebApiCreateHandle();
 s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest();
-s32 PS4_SYSV_ABI sceNpWebApiCreateRequest();
+s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 title_user_ctx_id, const char* p_api_group,
+                                          const char* p_path, s32 method,
+                                          SceNpWebApiContentParameter* p_content_parameter,
+                                          s64* p_request_id);
 s32 PS4_SYSV_ABI sceNpWebApiDeleteContext();
 s32 PS4_SYSV_ABI sceNpWebApiDeleteExtdPushEventFilter();
 s32 PS4_SYSV_ABI sceNpWebApiDeleteHandle();
-s32 PS4_SYSV_ABI sceNpWebApiDeleteRequest();
+s32 PS4_SYSV_ABI sceNpWebApiDeleteRequest(s64 request_id);
 s32 PS4_SYSV_ABI sceNpWebApiGetConnectionStats();
 s32 PS4_SYSV_ABI sceNpWebApiGetErrorCode();
 s32 PS4_SYSV_ABI sceNpWebApiGetHttpResponseHeaderValue();
 s32 PS4_SYSV_ABI sceNpWebApiGetHttpResponseHeaderValueLength();
-s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode();
+s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode(s64 request_id, s32* out_status_code);
 s32 PS4_SYSV_ABI sceNpWebApiGetMemoryPoolStats();
 s32 PS4_SYSV_ABI sceNpWebApiInitialize();
 s32 PS4_SYSV_ABI sceNpWebApiInitializeForPresence();
@@ -53,7 +67,7 @@ s32 PS4_SYSV_ABI sceNpWebApiIntCreateServicePushEventFilter();
 s32 PS4_SYSV_ABI sceNpWebApiIntInitialize();
 s32 PS4_SYSV_ABI sceNpWebApiIntRegisterServicePushEventCallback();
 s32 PS4_SYSV_ABI sceNpWebApiIntRegisterServicePushEventCallbackA();
-s32 PS4_SYSV_ABI sceNpWebApiReadData();
+s32 PS4_SYSV_ABI sceNpWebApiReadData(s64 request_id, char* data, u64 size);
 s32 PS4_SYSV_ABI sceNpWebApiRegisterExtdPushEventCallbackA();
 s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest();
 s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest2();

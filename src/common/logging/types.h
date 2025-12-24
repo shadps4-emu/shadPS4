@@ -107,6 +107,7 @@ enum class Class : u8 {
     Lib_Mouse,               ///< The LibSceMouse implementation
     Lib_WebBrowserDialog,    ///< The LibSceWebBrowserDialog implementation
     Lib_NpParty,             ///< The LibSceNpParty implementation
+    Lib_NpSignaling,         ///< The LibSceNpSignaling implementation
     Lib_Zlib,                ///< The LibSceZlib implementation.
     Lib_Hmd,                 ///< The LibSceHmd implementation.
     Lib_HmdSetupDialog,      ///< The LibSceHmdSetupDialog implementation.

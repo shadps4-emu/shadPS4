@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_score.h"
+#include "np_error.h"
 
 namespace Libraries::Np::NpScore {
 
@@ -30,7 +31,11 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
 
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
+
+    static s32 title_ctx_id_counter = 0;
+    s32 title_ctx_id = title_ctx_id_counter++;
+
+    return title_ctx_id;
 }
 
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA() {
@@ -40,12 +45,13 @@ int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA() {
 
 int PS4_SYSV_ABI sceNpScoreCreateRequest() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
+    return 1;
 }
 
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
+    // Seems to return 1 on success
+    return 1;
 }
 
 int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx() {
@@ -233,8 +239,17 @@ int PS4_SYSV_ABI sceNpScoreRecordScoreAsync() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreSanitizeComment() {
+int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_string,
+                                           char* output_buffer, s32 options) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+
+    if (output_buffer == nullptr || input_string == nullptr) {
+
+        return ORBIS_NP_SCORE_INVALID_ARGUMENT;
+    }
+
+    strcpy(output_buffer, input_string);
+
     return ORBIS_OK;
 }
 

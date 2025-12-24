@@ -38,6 +38,7 @@
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog.h"
 #include "core/libraries/np/np_score.h"
+#include "core/libraries/np/np_signaling.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_web_api.h"
@@ -104,6 +105,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Np::NpSnsFacebookDialog::RegisterLib(sym);
     Libraries::Np::NpAuth::RegisterLib(sym);
     Libraries::Np::NpParty::RegisterLib(sym);
+    Libraries::Np::NpSignaling::RegisterLib(sym);
     Libraries::ScreenShot::RegisterLib(sym);
     Libraries::AppContent::RegisterLib(sym);
     Libraries::PngDec::RegisterLib(sym);
