@@ -173,7 +173,8 @@ s32 PS4_SYSV_ABI sceNpWebApiSetMultipartContentType(s64 requestId, const char* p
 s32 PS4_SYSV_ABI sceNpWebApiSetRequestTimeout(s64 requestId, u32 timeout);
 s32 PS4_SYSV_ABI sceNpWebApiTerminate(s32 libCtxId);
 s32 PS4_SYSV_ABI sceNpWebApiUnregisterExtdPushEventCallback(s32 userCtxId, s32 callbackId);
-s32 PS4_SYSV_ABI sceNpWebApiUtilityParseNpId();
+s32 PS4_SYSV_ABI sceNpWebApiUtilityParseNpId(const char* pJsonNpId,
+                                             Libraries::Np::OrbisNpId* pNpId);
 s32 PS4_SYSV_ABI sceNpWebApiVshInitialize();
 s32 PS4_SYSV_ABI Func_064C4ED1EDBEB9E8();
 s32 PS4_SYSV_ABI Func_0783955D4E9563DA();
