@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include <span>
 #include <thread>
 #include <vector>
-#include <cstring>
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -490,7 +490,7 @@ static Error Umount(const OrbisSaveDataMountPoint* mountPoint, bool call_backup 
         return Error::PARAMETER;
     }
     LOG_DEBUG(Lib_SaveData, "Umount mountPoint:{}", mountPoint->data.to_view());
-    
+
     std::string mount_point_str = mountPoint->data.to_string();
 
     for (auto& instance : g_mount_slots) {
