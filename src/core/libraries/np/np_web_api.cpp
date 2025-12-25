@@ -9,6 +9,40 @@
 
 namespace Libraries::Np::NpWebApi {
 
+/**
+**  internal stuff
+**/
+s32 createExtendedPushEventFilterInternal(
+    s32 libCtxId, s32 handleId, const char* pNpServiceName,
+    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum,
+    void* additionalParam) {
+    LOG_ERROR(Lib_NpWebApi,
+              "called (STUBBED) : libCtxId = {}, "
+              "handleId = {}, pNpServiceName = '{}', npServiceLabel = {}, pFilterParam = {}, "
+              "filterParamNum = {}",
+              libCtxId, handleId, (pNpServiceName ? pNpServiceName : "null"), npServiceLabel,
+              fmt::ptr(pFilterParam), filterParamNum);
+    s32 result;
+    /* long libContextHandle;
+
+    libContextHandle = findAndValidateContext(libCtxId, 0);
+    if (libContextHandle == 0) {
+        result = ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    } else {
+        validateHandleForContext(libContextHandle, handleId);
+
+        result = createExtendedPushEventFilterImpl(libContextHandle, handleId, pNpServiceName,
+                                                   npServiceLabel, pFilterParam, filterParamNum,
+                                                   additionalParam);
+        releaseContext(libContextHandle);
+    }*/
+    result = 1; // stubbed to be removed!
+    return result;
+}
+/**
+**  endof internal stuff
+**/
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId,
                                           Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}, userId = {}", libCtxId, (s32)userId);
@@ -135,13 +169,24 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
     s32 libCtxId, s32 handleId, const char* pNpServiceName,
     Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum) {
+    s32 result;
+    // Validate parameters
+    if (((pNpServiceName == NULL ||
+          npServiceLabel != Libraries::Np::NpCommon::ORBIS_NP_INVALID_SERVICE_LABEL) &&
+         (pFilterParam != NULL)) &&
+        (filterParamNum != 0)) {
+        result = createExtendedPushEventFilterInternal(libCtxId, handleId, pNpServiceName,
+                                                       npServiceLabel, pFilterParam, filterParamNum,
+                                                       0); // 7th param is probably reserved
+        return result;
+    }
     LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : libCtxId = {}, "
-              "handleId = {}, pNpServiceName = '{}', npServiceLabel = {}, pFilterParam = {}, "
-              "filterParamNum = {}",
+              "sceNpWebApiCreateExtdPushEventFilter invalid argument: "
+              "libCtxId = {}, handleId = {}, pNpServiceName = '{}', npServiceLabel = {}, "
+              "pFilterParam = {}, filterParamNum = {}",
               libCtxId, handleId, (pNpServiceName ? pNpServiceName : "null"), npServiceLabel,
               fmt::ptr(pFilterParam), filterParamNum);
-    return ORBIS_OK;
+    return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateHandle(s32 libCtxId) {
