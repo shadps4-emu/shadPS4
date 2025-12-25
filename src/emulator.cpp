@@ -360,7 +360,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
-    if (EmulatorSettings::GetInstance()->IsDiscorRPCEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsDiscordRPCEnabled()) {
         auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
         if (rpc->getRPCEnabled() == false) {
             rpc->init();

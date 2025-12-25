@@ -156,8 +156,6 @@ static ConfigEntry<bool> backgroundControllerInput(false);
 
 // Audio
 static ConfigEntry<string> micDevice("Default Device");
-static ConfigEntry<string> mainOutputDevice("Default Device");
-static ConfigEntry<string> padSpkOutputDevice("Default Device");
 
 // GPU
 static ConfigEntry<u32> windowWidth(1280);
@@ -273,14 +271,6 @@ int getCursorHideTimeout() {
 
 string getMicDevice() {
     return micDevice.get();
-}
-
-std::string getMainOutputDevice() {
-    return mainOutputDevice.get();
-}
-
-std::string getPadSpkOutputDevice() {
-    return padSpkOutputDevice.get();
 }
 
 u32 getWindowWidth() {
@@ -504,14 +494,6 @@ void setMicDevice(std::string device, bool is_game_specific) {
     micDevice.set(device, is_game_specific);
 }
 
-void setMainOutputDevice(std::string device, bool is_game_specific) {
-    mainOutputDevice.set(device, is_game_specific);
-}
-
-void setPadSpkOutputDevice(std::string device, bool is_game_specific) {
-    padSpkOutputDevice.set(device, is_game_specific);
-}
-
 void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
 }
@@ -634,8 +616,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& audio = data.at("Audio");
 
         micDevice.setFromToml(audio, "micDevice", is_game_specific);
-        mainOutputDevice.setFromToml(audio, "mainOutputDevice", is_game_specific);
-        padSpkOutputDevice.setFromToml(audio, "padSpkOutputDevice", is_game_specific);
     }
 
     if (data.contains("GPU")) {
@@ -762,8 +742,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
     micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
-    mainOutputDevice.setTomlValue(data, "Audio", "mainOutputDevice", is_game_specific);
-    padSpkOutputDevice.setTomlValue(data, "Audio", "padSpkOutputDevice", is_game_specific);
 
     windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
     windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
@@ -876,10 +854,6 @@ void setDefaultValues(bool is_game_specific) {
         controllerCustomColorRGB[0] = 0;
         controllerCustomColorRGB[1] = 0;
         controllerCustomColorRGB[2] = 255;
-
-        // TODO: Change to be game specific
-        mainOutputDevice = "Default Device";
-        padSpkOutputDevice = "Default Device";
 
         // GPU
         shouldPatchShaders.base_value = false;

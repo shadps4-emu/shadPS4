@@ -88,10 +88,10 @@ struct GeneralSettings {
     Setting<bool> psn_signed_in{false};
     Setting<bool> trophy_popup_disabled{false};
     Setting<double> trophy_notification_duration{6.0};
+    Setting<std::string> trophy_notification_side{"right"};
     Setting<std::string> log_filter{""};
     Setting<std::string> log_type{"sync"};
     Setting<bool> show_splash{false};
-    Setting<std::string> trophy_notification_side{"right"};
     Setting<bool> connected_to_network{false};
     Setting<bool> discord_rpc_enabled{false};
 
@@ -186,7 +186,10 @@ struct AudioSettings {
 
     // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
-        return std::vector<OverrideItem>{};
+        return std::vector<OverrideItem>{
+            make_override<AudioSettings>("main_output_device", &AudioSettings::main_output_device),
+            make_override<AudioSettings>("padSpk_output_device",
+                                         &AudioSettings::padSpk_output_device)};
     }
 };
 
@@ -340,7 +343,11 @@ public:
     SETTING_FORWARD(m_general, LogFilter, log_filter)
     SETTING_FORWARD(m_general, LogType, log_type)
     SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)
-    SETTING_FORWARD_BOOL(m_general, DiscorRPCEnabled, discord_rpc_enabled)
+    SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
+
+    // Audio settings
+    SETTING_FORWARD(m_audio, MainOutputDevice, main_output_device)
+    SETTING_FORWARD(m_audio, PadSpkOutputDevice, padSpk_output_device)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
