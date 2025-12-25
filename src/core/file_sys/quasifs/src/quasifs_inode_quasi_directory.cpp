@@ -11,11 +11,14 @@
 namespace QuasiFS {
 
 QuasiDirectory::QuasiDirectory() {
-    st.st_mode |= QUASI_S_IFDIR;
-    dirent_cache_bin.reserve(512);
+    this->st.st_mode |= QUASI_S_IFDIR;
+    this->dirent_cache_bin.reserve(512);
 }
 
 s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
+    RebuildDirents();
+    st.st_atim.tv_sec = time(0);
+
     // data is contiguous. read goes like any regular file would: start at offset, read n bytes
     // output is always aligned up to 512 bytes with 0s
     // offset - classic. however at the end of read any unused (exceeding dirent buffer size) buffer
@@ -23,9 +26,9 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     // reclen always sums up to end of current alignment
 
     s64 bytes_available = this->dirent_cache_bin.size() - offset;
-    if (0 >= bytes_available)
+    if (bytes_available <= 0)
         return 0;
-    bytes_available = bytes_available > count ? count : bytes_available;
+    bytes_available = std::min<s64>(bytes_available, static_cast<s64>(count));
 
     // data
     memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
@@ -68,7 +71,7 @@ s64 QuasiDirectory::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     // offset might push it too far so read count becomes misaligned
     u64 apparent_end = offset + count;
     u64 minimum_read = Common::AlignDown(apparent_end, 512) - offset;
-    u64 to_read = bytes_available > minimum_read ? minimum_read : bytes_available;
+    s64 to_read = std::min<s64>(bytes_available, static_cast<s64>(minimum_read));
 
     std::copy(dirent_cache_bin.data() + offset, dirent_cache_bin.data() + offset + to_read,
               static_cast<u8*>(buf));
@@ -93,6 +96,7 @@ int QuasiDirectory::link(const std::string& name, inode_ptr child) {
     if (!child->is_link())
         child->st.st_nlink++;
     st.st_mtim.tv_sec = time(0);
+    dirents_changed = true;
     return 0;
 }
 
@@ -122,12 +126,13 @@ int QuasiDirectory::unlink(const std::string& name) {
     // not referenced in original location anymore
     target->st.st_nlink--;
     entries.erase(it);
+    dirents_changed = true;
     st.st_mtim.tv_sec = time(0);
     return 0;
 }
 
 void QuasiDirectory::RebuildDirents(void) {
-    if (this->dirents_changed)
+    if (!this->dirents_changed)
         return;
     this->dirents_changed = false;
 

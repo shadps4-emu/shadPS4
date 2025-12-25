@@ -30,8 +30,7 @@ protected:
 #pragma pack(pop)
 
 private:
-    void RebuildDirents(void);
-    s64 dirents_size{};
+    void RebuildDirents(void) final override;
 
 public:
     DirectoryPFS();
@@ -53,7 +52,6 @@ public:
     }
 
     s64 pread(void* buf, u64 count, s64 offset) final override;
-    s64 lseek(s64 current, s64 offset, s32 whence) final override;
 
     s64 getdents(void* buf, u64 count, s64 offset, s64* basep) final override;
 

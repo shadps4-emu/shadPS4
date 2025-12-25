@@ -9,76 +9,56 @@
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
 #include "core/libraries/kernel/posix_error.h"
 
-// PFS is a bit different from regular dirents, see comments below
-// Although it's pretty simple, every tested game (sample size: 1) reads it exclusively with
-// count=65536, so it doesn't need much mumbo-jambo like regular dirents
-// Except for (apparently) Minecraft which has larger directory size
-// I'll worry if a game uses something different than that count and offset=0
+// Read-wise PFS is almost identical to regular directory
+// Dirents need a bit of tuning, since they're converted from PFS to normal for getdirents
+// one important thing (aka. FIXME) - file pointer is moved to the end when last dirent is
+// encountered. it's a bit problematic to implement but well, it's for future me :)
+// Other than that, same rules as with regular directory
 
 namespace QuasiFS {
 
 DirectoryPFS::DirectoryPFS() {
-    this->st.st_size = 65536; // starting value, will get updated on rebuild
+    this->st.st_size = 65536;            // starting value, will get updated on rebuild
+    this->dirent_cache_bin.reserve(512); // It will grow anyway
 }
 
 DirectoryPFS::~DirectoryPFS() = default;
 
 s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
-    RebuildDirents();
+    this->RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
-    // data is contiguous. i think that's how it's said
-    // anyway, everything goes raw
-    // aligned to 65536 bytes, everything is zeroed-out in that range,
-    // above that - no touchies
-
-    s64 apparent_end = offset + count;
-
-    if (apparent_end > 65536) {
-        // i really don't want to do this yet
-        // no idea if it's even supported on og hw
-        LOG_CRITICAL(Kernel_Fs,
-                     "PFS directory size larger than 65536 bytes is not implemented yet");
-        if (offset > 65536)
-            return 0;
-        count = 65536 - offset;
-    }
-
     s64 bytes_available = this->dirent_cache_bin.size() - offset;
-    if (0 >= bytes_available)
+    if (bytes_available <= 0)
         return 0;
-    bytes_available = bytes_available > count ? count : bytes_available;
 
-    // data
+    bytes_available = std::min<s64>(bytes_available, static_cast<s64>(count));
     memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
-    // remainders
-    s64 filler = count - bytes_available;
-    if (filler > 0)
-        memset(static_cast<u8*>(buf) + bytes_available, 0, filler);
 
-    // always returns count
-    return count;
-}
-
-s64 DirectoryPFS::lseek(s64 current, s64 offset, s32 whence) {
-    RebuildDirents();
-    return Inode::lseek(current, offset, whence);
+    s64 to_fill =
+        (std::min<s64>(this->st.st_size, static_cast<s64>(count))) - bytes_available - offset;
+    if (to_fill < 0) {
+        LOG_ERROR(Kernel_Fs, "Dirent may have leaked {} bytes", -to_fill);
+        return -to_fill + bytes_available;
+    }
+    memset(static_cast<u8*>(buf) + bytes_available, 0, to_fill);
+    return to_fill + bytes_available;
 }
 
 // FIXME: this fn sets file pointer to 65536 so far no issues in testing
 // it could be just a pointer, but I don't have energy to poke around this
-// find a key, notify logs when this value should be set and pray nothing breaks in forseeable
-// future
+// also, it's *assumed* it's always read in full 64kb chunks. testing shows very inconsistent
+// results when using other sizes
 s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
-    if (count != 65536)
-        LOG_CRITICAL(Kernel_Fs, "PFS dirents read with count={} (which is not 65536) (report this)",
-                     count);
-
     if (basep)
         *basep = offset;
+
+    // same as others, we just don't need a variable
+    if (offset >= this->st.st_size)
+        return 0;
 
     u64 bytes_written = 0;
     u64 starting_offset = 0;
@@ -103,12 +83,6 @@ s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
             // dirents are aligned to the last full one
             break;
 
-        // if this dirent breaks alignment, skip
-        // dirents are count-aligned here, excess data is simply not written
-        // if (Common::AlignUp(buffer_position, count) !=
-        //     Common::AlignUp(buffer_position + pfs_dirent->d_reclen, count))
-        //     break;
-
         // we're transposing u32 into smaller types, so there miiight be some issues
         // reclen for both is the same despite difference in var sizes, extra 0s are padded after
         // the name
@@ -128,7 +102,7 @@ s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
 }
 
 void DirectoryPFS::RebuildDirents(void) {
-    if (this->dirents_changed)
+    if (!this->dirents_changed)
         return;
     this->dirents_changed = false;
 
