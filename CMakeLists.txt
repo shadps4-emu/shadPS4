@@ -585,6 +585,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_web_api.cpp
             src/core/libraries/np/np_web_api.h
+            src/core/libraries/np/np_web_api_error.h
             src/core/libraries/np/np_party.cpp
             src/core/libraries/np/np_party.h
             src/core/libraries/np/np_auth.cpp
