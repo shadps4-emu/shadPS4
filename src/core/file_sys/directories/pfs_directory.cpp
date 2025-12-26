@@ -138,7 +138,9 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
         buffer_position = bytes_written + starting_offset;
     }
 
-    file_offset += bytes_written;
+    file_offset = (buffer_position >= this->dirent_cache_bin.size())
+                      ? directory_size
+                      : (file_offset + bytes_written);
     return bytes_written;
 }
 } // namespace Core::Directories
