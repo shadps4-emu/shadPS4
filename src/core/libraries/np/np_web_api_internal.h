@@ -26,5 +26,14 @@ s32 createExtendedPushEventFilterImpl(OrbisNpWebApiContext* context, s32 handleI
 void releaseContext(OrbisNpWebApiContext* context);                             // FUN_01006fc0
 OrbisNpWebApiContext* findAndValidateContext(int32_t libCtxId, int flag);       // FUN_01006860
 void validateHandleForContext(OrbisNpWebApiContext* context, int32_t handleId); // FUN_01007fd0
+s32 createContextForUser(int32_t libCtxId, int32_t userId);                     // FUN_010015c0
+s32 createHandleInternal(OrbisNpWebApiContext* context);                        // FUN_01007730
+s32 registerExtdPushEventCallbackInternalA(s32 userCtxId, s32 filterId,
+                                           OrbisNpWebApiExtdPushEventCallbackA cbFunc,
+                                           void* pUserArg); // FUN_01003240
+s32 registerExtdPushEventCallbackInternal(s32 userCtxId, s32 filterId,
+                                          OrbisNpWebApiExtdPushEventCallback cbFunc,
+                                          OrbisNpWebApiExtdPushEventCallbackA cbFuncA,
+                                          void* pUserArg); // FUN_01003250
 
 }; // namespace Libraries::Np::NpWebApi

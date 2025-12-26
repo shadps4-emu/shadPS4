@@ -85,6 +85,8 @@ struct OrbisNpWebApiConnectionStats {
     u64 reserved;
 };
 
+using OrbisNpWebApiExtdPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
+
 using OrbisNpWebApiExtdPushEventCallbackA = PS4_SYSV_ABI void (*)(
     s32 userCtxId, s32 callbackId, const char* pNpServiceName,
     Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,

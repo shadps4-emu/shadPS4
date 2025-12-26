@@ -128,8 +128,21 @@ s32 PS4_SYSV_ABI sceNpWebApiClearUnusedConnection(s32 userCtxId, const char* pAp
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
                                            Libraries::UserService::OrbisUserServiceUserId userId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}, userId = {}", libCtxId, (s32)userId);
-    return ORBIS_OK;
+    s32 result;
+
+    result = ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
+
+    if ((u32)(libCtxId - 1) < 0x7FFF) {
+        if (userId != -1) {
+            return createContextForUser(libCtxId, userId);
+        }
+        result = ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_ERROR(Lib_NpWebApi,
+              "sceNpWebApiCreateContextA : "
+              "libCtxId = {}, userId = {} error{:#x}",
+              libCtxId, (s32)userId, result);
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
@@ -156,8 +169,21 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateHandle(s32 libCtxId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : libCtxId = {}", libCtxId);
-    return ORBIS_OK;
+    s32 result;
+    OrbisNpWebApiContext* context;
+
+    context = findAndValidateContext(libCtxId, 0);
+    if (context == nullptr) {
+        result = ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+        LOG_ERROR(Lib_NpWebApi,
+                  " sceNpWebApiCreateHandle: "
+                  "lib context not found: libCtxId = {}",
+                  libCtxId);
+    } else {
+        result = createHandleInternal(context);
+        releaseContext(context);
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest(s32 titleUserCtxId, const char* pApiGroup,
@@ -304,11 +330,14 @@ s32 PS4_SYSV_ABI sceNpWebApiReadData(s64 requestId, void* pData, u64 size) {
 
 s32 PS4_SYSV_ABI sceNpWebApiRegisterExtdPushEventCallbackA(
     s32 userCtxId, s32 filterId, OrbisNpWebApiExtdPushEventCallbackA cbFunc, void* pUserArg) {
+    if (cbFunc != nullptr) {
+        return registerExtdPushEventCallbackInternalA(userCtxId, filterId, cbFunc, pUserArg);
+    }
     LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : userCtxId = {}, "
-              "filterId = {}, cbFunc = {}, pUserArg = {}",
+              "sceNpWebApiRegisterExtdPushEventCallbackA invalid argument: "
+              "userCtxId = {}, filterId = {}, cbFunc = {}, pUserArg = {}",
               userCtxId, filterId, fmt::ptr(cbFunc), fmt::ptr(pUserArg));
-    return ORBIS_OK;
+    return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest() {

@@ -63,4 +63,30 @@ void validateHandleForContext(OrbisNpWebApiContext* context, int32_t handleId) {
               "handleId = {}",
               fmt::ptr(context), handleId); // TODO: implement
 }
+s32 createContextForUser(int32_t libCtxId, int32_t userId) {
+    LOG_ERROR(Lib_NpWebApi,
+              "called (STUBBED) : libCtxId = {}, "
+              "userId = {}",
+              libCtxId, userId);
+    return ORBIS_OK; // TODO: implement
+}
+s32 createHandleInternal(OrbisNpWebApiContext* context) {
+    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : context = {}", fmt::ptr(context));
+    return ORBIS_OK; // TODO: implement
+}
+s32 registerExtdPushEventCallbackInternalA(s32 userCtxId, s32 filterId,
+                                           OrbisNpWebApiExtdPushEventCallbackA cbFunc,
+                                           void* pUserArg) {
+    return registerExtdPushEventCallbackInternal(userCtxId, filterId, nullptr, cbFunc, pUserArg);
+}
+s32 registerExtdPushEventCallbackInternal(s32 userCtxId, s32 filterId,
+                                          OrbisNpWebApiExtdPushEventCallback cbFunc,
+                                          OrbisNpWebApiExtdPushEventCallbackA cbFuncA,
+                                          void* pUserArg) {
+    LOG_ERROR(Lib_NpWebApi,
+              "called (STUBBED) : userCtxId = {}, "
+              "filterId = {}, cbFunc = {}, cbFuncA = {}, pUserArg = {}",
+              userCtxId, filterId, fmt::ptr(cbFunc), fmt::ptr(cbFuncA), fmt::ptr(pUserArg));
+    return ORBIS_OK; // TODO: implement
+}
 }; // namespace Libraries::Np::NpWebApi
