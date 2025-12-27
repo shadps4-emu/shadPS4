@@ -176,7 +176,7 @@ s32 AjmContext::InstanceCreate(AjmCodecType codec_type, AjmInstanceFlags flags, 
     if (!opt_index.has_value()) {
         return ORBIS_AJM_ERROR_OUT_OF_RESOURCES;
     }
-    *out_instance = opt_index.value();
+    *out_instance = opt_index.value() | (static_cast<u32>(codec_type) << 14);
 
     LOG_INFO(Lib_Ajm, "instance = {}", *out_instance);
     return ORBIS_OK;

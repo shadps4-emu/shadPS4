@@ -7,29 +7,29 @@
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
-#include "libatrac9.h"
-
 #include <span>
 #include <vector>
 
+struct AAC_DECODER_INSTANCE;
+
 namespace Libraries::Ajm {
 
-enum AjmAt9CodecFlags : u32 {
-    ParseRiffHeader = 1 << 0,
-    NonInterleavedOutput = 1 << 8,
-};
-DECLARE_ENUM_FLAG_OPERATORS(AjmAt9CodecFlags)
-
-struct AjmSidebandDecAt9CodecInfo {
-    u32 super_frame_size;
-    u32 frames_in_super_frame;
-    u32 next_frame_size;
-    u32 frame_samples;
+enum ConfigType : u32 {
+    ADTS = 1,
+    RAW = 2,
 };
 
-struct AjmAt9Decoder final : AjmCodec {
-    explicit AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags, u32 channels);
-    ~AjmAt9Decoder() override;
+enum AjmAacCodecFlags : u32 {
+    enableSbrDecode = 1 << 0,
+    enableNondelayOutput = 1 << 1,
+    surroundChannelInterleaveOrderExtlExtrLsRs = 1 << 2,
+    surroundChannelInterleaveOrderLsRsExtlExtr = 1 << 3,
+};
+DECLARE_ENUM_FLAG_OPERATORS(AjmAacCodecFlags)
+
+struct AjmAacDecoder final : AjmCodec {
+    explicit AjmAacDecoder(AjmFormatEncoding format, AjmAacCodecFlags flags, u32 channels);
+    ~AjmAacDecoder() override;
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override;
@@ -41,27 +41,28 @@ struct AjmAt9Decoder final : AjmCodec {
                               AjmInstanceGapless& gapless) override;
 
 private:
+    struct InitializeParameters {
+        ConfigType config_type;
+        u32 sampling_freq_type;
+    };
+
     template <class T>
     size_t WriteOutputSamples(SparseOutputBuffer& output, u32 skipped_samples, u32 max_samples) {
+        const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
         std::span<T> pcm_data{reinterpret_cast<T*>(m_pcm_buffer.data()),
                               m_pcm_buffer.size() / sizeof(T)};
-        pcm_data = pcm_data.subspan(skipped_samples * m_codec_info.channels);
+        pcm_data = pcm_data.subspan(skipped_samples * info->numChannels);
         const auto pcm_size = std::min(u32(pcm_data.size()), max_samples);
         return output.Write(pcm_data.subspan(0, pcm_size));
     }
 
-    void ParseRIFFHeader(std::span<u8>& input, AjmInstanceGapless& gapless);
-
     const AjmFormatEncoding m_format;
-    const AjmAt9CodecFlags m_flags;
-
-    bool m_is_initialized{};
-    void* m_handle{};
-    u8 m_config_data[ORBIS_AT9_CONFIG_DATA_SIZE]{};
-    u32 m_superframe_bytes_remain{};
-    u32 m_num_frames{};
-    Atrac9CodecInfo m_codec_info{};
+    const AjmAacCodecFlags m_flags;
+    const u32 m_channels;
     std::vector<u8> m_pcm_buffer;
+
+    InitializeParameters m_init_params = {};
+    AAC_DECODER_INSTANCE* m_decoder = nullptr;
 };
 
 } // namespace Libraries::Ajm
