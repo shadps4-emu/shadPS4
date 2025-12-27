@@ -36,7 +36,7 @@ u32 GetChannelMask(u32 num_channels) {
     case 8:
         return ORBIS_AJM_CHANNELMASK_7POINT1;
     default:
-        return 0;
+        UNREACHABLE();
     }
 }
 

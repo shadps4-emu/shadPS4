@@ -69,9 +69,12 @@ void AjmAacDecoder::Reset() {
             break;
         case 7:
             asc.m_channelConfiguration = 11;
-        case 8:
-            asc.m_channelConfiguration = 14; // 7, 12 or 14 ?
             break;
+        case 8:
+            asc.m_channelConfiguration = 12; // 7, 12 or 14 ?
+            break;
+        default:
+            UNREACHABLE();
         }
 
         UCHAR changed = 1;
@@ -110,7 +113,7 @@ u32 AjmAacDecoder::GetMinimumInputSize() const {
 u32 AjmAacDecoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
     const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
     if (info->frameSize <= 0) {
-        return 10;
+        return 0;
     }
     const auto skip_samples = std::min<u32>(gapless.current.skip_samples, info->frameSize);
     const auto samples =
