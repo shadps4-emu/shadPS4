@@ -16,305 +16,305 @@ s32 unix2bsd(s32 id) {
     switch (id) {
     default:
         LOG_CRITICAL(Kernel_Fs, "Can't resolve POSIX errno: {}", id);
-        return EINVAL;
+        return POSIX_EINVAL;
     case 0:
         return 0;
-    case POSIX_EPERM:
-        return EPERM;
-    case POSIX_ENOENT:
-        return ENOENT;
-    case POSIX_ESRCH:
-        return ESRCH;
-    case POSIX_EINTR:
-        return EINTR;
-    case POSIX_EIO:
-        return EIO;
-    case POSIX_ENXIO:
-        return ENXIO;
-    case POSIX_E2BIG:
-        return E2BIG;
-    case POSIX_ENOEXEC:
-        return ENOEXEC;
-    case POSIX_EBADF:
-        return EBADF;
-    case POSIX_ECHILD:
-        return ECHILD;
-    case POSIX_EDEADLK:
-        return EDEADLK;
-    case POSIX_ENOMEM:
-        return ENOMEM;
-    case POSIX_EACCES:
-        return EACCES;
-    case POSIX_EFAULT:
-        return EFAULT;
+    case EPERM:
+        return POSIX_EPERM;
+    case ENOENT:
+        return POSIX_ENOENT;
+    case ESRCH:
+        return POSIX_ESRCH;
+    case EINTR:
+        return POSIX_EINTR;
+    case EIO:
+        return POSIX_EIO;
+    case ENXIO:
+        return POSIX_ENXIO;
+    case E2BIG:
+        return POSIX_E2BIG;
+    case ENOEXEC:
+        return POSIX_ENOEXEC;
+    case EBADF:
+        return POSIX_EBADF;
+    case ECHILD:
+        return POSIX_ECHILD;
+    case EDEADLK:
+        return POSIX_EDEADLK;
+    case ENOMEM:
+        return POSIX_ENOMEM;
+    case EACCES:
+        return POSIX_EACCES;
+    case EFAULT:
+        return POSIX_EFAULT;
 
 #ifndef _WIN32
-    case POSIX_ENOTBLK:
-        return ENOTBLK;
+    case ENOTBLK:
+        return POSIX_ENOTBLK;
 #endif
 
-    case POSIX_EBUSY:
-        return EBUSY;
-    case POSIX_EEXIST:
-        return EEXIST;
-    case POSIX_EXDEV:
-        return EXDEV;
-    case POSIX_ENODEV:
-        return ENODEV;
-    case POSIX_ENOTDIR:
-        return ENOTDIR;
-    case POSIX_EISDIR:
-        return EISDIR;
-    case POSIX_EINVAL:
-        return EINVAL;
-    case POSIX_ENFILE:
-        return ENFILE;
-    case POSIX_EMFILE:
-        return EMFILE;
-    case POSIX_ENOTTY:
-        return ENOTTY;
-    case POSIX_ETXTBSY:
-        return ETXTBSY;
-    case POSIX_EFBIG:
-        return EFBIG;
-    case POSIX_ENOSPC:
-        return ENOSPC;
-    case POSIX_ESPIPE:
-        return ESPIPE;
-    case POSIX_EROFS:
-        return EROFS;
-    case POSIX_EMLINK:
-        return EMLINK;
-    case POSIX_EPIPE:
-        return EPIPE;
-    case POSIX_EDOM:
-        return EDOM;
-    case POSIX_ERANGE:
-        return ERANGE;
-    case POSIX_EAGAIN:
-        return EAGAIN;
-        // same as POSIX_EAGAIN
-    // case POSIX_EWOULDBLOCK:
-    //     return EWOULDBLOCK;
-    case POSIX_EINPROGRESS:
-        return EINPROGRESS;
-    case POSIX_EALREADY:
-        return EALREADY;
-    case POSIX_ENOTSOCK:
-        return ENOTSOCK;
-    case POSIX_EDESTADDRREQ:
-        return EDESTADDRREQ;
-    case POSIX_EMSGSIZE:
-        return EMSGSIZE;
-    case POSIX_EPROTOTYPE:
-        return EPROTOTYPE;
-    case POSIX_ENOPROTOOPT:
-        return ENOPROTOOPT;
-    case POSIX_EPROTONOSUPPORT:
-        return EPROTONOSUPPORT;
+    case EBUSY:
+        return POSIX_EBUSY;
+    case EEXIST:
+        return POSIX_EEXIST;
+    case EXDEV:
+        return POSIX_EXDEV;
+    case ENODEV:
+        return POSIX_ENODEV;
+    case ENOTDIR:
+        return POSIX_ENOTDIR;
+    case EISDIR:
+        return POSIX_EISDIR;
+    case EINVAL:
+        return POSIX_EINVAL;
+    case ENFILE:
+        return POSIX_ENFILE;
+    case EMFILE:
+        return POSIX_EMFILE;
+    case ENOTTY:
+        return POSIX_ENOTTY;
+    case ETXTBSY:
+        return POSIX_ETXTBSY;
+    case EFBIG:
+        return POSIX_EFBIG;
+    case ENOSPC:
+        return POSIX_ENOSPC;
+    case ESPIPE:
+        return POSIX_ESPIPE;
+    case EROFS:
+        return POSIX_EROFS;
+    case EMLINK:
+        return POSIX_EMLINK;
+    case EPIPE:
+        return POSIX_EPIPE;
+    case EDOM:
+        return POSIX_EDOM;
+    case ERANGE:
+        return POSIX_ERANGE;
+    case EAGAIN:
+        return POSIX_EAGAIN;
+    // same as POSIX_EAGAIN
+    // case EWOULDBLOCK:
+    //     return POSIX_EWOULDBLOCK;
+    case EINPROGRESS:
+        return POSIX_EINPROGRESS;
+    case EALREADY:
+        return POSIX_EALREADY;
+    case ENOTSOCK:
+        return POSIX_ENOTSOCK;
+    case EDESTADDRREQ:
+        return POSIX_EDESTADDRREQ;
+    case EMSGSIZE:
+        return POSIX_EMSGSIZE;
+    case EPROTOTYPE:
+        return POSIX_EPROTOTYPE;
+    case ENOPROTOOPT:
+        return POSIX_ENOPROTOOPT;
+    case EPROTONOSUPPORT:
+        return POSIX_EPROTONOSUPPORT;
 
 #if !defined(_WIN32)
-    case POSIX_ESOCKTNOSUPPORT:
-        return ESOCKTNOSUPPORT;
+    case ESOCKTNOSUPPORT:
+        return POSIX_ESOCKTNOSUPPORT;
 #endif
 
-    case POSIX_EOPNOTSUPP:
-        return EOPNOTSUPP;
+    case EOPNOTSUPP:
+        return POSIX_EOPNOTSUPP;
         // same as POSIX_EOPNOTSUPP
-        // case POSIX_ENOTSUP:
-        //     return ENOTSUP;
+        // case ENOTSUP:
+        //     return POSIX_ENOTSUP;
 
 #if !defined(_WIN32)
-    case POSIX_EPFNOSUPPORT:
-        return EPFNOSUPPORT;
+    case EPFNOSUPPORT:
+        return POSIX_EPFNOSUPPORT;
 #endif
 
-    case POSIX_EAFNOSUPPORT:
-        return EAFNOSUPPORT;
-    case POSIX_EADDRINUSE:
-        return EADDRINUSE;
-    case POSIX_EADDRNOTAVAIL:
-        return EADDRNOTAVAIL;
-    case POSIX_ENETDOWN:
-        return ENETDOWN;
-    case POSIX_ENETUNREACH:
-        return ENETUNREACH;
-    case POSIX_ENETRESET:
-        return ENETRESET;
-    case POSIX_ECONNABORTED:
-        return ECONNABORTED;
-    case POSIX_ECONNRESET:
-        return ECONNRESET;
-    case POSIX_ENOBUFS:
-        return ENOBUFS;
-    case POSIX_EISCONN:
-        return EISCONN;
-    case POSIX_ENOTCONN:
-        return ENOTCONN;
+    case EAFNOSUPPORT:
+        return POSIX_EAFNOSUPPORT;
+    case EADDRINUSE:
+        return POSIX_EADDRINUSE;
+    case EADDRNOTAVAIL:
+        return POSIX_EADDRNOTAVAIL;
+    case ENETDOWN:
+        return POSIX_ENETDOWN;
+    case ENETUNREACH:
+        return POSIX_ENETUNREACH;
+    case ENETRESET:
+        return POSIX_ENETRESET;
+    case ECONNABORTED:
+        return POSIX_ECONNABORTED;
+    case ECONNRESET:
+        return POSIX_ECONNRESET;
+    case ENOBUFS:
+        return POSIX_ENOBUFS;
+    case EISCONN:
+        return POSIX_EISCONN;
+    case ENOTCONN:
+        return POSIX_ENOTCONN;
 
 #if !defined(_WIN32)
-    case POSIX_ESHUTDOWN:
-        return ESHUTDOWN;
-    case POSIX_ETOOMANYREFS:
-        return ETOOMANYREFS;
+    case ESHUTDOWN:
+        return POSIX_ESHUTDOWN;
+    case ETOOMANYREFS:
+        return POSIX_ETOOMANYREFS;
 #endif
 
-    case POSIX_ETIMEDOUT:
-        return ETIMEDOUT;
-    case POSIX_ECONNREFUSED:
-        return ECONNREFUSED;
-    case POSIX_ELOOP:
-        return ELOOP;
-    case POSIX_ENAMETOOLONG:
-        return ENAMETOOLONG;
+    case ETIMEDOUT:
+        return POSIX_ETIMEDOUT;
+    case ECONNREFUSED:
+        return POSIX_ECONNREFUSED;
+    case ELOOP:
+        return POSIX_ELOOP;
+    case ENAMETOOLONG:
+        return POSIX_ENAMETOOLONG;
 
 #if !defined(_WIN32)
-    case POSIX_EHOSTDOWN:
-        return EHOSTDOWN;
+    case EHOSTDOWN:
+        return POSIX_EHOSTDOWN;
 #endif
 
-    case POSIX_EHOSTUNREACH:
-        return EHOSTUNREACH;
-    case POSIX_ENOTEMPTY:
-        return ENOTEMPTY;
+    case EHOSTUNREACH:
+        return POSIX_EHOSTUNREACH;
+    case ENOTEMPTY:
+        return POSIX_ENOTEMPTY;
 
 #if !(defined(_WIN32) || defined(__linux__))
-    case POSIX_EPROCLIM:
-        return EPROCLIM;
+    case EPROCLIM:
+        return POSIX_EPROCLIM;
 #endif
 
 #if !defined(_WIN32)
-    case POSIX_EUSERS:
-        return EUSERS;
-    case POSIX_EDQUOT:
-        return EDQUOT;
-    case POSIX_ESTALE:
-        return ESTALE;
-    case POSIX_EREMOTE:
-        return EREMOTE;
+    case EUSERS:
+        return POSIX_EUSERS;
+    case EDQUOT:
+        return POSIX_EDQUOT;
+    case ESTALE:
+        return POSIX_ESTALE;
+    case EREMOTE:
+        return POSIX_EREMOTE;
 #endif
 
 #if !(defined(_WIN32) || defined(__linux__))
-    case POSIX_EBADRPC:
-        return EBADRPC;
-    case POSIX_ERPCMISMATCH:
-        return ERPCMISMATCH;
-    case POSIX_EPROGUNAVAIL:
-        return EPROGUNAVAIL;
-    case POSIX_EPROGMISMATCH:
-        return EPROGMISMATCH;
-    case POSIX_EPROCUNAVAIL:
-        return EPROCUNAVAIL;
+    case EBADRPC:
+        return POSIX_EBADRPC;
+    case ERPCMISMATCH:
+        return POSIX_ERPCMISMATCH;
+    case EPROGUNAVAIL:
+        return POSIX_EPROGUNAVAIL;
+    case EPROGMISMATCH:
+        return POSIX_EPROGMISMATCH;
+    case EPROCUNAVAIL:
+        return POSIX_EPROCUNAVAIL;
 #endif
 
-    case POSIX_ENOLCK:
-        return ENOLCK;
-    case POSIX_ENOSYS:
-        return ENOSYS;
+    case ENOLCK:
+        return POSIX_ENOLCK;
+    case ENOSYS:
+        return POSIX_ENOSYS;
 
 #if !(defined(_WIN32) || defined(__linux__))
-    case POSIX_EFTYPE:
-        return EFTYPE;
-    case POSIX_EAUTH:
-        return EAUTH;
-    case POSIX_ENEEDAUTH:
-        return ENEEDAUTH;
+    case EFTYPE:
+        return POSIX_EFTYPE;
+    case EAUTH:
+        return POSIX_EAUTH;
+    case ENEEDAUTH:
+        return POSIX_ENEEDAUTH;
 #endif
 
-    case POSIX_EIDRM:
-        return EIDRM;
-    case POSIX_ENOMSG:
-        return ENOMSG;
-    case POSIX_EOVERFLOW:
-        return EOVERFLOW;
-    case POSIX_ECANCELED:
-        return ECANCELED;
-    case POSIX_EILSEQ:
-        return EILSEQ;
+    case EIDRM:
+        return POSIX_EIDRM;
+    case ENOMSG:
+        return POSIX_ENOMSG;
+    case EOVERFLOW:
+        return POSIX_EOVERFLOW;
+    case ECANCELED:
+        return POSIX_ECANCELED;
+    case EILSEQ:
+        return POSIX_EILSEQ;
 
 #if !(defined(_WIN32) || defined(__linux__))
-    case POSIX_ENOATTR:
-        return ENOATTR;
+    case ENOATTR:
+        return POSIX_ENOATTR;
 #ifndef __APPLE_CC__
-    case POSIX_EDOOFUS:
-        return EDOOFUS;
+    case EDOOFUS:
+        return POSIX_EDOOFUS;
 #endif
 #endif // !(defined(_WIN32) || defined(__linux__))
 
-    case POSIX_EBADMSG:
-        return EBADMSG;
+    case EBADMSG:
+        return POSIX_EBADMSG;
 
 #ifndef _WIN32
-    case POSIX_EMULTIHOP:
-        return EMULTIHOP;
+    case EMULTIHOP:
+        return POSIX_EMULTIHOP;
 #endif
 
-    case POSIX_ENOLINK:
-        return ENOLINK;
-    case POSIX_EPROTO:
-        return EPROTO;
+    case ENOLINK:
+        return POSIX_ENOLINK;
+    case EPROTO:
+        return POSIX_EPROTO;
 
 #if !(defined(_WIN32) || defined(__linux__))
-    case POSIX_ENOTCAPABLE:
-        return ENOTCAPABLE;
+    case ENOTCAPABLE:
+        return POSIX_ENOTCAPABLE;
 #ifndef __APPLE_CC__
-    case POSIX_ECAPMODE:
-        return ECAPMODE;
-    case POSIX_ENOBLK:
-        return ENOBLK;
-    case POSIX_EICV:
-        return EICV;
-    case POSIX_ENOPLAYGOENT:
-        return ENOPLAYGOENT;
-    case POSIX_EREVOKE:
-        return EREVOKE;
-    case POSIX_ESDKVERSION:
-        return ESDKVERSION;
-    case POSIX_ESTART:
-        return ESTART;
-    case POSIX_ESTOP:
-        return ESTOP;
-    case POSIX_EINVALID2MB:
-        return EINVALID2MB;
-#endif                // !__APPLE_CC__
-    case POSIX_ELAST: // same as EINVALID2MB on macOS
-        return ELAST;
+    case ECAPMODE:
+        return POSIX_ECAPMODE;
+    case ENOBLK:
+        return POSIX_ENOBLK;
+    case EICV:
+        return POSIX_EICV;
+    case ENOPLAYGOENT:
+        return POSIX_ENOPLAYGOENT;
+    case EREVOKE:
+        return POSIX_EREVOKE;
+    case ESDKVERSION:
+        return POSIX_ESDKVERSION;
+    case ESTART:
+        return POSIX_ESTART;
+    case ESTOP:
+        return POSIX_ESTOP;
+    case EINVALID2MB:
+        return POSIX_EINVALID2MB;
+#endif          // !__APPLE_CC__
+    case ELAST: // same as EINVALID2MB on macOS
+        return POSIX_ELAST;
 #ifndef __APPLE_CC__
-    case POSIX_EADHOC:
-        return EADHOC;
-    case POSIX_EINACTIVEDISABLED:
-        return EINACTIVEDISABLED;
-    case POSIX_ENETNODATA:
-        return ENETNODATA;
-    case POSIX_ENETDESC:
-        return ENETDESC;
-    case POSIX_ENETDESCTIMEDOUT:
-        return ENETDESCTIMEDOUT;
-    case POSIX_ENETINTR:
-        return ENETINTR;
-    case POSIX_ERETURN:
-        return ERETURN;
-    case POSIX_EFPOS:
-        return EFPOS;
+    case EADHOC:
+        return POSIX_EADHOC;
+    case EINACTIVEDISABLED:
+        return POSIX_EINACTIVEDISABLED;
+    case ENETNODATA:
+        return POSIX_ENETNODATA;
+    case ENETDESC:
+        return POSIX_ENETDESC;
+    case ENETDESCTIMEDOUT:
+        return POSIX_ENETDESCTIMEDOUT;
+    case ENETINTR:
+        return POSIX_ENETINTR;
+    case ERETURN:
+        return POSIX_ERETURN;
+    case EFPOS:
+        return POSIX_EFPOS;
 #endif // !__APPLE_CC__
 #endif
 
-    case POSIX_ENODATA:
-        return ENODATA;
-    case POSIX_ENOSR:
-        return ENOSR;
-    case POSIX_ENOSTR:
-        return ENOSTR;
-    case POSIX_ENOTRECOVERABLE:
-        return ENOTRECOVERABLE;
+    case ENODATA:
+        return POSIX_ENODATA;
+    case ENOSR:
+        return POSIX_ENOSR;
+    case ENOSTR:
+        return POSIX_ENOSTR;
+    case ENOTRECOVERABLE:
+        return POSIX_ENOTRECOVERABLE;
 #if !(defined(__linux__) || defined(__APPLE_CC__))
-    case POSIX_EOTHER:
-        return EOTHER;
+    case EOTHER:
+        return POSIX_EOTHER;
 #endif
-    case POSIX_EOWNERDEAD:
-        return EOWNERDEAD;
-    case POSIX_ETIME:
-        return ETIME;
+    case EOWNERDEAD:
+        return POSIX_EOWNERDEAD;
+    case ETIME:
+        return POSIX_ETIME;
     }
     UNREACHABLE_MSG("Something went horribly wrong");
 }

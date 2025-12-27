@@ -534,8 +534,6 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.Read(host_fd, buf, count); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -573,8 +571,6 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.PRead(host_fd, buf, count, offset); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -610,8 +606,6 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernel
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.ReadV(host_fd, iov, iovcnt); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -646,8 +640,6 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKerne
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.PReadV(host_fd, iov, iovcnt, offset); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -681,8 +673,6 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.Write(host_fd, buf, count); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -716,8 +706,6 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.PWrite(host_fd, buf, count, offset); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -752,8 +740,6 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.WriteV(host_fd, iov, iovcnt); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
@@ -788,8 +774,6 @@ s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKern
         int host_fd = handle->host_fd;
         if (hio_status = qfs.hio_driver.PWriteV(host_fd, iov, iovcnt, offset); hio_status < 0) {
             // hosts operation must succeed in order to continue
-            if (errno == EINTR)
-                return hio_status;
             return hio_status;
         }
         host_used = true;
