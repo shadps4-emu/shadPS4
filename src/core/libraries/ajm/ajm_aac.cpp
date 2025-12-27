@@ -199,4 +199,9 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
     return result;
 }
 
+u32 AjmAacDecoder::GetNumChannels() const {
+    const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
+    return u32(info->numChannels);
+}
+
 } // namespace Libraries::Ajm

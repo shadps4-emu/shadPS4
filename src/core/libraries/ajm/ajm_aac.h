@@ -46,12 +46,13 @@ private:
         u32 sampling_freq_type;
     };
 
+    u32 GetNumChannels() const;
+
     template <class T>
     size_t WriteOutputSamples(SparseOutputBuffer& output, u32 skipped_samples, u32 max_samples) {
-        const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
         std::span<T> pcm_data{reinterpret_cast<T*>(m_pcm_buffer.data()),
                               m_pcm_buffer.size() / sizeof(T)};
-        pcm_data = pcm_data.subspan(skipped_samples * info->numChannels);
+        pcm_data = pcm_data.subspan(skipped_samples * GetNumChannels());
         const auto pcm_size = std::min(u32(pcm_data.size()), max_samples);
         return output.Write(pcm_data.subspan(0, pcm_size));
     }
