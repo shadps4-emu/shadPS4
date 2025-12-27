@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include "common/logging/log.h"
+#include "common/scope_exit.h"
 #include "core/file_sys/hostio/host_io_posix.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
 #include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
@@ -88,8 +89,8 @@ s32 HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
 }
 
 s32 HostIO_Virtual::Close(const s32 fd) {
-    // std::lock_guard<std::mutex> lock(ctx_mutex);
-    // N/A
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+    // We came here, so fd is valid
     return 0;
 }
 
@@ -146,13 +147,13 @@ s32 HostIO_Virtual::Unlink(const fs::path& path) {
 }
 
 s32 HostIO_Virtual::Remove(const fs::path& path) {
-    // std::lock_guard<std::mutex> lock(ctx_mutex);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
     return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Flush(const s32 fd) {
-    // std::lock_guard<std::mutex> lock(ctx_mutex);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
     // not applicable
     return 0;
@@ -183,13 +184,11 @@ s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
     if (nullptr == node)
         return -POSIX_EBADF;
 
+    node->__SetOffset(handle->pos);
     s64 new_position = node->lseek(handle->pos, offset, whence);
-
-    if (new_position < 0)
-        return -POSIX_EINVAL;
-
-    handle->pos = new_position;
-    return handle->pos;
+    if (new_position >= 0)
+        handle->pos = new_position;
+    return new_position;
 }
 
 s64 HostIO_Virtual::Tell(const s32 fd) {
@@ -233,15 +232,8 @@ s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
 }
 
 s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
-    s64 br = PRead(fd, buf, count, handle->pos);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    if (br > 0)
-        handle->pos += br;
-
-    return br;
-}
-
-s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     if (nullptr == handle)
         return -POSIX_EINVAL;
 
@@ -250,19 +242,51 @@ s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     if (nullptr == node)
         return -POSIX_EBADF;
 
+    SCOPE_EXIT {
+        handle->pos = node->__GetOffset();
+    };
+
+    node->__SetOffset(handle->pos);
+    return node->read(buf, count);
+}
+
+s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
+    if (nullptr == handle)
+        return -POSIX_EINVAL;
+
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -POSIX_EBADF;
+
+    node->__SetOffset(handle->pos);
     return node->pread(buf, count, offset);
 }
 
 s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
-    s64 br = PReadV(fd, iov, iovcnt, handle->pos);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    if (br > 0)
-        handle->pos += br;
+    if (nullptr == handle)
+        return -POSIX_EINVAL;
 
-    return br;
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -POSIX_EBADF;
+
+    SCOPE_EXIT {
+        handle->pos = node->__GetOffset();
+    };
+
+    node->__SetOffset(handle->pos);
+    return node->readv(iov, iovcnt);
 }
 
 s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
         return -POSIX_EBADF;
 
@@ -274,21 +298,41 @@ s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
     if (handle->append)
         offset = node->st.st_size;
 
+    node->__SetOffset(handle->pos);
     return node->preadv(iov, iovcnt, offset);
 }
 
 s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
-    s64 bw = this->PWrite(fd, buf, count, handle->pos);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    if (bw > 0)
-        handle->pos += bw;
+    if (nullptr == handle)
+        return -POSIX_EINVAL;
 
-    return bw;
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -POSIX_EBADF;
+
+    if (handle->append) {
+        node->__SetOffset(node->st.st_size);
+        s64 tbw = node->write(buf, count);
+        node->__SetOffset(handle->pos);
+        return tbw;
+    }
+
+    SCOPE_EXIT {
+        handle->pos = node->__GetOffset();
+    };
+
+    node->__SetOffset(handle->pos);
+    return node->write(buf, count);
 }
 
 s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
+    std::lock_guard<std::mutex> lock(ctx_mutex);
+
     if (nullptr == handle)
-        return -POSIX_EBADF;
+        return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
 
@@ -298,16 +342,34 @@ s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset)
     if (handle->append)
         offset = node->st.st_size;
 
+    node->__SetOffset(handle->pos);
     return node->pwrite(buf, count, offset);
 }
 
 s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
-    s64 bw = this->PWriteV(fd, iov, iovcnt, handle->pos);
+    std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    if (bw > 0)
-        handle->pos += bw;
+    if (nullptr == handle)
+        return -POSIX_EINVAL;
 
-    return bw;
+    inode_ptr node = handle->node;
+
+    if (nullptr == node)
+        return -POSIX_EBADF;
+
+    if (handle->append) {
+        node->__SetOffset(node->st.st_size);
+        s64 tbw = node->writev(iov, iovcnt);
+        node->__SetOffset(handle->pos);
+        return tbw;
+    }
+
+    SCOPE_EXIT {
+        handle->pos = node->__GetOffset();
+    };
+
+    node->__SetOffset(handle->pos);
+    return node->writev(iov, iovcnt);
 }
 
 s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
@@ -324,6 +386,7 @@ s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcn
     if (handle->append)
         offset = node->st.st_size;
 
+    node->__SetOffset(handle->pos);
     return node->pwritev(iov, iovcnt, offset);
 }
 
@@ -441,24 +504,24 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
         return -POSIX_EINVAL;
     }
 
-    s64 br = node->getdents(buf, count, handle->pos, basep);
+    SCOPE_EXIT {
+        handle->pos = node->__GetOffset();
+    };
 
-    if (br > 0)
-        handle->pos += br;
-
-    return br;
+    node->__SetOffset(handle->pos);
+    return node->getdents(buf, count, basep);
 }
 
 s32 HostIO_Virtual::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    return POSIX_ENOSYS;
+    return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
     std::lock_guard<std::mutex> lock(ctx_mutex);
 
-    return POSIX_ENOSYS;
+    return -POSIX_ENOSYS;
 }
 
 } // namespace HostIODriver

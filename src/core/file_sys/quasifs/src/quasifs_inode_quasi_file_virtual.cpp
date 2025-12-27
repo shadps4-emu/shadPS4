@@ -9,34 +9,37 @@
 
 namespace QuasiFS {
 
-s64 VirtualFile::pread(void* buf, u64 count, s64 offset) {
-    s64 read_amt = this->data.size() - offset - count;
+s64 VirtualFile::read(void* buf, u64 count) {
+    st.st_atim.tv_sec = time(0);
 
+    s64 read_amt = this->data.size() - descriptor_offset - count;
     // if >= 0 - we're good to go
     // <0 - n-bytes are missing, won't enter loop
     read_amt = count + read_amt * (read_amt < 0);
 
     for (s64 idx = 0; idx < read_amt; idx++) {
-        char c = this->data.at(idx + offset);
+        char c = this->data.at(idx + descriptor_offset);
         static_cast<char*>(buf)[idx] = c;
     }
-
-    st.st_atim.tv_sec = time(0);
+    descriptor_offset += read_amt;
     return read_amt;
 }
 
-s64 VirtualFile::pwrite(const void* buf, u64 count, s64 offset) {
+s64 VirtualFile::write(const void* buf, u64 count) {
+    st.st_mtim.tv_sec = time(0);
+
     auto& size = this->st.st_size;
-    auto end_pos = offset + count;
-    size = end_pos > size ? end_pos : size;
+    auto end_pos = descriptor_offset + count;
 
     // size can only be greater, so it will always scale up
-    this->data.resize(size, 0);
+    if (end_pos < size) {
+        this->data.resize(size, 0);
+        size = end_pos;
+    }
 
-    for (u64 idx = offset; idx < size; idx++)
-        this->data[idx] = static_cast<const char*>(buf)[idx];
-
-    st.st_mtim.tv_sec = time(0);
+    for (u64 idx = descriptor_offset; idx < size; idx++)
+        this->data[idx] = static_cast<const char*>(buf)[idx - descriptor_offset];
+    descriptor_offset += count;
     return count;
 }
 

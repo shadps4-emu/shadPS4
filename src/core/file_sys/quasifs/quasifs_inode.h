@@ -8,6 +8,7 @@
 #include <vector>
 #include <assert.h>
 
+#include "common/scope_exit.h"
 #include "common/types.h"
 #include "common/va_ctx.h"
 #include "core/libraries/kernel/file_system.h"
@@ -21,6 +22,12 @@ namespace QuasiFS {
 static_assert(sizeof(time_t) == 8, "Time is not stored in 64 bits");
 
 class Inode {
+protected:
+    // This variable is SACRIFICIAL and TEMPORARY
+    // It's set by calling function, as multiple fd's can be used with a single file;
+    // ergo every caller must remember to set it to its liking
+    s64 descriptor_offset{0};
+
 public:
     Inode() {
         st.st_ino = 0;
@@ -52,40 +59,77 @@ public:
         return -POSIX_ENOTTY;
     }
 
-    virtual s64 pread(void* buf, u64 count, s64 offset) {
+    virtual s64 read(void* buf, u64 count) {
         return -POSIX_EBADF;
+    }
+
+    virtual s64 write(const void* buf, u64 count) {
+        return -POSIX_EBADF;
+    }
+
+    virtual s64 pread(void* buf, u64 count, s64 offset) {
+        s64 old_offset = this->descriptor_offset;
+        SCOPE_EXIT {
+            this->descriptor_offset = old_offset;
+        };
+
+        return this->read(buf, count);
     }
 
     virtual s64 pwrite(const void* buf, u64 count, s64 offset) {
-        return -POSIX_EBADF;
+        s64 old_offset = this->descriptor_offset;
+        SCOPE_EXIT {
+            this->descriptor_offset = old_offset;
+        };
+
+        return this->write(buf, count);
+    }
+
+    virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
+        u64 tbr = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->read(iov[idx].iov_base, iov[idx].iov_len);
+            if (status < 0)
+                return status;
+            tbr += status;
+        }
+        return tbr;
+    }
+
+    virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
+        u64 tbw = 0;
+        for (unsigned int idx = 0; idx < iovcnt; idx++) {
+            int status = this->write(iov[idx].iov_base, iov[idx].iov_len);
+            if (status < 0)
+                return status;
+            tbw += status;
+        }
+        return tbw;
     }
 
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
-        u64 tb = 0;
-        for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->pread(iov[idx].iov_base, iov[idx].iov_len, offset);
-            if (status < 0)
-                return status;
-            tb += status;
-        }
-        return tb;
+        s64 old_offset = this->descriptor_offset;
+        SCOPE_EXIT {
+            this->descriptor_offset = old_offset;
+        };
+
+        return this->readv(iov, iovcnt);
     }
 
     virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
-        u64 tb = 0;
-        for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->pwrite(iov[idx].iov_base, iov[idx].iov_len, offset);
-            if (status < 0)
-                return status;
-            tb += status;
-        }
-        return tb;
+        s64 old_offset = this->descriptor_offset;
+        SCOPE_EXIT {
+            this->descriptor_offset = old_offset;
+        };
+
+        return this->writev(iov, iovcnt);
     }
 
     virtual s64 lseek(s64 current, s64 offset, s32 whence) {
-        return ((SeekOrigin::ORIGIN == whence) * offset) +
-               ((SeekOrigin::CURRENT == whence) * (current + offset)) +
-               ((SeekOrigin::END == whence) * (this->st.st_size + offset));
+        this->descriptor_offset = ((SeekOrigin::ORIGIN == whence) * offset) +
+                                  ((SeekOrigin::CURRENT == whence) * (current + offset)) +
+                                  ((SeekOrigin::END == whence) * (this->st.st_size + offset));
+        return this->descriptor_offset >= 0 ? this->descriptor_offset : -POSIX_EINVAL;
     }
 
     virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) {
@@ -101,7 +145,7 @@ public:
         return -POSIX_EINVAL;
     }
 
-    virtual s64 getdents(void* buf, u64 count, s64 offset, s64* basep) {
+    virtual s64 getdents(void* buf, u64 count, s64* basep) {
         return -POSIX_EINVAL;
     }
 
@@ -142,14 +186,21 @@ public:
         return this->st.st_mode & (QUASI_S_IXUSR | QUASI_S_IXGRP | QUASI_S_IXOTH);
     }
 
-    u32 GetFileno(void) {
+    // init - used by qfs/partition
+    u32 __GetFileno(void) {
         return this->st.st_ino;
     }
-    void SetFileno(fileno_t fileno) {
+    void __SetFileno(fileno_t fileno) {
         this->st.st_ino = fileno;
     }
 
-    struct Libraries::Kernel::OrbisKernelStat st{};
+    // file descriptors - set
+    s64 __GetOffset(void) {
+        return this->descriptor_offset;
+    }
+    void __SetOffset(s64 new_offset) {
+        this->descriptor_offset = new_offset;
+    }
 
     int chmod(u16 mode) {
         u16& st_mode = this->st.st_mode;
@@ -157,6 +208,8 @@ public:
         st.st_birthtim.tv_sec = time(0);
         return 0;
     }
+
+    struct Libraries::Kernel::OrbisKernelStat st{};
 };
 
 } // namespace QuasiFS

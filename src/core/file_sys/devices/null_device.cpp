@@ -11,10 +11,12 @@ NullDevice::NullDevice() = default;
 NullDevice::~NullDevice() = default;
 
 s64 NullDevice::read(void* buf, u64 count) {
+    descriptor_offset += count;
     return 0;
 }
 
 s64 NullDevice::write(const void* buf, u64 count) {
+    descriptor_offset += count;
     return count;
 }
 

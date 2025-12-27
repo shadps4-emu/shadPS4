@@ -31,8 +31,8 @@ public:
         return _out;
     }
 
-    virtual s64 pread(void* buf, u64 count, s64 offset) override;
-    virtual s64 pwrite(const void* buf, u64 count, s64 offset) override;
+    virtual s64 read(void* buf, u64 count) override;
+    virtual s64 write(const void* buf, u64 count) override;
 
     s32 fsync() override;
 

@@ -24,24 +24,26 @@ DirectoryPFS::DirectoryPFS() {
 
 DirectoryPFS::~DirectoryPFS() = default;
 
-s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
+s64 DirectoryPFS::read(void* buf, u64 count) {
     this->RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
-    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    s64 bytes_available = this->dirent_cache_bin.size() - descriptor_offset;
     if (bytes_available <= 0)
         return 0;
 
     bytes_available = std::min<s64>(bytes_available, static_cast<s64>(count));
-    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
+    memcpy(buf, this->dirent_cache_bin.data() + descriptor_offset, bytes_available);
 
-    s64 to_fill =
-        (std::min<s64>(this->st.st_size, static_cast<s64>(count))) - bytes_available - offset;
+    s64 to_fill = (std::min<s64>(this->st.st_size, static_cast<s64>(count))) - bytes_available -
+                  descriptor_offset;
     if (to_fill < 0) {
         LOG_ERROR(Kernel_Fs, "Dirent may have leaked {} bytes", -to_fill);
         return -to_fill + bytes_available;
     }
     memset(static_cast<u8*>(buf) + bytes_available, 0, to_fill);
+
+    descriptor_offset += to_fill + bytes_available;
     return to_fill + bytes_available;
 }
 
@@ -49,15 +51,15 @@ s64 DirectoryPFS::pread(void* buf, u64 count, s64 offset) {
 // it could be just a pointer, but I don't have energy to poke around this
 // also, it's *assumed* it's always read in full 64kb chunks. testing shows very inconsistent
 // results when using other sizes
-s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
+s64 DirectoryPFS::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
     if (basep)
-        *basep = offset;
+        *basep = this->descriptor_offset;
 
     // same as others, we just don't need a variable
-    if (offset >= this->st.st_size)
+    if (this->descriptor_offset >= this->st.st_size)
         return 0;
 
     u64 bytes_written = 0;
@@ -72,7 +74,7 @@ s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
         if (pfs_dirent->d_namlen == 0)
             break;
 
-        if (starting_offset < offset) {
+        if (starting_offset < this->descriptor_offset) {
             // reading starts from the nearest full dirent
             starting_offset += pfs_dirent->d_reclen;
             buffer_position = bytes_written + starting_offset;
@@ -98,6 +100,9 @@ s64 DirectoryPFS::getdents(void* buf, u64 count, s64 offset, s64* basep) {
         buffer_position = bytes_written + starting_offset;
     }
 
+    this->descriptor_offset = (buffer_position >= this->dirent_cache_bin.size())
+                                  ? this->st.st_size
+                                  : (this->descriptor_offset + bytes_written);
     return bytes_written;
 }
 
@@ -117,7 +122,7 @@ void DirectoryPFS::RebuildDirents(void) {
         inode_ptr node = entry->second;
         std::string name = entry->first;
 
-        tmp.d_fileno = node->GetFileno();
+        tmp.d_fileno = node->__GetFileno();
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;

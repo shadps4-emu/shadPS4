@@ -19,10 +19,12 @@ s64 SRandomDevice::read(void* buf, u64 count) {
     for (size_t i = 0; i < count; i++) {
         rbuf[i] = std::rand();
     }
+    descriptor_offset += count;
     return count;
 }
 
 s64 SRandomDevice::write(const void* buf, u64 count) {
+    descriptor_offset += count;
     return count;
 }
 

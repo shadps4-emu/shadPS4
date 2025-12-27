@@ -15,7 +15,7 @@ QuasiDirectory::QuasiDirectory() {
     this->dirent_cache_bin.reserve(512);
 }
 
-s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
+s64 QuasiDirectory::read(void* buf, u64 count) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
@@ -25,14 +25,15 @@ s64 QuasiDirectory::pread(void* buf, u64 count, s64 offset) {
     // space will be left untouched
     // reclen always sums up to end of current alignment
 
-    s64 bytes_available = this->dirent_cache_bin.size() - offset;
+    s64 bytes_available = this->dirent_cache_bin.size() - this->descriptor_offset;
     if (bytes_available <= 0)
         return 0;
     bytes_available = std::min<s64>(bytes_available, static_cast<s64>(count));
 
     // data
-    memcpy(buf, this->dirent_cache_bin.data() + offset, bytes_available);
+    memcpy(buf, this->dirent_cache_bin.data() + this->descriptor_offset, bytes_available);
 
+    this->descriptor_offset += bytes_available;
     return bytes_available;
 }
 
@@ -51,32 +52,51 @@ s32 QuasiDirectory::ftruncate(s64 length) {
     return -POSIX_EISDIR;
 }
 
-s64 QuasiDirectory::getdents(void* buf, u64 count, s64 offset, s64* basep) {
+s64 QuasiDirectory::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);
 
     if (basep)
-        *basep = offset;
+        *basep = this->descriptor_offset;
 
-    // at this point count is ALWAYS >=512 (checked in VIO Driver)
-    // always returns up to 512 bytes
-    // return always alignd final fptr to 512 bytes
-    // doesn't zero-out remaining space in buffer
-
-    // we're assuming this is always aligned, no check here
-    s64 bytes_available = this->dirent_cache_bin.size() - offset;
-    if (bytes_available <= 0)
+    // same as others, we just don't need a variable
+    if (this->descriptor_offset >= this->st.st_size)
         return 0;
 
-    // offset might push it too far so read count becomes misaligned
-    u64 apparent_end = offset + count;
-    u64 minimum_read = Common::AlignDown(apparent_end, 512) - offset;
-    s64 to_read = std::min<s64>(bytes_available, static_cast<s64>(minimum_read));
+    s64 bytes_written = 0;
+    s64 working_offset = this->descriptor_offset;
+    s64 dirent_buffer_offset = 0;
+    s64 aligned_count = Common::AlignDown(count, 512);
 
-    std::copy(dirent_cache_bin.data() + offset, dirent_cache_bin.data() + offset + to_read,
-              static_cast<u8*>(buf));
+    const u8* dirent_buffer = this->dirent_cache_bin.data();
+    while (dirent_buffer_offset < this->dirent_cache_bin.size()) {
+        const u8* normal_dirent_ptr = dirent_buffer + dirent_buffer_offset;
+        const dirent_t* normal_dirent = reinterpret_cast<const dirent_t*>(normal_dirent_ptr);
+        auto d_reclen = normal_dirent->d_reclen;
 
-    return to_read;
+        // bad, incomplete or OOB entry
+        if (normal_dirent->d_namlen == 0)
+            break;
+
+        if (working_offset >= d_reclen) {
+            dirent_buffer_offset += d_reclen;
+            working_offset -= d_reclen;
+            continue;
+        }
+
+        if ((bytes_written + d_reclen) > aligned_count)
+            // dirents are aligned to the last full one
+            break;
+
+        memcpy(static_cast<u8*>(buf) + bytes_written, normal_dirent_ptr + working_offset,
+               d_reclen - working_offset);
+        bytes_written += d_reclen - working_offset;
+        dirent_buffer_offset += d_reclen;
+        working_offset = 0;
+    }
+
+    this->descriptor_offset += bytes_written;
+    return bytes_written;
 }
 
 inode_ptr QuasiDirectory::lookup(const std::string& name) {
@@ -150,7 +170,7 @@ void QuasiDirectory::RebuildDirents(void) {
         std::string name = entry->first;
 
         // prepare dirent
-        tmp.d_fileno = node->GetFileno();
+        tmp.d_fileno = node->__GetFileno();
         tmp.d_namlen = name.size();
         strncpy(tmp.d_name, name.data(), tmp.d_namlen + 1);
         tmp.d_type = node->type() >> 12;

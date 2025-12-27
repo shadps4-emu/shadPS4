@@ -329,7 +329,7 @@ int Partition::rmInode(inode_ptr node) {
 
     // TODO: check for open file handles, return -POSIX_EEBUSY
 
-    this->inode_table.erase(node->GetFileno());
+    this->inode_table.erase(node->__GetFileno());
     return 0;
 }
 
@@ -338,10 +338,10 @@ bool Partition::IndexInode(inode_ptr node) {
         return false;
 
     // Assign fileno and add it to the fs table
-    fileno_t node_fileno = node->GetFileno();
+    fileno_t node_fileno = node->__GetFileno();
     if (node_fileno == 0) {
         node_fileno = this->NextFileno();
-        node->SetFileno(node_fileno);
+        node->__SetFileno(node_fileno);
     }
 
     inode_table[node_fileno] = node;

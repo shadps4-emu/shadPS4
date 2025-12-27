@@ -11,9 +11,10 @@ Logger::Logger(std::string prefix, bool is_err) : prefix(std::move(prefix)), is_
 
 Logger::~Logger() = default;
 
-s64 Logger::write(const void* buf, u64 nbytes) {
-    log(static_cast<const char*>(buf), nbytes);
-    return nbytes;
+s64 Logger::write(const void* buf, u64 count) {
+    log(static_cast<const char*>(buf), count);
+    descriptor_offset += count;
+    return count;
 }
 
 s32 Logger::fsync() {
@@ -21,9 +22,9 @@ s32 Logger::fsync() {
     return 0;
 }
 
-void Logger::log(const char* buf, u64 nbytes) {
+void Logger::log(const char* buf, u64 count) {
     std::scoped_lock lock{mtx};
-    const char* end = buf + nbytes;
+    const char* end = buf + count;
     for (const char* it = buf; it < end; ++it) {
         char c = *it;
         if (c == '\r') {

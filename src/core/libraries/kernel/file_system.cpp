@@ -95,13 +95,13 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 //
 
 // read
-s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 nbytes) {
+s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 count) {
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(count, remaining));
 
-    int result = g_qfs->Operation.Read(fd, buf, nbytes);
+    int result = g_qfs->Operation.Read(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -109,7 +109,7 @@ s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 nbytes) {
     return result;
 
     // if (file->type == Core::FileSys::FileType::Directory) {
-    //     s64 result = file->directory->read(buf, nbytes);
+    //     s64 result = file->directory->read(buf, count);
     //     if (result < 0) {
     //         ErrSceToPosix(result);
     //         return -1;
@@ -117,16 +117,16 @@ s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 nbytes) {
     //     return result;
     // } else if (file->type == Core::FileSys::FileType::Socket) {
     //     // Socket functions handle errnos internally.
-    //     return file->socket->ReceivePacket(buf, nbytes, 0, nullptr, 0);
+    //     return file->socket->ReceivePacket(buf, count, 0, nullptr, 0);
     // }
 }
 
-s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 nbytes) {
-    return posix_read_impl(fd, buf, nbytes);
+s64 PS4_SYSV_ABI posix_read(s32 fd, void* buf, u64 count) {
+    return posix_read_impl(fd, buf, count);
 }
 
-s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes) {
-    s64 result = posix_read_impl(fd, buf, nbytes);
+s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 count) {
+    s64 result = posix_read_impl(fd, buf, count);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -162,14 +162,22 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 }
 
 // pread
-s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 nbytes, s64 offset) {
-    const OrbisKernelIovec iovec{buf, nbytes};
-    return posix_preadv(fd, &iovec, 1, offset);
+s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 count, s64 offset) {
+    int result = g_qfs->Operation.PRead(fd, buf, count, offset);
+    if (result < 0) {
+        *__Error() = -result;
+        return -1;
+    }
+    return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
-    const OrbisKernelIovec iovec{buf, nbytes};
-    return sceKernelPreadv(fd, &iovec, 1, offset);
+s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 count, s64 offset) {
+    s64 result = posix_pread(fd, buf, count, offset);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 // readv
@@ -204,8 +212,8 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 }
 
 // write
-s64 PS4_SYSV_ABI posix_write_impl(s32 fd, const void* buf, u64 nbytes) {
-    int result = g_qfs->Operation.Write(fd, buf, nbytes);
+s64 PS4_SYSV_ABI posix_write_impl(s32 fd, const void* buf, u64 count) {
+    int result = g_qfs->Operation.Write(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -213,12 +221,12 @@ s64 PS4_SYSV_ABI posix_write_impl(s32 fd, const void* buf, u64 nbytes) {
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 nbytes) {
-    return posix_write_impl(fd, buf, nbytes);
+s64 PS4_SYSV_ABI posix_write(s32 fd, const void* buf, u64 count) {
+    return posix_write_impl(fd, buf, count);
 }
 
-s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
-    s64 result = posix_write_impl(fd, buf, nbytes);
+s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 count) {
+    s64 result = posix_write_impl(fd, buf, count);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -246,14 +254,22 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 }
 
 // pwrite
-s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
-    const OrbisKernelIovec iovec{buf, nbytes};
-    return posix_pwritev(fd, &iovec, 1, offset);
+s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 count, s64 offset) {
+    int result = g_qfs->Operation.PWrite(fd, buf, count, offset);
+    if (result < 0) {
+        *__Error() = -result;
+        return -1;
+    }
+    return result;
 }
 
-s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset) {
-    const OrbisKernelIovec iovec{buf, nbytes};
-    return sceKernelPwritev(fd, &iovec, 1, offset);
+s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 count, s64 offset) {
+    s64 result = posix_pwrite(fd, buf, count, offset);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
 }
 
 // writev
@@ -525,9 +541,9 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
     return result;
 }
 
-static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 nbytes, s64* basep) {
-    int result = g_qfs->Operation.GetDents(fd, buf, nbytes, basep);
-    LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, nbytes, result);
+static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
+    int result = g_qfs->Operation.GetDents(fd, buf, count, basep);
+    LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, count, result);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -535,12 +551,12 @@ static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 nbytes, s64* basep) {
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
-    return posix_getdirentries_impl(fd, buf, nbytes, basep);
+s64 PS4_SYSV_ABI posix_getdirentries(s32 fd, char* buf, u64 count, s64* basep) {
+    return posix_getdirentries_impl(fd, buf, count, basep);
 }
 
-s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* basep) {
-    s64 result = posix_getdirentries_impl(fd, buf, nbytes, basep);
+s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 count, s64* basep) {
+    s64 result = posix_getdirentries_impl(fd, buf, count, basep);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
@@ -548,12 +564,12 @@ s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* base
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 nbytes) {
-    return posix_getdirentries_impl(fd, buf, nbytes, nullptr);
+s64 PS4_SYSV_ABI posix_getdents(s32 fd, char* buf, u64 count) {
+    return posix_getdirentries_impl(fd, buf, count, nullptr);
 }
 
-s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 nbytes) {
-    return sceKernelGetdirentries(fd, buf, nbytes, nullptr);
+s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 count) {
+    return sceKernelGetdirentries(fd, buf, count, nullptr);
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {

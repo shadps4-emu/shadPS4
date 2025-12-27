@@ -28,12 +28,10 @@ public:
         return _out;
     }
 
-    virtual s64 read(void* buf, u64 count);
-    virtual s64 write(const void* buf, u64 count);
+    virtual s64 read(void* buf, u64 count) override;
+    virtual s64 write(const void* buf, u64 count) override;
 
-    s64 pread(void* buf, u64 count, s64 offset) final override;
-    s64 pwrite(const void* buf, u64 count, s64 offset) final override;
-    s64 lseek(s64 current, s64 offset, s32 whence) final override;
+    virtual s64 lseek(s64 current, s64 offset, s32 whence) final override;
 };
 
 } // namespace QuasiFS

@@ -51,9 +51,9 @@ public:
         return _out;
     }
 
-    s64 pread(void* buf, u64 count, s64 offset) final override;
+    s64 read(void* buf, u64 count) final override;
 
-    s64 getdents(void* buf, u64 count, s64 offset, s64* basep) final override;
+    s64 getdents(void* buf, u64 count, s64* basep) final override;
 
     // Find an element with [name, case insensitive]
     inode_ptr lookup(const std::string& name) final override;

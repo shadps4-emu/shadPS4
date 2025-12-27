@@ -26,7 +26,7 @@ public:
     s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) override { return 0; };
     s32 fsync() override { return 0; };
     s32 ftruncate(s64 length) override { return 0; };
-    s64 getdents(void* buf, u64 nbytes, s64 offset, s64* basep) override { return 0; };
+    s64 getdents(void* buf, u64 count, s64* basep) override { return 0; };
     // clang-format on
 };
 

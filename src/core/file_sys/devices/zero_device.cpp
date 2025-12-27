@@ -12,10 +12,12 @@ ZeroDevice::~ZeroDevice() = default;
 
 s64 ZeroDevice::read(void* buf, u64 count) {
     memset(buf, 0, count);
+    descriptor_offset += count;
     return count;
 }
 
 s64 ZeroDevice::write(const void* buf, u64 count) {
+    descriptor_offset += count;
     return count;
 }
 
