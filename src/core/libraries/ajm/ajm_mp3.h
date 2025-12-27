@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
@@ -63,7 +64,7 @@ struct AjmSidebandDecMp3CodecInfo {
 
 class AjmMp3Decoder : public AjmCodec {
 public:
-    explicit AjmMp3Decoder(AjmFormatEncoding format, AjmMp3CodecFlags flags);
+    explicit AjmMp3Decoder(AjmFormatEncoding format, AjmMp3CodecFlags flags, u32 channels);
     ~AjmMp3Decoder() override;
 
     void Reset() override;
