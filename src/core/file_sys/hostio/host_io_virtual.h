@@ -14,35 +14,14 @@
 namespace HostIODriver {
 class HostIO_Virtual final : public HostIO_Base {
 protected:
-    std::mutex ctx_mutex;
-    Resolved* res{nullptr};
+    Resolved* resolved{nullptr};
     fd_handle_ptr handle{nullptr};
     bool host_bound{false};
 
 public:
-    HostIO_Virtual();
+    HostIO_Virtual(Resolved* resolved = nullptr, bool host_bound = false,
+                   fd_handle_ptr handle = nullptr);
     ~HostIO_Virtual();
-
-    //
-    // Resolved holds necessary context to perform any FS operation
-    // Set context immediately before target operation and clear immediately after
-    // to avoid accidental mixups
-    // Path is more of a... suggestion where we might be.
-    //
-
-    void SetCtx(Resolved* res, bool host_bound, fd_handle_ptr handle) {
-        std::lock_guard<std::mutex> lock(ctx_mutex);
-        this->res = res;
-        this->host_bound = host_bound;
-        this->handle = handle;
-    }
-
-    void ClearCtx(void) {
-        std::lock_guard<std::mutex> lock(ctx_mutex);
-        this->res = nullptr;
-        this->handle = nullptr;
-        this->host_bound = false;
-    }
 
     //
     // Native wrappers

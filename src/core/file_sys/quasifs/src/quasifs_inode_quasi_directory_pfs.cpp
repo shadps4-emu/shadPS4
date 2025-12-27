@@ -47,10 +47,6 @@ s64 DirectoryPFS::read(void* buf, u64 count) {
     return to_fill + bytes_available;
 }
 
-// FIXME: this fn sets file pointer to 65536 so far no issues in testing
-// it could be just a pointer, but I don't have energy to poke around this
-// also, it's *assumed* it's always read in full 64kb chunks. testing shows very inconsistent
-// results when using other sizes
 s64 DirectoryPFS::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
     st.st_atim.tv_sec = time(0);

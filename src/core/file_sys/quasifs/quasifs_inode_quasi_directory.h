@@ -79,7 +79,7 @@ public:
 
     virtual s64 read(void* buf, u64 count) override;
     // s64 write(const void* buf, size_t count) override;
-    virtual s64 lseek(s64 current, s64 offset, s32 whence) final override;
+    virtual s64 lseek(s64 offset, s32 whence) final override;
     virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* sb) final override;
     virtual s32 ftruncate(s64 length) final override;
 

@@ -25,11 +25,13 @@ s64 Device::write(const void* buf, u64 count) {
     return -POSIX_EBADF;
 }
 
-s64 Device::lseek(s64 current, s64 offset, s32 whence) {
-    return ((QuasiFS::SeekOrigin::ORIGIN == whence) * offset) +
-           ((QuasiFS::SeekOrigin::CURRENT == whence) * (current + offset)) +
-           ((QuasiFS::SeekOrigin::END == whence) * ((offset > 0) * offset));
+s64 Device::lseek(s64 offset, s32 whence) {
+    this->descriptor_offset =
+        ((SeekOrigin::ORIGIN == whence) * offset) +
+        ((SeekOrigin::CURRENT == whence) * (this->descriptor_offset + offset)) +
+        ((SeekOrigin::END == whence) * ((offset > 0) * offset));
     // ::END is pro-forma
+    return this->descriptor_offset >= 0 ? this->descriptor_offset : -POSIX_EINVAL;
 }
 
 } // namespace QuasiFS

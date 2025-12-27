@@ -69,6 +69,7 @@ public:
 
     virtual s64 pread(void* buf, u64 count, s64 offset) {
         s64 old_offset = this->descriptor_offset;
+        this->descriptor_offset = offset;
         SCOPE_EXIT {
             this->descriptor_offset = old_offset;
         };
@@ -78,6 +79,7 @@ public:
 
     virtual s64 pwrite(const void* buf, u64 count, s64 offset) {
         s64 old_offset = this->descriptor_offset;
+        this->descriptor_offset = offset;
         SCOPE_EXIT {
             this->descriptor_offset = old_offset;
         };
@@ -109,6 +111,7 @@ public:
 
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
         s64 old_offset = this->descriptor_offset;
+        this->descriptor_offset = offset;
         SCOPE_EXIT {
             this->descriptor_offset = old_offset;
         };
@@ -118,6 +121,7 @@ public:
 
     virtual s64 pwritev(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
         s64 old_offset = this->descriptor_offset;
+        this->descriptor_offset = offset;
         SCOPE_EXIT {
             this->descriptor_offset = old_offset;
         };
@@ -125,10 +129,11 @@ public:
         return this->writev(iov, iovcnt);
     }
 
-    virtual s64 lseek(s64 current, s64 offset, s32 whence) {
-        this->descriptor_offset = ((SeekOrigin::ORIGIN == whence) * offset) +
-                                  ((SeekOrigin::CURRENT == whence) * (current + offset)) +
-                                  ((SeekOrigin::END == whence) * (this->st.st_size + offset));
+    virtual s64 lseek(s64 offset, s32 whence) {
+        this->descriptor_offset =
+            ((SeekOrigin::ORIGIN == whence) * offset) +
+            ((SeekOrigin::CURRENT == whence) * (this->descriptor_offset + offset)) +
+            ((SeekOrigin::END == whence) * (this->st.st_size + offset));
         return this->descriptor_offset >= 0 ? this->descriptor_offset : -POSIX_EINVAL;
     }
 

@@ -37,9 +37,9 @@ s64 QuasiDirectory::read(void* buf, u64 count) {
     return bytes_available;
 }
 
-s64 QuasiDirectory::lseek(s64 current, s64 offset, s32 whence) {
+s64 QuasiDirectory::lseek(s64 offset, s32 whence) {
     RebuildDirents();
-    return Inode::lseek(current, offset, whence);
+    return Inode::lseek(offset, whence);
 }
 
 s32 QuasiDirectory::fstat(Libraries::Kernel::OrbisKernelStat* sb) {

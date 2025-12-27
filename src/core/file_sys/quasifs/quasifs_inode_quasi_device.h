@@ -31,7 +31,7 @@ public:
     virtual s64 read(void* buf, u64 count) override;
     virtual s64 write(const void* buf, u64 count) override;
 
-    virtual s64 lseek(s64 current, s64 offset, s32 whence) final override;
+    virtual s64 lseek(s64 offset, s32 whence) final override;
 };
 
 } // namespace QuasiFS

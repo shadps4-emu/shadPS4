@@ -49,7 +49,6 @@ private:
 
     // Drivers
     HostIO hio_driver{};
-    HostVIO vio_driver{};
 
     //
     // Inherited from HostIOBase

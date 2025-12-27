@@ -24,26 +24,25 @@
 
 namespace HostIODriver {
 
-HostIO_Virtual::HostIO_Virtual() = default;
+HostIO_Virtual::HostIO_Virtual(Resolved* resolved, bool host_bound, fd_handle_ptr handle)
+    : resolved(resolved), handle(handle), host_bound(host_bound) {}
 HostIO_Virtual::~HostIO_Virtual() = default;
 
 s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     if (path.string().size() > 255)
         return -POSIX_ENAMETOOLONG;
 
     if (int remainder = flags & ~__QUASI_O_ALLFLAGS_AT_ONCE; remainder != 0)
         LOG_WARNING(Kernel_Fs, "open() received unknown flags: {:x}", remainder);
 
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    partition_ptr part = this->res->mountpoint;
-    dir_ptr parent = this->res->parent;
-    inode_ptr target = this->res->node;
+    partition_ptr part = this->resolved->mountpoint;
+    dir_ptr parent = this->resolved->parent;
+    inode_ptr target = this->resolved->node;
 
-    bool exists = this->res->node != nullptr;
+    bool exists = this->resolved->node != nullptr;
 
     if (exists && (flags & QUASI_O_EXCL) && (flags & QUASI_O_CREAT))
         return -POSIX_EEXIST;
@@ -54,11 +53,11 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
 
         target = this->host_bound ? RegularFile::Create() : VirtualFile::Create();
         target->chmod(mode);
-        if (0 != part->touch(parent, this->res->leaf, target))
+        if (0 != part->touch(parent, this->resolved->leaf, target))
             // touch failed in target directory, issue with resolve() is most likely
             return -POSIX_EFAULT;
 
-        this->res->node = target;
+        this->resolved->node = target;
     }
 
     // at this point target should exist
@@ -84,24 +83,20 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
 }
 
 s32 HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
-    // std::lock_guard<std::mutex> lock(ctx_mutex);
     return Open(path, QUASI_O_CREAT | QUASI_O_TRUNC | QUASI_O_WRONLY);
 }
 
 s32 HostIO_Virtual::Close(const s32 fd) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
     // We came here, so fd is valid
     return 0;
 }
 
 s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    partition_ptr part = this->res->mountpoint;
-    inode_ptr src_node = this->res->node;
+    partition_ptr part = this->resolved->mountpoint;
+    inode_ptr src_node = this->resolved->node;
 
     Resolved dst_res;
     fs::path dst_path = dst.parent_path();
@@ -118,51 +113,41 @@ s32 HostIO_Virtual::Link(const fs::path& src, const fs::path& dst) {
 }
 
 s32 HostIO_Virtual::LinkSymbolic(const fs::path& src, const fs::path& dst) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
     symlink_ptr sym = Symlink::Create(src);
     // symlink counter is never increased
     sym->st.st_nlink = 1;
 
-    return this->res->mountpoint->touch(this->res->parent, dst.filename().string(), sym);
+    return this->resolved->mountpoint->touch(this->resolved->parent, dst.filename().string(), sym);
 }
 
 s32 HostIO_Virtual::Unlink(const fs::path& path) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
-    if ("." == this->res->leaf)
+    if ("." == this->resolved->leaf)
         return -POSIX_EINVAL;
 
-    if (nullptr == this->res->node)
+    if (nullptr == this->resolved->node)
         return -POSIX_ENOENT;
 
-    partition_ptr part = this->res->mountpoint;
-    dir_ptr parent = this->res->parent;
-    return part->unlink(parent, this->res->leaf);
+    partition_ptr part = this->resolved->mountpoint;
+    dir_ptr parent = this->resolved->parent;
+    return part->unlink(parent, this->resolved->leaf);
 }
 
 s32 HostIO_Virtual::Remove(const fs::path& path) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Flush(const s32 fd) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     // not applicable
     return 0;
 }
 
 s32 HostIO_Virtual::FSync(const s32 fd) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -174,9 +159,7 @@ s32 HostIO_Virtual::FSync(const s32 fd) {
 }
 
 s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -185,25 +168,21 @@ s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
         return -POSIX_EBADF;
 
     node->__SetOffset(handle->pos);
-    s64 new_position = node->lseek(handle->pos, offset, whence);
+    s64 new_position = node->lseek(offset, whence);
     if (new_position >= 0)
         handle->pos = new_position;
     return new_position;
 }
 
 s64 HostIO_Virtual::Tell(const s32 fd) {
-    // std::lock_guard<std::mutex> lock(ctx_mutex);
-
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
 s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    inode_ptr node = this->res->node;
+    inode_ptr node = this->resolved->node;
 
     if (nullptr == node)
         return -POSIX_EBADF;
@@ -218,9 +197,7 @@ s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
 }
 
 s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -232,9 +209,7 @@ s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
 }
 
 s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -251,9 +226,7 @@ s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
 }
 
 s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -266,9 +239,7 @@ s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
 }
 
 s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -285,9 +256,7 @@ s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt)
 }
 
 s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EBADF;
 
     inode_ptr node = handle->node;
@@ -303,9 +272,7 @@ s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
 }
 
 s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -329,9 +296,7 @@ s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
 }
 
 s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -347,9 +312,7 @@ s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset)
 }
 
 s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
     inode_ptr node = handle->node;
@@ -373,9 +336,7 @@ s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
 }
 
 s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == handle)
+    if (nullptr == this->handle)
         return -POSIX_EBADF;
 
     inode_ptr node = handle->node;
@@ -391,32 +352,29 @@ s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcn
 }
 
 s32 HostIO_Virtual::MKDir(const fs::path& path, u16 mode) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    return this->res->mountpoint->mkdir(this->res->parent, this->res->leaf);
+    return this->resolved->mountpoint->mkdir(this->resolved->parent, this->resolved->leaf);
 }
 
 s32 HostIO_Virtual::RMDir(const fs::path& path) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
     // EINVAL on . as last element
 
     // don't remove partition root ;___;
-    dir_ptr parent = this->res->parent;
+    dir_ptr parent = this->resolved->parent;
 
     if (parent->mounted_root)
         return -POSIX_EBUSY;
 
-    if (int unlink_status = res->mountpoint->rmdir(parent, this->res->leaf); unlink_status != 0)
+    if (int unlink_status = resolved->mountpoint->rmdir(parent, this->resolved->leaf);
+        unlink_status != 0)
         return unlink_status;
 
-    auto target_nlink = res->node->st.st_nlink;
+    auto target_nlink = resolved->node->st.st_nlink;
     if (target_nlink != 0) {
         LOG_ERROR(Kernel_Fs, "RMDir'd directory nlink is not 0!", "(is ", target_nlink, ")");
         return -POSIX_ENOTEMPTY;
@@ -426,12 +384,10 @@ s32 HostIO_Virtual::RMDir(const fs::path& path) {
 }
 
 s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    inode_ptr node = this->res->node;
+    inode_ptr node = this->resolved->node;
 
     if (nullptr == node)
         return -POSIX_ENOENT;
@@ -442,8 +398,6 @@ s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
 }
 
 s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -458,12 +412,10 @@ s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
 }
 
 s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
-    if (nullptr == this->res)
+    if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
-    inode_ptr node = this->res->node;
+    inode_ptr node = this->resolved->node;
 
     if (nullptr == node)
         return -POSIX_ENOENT;
@@ -472,8 +424,6 @@ s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
 }
 
 s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -486,8 +436,6 @@ s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
 }
 
 s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -513,14 +461,10 @@ s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
 }
 
 s32 HostIO_Virtual::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     return -POSIX_ENOSYS;
 }
 
 s32 HostIO_Virtual::Move(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
-    std::lock_guard<std::mutex> lock(ctx_mutex);
-
     return -POSIX_ENOSYS;
 }
 
