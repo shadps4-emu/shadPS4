@@ -31,7 +31,7 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
             tmp.d_fileno = BaseDirectory::next_fileno();
             tmp.d_namlen = leaf.size();
             strncpy(tmp.d_name, leaf.data(), tmp.d_namlen + 1);
-            tmp.d_type = (ent_is_file ? 0100000 : 0040000) >> 12;
+            tmp.d_type = ent_is_file ? 2 : 4;
             tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 8);
             auto dirent_ptr = reinterpret_cast<const u8*>(&tmp);
 
@@ -129,7 +129,7 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
         NormalDirectoryDirent normal_dirent{};
         normal_dirent.d_fileno = pfs_dirent->d_fileno;
         normal_dirent.d_reclen = pfs_dirent->d_reclen;
-        normal_dirent.d_type = pfs_dirent->d_type;
+        normal_dirent.d_type = (pfs_dirent->d_type == 2) ? 8 : 4;
         normal_dirent.d_namlen = pfs_dirent->d_namlen;
         memcpy(normal_dirent.d_name, pfs_dirent->d_name, pfs_dirent->d_namlen);
 
