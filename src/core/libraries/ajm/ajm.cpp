@@ -144,9 +144,8 @@ int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmInstanceCodecType() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
-    return ORBIS_OK;
+AjmCodecType PS4_SYSV_ABI sceAjmInstanceCodecType(u32 instance_id) {
+    return static_cast<AjmCodecType>((instance_id >> 14) & 0x1F);
 }
 
 int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context_id, AjmCodecType codec_type,
