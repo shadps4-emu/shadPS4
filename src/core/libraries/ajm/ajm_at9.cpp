@@ -54,7 +54,7 @@ struct RIFFHeader {
 };
 static_assert(sizeof(RIFFHeader) == 12);
 
-AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags)
+AjmAt9Decoder::AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags, u32)
     : m_format(format), m_flags(flags), m_handle(Atrac9GetHandle()) {}
 
 AjmAt9Decoder::~AjmAt9Decoder() {
