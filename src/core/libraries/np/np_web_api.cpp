@@ -13,9 +13,8 @@ namespace Libraries::Np::NpWebApi {
 static bool g_is_initialized = false;
 static s32 g_active_library_contexts = 0;
 
-s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId,
-                                          Libraries::UserService::OrbisUserServiceUserId userId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}, userId = {}", libCtxId, (s32)userId);
+s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId, OrbisNpOnlineId* onlineId) {
+    LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}", libCtxId);
     return ORBIS_OK;
 }
 
@@ -144,7 +143,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
     LOG_ERROR(Lib_NpWebApi,
               "sceNpWebApiCreateContextA : "
               "libCtxId = {}, userId = {} error{:#x}",
-              libCtxId, (s32)userId, result);
+              libCtxId, userId, result);
     return result;
 }
 
