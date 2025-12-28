@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-#include <map>
 #include "core/libraries/kernel/time.h"
 #include "np_web_api_internal.h"
 
@@ -9,21 +8,22 @@ namespace Libraries::Np::NpWebApi {
 static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
 static s32 g_context_count = 0;
+static s32 g_user_context_count = 0;
 
 s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 type) {
     std::scoped_lock lk{g_global_mutex};
-    s32 ctx_id = 0;
+    s32 ctx_id = 1;
     while (g_contexts.contains(ctx_id)) {
         ctx_id++;
     }
-    if (ctx_id >= 0x7fff) {
+    if (ctx_id >= 0x8000) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_MAX;
     }
 
     // Create new context
     g_contexts[ctx_id] = new OrbisNpWebApiContext{};
     auto& new_context = g_contexts.at(ctx_id);
-    new_context->libCtxId = ctx_id + 1;
+    new_context->libCtxId = ctx_id;
     new_context->libHttpCtxId = libHttpCtxId;
     new_context->type = type;
     new_context->userCount = 0;
@@ -33,7 +33,7 @@ s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 t
     }
 
     g_context_count++;
-    return ctx_id + 1;
+    return ctx_id;
 }
 
 OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag) {
@@ -41,7 +41,7 @@ OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag) {
     if (libCtxId < 1 || libCtxId >= 0x8000) {
         return nullptr;
     }
-    auto& context = g_contexts[libCtxId - 1];
+    auto& context = g_contexts[libCtxId];
     std::scoped_lock lk2{context->contextLock};
     if (flag == 0 && context->terminated) {
         return nullptr;
@@ -80,12 +80,12 @@ void markContextAsTerminated(OrbisNpWebApiContext* context) {
 
 s32 deleteContext(s32 libCtxId) {
     std::scoped_lock lk{g_global_mutex};
-    s32 ctx_id = libCtxId - 1;
-    if (!g_contexts.contains(ctx_id)) {
+    if (!g_contexts.contains(libCtxId)) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    g_contexts.erase(ctx_id);
+    free(g_contexts[libCtxId]);
+    g_contexts.erase(libCtxId);
     g_context_count--;
     return ORBIS_OK;
 }
