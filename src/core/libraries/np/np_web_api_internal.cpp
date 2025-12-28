@@ -120,6 +120,119 @@ s32 terminateContext(s32 libCtxId) {
     return deleteContext(libCtxId);
 }
 
+OrbisNpWebApiUserContext* findUserContextByUserId(
+    OrbisNpWebApiContext* context, Libraries::UserService::OrbisUserServiceUserId userId) {
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return nullptr;
+    }
+
+    std::scoped_lock lk{context->contextLock};
+    for (auto& user_context : context->userContexts) {
+        if (user_context.second->userId == userId) {
+            user_context.second->userCount++;
+            return user_context.second;
+        }
+    }
+    return nullptr;
+}
+
+OrbisNpWebApiUserContext* findUserContext(OrbisNpWebApiContext* context, s32 userCtxId) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->userContexts.contains(userCtxId)) {
+        return nullptr;
+    }
+    OrbisNpWebApiUserContext* user_context = context->userContexts[userCtxId];
+    if (user_context->deleted) {
+        return nullptr;
+    }
+    user_context->userCount++;
+    return user_context;
+}
+
+s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId) {
+    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) libCtxId = {}", libCtxId);
+    return ORBIS_OK; // TODO: implement
+}
+
+s32 createUserContext(s32 libCtxId, Libraries::UserService::OrbisUserServiceUserId userId) {
+    LOG_INFO(Lib_NpWebApi, "libCtxId = {}, userId = {}", libCtxId, userId);
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId, 0);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContextByUserId(context, userId);
+    if (user_context != nullptr) {
+        user_context->userCount--;
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_ALREADY_EXIST;
+    }
+
+    std::scoped_lock lk{context->contextLock};
+
+    // Create new user context
+    s32 user_ctx_id = (libCtxId << 0x10) | 1;
+    while (context->userContexts.contains(user_ctx_id)) {
+        user_ctx_id++;
+    }
+    if (user_ctx_id >= (libCtxId << 0x10) + 0x10000) {
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_MAX;
+    }
+
+    context->userContexts[user_ctx_id] = new OrbisNpWebApiUserContext{};
+    user_context = context->userContexts.at(user_ctx_id);
+    user_context->userCount = 0;
+    user_context->parentContext = context;
+    user_context->userId = userId;
+    user_context->userCtxId = user_ctx_id;
+    user_context->deleted = false;
+
+    // TODO: Internal structs related to libSceHttp use are initialized here.
+    releaseContext(context);
+    return user_ctx_id;
+}
+
+bool isUserContextBusy(OrbisNpWebApiUserContext* userContext) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    return userContext->userCount > 1;
+}
+
+s32 deleteUserContext(s32 userCtxId) {
+    LOG_INFO(Lib_NpWebApi, "userCtxId = {:#x}", userCtxId);
+    OrbisNpWebApiContext* context = findAndValidateContext(userCtxId >> 0x10, 0);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lockContext(context);
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, userCtxId);
+    if (user_context == nullptr || user_context->deleted) {
+        unlockContext(context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    // TODO: Should abort all requests in user context
+
+    // TODO: For compiled SDK version < FW 4.0, should return error instead of waiting.
+    
+    user_context->deleted = true;
+    while (isUserContextBusy(user_context)) {
+        // TODO: should also check for busy requests
+        unlockContext(context);
+        Kernel::sceKernelUsleep(50000);
+        lockContext(context);
+    }
+
+    context->userContexts.erase(userCtxId);
+    free(user_context);
+
+    unlockContext(context);
+    releaseContext(context);
+    g_user_context_count--;
+
+    return ORBIS_OK;
+}
+
 s32 createExtendedPushEventFilterInternal(
     s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum,
@@ -168,14 +281,6 @@ void validateHandleForContext(OrbisNpWebApiContext* context, int32_t handleId) {
               "called (STUBBED) : context = {}, "
               "handleId = {}",
               fmt::ptr(context), handleId); // TODO: implement
-}
-
-s32 createContextForUser(int32_t libCtxId, int32_t userId) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : libCtxId = {}, "
-              "userId = {}",
-              libCtxId, userId);
-    return ORBIS_OK; // TODO: implement
 }
 
 s32 createHandleInternal(OrbisNpWebApiContext* context) {

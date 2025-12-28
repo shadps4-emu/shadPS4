@@ -14,8 +14,13 @@ static bool g_is_initialized = false;
 static s32 g_active_library_contexts = 0;
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId, OrbisNpOnlineId* onlineId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}", libCtxId);
-    return ORBIS_OK;
+    if (libCtxId >= 0x8000) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
+    }
+    if (onlineId == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    return createUserContextWithOnlineId(libCtxId, onlineId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter() {
@@ -130,21 +135,13 @@ s32 PS4_SYSV_ABI sceNpWebApiClearUnusedConnection(s32 userCtxId, const char* pAp
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
                                            Libraries::UserService::OrbisUserServiceUserId userId) {
-    s32 result;
-
-    result = ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
-
-    if ((u32)(libCtxId - 1) < 0x7FFF) {
-        if (userId != -1) {
-            return createContextForUser(libCtxId, userId);
-        }
-        result = ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    if (libCtxId >= 0x8000) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
     }
-    LOG_ERROR(Lib_NpWebApi,
-              "sceNpWebApiCreateContextA : "
-              "libCtxId = {}, userId = {} error{:#x}",
-              libCtxId, userId, result);
-    return result;
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    return createUserContext(libCtxId, userId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
@@ -218,7 +215,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 titleUserCtxId, const char* pApiGr
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteContext(s32 titleUserCtxId) {
     LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : titleUserCtxId = {}", titleUserCtxId);
-    return ORBIS_OK;
+    return deleteUserContext(titleUserCtxId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteExtdPushEventFilter(s32 libCtxId, s32 filterId) {
