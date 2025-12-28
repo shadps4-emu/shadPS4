@@ -82,8 +82,6 @@ enum class AjmStatisticsFlags : u64 {
 DECLARE_ENUM_FLAG_OPERATORS(AjmStatisticsFlags)
 
 union AjmStatisticsJobFlags {
-    AjmStatisticsJobFlags(AjmJobFlags job_flags) : raw(job_flags.raw) {}
-
     u64 raw;
     struct {
         u64 version : 3;

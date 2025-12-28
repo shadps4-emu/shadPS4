@@ -1,25 +1,21 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ajm.h"
 #include "ajm_aac.h"
 #include "ajm_result.h"
 
-#include "aacdecoder_lib.h"
 // using this internal header to manually configure the decoder in RAW mode
-#include "externals/fdk-aac/libAACdec/src/aacdecoder.h"
+#include "externals/aacdec/fdk-aac/libAACdec/src/aacdecoder.h"
 
+#include <aacdecoder_lib.h>
 #include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Ajm {
 
-struct AjmSidebandDecM4aacCodecInfo {
-    u32 heaac;
-    u32 reserved;
-};
-
 AjmAacDecoder::AjmAacDecoder(AjmFormatEncoding format, AjmAacCodecFlags flags, u32 channels)
-    : m_format(format), m_flags(flags), m_channels(channels), m_pcm_buffer(2048 * 8) {}
+    : m_format(format), m_flags(flags), m_channels(channels), m_pcm_buffer(2048 * 8),
+      m_skip_frames(True(flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2) {}
 
 AjmAacDecoder::~AjmAacDecoder() {
     aacDecoder_Close(m_decoder);
@@ -80,6 +76,7 @@ void AjmAacDecoder::Reset() {
         UCHAR changed = 1;
         CAacDecoder_Init(m_decoder, &asc, AC_CM_ALLOC_MEM, &changed);
     }
+    m_skip_frames = True(m_flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2;
 }
 
 void AjmAacDecoder::Initialize(const void* buffer, u32 buffer_size) {
@@ -91,7 +88,7 @@ void AjmAacDecoder::Initialize(const void* buffer, u32 buffer_size) {
 void AjmAacDecoder::GetInfo(void* out_info) const {
     auto* codec_info = reinterpret_cast<AjmSidebandDecM4aacCodecInfo*>(out_info);
     *codec_info = {
-        .heaac = True(m_flags & AjmAacCodecFlags::enableSbrDecode),
+        .heaac = True(m_flags & AjmAacCodecFlags::EnableSbrDecode),
     };
 }
 
@@ -112,7 +109,7 @@ u32 AjmAacDecoder::GetMinimumInputSize() const {
 
 u32 AjmAacDecoder::GetNextFrameSize(const AjmInstanceGapless& gapless) const {
     const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
-    if (info->frameSize <= 0) {
+    if (info->aacSamplesPerFrame <= 0) {
         return 0;
     }
     const auto skip_samples = std::min<u32>(gapless.current.skip_samples, info->frameSize);
@@ -132,22 +129,9 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
     UCHAR* buffers[] = {input.data()};
     const UINT sizes[] = {static_cast<UINT>(input.size())};
     UINT valid = sizes[0];
-    auto ret = aacDecoder_Fill(m_decoder, buffers, sizes, &valid);
-
-    switch (m_format) {
-    case AjmFormatEncoding::S16:
-        ret = aacDecoder_DecodeFrame(m_decoder, reinterpret_cast<s16*>(m_pcm_buffer.data()),
-                                     m_pcm_buffer.size() / 2, 0);
-        break;
-    case AjmFormatEncoding::S32:
-        UNREACHABLE_MSG("NOT IMPLEMENTED");
-        break;
-    case AjmFormatEncoding::Float:
-        UNREACHABLE_MSG("NOT IMPLEMENTED");
-        break;
-    default:
-        UNREACHABLE();
-    }
+    aacDecoder_Fill(m_decoder, buffers, sizes, &valid);
+    auto ret = aacDecoder_DecodeFrame(m_decoder, reinterpret_cast<s16*>(m_pcm_buffer.data()),
+                                      m_pcm_buffer.size() / 2, 0);
 
     switch (ret) {
     case AAC_DEC_OK:
@@ -168,20 +152,25 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
     result.frames_decoded += 1;
     input = input.subspan(bytes_used);
 
+    if (m_skip_frames > 0) {
+        --m_skip_frames;
+        return result;
+    }
+
     u32 skip_samples = 0;
     if (gapless.current.skip_samples > 0) {
         skip_samples = std::min<u16>(info->frameSize, gapless.current.skip_samples);
         gapless.current.skip_samples -= skip_samples;
     }
 
-    const auto max_pcm = gapless.init.total_samples != 0
-                             ? gapless.current.total_samples * info->numChannels
-                             : std::numeric_limits<u32>::max();
+    const auto max_samples =
+        gapless.init.total_samples != 0 ? gapless.current.total_samples : info->aacSamplesPerFrame;
 
     size_t pcm_written = 0;
     switch (m_format) {
     case AjmFormatEncoding::S16:
-        pcm_written = WriteOutputSamples<s16>(output, skip_samples, max_pcm);
+        pcm_written = WriteOutputSamples<s16>(output, skip_samples * info->numChannels,
+                                              max_samples * info->numChannels);
         break;
     case AjmFormatEncoding::S32:
         UNREACHABLE_MSG("NOT IMPLEMENTED");
@@ -200,11 +189,6 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
     }
 
     return result;
-}
-
-u32 AjmAacDecoder::GetNumChannels() const {
-    const auto* const info = aacDecoder_GetStreamInfo(m_decoder);
-    return u32(info->numChannels);
 }
 
 } // namespace Libraries::Ajm
