@@ -25,11 +25,6 @@
  */
 
 namespace QuasiFS {
-std::string file_mode(u16 mode);
-
-void _printTree(const inode_ptr& node, const std::string& name, int depth);
-
-void printTree(const dir_ptr& node, const std::string& name, int depth = 0);
 
 // Very small QFS manager: path resolution, mount, create/unlink
 class QFS {
