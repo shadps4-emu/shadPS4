@@ -105,7 +105,7 @@ AVFrame* AjmMp3Decoder::ConvertAudioFrame(AVFrame* frame) {
     return new_frame;
 }
 
-AjmMp3Decoder::AjmMp3Decoder(AjmFormatEncoding format, AjmMp3CodecFlags flags)
+AjmMp3Decoder::AjmMp3Decoder(AjmFormatEncoding format, AjmMp3CodecFlags flags, u32)
     : m_format(format), m_flags(flags), m_codec(avcodec_find_decoder(AV_CODEC_ID_MP3)),
       m_codec_context(avcodec_alloc_context3(m_codec)), m_parser(av_parser_init(m_codec->id)) {
     int ret = avcodec_open2(m_codec_context, m_codec, nullptr);
@@ -311,7 +311,8 @@ int AjmMp3Decoder::ParseMp3Header(const u8* p_begin, u32 stream_size, int parse_
 
     BitReader reader(p_current);
     if (header->protection_type == 0) {
-        reader.Skip(16); // crc = reader.Read<u16>(16);
+        // crc = reader.Read<u16>(16);
+        reader.Skip(16);
     }
 
     if (header->version == Mp3AudioVersion::V1) {

@@ -1,0 +1,154 @@
+# SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+set(AACDEC_SRC
+    fdk-aac/libAACdec/src/FDK_delay.cpp
+    fdk-aac/libAACdec/src/aac_ram.cpp
+    fdk-aac/libAACdec/src/aac_rom.cpp
+    fdk-aac/libAACdec/src/aacdec_drc.cpp
+    fdk-aac/libAACdec/src/aacdec_hcr.cpp
+    fdk-aac/libAACdec/src/aacdec_hcr_bit.cpp
+    fdk-aac/libAACdec/src/aacdec_hcrs.cpp
+    fdk-aac/libAACdec/src/aacdec_pns.cpp
+    fdk-aac/libAACdec/src/aacdec_tns.cpp
+    fdk-aac/libAACdec/src/aacdecoder.cpp
+    fdk-aac/libAACdec/src/aacdecoder_lib.cpp
+    fdk-aac/libAACdec/src/block.cpp
+    fdk-aac/libAACdec/src/channel.cpp
+    fdk-aac/libAACdec/src/channelinfo.cpp
+    fdk-aac/libAACdec/src/conceal.cpp
+    fdk-aac/libAACdec/src/ldfiltbank.cpp
+    fdk-aac/libAACdec/src/pulsedata.cpp
+    fdk-aac/libAACdec/src/rvlc.cpp
+    fdk-aac/libAACdec/src/rvlcbit.cpp
+    fdk-aac/libAACdec/src/rvlcconceal.cpp
+    fdk-aac/libAACdec/src/stereo.cpp
+    fdk-aac/libAACdec/src/usacdec_ace_d4t64.cpp
+    fdk-aac/libAACdec/src/usacdec_ace_ltp.cpp
+    fdk-aac/libAACdec/src/usacdec_acelp.cpp
+    fdk-aac/libAACdec/src/usacdec_fac.cpp
+    fdk-aac/libAACdec/src/usacdec_lpc.cpp
+    fdk-aac/libAACdec/src/usacdec_lpd.cpp
+    fdk-aac/libAACdec/src/usacdec_rom.cpp
+)
+
+set(FDK_SRC
+    fdk-aac/libFDK/src/FDK_bitbuffer.cpp
+    fdk-aac/libFDK/src/FDK_core.cpp
+    fdk-aac/libFDK/src/FDK_crc.cpp
+    fdk-aac/libFDK/src/FDK_decorrelate.cpp
+    fdk-aac/libFDK/src/FDK_hybrid.cpp
+    fdk-aac/libFDK/src/FDK_lpc.cpp
+    fdk-aac/libFDK/src/FDK_matrixCalloc.cpp
+    fdk-aac/libFDK/src/FDK_qmf_domain.cpp
+    fdk-aac/libFDK/src/FDK_tools_rom.cpp
+    fdk-aac/libFDK/src/FDK_trigFcts.cpp
+    fdk-aac/libFDK/src/autocorr2nd.cpp
+    fdk-aac/libFDK/src/dct.cpp
+    fdk-aac/libFDK/src/fft.cpp
+    fdk-aac/libFDK/src/fft_rad2.cpp
+    fdk-aac/libFDK/src/fixpoint_math.cpp
+    fdk-aac/libFDK/src/huff_nodes.cpp
+    fdk-aac/libFDK/src/mdct.cpp
+    fdk-aac/libFDK/src/nlc_dec.cpp
+    fdk-aac/libFDK/src/qmf.cpp
+    fdk-aac/libFDK/src/scale.cpp
+)
+
+set(SYS_SRC
+    fdk-aac/libSYS/src/genericStds.cpp
+    fdk-aac/libSYS/src/syslib_channelMapDescr.cpp
+)
+
+set(ARITHCODING_SRC
+    fdk-aac/libArithCoding/src/ac_arith_coder.cpp
+)
+
+set(MPEGTPDEC_SRC
+    fdk-aac/libMpegTPDec/src/tpdec_adif.cpp
+    fdk-aac/libMpegTPDec/src/tpdec_adts.cpp
+    fdk-aac/libMpegTPDec/src/tpdec_asc.cpp
+    fdk-aac/libMpegTPDec/src/tpdec_drm.cpp
+    fdk-aac/libMpegTPDec/src/tpdec_latm.cpp
+    fdk-aac/libMpegTPDec/src/tpdec_lib.cpp
+)
+
+set(SBRDEC_SRC
+    fdk-aac/libSBRdec/src/HFgen_preFlat.cpp
+    fdk-aac/libSBRdec/src/env_calc.cpp
+    fdk-aac/libSBRdec/src/env_dec.cpp
+    fdk-aac/libSBRdec/src/env_extr.cpp
+    fdk-aac/libSBRdec/src/hbe.cpp
+    fdk-aac/libSBRdec/src/huff_dec.cpp
+    fdk-aac/libSBRdec/src/lpp_tran.cpp
+    fdk-aac/libSBRdec/src/psbitdec.cpp
+    fdk-aac/libSBRdec/src/psdec.cpp
+    fdk-aac/libSBRdec/src/psdec_drm.cpp
+    fdk-aac/libSBRdec/src/psdecrom_drm.cpp
+    fdk-aac/libSBRdec/src/pvc_dec.cpp
+    fdk-aac/libSBRdec/src/sbr_deb.cpp
+    fdk-aac/libSBRdec/src/sbr_dec.cpp
+    fdk-aac/libSBRdec/src/sbr_ram.cpp
+    fdk-aac/libSBRdec/src/sbr_rom.cpp
+    fdk-aac/libSBRdec/src/sbrdec_drc.cpp
+    fdk-aac/libSBRdec/src/sbrdec_freq_sca.cpp
+    fdk-aac/libSBRdec/src/sbrdecoder.cpp
+)
+
+set(PCMUTILS_SRC
+  fdk-aac/libPCMutils/src/limiter.cpp
+  fdk-aac/libPCMutils/src/pcm_utils.cpp
+  fdk-aac/libPCMutils/src/pcmdmx_lib.cpp
+)
+
+set(DRCDEC_SRC
+  fdk-aac/libDRCdec/src/FDK_drcDecLib.cpp
+  fdk-aac/libDRCdec/src/drcDec_gainDecoder.cpp
+  fdk-aac/libDRCdec/src/drcDec_reader.cpp
+  fdk-aac/libDRCdec/src/drcDec_rom.cpp
+  fdk-aac/libDRCdec/src/drcDec_selectionProcess.cpp
+  fdk-aac/libDRCdec/src/drcDec_tools.cpp
+  fdk-aac/libDRCdec/src/drcGainDec_init.cpp
+  fdk-aac/libDRCdec/src/drcGainDec_preprocess.cpp
+  fdk-aac/libDRCdec/src/drcGainDec_process.cpp
+)
+
+set(SACDEC_SRC
+  fdk-aac/libSACdec/src/sac_bitdec.cpp
+  fdk-aac/libSACdec/src/sac_calcM1andM2.cpp
+  fdk-aac/libSACdec/src/sac_dec.cpp
+  fdk-aac/libSACdec/src/sac_dec_conceal.cpp
+  fdk-aac/libSACdec/src/sac_dec_lib.cpp
+  fdk-aac/libSACdec/src/sac_process.cpp
+  fdk-aac/libSACdec/src/sac_qmf.cpp
+  fdk-aac/libSACdec/src/sac_reshapeBBEnv.cpp
+  fdk-aac/libSACdec/src/sac_rom.cpp
+  fdk-aac/libSACdec/src/sac_smoothing.cpp
+  fdk-aac/libSACdec/src/sac_stp.cpp
+  fdk-aac/libSACdec/src/sac_tsd.cpp
+)
+
+add_library(fdk-aac
+  ${AACDEC_SRC}
+  ${FDK_SRC}
+  ${SYS_SRC}
+  ${ARITHCODING_SRC}
+  ${MPEGTPDEC_SRC}
+  ${SBRDEC_SRC}
+  ${PCMUTILS_SRC}
+  ${DRCDEC_SRC}
+  ${SACDEC_SRC}
+)
+
+target_include_directories(fdk-aac
+  PUBLIC
+    fdk-aac/libAACdec/include
+    fdk-aac/libFDK/include
+    fdk-aac/libSYS/include
+    fdk-aac/libArithCoding/include
+    fdk-aac/libMpegTPDec/include
+    fdk-aac/libSBRdec/include
+    fdk-aac/libPCMutils/include
+    fdk-aac/libDRCdec/include
+    fdk-aac/libSACdec/include
+)
