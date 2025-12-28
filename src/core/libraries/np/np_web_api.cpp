@@ -10,10 +10,17 @@
 
 namespace Libraries::Np::NpWebApi {
 
-s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId,
-                                          Libraries::UserService::OrbisUserServiceUserId userId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED): libCtxId = {}, userId = {}", libCtxId, (s32)userId);
-    return ORBIS_OK;
+static bool g_is_initialized = false;
+static s32 g_active_library_contexts = 0;
+
+s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId, OrbisNpOnlineId* onlineId) {
+    if (libCtxId >= 0x8000) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
+    }
+    if (onlineId == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    return createUserContextWithOnlineId(libCtxId, onlineId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter() {
@@ -128,31 +135,21 @@ s32 PS4_SYSV_ABI sceNpWebApiClearUnusedConnection(s32 userCtxId, const char* pAp
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
                                            Libraries::UserService::OrbisUserServiceUserId userId) {
-    s32 result;
-
-    result = ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
-
-    if ((u32)(libCtxId - 1) < 0x7FFF) {
-        if (userId != -1) {
-            return createContextForUser(libCtxId, userId);
-        }
-        result = ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    if (libCtxId >= 0x8000) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_LIB_CONTEXT_ID;
     }
-    LOG_ERROR(Lib_NpWebApi,
-              "sceNpWebApiCreateContextA : "
-              "libCtxId = {}, userId = {} error{:#x}",
-              libCtxId, (s32)userId, result);
-    return result;
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    return createUserContext(libCtxId, userId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
-    s32 libCtxId, s32 handleId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum) {
     s32 result;
     // Validate parameters
-    if (((pNpServiceName == NULL ||
-          npServiceLabel != Libraries::Np::NpCommon::ORBIS_NP_INVALID_SERVICE_LABEL) &&
+    if (((pNpServiceName == NULL || npServiceLabel != ORBIS_NP_INVALID_SERVICE_LABEL) &&
          (pFilterParam != NULL)) &&
         (filterParamNum != 0)) {
         result = createExtendedPushEventFilterInternal(
@@ -218,7 +215,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 titleUserCtxId, const char* pApiGr
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteContext(s32 titleUserCtxId) {
     LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : titleUserCtxId = {}", titleUserCtxId);
-    return ORBIS_OK;
+    return deleteUserContext(titleUserCtxId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteExtdPushEventFilter(s32 libCtxId, s32 filterId) {
@@ -280,16 +277,24 @@ s32 PS4_SYSV_ABI sceNpWebApiGetMemoryPoolStats(s32 libCtxId,
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiInitialize(int libHttpCtxId, u64 poolSize) {
-    LOG_ERROR(Lib_NpWebApi, "called (DUMMY) : libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId,
-              poolSize);
-    static s32 id = 0;
-    return ++id;
+s32 PS4_SYSV_ABI sceNpWebApiInitialize(s32 libHttpCtxId, u64 poolSize) {
+    LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
+    g_is_initialized = true;
+    s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 0);
+    if (result >= ORBIS_OK) {
+        g_active_library_contexts++;
+    }
+    return result;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiInitializeForPresence() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiInitializeForPresence(s32 libHttpCtxId, u64 poolSize) {
+    LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
+    g_is_initialized = true;
+    s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 3);
+    if (result >= ORBIS_OK) {
+        g_active_library_contexts++;
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiIntCreateCtxIndExtdPushEventFilter() {
@@ -307,9 +312,17 @@ s32 PS4_SYSV_ABI sceNpWebApiIntCreateServicePushEventFilter() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiIntInitialize() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiIntInitialize(const OrbisNpWebApiIntInitializeArgs* args) {
+    LOG_INFO(Lib_NpWebApi, "called");
+    if (args == nullptr || args->structSize != sizeof(OrbisNpWebApiIntInitializeArgs)) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+    g_is_initialized = true;
+    s32 result = createLibraryContext(args->libHttpCtxId, args->poolSize, args->name, 2);
+    if (result >= ORBIS_OK) {
+        g_active_library_contexts++;
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiIntRegisterServicePushEventCallback() {
@@ -397,7 +410,16 @@ s32 PS4_SYSV_ABI sceNpWebApiSetRequestTimeout(s64 requestId, u32 timeout) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiTerminate(s32 libCtxId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : libCtxId = {}", libCtxId);
+    LOG_INFO(Lib_NpWebApi, "called libCtxId = {}", libCtxId);
+    s32 result = terminateContext(libCtxId);
+    if (result != ORBIS_OK) {
+        return result;
+    }
+
+    g_active_library_contexts--;
+    if (g_active_library_contexts == 0) {
+        g_is_initialized = false;
+    }
     return ORBIS_OK;
 }
 

@@ -11,18 +11,6 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpCommon {
 
-using OrbisNpServiceLabel = u32;
-constexpr int ORBIS_NP_INVALID_SERVICE_LABEL = 0xFFFFFFFF;
-
-using OrbisNpAccountId = u64;
-using OrbisNpPlatformType = s32; // 0=none , 1=ps3 , 2=vita , 3=ps4
-
-struct OrbisNpPeerAddressA {
-    OrbisNpAccountId accountId;
-    OrbisNpPlatformType platform;
-    char padding[4];
-};
-
 struct OrbisNpFreeKernelMemoryArgs {
     u64 length;
     u64 unk;
