@@ -16,11 +16,9 @@ class HostIO_Virtual final : public HostIO_Base {
 protected:
     Resolved* resolved{nullptr};
     fd_handle_ptr handle{nullptr};
-    bool host_bound{false};
 
 public:
-    HostIO_Virtual(Resolved* resolved = nullptr, bool host_bound = false,
-                   fd_handle_ptr handle = nullptr);
+    HostIO_Virtual(Resolved* resolved = nullptr, fd_handle_ptr handle = nullptr);
     ~HostIO_Virtual();
 
     //

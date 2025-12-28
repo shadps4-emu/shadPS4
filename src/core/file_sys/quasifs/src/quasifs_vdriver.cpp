@@ -98,7 +98,7 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
         }
     }
 
-    vio_status = HostVIO(&res, host_used, nullptr).Open(res.local_path, flags, mode);
+    vio_status = HostVIO(&res, nullptr).Open(res.local_path, flags, mode);
 
     if (int tmp_hio_status = hio_status >= 0 ? 0 : hio_status;
         host_used && (tmp_hio_status != vio_status))
@@ -139,14 +139,12 @@ s32 QFS::OperationImpl::Close(s32 fd) {
         LOG_ERROR(Kernel_Fs, "Closing std stream, this will have consequences fd={}", fd);
 
     // if it fails, it fails
-    bool host_used = false;
     int hio_status = 0;
     if (handle->host_fd >= 0) {
         hio_status = qfs.hio_driver.Close(handle->host_fd);
-        host_used = true;
     }
 
-    HostVIO(nullptr, host_used, handle).Close(fd);
+    HostVIO(nullptr, handle).Close(fd);
 
     // if it's the last entry, remove it to avoid blowing up fd table
     // not really helping with fragmentation, but may save resources on burst opens
@@ -207,7 +205,7 @@ s32 QFS::OperationImpl::Link(const fs::path& src, const fs::path& dst) {
         host_used = true;
     }
 
-    vio_status = HostVIO(&src_res, host_used, nullptr).Link(src_res.local_path, dst_res.local_path);
+    vio_status = HostVIO(&src_res, nullptr).Link(src_res.local_path, dst_res.local_path);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -268,7 +266,7 @@ s32 QFS::OperationImpl::LinkSymbolic(const fs::path& src, const fs::path& dst) {
     }
 
     // src stays 1:1
-    vio_status = HostVIO(&dst_res, host_used, nullptr).LinkSymbolic(src, dst_res.local_path);
+    vio_status = HostVIO(&dst_res, nullptr).LinkSymbolic(src, dst_res.local_path);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -329,7 +327,7 @@ s32 QFS::OperationImpl::Unlink(const fs::path& path) {
         host_used = true;
     }
 
-    vio_status = HostVIO(&res, host_used, nullptr).Unlink(res.local_path);
+    vio_status = HostVIO(&res, nullptr).Unlink(res.local_path);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -365,7 +363,7 @@ s32 QFS::OperationImpl::Flush(const s32 fd) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).Flush(fd);
+    vio_status = HostVIO(nullptr, handle).Flush(fd);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -394,7 +392,7 @@ s32 QFS::OperationImpl::FSync(const s32 fd) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).FSync(fd);
+    vio_status = HostVIO(nullptr, handle).FSync(fd);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -429,7 +427,7 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
         host_used = true;
     }
 
-    vio_status = HostVIO(&res, host_used, nullptr).Truncate(res.local_path, length);
+    vio_status = HostVIO(&res, nullptr).Truncate(res.local_path, length);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -463,7 +461,7 @@ s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).FTruncate(fd, length);
+    vio_status = HostVIO(nullptr, handle).FTruncate(fd, length);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -492,7 +490,7 @@ s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).LSeek(fd, offset, whence);
+    vio_status = HostVIO(nullptr, handle).LSeek(fd, offset, whence);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -539,11 +537,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
         host_used = true;
     }
 
-    if (fd == 17 && hio_status == 32768) {
-        int i = 2137;
-    }
-    // FIXME: mutex na te 3 bo inne wątki mogą wyczyścić ctx xanim się wykona
-    vio_status = HostVIO(nullptr, host_used, handle).Read(fd, buf, count);
+    vio_status = HostVIO(nullptr, handle).Read(fd, buf, count);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -576,7 +570,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).PRead(fd, buf, count, offset);
+    vio_status = HostVIO(nullptr, handle).PRead(fd, buf, count, offset);
 
     if (host_used && (hio_status != vio_status)) {
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -611,7 +605,7 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernel
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).ReadV(fd, iov, iovcnt);
+    vio_status = HostVIO(nullptr, handle).ReadV(fd, iov, iovcnt);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -645,7 +639,7 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKerne
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).PReadV(fd, iov, iovcnt, offset);
+    vio_status = HostVIO(nullptr, handle).PReadV(fd, iov, iovcnt, offset);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -678,7 +672,7 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).Write(fd, buf, count);
+    vio_status = HostVIO(nullptr, handle).Write(fd, buf, count);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -711,7 +705,7 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).PWrite(fd, buf, count, offset);
+    vio_status = HostVIO(nullptr, handle).PWrite(fd, buf, count, offset);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -745,7 +739,7 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).WriteV(fd, iov, iovcnt);
+    vio_status = HostVIO(nullptr, handle).WriteV(fd, iov, iovcnt);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -779,7 +773,7 @@ s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKern
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, host_used, handle).PWriteV(fd, iov, iovcnt, offset);
+    vio_status = HostVIO(nullptr, handle).PWriteV(fd, iov, iovcnt, offset);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -822,7 +816,7 @@ s32 QFS::OperationImpl::MKDir(const fs::path& path, u16 mode) {
         host_used = true;
     }
 
-    vio_status = HostVIO(&res, host_used, nullptr).MKDir(res.local_path, mode);
+    vio_status = HostVIO(&res, nullptr).MKDir(res.local_path, mode);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -855,7 +849,7 @@ s32 QFS::OperationImpl::RMDir(const fs::path& path) {
         host_used = true;
     }
 
-    status = HostVIO(&res, host_used, nullptr).RMDir(res.local_path);
+    vio_status = HostVIO(&res, nullptr).RMDir(res.local_path);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
@@ -873,7 +867,7 @@ s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
         return resolve_status;
     }
 
-    return HostVIO(&res, false, nullptr).Stat(res.local_path, statbuf);
+    return HostVIO(&res, nullptr).Stat(res.local_path, statbuf);
 }
 
 s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
@@ -884,7 +878,7 @@ s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* 
     if (nullptr == handle)
         return -POSIX_EBADF;
 
-    return HostVIO(nullptr, false, handle).FStat(fd, statbuf);
+    return HostVIO(nullptr, handle).FStat(fd, statbuf);
 }
 
 s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
@@ -896,7 +890,7 @@ s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
         return resolve_status;
     }
 
-    return HostVIO(&res, false, nullptr).Chmod(res.local_path, mode);
+    return HostVIO(&res, nullptr).Chmod(res.local_path, mode);
 }
 
 s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
@@ -910,7 +904,7 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     if (!handle->read)
         return -POSIX_EBADF;
 
-    return HostVIO(nullptr, false, handle).FChmod(fd, mode);
+    return HostVIO(nullptr, handle).FChmod(fd, mode);
 }
 
 s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
@@ -924,7 +918,7 @@ s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep)
     if (!handle->read)
         return -POSIX_EBADF;
 
-    return HostVIO(nullptr, false, handle).GetDents(fd, buf, count, basep);
+    return HostVIO(nullptr, handle).GetDents(fd, buf, count, basep);
 }
 
 s32 QFS::OperationImpl::Copy(const fs::path& src, const fs::path& dst, bool fail_if_exists) {
@@ -988,7 +982,7 @@ s32 QFS::OperationImpl::Move(const fs::path& src, const fs::path& dst, bool fail
         host_used = true;
     }
 
-    vio_status = HostVIO(&dst_res, host_used, nullptr).Move(src, dst_res.local_path, false);
+    vio_status = HostVIO(&dst_res, nullptr).Move(src, dst_res.local_path, false);
 
     if (host_used && (hio_status != vio_status))
         LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,

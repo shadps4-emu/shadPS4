@@ -24,8 +24,8 @@
 
 namespace HostIODriver {
 
-HostIO_Virtual::HostIO_Virtual(Resolved* resolved, bool host_bound, fd_handle_ptr handle)
-    : resolved(resolved), handle(handle), host_bound(host_bound) {}
+HostIO_Virtual::HostIO_Virtual(Resolved* resolved, fd_handle_ptr handle)
+    : resolved(resolved), handle(handle) {}
 HostIO_Virtual::~HostIO_Virtual() = default;
 
 s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
@@ -51,7 +51,7 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
         if ((flags & QUASI_O_CREAT) == 0)
             return -POSIX_ENOENT;
 
-        target = this->host_bound ? RegularFile::Create() : VirtualFile::Create();
+        target = part->IsHostMounted() ? RegularFile::Create() : VirtualFile::Create();
         target->chmod(mode);
         if (0 != part->touch(parent, this->resolved->leaf, target))
             // touch failed in target directory, issue with resolve() is most likely

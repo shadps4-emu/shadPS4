@@ -19,14 +19,14 @@ s32 win2bsd(s32 id) {
     switch (id) {
     default:
         LOG_CRITICAL(Kernel_Fs, "Can't resolve POSIX errno: {}", id);
-        return EIO;
+        return POSIX_EIO;
     case ERROR_FILE_NOT_FOUND:
     case ERROR_PATH_NOT_FOUND:
-        return ENOENT;
+        return POSIX_ENOENT;
     case ERROR_ALREADY_EXISTS:
-        return EEXIST;
+        return POSIX_EEXIST;
     case ERROR_ACCESS_DENIED:
-        return EACCES;
+        return POSIX_EACCES;
     }
 }
 
