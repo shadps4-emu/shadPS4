@@ -146,13 +146,11 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
-    s32 libCtxId, s32 handleId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum) {
     s32 result;
     // Validate parameters
-    if (((pNpServiceName == NULL ||
-          npServiceLabel != Libraries::Np::NpCommon::ORBIS_NP_INVALID_SERVICE_LABEL) &&
+    if (((pNpServiceName == NULL || npServiceLabel != ORBIS_NP_INVALID_SERVICE_LABEL) &&
          (pFilterParam != NULL)) &&
         (filterParamNum != 0)) {
         result = createExtendedPushEventFilterInternal(

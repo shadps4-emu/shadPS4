@@ -5,8 +5,7 @@
 namespace Libraries::Np::NpWebApi {
 
 s32 createExtendedPushEventFilterInternal(
-    s32 libCtxId, s32 handleId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum,
     int additionalParam) {
     LOG_ERROR(Lib_NpWebApi,
@@ -35,7 +34,7 @@ s32 createExtendedPushEventFilterInternal(
 }
 s32 createExtendedPushEventFilterImpl(OrbisNpWebApiContext* context, s32 handleId,
                                       const char* pNpServiceName,
-                                      Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+                                      OrbisNpServiceLabel npServiceLabel,
                                       const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam,
                                       u64 filterParamNum, int additionalParam) {
     LOG_ERROR(Lib_NpWebApi,

@@ -13,13 +13,12 @@ namespace Libraries::Np::NpWebApi {
 struct OrbisNpWebApiContext {};
 
 s32 createExtendedPushEventFilterInternal(
-    s32 libCtxId, s32 handleId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum,
     int additionalParam); // FUN_01003180
 s32 createExtendedPushEventFilterImpl(OrbisNpWebApiContext* context, s32 handleId,
                                       const char* pNpServiceName,
-                                      Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+                                      OrbisNpServiceLabel npServiceLabel,
                                       const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam,
                                       u64 filterParamNum,
                                       int additionalParam);                     // FUN_01008680

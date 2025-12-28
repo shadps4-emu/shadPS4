@@ -43,4 +43,21 @@ struct OrbisNpIdToken {
     u8 padding[7];
 };
 
+using OrbisNpServiceLabel = u32;
+constexpr s32 ORBIS_NP_INVALID_SERVICE_LABEL = 0xFFFFFFFF;
+
+using OrbisNpAccountId = u64;
+enum OrbisNpPlatformType : s32 {
+    None = 0,
+    PS3 = 1,
+    Vita = 2,
+    PS4 = 3,
+};
+
+struct OrbisNpPeerAddressA {
+    OrbisNpAccountId accountId;
+    OrbisNpPlatformType platform;
+    char padding[4];
+};
+
 }; // namespace Libraries::Np

@@ -33,7 +33,7 @@ struct OrbisNpWebApiExtdPushEventFilterParameter {
     u64 extdDataKeyNum;
 };
 
-struct SceNpWebApiExtdPushEventExtdData {
+struct OrbisNpWebApiExtdPushEventExtdData {
     OrbisNpWebApiExtdPushEventExtdDataKey extdDataKey;
     char* pData;
     u64 dataLen;
@@ -88,14 +88,11 @@ struct OrbisNpWebApiConnectionStats {
 using OrbisNpWebApiExtdPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
 
 using OrbisNpWebApiExtdPushEventCallbackA = PS4_SYSV_ABI void (*)(
-    s32 userCtxId, s32 callbackId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
-    const Libraries::Np::NpCommon::OrbisNpPeerAddressA* pTo,
-    const Libraries::Np::OrbisNpOnlineId* pToOnlineId,
-    const Libraries::Np::NpCommon::OrbisNpPeerAddressA* pFrom,
-    const Libraries::Np::OrbisNpOnlineId* pFromOnlineId,
+    s32 userCtxId, s32 callbackId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
+    const OrbisNpPeerAddressA* pTo, const OrbisNpOnlineId* pToOnlineId,
+    const OrbisNpPeerAddressA* pFrom, const OrbisNpOnlineId* pFromOnlineId,
     const OrbisNpWebApiPushEventDataType* pDataType, const char* pData, size_t dataLen,
-    const SceNpWebApiExtdPushEventExtdData* pExtdData, size_t extdDataNum, void* pUserArg);
+    const OrbisNpWebApiExtdPushEventExtdData* pExtdData, size_t extdDataNum, void* pUserArg);
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId,
                                           Libraries::UserService::OrbisUserServiceUserId userId);
@@ -125,8 +122,7 @@ s32 PS4_SYSV_ABI sceNpWebApiClearUnusedConnection(s32 userCtxId, const char* pAp
 s32 PS4_SYSV_ABI sceNpWebApiCreateContextA(s32 libCtxId,
                                            Libraries::UserService::OrbisUserServiceUserId userId);
 s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
-    s32 libCtxId, s32 handleId, const char* pNpServiceName,
-    Libraries::Np::NpCommon::OrbisNpServiceLabel npServiceLabel,
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum);
 s32 PS4_SYSV_ABI sceNpWebApiCreateHandle(s32 libCtxId);
 s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest(s32 titleUserCtxId, const char* pApiGroup,
