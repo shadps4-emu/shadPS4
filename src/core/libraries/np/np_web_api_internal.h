@@ -57,7 +57,7 @@ OrbisNpWebApiUserContext* findUserContext(OrbisNpWebApiContext* context,
 s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId); // FUN_010016a0
 s32 createUserContext(s32 libCtxId,
                       Libraries::UserService::OrbisUserServiceUserId userId); // FUN_010015c0
-bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);                 // FUN_0100ea40
+bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);                // FUN_0100ea40
 s32 deleteUserContext(s32 userCtxId);                                         // FUN_01001710
 
 s32 createExtendedPushEventFilterInternal(

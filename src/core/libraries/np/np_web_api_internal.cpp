@@ -214,7 +214,7 @@ s32 deleteUserContext(s32 userCtxId) {
     // TODO: Should abort all requests in user context
 
     // TODO: For compiled SDK version < FW 4.0, should return error instead of waiting.
-    
+
     user_context->deleted = true;
     while (isUserContextBusy(user_context)) {
         // TODO: should also check for busy requests
