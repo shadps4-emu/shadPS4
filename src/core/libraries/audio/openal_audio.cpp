@@ -119,11 +119,12 @@ public:
             LOG_WARNING(Lib_AudioOut, "Unsupported {}CH format, will downmix to stereo", channels);
             downmix_needed = true;
             channels = 2; // output channels
-            al_format = GetALFormat(2, true);
-            stereo_buffer.resize(CalculateBufferSize(2));
-            bytes_per_buffer = CalculateBufferSize(2);
+            al_format = has_float32 ? AL_FORMAT_STEREO_FLOAT32 : AL_FORMAT_STEREO16;
+            // Resize stereo buffer for downmixed float data
+            stereo_buffer.resize(CalculateBufferSize(2, true));
+            bytes_per_buffer = CalculateBufferSize(2, true);
         } else {
-            bytes_per_buffer = CalculateBufferSize(channels);
+            bytes_per_buffer = CalculateBufferSize(channels, is_float);
         }
 
         // Buffers
@@ -166,9 +167,16 @@ public:
         if (!source)
             return;
 
-        int max = *std::ranges::max_element(ch_volumes);
-        float gain =
-            static_cast<float>(max) / SCE_AUDIO_OUT_VOLUME_0DB * Config::getVolumeSlider() / 100.0f;
+        // Calculate average volume or use max as you prefer
+        int total = 0;
+        for (int vol : ch_volumes) {
+            total += vol;
+        }
+        int avg = total / static_cast<int>(ch_volumes.size());
+
+        float normalized = static_cast<float>(avg) / SCE_AUDIO_OUT_VOLUME_0DB;
+        float gain = normalized * Config::getVolumeSlider() / 100.0f;
+
         alSourcef(source, AL_GAIN, std::clamp(gain, 0.0f, 1.0f));
     }
 
@@ -176,32 +184,55 @@ public:
         if (!running)
             return;
 
-        // Determine input sample type
-        const bool float_input = is_float;
-        const size_t input_channels = channels;
-        const size_t bytes_per_sample = float_input ? 4 : 2;
+        std::vector<std::byte> audio_data;
 
-        // Calculate number of frames in the buffer
-        size_t frames = guest_buffer_size / (bytes_per_sample * input_channels);
-
-        // Prepare source buffer
-        std::vector<std::byte> data(guest_buffer_size);
-        std::memcpy(data.data(), ptr, guest_buffer_size);
-
-        std::vector<std::byte>* out_buffer = &data;
-
-        // Downmix if needed
         if (downmix_needed) {
-            // Resize stereo buffer to hold 2 channels
-            stereo_buffer.resize(frames * bytes_per_sample * 2);
-            Downmix8CHToStereo(data.data(), float_input, stereo_buffer);
-            out_buffer = &stereo_buffer;
+            // Calculate frames based on original 8-channel data
+            size_t input_channels = 8;
+            size_t bytes_per_sample = is_float ? 4 : 2;
+            size_t frames = guest_buffer_size / (bytes_per_sample * input_channels);
+
+            LOG_DEBUG(
+                Lib_AudioOut,
+                "Downmixing: frames={}, input_channels={}, output_channels=2, bytes_per_sample={}",
+                frames, input_channels, bytes_per_sample);
+
+            // Resize stereo buffer for downmixed float32 output
+            // Always output float32 when downmixing
+            size_t stereo_size = frames * sizeof(float) * 2;
+            if (stereo_buffer.size() != stereo_size) {
+                stereo_buffer.resize(stereo_size);
+                LOG_DEBUG(Lib_AudioOut, "Resized stereo_buffer to {} bytes", stereo_size);
+            }
+
+            // Perform downmix
+            Downmix8CHToStereo(ptr, is_float, stereo_buffer);
+
+            // Use the downmixed buffer
+            audio_data = stereo_buffer; // Copy the data
+
+            LOG_DEBUG(Lib_AudioOut, "Downmix complete: output_buffer_size={}", audio_data.size());
+
+        } else {
+            // Simply copy the input data
+            audio_data.resize(guest_buffer_size);
+            std::memcpy(audio_data.data(), ptr, guest_buffer_size);
+
+            LOG_DEBUG(Lib_AudioOut, "Normal path: copied {} bytes", guest_buffer_size);
+        }
+
+        // Verify buffer size matches expected
+        if (audio_data.size() != bytes_per_buffer) {
+            LOG_WARNING(Lib_AudioOut, "Buffer size mismatch: expected={}, actual={}",
+                        bytes_per_buffer, audio_data.size());
         }
 
         // Queue the buffer
         {
             std::lock_guard<std::mutex> lock(buffer_mutex);
-            queued_data.emplace_back(std::move(*out_buffer));
+            queued_data.emplace_back(std::move(audio_data));
+            LOG_DEBUG(Lib_AudioOut, "Queued buffer: size={}, queue_size={}", audio_data.size(),
+                      queued_data.size());
         }
 
         buffer_cv.notify_one();
@@ -293,8 +324,8 @@ private:
         }
     }
 
-    uint32_t CalculateBufferSize(int out_channels) const {
-        uint32_t bytes_per_sample = is_float ? 4 : 2;
+    uint32_t CalculateBufferSize(int out_channels, bool use_float) const {
+        uint32_t bytes_per_sample = use_float ? 4 : 2;
         size_t frames = guest_buffer_size / frame_size;
         return static_cast<uint32_t>(frames * bytes_per_sample * out_channels);
     }
@@ -306,52 +337,52 @@ private:
     void Downmix8CHToStereo(const void* src, bool is_float_input, std::vector<std::byte>& dst) {
         const size_t input_channels = 8;
         const size_t output_channels = 2;
-        const size_t bytes_per_sample = is_float_input ? 4 : 2;
 
-        size_t frames = guest_buffer_size / (bytes_per_sample * input_channels);
+        size_t frames = guest_buffer_size / (frame_size);
 
-        dst.resize(frames * bytes_per_sample * output_channels);
+        // Always output float32 (4 bytes per sample)
+        dst.resize(frames * sizeof(float) * output_channels);
 
+        const float* fsrc = nullptr;
+        std::vector<float> temp_input;
+
+        // Convert input to float if needed
         if (is_float_input) {
-            const float* fsrc = reinterpret_cast<const float*>(src);
-            float* fdst = reinterpret_cast<float*>(dst.data());
-
-            for (size_t i = 0; i < frames; i++) {
-                float fl = fsrc[i * 8 + 0];
-                float fr = fsrc[i * 8 + 1];
-                float c = fsrc[i * 8 + 2];
-                float lfe = fsrc[i * 8 + 3];
-                float rl = fsrc[i * 8 + 4];
-                float rr = fsrc[i * 8 + 5];
-                float sl = fsrc[i * 8 + 6];
-                float sr = fsrc[i * 8 + 7];
-
-                float left = fl + 0.707f * c + rl + 0.707f * sl;
-                float right = fr + 0.707f * c + rr + 0.707f * sr;
-
-                fdst[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
-                fdst[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
-            }
+            fsrc = reinterpret_cast<const float*>(src);
         } else {
+            // Convert int16 to float
             const int16_t* isrc = reinterpret_cast<const int16_t*>(src);
-            float* fdst = reinterpret_cast<float*>(dst.data());
-
-            for (size_t i = 0; i < frames; i++) {
-                float fl = isrc[i * 8 + 0] / 32768.0f;
-                float fr = isrc[i * 8 + 1] / 32768.0f;
-                float c = isrc[i * 8 + 2] / 32768.0f;
-                float lfe = isrc[i * 8 + 3] / 32768.0f;
-                float rl = isrc[i * 8 + 4] / 32768.0f;
-                float rr = isrc[i * 8 + 5] / 32768.0f;
-                float sl = isrc[i * 8 + 6] / 32768.0f;
-                float sr = isrc[i * 8 + 7] / 32768.0f;
-
-                float left = fl + 0.707f * c + rl + 0.707f * sl;
-                float right = fr + 0.707f * c + rr + 0.707f * sr;
-
-                fdst[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
-                fdst[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
+            temp_input.resize(frames * input_channels);
+            for (size_t i = 0; i < frames * input_channels; i++) {
+                temp_input[i] = isrc[i] / 32768.0f;
             }
+            fsrc = temp_input.data();
+        }
+
+        float* fdst = reinterpret_cast<float*>(dst.data());
+
+        for (size_t i = 0; i < frames; i++) {
+            float fl = fsrc[i * 8 + 0];
+            float fr = fsrc[i * 8 + 1];
+            float c = fsrc[i * 8 + 2];
+            float lfe = fsrc[i * 8 + 3];
+            float rl = fsrc[i * 8 + 4];
+            float rr = fsrc[i * 8 + 5];
+            float sl = fsrc[i * 8 + 6];
+            float sr = fsrc[i * 8 + 7];
+
+            // Apply downmix coefficients (standard 7.1 to stereo)
+            // You might want to adjust these coefficients based on your needs
+            float left = fl + 0.707f * c + 0.707f * sl + 0.5f * rl;
+            float right = fr + 0.707f * c + 0.707f * sr + 0.5f * rr;
+
+            // Optionally add LFE at reduced level
+            left += 0.1f * lfe;
+            right += 0.1f * lfe;
+
+            // Clamp to valid range
+            fdst[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
+            fdst[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
         }
     }
 
