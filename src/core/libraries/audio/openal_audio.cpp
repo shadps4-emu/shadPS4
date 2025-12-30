@@ -176,16 +176,26 @@ public:
         if (!running)
             return;
 
+        // Copy guest data
         std::vector<std::byte> data(guest_buffer_size);
         std::memcpy(data.data(), ptr, guest_buffer_size);
 
-        if (downmix_needed)
-            Downmix8CHToStereo(reinterpret_cast<const float*>(data.data()), stereo_buffer);
+        std::vector<std::byte>* out_buffer = &data;
+
+        // Downmix if needed
+        if (downmix_needed) {
+            if (stereo_buffer.size() != CalculateBufferSize(2))
+                stereo_buffer.resize(CalculateBufferSize(2));
+
+            Downmix8CHToStereo(data.data(), is_float, stereo_buffer);
+            out_buffer = &stereo_buffer;
+        }
 
         {
             std::lock_guard<std::mutex> lock(buffer_mutex);
-            queued_data.emplace_back(downmix_needed ? stereo_buffer : data);
+            queued_data.emplace_back(std::move(*out_buffer));
         }
+
         buffer_cv.notify_one();
     }
 
@@ -285,30 +295,46 @@ private:
         buffer_count = std::clamp<size_t>(12, 12, 16); // adjust as needed
     }
 
-    void Downmix8CHToStereo(const float* src, std::vector<std::byte>& dst) {
+    void Downmix8CHToStereo(const void* src, bool is_float_input, std::vector<std::byte>& dst) {
         size_t frames = guest_buffer_size / frame_size;
         float* dst_float = reinterpret_cast<float*>(dst.data());
 
-        for (size_t i = 0; i < frames; i++) {
-            float fl = src[i * 8 + 0];
-            float fr = src[i * 8 + 1];
-            float c = src[i * 8 + 2];
-            float lfe = src[i * 8 + 3]; // optional, can be ignored or mixed softly
-            float rl = src[i * 8 + 4];
-            float rr = src[i * 8 + 5];
-            float sl = src[i * 8 + 6];
-            float sr = src[i * 8 + 7];
+        if (is_float_input) {
+            const float* fsrc = reinterpret_cast<const float*>(src);
+            for (size_t i = 0; i < frames; i++) {
+                float fl = fsrc[i * 8 + 0];
+                float fr = fsrc[i * 8 + 1];
+                float c = fsrc[i * 8 + 2];
+                float lfe = fsrc[i * 8 + 3];
+                float rl = fsrc[i * 8 + 4];
+                float rr = fsrc[i * 8 + 5];
+                float sl = fsrc[i * 8 + 6];
+                float sr = fsrc[i * 8 + 7];
 
-            // Weighted downmix
-            float left = fl + 0.707f * c + rl + 0.707f * sl;
-            float right = fr + 0.707f * c + rr + 0.707f * sr;
+                float left = fl + 0.707f * c + rl + 0.707f * sl;
+                float right = fr + 0.707f * c + rr + 0.707f * sr;
 
-            // Optional: normalize / clamp to [-1.0f, 1.0f] to avoid clipping
-            left = std::clamp(left, -1.0f, 1.0f);
-            right = std::clamp(right, -1.0f, 1.0f);
+                dst_float[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
+                dst_float[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
+            }
+        } else {
+            const int16_t* isrc = reinterpret_cast<const int16_t*>(src);
+            for (size_t i = 0; i < frames; i++) {
+                float fl = isrc[i * 8 + 0] / 32768.0f;
+                float fr = isrc[i * 8 + 1] / 32768.0f;
+                float c = isrc[i * 8 + 2] / 32768.0f;
+                float lfe = isrc[i * 8 + 3] / 32768.0f;
+                float rl = isrc[i * 8 + 4] / 32768.0f;
+                float rr = isrc[i * 8 + 5] / 32768.0f;
+                float sl = isrc[i * 8 + 6] / 32768.0f;
+                float sr = isrc[i * 8 + 7] / 32768.0f;
 
-            dst_float[i * 2 + 0] = left;
-            dst_float[i * 2 + 1] = right;
+                float left = fl + 0.707f * c + rl + 0.707f * sl;
+                float right = fr + 0.707f * c + rr + 0.707f * sr;
+
+                dst_float[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
+                dst_float[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
+            }
         }
     }
 
