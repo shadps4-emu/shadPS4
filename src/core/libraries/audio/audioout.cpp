@@ -255,7 +255,8 @@ int PS4_SYSV_ABI sceAudioOutInit() {
     if (audio != nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
-    audio = std::make_unique<SDLAudioOut>();
+    // audio = std::make_unique<SDLAudioOut>(); //TODO decide if we keep them both or only openal
+    audio = std::make_unique<OpenALAudioOut>();
     return ORBIS_OK;
 }
 
