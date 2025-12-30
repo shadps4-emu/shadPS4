@@ -176,7 +176,15 @@ public:
         if (!running)
             return;
 
-        // Copy guest data
+        // Determine input sample type
+        const bool float_input = is_float;
+        const size_t input_channels = channels;
+        const size_t bytes_per_sample = float_input ? 4 : 2;
+
+        // Calculate number of frames in the buffer
+        size_t frames = guest_buffer_size / (bytes_per_sample * input_channels);
+
+        // Prepare source buffer
         std::vector<std::byte> data(guest_buffer_size);
         std::memcpy(data.data(), ptr, guest_buffer_size);
 
@@ -184,13 +192,13 @@ public:
 
         // Downmix if needed
         if (downmix_needed) {
-            if (stereo_buffer.size() != CalculateBufferSize(2))
-                stereo_buffer.resize(CalculateBufferSize(2));
-
-            Downmix8CHToStereo(data.data(), is_float, stereo_buffer);
+            // Resize stereo buffer to hold 2 channels
+            stereo_buffer.resize(frames * bytes_per_sample * 2);
+            Downmix8CHToStereo(data.data(), float_input, stereo_buffer);
             out_buffer = &stereo_buffer;
         }
 
+        // Queue the buffer
         {
             std::lock_guard<std::mutex> lock(buffer_mutex);
             queued_data.emplace_back(std::move(*out_buffer));
@@ -296,11 +304,18 @@ private:
     }
 
     void Downmix8CHToStereo(const void* src, bool is_float_input, std::vector<std::byte>& dst) {
-        size_t frames = guest_buffer_size / frame_size;
-        float* dst_float = reinterpret_cast<float*>(dst.data());
+        const size_t input_channels = 8;
+        const size_t output_channels = 2;
+        const size_t bytes_per_sample = is_float_input ? 4 : 2;
+
+        size_t frames = guest_buffer_size / (bytes_per_sample * input_channels);
+
+        dst.resize(frames * bytes_per_sample * output_channels);
 
         if (is_float_input) {
             const float* fsrc = reinterpret_cast<const float*>(src);
+            float* fdst = reinterpret_cast<float*>(dst.data());
+
             for (size_t i = 0; i < frames; i++) {
                 float fl = fsrc[i * 8 + 0];
                 float fr = fsrc[i * 8 + 1];
@@ -314,11 +329,13 @@ private:
                 float left = fl + 0.707f * c + rl + 0.707f * sl;
                 float right = fr + 0.707f * c + rr + 0.707f * sr;
 
-                dst_float[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
-                dst_float[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
+                fdst[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
+                fdst[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
             }
         } else {
             const int16_t* isrc = reinterpret_cast<const int16_t*>(src);
+            float* fdst = reinterpret_cast<float*>(dst.data());
+
             for (size_t i = 0; i < frames; i++) {
                 float fl = isrc[i * 8 + 0] / 32768.0f;
                 float fr = isrc[i * 8 + 1] / 32768.0f;
@@ -332,8 +349,8 @@ private:
                 float left = fl + 0.707f * c + rl + 0.707f * sl;
                 float right = fr + 0.707f * c + rr + 0.707f * sr;
 
-                dst_float[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
-                dst_float[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
+                fdst[i * 2 + 0] = std::clamp(left, -1.0f, 1.0f);
+                fdst[i * 2 + 1] = std::clamp(right, -1.0f, 1.0f);
             }
         }
     }
