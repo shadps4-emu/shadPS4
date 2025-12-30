@@ -115,10 +115,15 @@ public:
         // Determine AL format
         al_format = GetALFormat(channels, is_float);
         if (!al_format) {
-            LOG_WARNING(Lib_AudioOut, "Unsupported 8CH format, will downmix to stereo");
-            al_format = GetALFormat(2, true);
+            // Downmix to stereo if unsupported 8CH
+            LOG_WARNING(Lib_AudioOut, "Unsupported {}CH format, will downmix to stereo", channels);
             downmix_needed = true;
-            stereo_buffer.resize(CalculateStereoByteSize());
+            channels = 2; // output channels
+            al_format = GetALFormat(2, true);
+            stereo_buffer.resize(CalculateBufferSize(2));
+            bytes_per_buffer = CalculateBufferSize(2);
+        } else {
+            bytes_per_buffer = CalculateBufferSize(channels);
         }
 
         // Buffers
@@ -126,10 +131,8 @@ public:
         buffers.resize(buffer_count);
         alGenBuffers(static_cast<ALsizei>(buffer_count), buffers.data());
 
-        bytes_per_buffer = downmix_needed ? CalculateStereoByteSize() : CalculateByteSize();
-
-        std::vector<std::byte> silence(bytes_per_buffer);
-        std::memset(silence.data(), 0, silence.size());
+        // Fill buffers with silence
+        std::vector<std::byte> silence(bytes_per_buffer, std::byte{0});
         for (ALuint b : buffers)
             alBufferData(b, al_format, silence.data(), static_cast<ALsizei>(silence.size()),
                          sample_rate);
@@ -272,14 +275,10 @@ private:
         }
     }
 
-    uint32_t CalculateByteSize() const {
+    uint32_t CalculateBufferSize(int out_channels) const {
         uint32_t bytes_per_sample = is_float ? 4 : 2;
-        return guest_buffer_size / frame_size * bytes_per_sample * channels;
-    }
-
-    uint32_t CalculateStereoByteSize() const {
-        uint32_t bytes_per_sample = 4; // float stereo
-        return guest_buffer_size / frame_size * bytes_per_sample * 2;
+        size_t frames = guest_buffer_size / frame_size;
+        return static_cast<uint32_t>(frames * bytes_per_sample * out_channels);
     }
 
     void CalculateBufferCount() {
@@ -287,20 +286,29 @@ private:
     }
 
     void Downmix8CHToStereo(const float* src, std::vector<std::byte>& dst) {
-        // convert 8CH float audio to stereo
         size_t frames = guest_buffer_size / frame_size;
         float* dst_float = reinterpret_cast<float*>(dst.data());
 
         for (size_t i = 0; i < frames; i++) {
-            dst_float[i * 2 + 0] = 0.0f;
-            dst_float[i * 2 + 1] = 0.0f;
-            for (int ch = 0; ch < 8; ch++) {
-                float sample = reinterpret_cast<const float*>(src)[i * 8 + ch];
-                if (ch % 2 == 0)
-                    dst_float[i * 2 + 0] += sample * 0.5f; // left
-                else
-                    dst_float[i * 2 + 1] += sample * 0.5f; // right
-            }
+            float fl = src[i * 8 + 0];
+            float fr = src[i * 8 + 1];
+            float c = src[i * 8 + 2];
+            float lfe = src[i * 8 + 3]; // optional, can be ignored or mixed softly
+            float rl = src[i * 8 + 4];
+            float rr = src[i * 8 + 5];
+            float sl = src[i * 8 + 6];
+            float sr = src[i * 8 + 7];
+
+            // Weighted downmix
+            float left = fl + 0.707f * c + rl + 0.707f * sl;
+            float right = fr + 0.707f * c + rr + 0.707f * sr;
+
+            // Optional: normalize / clamp to [-1.0f, 1.0f] to avoid clipping
+            left = std::clamp(left, -1.0f, 1.0f);
+            right = std::clamp(right, -1.0f, 1.0f);
+
+            dst_float[i * 2 + 0] = left;
+            dst_float[i * 2 + 1] = right;
         }
     }
 
