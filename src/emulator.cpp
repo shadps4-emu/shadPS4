@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -27,6 +27,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -181,7 +182,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                  true);
 
     // Initialize logging as soon as possible
-    if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
+    if (!id.empty() && EmulatorSettings::GetInstance()->IsSeparateLoggingEnabled()) {
         Common::Log::Initialize(id + ".log");
     } else {
         Common::Log::Initialize();
@@ -203,19 +204,20 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
-    LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
-    LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
-    LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
-    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
+    LOG_INFO(Config, "General LogType: {}", EmulatorSettings::GetInstance()->GetLogType());
+    LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
+    LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings::GetInstance()->IsDevKit());
+    LOG_INFO(Config, "General isConnectedToNetwork: {}",
+             EmulatorSettings::GetInstance()->IsConnectedToNetwork());
+    LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings::GetInstance()->IsPSNSignedIn());
+    LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings::GetInstance()->IsNullGPU());
     LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
     LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", Config::copyGPUCmdBuffers());
-    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
+    LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings::GetInstance()->GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", Config::vkValidationCoreEnabled());
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
@@ -258,7 +260,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize components
     memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
+    controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
 
     // Load renderdoc module
@@ -300,7 +302,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(
-        Config::getWindowWidth(), Config::getWindowHeight(), controller, window_title);
+        Config::getWindowWidth(), Config::getWindowHeight(), controllers, window_title);
 
     g_window = window.get();
 
@@ -358,7 +360,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
-    if (Config::getEnableDiscordRPC()) {
+    if (EmulatorSettings::GetInstance()->IsDiscordRPCEnabled()) {
         auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
         if (rpc->getRPCEnabled() == false) {
             rpc->init();
@@ -509,7 +511,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
-    const auto& sys_module_path = Config::getSysModulesPath();
+    const auto& sys_module_path = EmulatorSettings::GetInstance()->GetSysModulesDir();
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
         found_modules.push_back(entry.path());
     }

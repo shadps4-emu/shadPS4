@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -8,6 +8,7 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 
@@ -26,8 +27,8 @@ public:
 
         // Determine port type
         std::string port_name = port.type == OrbisAudioOutPort::PadSpk
-                                    ? Config::getPadSpkOutputDevice()
-                                    : Config::getMainOutputDevice();
+                                    ? EmulatorSettings::GetInstance()->GetPadSpkOutputDevice()
+                                    : EmulatorSettings::GetInstance()->GetMainOutputDevice();
         SDL_AudioDeviceID dev_id = SDL_INVALID_AUDIODEVICEID;
         if (port_name == "None") {
             stream = nullptr;

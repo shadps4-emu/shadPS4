@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # Version 3.24 needed for FetchContent OVERRIDE_FIND_PACKAGE
@@ -838,6 +838,10 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/emulator_settings.cpp
+         src/core/emulator_settings.h
+         src/core/user_manager.cpp
+         src/core/user_manager.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
