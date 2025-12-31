@@ -272,7 +272,7 @@ add_subdirectory(miniz)
 
 #openal
 set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
-
+set(LIBTYPE "STATIC" CACHE STRING "" FORCE)
 # Disable everything we don't need
 set(ALSOFT_UTILS OFF CACHE BOOL "" FORCE)
 set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
