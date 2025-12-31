@@ -18,7 +18,8 @@
 
 namespace Libraries::Ajm {
 
-static constexpr u32 ORBIS_AJM_WAIT_INFINITE = -1;
+constexpr u32 ORBIS_AJM_WAIT_INFINITE = -1;
+constexpr int INSTANCE_ID_MASK = 0x3FFF;
 
 AjmContext::AjmContext() {
     worker_thread = std::jthread([this](std::stop_token stop) { this->WorkerThread(stop); });
@@ -84,7 +85,7 @@ void AjmContext::ProcessBatch(u32 id, std::span<AjmJob> jobs) {
             std::shared_ptr<AjmInstance> instance;
             {
                 std::shared_lock lock(instances_mutex);
-                auto* p_instance = instances.Get(job.instance_id);
+                auto* p_instance = instances.Get(job.instance_id & INSTANCE_ID_MASK);
                 ASSERT_MSG(p_instance != nullptr, "Attempting to execute job on null instance");
                 instance = *p_instance;
             }
@@ -176,15 +177,15 @@ s32 AjmContext::InstanceCreate(AjmCodecType codec_type, AjmInstanceFlags flags, 
     if (!opt_index.has_value()) {
         return ORBIS_AJM_ERROR_OUT_OF_RESOURCES;
     }
-    *out_instance = opt_index.value();
+    *out_instance = opt_index.value() | (static_cast<u32>(codec_type) << 14);
 
     LOG_INFO(Lib_Ajm, "instance = {}", *out_instance);
     return ORBIS_OK;
 }
 
-s32 AjmContext::InstanceDestroy(u32 instance) {
+s32 AjmContext::InstanceDestroy(u32 instance_id) {
     std::unique_lock lock(instances_mutex);
-    if (!instances.Destroy(instance)) {
+    if (!instances.Destroy(instance_id & INSTANCE_ID_MASK)) {
         return ORBIS_AJM_ERROR_INVALID_INSTANCE;
     }
     return ORBIS_OK;

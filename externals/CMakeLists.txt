@@ -258,6 +258,10 @@ if (WIN32)
 add_subdirectory(ext-wepoll)
 endif()
 
+if (NOT TARGET fdk-aac)
+add_subdirectory(aacdec)
+endif()
+
 #nlohmann json 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
