@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -11,7 +11,7 @@ struct User {
     s32 user_id;
     u32 user_color;
     std::string user_name;
-    int controller_port; // 1–4
+    int controller_port; // 1ï¿½4
 };
 
 struct Users {
