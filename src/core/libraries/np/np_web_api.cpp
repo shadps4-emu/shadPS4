@@ -413,33 +413,46 @@ s32 PS4_SYSV_ABI sceNpWebApiRegisterExtdPushEventCallbackA(
     return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest(s64 requestId, s32 partIndex, const void* pData,
+                                                 u64 dataSize) {
+    if (partIndex <= 0 || pData == nullptr || dataSize == 0) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi,
+              "called, requestId = {:#x}, "
+              "partIndex = {}, pData = {}, dataSize = {}",
+              requestId, partIndex, fmt::ptr(pData), dataSize);
+    return sendRequest(requestId, partIndex, pData, dataSize, 0, nullptr);
 }
 
 s32 PS4_SYSV_ABI
 sceNpWebApiSendMultipartRequest2(s64 requestId, s32 partIndex, const void* pData, u64 dataSize,
                                  OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : requestId = {:#x}, "
+    if (partIndex <= 0 || pData == nullptr || dataSize == 0) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi,
+              "called, requestId = {:#x}, "
               "partIndex = {}, pData = {}, dataSize = {}, pRespInfoOption = {}",
               requestId, partIndex, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
-    return ORBIS_OK;
+    return sendRequest(requestId, partIndex, pData, dataSize, 1, pRespInfoOption);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiSendRequest() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiSendRequest(s64 requestId, const void* pData, u64 dataSize) {
+    LOG_INFO(Lib_NpWebApi, "called, requestId = {:#x}, pData = {}, dataSize = {}",
+              requestId, fmt::ptr(pData), dataSize);
+    return sendRequest(requestId, 0, pData, dataSize, 0, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSendRequest2(s64 requestId, const void* pData, u64 dataSize,
                                          OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : requestId = {:#x}, "
+    LOG_INFO(Lib_NpWebApi,
+              "called, requestId = {:#x}, "
               "pData = {}, dataSize = {}, pRespInfoOption = {}",
               requestId, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
-    return ORBIS_OK;
+    return sendRequest(requestId, 0, pData, dataSize, 1, pRespInfoOption);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSetHandleTimeout(s32 libCtxId, s32 handleId, u32 timeout) {

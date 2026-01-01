@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/elf_info.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
 #include "np_web_api_internal.h"
+
+#include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Np::NpWebApi {
 
@@ -354,9 +357,68 @@ bool isRequestBusy(OrbisNpWebApiRequest* request) {
     return request->userCount > 1;
 }
 
-s32 sendRequest(s64 requestId, s32 partIndex, void* data, u64 dataSize, s8 flag,
-                const OrbisNpWebApiResponseInformationOption* pResponseInformationOption) {
+void setRequestEndTime(OrbisNpWebApiRequest* request) {
+    if (request->requestTimeout != 0 && request->requestEndTime == 0) {
+        request->requestEndTime = Kernel::sceKernelGetProcessTime() + request->requestTimeout;
+    }
+}
 
+s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s8 flag,
+                const OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    setRequestEndTime(request);
+
+    // TODO: multipart logic
+
+    if (g_sdk_ver >= Common::ElfInfo::FW_25 && !request->sent) {
+        request->sent = true;
+    }
+
+    lockContext(context);
+    if (!request->timedOut && request->aborted) {
+        unlockContext(context);
+        releaseRequest(request);
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_ABORTED;
+    }
+
+    unlockContext(context);
+
+    // Stubbing sceNpManagerIntGetSigninState call with a config check.
+    if (!Config::getPSNSignedIn()) {
+        releaseRequest(request);
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_NOT_SIGNED_IN;
+    }
+
+    LOG_ERROR(Lib_NpWebApi,
+              "(STUBBED) called, requestId = {:#x}, pApiGroup = '{}', pPath = '{}', pContentType = "
+              "'{}', method = {}, multipart = {}",
+              requestId, request->userApiGroup, request->userPath, request->userContentType,
+              magic_enum::enum_name(request->userMethod), request->multipart);
+
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
     return ORBIS_OK;
 }
 

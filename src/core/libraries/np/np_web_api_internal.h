@@ -48,6 +48,10 @@ struct OrbisNpWebApiRequest {
     std::string userContentType;
     bool multipart;
     bool aborted;
+    bool sent;
+    u32 requestTimeout;
+    u64 requestEndTime;
+    bool timedOut;
 };
 
 // General functions
@@ -91,8 +95,9 @@ OrbisNpWebApiRequest* findRequest(OrbisNpWebApiUserContext* userContext,
 OrbisNpWebApiRequest* findRequestAndMarkBusy(OrbisNpWebApiUserContext* userContext,
                                              s64 requestId); // FUN_0100d330
 bool isRequestBusy(OrbisNpWebApiRequest* request);           // FUN_0100c1b0
+void setRequestEndTime(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
 s32 sendRequest(
-    s64 requestId, s32 partIndex, void* data, u64 dataSize, s8 flag,
+    s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
     const OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50
 s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
                          OrbisNpWebApiRequest* request); // FUN_01001b70
