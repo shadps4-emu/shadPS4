@@ -7,7 +7,7 @@
 #include <winerror.h>
 
 #include "common/logging/log.h"
-#include "src/core/file_sys/hostio/host_io_win32.h"
+#include "core/file_sys/hostio/host_io_win32.h"
 
 #include "host_io_linux2bsd.h"
 #include "host_io_win2bsd.h"

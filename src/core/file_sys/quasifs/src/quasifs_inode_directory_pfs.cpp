@@ -6,7 +6,7 @@
 #include <string>
 
 #include "common/alignment.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
 #include "core/libraries/kernel/posix_error.h"
 
 // Read-wise PFS is almost identical to regular directory

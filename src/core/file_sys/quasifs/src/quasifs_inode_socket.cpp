@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2026
 
-#include "core/file_sys/quasifs/quasifs_inode_quasi_socket.h"
+#include "core/file_sys/quasifs/quasifs_inode_socket.h"
 
 namespace QuasiFS {
 
-Socket::Socket() {
+Socket::Socket(int domain, int type, int protocol) {
     // fileno and blkdev assigned by partition
     this->st.st_size = 0;
     this->st.st_blksize = 0;

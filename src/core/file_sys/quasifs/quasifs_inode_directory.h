@@ -5,8 +5,8 @@
 #pragma once
 
 // #include <map>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "common/assert.h"
@@ -31,9 +31,9 @@ protected:
     } dirent_t;
 #pragma pack(pop)
 
-// TODO: sort on rebuild, PS4's dirents are neatly sorted, and debugging it is a huge
-// inconvenience
-// #warning Suboptimal structure for holding directory entries
+    // TODO: sort on rebuild, PS4's dirents are neatly sorted, and debugging it is a huge
+    // inconvenience
+    // #warning Suboptimal structure for holding directory entries
     // std::map<std::string, inode_ptr> entries{};
     std::unordered_map<std::string, inode_ptr> entries{};
 

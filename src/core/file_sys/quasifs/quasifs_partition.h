@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 #include "common/alignment.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory.h"
 
 #include "quasi_types.h"
 

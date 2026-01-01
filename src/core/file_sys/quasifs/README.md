@@ -5,7 +5,7 @@ INAA License @marecl 2025
 -->
 
 ### Quick rundown
-quasifs_inode_quasi_* - standalones/prototypes for more complex objects, i.e. turning regular directory into PFS directory or Partition into patchable partition  
+quasifs_inode_* - standalones/prototypes for more complex objects, i.e. turning regular directory into PFS directory or Partition into patchable partition  
 quasifs_inode_* - complex types, inode based  
 
 quasi_* - not interacting with FS directly  

@@ -5,7 +5,7 @@
 #include <string>
 
 #include "common/alignment.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory.h"
 #include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {

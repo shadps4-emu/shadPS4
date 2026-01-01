@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2026
 
-#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
 
 namespace QuasiFS {
 

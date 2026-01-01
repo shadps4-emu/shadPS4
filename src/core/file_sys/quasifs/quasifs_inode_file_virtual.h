@@ -7,7 +7,7 @@
 #include "common/assert.h"
 
 #include "quasi_types.h"
-#include "quasifs_inode_quasi_file.h"
+#include "quasifs_inode_file.h"
 
 namespace QuasiFS {
 

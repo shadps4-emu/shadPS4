@@ -14,7 +14,7 @@
 #include "core/libraries/system/systemservice.h"
 
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 
 namespace qfs = QuasiFS;

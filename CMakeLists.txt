@@ -667,18 +667,18 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
 set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/quasifs/quasifs.h
             src/core/file_sys/quasifs/src/quasifs_vdriver.cpp
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_device.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_device.h
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_directory.h
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_directory_pfs.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_directory_pfs.h
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_file.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_file.h
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_socket.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_socket.h
-            src/core/file_sys/quasifs/src/quasifs_inode_quasi_file_virtual.cpp
-            src/core/file_sys/quasifs/quasifs_inode_quasi_file_virtual.h
+            src/core/file_sys/quasifs/src/quasifs_inode_device.cpp
+            src/core/file_sys/quasifs/quasifs_inode_device.h
+            src/core/file_sys/quasifs/src/quasifs_inode_directory.cpp
+            src/core/file_sys/quasifs/quasifs_inode_directory.h
+            src/core/file_sys/quasifs/src/quasifs_inode_directory_pfs.cpp
+            src/core/file_sys/quasifs/quasifs_inode_directory_pfs.h
+            src/core/file_sys/quasifs/src/quasifs_inode_file.cpp
+            src/core/file_sys/quasifs/quasifs_inode_file.h
+            src/core/file_sys/quasifs/src/quasifs_inode_socket.cpp
+            src/core/file_sys/quasifs/quasifs_inode_socket.h
+            src/core/file_sys/quasifs/src/quasifs_inode_file_virtual.cpp
+            src/core/file_sys/quasifs/quasifs_inode_file_virtual.h
             src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
             src/core/file_sys/quasifs/quasifs_inode_symlink.h
             src/core/file_sys/quasifs/src/quasifs_partition.cpp
@@ -702,6 +702,14 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/devices/rng_device.h
             src/core/file_sys/devices/zero_device.cpp
             src/core/file_sys/devices/zero_device.h
+
+
+            src/core/file_sys/sockets/quasifs_inode_socket_p2p.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_p2p.h
+            src/core/file_sys/sockets/quasifs_inode_socket_unix.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_unix.h
+            src/core/file_sys/sockets/quasifs_inode_socket_posix.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_posix.h
 )
 
 set(HOSTIO  src/core/file_sys/hostio/src/host_io_base.cpp

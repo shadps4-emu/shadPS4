@@ -11,7 +11,7 @@
 
 #include "quasi_types.h"
 #include "quasifs_inode.h"
-#include "quasifs_inode_quasi_directory.h"
+#include "quasifs_inode_directory.h"
 
 namespace QuasiFS {
 

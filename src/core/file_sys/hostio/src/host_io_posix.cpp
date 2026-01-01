@@ -13,9 +13,9 @@
 
 #include "core/file_sys/hostio/host_io_posix.h"
 #include "core/file_sys/quasifs/quasi_types.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_device.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_file.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 

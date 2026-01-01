@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include "core/file_sys/quasifs/quasifs_inode_quasi_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_file.h"
 #include "core/libraries/kernel/posix_error.h"
 
 namespace QuasiFS {
