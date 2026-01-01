@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-// INAA License @marecl 2025
+// INAA License @marecl 2026
 
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 
