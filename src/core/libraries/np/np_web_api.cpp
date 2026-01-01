@@ -87,8 +87,8 @@ s32 PS4_SYSV_ABI sceNpWebApiAbortHandle(s32 libCtxId, s32 handleId) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiAbortRequest(s64 requestId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : requestId = {:#x}", requestId);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called requestId = {:#x}", requestId);
+    return abortRequest(requestId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiAddHttpRequestHeader(s64 requestId, const char* pFieldName,
@@ -249,8 +249,8 @@ s32 PS4_SYSV_ABI sceNpWebApiDeleteHandle(s32 libCtxId, s32 handleId) {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteRequest(s64 requestId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : requestId = {:#x}", requestId);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called requestId = {:#x}", requestId);
+    return deleteRequest(requestId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiGetConnectionStats(s32 userCtxId, const char* pApiGroup,

@@ -105,7 +105,7 @@ s32 deleteContext(s32 libCtxId) {
 }
 
 s32 terminateContext(s32 libCtxId) {
-    OrbisNpWebApiContext* ctx = findAndValidateContext(libCtxId, 0);
+    OrbisNpWebApiContext* ctx = findAndValidateContext(libCtxId);
     if (ctx == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
@@ -170,14 +170,15 @@ s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId) {
 
 s32 createUserContext(s32 libCtxId, Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_INFO(Lib_NpWebApi, "libCtxId = {}, userId = {}", libCtxId, userId);
-    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId, 0);
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
     OrbisNpWebApiUserContext* user_context = findUserContextByUserId(context, userId);
     if (user_context != nullptr) {
-        user_context->userCount--;
+        releaseUserContext(user_context);
+        releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_ALREADY_EXIST;
     }
 
@@ -217,15 +218,20 @@ void releaseUserContext(OrbisNpWebApiUserContext* userContext) {
 
 s32 deleteUserContext(s32 titleUserCtxId) {
     LOG_INFO(Lib_NpWebApi, "userCtxId = {:#x}", titleUserCtxId);
-    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10, 0);
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
     lockContext(context);
     OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
-    if (user_context == nullptr || user_context->deleted) {
+    if (user_context == nullptr) {
         unlockContext(context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    } else if (user_context->deleted) {
+        unlockContext(context);
+        releaseUserContext(user_context);
         releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
@@ -257,13 +263,14 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
                   const OrbisNpWebApiContentParameter* pContentParameter,
                   const OrbisNpWebApiIntCreateRequestExtraArgs* pInternalArgs, s64* pRequestId,
                   bool isMultipart) {
-    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10, 0);
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
     OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
     if (user_context == nullptr) {
+        releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
@@ -274,7 +281,7 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
         releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
-    
+
     g_request_count++;
     if (g_request_count >> 0x20 != 0) {
         g_request_count = 1;
@@ -322,6 +329,130 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
     return ORBIS_OK;
 }
 
+OrbisNpWebApiRequest* findRequest(OrbisNpWebApiUserContext* userContext, s64 requestId) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    if (userContext->requests.contains(requestId)) {
+        return userContext->requests[requestId];
+    }
+
+    return nullptr;
+}
+
+OrbisNpWebApiRequest* findRequestAndMarkBusy(OrbisNpWebApiUserContext* userContext, s64 requestId) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    if (userContext->requests.contains(requestId)) {
+        auto& request = userContext->requests[requestId];
+        request->userCount++;
+        return request;
+    }
+
+    return nullptr;
+}
+
+bool isRequestBusy(OrbisNpWebApiRequest* request) {
+    std::scoped_lock lk{request->parentContext->contextLock};
+    return request->userCount > 1;
+}
+
+s32 sendRequest(s64 requestId, s32 partIndex, void* data, u64 dataSize, s8 flag,
+                const OrbisNpWebApiResponseInformationOption* pResponseInformationOption) {
+
+    return ORBIS_OK;
+}
+
+s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
+                         OrbisNpWebApiRequest* request) {
+    if (context == nullptr || userContext == nullptr || request == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lk{context->contextLock};
+    if (request->aborted) {
+        return ORBIS_OK;
+    }
+
+    request->aborted = true;
+
+    // TODO: Should also abort any Np requests and Http requests tied to this request.
+
+    return ORBIS_OK;
+}
+
+s32 abortRequest(s64 requestId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    s32 result = abortRequestInternal(context, user_context, request);
+
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return result;
+}
+
+void releaseRequest(OrbisNpWebApiRequest* request) {
+    std::scoped_lock lk{request->parentContext->contextLock};
+    request->userCount--;
+}
+
+s32 deleteRequest(s64 requestId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    lockContext(context);
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    if (g_sdk_ver < Common::ElfInfo::FW_40 && isRequestBusy(request)) {
+        releaseRequest(request);
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_BUSY;
+    }
+
+    abortRequestInternal(context, user_context, request);
+    while (isRequestBusy(request)) {
+        unlockContext(context);
+        Kernel::sceKernelUsleep(50000);
+        lockContext(context);
+    }
+
+    releaseRequest(request);
+    user_context->requests.erase(request->requestId);
+    free(request);
+
+    releaseUserContext(user_context);
+    unlockContext(context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
 s32 createExtendedPushEventFilterInternal(
     s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam, u64 filterParamNum,
@@ -334,7 +465,7 @@ s32 createExtendedPushEventFilterInternal(
               fmt::ptr(pFilterParam), filterParamNum);
     s32 result;
     OrbisNpWebApiContext* context;
-    context = findAndValidateContext(libCtxId, 0);
+    context = findAndValidateContext(libCtxId);
     if (context == nullptr) {
         LOG_ERROR(Lib_NpWebApi,
                   " createExtendedPushEventFilterInternal: "

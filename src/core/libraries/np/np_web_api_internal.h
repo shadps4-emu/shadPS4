@@ -55,18 +55,17 @@ s32 initializeLibrary();     // FUN_01001450
 s32 getCompiledSdkVersion(); // FUN_01001440
 
 // Library context functions
-
 s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name,
-                         s32 type);                                   // FUN_01006970
-OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag); // FUN_01006860
-void releaseContext(OrbisNpWebApiContext* context);                   // FUN_01006fc0
-bool isContextTerminated(OrbisNpWebApiContext* context);              // FUN_01006910
-bool isContextBusy(OrbisNpWebApiContext* context);                    // FUN_01008a50
-void lockContext(OrbisNpWebApiContext* context);                      // FUN_010072e0
-void unlockContext(OrbisNpWebApiContext* context);                    // FUN_010072f0
-void markContextAsTerminated(OrbisNpWebApiContext* context);          // FUN_01008bf0
-s32 deleteContext(s32 libCtxId);                                      // FUN_01006c70
-s32 terminateContext(s32 libCtxId);                                   // FUN_010014b0
+                         s32 type);                                       // FUN_01006970
+OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag = 0); // FUN_01006860
+void releaseContext(OrbisNpWebApiContext* context);                       // FUN_01006fc0
+bool isContextTerminated(OrbisNpWebApiContext* context);                  // FUN_01006910
+bool isContextBusy(OrbisNpWebApiContext* context);                        // FUN_01008a50
+void lockContext(OrbisNpWebApiContext* context);                          // FUN_010072e0
+void unlockContext(OrbisNpWebApiContext* context);                        // FUN_010072f0
+void markContextAsTerminated(OrbisNpWebApiContext* context);              // FUN_01008bf0
+s32 deleteContext(s32 libCtxId);                                          // FUN_01006c70
+s32 terminateContext(s32 libCtxId);                                       // FUN_010014b0
 
 // User context functions
 OrbisNpWebApiUserContext* findUserContextByUserId(
@@ -87,6 +86,19 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
                   const OrbisNpWebApiContentParameter* pContentParameter,
                   const OrbisNpWebApiIntCreateRequestExtraArgs* pInternalArgs, s64* pRequestId,
                   bool isMultipart); // FUN_01001850
+OrbisNpWebApiRequest* findRequest(OrbisNpWebApiUserContext* userContext,
+                                  s64 requestId); // FUN_0100d3a0
+OrbisNpWebApiRequest* findRequestAndMarkBusy(OrbisNpWebApiUserContext* userContext,
+                                             s64 requestId); // FUN_0100d330
+bool isRequestBusy(OrbisNpWebApiRequest* request);           // FUN_0100c1b0
+s32 sendRequest(
+    s64 requestId, s32 partIndex, void* data, u64 dataSize, s8 flag,
+    const OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50
+s32 abortRequestInternal(OrbisNpWebApiContext* context, OrbisNpWebApiUserContext* userContext,
+                         OrbisNpWebApiRequest* request); // FUN_01001b70
+s32 abortRequest(s64 requestId);                         // FUN_01002c70
+void releaseRequest(OrbisNpWebApiRequest* request);      // FUN_01009fb0
+s32 deleteRequest(s64 requestId);                        // FUN_010019a0
 
 s32 createExtendedPushEventFilterInternal(
     s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
