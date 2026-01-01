@@ -129,7 +129,7 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
 }
 
 int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
-    LOG_WARNING(Lib_Kernel, "Raising exception on thread '{}'", thread->name);
+    // LOG_WARNING(Lib_Kernel, "Raising exception on thread '{}'", thread->name);
     ASSERT_MSG(signum == POSIX_SIGUSR1, "Attempting to raise non user defined signal!");
 #ifndef _WIN64
     const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
