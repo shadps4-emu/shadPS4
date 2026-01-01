@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "np_web_api_internal.h"
 
@@ -9,6 +10,15 @@ static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
 static s32 g_context_count = 0;
 static s32 g_user_context_count = 0;
+static s32 g_sdk_ver = 0;
+
+s32 initializeLibrary() {
+    return Kernel::sceKernelGetCompiledSdkVersion(&g_sdk_ver);
+}
+
+s32 getCompiledSdkVersion() {
+    return g_sdk_ver;
+}
 
 s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 type) {
     std::scoped_lock lk{g_global_mutex};

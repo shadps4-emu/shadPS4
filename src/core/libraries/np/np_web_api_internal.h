@@ -35,7 +35,12 @@ struct OrbisNpWebApiUserContext {
     bool deleted;
 };
 
+// General functions
+s32 initializeLibrary();     // FUN_01001450
+s32 getCompiledSdkVersion(); // FUN_01001440
+
 // Library context functions
+
 s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name,
                          s32 type);                                   // FUN_01006970
 OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag); // FUN_01006860

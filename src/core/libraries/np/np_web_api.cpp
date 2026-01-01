@@ -279,7 +279,14 @@ s32 PS4_SYSV_ABI sceNpWebApiGetMemoryPoolStats(s32 libCtxId,
 
 s32 PS4_SYSV_ABI sceNpWebApiInitialize(s32 libHttpCtxId, u64 poolSize) {
     LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
-    g_is_initialized = true;
+    if (!g_is_initialized) {
+        g_is_initialized = true;
+        s32 result = initializeLibrary();
+        if (result < ORBIS_OK) {
+            return result;
+        }
+    }
+
     s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 0);
     if (result >= ORBIS_OK) {
         g_active_library_contexts++;
@@ -289,7 +296,14 @@ s32 PS4_SYSV_ABI sceNpWebApiInitialize(s32 libHttpCtxId, u64 poolSize) {
 
 s32 PS4_SYSV_ABI sceNpWebApiInitializeForPresence(s32 libHttpCtxId, u64 poolSize) {
     LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
-    g_is_initialized = true;
+    if (!g_is_initialized) {
+        g_is_initialized = true;
+        s32 result = initializeLibrary();
+        if (result < ORBIS_OK) {
+            return result;
+        }
+    }
+
     s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 3);
     if (result >= ORBIS_OK) {
         g_active_library_contexts++;
@@ -317,7 +331,15 @@ s32 PS4_SYSV_ABI sceNpWebApiIntInitialize(const OrbisNpWebApiIntInitializeArgs* 
     if (args == nullptr || args->structSize != sizeof(OrbisNpWebApiIntInitializeArgs)) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
-    g_is_initialized = true;
+
+    if (!g_is_initialized) {
+        g_is_initialized = true;
+        s32 result = initializeLibrary();
+        if (result < ORBIS_OK) {
+            return result;
+        }
+    }
+
     s32 result = createLibraryContext(args->libHttpCtxId, args->poolSize, args->name, 2);
     if (result >= ORBIS_OK) {
         g_active_library_contexts++;
@@ -436,7 +458,14 @@ s32 PS4_SYSV_ABI sceNpWebApiUtilityParseNpId(const char* pJsonNpId,
 
 s32 PS4_SYSV_ABI sceNpWebApiVshInitialize(s32 libHttpCtxId, u64 poolSize) {
     LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
-    g_is_initialized = true;
+    if (!g_is_initialized) {
+        g_is_initialized = true;
+        s32 result = initializeLibrary();
+        if (result < ORBIS_OK) {
+            return result;
+        }
+    }
+
     s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 4);
     if (result >= ORBIS_OK) {
         g_active_library_contexts++;
