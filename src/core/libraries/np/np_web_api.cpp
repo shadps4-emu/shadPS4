@@ -434,9 +434,14 @@ s32 PS4_SYSV_ABI sceNpWebApiUtilityParseNpId(const char* pJsonNpId,
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiVshInitialize() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiVshInitialize(s32 libHttpCtxId, u64 poolSize) {
+    LOG_INFO(Lib_NpWebApi, "called libHttpCtxId = {}, poolSize = {} bytes", libHttpCtxId, poolSize);
+    g_is_initialized = true;
+    s32 result = createLibraryContext(libHttpCtxId, poolSize, nullptr, 4);
+    if (result >= ORBIS_OK) {
+        g_active_library_contexts++;
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI Func_064C4ED1EDBEB9E8() {
