@@ -285,11 +285,6 @@ s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
 // Privates (don't touch)
 //
 
-u64 tick() {
-    using namespace std::chrono;
-    return duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count();
-}
-
 void QFS::SyncHostImpl(partition_ptr part) {
     fs::path host_path{};
     if (0 != part->GetHostPath(host_path)) {

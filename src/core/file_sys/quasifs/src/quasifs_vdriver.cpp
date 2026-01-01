@@ -490,6 +490,7 @@ s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
         host_used = true;
     }
 
+    // TODO: desync possible
     vio_status = HostVIO(nullptr, handle).LSeek(fd, offset, whence);
 
     if (host_used && (hio_status != vio_status))
@@ -526,7 +527,6 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
 
     bool host_used = false;
     int hio_status = 0;
-    int vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -537,13 +537,10 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, handle).Read(fd, buf, count);
+    if (host_used && (hio_status < count))
+        LOG_ERROR(Kernel_Fs, "Host read less bytes ({}) than requested ({})", hio_status, count);
 
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
-
-    return vio_status;
+    return HostVIO(nullptr, handle).Read(fd, buf, host_used ? hio_status : count);
 }
 
 s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
@@ -559,7 +556,6 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
 
     bool host_used = false;
     int hio_status = 0;
-    int vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -570,14 +566,10 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, handle).PRead(fd, buf, count, offset);
+    if (host_used && (hio_status < count))
+        LOG_ERROR(Kernel_Fs, "Host read less bytes ({}) than requested ({})", hio_status, count);
 
-    if (host_used && (hio_status != vio_status)) {
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
-    }
-
-    return vio_status;
+    return HostVIO(nullptr, handle).PRead(fd, buf, host_used ? hio_status : count, offset);
 };
 
 s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
@@ -605,6 +597,7 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernel
         host_used = true;
     }
 
+    // TODO: desync possible
     vio_status = HostVIO(nullptr, handle).ReadV(fd, iov, iovcnt);
 
     if (host_used && (hio_status != vio_status))
@@ -639,6 +632,7 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKerne
         host_used = true;
     }
 
+    // TODO: desync possible
     vio_status = HostVIO(nullptr, handle).PReadV(fd, iov, iovcnt, offset);
 
     if (host_used && (hio_status != vio_status))
@@ -661,7 +655,6 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
 
     bool host_used = false;
     int hio_status = 0;
-    int vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -672,13 +665,10 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, handle).Write(fd, buf, count);
+    if (host_used && (hio_status < count))
+        LOG_ERROR(Kernel_Fs, "Host write less bytes ({}) than requested ({})", hio_status, count);
 
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
-
-    return vio_status;
+    return HostVIO(nullptr, handle).Write(fd, buf, host_used ? hio_status : count);
 }
 
 s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
@@ -705,13 +695,10 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
         host_used = true;
     }
 
-    vio_status = HostVIO(nullptr, handle).PWrite(fd, buf, count, offset);
+    if (host_used && (hio_status < count))
+        LOG_ERROR(Kernel_Fs, "Host write less bytes ({}) than requested ({})", hio_status, count);
 
-    if (host_used && (hio_status != vio_status))
-        LOG_ERROR(Kernel_Fs, "Host returned {}, but virtual driver returned {}", hio_status,
-                  vio_status);
-
-    return vio_status;
+    return HostVIO(nullptr, handle).PWrite(fd, buf, host_used ? hio_status : count, offset);
 };
 
 s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
@@ -739,6 +726,7 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
         host_used = true;
     }
 
+    // TODO: desync possible
     vio_status = HostVIO(nullptr, handle).WriteV(fd, iov, iovcnt);
 
     if (host_used && (hio_status != vio_status))
@@ -773,6 +761,7 @@ s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKern
         host_used = true;
     }
 
+    // TODO: desync possible
     vio_status = HostVIO(nullptr, handle).PWriteV(fd, iov, iovcnt, offset);
 
     if (host_used && (hio_status != vio_status))
