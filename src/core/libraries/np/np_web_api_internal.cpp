@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "common/elf_info.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/network/http.h"
 #include "np_web_api_internal.h"
 
 namespace Libraries::Np::NpWebApi {
@@ -10,6 +13,7 @@ static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
 static s32 g_context_count = 0;
 static s32 g_user_context_count = 0;
+static s64 g_request_count = 0;
 static s32 g_sdk_ver = 0;
 
 s32 initializeLibrary() {
@@ -209,6 +213,11 @@ bool isUserContextBusy(OrbisNpWebApiUserContext* userContext) {
 s32 deleteUserContext(s32 userCtxId) {
     LOG_INFO(Lib_NpWebApi, "userCtxId = {:#x}", userCtxId);
     OrbisNpWebApiContext* context = findAndValidateContext(userCtxId >> 0x10, 0);
+void releaseUserContext(OrbisNpWebApiUserContext* userContext) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    userContext->userCount--;
+}
+
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
@@ -240,6 +249,76 @@ s32 deleteUserContext(s32 userCtxId) {
     releaseContext(context);
     g_user_context_count--;
 
+    return ORBIS_OK;
+}
+
+s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
+                  OrbisNpWebApiHttpMethod method,
+                  const OrbisNpWebApiContentParameter* pContentParameter,
+                  const OrbisNpWebApiIntCreateRequestExtraArgs* pInternalArgs, s64* pRequestId,
+                  bool isMultipart) {
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10, 0);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
+    if (user_context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    lockContext(user_context->parentContext);
+    if (g_sdk_ver >= Common::ElfInfo::FW_40 && user_context->deleted) {
+        unlockContext(user_context->parentContext);
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+    
+    g_request_count++;
+    if (g_request_count >> 0x20 != 0) {
+        g_request_count = 1;
+    }
+    s64 request_id = static_cast<s64>(user_context->userCtxId) << 0x20 | g_request_count;
+    user_context->requests[request_id] = new OrbisNpWebApiRequest{};
+
+    auto& request = user_context->requests[request_id];
+    request->parentContext = context;
+    request->userCount = 0;
+    request->requestId = request_id;
+    request->userMethod = method;
+    request->multipart = isMultipart;
+    request->aborted = false;
+
+    if (pApiGroup != nullptr) {
+        request->userApiGroup = std::string(pApiGroup);
+    }
+
+    if (pPath != nullptr) {
+        request->userPath = std::string(pPath);
+    }
+
+    if (pContentParameter != nullptr) {
+        request->userContentLength = pContentParameter->contentLength;
+        if (pContentParameter->pContentType != nullptr) {
+            request->userContentType = std::string(pContentParameter->pContentType);
+        }
+    }
+
+    if (pInternalArgs != nullptr) {
+        ASSERT_MSG(pInternalArgs->unk_0 == nullptr && pInternalArgs->unk_1 == nullptr &&
+                       pInternalArgs->unk_2 == nullptr,
+                   "Internal arguments for requests not supported");
+    }
+
+    unlockContext(user_context->parentContext);
+
+    if (pRequestId != nullptr) {
+        *pRequestId = request->requestId;
+    }
+
+    releaseUserContext(user_context);
+    releaseContext(context);
     return ORBIS_OK;
 }
 

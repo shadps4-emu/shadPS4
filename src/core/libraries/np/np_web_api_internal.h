@@ -15,6 +15,7 @@ namespace Libraries::Np::NpWebApi {
 // Most structs reference each other, so declare them before their contents.
 struct OrbisNpWebApiContext;
 struct OrbisNpWebApiUserContext;
+struct OrbisNpWebApiRequest;
 
 struct OrbisNpWebApiContext {
     s32 type;
@@ -32,7 +33,21 @@ struct OrbisNpWebApiUserContext {
     s32 userCount;
     s32 userCtxId;
     Libraries::UserService::OrbisUserServiceUserId userId;
+    std::map<s64, OrbisNpWebApiRequest*> requests;
     bool deleted;
+};
+
+struct OrbisNpWebApiRequest {
+    OrbisNpWebApiContext* parentContext;
+    s32 userCount;
+    s64 requestId;
+    std::string userApiGroup;
+    std::string userPath;
+    OrbisNpWebApiHttpMethod userMethod;
+    u64 userContentLength;
+    std::string userContentType;
+    bool multipart;
+    bool aborted;
 };
 
 // General functions
@@ -63,7 +78,15 @@ s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId); // F
 s32 createUserContext(s32 libCtxId,
                       Libraries::UserService::OrbisUserServiceUserId userId); // FUN_010015c0
 bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);                // FUN_0100ea40
+void releaseUserContext(OrbisNpWebApiUserContext* userContext);               // FUN_0100caa0
 s32 deleteUserContext(s32 userCtxId);                                         // FUN_01001710
+
+// Request functions
+s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
+                  OrbisNpWebApiHttpMethod method,
+                  const OrbisNpWebApiContentParameter* pContentParameter,
+                  const OrbisNpWebApiIntCreateRequestExtraArgs* pInternalArgs, s64* pRequestId,
+                  bool isMultipart); // FUN_01001850
 
 s32 createExtendedPushEventFilterInternal(
     s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,

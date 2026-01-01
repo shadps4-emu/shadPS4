@@ -1,12 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_web_api.h"
 #include "core/libraries/np/np_web_api_error.h"
 #include "core/libraries/np/np_web_api_internal.h"
+
+#include <magic_enum/magic_enum.hpp>
 
 namespace Libraries::Np::NpWebApi {
 
@@ -187,30 +190,47 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest(s32 titleUserCtxId, const cha
                                                    const char* pPath,
                                                    OrbisNpWebApiHttpMethod method,
                                                    s64* pRequestId) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : titleUserCtxId = {}, "
-              "pApiGroup = '{}', pPath = '{}', method = {}, pRequestId = {}",
-              titleUserCtxId, (pApiGroup ? pApiGroup : "null"), (pPath ? pPath : "null"),
-              (s32)method, fmt::ptr(pRequestId));
-    return ORBIS_OK;
+    if (pApiGroup == nullptr || pPath == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_25 &&
+        method > OrbisNpWebApiHttpMethod::ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi,
+             "called titleUserCtxId = {:#x}, pApiGroup = '{}', pPath = '{}', method = {}",
+             titleUserCtxId, pApiGroup, pPath, magic_enum::enum_name(method));
+
+    return createRequest(titleUserCtxId, pApiGroup, pPath, method, nullptr, nullptr, pRequestId,
+                         true);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateRequest(s32 titleUserCtxId, const char* pApiGroup,
                                           const char* pPath, OrbisNpWebApiHttpMethod method,
                                           const OrbisNpWebApiContentParameter* pContentParameter,
                                           s64* pRequestId) {
-    LOG_ERROR(
-        Lib_NpWebApi,
-        "called (STUBBED) : titleUserCtxId = {}, "
-        "pApiGroup = '{}', pPath = '{}', method = {}, pContentParameter = {}, pRequestId = {}",
-        titleUserCtxId, (pApiGroup ? pApiGroup : "null"), (pPath ? pPath : "null"), (s32)method,
-        fmt::ptr(pContentParameter), fmt::ptr(pRequestId));
-    if (pContentParameter) {
-        LOG_ERROR(Lib_NpWebApi, "  Content params: contentLength = {}, pContentType = '{}'",
-                  pContentParameter->contentLength,
-                  (pContentParameter->pContentType ? pContentParameter->pContentType : "null"));
+    if (pApiGroup == nullptr || pPath == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
-    return ORBIS_OK;
+
+    if (pContentParameter != nullptr && pContentParameter->contentLength != 0 &&
+        pContentParameter->pContentType == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_CONTENT_PARAMETER;
+    }
+
+    if (getCompiledSdkVersion() >= Common::ElfInfo::FW_25 &&
+        method > OrbisNpWebApiHttpMethod::ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    LOG_INFO(Lib_NpWebApi,
+             "called titleUserCtxId = {:#x}, pApiGroup = '{}', pPath = '{}', method = {}",
+             titleUserCtxId, pApiGroup, pPath, magic_enum::enum_name(method));
+
+    return createRequest(titleUserCtxId, pApiGroup, pPath, method, pContentParameter, nullptr,
+                         pRequestId, false);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteContext(s32 titleUserCtxId) {
@@ -316,9 +336,27 @@ s32 PS4_SYSV_ABI sceNpWebApiIntCreateCtxIndExtdPushEventFilter() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiIntCreateRequest() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiIntCreateRequest(
+    s32 titleUserCtxId, const char* pApiGroup, const char* pPath, OrbisNpWebApiHttpMethod method,
+    const OrbisNpWebApiContentParameter* pContentParameter,
+    const OrbisNpWebApiIntCreateRequestExtraArgs* pInternalArgs, s64* pRequestId) {
+    LOG_INFO(Lib_NpWebApi, "called");
+    if (pApiGroup == nullptr || pPath == nullptr ||
+        method > OrbisNpWebApiHttpMethod::ORBIS_NP_WEBAPI_HTTP_METHOD_PATCH) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (pContentParameter != nullptr && pContentParameter->contentLength != 0 &&
+        pContentParameter->pContentType == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_CONTENT_PARAMETER;
+    }
+
+    LOG_INFO(Lib_NpWebApi,
+             "called titleUserCtxId = {:#x}, pApiGroup = '{}', pPath = '{}', method = {}",
+             titleUserCtxId, pApiGroup, pPath, magic_enum::enum_name(method));
+
+    return createRequest(titleUserCtxId, pApiGroup, pPath, method, pContentParameter, pInternalArgs,
+                         pRequestId, false);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiIntCreateServicePushEventFilter() {

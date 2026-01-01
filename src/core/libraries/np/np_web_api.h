@@ -50,11 +50,12 @@ struct OrbisNpWebApiMultipartPartParameter {
     u64 contentLength;
 };
 
-enum OrbisNpWebApiHttpMethod {
+enum OrbisNpWebApiHttpMethod : s32 {
     ORBIS_NP_WEBAPI_HTTP_METHOD_GET,
     ORBIS_NP_WEBAPI_HTTP_METHOD_POST,
     ORBIS_NP_WEBAPI_HTTP_METHOD_PUT,
-    ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE
+    ORBIS_NP_WEBAPI_HTTP_METHOD_DELETE,
+    ORBIS_NP_WEBAPI_HTTP_METHOD_PATCH
 };
 
 struct OrbisNpWebApiContentParameter {
@@ -91,6 +92,12 @@ struct OrbisNpWebApiIntInitializeArgs {
     u64 poolSize;
     const char* name;
     u64 structSize;
+};
+
+struct OrbisNpWebApiIntCreateRequestExtraArgs {
+    void* unk_0;
+    void* unk_1;
+    void* unk_2;
 };
 
 using OrbisNpWebApiExtdPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
