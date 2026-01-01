@@ -420,9 +420,9 @@ s32 PS4_SYSV_ABI sceNpWebApiSendMultipartRequest(s64 requestId, s32 partIndex, c
     }
 
     LOG_INFO(Lib_NpWebApi,
-              "called, requestId = {:#x}, "
-              "partIndex = {}, pData = {}, dataSize = {}",
-              requestId, partIndex, fmt::ptr(pData), dataSize);
+             "called, requestId = {:#x}, "
+             "partIndex = {}, pData = {}, dataSize = {}",
+             requestId, partIndex, fmt::ptr(pData), dataSize);
     return sendRequest(requestId, partIndex, pData, dataSize, 0, nullptr);
 }
 
@@ -434,24 +434,24 @@ sceNpWebApiSendMultipartRequest2(s64 requestId, s32 partIndex, const void* pData
     }
 
     LOG_INFO(Lib_NpWebApi,
-              "called, requestId = {:#x}, "
-              "partIndex = {}, pData = {}, dataSize = {}, pRespInfoOption = {}",
-              requestId, partIndex, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
+             "called, requestId = {:#x}, "
+             "partIndex = {}, pData = {}, dataSize = {}, pRespInfoOption = {}",
+             requestId, partIndex, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
     return sendRequest(requestId, partIndex, pData, dataSize, 1, pRespInfoOption);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSendRequest(s64 requestId, const void* pData, u64 dataSize) {
-    LOG_INFO(Lib_NpWebApi, "called, requestId = {:#x}, pData = {}, dataSize = {}",
-              requestId, fmt::ptr(pData), dataSize);
+    LOG_INFO(Lib_NpWebApi, "called, requestId = {:#x}, pData = {}, dataSize = {}", requestId,
+             fmt::ptr(pData), dataSize);
     return sendRequest(requestId, 0, pData, dataSize, 0, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSendRequest2(s64 requestId, const void* pData, u64 dataSize,
                                          OrbisNpWebApiResponseInformationOption* pRespInfoOption) {
     LOG_INFO(Lib_NpWebApi,
-              "called, requestId = {:#x}, "
-              "pData = {}, dataSize = {}, pRespInfoOption = {}",
-              requestId, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
+             "called, requestId = {:#x}, "
+             "pData = {}, dataSize = {}, pRespInfoOption = {}",
+             requestId, fmt::ptr(pData), dataSize, fmt::ptr(pRespInfoOption));
     return sendRequest(requestId, 0, pData, dataSize, 1, pRespInfoOption);
 }
 
