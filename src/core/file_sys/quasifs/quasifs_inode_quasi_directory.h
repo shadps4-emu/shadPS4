@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <map>
-// #include <unordered_map>
+// #include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -33,9 +33,9 @@ protected:
 
 // TODO: sort on rebuild, PS4's dirents are neatly sorted, and debugging it is a huge
 // inconvenience
-#warning Suboptimal structure for holding directory entries
-    std::map<std::string, inode_ptr> entries{};
-    // std::unordered_map<std::string, inode_ptr> entries{};
+// #warning Suboptimal structure for holding directory entries
+    // std::map<std::string, inode_ptr> entries{};
+    std::unordered_map<std::string, inode_ptr> entries{};
 
     bool dirents_changed{false};
     std::vector<u8> dirent_cache_bin{};
