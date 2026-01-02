@@ -228,6 +228,12 @@ public:
             LOG_DEBUG(Lib_AudioOut, "Normal path: copied {} bytes", guest_buffer_size);
         }
 
+        // Verify buffer size matches expected
+        if (audio_data.size() != bytes_per_buffer) {
+            LOG_WARNING(Lib_AudioOut, "Buffer size mismatch: expected={}, actual={}",
+                        bytes_per_buffer, audio_data.size());
+        }
+
         // Queue the buffer
         {
             std::lock_guard<std::mutex> lock(buffer_mutex);
