@@ -16,6 +16,8 @@ static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
 static s32 g_user_context_count = 0;
 static s32 g_handle_count = 0;
+static s32 g_push_event_filter_count = 0;
+static s32 g_service_push_event_filter_count = 0;
 static s32 g_extended_push_event_filter_count = 0;
 static s64 g_request_count = 0;
 static s32 g_sdk_ver = 0;
@@ -701,6 +703,136 @@ s32 deleteHandle(s32 libCtxId, s32 handleId) {
     return result;
 }
 
+s32 createPushEventFilterInternal(OrbisNpWebApiContext* context, const void* pFilterParam,
+                                  u64 filterParamNum) {
+    std::scoped_lock lk{context->contextLock};
+    g_push_event_filter_count++;
+    if (g_push_event_filter_count >= 0xf0000000) {
+        g_push_event_filter_count = 1;
+    }
+    s32 filterId = g_push_event_filter_count;
+
+    context->pushEventFilters[filterId] = new OrbisNpWebApiPushEventFilter{};
+    auto& filter = context->pushEventFilters[filterId];
+    filter->parentContext = context;
+    filter->filterId = filterId;
+
+    if (pFilterParam != nullptr && filterParamNum != 0) {
+        LOG_WARNING(Lib_NpWebApi, "Filter parameters are unimplemented");
+        filter->filterParamsNum = filterParamNum;
+    }
+    return filterId;
+}
+
+s32 createPushEventFilter(s32 libCtxId, const void* pFilterParam, u64 filterParamNum) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = createPushEventFilterInternal(context, pFilterParam, filterParamNum);
+    releaseContext(context);
+    return result;
+}
+
+s32 deletePushEventFilterInternal(OrbisNpWebApiContext* context, s32 filterId) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->pushEventFilters.contains(filterId)) {
+        return ORBIS_NP_WEBAPI_ERROR_PUSH_EVENT_FILTER_NOT_FOUND;
+    }
+    context->pushEventFilters.erase(filterId);
+
+    return ORBIS_OK;
+}
+
+s32 deletePushEventFilter(s32 libCtxId, s32 filterId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = deletePushEventFilterInternal(context, filterId);
+    releaseContext(context);
+    return result;
+}
+
+s32 createServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 handleId,
+                                         const char* pNpServiceName,
+                                         OrbisNpServiceLabel npServiceLabel,
+                                         const void* pFilterParam, u64 filterParamNum) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->handles.contains(handleId)) {
+        return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
+    }
+    auto& handle = context->handles[handleId];
+    handle->userCount++;
+
+    g_service_push_event_filter_count++;
+    if (g_service_push_event_filter_count >= 0xf0000000) {
+        g_service_push_event_filter_count = 1;
+    }
+    s32 filterId = g_service_push_event_filter_count;
+
+    context->servicePushEventFilters[filterId] = new OrbisNpWebApiServicePushEventFilter{};
+    auto& filter = context->servicePushEventFilters[filterId];
+    filter->parentContext = context;
+    filter->filterId = filterId;
+
+    if (pNpServiceName == nullptr) {
+        filter->internal = true;
+    } else {
+        // TODO: if pNpServiceName is non-null, create an np request for this filter.
+        LOG_ERROR(Lib_NpWebApi, "Np behavior not handled");
+        filter->npServiceName = std::string(pNpServiceName);
+    }
+
+    filter->npServiceLabel = npServiceLabel;
+
+    if (pFilterParam != nullptr && filterParamNum != 0) {
+        LOG_WARNING(Lib_NpWebApi, "Filter parameters are unimplemented");
+        filter->filterParamsNum = filterParamNum;
+    }
+
+    handle->userCount--;
+    return filterId;
+}
+
+s32 createServicePushEventFilter(s32 libCtxId, s32 handleId, const char* pNpServiceName,
+                                 OrbisNpServiceLabel npServiceLabel, const void* pFilterParam,
+                                 u64 filterParamNum) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    checkTimerHandle(context, handleId);
+    s32 result = createServicePushEventFilterInternal(context, handleId, pNpServiceName,
+                                                      npServiceLabel, pFilterParam, filterParamNum);
+    releaseContext(context);
+    return result;
+}
+
+s32 deleteServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 filterId) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->pushEventFilters.contains(filterId)) {
+        return ORBIS_NP_WEBAPI_ERROR_SERVICE_PUSH_EVENT_FILTER_NOT_FOUND;
+    }
+    context->pushEventFilters.erase(filterId);
+
+    return ORBIS_OK;
+}
+
+s32 deleteServicePushEventFilter(s32 libCtxId, s32 filterId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = deleteServicePushEventFilterInternal(context, filterId);
+    releaseContext(context);
+    return result;
+}
+
 s32 createExtendedPushEventFilterInternal(
     OrbisNpWebApiContext* context, s32 handleId, const char* pNpServiceName,
     OrbisNpServiceLabel npServiceLabel,
@@ -723,6 +855,7 @@ s32 createExtendedPushEventFilterInternal(
     auto& filter = context->extendedPushEventFilters[filterId];
     filter->internal = internal;
     filter->parentContext = context;
+    filter->filterId = filterId;
 
     if (pNpServiceName == nullptr) {
         npServiceLabel = ORBIS_NP_INVALID_SERVICE_LABEL;
