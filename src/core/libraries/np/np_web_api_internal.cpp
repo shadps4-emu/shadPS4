@@ -82,6 +82,17 @@ bool isContextBusy(OrbisNpWebApiContext* context) {
     return context->userCount > 1;
 }
 
+bool areContextHandlesBusy(OrbisNpWebApiContext* context) {
+    std::scoped_lock lk{context->contextLock};
+    bool is_busy = false;
+    for (auto& handle : context->handles) {
+        if (handle.second->userCount > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void lockContext(OrbisNpWebApiContext* context) {
     context->contextLock.lock();
 }
@@ -101,6 +112,7 @@ s32 deleteContext(s32 libCtxId) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
+    // TODO: Should delete contents of all maps.
     g_contexts.erase(libCtxId);
     return ORBIS_OK;
 }
@@ -121,23 +133,29 @@ s32 terminateContext(s32 libCtxId) {
         user_context_ids.emplace_back(user_context.first);
     }
     for (s32 user_context_id : user_context_ids) {
-        deleteUserContext(user_context_id);
+        s32 result = deleteUserContext(user_context_id);
+        if (result != ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND ||
+            g_sdk_ver < Common::ElfInfo::FW_40) {
+            return result;
+        }
     }
 
-    // TODO: destroy handle objects
     lockContext(ctx);
-    if (isContextTerminated(ctx)) {
-        unlockContext(ctx);
-        releaseContext(ctx);
-        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
-    }
-
-    markContextAsTerminated(ctx);
-    while (isContextBusy(ctx)) {
-        // TODO: should also check if context handle objects are busy
-        unlockContext(ctx);
-        Kernel::sceKernelUsleep(50000);
-        lockContext(ctx);
+    if (g_sdk_ver >= Common::ElfInfo::FW_40) {
+        for (auto& handle : ctx->handles) {
+            abortHandle(libCtxId, handle.first);
+        }
+        if (isContextTerminated(ctx)) {
+            unlockContext(ctx);
+            releaseContext(ctx);
+            return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+        }
+        markContextAsTerminated(ctx);
+        while (isContextBusy(ctx) || areContextHandlesBusy(ctx)) {
+            unlockContext(ctx);
+            Kernel::sceKernelUsleep(50000);
+            lockContext(ctx);
+        }
     }
 
     unlockContext(ctx);

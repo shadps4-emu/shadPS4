@@ -95,6 +95,7 @@ OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag = 0); // FUN
 void releaseContext(OrbisNpWebApiContext* context);                       // FUN_01006fc0
 bool isContextTerminated(OrbisNpWebApiContext* context);                  // FUN_01006910
 bool isContextBusy(OrbisNpWebApiContext* context);                        // FUN_01008a50
+bool areContextHandlesBusy(OrbisNpWebApiContext* context);                // FUN_01008c20
 void lockContext(OrbisNpWebApiContext* context);                          // FUN_010072e0
 void unlockContext(OrbisNpWebApiContext* context);                        // FUN_010072f0
 void markContextAsTerminated(OrbisNpWebApiContext* context);              // FUN_01008bf0
