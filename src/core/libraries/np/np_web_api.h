@@ -106,8 +106,8 @@ using OrbisNpWebApiExtdPushEventCallbackA = PS4_SYSV_ABI void (*)(
     s32 userCtxId, s32 callbackId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpPeerAddressA* pTo, const OrbisNpOnlineId* pToOnlineId,
     const OrbisNpPeerAddressA* pFrom, const OrbisNpOnlineId* pFromOnlineId,
-    const OrbisNpWebApiPushEventDataType* pDataType, const char* pData, size_t dataLen,
-    const OrbisNpWebApiExtdPushEventExtdData* pExtdData, size_t extdDataNum, void* pUserArg);
+    const OrbisNpWebApiPushEventDataType* pDataType, const char* pData, u64 dataLen,
+    const OrbisNpWebApiExtdPushEventExtdData* pExtdData, u64 extdDataNum, void* pUserArg);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi
