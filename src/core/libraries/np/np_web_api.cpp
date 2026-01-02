@@ -82,8 +82,8 @@ s32 PS4_SYSV_ABI sceNpWebApiUnregisterServicePushEventCallback() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiAbortHandle(s32 libCtxId, s32 handleId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : libCtxId = {}, handleId = {}", libCtxId, handleId);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called libCtxId = {}, handleId = {}", libCtxId, handleId);
+    return abortHandle(libCtxId, handleId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiAbortRequest(s64 requestId) {
@@ -169,21 +169,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateExtdPushEventFilter(
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateHandle(s32 libCtxId) {
-    s32 result;
-    OrbisNpWebApiContext* context;
-
-    context = findAndValidateContext(libCtxId, 0);
-    if (context == nullptr) {
-        result = ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
-        LOG_ERROR(Lib_NpWebApi,
-                  " sceNpWebApiCreateHandle: "
-                  "lib context not found: libCtxId = {}",
-                  libCtxId);
-    } else {
-        result = createHandleInternal(context);
-        releaseContext(context);
-    }
-    return result;
+    return createHandle(libCtxId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiCreateMultipartRequest(s32 titleUserCtxId, const char* pApiGroup,
@@ -244,8 +230,8 @@ s32 PS4_SYSV_ABI sceNpWebApiDeleteExtdPushEventFilter(s32 libCtxId, s32 filterId
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteHandle(s32 libCtxId, s32 handleId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : libCtxId = {}, handleId = {}", libCtxId, handleId);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called libCtxId = {}, handleId = {}", libCtxId, handleId);
+    return deleteHandle(libCtxId, handleId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteRequest(s64 requestId) {

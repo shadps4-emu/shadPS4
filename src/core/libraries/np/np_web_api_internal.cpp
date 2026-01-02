@@ -14,8 +14,8 @@ namespace Libraries::Np::NpWebApi {
 
 static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
-static s32 g_context_count = 0;
 static s32 g_user_context_count = 0;
+static s32 g_handle_count = 0;
 static s64 g_request_count = 0;
 static s32 g_sdk_ver = 0;
 
@@ -46,10 +46,9 @@ s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 t
     new_context->userCount = 0;
     new_context->terminated = false;
     if (name != nullptr) {
-        strncpy(new_context->name, name, 0x20);
+        new_context->name = std::string(name);
     }
 
-    g_context_count++;
     return ctx_id;
 }
 
@@ -101,9 +100,7 @@ s32 deleteContext(s32 libCtxId) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    free(g_contexts[libCtxId]);
     g_contexts.erase(libCtxId);
-    g_context_count--;
     return ORBIS_OK;
 }
 
@@ -292,7 +289,6 @@ s32 deleteUserContext(s32 titleUserCtxId) {
     }
 
     context->userContexts.erase(titleUserCtxId);
-    free(user_context);
 
     unlockContext(context);
     releaseContext(context);
@@ -547,12 +543,143 @@ s32 deleteRequest(s64 requestId) {
 
     releaseRequest(request);
     user_context->requests.erase(request->requestId);
-    free(request);
 
     releaseUserContext(user_context);
     unlockContext(context);
     releaseContext(context);
     return ORBIS_OK;
+}
+
+s32 createHandleInternal(OrbisNpWebApiContext* context) {
+    g_handle_count++;
+    if (g_handle_count >= 0xf0000000) {
+        g_handle_count = 1;
+    }
+
+    std::scoped_lock lk{context->contextLock};
+
+    s32 handle_id = g_handle_count;
+    context->handles[handle_id] = new OrbisNpWebApiHandle{};
+    auto& handle = context->handles[handle_id];
+    handle->handleId = handle_id;
+    handle->userCount = 0;
+    handle->aborted = false;
+    handle->deleted = false;
+
+    if (g_sdk_ver >= Common::ElfInfo::FW_30) {
+        context->timerHandles[handle_id] = new OrbisNpWebApiTimerHandle{};
+        auto& timer_handle = context->timerHandles[handle_id];
+        timer_handle->handleId = handle_id;
+        timer_handle->timedOut = false;
+        timer_handle->timeout = 0;
+        timer_handle->useTime = 0;
+    }
+
+    return handle_id;
+}
+
+s32 createHandle(s32 libCtxId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = createHandleInternal(context);
+    releaseContext(context);
+    return result;
+}
+
+void checkTimerHandle(OrbisNpWebApiContext* context, s32 handleId) {}
+
+void releaseHandle(OrbisNpWebApiContext* context, OrbisNpWebApiHandle* handle) {
+    if (handle != nullptr) {
+        std::scoped_lock lk{context->contextLock};
+        handle->userCount--;
+    }
+}
+
+s32 getHandle(OrbisNpWebApiContext* context, s32 handleId, OrbisNpWebApiHandle** handleOut) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->handles.contains(handleId)) {
+        return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
+    }
+    auto& handle = context->handles[handleId];
+    handle->userCount++;
+    if (handleOut != nullptr) {
+        *handleOut = handle;
+    }
+    return ORBIS_OK;
+}
+
+s32 abortHandle(s32 libCtxId, s32 handleId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiHandle* handle;
+    s32 result = getHandle(context, handleId, &handle);
+    if (result == ORBIS_OK) {
+        std::scoped_lock lk{context->contextLock};
+        handle->aborted = true;
+        // TODO: sceNpAsmClientAbortRequest call
+        releaseHandle(context, handle);
+    }
+
+    releaseContext(context);
+    return result;
+}
+
+s32 deleteHandleInternal(OrbisNpWebApiContext* context, s32 handleId) {
+    lockContext(context);
+    if (!context->handles.contains(handleId)) {
+        return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
+    }
+
+    auto& handle = context->handles[handleId];
+    if (g_sdk_ver >= Common::ElfInfo::FW_40) {
+        if (handle->deleted) {
+            unlockContext(context);
+            return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
+        }
+        handle->deleted = true;
+        unlockContext(context);
+        abortHandle(context->libCtxId, handleId);
+        lockContext(context);
+        handle->userCount++;
+        while (handle->userCount > 1) {
+            handle->userCount--;
+            unlockContext(context);
+            Kernel::sceKernelUsleep(50000);
+            lockContext(context);
+            handle->userCount++;
+        }
+        handle->userCount--;
+    } else if (handle->userCount > 0) {
+        unlockContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_HANDLE_BUSY;
+    }
+
+    context->handles.erase(handleId);
+
+    if (g_sdk_ver >= Common::ElfInfo::FW_30 && context->timerHandles.contains(handleId)) {
+        auto& timer_handle = context->timerHandles[handleId];
+        context->timerHandles.erase(handleId);
+    }
+
+    unlockContext(context);
+    return ORBIS_OK;
+}
+
+s32 deleteHandle(s32 libCtxId, s32 handleId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = deleteHandleInternal(context, handleId);
+    releaseContext(context);
+    return result;
 }
 
 s32 createExtendedPushEventFilterInternal(
@@ -575,7 +702,7 @@ s32 createExtendedPushEventFilterInternal(
                   libCtxId);
         result = ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     } else {
-        validateHandleForContext(context, handleId);
+        checkTimerHandle(context, handleId);
         result =
             createExtendedPushEventFilterImpl(context, handleId, pNpServiceName, npServiceLabel,
                                               pFilterParam, filterParamNum, additionalParam);
@@ -595,18 +722,6 @@ s32 createExtendedPushEventFilterImpl(OrbisNpWebApiContext* context, s32 handleI
               "filterParamNum = {}, additionalParam = {}",
               handleId, (pNpServiceName ? pNpServiceName : "null"), npServiceLabel,
               fmt::ptr(pFilterParam), filterParamNum, additionalParam);
-    return ORBIS_OK; // TODO: implement
-}
-
-void validateHandleForContext(OrbisNpWebApiContext* context, int32_t handleId) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : context = {}, "
-              "handleId = {}",
-              fmt::ptr(context), handleId); // TODO: implement
-}
-
-s32 createHandleInternal(OrbisNpWebApiContext* context) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : context = {}", fmt::ptr(context));
     return ORBIS_OK; // TODO: implement
 }
 
