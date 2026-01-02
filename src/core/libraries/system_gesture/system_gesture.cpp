@@ -43,7 +43,7 @@ s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndex(
 }
 
 s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByPrimitiveID(
-    s32 gestureHandle, const uint16_t primitiveID,
+    s32 gestureHandle, const u16 primitiveID,
     OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent) {
     LOG_ERROR(Lib_SystemGesture, "(STUBBED) called");
     return ORBIS_OK;

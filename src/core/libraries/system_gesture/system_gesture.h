@@ -219,7 +219,7 @@ s32 PS4_SYSV_ABI sceSystemGestureFinalizePrimitiveTouchRecognizer();
 s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndex(
     s32 gestureHandle, const u32 index, OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent);
 s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByPrimitiveID(
-    s32 gestureHandle, const uint16_t primitiveID,
+    s32 gestureHandle, const u16 primitiveID,
     OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent);
 s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEvents(
     s32 gestureHandle, OrbisSystemGesturePrimitiveTouchEvent* primitiveEventBuffer,
