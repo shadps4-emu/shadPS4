@@ -112,12 +112,21 @@ s32 terminateContext(s32 libCtxId) {
     if (ctx == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
-    // TODO: For compiled SDK version < FW 4.0, should return error instead of waiting.
 
-    // TODO: destroy user context objects
+    if (g_sdk_ver < Common::ElfInfo::FW_40 && isContextBusy(ctx)) {
+        releaseContext(ctx);
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_BUSY;
+    }
+
+    std::vector<s32> user_context_ids;
+    for (auto& user_context : ctx->userContexts) {
+        user_context_ids.emplace_back(user_context.first);
+    }
+    for (s32 user_context_id : user_context_ids) {
+        deleteUserContext(user_context_id);
+    }
 
     // TODO: destroy handle objects
-
     lockContext(ctx);
     if (isContextTerminated(ctx)) {
         unlockContext(ctx);
@@ -132,6 +141,7 @@ s32 terminateContext(s32 libCtxId) {
         Kernel::sceKernelUsleep(50000);
         lockContext(ctx);
     }
+
     unlockContext(ctx);
     releaseContext(ctx);
     return deleteContext(libCtxId);
@@ -214,13 +224,27 @@ bool isUserContextBusy(OrbisNpWebApiUserContext* userContext) {
     return userContext->userCount > 1;
 }
 
+bool areUserContextRequestsBusy(OrbisNpWebApiUserContext* userContext) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    bool is_busy = false;
+    for (auto& request : userContext->requests) {
+        request.second->userCount++;
+        bool req_busy = isRequestBusy(request.second);
+        request.second->userCount--;
+        if (req_busy) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void releaseUserContext(OrbisNpWebApiUserContext* userContext) {
     std::scoped_lock lk{userContext->parentContext->contextLock};
     userContext->userCount--;
 }
 
 s32 deleteUserContext(s32 titleUserCtxId) {
-    LOG_INFO(Lib_NpWebApi, "userCtxId = {:#x}", titleUserCtxId);
+    LOG_INFO(Lib_NpWebApi, "titleUserCtxId = {:#x}", titleUserCtxId);
     OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
@@ -232,20 +256,36 @@ s32 deleteUserContext(s32 titleUserCtxId) {
         unlockContext(context);
         releaseContext(context);
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
-    } else if (user_context->deleted) {
-        unlockContext(context);
-        releaseUserContext(user_context);
-        releaseContext(context);
-        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
     }
 
-    // TODO: Should abort all requests in user context
+    if (g_sdk_ver < Common::ElfInfo::FW_40) {
+        if (isUserContextBusy(user_context)) {
+            releaseUserContext(user_context);
+            unlockContext(context);
+            releaseContext(context);
+            return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_BUSY;
+        }
+        if (areUserContextRequestsBusy(user_context)) {
+            releaseUserContext(user_context);
+            unlockContext(context);
+            releaseContext(context);
+            return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_BUSY;
+        }
+    }
 
-    // TODO: For compiled SDK version < FW 4.0, should return error instead of waiting.
+    for (auto& request : user_context->requests) {
+        abortRequestInternal(context, user_context, request.second);
+    }
+
+    if (user_context->deleted) {
+        releaseUserContext(user_context);
+        unlockContext(context);
+        releaseContext(context);
+        return ORBIS_OK;
+    }
 
     user_context->deleted = true;
-    while (isUserContextBusy(user_context)) {
-        // TODO: should also check for busy requests
+    while (isUserContextBusy(user_context) || areUserContextRequestsBusy(user_context)) {
         unlockContext(context);
         Kernel::sceKernelUsleep(50000);
         lockContext(context);

@@ -81,6 +81,7 @@ s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId); // F
 s32 createUserContext(s32 libCtxId,
                       Libraries::UserService::OrbisUserServiceUserId userId); // FUN_010015c0
 bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);                // FUN_0100ea40
+bool areUserContextRequestsBusy(OrbisNpWebApiUserContext* userContext);       // FUN_0100d1f0
 void releaseUserContext(OrbisNpWebApiUserContext* userContext);               // FUN_0100caa0
 s32 deleteUserContext(s32 userCtxId);                                         // FUN_01001710
 
