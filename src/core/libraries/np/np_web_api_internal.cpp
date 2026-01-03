@@ -260,6 +260,27 @@ s32 registerNotificationCallback(s32 titleUserCtxId, OrbisNpWebApiNotificationCa
     return ORBIS_OK;
 }
 
+s32 unregisterNotificationCallback(s32 titleUserCtxId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    lockContext(context);
+    user_context->notificationCallbackFunction = nullptr;
+    user_context->pNotificationCallbackUserArgs = nullptr;
+    unlockContext(context);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
 bool isUserContextBusy(OrbisNpWebApiUserContext* userContext) {
     std::scoped_lock lk{userContext->parentContext->contextLock};
     return userContext->userCount > 1;
@@ -823,6 +844,30 @@ s32 registerPushEventCallback(s32 titleUserCtxId, s32 filterId,
     return result;
 }
 
+s32 unregisterPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    if (!user_context->pushEventCallbacks.contains(callbackId)) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_PUSH_EVENT_CALLBACK_NOT_FOUND;
+    }
+
+    user_context->pushEventCallbacks.erase(callbackId);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
 s32 createServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 handleId,
                                          const char* pNpServiceName,
                                          OrbisNpServiceLabel npServiceLabel,
@@ -957,6 +1002,30 @@ s32 registerServicePushEventCallback(s32 titleUserCtxId, s32 filterId,
     releaseUserContext(user_context);
     releaseContext(context);
     return result;
+}
+
+s32 unregisterServicePushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    if (!user_context->servicePushEventCallbacks.contains(callbackId)) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_SERVICE_PUSH_EVENT_CALLBACK_NOT_FOUND;
+    }
+
+    user_context->servicePushEventCallbacks.erase(callbackId);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
 }
 
 s32 createExtendedPushEventFilterInternal(
@@ -1105,6 +1174,30 @@ s32 registerExtdPushEventCallback(s32 titleUserCtxId, s32 filterId,
 s32 registerExtdPushEventCallbackA(s32 titleUserCtxId, s32 filterId,
                                    OrbisNpWebApiExtdPushEventCallbackA cbFunc, void* pUserArg) {
     return registerExtdPushEventCallback(titleUserCtxId, filterId, nullptr, cbFunc, pUserArg);
+}
+
+s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, titleUserCtxId);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    if (!user_context->extendedPushEventCallbacks.contains(callbackId)) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_EXTD_PUSH_EVENT_CALLBACK_NOT_FOUND;
+    }
+
+    user_context->extendedPushEventCallbacks.erase(callbackId);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
 }
 
 }; // namespace Libraries::Np::NpWebApi

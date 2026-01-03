@@ -168,6 +168,7 @@ s32 createUserContext(s32 libCtxId,
                       Libraries::UserService::OrbisUserServiceUserId userId); // FUN_010015c0
 s32 registerNotificationCallback(s32 titleUserCtxId, OrbisNpWebApiNotificationCallback cbFunc,
                                  void* pUserArg);                       // FUN_01003770
+s32 unregisterNotificationCallback(s32 titleUserCtxId);                 // FUN_01003800
 bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);          // FUN_0100ea40
 bool areUserContextRequestsBusy(OrbisNpWebApiUserContext* userContext); // FUN_0100d1f0
 void releaseUserContext(OrbisNpWebApiUserContext* userContext);         // FUN_0100caa0
@@ -219,7 +220,8 @@ s32 registerPushEventCallbackInternal(OrbisNpWebApiUserContext* userContext, s32
                                       void* userArg); // FUN_0100d450
 s32 registerPushEventCallback(s32 titleUserCtxId, s32 filterId,
                               OrbisNpWebApiPushEventCallback cbFunc,
-                              void* pUserArg); // FUN_01002da0
+                              void* pUserArg);                       // FUN_01002da0
+s32 unregisterPushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_01002e50
 
 // Service push event filter functions
 s32 createServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 handleId,
@@ -244,7 +246,8 @@ s32 registerServicePushEventCallback(s32 titleUserCtxId, s32 filterId,
                                      OrbisNpWebApiServicePushEventCallback cbFunc,
                                      OrbisNpWebApiInternalServicePushEventCallback intCbFunc,
                                      OrbisNpWebApiInternalServicePushEventCallbackA intCbFuncA,
-                                     void* pUserArg); // FUN_01003030
+                                     void* pUserArg);                       // FUN_01003030
+s32 unregisterServicePushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_010030f0
 
 // Extended push event filter functions
 s32 createExtendedPushEventFilterInternal(
@@ -271,6 +274,7 @@ s32 registerExtdPushEventCallback(s32 userCtxId, s32 filterId,
                                   void* pUserArg); // FUN_01003250
 s32 registerExtdPushEventCallbackA(s32 userCtxId, s32 filterId,
                                    OrbisNpWebApiExtdPushEventCallbackA cbFunc,
-                                   void* pUserArg); // FUN_01003240
+                                   void* pUserArg);                      // FUN_01003240
+s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_01003300
 
 }; // namespace Libraries::Np::NpWebApi

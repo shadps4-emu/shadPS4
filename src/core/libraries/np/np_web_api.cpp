@@ -110,19 +110,21 @@ s32 PS4_SYSV_ABI sceNpWebApiRegisterServicePushEventCallback(
                                             pUserArg);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiUnregisterNotificationCallback() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiUnregisterNotificationCallback(s32 titleUserCtxId) {
+    LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}", titleUserCtxId);
+    return unregisterNotificationCallback(titleUserCtxId);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiUnregisterPushEventCallback() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiUnregisterPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}, callbackId = {:#x}", titleUserCtxId,
+             callbackId);
+    return unregisterPushEventCallback(titleUserCtxId, callbackId);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiUnregisterServicePushEventCallback() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiUnregisterServicePushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}, callbackId = {:#x}", titleUserCtxId,
+             callbackId);
+    return unregisterServicePushEventCallback(titleUserCtxId, callbackId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiAbortHandle(s32 libCtxId, s32 handleId) {
@@ -551,9 +553,10 @@ s32 PS4_SYSV_ABI sceNpWebApiTerminate(s32 libCtxId) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiUnregisterExtdPushEventCallback(s32 userCtxId, s32 callbackId) {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpWebApiUnregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
+    LOG_INFO(Lib_NpWebApi, "called, titleUserCtxId = {:#x}, callbackId = {:#x}", titleUserCtxId,
+             callbackId);
+    return unregisterExtdPushEventCallback(titleUserCtxId, callbackId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiUtilityParseNpId(const char* pJsonNpId,
