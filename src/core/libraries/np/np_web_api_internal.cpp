@@ -21,6 +21,7 @@ static s32 g_service_push_event_filter_count = 0;
 static s32 g_extended_push_event_filter_count = 0;
 static s32 g_registered_callback_count = 0;
 static s64 g_request_count = 0;
+static u64 g_last_timeout_check = 0;
 static s32 g_sdk_ver = 0;
 
 s32 initializeLibrary() {
@@ -107,6 +108,37 @@ void unlockContext(OrbisNpWebApiContext* context) {
 void markContextAsTerminated(OrbisNpWebApiContext* context) {
     std::scoped_lock lk{context->contextLock};
     context->terminated = true;
+}
+
+void checkContextTimeout(OrbisNpWebApiContext* context) {
+    u64 time = Kernel::sceKernelGetProcessTime();
+    std::scoped_lock lk{context->contextLock};
+
+    for (auto& user_context : context->userContexts) {
+        checkUserContextTimeout(user_context.second);
+    }
+
+    for (auto& value : context->timerHandles) {
+        auto& timer_handle = value.second;
+        if (!timer_handle->timedOut && timer_handle->timeoutTime != 0 &&
+            timer_handle->timeoutTime < time) {
+            timer_handle->timedOut = true;
+            abortHandle(context->libCtxId, timer_handle->handleId);
+        }
+    }
+}
+
+void checkTimeout() {
+    u64 time = Kernel::sceKernelGetProcessTime();
+    if (time < g_last_timeout_check + 1000) {
+        return;
+    }
+    g_last_timeout_check = time;
+    std::scoped_lock lk{g_global_mutex};
+
+    for (auto& context : g_contexts) {
+        checkContextTimeout(context.second);
+    }
 }
 
 s32 deleteContext(s32 libCtxId) {
@@ -311,6 +343,13 @@ void releaseUserContext(OrbisNpWebApiUserContext* userContext) {
     userContext->userCount--;
 }
 
+void checkUserContextTimeout(OrbisNpWebApiUserContext* userContext) {
+    std::scoped_lock lk{userContext->parentContext->contextLock};
+    for (auto& request : userContext->requests) {
+        checkRequestTimeout(request.second);
+    }
+}
+
 s32 deleteUserContext(s32 titleUserCtxId) {
     OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
     if (context == nullptr) {
@@ -469,6 +508,14 @@ bool isRequestBusy(OrbisNpWebApiRequest* request) {
 void setRequestEndTime(OrbisNpWebApiRequest* request) {
     if (request->requestTimeout != 0 && request->requestEndTime == 0) {
         request->requestEndTime = Kernel::sceKernelGetProcessTime() + request->requestTimeout;
+    }
+}
+
+void checkRequestTimeout(OrbisNpWebApiRequest* request) {
+    u64 time = Kernel::sceKernelGetProcessTime();
+    if (!request->timedOut && request->requestEndTime != 0 && request->requestEndTime < time) {
+        request->timedOut = true;
+        abortRequest(request->requestId);
     }
 }
 
@@ -644,8 +691,8 @@ s32 createHandleInternal(OrbisNpWebApiContext* context) {
         auto& timer_handle = context->timerHandles[handle_id];
         timer_handle->handleId = handle_id;
         timer_handle->timedOut = false;
-        timer_handle->timeout = 0;
-        timer_handle->useTime = 0;
+        timer_handle->timeoutVal = 0;
+        timer_handle->timeoutTime = 0;
     }
 
     return handle_id;

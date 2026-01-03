@@ -81,8 +81,8 @@ struct OrbisNpWebApiHandle {
 
 struct OrbisNpWebApiTimerHandle {
     s32 handleId;
-    u32 timeout;
-    u64 useTime;
+    u32 timeoutVal;
+    u64 timeoutTime;
     bool timedOut;
 };
 
@@ -154,6 +154,8 @@ bool areContextHandlesBusy(OrbisNpWebApiContext* context);                // FUN
 void lockContext(OrbisNpWebApiContext* context);                          // FUN_010072e0
 void unlockContext(OrbisNpWebApiContext* context);                        // FUN_010072f0
 void markContextAsTerminated(OrbisNpWebApiContext* context);              // FUN_01008bf0
+void checkContextTimeout(OrbisNpWebApiContext* context);                  // FUN_01008ad0
+void checkTimeout();                                                      // FUN_01003700
 s32 deleteContext(s32 libCtxId);                                          // FUN_01006c70
 s32 terminateContext(s32 libCtxId);                                       // FUN_010014b0
 
@@ -172,6 +174,7 @@ s32 unregisterNotificationCallback(s32 titleUserCtxId);                 // FUN_0
 bool isUserContextBusy(OrbisNpWebApiUserContext* userContext);          // FUN_0100ea40
 bool areUserContextRequestsBusy(OrbisNpWebApiUserContext* userContext); // FUN_0100d1f0
 void releaseUserContext(OrbisNpWebApiUserContext* userContext);         // FUN_0100caa0
+void checkUserContextTimeout(OrbisNpWebApiUserContext* userContext);    // FUN_0100ea90
 s32 deleteUserContext(s32 userCtxId);                                   // FUN_01001710
 
 // Request functions
@@ -186,6 +189,7 @@ OrbisNpWebApiRequest* findRequestAndMarkBusy(OrbisNpWebApiUserContext* userConte
                                              s64 requestId); // FUN_0100d330
 bool isRequestBusy(OrbisNpWebApiRequest* request);           // FUN_0100c1b0
 void setRequestEndTime(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
+void checkRequestTimeout(OrbisNpWebApiRequest* request);     // FUN_0100c130
 s32 sendRequest(
     s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
     const OrbisNpWebApiResponseInformationOption* pResponseInformationOption); // FUN_01001c50

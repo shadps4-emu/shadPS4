@@ -161,7 +161,11 @@ s32 PS4_SYSV_ABI sceNpWebApiAddMultipartPart(s64 requestId,
 }
 
 void PS4_SYSV_ABI sceNpWebApiCheckTimeout() {
-    LOG_ERROR(Lib_NpWebApi, "(STUBBED) called");
+    LOG_TRACE(Lib_NpWebApi, "called");
+    if (!g_is_initialized) {
+        return;
+    }
+    return checkTimeout();
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiClearAllUnusedConnection(s32 userCtxId,
