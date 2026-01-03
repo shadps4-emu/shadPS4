@@ -260,8 +260,8 @@ s32 createExtendedPushEventFilter(s32 libCtxId, s32 handleId, const char* pNpSer
                                   const OrbisNpWebApiExtdPushEventFilterParameter* pFilterParam,
                                   u64 filterParamNum, bool internal); // FUN_01003180
 s32 deleteExtendedPushEventFilterInternal(OrbisNpWebApiContext* context,
-                                          s32 filterId);       // FUN_01003200
-s32 deleteExtendedPushEventFilter(s32 libCtxId, s32 filterId); // FUN_01008880
+                                          s32 filterId);       // FUN_01008880
+s32 deleteExtendedPushEventFilter(s32 libCtxId, s32 filterId); // FUN_01003200
 
 // Extended push event callback functions
 s32 registerExtdPushEventCallbackInternal(OrbisNpWebApiUserContext* userContext, s32 filterId,
