@@ -120,8 +120,8 @@ void checkContextTimeout(OrbisNpWebApiContext* context) {
 
     for (auto& value : context->timerHandles) {
         auto& timer_handle = value.second;
-        if (!timer_handle->timedOut && timer_handle->timeoutTime != 0 &&
-            timer_handle->timeoutTime < time) {
+        if (!timer_handle->timedOut && timer_handle->handleTimeout != 0 &&
+            timer_handle->handleEndTime < time) {
             timer_handle->timedOut = true;
             abortHandle(context->libCtxId, timer_handle->handleId);
         }
@@ -505,7 +505,34 @@ bool isRequestBusy(OrbisNpWebApiRequest* request) {
     return request->userCount > 1;
 }
 
-void setRequestEndTime(OrbisNpWebApiRequest* request) {
+s32 setRequestTimeout(s64 requestId, u32 timeout) {
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequestAndMarkBusy(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    request->requestTimeout = timeout;
+
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+    return ORBIS_OK;
+}
+
+void startRequestTimer(OrbisNpWebApiRequest* request) {
     if (request->requestTimeout != 0 && request->requestEndTime == 0) {
         request->requestEndTime = Kernel::sceKernelGetProcessTime() + request->requestTimeout;
     }
@@ -539,7 +566,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
         return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
     }
 
-    setRequestEndTime(request);
+    startRequestTimer(request);
 
     // TODO: multipart logic
 
@@ -691,8 +718,8 @@ s32 createHandleInternal(OrbisNpWebApiContext* context) {
         auto& timer_handle = context->timerHandles[handle_id];
         timer_handle->handleId = handle_id;
         timer_handle->timedOut = false;
-        timer_handle->timeoutVal = 0;
-        timer_handle->timeoutTime = 0;
+        timer_handle->handleTimeout = 0;
+        timer_handle->handleEndTime = 0;
     }
 
     return handle_id;
@@ -709,7 +736,43 @@ s32 createHandle(s32 libCtxId) {
     return result;
 }
 
-void checkTimerHandle(OrbisNpWebApiContext* context, s32 handleId) {}
+s32 setHandleTimeoutInternal(OrbisNpWebApiContext* context, s32 handleId, u32 timeout) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->timerHandles.contains(handleId)) {
+        return ORBIS_NP_WEBAPI_ERROR_HANDLE_NOT_FOUND;
+    }
+    auto& handle = context->handles[handleId];
+    handle->userCount++;
+
+    auto& timer_handle = context->timerHandles[handleId];
+    timer_handle->handleTimeout = timeout;
+
+    handle->userCount--;
+    return ORBIS_OK;
+}
+
+s32 setHandleTimeout(s32 libCtxId, s32 handleId, u32 timeout) {
+    OrbisNpWebApiContext* context = findAndValidateContext(libCtxId);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    s32 result = setHandleTimeoutInternal(context, handleId, timeout);
+    releaseContext(context);
+    return result;
+}
+
+void startHandleTimer(OrbisNpWebApiContext* context, s32 handleId) {
+    std::scoped_lock lk{context->contextLock};
+    if (!context->timerHandles.contains(handleId)) {
+        return;
+    }
+    auto& timer_handle = context->timerHandles[handleId];
+    if (timer_handle->handleTimeout == 0) {
+        return;
+    }
+    timer_handle->handleEndTime = Kernel::sceKernelGetProcessTime() + timer_handle->handleTimeout;
+}
 
 void releaseHandle(OrbisNpWebApiContext* context, OrbisNpWebApiHandle* handle) {
     if (handle != nullptr) {
@@ -975,7 +1038,7 @@ s32 createServicePushEventFilter(s32 libCtxId, s32 handleId, const char* pNpServ
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    checkTimerHandle(context, handleId);
+    startHandleTimer(context, handleId);
     s32 result = createServicePushEventFilterInternal(context, handleId, pNpServiceName,
                                                       npServiceLabel, pFilterParam, filterParamNum);
     releaseContext(context);
@@ -1149,7 +1212,7 @@ s32 createExtendedPushEventFilter(s32 libCtxId, s32 handleId, const char* pNpSer
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    checkTimerHandle(context, handleId);
+    startHandleTimer(context, handleId);
     s32 result = createExtendedPushEventFilterInternal(
         context, handleId, pNpServiceName, npServiceLabel, pFilterParam, filterParamNum, internal);
     releaseContext(context);

@@ -81,8 +81,8 @@ struct OrbisNpWebApiHandle {
 
 struct OrbisNpWebApiTimerHandle {
     s32 handleId;
-    u32 timeoutVal;
-    u64 timeoutTime;
+    u32 handleTimeout;
+    u64 handleEndTime;
     bool timedOut;
 };
 
@@ -188,7 +188,8 @@ OrbisNpWebApiRequest* findRequest(OrbisNpWebApiUserContext* userContext,
 OrbisNpWebApiRequest* findRequestAndMarkBusy(OrbisNpWebApiUserContext* userContext,
                                              s64 requestId); // FUN_0100d330
 bool isRequestBusy(OrbisNpWebApiRequest* request);           // FUN_0100c1b0
-void setRequestEndTime(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
+s32 setRequestTimeout(s64 requestId, u32 timeout);           // FUN_01003610
+void startRequestTimer(OrbisNpWebApiRequest* request);       // FUN_0100c0d0
 void checkRequestTimeout(OrbisNpWebApiRequest* request);     // FUN_0100c130
 s32 sendRequest(
     s64 requestId, s32 partIndex, const void* data, u64 dataSize, s8 flag,
@@ -200,9 +201,12 @@ void releaseRequest(OrbisNpWebApiRequest* request);      // FUN_01009fb0
 s32 deleteRequest(s64 requestId);                        // FUN_010019a0
 
 // Handle functions
-s32 createHandleInternal(OrbisNpWebApiContext* context);                        // FUN_01007730
-s32 createHandle(s32 libCtxId);                                                 // FUN_01002ee0
-void checkTimerHandle(OrbisNpWebApiContext* context, s32 handleId);             // FUN_01007fd0
+s32 createHandleInternal(OrbisNpWebApiContext* context); // FUN_01007730
+s32 createHandle(s32 libCtxId);                          // FUN_01002ee0
+s32 setHandleTimeoutInternal(OrbisNpWebApiContext* context, s32 handleId,
+                             u32 timeout);                                      // FUN_01007ed0
+s32 setHandleTimeout(s32 libCtxId, s32 handleId, u32 timeout);                  // FUN_010036b0
+void startHandleTimer(OrbisNpWebApiContext* context, s32 handleId);             // FUN_01007fd0
 void releaseHandle(OrbisNpWebApiContext* context, OrbisNpWebApiHandle* handle); // FUN_01007ea0
 s32 getHandle(OrbisNpWebApiContext* context, s32 handleId,
               OrbisNpWebApiHandle** handleOut);                        // FUN_01007e20

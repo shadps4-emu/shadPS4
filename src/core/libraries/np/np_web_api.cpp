@@ -520,10 +520,9 @@ s32 PS4_SYSV_ABI sceNpWebApiSendRequest2(s64 requestId, const void* pData, u64 d
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSetHandleTimeout(s32 libCtxId, s32 handleId, u32 timeout) {
-    LOG_ERROR(Lib_NpWebApi,
-              "called (STUBBED) : libCtxId = {:#x}, handleId = {:#x}, timeout = {} ms", libCtxId,
-              handleId, timeout);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called, libCtxId = {:#x}, handleId = {:#x}, timeout = {} ms", libCtxId,
+             handleId, timeout);
+    return setHandleTimeout(libCtxId, handleId, timeout);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSetMaxConnection(s32 libCtxId, s32 maxConnection) {
@@ -542,9 +541,8 @@ s32 PS4_SYSV_ABI sceNpWebApiSetMultipartContentType(s64 requestId, const char* p
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiSetRequestTimeout(s64 requestId, u32 timeout) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : requestId = {:#x}, timeout = {} ms", requestId,
-              timeout);
-    return ORBIS_OK;
+    LOG_INFO(Lib_NpWebApi, "called requestId = {:#x}, timeout = {} ms", requestId, timeout);
+    return setRequestTimeout(requestId, timeout);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiTerminate(s32 libCtxId) {
