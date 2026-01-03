@@ -332,38 +332,41 @@ s32 deleteUserContext(s32 titleUserCtxId) {
             releaseContext(context);
             return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_BUSY;
         }
+
         if (areUserContextRequestsBusy(user_context)) {
             releaseUserContext(user_context);
             unlockContext(context);
             releaseContext(context);
             return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_BUSY;
         }
+    } else {
+        for (auto& request : user_context->requests) {
+            abortRequestInternal(context, user_context, request.second);
+        }
+
+        if (user_context->deleted) {
+            releaseUserContext(user_context);
+            unlockContext(context);
+            releaseContext(context);
+            return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+        }
+
+        user_context->deleted = true;
+        while (isUserContextBusy(user_context) || areUserContextRequestsBusy(user_context)) {
+            unlockContext(context);
+            Kernel::sceKernelUsleep(50000);
+            lockContext(context);
+        }
     }
 
-    for (auto& request : user_context->requests) {
-        abortRequestInternal(context, user_context, request.second);
-    }
-
-    if (user_context->deleted) {
-        releaseUserContext(user_context);
-        unlockContext(context);
-        releaseContext(context);
-        return ORBIS_OK;
-    }
-
-    user_context->deleted = true;
-    while (isUserContextBusy(user_context) || areUserContextRequestsBusy(user_context)) {
-        unlockContext(context);
-        Kernel::sceKernelUsleep(50000);
-        lockContext(context);
-    }
-
+    user_context->extendedPushEventCallbacks.clear();
+    user_context->servicePushEventCallbacks.clear();
+    user_context->pushEventCallbacks.clear();
+    user_context->requests.clear();
     context->userContexts.erase(titleUserCtxId);
 
     unlockContext(context);
     releaseContext(context);
-    g_user_context_count--;
-
     return ORBIS_OK;
 }
 
@@ -789,8 +792,9 @@ s32 deletePushEventFilterInternal(OrbisNpWebApiContext* context, s32 filterId) {
     if (!context->pushEventFilters.contains(filterId)) {
         return ORBIS_NP_WEBAPI_ERROR_PUSH_EVENT_FILTER_NOT_FOUND;
     }
-    context->pushEventFilters.erase(filterId);
 
+    // TODO: Clear stored parameters
+    context->pushEventFilters.erase(filterId);
     return ORBIS_OK;
 }
 
@@ -936,8 +940,9 @@ s32 deleteServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 filt
     if (!context->pushEventFilters.contains(filterId)) {
         return ORBIS_NP_WEBAPI_ERROR_SERVICE_PUSH_EVENT_FILTER_NOT_FOUND;
     }
-    context->pushEventFilters.erase(filterId);
 
+    // TODO: Clear stored parameters
+    context->pushEventFilters.erase(filterId);
     return ORBIS_OK;
 }
 
@@ -1109,8 +1114,9 @@ s32 deleteExtendedPushEventFilterInternal(OrbisNpWebApiContext* context, s32 fil
     if (!context->extendedPushEventFilters.contains(filterId)) {
         return ORBIS_NP_WEBAPI_ERROR_EXTD_PUSH_EVENT_FILTER_NOT_FOUND;
     }
-    context->extendedPushEventFilters.erase(filterId);
 
+    context->extendedPushEventFilters[filterId]->filterParams.clear();
+    context->extendedPushEventFilters.erase(filterId);
     return ORBIS_OK;
 }
 
