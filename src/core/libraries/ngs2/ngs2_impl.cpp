@@ -3,10 +3,12 @@
 
 #include "ngs2_error.h"
 #include "ngs2_impl.h"
+#include "ngs2_internal.h"
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
+#include <algorithm>
 
 using namespace Libraries::Kernel;
 
@@ -101,8 +103,23 @@ s32 SystemSetupCore(StackBuffer* stackBuffer, const OrbisNgs2SystemOption* optio
     }
 
     if (outSystem) {
-        // dummy handle
-        outSystem->systemHandle = 1;
+        // Initialize system
+        std::memset(outSystem, 0, sizeof(SystemInternal));
+        outSystem->systemHandle = reinterpret_cast<OrbisNgs2Handle>(outSystem);
+        outSystem->sampleRate = sampleRate;
+        outSystem->currentSampleRate = sampleRate;
+        outSystem->maxGrainSamples = static_cast<u16>(maxGrainSamples);
+        outSystem->minGrainSamples = 64;
+        outSystem->numGrainSamples = static_cast<u16>(numGrainSamples);
+        outSystem->currentNumGrainSamples = numGrainSamples;
+        outSystem->renderCount = 0;
+        outSystem->rackCount = 0;
+        outSystem->isActive = 1;
+        
+        if (option && option->name[0] != '\0') {
+            std::strncpy(outSystem->name, option->name, ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1);
+            outSystem->name[ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1] = '\0';
+        }
     }
 
     return ORBIS_OK;
@@ -157,31 +174,130 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
     // Setup
     StackBufferOpen(&stackBuffer, hostBufferInfo->hostBuffer, hostBufferInfo->hostBufferSize,
                     &systemList, optionFlags);
-    result = SystemSetupCore(&stackBuffer, option, &setupResult);
+    
+    // Allocate SystemInternal from the buffer
+    auto* system = new SystemInternal();
+    result = SystemSetupCore(&stackBuffer, option, system);
 
     if (result < 0) {
+        delete system;
         return result;
     }
 
     StackBufferClose(&stackBuffer, &requiredBufferSize);
 
-    // Copy buffer results
-    setupResult.bufferInfo = *hostBufferInfo;
-    setupResult.hostFree = hostFree;
-    // TODO
-    // setupResult.systemList = systemList;
+    system->bufferInfo = *hostBufferInfo;
+    system->hostFree = hostFree;
+    system->systemHandle = reinterpret_cast<OrbisNgs2Handle>(system);
 
-    OrbisNgs2Handle systemHandle = setupResult.systemHandle;
     if (hostBufferInfo->hostBufferSize >= requiredBufferSize) {
-        *outHandle = systemHandle;
+        *outHandle = system->systemHandle;
         return ORBIS_OK;
     }
 
-    SystemCleanup(systemHandle, 0);
+    delete system;
 
     LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])", hostBufferInfo->hostBufferSize,
               requiredBufferSize);
     return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
+}
+
+u32 RackIdToIndex(u32 rackId) {
+    switch (rackId) {
+    case 0x1000: return 0; // Sampler
+    case 0x3000: return 1; // Mastering
+    case 0x2000: return 2; // Submixer
+    case 0x2001: return 3; // Submixer alt
+    case 0x4001: return 4; // Reverb
+    case 0x4002: return 5; // Equalizer
+    case 0x4003: return 6; // Custom
+    default: return 0xFF;
+    }
+}
+
+s32 RackCreate(SystemInternal* system, u32 rackId, const OrbisNgs2RackOption* option,
+               const OrbisNgs2ContextBufferInfo* bufferInfo, OrbisNgs2Handle* outHandle) {
+    if (!system) {
+        LOG_ERROR(Lib_Ngs2, "RackCreate: Invalid system handle");
+        return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
+    }
+    
+    u32 rackIndex = RackIdToIndex(rackId);
+    if (rackIndex == 0xFF) {
+        LOG_ERROR(Lib_Ngs2, "Invalid rack ID: {:#x}", rackId);
+        return ORBIS_NGS2_ERROR_INVALID_RACK_ID;
+    }
+    
+    auto* rack = new RackInternal();
+    rack->ownerSystem = system;
+    rack->rackType = rackIndex;
+    rack->rackId = rackId;
+    rack->handle.systemData = system;
+    
+    // Setup rack info with defaults or from option
+    rack->info.rackHandle = reinterpret_cast<OrbisNgs2Handle>(rack);
+    rack->info.ownerSystemHandle = system->systemHandle;
+    rack->info.type = rackIndex;
+    rack->info.rackId = rackId;
+    rack->info.minGrainSamples = 64;
+    rack->info.stateFlags = 0;
+    
+    // Use option values if provided, otherwise use defaults
+    if (option && option->size >= sizeof(OrbisNgs2RackOption)) {
+        std::strncpy(rack->info.name, option->name, ORBIS_NGS2_RACK_NAME_LENGTH - 1);
+        rack->info.name[ORBIS_NGS2_RACK_NAME_LENGTH - 1] = '\0';
+        rack->info.maxVoices = option->maxVoices > 0 ? option->maxVoices : 1;
+        rack->info.maxGrainSamples = option->maxGrainSamples > 0 ? option->maxGrainSamples : 512;
+    } else {
+        // Default values when option is NULL - based on libSceNgs2.c analysis
+        rack->info.name[0] = '\0';
+        // Sampler rack (0x1000) defaults to 0x100 (256) voices, others default to 1
+        if (rackId == 0x1000) {
+            rack->info.maxVoices = 256;  // Sampler default
+        } else {
+            rack->info.maxVoices = 1;
+        }
+        rack->info.maxGrainSamples = 512;
+    }
+    
+    // Allocate voices
+    u32 numVoices = rack->info.maxVoices;
+    rack->voices.reserve(numVoices);
+    for (u32 i = 0; i < numVoices; i++) {
+        auto voice = std::make_unique<VoiceInternal>();
+        voice->ownerRack = rack;
+        voice->voiceIndex = i;
+        voice->handle.systemData = system;
+        voice->stateFlags = 0; // Not playing
+        rack->voices.push_back(std::move(voice));
+    }
+    
+    system->racks.push_back(rack);
+    system->rackCount++;
+    
+    if (outHandle) {
+        *outHandle = reinterpret_cast<OrbisNgs2Handle>(rack);
+    }
+    
+    return ORBIS_OK;
+}
+
+s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* outBufferInfo) {
+    if (!rack) {
+        return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
+    }
+    
+    SystemInternal* system = rack->ownerSystem;
+    if (system) {
+        auto it = std::find(system->racks.begin(), system->racks.end(), rack);
+        if (it != system->racks.end()) {
+            system->racks.erase(it);
+            system->rackCount--;
+        }
+    }
+    
+    delete rack;
+    return ORBIS_OK;
 }
 
 } // namespace Libraries::Ngs2

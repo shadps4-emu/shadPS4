@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include "common/types.h"
 #include "core/libraries/kernel/threads/pthread.h"
+#include <atomic>
+#include <vector>
 
 namespace Libraries::Ngs2 {
 
@@ -92,6 +95,10 @@ struct StackBuffer {
     char padding[7];
 };
 
+// Forward declarations for types used before definition
+struct RackInternal;
+struct VoiceInternal;
+
 struct SystemInternal {
     // setup init
     char name[ORBIS_NGS2_SYSTEM_NAME_LENGTH]; // 0
@@ -154,6 +161,9 @@ struct SystemInternal {
     u32 rackCount;              // 336
     float lastRenderRatio;      // 340
     float cpuLoad;              // 344
+    
+    // Rack management
+    std::vector<RackInternal*> racks;
 };
 
 struct HandleInternal {
@@ -175,5 +185,15 @@ void* MemoryClear(void* buffer, size_t size);
 s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outInfo);
 s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* hostBufferInfo,
                 OrbisNgs2BufferFreeHandler hostFree, OrbisNgs2Handle* outHandle);
+
+// Forward declarations for internal types
+struct RackInternal;
+struct SystemInternal;
+struct OrbisNgs2RackOption;
+
+u32 RackIdToIndex(u32 rackId);
+s32 RackCreate(SystemInternal* system, u32 rackId, const OrbisNgs2RackOption* option,
+               const OrbisNgs2ContextBufferInfo* bufferInfo, OrbisNgs2Handle* outHandle);
+s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* outBufferInfo);
 
 } // namespace Libraries::Ngs2
