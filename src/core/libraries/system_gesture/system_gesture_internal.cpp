@@ -169,7 +169,7 @@ s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndexInternal(
     // Check if handle_index is valid (0-7)
     if (handle_index >= 8) {
         LOG_ERROR(Lib_SystemGesture, "Invalid handle_index={}, must be < 8", handle_index);
-        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_HANDLE; // -0x7f76ffff
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_HANDLE;
     }
 
     // Check if index is valid
@@ -246,6 +246,143 @@ s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndexInternal(
               primitiveTouchEvent->currentPosition.x, primitiveTouchEvent->currentPosition.y,
               primitiveTouchEvent->deltaTime, primitiveTouchEvent->elapsedTime);
 
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByPrimitiveIDInternal(
+    s32 handle_index, u16 primitiveID, OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent) {
+
+    LOG_TRACE(Lib_SystemGesture, "Called, handle_index={}, primitiveID={}", handle_index,
+              primitiveID);
+
+    // Check if handle_index is valid (0-7)
+    if (handle_index >= 8) {
+        LOG_ERROR(Lib_SystemGesture, "Invalid handle_index={}, must be < 8", handle_index);
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_HANDLE; // 0x80890001
+    }
+
+    // Get the 4 linked list heads
+    OrbisSystemGestureGlobalStateInternal* global_state = &g_gestureGlobalState[handle_index];
+    OrbisSystemGesturePrimitiveTouchEvent* list0 = global_state->primitiveEventLists[0];
+    OrbisSystemGesturePrimitiveTouchEvent* list1 = global_state->primitiveEventLists[1];
+    OrbisSystemGesturePrimitiveTouchEvent* list2 = global_state->primitiveEventLists[2];
+    OrbisSystemGesturePrimitiveTouchEvent* list3 = global_state->primitiveEventLists[3];
+
+    LOG_TRACE(Lib_SystemGesture, "List pointers: list0={}, list1={}, list2={}, list3={}",
+              static_cast<void*>(list0), static_cast<void*>(list1), static_cast<void*>(list2),
+              static_cast<void*>(list3));
+
+    OrbisSystemGesturePrimitiveTouchEvent* found_event = nullptr;
+    s32 list_found_in = -1;
+
+    // Search through list 0
+    OrbisSystemGesturePrimitiveTouchEvent* current = list0;
+    s32 list_index = 0;
+    while (current != nullptr) {
+        if (current->primitiveID == primitiveID) {
+            found_event = current;
+            list_found_in = 0;
+            break;
+        }
+        current = current->next;
+        list_index++;
+    }
+
+    // Search through list 1
+    if (found_event == nullptr) {
+        list_index = 0;
+        current = list1;
+        while (current != nullptr) {
+            if (current->primitiveID == primitiveID) {
+                found_event = current;
+                list_found_in = 1;
+                break;
+            }
+            current = current->next;
+            list_index++;
+        }
+    }
+
+    // Search through list 2
+    if (found_event == nullptr) {
+        list_index = 0;
+        current = list2;
+        while (current != nullptr) {
+            if (current->primitiveID == primitiveID) {
+                found_event = current;
+                list_found_in = 2;
+                break;
+            }
+            current = current->next;
+            list_index++;
+        }
+    }
+
+    // Search through list 3
+    if (found_event == nullptr) {
+        list_index = 0;
+        current = list3;
+        while (current != nullptr) {
+            if (current->primitiveID == primitiveID) {
+                found_event = current;
+                list_found_in = 3;
+                break;
+            }
+            current = current->next;
+            list_index++;
+        }
+    }
+
+    // Check if event was found
+    if (found_event == nullptr) {
+        LOG_ERROR(Lib_SystemGesture, "Primitive ID {} not found in any list", primitiveID);
+        return ORBIS_SYSTEM_GESTURE_ERROR_EVENT_DATA_NOT_FOUND;
+    }
+
+    LOG_TRACE(Lib_SystemGesture, "Found primitive ID {} in list {}, position {} in list",
+              primitiveID, list_found_in, list_index);
+
+    // Check if output buffer is provided
+    if (primitiveTouchEvent == nullptr) {
+        LOG_ERROR(Lib_SystemGesture, "primitiveTouchEvent is null");
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_HANDLE;
+    }
+
+    // Copy fields from found event to output buffer
+    primitiveTouchEvent->primitiveID =
+        primitiveID; // Note: uses parameter, not found_event->primitiveID
+    primitiveTouchEvent->eventState = found_event->eventState;
+    primitiveTouchEvent->pressedPosition = found_event->pressedPosition;
+    primitiveTouchEvent->currentPosition = found_event->currentPosition;
+
+    // Conditional deltaVector copy
+    if (found_event->condition_flag == 0) {
+        primitiveTouchEvent->deltaVector = found_event->deltaVector;
+        LOG_TRACE(Lib_SystemGesture, "condition_flag=0, copying deltaVector: x={}, y={}",
+                  primitiveTouchEvent->deltaVector.x, primitiveTouchEvent->deltaVector.y);
+    } else {
+        primitiveTouchEvent->deltaVector.x = 0.0f;
+        primitiveTouchEvent->deltaVector.y = 0.0f;
+        LOG_TRACE(Lib_SystemGesture, "condition_flag={}, zeroing deltaVector",
+                  found_event->condition_flag);
+    }
+
+    primitiveTouchEvent->isUpdated = found_event->isUpdated;
+
+    primitiveTouchEvent->deltaTime = found_event->elapsedTime;
+    primitiveTouchEvent->elapsedTime = found_event->unknown_0x30;
+
+    LOG_TRACE(Lib_SystemGesture,
+              "Copied event: ID={}, state={}, "
+              "pressed=({},{}), current=({},{}), deltaTime={}, elapsedTime={}, isUpdated={}",
+              primitiveTouchEvent->primitiveID, static_cast<u32>(primitiveTouchEvent->eventState),
+              primitiveTouchEvent->pressedPosition.x, primitiveTouchEvent->pressedPosition.y,
+              primitiveTouchEvent->currentPosition.x, primitiveTouchEvent->currentPosition.y,
+              primitiveTouchEvent->deltaTime, primitiveTouchEvent->elapsedTime,
+              primitiveTouchEvent->isUpdated);
+
+    LOG_TRACE(Lib_SystemGesture, "Successfully returned primitive touch event for ID={}",
+              primitiveID);
     return ORBIS_OK;
 }
 

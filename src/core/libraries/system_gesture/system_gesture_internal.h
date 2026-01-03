@@ -1360,4 +1360,7 @@ sceSystemGestureGetPrimitiveTouchEventsCountInternal(s32 handle_index); // FUN_0
 s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByIndexInternal(
     s32 handle_index, u32 index,
     OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent); // FUN_01001160
+s32 PS4_SYSV_ABI sceSystemGestureGetPrimitiveTouchEventByPrimitiveIDInternal(
+    s32 handle_index, u16 primitiveID,
+    OrbisSystemGesturePrimitiveTouchEvent* primitiveTouchEvent); // FUN_010013b0
 } // namespace Libraries::SystemGesture
