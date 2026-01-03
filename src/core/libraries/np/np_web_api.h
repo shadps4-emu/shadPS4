@@ -100,14 +100,21 @@ struct OrbisNpWebApiIntCreateRequestExtraArgs {
     void* unk_2;
 };
 
-using OrbisNpWebApiExtdPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
+using OrbisNpWebApiPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
 
+using OrbisNpWebApiExtdPushEventCallback = PS4_SYSV_ABI void (*)(); // dummy
 using OrbisNpWebApiExtdPushEventCallbackA = PS4_SYSV_ABI void (*)(
     s32 userCtxId, s32 callbackId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
     const OrbisNpPeerAddressA* pTo, const OrbisNpOnlineId* pToOnlineId,
     const OrbisNpPeerAddressA* pFrom, const OrbisNpOnlineId* pFromOnlineId,
     const OrbisNpWebApiPushEventDataType* pDataType, const char* pData, u64 dataLen,
     const OrbisNpWebApiExtdPushEventExtdData* pExtdData, u64 extdDataNum, void* pUserArg);
+
+using OrbisNpWebApiServicePushEventCallback = PS4_SYSV_ABI void (*)();          // dummy
+using OrbisNpWebApiInternalServicePushEventCallback = PS4_SYSV_ABI void (*)();  // dummy
+using OrbisNpWebApiInternalServicePushEventCallbackA = PS4_SYSV_ABI void (*)(); // dummy
+
+using OrbisNpWebApiNotificationCallback = PS4_SYSV_ABI void (*)(); // dummy
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi
