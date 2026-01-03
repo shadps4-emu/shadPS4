@@ -516,6 +516,8 @@ set(SYSTEM_GESTURE_LIB
             src/core/libraries/system_gesture/system_gesture.cpp
             src/core/libraries/system_gesture/system_gesture.h
             src/core/libraries/system_gesture/system_gesture_error.h
+            src/core/libraries/system_gesture/system_gesture_internal.cpp
+            src/core/libraries/system_gesture/system_gesture_internal.h
 )
 
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
