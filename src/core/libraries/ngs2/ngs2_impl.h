@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "common/types.h"
-#include "core/libraries/kernel/threads/pthread.h"
 #include <atomic>
 #include <vector>
+#include "common/types.h"
+#include "core/libraries/kernel/threads/pthread.h"
 
 namespace Libraries::Ngs2 {
 
@@ -161,7 +161,7 @@ struct SystemInternal {
     u32 rackCount;              // 336
     float lastRenderRatio;      // 340
     float cpuLoad;              // 344
-    
+
     // Rack management
     std::vector<RackInternal*> racks;
 };

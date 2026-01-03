@@ -5,10 +5,10 @@
 #include "ngs2_impl.h"
 #include "ngs2_internal.h"
 
+#include <algorithm>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
-#include <algorithm>
 
 using namespace Libraries::Kernel;
 
@@ -205,14 +205,22 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
 
 u32 RackIdToIndex(u32 rack_id) {
     switch (rack_id) {
-    case 0x1000: return 0; // Sampler
-    case 0x3000: return 1; // Mastering
-    case 0x2000: return 2; // Submixer
-    case 0x2001: return 3; // Submixer alt
-    case 0x4001: return 4; // Reverb
-    case 0x4002: return 5; // Equalizer
-    case 0x4003: return 6; // Custom
-    default: return 0xFF;
+    case 0x1000:
+        return 0; // Sampler
+    case 0x3000:
+        return 1; // Mastering
+    case 0x2000:
+        return 2; // Submixer
+    case 0x2001:
+        return 3; // Submixer alt
+    case 0x4001:
+        return 4; // Reverb
+    case 0x4002:
+        return 5; // Equalizer
+    case 0x4003:
+        return 6; // Custom
+    default:
+        return 0xFF;
     }
 }
 
