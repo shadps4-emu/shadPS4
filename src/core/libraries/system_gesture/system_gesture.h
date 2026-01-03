@@ -15,7 +15,7 @@ namespace Libraries::SystemGesture {
 
 constexpr int ORBIS_SYSTEM_GESTURE_INPUT_TOUCH_PAD = 0;
 
-enum OrbisSystemGestureTouchState {
+enum OrbisSystemGestureTouchState : u32 {
     ORBIS_SYSTEM_GESTURE_TOUCH_STATE_INACTIVE = 0x00000000,
     ORBIS_SYSTEM_GESTURE_TOUCH_STATE_BEGIN = 0x00000001,
     ORBIS_SYSTEM_GESTURE_TOUCH_STATE_ACTIVE = 0x00000002,
@@ -58,9 +58,17 @@ struct OrbisSystemGesturePrimitiveTouchEvent {
 
     u64 deltaTime;
     u64 elapsedTime;
-
-    u8 reserve[32];
+    // extra fields previous reserved
+    u64 unknown_0x30; // time related
+    u8 unknown_0x38[8];
+    OrbisSystemGesturePrimitiveTouchEvent* next;
+    u8 unknown_0x48[4];
+    u8 condition_flag;
+    u8 unknown_0x4D[3];
 };
+
+static_assert(sizeof(OrbisSystemGesturePrimitiveTouchEvent) == 0x50,
+              "OrbisSystemGesturePrimitiveTouchEvent size must be 0x50");
 
 struct OrbisSystemGesturePrimitiveTouchRecognizerParameter {
     u8 reserve[64];
@@ -533,6 +541,9 @@ struct OrbisSystemGestureTouchEvent {
 
     u8 reserve[56];
 };
+
+static_assert(sizeof(OrbisSystemGestureTouchEvent) == 0xA8,
+              "OrbisSystemGestureTouchEvent size must be 0xA8");
 
 struct OrbisSystemGestureTapRecognizerParameter {
     u8 maxTapCount;
