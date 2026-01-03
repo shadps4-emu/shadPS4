@@ -31,8 +31,8 @@ enum WaveformType : u32 {
 };
 
 // Check if waveform type is supported
-static bool IsWaveformTypeSupported(u32 waveformType) {
-    switch (waveformType) {
+static bool IsWaveformTypeSupported(u32 waveform_type) {
+    switch (waveform_type) {
     case WaveformType::PCM16:
         return true;
     // TODO: Add cases for new formats here
@@ -42,15 +42,15 @@ static bool IsWaveformTypeSupported(u32 waveformType) {
 }
 
 // Get bytes per sample for a waveform type
-static u32 GetBytesPerSample(u32 waveformType, u32 numChannels) {
-    switch (waveformType) {
+static u32 GetBytesPerSample(u32 waveform_type, u32 num_channels) {
+    switch (waveform_type) {
     case WaveformType::PCM16:
-        return 2 * numChannels;
+        return 2 * num_channels;
     // TODO: Add cases for new formats here
     // case WaveformType::FLOAT:
-    //     return 4 * numChannels;
+    //     return 4 * num_channels;
     default:
-        return 2 * numChannels;
+        return 2 * num_channels;
     }
 }
 
@@ -58,14 +58,14 @@ static u32 GetBytesPerSample(u32 waveformType, u32 numChannels) {
 // PCM16 Decoder
 // =============================================================================
 
-static float DecodePCM16Sample(const void* data, u32 sampleIdx, u32 channel, u32 numChannels,
-                               u32 totalSamples) {
-    if (sampleIdx >= totalSamples) {
+static float DecodePCM16Sample(const void* data, u32 sample_idx, u32 channel, u32 num_channels,
+                               u32 total_samples) {
+    if (sample_idx >= total_samples) {
         return 0.0f;
     }
 
-    const s16* srcData = reinterpret_cast<const s16*>(data);
-    s16 sample = srcData[sampleIdx * numChannels + channel];
+    const s16* src_data = reinterpret_cast<const s16*>(data);
+    s16 sample = src_data[sample_idx * num_channels + channel];
 
     return static_cast<float>(sample) / 32768.0f;
 }
@@ -74,21 +74,21 @@ static float DecodePCM16Sample(const void* data, u32 sampleIdx, u32 channel, u32
 // Add new decoder functions here
 // =============================================================================
 // Example:
-// static float DecodeFloatSample(const void* data, u32 sampleIdx, u32 channel,
-//                                u32 numChannels, u32 totalSamples) {
-//     const float* srcData = reinterpret_cast<const float*>(data);
-//     return srcData[sampleIdx * numChannels + channel];
+// static float DecodeFloatSample(const void* data, u32 sample_idx, u32 channel,
+//                                u32 num_channels, u32 total_samples) {
+//     const float* src_data = reinterpret_cast<const float*>(data);
+//     return src_data[sample_idx * num_channels + channel];
 // }
 
 // =============================================================================
 // Unified Sample Decoder
 // =============================================================================
 
-static float DecodeSample(const void* data, u32 sampleIdx, u32 channel, u32 numChannels,
-                          u32 totalSamples, u32 waveformType) {
-    switch (waveformType) {
+static float DecodeSample(const void* data, u32 sample_idx, u32 channel, u32 num_channels,
+                          u32 total_samples, u32 waveform_type) {
+    switch (waveform_type) {
     case WaveformType::PCM16:
-        return DecodePCM16Sample(data, sampleIdx, channel, numChannels, totalSamples);
+        return DecodePCM16Sample(data, sample_idx, channel, num_channels, total_samples);
     // TODO: Add cases for new formats here
     default:
         return 0.0f;
@@ -100,10 +100,10 @@ static float DecodeSample(const void* data, u32 sampleIdx, u32 channel, u32 numC
 // =============================================================================
 
 struct RenderContext {
-    const OrbisNgs2RenderBufferInfo* bufferInfo;
-    u32 numBufferInfo;
-    u32 grainSamples;
-    u32 outputSampleRate;
+    const OrbisNgs2RenderBufferInfo* buffer_info;
+    u32 num_buffer_info;
+    u32 grain_samples;
+    u32 output_sample_rate;
 };
 
 static bool RenderVoice(VoiceInternal* voice, const RenderContext& ctx) {
@@ -124,145 +124,145 @@ static bool RenderVoice(VoiceInternal* voice, const RenderContext& ctx) {
         return false;
     }
 
-    u32 waveformType = voice->format.waveformType;
-    if (!IsWaveformTypeSupported(waveformType)) {
-        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Unsupported waveform type: {:#x}", waveformType);
+    u32 waveform_type = voice->format.waveformType;
+    if (!IsWaveformTypeSupported(waveform_type)) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Unsupported waveform type: {:#x}", waveform_type);
         return false;
     }
 
     // Get current slot from ring buffer
-    RingBufferSlot* currentSlot = voice->getCurrentSlot();
-    if (!currentSlot || !currentSlot->valid || currentSlot->consumed) {
+    RingBufferSlot* current_slot = voice->getCurrentSlot();
+    if (!current_slot || !current_slot->valid || current_slot->consumed) {
         LOG_DEBUG(Lib_Ngs2, "(STUBBED) No valid buffer in ring");
         return false;
     }
 
-    voice->currentBufferPtr = currentSlot->basePtr;
+    voice->currentBufferPtr = current_slot->basePtr;
 
-    u32 numChannels = voice->format.numChannels;
-    if (numChannels == 0 || numChannels > 8) {
-        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Invalid number of channels: {}", numChannels);
+    u32 num_channels = voice->format.numChannels;
+    if (num_channels == 0 || num_channels > 8) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Invalid number of channels: {}", num_channels);
         return false;
     }
 
     // Calculate sample rate ratio for resampling
-    u32 sourceSampleRate = voice->format.sampleRate;
-    if (sourceSampleRate == 0) {
-        sourceSampleRate = 48000;
+    u32 source_sample_rate = voice->format.sampleRate;
+    if (source_sample_rate == 0) {
+        source_sample_rate = 48000;
     }
 
-    float pitchRatio = voice->pitchRatio;
-    if (pitchRatio <= 0.0f) {
-        pitchRatio = 1.0f;
+    float pitch_ratio = voice->pitchRatio;
+    if (pitch_ratio <= 0.0f) {
+        pitch_ratio = 1.0f;
     }
 
-    float sampleRateRatio = (static_cast<float>(sourceSampleRate) * pitchRatio) /
-                            static_cast<float>(ctx.outputSampleRate);
+    float sample_rate_ratio = (static_cast<float>(source_sample_rate) * pitch_ratio) /
+                              static_cast<float>(ctx.output_sample_rate);
 
     // Find matching output buffer and render
-    for (u32 bufIdx = 0; bufIdx < ctx.numBufferInfo; bufIdx++) {
-        const auto& bufInfo = ctx.bufferInfo[bufIdx];
-        if (!bufInfo.buffer || bufInfo.bufferSize == 0) {
+    for (u32 buf_idx = 0; buf_idx < ctx.num_buffer_info; buf_idx++) {
+        const auto& buf_info = ctx.buffer_info[buf_idx];
+        if (!buf_info.buffer || buf_info.bufferSize == 0) {
             continue;
         }
 
-        const void* srcData = currentSlot->data;
-        u32 totalSamples = currentSlot->numSamples;
-        if (totalSamples == 0) {
+        const void* src_data = current_slot->data;
+        u32 total_samples = current_slot->numSamples;
+        if (total_samples == 0) {
             continue;
         }
 
         // Determine output format
         // Output buffer format detection - use raw values since we only know PCM16 for sure
-        float* dstFloat = nullptr;
-        s16* dstS16 = nullptr;
-        u32 dstChannels = 2;
-        bool outputIsFloat = false;
+        float* dst_float = nullptr;
+        s16* dst_s16 = nullptr;
+        u32 dst_channels = 2;
+        bool output_is_float = false;
 
-        if (bufInfo.waveformType == WaveformType::PCM16) {
-            dstS16 = reinterpret_cast<s16*>(bufInfo.buffer);
-            dstChannels = bufInfo.numChannels > 0 ? bufInfo.numChannels : numChannels;
-            outputIsFloat = false;
+        if (buf_info.waveformType == WaveformType::PCM16) {
+            dst_s16 = reinterpret_cast<s16*>(buf_info.buffer);
+            dst_channels = buf_info.numChannels > 0 ? buf_info.numChannels : num_channels;
+            output_is_float = false;
         } else {
             // Default to float output for unknown types
-            dstFloat = reinterpret_cast<float*>(bufInfo.buffer);
-            dstChannels = bufInfo.numChannels > 0 ? bufInfo.numChannels : 2;
-            outputIsFloat = true;
+            dst_float = reinterpret_cast<float*>(buf_info.buffer);
+            dst_channels = buf_info.numChannels > 0 ? buf_info.numChannels : 2;
+            output_is_float = true;
         }
 
         // Render samples
-        float currentPos = voice->samplePosFloat;
-        bool voiceStopped = false;
+        float current_pos = voice->samplePosFloat;
+        bool voice_stopped = false;
 
-        for (u32 outSample = 0; outSample < ctx.grainSamples && !voiceStopped; outSample++) {
-            u32 sampleInt = static_cast<u32>(currentPos);
-            float frac = currentPos - static_cast<float>(sampleInt);
+        for (u32 out_sample = 0; out_sample < ctx.grain_samples && !voice_stopped; out_sample++) {
+            u32 sample_int = static_cast<u32>(current_pos);
+            float frac = current_pos - static_cast<float>(sample_int);
 
             // Check if we've reached the end of current buffer
-            if (sampleInt >= totalSamples) {
-                voice->lastConsumedBuffer = currentSlot->basePtr;
-                voice->totalDecodedSamples += totalSamples;
+            if (sample_int >= total_samples) {
+                voice->lastConsumedBuffer = current_slot->basePtr;
+                voice->totalDecodedSamples += total_samples;
                 voice->advanceReadIndex();
 
                 if (voice->getReadyBufferCount() <= VoiceInternal::STARVATION_THRESHOLD) {
                     voice->stateFlags |= 0x80;
                 }
 
-                currentSlot = voice->getCurrentSlot();
-                if (currentSlot && currentSlot->valid && !currentSlot->consumed) {
-                    srcData = currentSlot->data;
-                    totalSamples = currentSlot->numSamples;
-                    currentPos = 0.0f;
-                    sampleInt = 0;
+                current_slot = voice->getCurrentSlot();
+                if (current_slot && current_slot->valid && !current_slot->consumed) {
+                    src_data = current_slot->data;
+                    total_samples = current_slot->numSamples;
+                    current_pos = 0.0f;
+                    sample_int = 0;
                     frac = 0.0f;
                     voice->isStreaming = true;
-                    voice->currentBufferPtr = currentSlot->basePtr;
+                    voice->currentBufferPtr = current_slot->basePtr;
                 } else {
                     if (voice->isStreaming) {
-                        currentPos = 0.0f;
+                        current_pos = 0.0f;
                         break;
                     } else {
                         voice->stateFlags &= ~0x01;
                         voice->stateFlags |= 0x400;
-                        voiceStopped = true;
+                        voice_stopped = true;
                         break;
                     }
                 }
             }
 
             // Decode and interpolate samples for each output channel
-            for (u32 ch = 0; ch < dstChannels; ch++) {
-                u32 srcCh = ch < numChannels ? ch : 0;
+            for (u32 ch = 0; ch < dst_channels; ch++) {
+                u32 src_ch = ch < num_channels ? ch : 0;
 
-                float sample0 = DecodeSample(srcData, sampleInt, srcCh, numChannels, totalSamples,
-                                             waveformType);
-                float sample1 = DecodeSample(srcData, sampleInt + 1, srcCh, numChannels,
-                                             totalSamples, waveformType);
+                float sample0 = DecodeSample(src_data, sample_int, src_ch, num_channels,
+                                             total_samples, waveform_type);
+                float sample1 = DecodeSample(src_data, sample_int + 1, src_ch, num_channels,
+                                             total_samples, waveform_type);
                 float sample = sample0 + frac * (sample1 - sample0);
 
                 // Apply port volume
                 sample *= voice->portVolume;
 
                 // Write to output buffer
-                u32 dstIdx = outSample * dstChannels + ch;
-                if (outputIsFloat) {
-                    if (dstIdx * sizeof(float) < bufInfo.bufferSize) {
-                        dstFloat[dstIdx] += sample;
-                        dstFloat[dstIdx] = std::clamp(dstFloat[dstIdx], -1.0f, 1.0f);
+                u32 dst_idx = out_sample * dst_channels + ch;
+                if (output_is_float) {
+                    if (dst_idx * sizeof(float) < buf_info.bufferSize) {
+                        dst_float[dst_idx] += sample;
+                        dst_float[dst_idx] = std::clamp(dst_float[dst_idx], -1.0f, 1.0f);
                     }
                 } else {
-                    if (dstIdx * 2 < bufInfo.bufferSize) {
-                        s32 mixed = dstS16[dstIdx] + static_cast<s32>(sample * 32768.0f);
-                        dstS16[dstIdx] = static_cast<s16>(std::clamp(mixed, -32768, 32767));
+                    if (dst_idx * 2 < buf_info.bufferSize) {
+                        s32 mixed = dst_s16[dst_idx] + static_cast<s32>(sample * 32768.0f);
+                        dst_s16[dst_idx] = static_cast<s16>(std::clamp(mixed, -32768, 32767));
                     }
                 }
             }
 
-            currentPos += sampleRateRatio;
+            current_pos += sample_rate_ratio;
         }
 
-        voice->samplePosFloat = currentPos;
-        voice->currentSamplePos = static_cast<u32>(currentPos);
+        voice->samplePosFloat = current_pos;
+        voice->currentSamplePos = static_cast<u32>(current_pos);
         return true;
     }
 
@@ -395,42 +395,42 @@ s32 PS4_SYSV_ABI sceNgs2RackQueryBufferSize(u32 rackId, const OrbisNgs2RackOptio
         return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
     }
 
-    u32 rackIndex = RackIdToIndex(rackId);
-    if (rackIndex == 0xFF) {
+    u32 rack_index = RackIdToIndex(rackId);
+    if (rack_index == 0xFF) {
         LOG_ERROR(Lib_Ngs2, "Invalid rack ID: {:#x}", rackId);
         return ORBIS_NGS2_ERROR_INVALID_RACK_ID;
     }
 
     // Use defaults if option is NULL - based on libSceNgs2.c analysis
-    u32 maxVoices = 1;
-    u32 maxPorts = 1;
-    u32 maxMatrices = 1;
+    u32 max_voices = 1;
+    u32 max_ports = 1;
+    u32 max_matrices = 1;
 
     if (option && option->size >= sizeof(OrbisNgs2RackOption)) {
-        maxVoices = option->maxVoices > 0 ? option->maxVoices : 1;
-        maxPorts = option->maxPorts > 0 ? option->maxPorts : 1;
-        maxMatrices = option->maxMatrices > 0 ? option->maxMatrices : 1;
+        max_voices = option->maxVoices > 0 ? option->maxVoices : 1;
+        max_ports = option->maxPorts > 0 ? option->maxPorts : 1;
+        max_matrices = option->maxMatrices > 0 ? option->maxMatrices : 1;
     } else {
         // Sampler rack (0x1000) defaults to 256 voices
         if (rackId == 0x1000) {
-            maxVoices = 256;
+            max_voices = 256;
         }
     }
 
     // Calculate required buffer size
-    size_t baseSize = sizeof(RackInternal);
-    size_t voiceSize = sizeof(VoiceInternal) * maxVoices;
-    size_t portSize = sizeof(OrbisNgs2VoicePortInfo) * maxPorts * maxVoices;
-    size_t matrixSize = sizeof(OrbisNgs2VoiceMatrixInfo) * maxMatrices * maxVoices;
+    size_t base_size = sizeof(RackInternal);
+    size_t voice_size = sizeof(VoiceInternal) * max_voices;
+    size_t port_size = sizeof(OrbisNgs2VoicePortInfo) * max_ports * max_voices;
+    size_t matrix_size = sizeof(OrbisNgs2VoiceMatrixInfo) * max_matrices * max_voices;
 
-    size_t totalSize = baseSize + voiceSize + portSize + matrixSize;
-    totalSize = (totalSize + 0xFF) & ~0xFF; // Align to 256 bytes
+    size_t total_size = base_size + voice_size + port_size + matrix_size;
+    total_size = (total_size + 0xFF) & ~0xFF; // Align to 256 bytes
 
     outBufferInfo->hostBuffer = nullptr;
-    outBufferInfo->hostBufferSize = totalSize;
+    outBufferInfo->hostBufferSize = total_size;
     std::memset(outBufferInfo->reserved, 0, sizeof(outBufferInfo->reserved));
 
-    LOG_DEBUG(Lib_Ngs2, "Required buffer size: {} bytes", totalSize);
+    LOG_DEBUG(Lib_Ngs2, "Required buffer size: {} bytes", total_size);
     return ORBIS_OK;
 }
 
@@ -448,7 +448,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreate(const OrbisNgs2SystemOption* option,
                                      const OrbisNgs2ContextBufferInfo* bufferInfo,
                                      OrbisNgs2Handle* outHandle) {
     s32 result;
-    OrbisNgs2ContextBufferInfo localInfo;
+    OrbisNgs2ContextBufferInfo local_info;
     if (!bufferInfo || !outHandle) {
         if (!bufferInfo) {
             result = ORBIS_NGS2_ERROR_INVALID_BUFFER_INFO;
@@ -461,14 +461,14 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreate(const OrbisNgs2SystemOption* option,
         // TODO: Report errors?
     } else {
         // Make bufferInfo copy
-        localInfo.hostBuffer = bufferInfo->hostBuffer;
-        localInfo.hostBufferSize = bufferInfo->hostBufferSize;
+        local_info.hostBuffer = bufferInfo->hostBuffer;
+        local_info.hostBufferSize = bufferInfo->hostBufferSize;
         for (int i = 0; i < 5; i++) {
-            localInfo.reserved[i] = bufferInfo->reserved[i];
+            local_info.reserved[i] = bufferInfo->reserved[i];
         }
-        localInfo.userData = bufferInfo->userData;
+        local_info.userData = bufferInfo->userData;
 
-        result = SystemSetup(option, &localInfo, 0, outHandle);
+        result = SystemSetup(option, &local_info, 0, outHandle);
     }
 
     // TODO: API reporting?
@@ -482,20 +482,19 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreateWithAllocator(const OrbisNgs2SystemOption* o
                                                   OrbisNgs2Handle* outHandle) {
     s32 result;
     if (allocator && allocator->allocHandler != 0) {
-        OrbisNgs2BufferAllocHandler hostAlloc = allocator->allocHandler;
+        OrbisNgs2BufferAllocHandler host_alloc = allocator->allocHandler;
         if (outHandle) {
-            OrbisNgs2BufferFreeHandler hostFree = allocator->freeHandler;
-            OrbisNgs2ContextBufferInfo bufferInfo;
-            result = SystemSetup(option, &bufferInfo, 0, 0);
+            OrbisNgs2BufferFreeHandler host_free = allocator->freeHandler;
+            OrbisNgs2ContextBufferInfo buffer_info;
+            result = SystemSetup(option, &buffer_info, 0, 0);
             if (result >= 0) {
-                uintptr_t sysUserData = allocator->userData;
-                result = Core::ExecuteGuest(hostAlloc, &bufferInfo);
+                result = Core::ExecuteGuest(host_alloc, &buffer_info);
                 if (result >= 0) {
-                    OrbisNgs2Handle* handleCopy = outHandle;
-                    result = SystemSetup(option, &bufferInfo, hostFree, handleCopy);
+                    OrbisNgs2Handle* handle_copy = outHandle;
+                    result = SystemSetup(option, &buffer_info, host_free, handle_copy);
                     if (result < 0) {
-                        if (hostFree) {
-                            Core::ExecuteGuest(hostFree, &bufferInfo);
+                        if (host_free) {
+                            Core::ExecuteGuest(host_free, &buffer_info);
                         }
                     }
                 }
@@ -600,12 +599,12 @@ s32 PS4_SYSV_ABI sceNgs2SystemRender(OrbisNgs2Handle systemHandle,
 
     // Setup render context
     RenderContext ctx{};
-    ctx.bufferInfo = aBufferInfo;
-    ctx.numBufferInfo = numBufferInfo;
-    ctx.grainSamples = system->numGrainSamples > 0 ? system->numGrainSamples : 256;
-    ctx.outputSampleRate = system->sampleRate > 0 ? system->sampleRate : 48000;
+    ctx.buffer_info = aBufferInfo;
+    ctx.num_buffer_info = numBufferInfo;
+    ctx.grain_samples = system->numGrainSamples > 0 ? system->numGrainSamples : 256;
+    ctx.output_sample_rate = system->sampleRate > 0 ? system->sampleRate : 48000;
 
-    u32 voicesRendered = 0;
+    u32 voices_rendered = 0;
 
     // Process each rack
     for (auto* rack : system->racks) {
@@ -617,7 +616,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemRender(OrbisNgs2Handle systemHandle,
         if (rack->rackId == 0x1000) {
             for (auto& voice : rack->voices) {
                 if (RenderVoice(voice.get(), ctx)) {
-                    voicesRendered++;
+                    voices_rendered++;
                 }
             }
         }
@@ -706,14 +705,14 @@ s32 PS4_SYSV_ABI sceNgs2VoiceControl(OrbisNgs2Handle voiceHandle,
             auto* blocks =
                 reinterpret_cast<const OrbisNgs2SamplerVoiceWaveformBlocksParam*>(current);
 
-            u32 totalDataSize = 0;
-            u32 totalSamples = 0;
-            u32 numChannels = voice->format.numChannels > 0 ? voice->format.numChannels : 2;
+            u32 total_data_size = 0;
+            u32 total_samples = 0;
+            u32 num_channels = voice->format.numChannels > 0 ? voice->format.numChannels : 2;
 
             if (blocks->numBlocks > 0 && blocks->aBlock) {
                 for (u32 i = 0; i < blocks->numBlocks; i++) {
-                    totalDataSize += blocks->aBlock[i].dataSize;
-                    totalSamples += blocks->aBlock[i].numSamples;
+                    total_data_size += blocks->aBlock[i].dataSize;
+                    total_samples += blocks->aBlock[i].numSamples;
                 }
 
                 voice->waveformBlocks.resize(blocks->numBlocks);
@@ -727,18 +726,18 @@ s32 PS4_SYSV_ABI sceNgs2VoiceControl(OrbisNgs2Handle voiceHandle,
                 }
             }
 
-            const u8* basePtr = reinterpret_cast<const u8*>(blocks->data);
-            u32 dataOffset =
+            const u8* base_ptr = reinterpret_cast<const u8*>(blocks->data);
+            u32 data_offset =
                 (blocks->numBlocks > 0 && blocks->aBlock) ? blocks->aBlock[0].dataOffset : 0;
-            const void* actualDataPtr = basePtr + dataOffset;
+            const void* actual_data_ptr = base_ptr + data_offset;
 
-            bool isFirstSetup = (voice->ringBufferCount == 0) && !voice->isStreaming;
+            bool is_first_setup = (voice->ringBufferCount == 0) && !voice->isStreaming;
 
-            if (isFirstSetup) {
+            if (is_first_setup) {
                 voice->resetRing();
-                voice->addToRing(blocks->data, actualDataPtr, totalDataSize, totalSamples);
+                voice->addToRing(blocks->data, actual_data_ptr, total_data_size, total_samples);
                 voice->lastConsumedBuffer = nullptr;
-                voice->currentBufferPtr = actualDataPtr;
+                voice->currentBufferPtr = actual_data_ptr;
                 voice->stateFlags &= ~0x80;
                 voice->currentSamplePos = 0;
                 voice->samplePosFloat = 0.0f;
@@ -746,7 +745,7 @@ s32 PS4_SYSV_ABI sceNgs2VoiceControl(OrbisNgs2Handle voiceHandle,
                 voice->isStreaming = false;
             } else {
                 bool added =
-                    voice->addToRing(blocks->data, actualDataPtr, totalDataSize, totalSamples);
+                    voice->addToRing(blocks->data, actual_data_ptr, total_data_size, total_samples);
 
                 if (added) {
                     voice->isStreaming = true;
@@ -925,24 +924,24 @@ s32 PS4_SYSV_ABI sceNgs2VoiceGetState(OrbisNgs2Handle voiceHandle, OrbisNgs2Voic
         return ORBIS_OK;
     }
 
-    auto* samplerState = reinterpret_cast<OrbisNgs2SamplerVoiceState*>(outState);
-    samplerState->voiceState.stateFlags = voice->stateFlags;
+    auto* sampler_state = reinterpret_cast<OrbisNgs2SamplerVoiceState*>(outState);
+    sampler_state->voiceState.stateFlags = voice->stateFlags;
 
     if (voice->isStreaming && voice->getReadyBufferCount() <= VoiceInternal::STARVATION_THRESHOLD) {
-        samplerState->userData = 1;
+        sampler_state->userData = 1;
     } else {
-        samplerState->userData = 0;
+        sampler_state->userData = 0;
     }
-    samplerState->envelopeHeight = 1.0f;
-    samplerState->peakHeight = 1.0f;
-    samplerState->reserved = 0;
+    sampler_state->envelopeHeight = 1.0f;
+    sampler_state->peakHeight = 1.0f;
+    sampler_state->reserved = 0;
 
-    samplerState->numDecodedSamples = voice->totalDecodedSamples;
+    sampler_state->numDecodedSamples = voice->totalDecodedSamples;
 
-    u32 bytesPerSample = 2 * (voice->format.numChannels > 0 ? voice->format.numChannels : 2);
-    samplerState->decodedDataSize = samplerState->numDecodedSamples * bytesPerSample;
+    u32 bytes_per_sample = 2 * (voice->format.numChannels > 0 ? voice->format.numChannels : 2);
+    sampler_state->decodedDataSize = sampler_state->numDecodedSamples * bytes_per_sample;
 
-    samplerState->waveformData = voice->currentBufferPtr;
+    sampler_state->waveformData = voice->currentBufferPtr;
 
     return ORBIS_OK;
 }
@@ -1022,36 +1021,36 @@ s32 PS4_SYSV_ABI sceNgs2PanGetVolumeMatrix(OrbisNgs2PanWork* work, const OrbisNg
     }
 
     // matrixFormat: 1 = mono, 2 = stereo, etc.
-    u32 numOutputChannels = matrixFormat;
-    if (numOutputChannels == 0)
-        numOutputChannels = 2;
-    if (numOutputChannels > 8)
-        numOutputChannels = 8;
+    u32 num_output_channels = matrixFormat;
+    if (num_output_channels == 0)
+        num_output_channels = 2;
+    if (num_output_channels > 8)
+        num_output_channels = 8;
 
     // Initialize volume matrix to identity/center pan
     // For stereo output (format 2), we create a simple center pan
     for (u32 p = 0; p < numParams; p++) {
-        float* matrix = outVolumeMatrix + p * numOutputChannels;
+        float* matrix = outVolumeMatrix + p * num_output_channels;
 
         if (aParam && numParams > 0) {
             // Use the pan angle to compute left/right levels
             float angle = aParam[p].angle;
             // Simple stereo panning: angle 0 = center, -1 = left, +1 = right
-            float leftLevel = 0.5f * (1.0f - angle);
-            float rightLevel = 0.5f * (1.0f + angle);
+            float left_level = 0.5f * (1.0f - angle);
+            float right_level = 0.5f * (1.0f + angle);
 
-            if (numOutputChannels >= 2) {
-                matrix[0] = leftLevel;
-                matrix[1] = rightLevel;
-                for (u32 ch = 2; ch < numOutputChannels; ch++) {
+            if (num_output_channels >= 2) {
+                matrix[0] = left_level;
+                matrix[1] = right_level;
+                for (u32 ch = 2; ch < num_output_channels; ch++) {
                     matrix[ch] = 0.0f;
                 }
             } else {
                 matrix[0] = 1.0f;
             }
         } else {
-            for (u32 ch = 0; ch < numOutputChannels; ch++) {
-                matrix[ch] = 1.0f / numOutputChannels;
+            for (u32 ch = 0; ch < num_output_channels; ch++) {
+                matrix[ch] = 1.0f / num_output_channels;
             }
         }
     }

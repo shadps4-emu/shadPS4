@@ -14,8 +14,8 @@ using namespace Libraries::Kernel;
 
 namespace Libraries::Ngs2 {
 
-s32 HandleReportInvalid(OrbisNgs2Handle handle, u32 handleType) {
-    switch (handleType) {
+s32 HandleReportInvalid(OrbisNgs2Handle handle, u32 handle_type) {
+    switch (handle_type) {
     case 1:
         LOG_ERROR(Lib_Ngs2, "Invalid system handle {}", handle);
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
@@ -38,33 +38,33 @@ void* MemoryClear(void* buffer, size_t size) {
     return memset(buffer, 0, size);
 }
 
-s32 StackBufferClose(StackBuffer* stackBuffer, size_t* outTotalSize) {
-    if (outTotalSize) {
-        *outTotalSize = stackBuffer->usedSize + stackBuffer->alignment;
+s32 StackBufferClose(StackBuffer* stack_buffer, size_t* out_total_size) {
+    if (out_total_size) {
+        *out_total_size = stack_buffer->usedSize + stack_buffer->alignment;
     }
     return ORBIS_OK;
 }
 
-s32 StackBufferOpen(StackBuffer* stackBuffer, void* bufferStart, size_t bufferSize,
-                    void** outBuffer, u8 flags) {
-    stackBuffer->top = outBuffer;
-    stackBuffer->base = bufferStart;
-    stackBuffer->size = (size_t)bufferStart;
-    stackBuffer->currentOffset = (size_t)bufferStart;
-    stackBuffer->usedSize = 0;
-    stackBuffer->totalSize = bufferSize;
-    stackBuffer->alignment = 8; // this is a fixed value
-    stackBuffer->flags = flags;
+s32 StackBufferOpen(StackBuffer* stack_buffer, void* buffer_start, size_t buffer_size,
+                    void** out_buffer, u8 flags) {
+    stack_buffer->top = out_buffer;
+    stack_buffer->base = buffer_start;
+    stack_buffer->size = (size_t)buffer_start;
+    stack_buffer->currentOffset = (size_t)buffer_start;
+    stack_buffer->usedSize = 0;
+    stack_buffer->totalSize = buffer_size;
+    stack_buffer->alignment = 8; // this is a fixed value
+    stack_buffer->flags = flags;
 
-    if (outBuffer != NULL) {
-        *outBuffer = NULL;
+    if (out_buffer != NULL) {
+        *out_buffer = NULL;
     }
 
     return ORBIS_OK;
 }
 
-s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outInfo) {
-    if (!systemHandle) {
+s32 SystemCleanup(OrbisNgs2Handle system_handle, OrbisNgs2ContextBufferInfo* out_info) {
+    if (!system_handle) {
         return ORBIS_NGS2_ERROR_INVALID_HANDLE;
     }
 
@@ -73,65 +73,66 @@ s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outI
     return ORBIS_OK;
 }
 
-s32 SystemSetupCore(StackBuffer* stackBuffer, const OrbisNgs2SystemOption* option,
-                    SystemInternal* outSystem) {
-    u32 maxGrainSamples = 512;
-    u32 numGrainSamples = 256;
-    u32 sampleRate = 48000;
+s32 SystemSetupCore(StackBuffer* stack_buffer, const OrbisNgs2SystemOption* option,
+                    SystemInternal* out_system) {
+    u32 max_grain_samples = 512;
+    u32 num_grain_samples = 256;
+    u32 sample_rate = 48000;
 
     if (option) {
-        sampleRate = option->sampleRate;
-        maxGrainSamples = option->maxGrainSamples;
-        numGrainSamples = option->numGrainSamples;
+        sample_rate = option->sampleRate;
+        max_grain_samples = option->maxGrainSamples;
+        num_grain_samples = option->numGrainSamples;
     }
 
-    if (maxGrainSamples < 64 || maxGrainSamples > 1024 || (maxGrainSamples & 63) != 0) {
-        LOG_ERROR(Lib_Ngs2, "Invalid system option (maxGrainSamples={},x64)", maxGrainSamples);
+    if (max_grain_samples < 64 || max_grain_samples > 1024 || (max_grain_samples & 63) != 0) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system option (maxGrainSamples={},x64)", max_grain_samples);
         return ORBIS_NGS2_ERROR_INVALID_MAX_GRAIN_SAMPLES;
     }
 
-    if (numGrainSamples < 64 || numGrainSamples > 1024 || (numGrainSamples & 63) != 0) {
-        LOG_ERROR(Lib_Ngs2, "Invalid system option (numGrainSamples={},x64)", numGrainSamples);
+    if (num_grain_samples < 64 || num_grain_samples > 1024 || (num_grain_samples & 63) != 0) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system option (numGrainSamples={},x64)", num_grain_samples);
         return ORBIS_NGS2_ERROR_INVALID_NUM_GRAIN_SAMPLES;
     }
 
-    if (sampleRate != 11025 && sampleRate != 12000 && sampleRate != 22050 && sampleRate != 24000 &&
-        sampleRate != 44100 && sampleRate != 48000 && sampleRate != 88200 && sampleRate != 96000 &&
-        sampleRate != 176400 && sampleRate != 192000) {
-        LOG_ERROR(Lib_Ngs2, "Invalid system option(sampleRate={}:44.1/48kHz series)", sampleRate);
+    if (sample_rate != 11025 && sample_rate != 12000 && sample_rate != 22050 &&
+        sample_rate != 24000 && sample_rate != 44100 && sample_rate != 48000 &&
+        sample_rate != 88200 && sample_rate != 96000 && sample_rate != 176400 &&
+        sample_rate != 192000) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system option(sampleRate={}:44.1/48kHz series)", sample_rate);
         return ORBIS_NGS2_ERROR_INVALID_SAMPLE_RATE;
     }
 
-    if (outSystem) {
+    if (out_system) {
         // Initialize system
-        std::memset(outSystem, 0, sizeof(SystemInternal));
-        outSystem->systemHandle = reinterpret_cast<OrbisNgs2Handle>(outSystem);
-        outSystem->sampleRate = sampleRate;
-        outSystem->currentSampleRate = sampleRate;
-        outSystem->maxGrainSamples = static_cast<u16>(maxGrainSamples);
-        outSystem->minGrainSamples = 64;
-        outSystem->numGrainSamples = static_cast<u16>(numGrainSamples);
-        outSystem->currentNumGrainSamples = numGrainSamples;
-        outSystem->renderCount = 0;
-        outSystem->rackCount = 0;
-        outSystem->isActive = 1;
-        
+        std::memset(out_system, 0, sizeof(SystemInternal));
+        out_system->systemHandle = reinterpret_cast<OrbisNgs2Handle>(out_system);
+        out_system->sampleRate = sample_rate;
+        out_system->currentSampleRate = sample_rate;
+        out_system->maxGrainSamples = static_cast<u16>(max_grain_samples);
+        out_system->minGrainSamples = 64;
+        out_system->numGrainSamples = static_cast<u16>(num_grain_samples);
+        out_system->currentNumGrainSamples = num_grain_samples;
+        out_system->renderCount = 0;
+        out_system->rackCount = 0;
+        out_system->isActive = 1;
+
         if (option && option->name[0] != '\0') {
-            std::strncpy(outSystem->name, option->name, ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1);
-            outSystem->name[ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1] = '\0';
+            std::strncpy(out_system->name, option->name, ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1);
+            out_system->name[ORBIS_NGS2_SYSTEM_NAME_LENGTH - 1] = '\0';
         }
     }
 
     return ORBIS_OK;
 }
 
-s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* hostBufferInfo,
-                OrbisNgs2BufferFreeHandler hostFree, OrbisNgs2Handle* outHandle) {
-    u8 optionFlags = 0;
-    StackBuffer stackBuffer;
-    SystemInternal setupResult;
-    void* systemList = NULL;
-    size_t requiredBufferSize = 0;
+s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* host_buffer_info,
+                OrbisNgs2BufferFreeHandler host_free, OrbisNgs2Handle* out_handle) {
+    u8 option_flags = 0;
+    StackBuffer stack_buffer;
+    SystemInternal setup_result;
+    void* system_list = NULL;
+    size_t required_buffer_size = 0;
     u32 result = ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
 
     if (option) {
@@ -139,71 +140,71 @@ s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo*
             LOG_ERROR(Lib_Ngs2, "Invalid system option size ({})", option->size);
             return ORBIS_NGS2_ERROR_INVALID_OPTION_SIZE;
         }
-        optionFlags = option->flags >> 31;
+        option_flags = option->flags >> 31;
     }
 
     // Init
-    StackBufferOpen(&stackBuffer, NULL, 0, NULL, optionFlags);
-    result = SystemSetupCore(&stackBuffer, option, 0);
+    StackBufferOpen(&stack_buffer, NULL, 0, NULL, option_flags);
+    result = SystemSetupCore(&stack_buffer, option, 0);
 
     if (result < 0) {
         return result;
     }
 
-    StackBufferClose(&stackBuffer, &requiredBufferSize);
+    StackBufferClose(&stack_buffer, &required_buffer_size);
 
-    // outHandle unprovided
-    if (!outHandle) {
-        hostBufferInfo->hostBuffer = NULL;
-        hostBufferInfo->hostBufferSize = requiredBufferSize;
-        MemoryClear(&hostBufferInfo->reserved, sizeof(hostBufferInfo->reserved));
+    // out_handle unprovided
+    if (!out_handle) {
+        host_buffer_info->hostBuffer = NULL;
+        host_buffer_info->hostBufferSize = required_buffer_size;
+        MemoryClear(&host_buffer_info->reserved, sizeof(host_buffer_info->reserved));
         return ORBIS_OK;
     }
 
-    if (!hostBufferInfo->hostBuffer) {
-        LOG_ERROR(Lib_Ngs2, "Invalid system buffer address ({})", hostBufferInfo->hostBuffer);
+    if (!host_buffer_info->hostBuffer) {
+        LOG_ERROR(Lib_Ngs2, "Invalid system buffer address ({})", host_buffer_info->hostBuffer);
         return ORBIS_NGS2_ERROR_INVALID_BUFFER_ADDRESS;
     }
 
-    if (hostBufferInfo->hostBufferSize < requiredBufferSize) {
+    if (host_buffer_info->hostBufferSize < required_buffer_size) {
         LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])",
-                  hostBufferInfo->hostBufferSize, requiredBufferSize);
+                  host_buffer_info->hostBufferSize, required_buffer_size);
         return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
     }
 
     // Setup
-    StackBufferOpen(&stackBuffer, hostBufferInfo->hostBuffer, hostBufferInfo->hostBufferSize,
-                    &systemList, optionFlags);
-    
+    StackBufferOpen(&stack_buffer, host_buffer_info->hostBuffer, host_buffer_info->hostBufferSize,
+                    &system_list, option_flags);
+
     // Allocate SystemInternal from the buffer
     auto* system = new SystemInternal();
-    result = SystemSetupCore(&stackBuffer, option, system);
+    result = SystemSetupCore(&stack_buffer, option, system);
 
     if (result < 0) {
         delete system;
         return result;
     }
 
-    StackBufferClose(&stackBuffer, &requiredBufferSize);
+    StackBufferClose(&stack_buffer, &required_buffer_size);
 
-    system->bufferInfo = *hostBufferInfo;
-    system->hostFree = hostFree;
+    system->bufferInfo = *host_buffer_info;
+    system->hostFree = host_free;
     system->systemHandle = reinterpret_cast<OrbisNgs2Handle>(system);
 
-    if (hostBufferInfo->hostBufferSize >= requiredBufferSize) {
-        *outHandle = system->systemHandle;
+    if (host_buffer_info->hostBufferSize >= required_buffer_size) {
+        *out_handle = system->systemHandle;
         return ORBIS_OK;
     }
 
     delete system;
 
-    LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])", hostBufferInfo->hostBufferSize,
-              requiredBufferSize);
+    LOG_ERROR(Lib_Ngs2, "Invalid system buffer size ({}<{}[byte])",
+              host_buffer_info->hostBufferSize, required_buffer_size);
     return ORBIS_NGS2_ERROR_INVALID_BUFFER_SIZE;
 }
 
-u32 RackIdToIndex(u32 rackId) {
-    switch (rackId) {
+u32 RackIdToIndex(u32 rack_id) {
+    switch (rack_id) {
     case 0x1000: return 0; // Sampler
     case 0x3000: return 1; // Mastering
     case 0x2000: return 2; // Submixer
@@ -215,33 +216,33 @@ u32 RackIdToIndex(u32 rackId) {
     }
 }
 
-s32 RackCreate(SystemInternal* system, u32 rackId, const OrbisNgs2RackOption* option,
-               const OrbisNgs2ContextBufferInfo* bufferInfo, OrbisNgs2Handle* outHandle) {
+s32 RackCreate(SystemInternal* system, u32 rack_id, const OrbisNgs2RackOption* option,
+               const OrbisNgs2ContextBufferInfo* buffer_info, OrbisNgs2Handle* out_handle) {
     if (!system) {
         LOG_ERROR(Lib_Ngs2, "RackCreate: Invalid system handle");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    
-    u32 rackIndex = RackIdToIndex(rackId);
-    if (rackIndex == 0xFF) {
-        LOG_ERROR(Lib_Ngs2, "Invalid rack ID: {:#x}", rackId);
+
+    u32 rack_index = RackIdToIndex(rack_id);
+    if (rack_index == 0xFF) {
+        LOG_ERROR(Lib_Ngs2, "Invalid rack ID: {:#x}", rack_id);
         return ORBIS_NGS2_ERROR_INVALID_RACK_ID;
     }
-    
+
     auto* rack = new RackInternal();
     rack->ownerSystem = system;
-    rack->rackType = rackIndex;
-    rack->rackId = rackId;
+    rack->rackType = rack_index;
+    rack->rackId = rack_id;
     rack->handle.systemData = system;
-    
+
     // Setup rack info with defaults or from option
     rack->info.rackHandle = reinterpret_cast<OrbisNgs2Handle>(rack);
     rack->info.ownerSystemHandle = system->systemHandle;
-    rack->info.type = rackIndex;
-    rack->info.rackId = rackId;
+    rack->info.type = rack_index;
+    rack->info.rackId = rack_id;
     rack->info.minGrainSamples = 64;
     rack->info.stateFlags = 0;
-    
+
     // Use option values if provided, otherwise use defaults
     if (option && option->size >= sizeof(OrbisNgs2RackOption)) {
         std::strncpy(rack->info.name, option->name, ORBIS_NGS2_RACK_NAME_LENGTH - 1);
@@ -252,18 +253,18 @@ s32 RackCreate(SystemInternal* system, u32 rackId, const OrbisNgs2RackOption* op
         // Default values when option is NULL - based on libSceNgs2.c analysis
         rack->info.name[0] = '\0';
         // Sampler rack (0x1000) defaults to 0x100 (256) voices, others default to 1
-        if (rackId == 0x1000) {
-            rack->info.maxVoices = 256;  // Sampler default
+        if (rack_id == 0x1000) {
+            rack->info.maxVoices = 256; // Sampler default
         } else {
             rack->info.maxVoices = 1;
         }
         rack->info.maxGrainSamples = 512;
     }
-    
+
     // Allocate voices
-    u32 numVoices = rack->info.maxVoices;
-    rack->voices.reserve(numVoices);
-    for (u32 i = 0; i < numVoices; i++) {
+    u32 num_voices = rack->info.maxVoices;
+    rack->voices.reserve(num_voices);
+    for (u32 i = 0; i < num_voices; i++) {
         auto voice = std::make_unique<VoiceInternal>();
         voice->ownerRack = rack;
         voice->voiceIndex = i;
@@ -271,22 +272,22 @@ s32 RackCreate(SystemInternal* system, u32 rackId, const OrbisNgs2RackOption* op
         voice->stateFlags = 0; // Not playing
         rack->voices.push_back(std::move(voice));
     }
-    
+
     system->racks.push_back(rack);
     system->rackCount++;
-    
-    if (outHandle) {
-        *outHandle = reinterpret_cast<OrbisNgs2Handle>(rack);
+
+    if (out_handle) {
+        *out_handle = reinterpret_cast<OrbisNgs2Handle>(rack);
     }
-    
+
     return ORBIS_OK;
 }
 
-s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* outBufferInfo) {
+s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* out_buffer_info) {
     if (!rack) {
         return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
     }
-    
+
     SystemInternal* system = rack->ownerSystem;
     if (system) {
         auto it = std::find(system->racks.begin(), system->racks.end(), rack);
@@ -295,7 +296,7 @@ s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* outBufferInfo) {
             system->rackCount--;
         }
     }
-    
+
     delete rack;
     return ORBIS_OK;
 }
