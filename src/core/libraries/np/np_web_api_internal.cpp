@@ -312,7 +312,6 @@ void releaseUserContext(OrbisNpWebApiUserContext* userContext) {
 }
 
 s32 deleteUserContext(s32 titleUserCtxId) {
-    LOG_INFO(Lib_NpWebApi, "titleUserCtxId = {:#x}", titleUserCtxId);
     OrbisNpWebApiContext* context = findAndValidateContext(titleUserCtxId >> 0x10);
     if (context == nullptr) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
