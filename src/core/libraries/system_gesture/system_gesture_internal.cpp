@@ -103,11 +103,43 @@ s32 PS4_SYSV_ABI sceSystemGestureGetTouchRecognizerInformationInternal(
     LOG_TRACE(Lib_SystemGesture,
               "Retrieved touch recognizer information: gestureType=(0x{:x}), "
               "updateTime={}, rectangle x={}, y={}, width={}, height={}",
-               magic_enum::enum_integer(information->gestureType), information->updatedTime, information->rectangle.x,
-              information->rectangle.y, information->rectangle.width,
+              magic_enum::enum_integer(information->gestureType), information->updatedTime,
+              information->rectangle.x, information->rectangle.y, information->rectangle.width,
               information->rectangle.height);
 
     return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceSystemGestureGetTouchEventsCountInternal(
+    s32 handle_index, OrbisSystemGestureTouchRecognizer* touchRecognizer) {
+
+    LOG_TRACE(Lib_SystemGesture, "Called, handle_index={}, touchRecognizer={:p}", handle_index,
+              fmt::ptr(touchRecognizer));
+
+    // Check if handle_index is valid (0-7)
+    if (handle_index >= 8) {
+        LOG_ERROR(Lib_SystemGesture, "Invalid handle_index={}, must be < 8", handle_index);
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_HANDLE;
+    }
+
+    if (touchRecognizer == nullptr) {
+        LOG_ERROR(Lib_SystemGesture, "touchRecognizer is null");
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Check magic value in touchRecognizer
+    if (touchRecognizer->magic != 0x35547435) { // ASCII "5Tt5"
+        LOG_ERROR(Lib_SystemGesture,
+                  "Invalid touchRecognizer magic, expected 0x35547435, got 0x{:x}",
+                  touchRecognizer->magic);
+        return ORBIS_SYSTEM_GESTURE_ERROR_INVALID_ARGUMENT; // -0x7f76fffd
+    }
+
+    s32 touchEventsCount = touchRecognizer->touchEventsCount;
+
+    LOG_TRACE(Lib_SystemGesture, "Touch events count: {}", touchEventsCount);
+
+    return touchEventsCount;
 }
 
 } // namespace Libraries::SystemGesture

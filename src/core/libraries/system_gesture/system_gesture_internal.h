@@ -16,4 +16,6 @@ s32 sceSystemGestureUpdateTouchRecognizerRectangleInternal(
 s32 PS4_SYSV_ABI sceSystemGestureGetTouchRecognizerInformationInternal(
     s32 handle_index, OrbisSystemGestureTouchRecognizer* touchRecognizer,
     OrbisSystemGestureTouchRecognizerInformation* information); // FUN_01005500
+s32 PS4_SYSV_ABI sceSystemGestureGetTouchEventsCountInternal(
+    s32 handle_index, OrbisSystemGestureTouchRecognizer* touchRecognizer); // FUN_010051e0
 } // namespace Libraries::SystemGesture
