@@ -115,7 +115,13 @@ s32 deleteContext(s32 libCtxId) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
     }
 
-    // TODO: Should delete contents of all maps.
+    auto& context = g_contexts[libCtxId];
+    context->handles.clear();
+    context->timerHandles.clear();
+    context->pushEventFilters.clear();
+    context->servicePushEventFilters.clear();
+    context->extendedPushEventFilters.clear();
+
     g_contexts.erase(libCtxId);
     return ORBIS_OK;
 }
@@ -862,7 +868,9 @@ s32 unregisterPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
         return ORBIS_NP_WEBAPI_ERROR_PUSH_EVENT_CALLBACK_NOT_FOUND;
     }
 
+    lockContext(context);
     user_context->pushEventCallbacks.erase(callbackId);
+    unlockContext(context);
     releaseUserContext(user_context);
     releaseContext(context);
     return ORBIS_OK;
@@ -1022,7 +1030,9 @@ s32 unregisterServicePushEventCallback(s32 titleUserCtxId, s32 callbackId) {
         return ORBIS_NP_WEBAPI_ERROR_SERVICE_PUSH_EVENT_CALLBACK_NOT_FOUND;
     }
 
+    lockContext(context);
     user_context->servicePushEventCallbacks.erase(callbackId);
+    unlockContext(context);
     releaseUserContext(user_context);
     releaseContext(context);
     return ORBIS_OK;
@@ -1194,7 +1204,9 @@ s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
         return ORBIS_NP_WEBAPI_ERROR_EXTD_PUSH_EVENT_CALLBACK_NOT_FOUND;
     }
 
+    lockContext(context);
     user_context->extendedPushEventCallbacks.erase(callbackId);
+    unlockContext(context);
     releaseUserContext(user_context);
     releaseContext(context);
     return ORBIS_OK;
