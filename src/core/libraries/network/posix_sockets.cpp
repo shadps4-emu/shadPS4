@@ -184,32 +184,6 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
-int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
-    std::scoped_lock lock{m_mutex};
-#ifdef _WIN32
-    DWORD bytesSent = 0;
-    LPFN_WSASENDMSG wsasendmsg = nullptr;
-    GUID guid = WSAID_WSASENDMSG;
-    DWORD bytes = 0;
-
-    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsasendmsg,
-                 sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
-        return ConvertReturnErrorCode(-1);
-    }
-
-    int res = wsasendmsg(sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), flags,
-                         &bytesSent, nullptr, nullptr);
-
-    if (res == SOCKET_ERROR) {
-        return ConvertReturnErrorCode(-1);
-    }
-    return static_cast<int>(bytesSent);
-#else
-    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
-    return ConvertReturnErrorCode(res);
-#endif
-}
-
 static int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
     int posix_flags = 0;
 
@@ -242,6 +216,73 @@ static int socket_is_ready(int sock, bool is_read = true) {
         return ConvertReturnErrorCode(res);
 
     return res;
+}
+
+int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
+    std::scoped_lock lock{m_mutex};
+
+#ifdef _WIN32
+    int totalSent = 0;
+    bool waitAll = (flags & ORBIS_NET_MSG_WAITALL) != 0;
+    bool dontWait = (flags & ORBIS_NET_MSG_DONTWAIT) != 0;
+
+    // stream socket with multiple buffers
+    bool use_wsamsg =
+        (socket_type == ORBIS_NET_SOCK_STREAM || socket_type == ORBIS_NET_SOCK_STREAM_P2P) &&
+        msg->msg_iovlen > 1;
+
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        char* buf = (char*)msg->msg_iov[i].iov_base;
+        size_t remaining = msg->msg_iov[i].iov_len;
+
+        while (remaining > 0) {
+            if (dontWait) {
+                int ready = socket_is_ready(sock, false);
+                if (ready <= 0)
+                    return ready;
+            }
+
+            int sent = 0;
+            if (use_wsamsg) {
+                // only call WSASendMsg if we have multiple buffers
+                LPFN_WSASENDMSG wsasendmsg = nullptr;
+                GUID guid = WSAID_WSASENDMSG;
+                DWORD bytes = 0;
+                if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
+                             &wsasendmsg, sizeof(wsasendmsg), &bytes, nullptr, nullptr) != 0) {
+                    // fallback to send()
+                    sent = ::send(sock, buf, remaining, 0);
+                } else {
+                    DWORD bytesSent = 0;
+                    int res = wsasendmsg(
+                        sock, reinterpret_cast<LPWSAMSG>(const_cast<OrbisNetMsghdr*>(msg)), 0,
+                        &bytesSent, nullptr, nullptr);
+                    if (res == SOCKET_ERROR)
+                        return ConvertReturnErrorCode(WSAGetLastError());
+                    sent = bytesSent;
+                }
+            } else {
+                sent = ::send(sock, buf, remaining, 0);
+                if (sent == SOCKET_ERROR)
+                    return ConvertReturnErrorCode(WSAGetLastError());
+            }
+
+            totalSent += sent;
+            remaining -= sent;
+            buf += sent;
+
+            if (!waitAll)
+                break;
+        }
+    }
+
+    return totalSent;
+
+#else
+    int native_flags = convertOrbisFlagsToPosix(socket_type, flags);
+    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), native_flags);
+    return ConvertReturnErrorCode(res);
+#endif
 }
 
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
