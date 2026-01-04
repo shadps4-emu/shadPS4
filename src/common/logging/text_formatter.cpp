@@ -24,8 +24,8 @@ std::string FormatLogMessage(const Entry& entry) {
     const char* class_name = GetLogClassName(entry.log_class);
     const char* level_name = GetLevelName(entry.log_level);
 
-    return fmt::format("[{}] ({}) <{}> {}:{} {}: {}", class_name, Common::GetCurrentThreadName(), level_name,
-                       entry.filename, entry.line_num, entry.function, entry.message);
+    return fmt::format("[{}] ({}) <{}> {}:{} {}: {}", class_name, Common::GetCurrentThreadName(),
+                       level_name, entry.filename, entry.line_num, entry.function, entry.message);
 }
 
 void PrintMessage(const Entry& entry) {
