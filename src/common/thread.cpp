@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ctime>
@@ -34,10 +35,6 @@
 #ifdef __FreeBSD__
 #define cpu_set_t cpuset_t
 #endif
-
-namespace Libraries::Kernel {
-extern thread_local Libraries::Kernel::Pthread* g_curthread;
-}
 
 namespace Common {
 
