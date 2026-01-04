@@ -42,7 +42,7 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 
 #else
 
-static std::string GetThreadName() {
+std::string GetThreadName() {
     char name[256];
     if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
         return "<unknown name>";

@@ -54,4 +54,6 @@ private:
 
 using Signals = Common::Singleton<SignalDispatch>;
 
+std::string GetThreadName();
+
 } // namespace Core
