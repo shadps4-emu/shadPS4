@@ -210,17 +210,60 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
 #endif
 }
 
+static int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
+    int posix_flags = 0;
+
+    if (sce_flags & ORBIS_NET_MSG_PEEK)
+        posix_flags |= MSG_PEEK;
+#ifndef _WIN32
+    if (sce_flags & ORBIS_NET_MSG_DONTWAIT)
+        posix_flags |= MSG_DONTWAIT;
+#endif
+    // MSG_WAITALL is only valid for stream sockets
+    if ((sce_flags & ORBIS_NET_MSG_WAITALL) &&
+        ((sock_type == ORBIS_NET_SOCK_STREAM) || (sock_type == ORBIS_NET_SOCK_STREAM_P2P)))
+        posix_flags |= MSG_WAITALL;
+
+    return posix_flags;
+}
+
+// On Windows, MSG_DONTWAIT is not handled natively by recv/send.
+// This function uses select() with zero timeout to simulate non-blocking behavior.
+static int socket_is_ready(int sock, bool is_read = true) {
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(sock, &fds);
+    timeval timeout{0, 0};
+    int res =
+        select(sock + 1, is_read ? &fds : nullptr, is_read ? nullptr : &fds, nullptr, &timeout);
+    if (res == 0)
+        return ORBIS_NET_ERROR_EWOULDBLOCK;
+    else if (res < 0)
+        return ConvertReturnErrorCode(res);
+
+    return res;
+}
+
 int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetSockaddr* to,
                             u32 tolen) {
     std::scoped_lock lock{m_mutex};
-    if (to != nullptr) {
-        sockaddr addr;
-        convertOrbisNetSockaddrToPosix(to, &addr);
-        return ConvertReturnErrorCode(
-            sendto(sock, (const char*)msg, len, flags, &addr, sizeof(sockaddr_in)));
-    } else {
-        return ConvertReturnErrorCode(send(sock, (const char*)msg, len, flags));
+    int res = 0;
+#ifdef _WIN32
+    if (flags & ORBIS_NET_MSG_DONTWAIT) {
+        res = socket_is_ready(sock, false);
+        if (res <= 0)
+            return res;
     }
+#endif
+    const auto posix_flags = convertOrbisFlagsToPosix(socket_type, flags);
+    if (to == nullptr) {
+        res = send(sock, (const char*)msg, len, posix_flags);
+    } else {
+        sockaddr addr{};
+        convertOrbisNetSockaddrToPosix(to, &addr);
+        res = sendto(sock, (const char*)msg, len, posix_flags, &addr, tolen);
+    }
+    return ConvertReturnErrorCode(res);
 }
 
 int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
@@ -251,15 +294,27 @@ int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
 int PosixSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
                                u32* fromlen) {
     std::scoped_lock lock{receive_mutex};
-    if (from != nullptr) {
-        sockaddr addr;
-        int res = recvfrom(sock, (char*)buf, len, flags, &addr, (socklen_t*)fromlen);
-        convertPosixSockaddrToOrbis(&addr, from);
-        *fromlen = sizeof(OrbisNetSockaddrIn);
-        return ConvertReturnErrorCode(res);
-    } else {
-        return ConvertReturnErrorCode(recv(sock, (char*)buf, len, flags));
+    int res = 0;
+#ifdef _WIN32
+    if (flags & ORBIS_NET_MSG_DONTWAIT) {
+        res = socket_is_ready(sock);
+        if (res <= 0)
+            return res;
     }
+#endif
+    const auto posix_flags = convertOrbisFlagsToPosix(socket_type, flags);
+    if (from == nullptr) {
+        res = recv(sock, (char*)buf, len, posix_flags);
+    } else {
+        sockaddr addr{};
+        socklen_t addrlen = sizeof(addr);
+        res = recvfrom(sock, (char*)buf, len, posix_flags, &addr,
+                       (fromlen && *fromlen <= sizeof(addr) ? (socklen_t*)fromlen : &addrlen));
+        if (res > 0)
+            convertPosixSockaddrToOrbis(&addr, from);
+    }
+
+    return ConvertReturnErrorCode(res);
 }
 
 SocketPtr PosixSocket::Accept(OrbisNetSockaddr* addr, u32* addrlen) {
