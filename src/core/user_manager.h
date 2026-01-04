@@ -11,7 +11,7 @@ struct User {
     s32 user_id;
     u32 user_color;
     std::string user_name;
-    int controller_port; // 1�4
+    int controller_port; // 1-4
 };
 
 struct Users {
