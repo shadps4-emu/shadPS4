@@ -26,8 +26,8 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateContext(s32 libCtxId, OrbisNpOnlineId* onlineI
     return createUserContextWithOnlineId(libCtxId, onlineId);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter(s32 libCtxId, const void* pFilterParam,
-                                                  u64 filterParamNum) {
+s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter(
+    s32 libCtxId, const OrbisNpWebApiPushEventFilterParameter* pFilterParam, u64 filterParamNum) {
     if (pFilterParam == nullptr || filterParamNum == 0) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }

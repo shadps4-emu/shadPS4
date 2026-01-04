@@ -27,6 +27,10 @@ struct OrbisNpWebApiExtdPushEventExtdDataKey {
     char val[ORBIS_NP_WEBAPI_EXTD_PUSH_EVENT_EXTD_DATA_KEY_LEN_MAX + 1];
 };
 
+struct OrbisNpWebApiPushEventFilterParameter {
+    OrbisNpWebApiPushEventDataType dataType;
+};
+
 struct OrbisNpWebApiExtdPushEventFilterParameter {
     OrbisNpWebApiPushEventDataType dataType;
     OrbisNpWebApiExtdPushEventExtdDataKey* pExtdDataKey;

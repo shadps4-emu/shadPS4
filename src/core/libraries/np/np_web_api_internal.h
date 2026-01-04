@@ -88,7 +88,7 @@ struct OrbisNpWebApiTimerHandle {
 
 struct OrbisNpWebApiPushEventFilter {
     s32 filterId;
-    void* filterParams; // OrbisNpWebApiPushEventFilterParameter*
+    std::vector<OrbisNpWebApiPushEventFilterParameter> filterParams;
     u64 filterParamsNum;
     OrbisNpWebApiContext* parentContext;
 };
@@ -215,9 +215,10 @@ s32 deleteHandleInternal(OrbisNpWebApiContext* context, s32 handleId); // FUN_01
 s32 deleteHandle(s32 libCtxId, s32 handleId);                          // FUN_01002f20
 
 // Push event filter functions
-s32 createPushEventFilterInternal(OrbisNpWebApiContext* context, const void* pFilterParam,
+s32 createPushEventFilterInternal(OrbisNpWebApiContext* context,
+                                  const OrbisNpWebApiPushEventFilterParameter* pFilterParam,
                                   u64 filterParamNum); // FUN_01008040
-s32 createPushEventFilter(s32 libCtxId, const void* pFilterParam,
+s32 createPushEventFilter(s32 libCtxId, const OrbisNpWebApiPushEventFilterParameter* pFilterParam,
                           u64 filterParamNum);                                  // FUN_01002d10
 s32 deletePushEventFilterInternal(OrbisNpWebApiContext* context, s32 filterId); // FUN_01008180
 s32 deletePushEventFilter(s32 libCtxId, s32 filterId);                          // FUN_01002d60
