@@ -89,15 +89,13 @@ struct OrbisNpWebApiTimerHandle {
 struct OrbisNpWebApiPushEventFilter {
     s32 filterId;
     std::vector<OrbisNpWebApiPushEventFilterParameter> filterParams;
-    u64 filterParamsNum;
     OrbisNpWebApiContext* parentContext;
 };
 
 struct OrbisNpWebApiServicePushEventFilter {
     s32 filterId;
     bool internal;
-    void* filterParams; // OrbisNpWebApiServicePushEventFilterParameter*
-    u64 filterParamsNum;
+    std::vector<OrbisNpWebApiServicePushEventFilterParameter> filterParams;
     std::string npServiceName;
     OrbisNpServiceLabel npServiceLabel;
     OrbisNpWebApiContext* parentContext;
@@ -107,7 +105,6 @@ struct OrbisNpWebApiExtendedPushEventFilter {
     s32 filterId;
     bool internal;
     std::vector<OrbisNpWebApiExtdPushEventFilterParameter> filterParams;
-    u64 filterParamsNum;
     std::string npServiceName;
     OrbisNpServiceLabel npServiceLabel;
     OrbisNpWebApiContext* parentContext;
@@ -233,13 +230,14 @@ s32 registerPushEventCallback(s32 titleUserCtxId, s32 filterId,
 s32 unregisterPushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_01002e50
 
 // Service push event filter functions
-s32 createServicePushEventFilterInternal(OrbisNpWebApiContext* context, s32 handleId,
-                                         const char* pNpServiceName,
-                                         OrbisNpServiceLabel npServiceLabel,
-                                         const void* pFilterParam,
-                                         u64 filterParamNum); // FUN_010082f0
+s32 createServicePushEventFilterInternal(
+    OrbisNpWebApiContext* context, s32 handleId, const char* pNpServiceName,
+    OrbisNpServiceLabel npServiceLabel,
+    const OrbisNpWebApiServicePushEventFilterParameter* pFilterParam,
+    u64 filterParamNum); // FUN_010082f0
 s32 createServicePushEventFilter(s32 libCtxId, s32 handleId, const char* pNpServiceName,
-                                 OrbisNpServiceLabel npServiceLabel, const void* pFilterParam,
+                                 OrbisNpServiceLabel npServiceLabel,
+                                 const OrbisNpWebApiServicePushEventFilterParameter* pFilterParam,
                                  u64 filterParamNum); // FUN_01002f60
 s32 deleteServicePushEventFilterInternal(OrbisNpWebApiContext* context,
                                          s32 filterId);       // FUN_010084f0

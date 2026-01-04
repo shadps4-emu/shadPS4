@@ -31,6 +31,10 @@ struct OrbisNpWebApiPushEventFilterParameter {
     OrbisNpWebApiPushEventDataType dataType;
 };
 
+struct OrbisNpWebApiServicePushEventFilterParameter {
+    OrbisNpWebApiPushEventDataType dataType;
+};
+
 struct OrbisNpWebApiExtdPushEventFilterParameter {
     OrbisNpWebApiPushEventDataType dataType;
     OrbisNpWebApiExtdPushEventExtdDataKey* pExtdDataKey;

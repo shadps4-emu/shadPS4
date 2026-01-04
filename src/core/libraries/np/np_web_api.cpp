@@ -35,11 +35,9 @@ s32 PS4_SYSV_ABI sceNpWebApiCreatePushEventFilter(
     return createPushEventFilter(libCtxId, pFilterParam, filterParamNum);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiCreateServicePushEventFilter(s32 libCtxId, s32 handleId,
-                                                         const char* pNpServiceName,
-                                                         OrbisNpServiceLabel npServiceLabel,
-                                                         const void* pFilterParam,
-                                                         u64 filterParamNum) {
+s32 PS4_SYSV_ABI sceNpWebApiCreateServicePushEventFilter(
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
+    const OrbisNpWebApiServicePushEventFilterParameter* pFilterParam, u64 filterParamNum) {
     if (pNpServiceName == nullptr || pFilterParam == nullptr || filterParamNum == 0) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
@@ -400,11 +398,9 @@ s32 PS4_SYSV_ABI sceNpWebApiIntCreateRequest(
                          pRequestId, false);
 }
 
-s32 PS4_SYSV_ABI sceNpWebApiIntCreateServicePushEventFilter(s32 libCtxId, s32 handleId,
-                                                            const char* pNpServiceName,
-                                                            OrbisNpServiceLabel npServiceLabel,
-                                                            const void* pFilterParam,
-                                                            u64 filterParamNum) {
+s32 PS4_SYSV_ABI sceNpWebApiIntCreateServicePushEventFilter(
+    s32 libCtxId, s32 handleId, const char* pNpServiceName, OrbisNpServiceLabel npServiceLabel,
+    const OrbisNpWebApiServicePushEventFilterParameter* pFilterParam, u64 filterParamNum) {
     if (pFilterParam == nullptr || filterParamNum == 0) {
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
