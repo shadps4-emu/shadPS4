@@ -9,7 +9,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include "common/string_util.h"
 #else
 #include <csignal>
 #include <pthread.h>
