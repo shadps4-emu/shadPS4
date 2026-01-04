@@ -160,7 +160,7 @@ jobs:
         sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main'
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang-19 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang-19 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 
@@ -216,7 +216,7 @@ jobs:
         submodules: recursive
 
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev
+      run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
 
     - name: Cache CMake Configuration
       uses: actions/cache@v4 

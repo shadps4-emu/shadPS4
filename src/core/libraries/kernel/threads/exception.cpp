@@ -173,6 +173,8 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("OMDRKKAZ8I4", "libkernel", 1, "libkernel", sceKernelDebugRaiseException);
     LIB_FUNCTION("zE-wXIZjLoM", "libkernel", 1, "libkernel",
                  sceKernelDebugRaiseExceptionOnReleaseMode);
+    LIB_FUNCTION("WkwEd3N7w0Y", "libkernel", 1, "libkernel", sceKernelInstallExceptionHandler);
+    LIB_FUNCTION("Qhv5ARAoOEc", "libkernel", 1, "libkernel", sceKernelRemoveExceptionHandler);
 }
 
 } // namespace Libraries::Kernel

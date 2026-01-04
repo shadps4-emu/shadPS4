@@ -5,22 +5,33 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
 
 namespace Libraries::Kernel {
 
+static s32 g_sdk_version = -1;
+static bool g_alias_dmem = false;
+
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_TRACE(Kernel_Vmm, "called");
     const auto* memory = Core::Memory::Instance();
     return memory->GetTotalDirectSize();
+}
+
+s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
+    LOG_DEBUG(Kernel_Vmm, "called");
+    g_alias_dmem = true;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
@@ -197,8 +208,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
-    const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
-                                       Core::VMAType::Direct, name, false, phys_addr, alignment);
+    bool should_check = false;
+    if (g_sdk_version >= Common::ElfInfo::FW_25 && False(map_flags & Core::MemoryMapFlags::Stack)) {
+        // Under these conditions, this would normally redirect to sceKernelMapDirectMemory2.
+        should_check = !g_alias_dmem;
+    }
+    const auto ret =
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
+                          should_check, phys_addr, alignment);
 
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
     return ret;
@@ -244,8 +261,9 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
     auto* memory = Core::Memory::Instance();
-    const auto ret = memory->MapMemory(addr, in_addr, len, mem_prot, map_flags,
-                                       Core::VMAType::Direct, "anon", true, phys_addr, alignment);
+    const auto ret =
+        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
+                          !g_alias_dmem, phys_addr, alignment);
 
     if (ret == 0) {
         // If the map call succeeds, set the direct memory type using the output address.
@@ -668,10 +686,21 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     }
 
     s32 result = ORBIS_OK;
-    if (fd == -1) {
+    if (True(mem_flags & Core::MemoryMapFlags::Anon)) {
+        // Maps flexible memory
         result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Flexible, "anon", false);
+    } else if (True(mem_flags & Core::MemoryMapFlags::Stack)) {
+        // Maps stack memory
+        result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
+                                   Core::VMAType::Stack, "anon", false);
+    } else if (True(mem_flags & Core::MemoryMapFlags::Void)) {
+        // Reserves memory
+        result =
+            memory->MapMemory(&addr_out, aligned_addr, aligned_size, Core::MemoryProt::NoAccess,
+                              mem_flags, Core::VMAType::Reserved, "anon", false);
     } else {
+        // Default to file mapping
         result = memory->MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags, fd,
                                  phys_addr);
     }
@@ -769,6 +798,12 @@ s32 PS4_SYSV_ABI sceKernelGetPrtAperture(s32 id, VAddr* address, u64* size) {
 }
 
 void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(sceKernelGetCompiledSdkVersion(&g_sdk_version) == ORBIS_OK,
+               "Failed to get compiled SDK verision.");
+
+    LIB_FUNCTION("usHTMoFoBTM", "libkernel_dmem_aliasing2", 1, "libkernel",
+                 sceKernelEnableDmemAliasing);
+    LIB_FUNCTION("usHTMoFoBTM", "libkernel", 1, "libkernel", sceKernelEnableDmemAliasing);
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", sceKernelAllocateDirectMemory);
     LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", sceKernelAllocateMainDirectMemory);
     LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", sceKernelAvailableDirectMemorySize);
