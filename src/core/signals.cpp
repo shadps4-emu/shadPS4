@@ -80,18 +80,16 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
-            UNREACHABLE_MSG(
-                "Unhandled access violation in thread '{}' at code address {}: {} address {}",
-                GetThreadName(), fmt::ptr(code_address), is_write ? "Write to" : "Read from",
-                fmt::ptr(info->si_addr));
+            UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
+                            fmt::ptr(code_address), is_write ? "Write to" : "Read from",
+                            fmt::ptr(info->si_addr));
         }
         break;
     }
     case SIGILL:
         if (!signals->DispatchIllegalInstruction(raw_context)) {
-            UNREACHABLE_MSG("Unhandled illegal instruction in thread '{}' at code address {}: {}",
-                            GetThreadName(), fmt::ptr(code_address),
-                            DisassembleInstruction(code_address));
+            UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
+                            fmt::ptr(code_address), DisassembleInstruction(code_address));
         }
         break;
     case SIGUSR1: { // Sleep thread until signal is received
