@@ -6,6 +6,8 @@
 #include <string>
 #include <thread>
 
+#include "core/libraries/kernel/threads/pthread.h"
+
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
@@ -32,6 +34,10 @@
 #ifdef __FreeBSD__
 #define cpu_set_t cpuset_t
 #endif
+
+namespace Libraries::Kernel {
+extern thread_local Libraries::Kernel::Pthread* g_curthread;
+}
 
 namespace Common {
 
@@ -235,6 +241,24 @@ void AccurateTimer::End() {
     auto now = std::chrono::high_resolution_clock::now();
     total_wait +=
         target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+}
+
+std::string GetCurrentThreadName() {
+    using namespace Libraries::Kernel;
+    if (g_curthread && !g_curthread->name.empty()) {
+        return g_curthread->name;
+    }
+#ifdef _WIN32
+    PWSTR name;
+    GetThreadDescription(GetCurrentThread(), &name);
+    return Common::UTF16ToUTF8(name);
+#else
+    char name[256];
+    if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
+        return "<unknown name>";
+    }
+    return std::string{name};
+#endif
 }
 
 } // namespace Common

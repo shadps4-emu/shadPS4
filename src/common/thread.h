@@ -46,4 +46,6 @@ public:
     }
 };
 
+std::string GetCurrentThreadName();
+
 } // namespace Common

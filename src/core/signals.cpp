@@ -22,12 +22,6 @@ namespace Core {
 
 #if defined(_WIN32)
 
-std::string GetThreadName() {
-    PWSTR name;
-    GetThreadDescription(GetCurrentThread(), &name);
-    return Common::UTF16ToUTF8(name);
-}
-
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
 
@@ -48,14 +42,6 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 }
 
 #else
-
-std::string GetThreadName() {
-    char name[256];
-    if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
-        return "<unknown name>";
-    }
-    return std::string{name};
-}
 
 static std::string DisassembleInstruction(void* code_address) {
     char buffer[256] = "<unable to decode>";
