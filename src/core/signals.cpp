@@ -9,6 +9,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include "common/string_util.h"
 #else
 #include <csignal>
 #include <pthread.h>
@@ -20,6 +21,12 @@
 namespace Core {
 
 #if defined(_WIN32)
+
+std::string GetThreadName() {
+    PWSTR name;
+    GetThreadDescription(GetCurrentThread(), &name);
+    return Common::UTF16ToUTF8(name);
+}
 
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     const auto* signals = Signals::Instance();
