@@ -48,7 +48,7 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateServicePushEventFilter(s32 libCtxId, s32 handl
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     }
     LOG_WARNING(Lib_NpWebApi,
-                "called, libCtxId = {:#x}, handleId = :#x}, pNpServiceName = '{}', "
+                "called, libCtxId = {:#x}, handleId = {:#x}, pNpServiceName = '{}', "
                 "npServiceLabel = {:#x}",
                 libCtxId, handleId, pNpServiceName, npServiceLabel);
     return createServicePushEventFilter(libCtxId, handleId, pNpServiceName, npServiceLabel,
