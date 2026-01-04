@@ -234,8 +234,11 @@ OrbisNpWebApiUserContext* findUserContext(OrbisNpWebApiContext* context, s32 tit
 }
 
 s32 createUserContextWithOnlineId(s32 libCtxId, OrbisNpOnlineId* onlineId) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) libCtxId = {}", libCtxId);
-    return ORBIS_OK; // TODO: implement
+    LOG_WARNING(Lib_NpWebApi, "called libCtxId = {}", libCtxId);
+
+    Libraries::UserService::OrbisUserServiceUserId user_id = 0;
+    Libraries::UserService::sceUserServiceGetInitialUser(&user_id);
+    return createUserContext(libCtxId, user_id);
 }
 
 s32 createUserContext(s32 libCtxId, Libraries::UserService::OrbisUserServiceUserId userId) {
