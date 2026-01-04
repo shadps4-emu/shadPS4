@@ -309,25 +309,71 @@ int PosixSocket::SendPacket(const void* msg, u32 len, int flags, const OrbisNetS
 
 int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     std::scoped_lock lock{receive_mutex};
+
 #ifdef _WIN32
-    LPFN_WSARECVMSG wsarecvmsg = nullptr;
-    GUID guid = WSAID_WSARECVMSG;
-    DWORD bytes = 0;
+    int totalReceived = 0;
+    bool waitAll = (flags & ORBIS_NET_MSG_WAITALL) != 0;
+    bool dontWait = (flags & ORBIS_NET_MSG_DONTWAIT) != 0;
 
-    if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid), &wsarecvmsg,
-                 sizeof(wsarecvmsg), &bytes, nullptr, nullptr) != 0) {
-        return ConvertReturnErrorCode(-1);
+    // stream socket with multiple buffers
+    bool use_wsarecvmsg =
+        (socket_type == ORBIS_NET_SOCK_STREAM || socket_type == ORBIS_NET_SOCK_STREAM_P2P) &&
+        msg->msg_iovlen > 1;
+
+    for (int i = 0; i < msg->msg_iovlen; ++i) {
+        char* buf = (char*)msg->msg_iov[i].iov_base;
+        size_t remaining = msg->msg_iov[i].iov_len;
+
+        while (remaining > 0) {
+            // emulate DONTWAIT
+            if (dontWait) {
+                int ready = socket_is_ready(sock, true);
+                if (ready <= 0)
+                    return ready; // returns ORBIS_NET_ERROR_EWOULDBLOCK or error
+            }
+
+            int received = 0;
+            if (use_wsarecvmsg) {
+                // only call WSARecvMsg if multiple buffers + stream
+                LPFN_WSARECVMSG wsarecvmsg = nullptr;
+                GUID guid = WSAID_WSARECVMSG;
+                DWORD bytes = 0;
+                if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &guid, sizeof(guid),
+                             &wsarecvmsg, sizeof(wsarecvmsg), &bytes, nullptr, nullptr) != 0) {
+                    // fallback to recv()
+                    received = ::recv(sock, buf, remaining, 0);
+                    if (received == SOCKET_ERROR)
+                        return ConvertReturnErrorCode(WSAGetLastError());
+                } else {
+                    DWORD bytesReceived = 0;
+                    int res = wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), &bytesReceived,
+                                         nullptr, nullptr);
+                    if (res == SOCKET_ERROR)
+                        return ConvertReturnErrorCode(WSAGetLastError());
+                    received = bytesReceived;
+                }
+            } else {
+                // fallback to recv() for UDP or single-buffer
+                received = ::recv(sock, buf, remaining, 0);
+                if (received == SOCKET_ERROR)
+                    return ConvertReturnErrorCode(WSAGetLastError());
+            }
+
+            totalReceived += received;
+            remaining -= received;
+            buf += received;
+
+            // stop after first receive if WAITALL is not set
+            if (!waitAll)
+                break;
+        }
     }
 
-    DWORD bytesReceived = 0;
-    int res = wsarecvmsg(sock, reinterpret_cast<LPWSAMSG>(msg), &bytesReceived, nullptr, nullptr);
+    return totalReceived;
 
-    if (res == SOCKET_ERROR) {
-        return ConvertReturnErrorCode(-1);
-    }
-    return static_cast<int>(bytesReceived);
 #else
-    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    int native_flags = convertOrbisFlagsToPosix(socket_type, flags);
+    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), native_flags);
     return ConvertReturnErrorCode(res);
 #endif
 }
