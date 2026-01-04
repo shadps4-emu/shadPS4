@@ -110,7 +110,6 @@ bool ImeDialogState::CopyTextToOrbisBuffer() {
     }
 
     return ConvertUTF8ToOrbis(current_text.begin(), current_text.capacity(), text_buffer,
-                              max_text_length);
                               static_cast<std::size_t>(max_text_length) + 1);
 }
 
