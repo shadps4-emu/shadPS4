@@ -48,7 +48,7 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
         title.resize(title_len * 4 + 1);
         title[title_len * 4] = '\0';
 
-        if (!ConvertOrbisToUTF8(param->title, title_len, &title[0], title_len * 4)) {
+        if (!ConvertOrbisToUTF8(param->title, title_len, &title[0], title_len * 4 + 1)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert title to utf8 encoding");
         }
     }
@@ -59,14 +59,14 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
         placeholder[placeholder_len * 4] = '\0';
 
         if (!ConvertOrbisToUTF8(param->placeholder, placeholder_len, &placeholder[0],
-                                placeholder_len * 4)) {
+                                placeholder_len * 4 + 1)) {
             LOG_ERROR(Lib_ImeDialog, "Failed to convert placeholder to utf8 encoding");
         }
     }
 
     std::size_t text_len = std::char_traits<char16_t>::length(text_buffer);
     if (!ConvertOrbisToUTF8(text_buffer, text_len, current_text.begin(),
-                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4)) {
+                            ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1)) {
         LOG_ERROR(Lib_ImeDialog, "Failed to convert text to utf8 encoding");
     }
 }
@@ -110,7 +110,7 @@ bool ImeDialogState::CopyTextToOrbisBuffer() {
     }
 
     return ConvertUTF8ToOrbis(current_text.begin(), current_text.capacity(), text_buffer,
-                              max_text_length);
+                              static_cast<std::size_t>(max_text_length) + 1);
 }
 
 bool ImeDialogState::CallTextFilter() {
@@ -380,10 +380,12 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         .timestamp = {0},
     };
 
-    if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, &src_keycode.character, 1)) {
+    char16_t tmp_char[2] = {0};
+    if (!ui->state->ConvertUTF8ToOrbis(event_char, 4, tmp_char, 2)) {
         LOG_ERROR(Lib_ImeDialog, "InputTextCallback: ConvertUTF8ToOrbis failed");
         return 0;
     }
+    src_keycode.character = tmp_char[0];
     LOG_DEBUG(Lib_ImeDialog, "InputTextCallback: converted to Orbis char={:#X}",
               static_cast<uint16_t>(src_keycode.character));
     src_keycode.keycode = src_keycode.character; // TODO set this to the correct value

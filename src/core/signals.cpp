@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/arch.h"
@@ -42,14 +42,6 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
 
 #else
 
-static std::string GetThreadName() {
-    char name[256];
-    if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
-        return "<unknown name>";
-    }
-    return std::string{name};
-}
-
 static std::string DisassembleInstruction(void* code_address) {
     char buffer[256] = "<unable to decode>";
 
@@ -80,18 +72,16 @@ static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
-            UNREACHABLE_MSG(
-                "Unhandled access violation in thread '{}' at code address {}: {} address {}",
-                GetThreadName(), fmt::ptr(code_address), is_write ? "Write to" : "Read from",
-                fmt::ptr(info->si_addr));
+            UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
+                            fmt::ptr(code_address), is_write ? "Write to" : "Read from",
+                            fmt::ptr(info->si_addr));
         }
         break;
     }
     case SIGILL:
         if (!signals->DispatchIllegalInstruction(raw_context)) {
-            UNREACHABLE_MSG("Unhandled illegal instruction in thread '{}' at code address {}: {}",
-                            GetThreadName(), fmt::ptr(code_address),
-                            DisassembleInstruction(code_address));
+            UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
+                            fmt::ptr(code_address), DisassembleInstruction(code_address));
         }
         break;
     case SIGUSR1: { // Sleep thread until signal is received

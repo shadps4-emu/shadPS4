@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ctime>
 #include <string>
 #include <thread>
+
+#include "core/libraries/kernel/threads/pthread.h"
 
 #include "common/error.h"
 #include "common/logging/log.h"
@@ -235,6 +238,24 @@ void AccurateTimer::End() {
     auto now = std::chrono::high_resolution_clock::now();
     total_wait +=
         target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+}
+
+std::string GetCurrentThreadName() {
+    using namespace Libraries::Kernel;
+    if (g_curthread && !g_curthread->name.empty()) {
+        return g_curthread->name;
+    }
+#ifdef _WIN32
+    PWSTR name;
+    GetThreadDescription(GetCurrentThread(), &name);
+    return Common::UTF16ToUTF8(name);
+#else
+    char name[256];
+    if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
+        return "<unknown name>";
+    }
+    return std::string{name};
+#endif
 }
 
 } // namespace Common
