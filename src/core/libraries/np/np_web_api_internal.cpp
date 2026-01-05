@@ -1340,4 +1340,46 @@ s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI getHttpRequestIdFromRequest(OrbisNpWebApiRequest* request)
+
+{
+    return request->requestId;
+}
+
+s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code) {
+    s32 status_code;
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    // Query HTTP layer
+    {
+        int32_t httpReqId = getHttpRequestIdFromRequest(request);
+        s32 err = Libraries::Http::sceHttpGetStatusCode(httpReqId, &status_code);
+
+        if (out_status_code != nullptr)
+            *out_status_code = status_code;
+
+        releaseRequest(request);
+        releaseUserContext(user_context);
+        releaseContext(context);
+
+        return err;
+    }
+}
+
 }; // namespace Libraries::Np::NpWebApi

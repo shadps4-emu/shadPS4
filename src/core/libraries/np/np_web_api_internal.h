@@ -284,4 +284,7 @@ s32 registerExtdPushEventCallbackA(s32 userCtxId, s32 filterId,
                                    void* pUserArg);                      // FUN_01003240
 s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_01003300
 
+s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code);
+s32 PS4_SYSV_ABI getHttpRequestIdFromRequest(OrbisNpWebApiRequest* request);
+
 }; // namespace Libraries::Np::NpWebApi
