@@ -314,15 +314,10 @@ s32 PS4_SYSV_ABI sceNpWebApiGetHttpResponseHeaderValueLength(s64 requestId, cons
     return ORBIS_OK;
 }
 
-if (getCompiledSdkVersion() >= Common::ElfInfo::FW_20 &&
-    npServiceLabel == ORBIS_NP_INVALID_SERVICE_LABEL) {
-    return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
-}
-
 s32 PS4_SYSV_ABI sceNpWebApiGetHttpStatusCode(s64 requestId, s32* out_status_code) {
     LOG_ERROR(Lib_NpWebApi, "called : requestId = {:#x}", requestId);
     // On newer SDKs, NULL output pointer is invalid
-    if (getCompiledSdkVersion () > Common::ElfInfo::FW_10 && out_status_code == nullptr)
+    if (getCompiledSdkVersion() > Common::ElfInfo::FW_10 && out_status_code == nullptr)
         return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
     s32 returncode = getHttpStatusCodeInternal(requestId, out_status_code);
     return returncode;
