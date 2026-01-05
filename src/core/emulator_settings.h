@@ -411,6 +411,8 @@ public:
     SETTING_FORWARD(m_gpu, PresentMode, present_mode)
     SETTING_FORWARD(m_gpu, WindowHeight, window_height)
     SETTING_FORWARD(m_gpu, WindowWidth, window_width)
+    SETTING_FORWARD(m_gpu, InternalScreenHeight, internal_screen_height)
+    SETTING_FORWARD(m_gpu, InternalScreenWidth, internal_screen_width)
     SETTING_FORWARD_BOOL(m_gpu, HdrAllowed, hdr_allowed)
     SETTING_FORWARD_BOOL(m_gpu, FsrEnabled, fsr_enabled)
     SETTING_FORWARD_BOOL(m_gpu, RcasEnabled, rcas_enabled)

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Include the vulkan platform specific header
@@ -20,6 +20,7 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -200,7 +201,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     }
 
-    if (Config::allowHDR()) {
+    if (EmulatorSettings::GetInstance()->IsHdrAllowed()) {
         extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
     }
 

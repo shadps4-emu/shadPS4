@@ -154,22 +154,11 @@ static ConfigEntry<bool> useUnifiedInputConfig(true);
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
 
-// Audio
-static ConfigEntry<string> micDevice("Default Device");
-
-// GPU
-static ConfigEntry<u32> windowWidth(1280);
-static ConfigEntry<u32> windowHeight(720);
-static ConfigEntry<u32> internalScreenWidth(1280);
-static ConfigEntry<u32> internalScreenHeight(720);
-static ConfigEntry<bool> shouldCopyGPUBuffers(false);
-static ConfigEntry<bool> readbacksEnabled(false);
 static ConfigEntry<bool> readbackLinearImagesEnabled(false);
 static ConfigEntry<bool> directMemoryAccessEnabled(false);
 static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
-static ConfigEntry<bool> isHDRAllowed(false);
 static ConfigEntry<bool> fsrEnabled(false);
 static ConfigEntry<bool> rcasEnabled(true);
 static ConfigEntry<int> rcasAttenuation(250);
@@ -205,22 +194,10 @@ static string config_version = Common::g_scm_rev;
 // These entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool isGameRunning = false;
 static bool load_auto_patches = true;
-
-bool getGameRunning() {
-    return isGameRunning;
-}
-
-void setGameRunning(bool running) {
-    isGameRunning = running;
-}
 
 int getVolumeSlider() {
     return volumeSlider.get();
-}
-bool allowHDR() {
-    return isHDRAllowed.get();
 }
 
 bool GetUseUnifiedInputConfig() {
@@ -269,26 +246,6 @@ int getCursorHideTimeout() {
     return cursorHideTimeout.get();
 }
 
-string getMicDevice() {
-    return micDevice.get();
-}
-
-u32 getWindowWidth() {
-    return windowWidth.get();
-}
-
-u32 getWindowHeight() {
-    return windowHeight.get();
-}
-
-u32 getInternalScreenWidth() {
-    return internalScreenHeight.get();
-}
-
-u32 getInternalScreenHeight() {
-    return internalScreenHeight.get();
-}
-
 void setUserName(int id, string name) {
     auto temp = userNames.get();
     temp[id] = name;
@@ -313,14 +270,6 @@ int getSpecialPadClass() {
 
 bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
-}
-
-bool copyGPUCmdBuffers() {
-    return shouldCopyGPUBuffers.get();
-}
-
-bool readbacks() {
-    return readbacksEnabled.get();
 }
 
 bool readbackLinearImages() {
@@ -410,34 +359,6 @@ void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
     vkGuestMarkers.set(enable, is_game_specific);
 }
 
-void setWindowWidth(u32 width, bool is_game_specific) {
-    windowWidth.set(width, is_game_specific);
-}
-
-void setWindowHeight(u32 height, bool is_game_specific) {
-    windowHeight.set(height, is_game_specific);
-}
-
-void setInternalScreenWidth(u32 width) {
-    internalScreenWidth.base_value = width;
-}
-
-void setInternalScreenHeight(u32 height) {
-    internalScreenHeight.base_value = height;
-}
-
-void setAllowHDR(bool enable, bool is_game_specific) {
-    isHDRAllowed.set(enable, is_game_specific);
-}
-
-void setCopyGPUCmdBuffers(bool enable, bool is_game_specific) {
-    shouldCopyGPUBuffers.set(enable, is_game_specific);
-}
-
-void setReadbacks(bool enable, bool is_game_specific) {
-    readbacksEnabled.set(enable, is_game_specific);
-}
-
 void setReadbackLinearImages(bool enable, bool is_game_specific) {
     readbackLinearImagesEnabled.set(enable, is_game_specific);
 }
@@ -488,10 +409,6 @@ void setCursorState(s16 newCursorState, bool is_game_specific) {
 
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific) {
     cursorHideTimeout.set(newcursorHideTimeout, is_game_specific);
-}
-
-void setMicDevice(std::string device, bool is_game_specific) {
-    micDevice.set(device, is_game_specific);
 }
 
 void setLanguage(u32 language, bool is_game_specific) {
@@ -612,27 +529,13 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
     }
 
-    if (data.contains("Audio")) {
-        const toml::value& audio = data.at("Audio");
-
-        micDevice.setFromToml(audio, "micDevice", is_game_specific);
-    }
-
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
-
-        windowWidth.setFromToml(gpu, "screenWidth", is_game_specific);
-        windowHeight.setFromToml(gpu, "screenHeight", is_game_specific);
-        internalScreenWidth.setFromToml(gpu, "internalScreenWidth", is_game_specific);
-        internalScreenHeight.setFromToml(gpu, "internalScreenHeight", is_game_specific);
-        shouldCopyGPUBuffers.setFromToml(gpu, "copyGPUBuffers", is_game_specific);
-        readbacksEnabled.setFromToml(gpu, "readbacks", is_game_specific);
         readbackLinearImagesEnabled.setFromToml(gpu, "readbackLinearImages", is_game_specific);
         directMemoryAccessEnabled.setFromToml(gpu, "directMemoryAccess", is_game_specific);
         shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
         shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
         vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
-        isHDRAllowed.setFromToml(gpu, "allowHDR", is_game_specific);
         fsrEnabled.setFromToml(gpu, "fsrEnabled", is_game_specific);
         rcasEnabled.setFromToml(gpu, "rcasEnabled", is_game_specific);
         rcasAttenuation.setFromToml(gpu, "rcasAttenuation", is_game_specific);
@@ -741,16 +644,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                            is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
-    micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
-
-    windowWidth.setTomlValue(data, "GPU", "screenWidth", is_game_specific);
-    windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
-    shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific);
-    readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific);
     readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
     fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
     rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
     rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific);
@@ -779,8 +675,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
         data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-        data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
-        data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
         data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
@@ -799,7 +693,6 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
-        readbacksEnabled.setDefault(is_game_specific);
         readbackLinearImagesEnabled.setDefault(is_game_specific);
         directMemoryAccessEnabled.setDefault(is_game_specific);
     }
@@ -816,16 +709,9 @@ void setDefaultValues(bool is_game_specific) {
     backgroundControllerInput.setDefault(is_game_specific);
     usbDeviceBackend.setDefault(is_game_specific);
 
-    // GS - Audio
-    micDevice.setDefault(is_game_specific);
-
     // GS - GPU
-    windowWidth.setDefault(is_game_specific);
-    windowHeight.setDefault(is_game_specific);
-    shouldCopyGPUBuffers.setDefault(is_game_specific);
     shouldDumpShaders.setDefault(is_game_specific);
     vblankFrequency.setDefault(is_game_specific);
-    isHDRAllowed.setDefault(is_game_specific);
     fsrEnabled.setDefault(is_game_specific);
     rcasEnabled.setDefault(is_game_specific);
     rcasAttenuation.setDefault(is_game_specific);
@@ -857,9 +743,6 @@ void setDefaultValues(bool is_game_specific) {
 
         // GPU
         shouldPatchShaders.base_value = false;
-        internalScreenWidth.base_value = 1280;
-        internalScreenHeight.base_value = 720;
-
         // Debug
         isFpsColor.base_value = true;
         showFpsCounter.base_value = false;

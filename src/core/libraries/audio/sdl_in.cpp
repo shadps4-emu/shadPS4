@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
 #include <common/config.h>
 #include <common/logging/log.h>
+#include "core/emulator_settings.h"
 #include "sdl_in.h"
 
 int SDLAudioIn::AudioInit() {
@@ -45,7 +46,7 @@ int SDLAudioIn::AudioInOpen(int type, uint32_t samples_num, uint32_t freq, uint3
             fmt.channels = port.channels_num;
             fmt.freq = port.freq;
 
-            std::string micDevStr = Config::getMicDevice();
+            std::string micDevStr = EmulatorSettings::GetInstance()->GetMicDevice();
             uint32_t devId;
 
             bool nullDevice = false;

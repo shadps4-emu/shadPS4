@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -213,12 +213,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
              EmulatorSettings::GetInstance()->IsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings::GetInstance()->IsPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings::GetInstance()->IsNullGPU());
-    LOG_INFO(Config, "GPU readbacks: {}", Config::readbacks());
+    LOG_INFO(Config, "GPU readbacks: {}", EmulatorSettings::GetInstance()->IsReadbacksEnabled());
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
     LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
-    LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", Config::copyGPUCmdBuffers());
+    LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}",
+             EmulatorSettings::GetInstance()->IsCopyGpuBuffers());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings::GetInstance()->GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", Config::vkValidationCoreEnabled());
@@ -304,7 +305,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(
-        Config::getWindowWidth(), Config::getWindowHeight(), controllers, window_title);
+        EmulatorSettings::GetInstance()->GetWindowWidth(),
+        EmulatorSettings::GetInstance()->GetWindowHeight(), controllers, window_title);
 
     g_window = window.get();
 
