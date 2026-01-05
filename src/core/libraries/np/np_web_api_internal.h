@@ -70,6 +70,11 @@ struct OrbisNpWebApiRequest {
     u32 requestTimeout;
     u64 requestEndTime;
     bool timedOut;
+    // not sure Stephen
+    u8 requestState;
+    u64 remainingData;
+    u32 readOffset;
+    char data[64];
 };
 
 struct OrbisNpWebApiHandle {
@@ -286,5 +291,11 @@ s32 unregisterExtdPushEventCallback(s32 titleUserCtxId, s32 callbackId); // FUN_
 
 s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code);
 s32 PS4_SYSV_ABI getHttpRequestIdFromRequest(OrbisNpWebApiRequest* request);
+s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size);
+void PS4_SYSV_ABI setRequestEndTime(OrbisNpWebApiRequest* request);
+void PS4_SYSV_ABI clearRequestEndTime(OrbisNpWebApiRequest* req);
+bool PS4_SYSV_ABI hasRequestTimedOut(OrbisNpWebApiRequest* request);
+void PS4_SYSV_ABI setRequestState(OrbisNpWebApiRequest* request, u8 state);
+u64 PS4_SYSV_ABI copyRequestData(OrbisNpWebApiRequest* request, void* data, u64 size);
 
 }; // namespace Libraries::Np::NpWebApi

@@ -462,9 +462,12 @@ s32 PS4_SYSV_ABI sceNpWebApiIntRegisterServicePushEventCallbackA(
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiReadData(s64 requestId, void* pData, u64 size) {
-    LOG_ERROR(Lib_NpWebApi, "called (STUBBED) : requestId = {:#x}, pData = {}, size = {:#x}",
+    LOG_ERROR(Lib_NpWebApi, "called : requestId = {:#x}, pData = {}, size = {:#x}",
               requestId, fmt::ptr(pData), size);
-    return ORBIS_OK;
+    if (pData == nullptr || size == 0)
+        return ORBIS_NP_WEBAPI_ERROR_INVALID_ARGUMENT;
+
+    return readDataInternal(requestId, pData, size);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiRegisterExtdPushEventCallbackA(

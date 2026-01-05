@@ -1382,4 +1382,122 @@ s32 PS4_SYSV_ABI getHttpStatusCodeInternal(s64 requestId, s32* out_status_code) 
     }
 }
 
+void PS4_SYSV_ABI setRequestEndTime(OrbisNpWebApiRequest* request) {
+    u64 time;
+    if ((request->requestTimeout != 0) && (request->requestEndTime == 0)) {
+        time = Libraries::Kernel::sceKernelGetProcessTime();
+        request->requestEndTime = (u64)request->requestTimeout + time;
+    }
+}
+
+void PS4_SYSV_ABI clearRequestEndTime(OrbisNpWebApiRequest* req) {
+    req->requestEndTime = 0;
+    return;
+}
+
+bool PS4_SYSV_ABI hasRequestTimedOut(OrbisNpWebApiRequest* request) {
+    return request->timedOut;
+}
+
+bool PS4_SYSV_ABI isRequestAborted(OrbisNpWebApiRequest* request) {
+    return request->aborted;
+}
+
+void PS4_SYSV_ABI setRequestState(OrbisNpWebApiRequest* request, u8 state) {
+    request->requestState = state;
+}
+
+u64 PS4_SYSV_ABI copyRequestData(OrbisNpWebApiRequest* request, void* data, u64 size) {
+    u64 readSize = 0;
+
+    if (request->remainingData != 0) {
+        u64 remainingSize = request->remainingData - request->readOffset;
+
+        if (remainingSize != 0) {
+            if (remainingSize < size) {
+                size = remainingSize;
+            }
+            memcpy(data, request->data + request->readOffset, size);
+            request->readOffset += static_cast<u32>(size);
+            readSize = size;
+        }
+    }
+    return readSize;
+}
+
+s32 PS4_SYSV_ABI readDataInternal(s64 requestId, void* pData, u64 size) {
+    u32 offset;
+    s32 result;
+    u64 remainingSize;
+    u64 bytesCopied;
+
+    OrbisNpWebApiContext* context = findAndValidateContext(requestId >> 0x30);
+    if (context == nullptr) {
+        return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiUserContext* user_context = findUserContext(context, requestId >> 0x20);
+    if (user_context == nullptr) {
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_NOT_FOUND;
+    }
+
+    OrbisNpWebApiRequest* request = findRequest(user_context, requestId);
+    if (request == nullptr) {
+        releaseUserContext(user_context);
+        releaseContext(context);
+        return ORBIS_NP_WEBAPI_ERROR_REQUEST_NOT_FOUND;
+    }
+
+    setRequestEndTime(request);
+
+    bytesCopied = copyRequestData(request, pData, size);
+    offset = (u32)bytesCopied;
+    remainingSize = size - offset;
+
+    // If caller wants more data than buffered
+    if (remainingSize != 0) {
+        lockContext(context);
+        setRequestState(request, 5); // TODO add request states?
+
+        if (!hasRequestTimedOut(request) && isRequestAborted(request)) {
+            unlockContext(context);
+            offset = ORBIS_NP_WEBAPI_ERROR_ABORTED;
+        } else {
+            unlockContext(context);
+
+            int32_t httpReqId = getHttpRequestIdFromRequest(request);
+            int32_t httpRead =
+                Libraries::Http::sceHttpReadData(httpReqId, (u8*)pData + offset, remainingSize);
+
+            if (httpRead < 0)
+                httpRead = 0;
+
+            offset += httpRead;
+        }
+    }
+
+    // Final state resolution
+    lockContext(context);
+    setRequestState(request, 0);
+
+    if (hasRequestTimedOut(request)) {
+        result = ORBIS_NP_WEBAPI_ERROR_TIMEOUT;
+    } else if (isRequestAborted(request)) {
+        result = ORBIS_NP_WEBAPI_ERROR_ABORTED;
+    } else {
+        result = offset;
+    }
+
+    unlockContext(context);
+
+    // Cleanup
+    clearRequestEndTime(request);
+    releaseRequest(request);
+    releaseUserContext(user_context);
+    releaseContext(context);
+
+    return result;
+}
+
 }; // namespace Libraries::Np::NpWebApi
