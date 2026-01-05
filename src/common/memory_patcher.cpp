@@ -51,14 +51,14 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
             uint32_t i;
         } floatUnion;
         floatUnion.f = std::stof(valueStr);
-        result = toHex(floatUnion.i, sizeof(floatUnion.i));
+        result = toHex(std::byteswap(floatUnion.i), sizeof(floatUnion.i));
     } else if (type == "float64") {
         union {
             double d;
             uint64_t i;
         } doubleUnion;
         doubleUnion.d = std::stod(valueStr);
-        result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
+        result = toHex(std::byteswap(doubleUnion.i), sizeof(doubleUnion.i));
     } else if (type == "utf8") {
         std::vector<unsigned char> byteArray =
             std::vector<unsigned char>(valueStr.begin(), valueStr.end());
