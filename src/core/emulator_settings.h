@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -130,30 +130,32 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
 struct DebugSettings {
     Setting<bool> separate_logging_enabled{false}; // specific
     Setting<bool> debug_dump{false};               // specific
-    Setting<bool> shader_dump{false};              // specific
+    Setting<bool> shader_collect{false};           // specific
     Setting<bool> fps_color{true};
     Setting<bool> log_enabled{true}; // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<DebugSettings>("debug_dump", &DebugSettings::debug_dump),
-            make_override<DebugSettings>("shader_dump", &DebugSettings::shader_dump),
+            make_override<DebugSettings>("shader_collect", &DebugSettings::shader_collect),
             make_override<DebugSettings>("separate_logging_enabled",
                                          &DebugSettings::separate_logging_enabled),
             make_override<DebugSettings>("log_enabled", &DebugSettings::log_enabled)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump, shader_dump,
-                                   fps_color, log_enabled)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
+                                   shader_collect, fps_color, log_enabled)
 
 // -------------------------------
 // Input settings
 // -------------------------------
 enum HideCursorState : int { Never, Idle, Always };
+enum UsbDevice : int { Real, SkylanderPortal, InfinityBase, DimensionsToypad };
 
 struct InputSettings {
     Setting<int> cursor_state{HideCursorState::Idle}; // specific
     Setting<int> cursor_hide_timeout{5};              // specific
+    Setting<int> usb_device{UsbDevice::Real};         // specific
     Setting<bool> use_special_pad{false};
     Setting<int> special_pad_class{1};
     Setting<bool> motion_controls_enabled{true}; // specific
@@ -166,13 +168,14 @@ struct InputSettings {
             make_override<InputSettings>("cursor_state", &InputSettings::cursor_state),
             make_override<InputSettings>("cursor_hide_timeout",
                                          &InputSettings::cursor_hide_timeout),
+            make_override<InputSettings>("usb_device", &InputSettings::usb_device),
             make_override<InputSettings>("motion_controls_enabled",
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout, usb_device,
                                    use_special_pad, special_pad_class, motion_controls_enabled,
                                    use_unified_Input_Config, default_controller_id,
                                    background_controller_input)
@@ -187,6 +190,7 @@ struct AudioSettings {
     // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
+            make_override<AudioSettings>("mic_device", &AudioSettings::mic_device),
             make_override<AudioSettings>("main_output_device", &AudioSettings::main_output_device),
             make_override<AudioSettings>("padSpk_output_device",
                                          &AudioSettings::padSpk_output_device)};
@@ -205,14 +209,13 @@ struct GPUSettings {
     Setting<u32> internal_screen_width{1280};
     Setting<u32> internal_screen_height{720};
     Setting<bool> null_gpu{false};
-    Setting<bool> should_copy_gpu_buffers{false};
+    Setting<bool> copy_gpu_buffers{false};
     Setting<bool> readbacks_enabled{false};
     Setting<bool> readback_linear_images_enabled{false};
     Setting<bool> direct_memory_access_enabled{false};
-    Setting<bool> should_dump_shaders{false};
-    Setting<bool> should_patch_shaders{false};
+    Setting<bool> dump_shaders{false};
+    Setting<bool> patch_shaders{false};
     Setting<u32> vblank_frequency{60};
-    Setting<bool> full_screen{false};
     Setting<std::string> full_screen_mode{"Windowed"};
     Setting<std::string> present_mode{"Mailbox"};
     Setting<bool> hdr_allowed{false};
@@ -223,31 +226,75 @@ struct GPUSettings {
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<GPUSettings>("null_gpu", &GPUSettings::null_gpu),
-            make_override<GPUSettings>("full_screen", &GPUSettings::full_screen),
-            make_override<GPUSettings>("present_mode", &GPUSettings::present_mode)};
+            make_override<GPUSettings>("copy_gpu_buffers", &GPUSettings::copy_gpu_buffers),
+            make_override<GPUSettings>("full_screen_mode", &GPUSettings::full_screen_mode),
+            make_override<GPUSettings>("present_mode", &GPUSettings::present_mode),
+            make_override<GPUSettings>("window_height", &GPUSettings::window_height),
+            make_override<GPUSettings>("window_width", &GPUSettings::window_width),
+            make_override<GPUSettings>("hdr_allowed", &GPUSettings::hdr_allowed),
+            make_override<GPUSettings>("fsr_enabled", &GPUSettings::fsr_enabled),
+            make_override<GPUSettings>("rcas_enabled", &GPUSettings::rcas_enabled),
+            make_override<GPUSettings>("rcas_attenuation", &GPUSettings::rcas_attenuation),
+            make_override<GPUSettings>("dump_shaders", &GPUSettings::dump_shaders),
+            make_override<GPUSettings>("patch_shaders", &GPUSettings::patch_shaders),
+            make_override<GPUSettings>("readbacks_enabled", &GPUSettings::readbacks_enabled),
+            make_override<GPUSettings>("readback_linear_images_enabled",
+                                       &GPUSettings::readback_linear_images_enabled),
+            make_override<GPUSettings>("direct_memory_access_enabled",
+                                       &GPUSettings::direct_memory_access_enabled),
+        };
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, internal_screen_width,
-                                   internal_screen_height, null_gpu, should_copy_gpu_buffers,
+                                   internal_screen_height, null_gpu, copy_gpu_buffers,
                                    readbacks_enabled, readback_linear_images_enabled,
-                                   direct_memory_access_enabled, should_dump_shaders,
-                                   should_patch_shaders, vblank_frequency, full_screen,
-                                   full_screen_mode, present_mode, hdr_allowed, fsr_enabled,
-                                   rcas_enabled, rcas_attenuation)
+                                   direct_memory_access_enabled, dump_shaders, patch_shaders,
+                                   vblank_frequency, full_screen_mode, present_mode, hdr_allowed,
+                                   fsr_enabled, rcas_enabled, rcas_attenuation)
 // -------------------------------
 // Vulkan settings
 // -------------------------------
 struct VulkanSettings {
     Setting<s32> gpu_id{-1};
     Setting<bool> full_screen{false};
-    // TODO
+    Setting<bool> renderdoc_enabled{false};
+    Setting<bool> vkvalidation_enabled{false};
+    Setting<bool> vkvalidation_core_enabled{true};
+    Setting<bool> vkvalidation_sync_enabled{false};
+    Setting<bool> vkvalidation_gpu_enabled{false};
+    Setting<bool> crash_diagnostic_enabled{false};
+    Setting<bool> host_markers{false};
+    Setting<bool> guest_markers{false};
+    Setting<bool> pipeline_cache_enabled{false};
+    Setting<bool> pipeline_cache_archive{false};
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<VulkanSettings>("gpu_id", &VulkanSettings::gpu_id),
-            make_override<VulkanSettings>("full_screen", &VulkanSettings::full_screen)};
+            make_override<VulkanSettings>("full_screen", &VulkanSettings::full_screen),
+            make_override<VulkanSettings>("renderdoc_enabled", &VulkanSettings::renderdoc_enabled),
+            make_override<VulkanSettings>("vkvalidation_enabled",
+                                          &VulkanSettings::vkvalidation_enabled),
+            make_override<VulkanSettings>("vkvalidation_core_enabled",
+                                          &VulkanSettings::vkvalidation_core_enabled),
+            make_override<VulkanSettings>("vkvalidation_sync_enabled",
+                                          &VulkanSettings::vkvalidation_sync_enabled),
+            make_override<VulkanSettings>("vkvalidation_gpu_enabled",
+                                          &VulkanSettings::vkvalidation_gpu_enabled),
+            make_override<VulkanSettings>("crash_diagnostic_enabled",
+                                          &VulkanSettings::crash_diagnostic_enabled),
+            make_override<VulkanSettings>("host_markers", &VulkanSettings::host_markers),
+            make_override<VulkanSettings>("guest_markers", &VulkanSettings::guest_markers),
+            make_override<VulkanSettings>("pipeline_cache_enabled",
+                                          &VulkanSettings::pipeline_cache_enabled),
+            make_override<VulkanSettings>("pipeline_cache_archive",
+                                          &VulkanSettings::pipeline_cache_archive),
+        };
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, full_screen)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, full_screen, renderdoc_enabled,
+                                   vkvalidation_enabled, vkvalidation_core_enabled,
+                                   vkvalidation_sync_enabled, vkvalidation_gpu_enabled,
+                                   crash_diagnostic_enabled, host_markers, guest_markers)
 // -------------------------------
 // User settings
 // -------------------------------
@@ -346,23 +393,53 @@ public:
     SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
 
     // Audio settings
+    SETTING_FORWARD(m_audio, MicDevice, mic_device)
     SETTING_FORWARD(m_audio, MainOutputDevice, main_output_device)
     SETTING_FORWARD(m_audio, PadSpkOutputDevice, padSpk_output_device)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
-    SETTING_FORWARD_BOOL(m_debug, ShaderDump, shader_dump)
+    SETTING_FORWARD_BOOL(m_debug, ShaderCollect, shader_collect)
     SETTING_FORWARD_BOOL(m_debug, LogEnabled, log_enabled)
 
     // GPU Settings
     SETTING_FORWARD_BOOL(m_gpu, NullGPU, null_gpu)
+    SETTING_FORWARD_BOOL(m_gpu, DumpShaders, dump_shaders)
+    SETTING_FORWARD_BOOL(m_gpu, CopyGpuBuffers, copy_gpu_buffers)
     SETTING_FORWARD(m_gpu, FullScreenMode, full_screen_mode)
     SETTING_FORWARD(m_gpu, PresentMode, present_mode)
+    SETTING_FORWARD(m_gpu, WindowHeight, window_height)
+    SETTING_FORWARD(m_gpu, WindowWidth, window_width)
+    SETTING_FORWARD_BOOL(m_gpu, HdrAllowed, hdr_allowed)
+    SETTING_FORWARD_BOOL(m_gpu, FsrEnabled, fsr_enabled)
+    SETTING_FORWARD_BOOL(m_gpu, RcasEnabled, rcas_enabled)
+    SETTING_FORWARD(m_gpu, RcasAttenuation, rcas_attenuation)
+    SETTING_FORWARD_BOOL(m_gpu, ReadbacksEnabled, readbacks_enabled)
+    SETTING_FORWARD_BOOL(m_gpu, ReadbackLinearImagesEnabled, readback_linear_images_enabled)
+    SETTING_FORWARD_BOOL(m_gpu, DirectMemoryAccessEnabled, direct_memory_access_enabled)
+    SETTING_FORWARD(m_gpu, VblankFrequency, vblank_frequency)
+
+    // Input Settings
+    SETTING_FORWARD(m_input, CursorState, cursor_state)
+    SETTING_FORWARD(m_input, CursorHideTimeout, cursor_hide_timeout)
+    SETTING_FORWARD(m_input, UsbDevice, usb_device)
+    SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
+    SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
     SETTING_FORWARD_BOOL(m_vulkan, FullScreen, full_screen)
+    SETTING_FORWARD_BOOL(m_vulkan, RenderdocEnabled, renderdoc_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, VkValidationEnabled, vkvalidation_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, VkValidationCoreEnabled, vkvalidation_core_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, VkValidationSyncEnabled, vkvalidation_sync_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, VkValidationGpuEnabled, vkvalidation_gpu_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, CrashDiagnosticEnabled, crash_diagnostic_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, HostMarkers, host_markers)
+    SETTING_FORWARD_BOOL(m_vulkan, GuestMarkers, guest_markers)
+    SETTING_FORWARD_BOOL(m_vulkan, PipelineCacheEnabled, pipeline_cache_enabled)
+    SETTING_FORWARD_BOOL(m_vulkan, PipelineCacheArchive, pipeline_cache_archive)
 
 #undef SETTING_FORWARD
 #undef SETTING_FORWARD_BOOL

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ranges>
@@ -296,7 +296,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         RegisterPipelineData(graphics_key, pipeline_hash, sdata);
         ++num_new_pipelines;
 
-        if (EmulatorSettings::GetInstance()->IsShaderDump()) {
+        if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
                     auto& m = modules[stage];
@@ -325,7 +325,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
         RegisterPipelineData(compute_key, sdata);
         ++num_new_pipelines;
 
-        if (EmulatorSettings::GetInstance()->IsShaderDump()) {
+        if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
         }
@@ -556,7 +556,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
-    if (EmulatorSettings::GetInstance()->IsShaderDump()) {
+    if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
     }

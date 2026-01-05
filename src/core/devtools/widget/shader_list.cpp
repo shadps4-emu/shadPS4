@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -245,7 +245,7 @@ void ShaderList::Draw() {
         return;
     }
 
-    if (!EmulatorSettings::GetInstance()->IsShaderDump()) {
+    if (!EmulatorSettings::GetInstance()->IsShaderCollect()) {
         DrawCenteredText("Enable 'shader_dump' in config to see shaders");
         End();
         return;
