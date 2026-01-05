@@ -214,8 +214,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings::GetInstance()->IsPSNSignedIn());
     LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings::GetInstance()->IsNullGPU());
     LOG_INFO(Config, "GPU readbacks: {}", EmulatorSettings::GetInstance()->IsReadbacksEnabled());
-    LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
-    LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
+    LOG_INFO(Config, "GPU readbackLinearImages: {}",
+             EmulatorSettings::GetInstance()->IsReadbackLinearImagesEnabled());
+    LOG_INFO(Config, "GPU directMemoryAccess: {}",
+             EmulatorSettings::GetInstance()->IsDirectMemoryAccessEnabled());
     LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
     LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}",

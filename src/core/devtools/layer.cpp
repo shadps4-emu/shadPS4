@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "layer.h"
@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
@@ -106,11 +107,11 @@ void L::DrawMenuBar() {
                 EndDisabled();
 
                 if (Button("Save")) {
-                    Config::setFsrEnabled(fsr.enable);
-                    Config::setRcasEnabled(fsr.use_rcas);
-                    Config::setRcasAttenuation(static_cast<int>(fsr.rcas_attenuation * 1000));
-                    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                 "config.toml");
+                    EmulatorSettings::GetInstance()->SetFsrEnabled(fsr.enable);
+                    EmulatorSettings::GetInstance()->SetRcasEnabled(fsr.use_rcas);
+                    EmulatorSettings::GetInstance()->SetRcasAttenuation(
+                        static_cast<int>(fsr.rcas_attenuation * 1000));
+                    EmulatorSettings::GetInstance()->Save();
                     CloseCurrentPopup();
                 }
 

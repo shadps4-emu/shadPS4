@@ -154,14 +154,9 @@ static ConfigEntry<bool> useUnifiedInputConfig(true);
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
 
-static ConfigEntry<bool> readbackLinearImagesEnabled(false);
-static ConfigEntry<bool> directMemoryAccessEnabled(false);
 static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
-static ConfigEntry<bool> fsrEnabled(false);
-static ConfigEntry<bool> rcasEnabled(true);
-static ConfigEntry<int> rcasAttenuation(250);
 
 // Vulkan
 static ConfigEntry<bool> vkValidation(false);
@@ -272,14 +267,6 @@ bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
 }
 
-bool readbackLinearImages() {
-    return readbackLinearImagesEnabled.get();
-}
-
-bool directMemoryAccess() {
-    return directMemoryAccessEnabled.get();
-}
-
 bool dumpShaders() {
     return shouldDumpShaders.get();
 }
@@ -357,14 +344,6 @@ void setVkHostMarkersEnabled(bool enable, bool is_game_specific) {
 
 void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
     vkGuestMarkers.set(enable, is_game_specific);
-}
-
-void setReadbackLinearImages(bool enable, bool is_game_specific) {
-    readbackLinearImagesEnabled.set(enable, is_game_specific);
-}
-
-void setDirectMemoryAccess(bool enable, bool is_game_specific) {
-    directMemoryAccessEnabled.set(enable, is_game_specific);
 }
 
 void setDumpShaders(bool enable, bool is_game_specific) {
@@ -447,30 +426,6 @@ void setBackgroundControllerInput(bool enable, bool is_game_specific) {
     backgroundControllerInput.set(enable, is_game_specific);
 }
 
-bool getFsrEnabled() {
-    return fsrEnabled.get();
-}
-
-void setFsrEnabled(bool enable, bool is_game_specific) {
-    fsrEnabled.set(enable, is_game_specific);
-}
-
-bool getRcasEnabled() {
-    return rcasEnabled.get();
-}
-
-void setRcasEnabled(bool enable, bool is_game_specific) {
-    rcasEnabled.set(enable, is_game_specific);
-}
-
-int getRcasAttenuation() {
-    return rcasAttenuation.get();
-}
-
-void setRcasAttenuation(int value, bool is_game_specific) {
-    rcasAttenuation.set(value, is_game_specific);
-}
-
 int getUsbDeviceBackend() {
     return usbDeviceBackend.get();
 }
@@ -531,14 +486,9 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("GPU")) {
         const toml::value& gpu = data.at("GPU");
-        readbackLinearImagesEnabled.setFromToml(gpu, "readbackLinearImages", is_game_specific);
-        directMemoryAccessEnabled.setFromToml(gpu, "directMemoryAccess", is_game_specific);
         shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
         shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
         vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
-        fsrEnabled.setFromToml(gpu, "fsrEnabled", is_game_specific);
-        rcasEnabled.setFromToml(gpu, "rcasEnabled", is_game_specific);
-        rcasAttenuation.setFromToml(gpu, "rcasAttenuation", is_game_specific);
     }
 
     if (data.contains("Vulkan")) {
@@ -644,13 +594,8 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                            is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
-    readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
-    rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
-    rcasAttenuation.setTomlValue(data, "GPU", "rcasAttenuation", is_game_specific);
-    directMemoryAccessEnabled.setTomlValue(data, "GPU", "directMemoryAccess", is_game_specific);
 
     vkValidation.setTomlValue(data, "Vulkan", "validation", is_game_specific);
     vkValidationSync.setTomlValue(data, "Vulkan", "validation_sync", is_game_specific);
@@ -692,10 +637,6 @@ void setDefaultValues(bool is_game_specific) {
 
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
-    if (is_game_specific) {
-        readbackLinearImagesEnabled.setDefault(is_game_specific);
-        directMemoryAccessEnabled.setDefault(is_game_specific);
-    }
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
@@ -712,9 +653,6 @@ void setDefaultValues(bool is_game_specific) {
     // GS - GPU
     shouldDumpShaders.setDefault(is_game_specific);
     vblankFrequency.setDefault(is_game_specific);
-    fsrEnabled.setDefault(is_game_specific);
-    rcasEnabled.setDefault(is_game_specific);
-    rcasAttenuation.setDefault(is_game_specific);
 
     // GS - Vulkan
     vkValidation.set(false, is_game_specific);
