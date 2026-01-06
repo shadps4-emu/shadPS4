@@ -14,6 +14,7 @@
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "core/ipc/ipc.h"
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
@@ -170,6 +171,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
+    Common::SetCurrentThreadName("Main Thread");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }

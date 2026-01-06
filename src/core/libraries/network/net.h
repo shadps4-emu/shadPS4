@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -108,6 +108,15 @@ enum OrbisNetSocketSoOption : u32 {
     ORBIS_NET_SO_POLICY = 0x1201,
     ORBIS_NET_SO_NAME = 0x1202,
     ORBIS_NET_SO_PRIORITY = 0x1203
+};
+
+enum OrbisNetFlags : u32 {
+    ORBIS_NET_MSG_PEEK = 0x00000002,
+    ORBIS_NET_MSG_WAITALL = 0x00000040,
+    ORBIS_NET_MSG_DONTWAIT = 0x00000080,
+    ORBIS_NET_MSG_USECRYPTO = 0x00100000,
+    ORBIS_NET_MSG_USESIGNATURE = 0x00200000,
+    ORBIS_NET_MSG_PEEKLEN = (0x00400000 | ORBIS_NET_MSG_PEEK)
 };
 
 constexpr std::string_view NameOf(OrbisNetSocketSoOption o) {
