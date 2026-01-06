@@ -57,7 +57,7 @@ int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync();
 int PS4_SYSV_ABI sceNpScoreRecordScore();
 int PS4_SYSV_ABI sceNpScoreRecordScoreAsync();
 int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_string,
-                                           char* output_buffer, s32 options);
+                                           char* output_buffer, void* options);
 int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync();
 int PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId();
 int PS4_SYSV_ABI sceNpScoreSetThreadParam();

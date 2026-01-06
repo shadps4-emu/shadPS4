@@ -240,7 +240,7 @@ int PS4_SYSV_ABI sceNpScoreRecordScoreAsync() {
 }
 
 int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 request_handle, char* input_string,
-                                           char* output_buffer, s32 options) {
+                                           char* output_buffer, void* options) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
 
     if (output_buffer == nullptr || input_string == nullptr) {

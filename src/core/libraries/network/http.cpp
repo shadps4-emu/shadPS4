@@ -48,6 +48,8 @@ std::string ReplaceHost(std::string url, const std::string& new_host, bool force
         }
     }
 
+    LOG_INFO(Lib_Http, "Replaced URL host, new URL: {}", url);
+
     return url;
 }
 
