@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
@@ -219,6 +220,7 @@ public:
             .line_num = line_num,
             .function = function,
             .message = std::move(message),
+            .thread = Common::GetCurrentThreadName(),
         };
         if (Config::getLogType() == "async") {
             message_queue.EmplaceWait(entry);

@@ -14,7 +14,6 @@
 #include "common/logging/log.h"
 #include "common/logging/log_entry.h"
 #include "common/logging/text_formatter.h"
-#include "common/thread.h"
 
 namespace Common::Log {
 
@@ -25,9 +24,8 @@ std::string FormatLogMessage(const Entry& entry) {
     const char* class_name = GetLogClassName(entry.log_class);
     const char* level_name = GetLevelName(entry.log_level);
 
-    return fmt::format("[{}] <{}> ({}) {}:{} {}: {}", class_name, level_name,
-                       Common::GetCurrentThreadName(), entry.filename, entry.line_num,
-                       entry.function, entry.message);
+    return fmt::format("[{}] <{}> ({}) {}:{} {}: {}", class_name, level_name, entry.thread,
+                       entry.filename, entry.line_num, entry.function, entry.message);
 }
 
 void PrintMessage(const Entry& entry) {
