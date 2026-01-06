@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
@@ -12,8 +13,6 @@
 #include <vector>
 
 namespace Libraries::Ajm {
-
-constexpr s32 ORBIS_AJM_DEC_AT9_MAX_CHANNELS = 8;
 
 enum AjmAt9CodecFlags : u32 {
     ParseRiffHeader = 1 << 0,
@@ -29,16 +28,17 @@ struct AjmSidebandDecAt9CodecInfo {
 };
 
 struct AjmAt9Decoder final : AjmCodec {
-    explicit AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags);
+    explicit AjmAt9Decoder(AjmFormatEncoding format, AjmAt9CodecFlags flags, u32 channels);
     ~AjmAt9Decoder() override;
 
     void Reset() override;
     void Initialize(const void* buffer, u32 buffer_size) override;
     void GetInfo(void* out_info) const override;
     AjmSidebandFormat GetFormat() const override;
+    u32 GetMinimumInputSize() const override;
     u32 GetNextFrameSize(const AjmInstanceGapless& gapless) const override;
-    std::tuple<u32, u32, bool> ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
-                                           AjmInstanceGapless& gapless) override;
+    DecoderResult ProcessData(std::span<u8>& input, SparseOutputBuffer& output,
+                              AjmInstanceGapless& gapless) override;
 
 private:
     template <class T>
