@@ -188,7 +188,9 @@ int main(int argc, char* argv[]) {
     if (argc == 1) {
         if (!SDL_ShowSimpleMessageBox(
                 SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                "This is a CLI application. Please use the QTLauncher for a GUI.", nullptr))
+                "This is a CLI application. Please use the QTLauncher for a GUI: "
+                "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
+                nullptr))
             std::cerr << "Could not display SDL message box! Error: " << SDL_GetError() << "\n";
         int dummy = 0; // one does not simply pass 0 directly
         arg_map.at("-h")(dummy);
