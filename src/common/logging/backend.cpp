@@ -219,6 +219,7 @@ public:
             .line_num = line_num,
             .function = function,
             .message = std::move(message),
+            .thread = Common::GetCurrentThreadName(),
         };
         if (Config::getLogType() == "async") {
             message_queue.EmplaceWait(entry);
