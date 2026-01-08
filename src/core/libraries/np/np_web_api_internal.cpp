@@ -14,6 +14,7 @@ namespace Libraries::Np::NpWebApi {
 
 static std::mutex g_global_mutex;
 static std::map<s32, OrbisNpWebApiContext*> g_contexts;
+static s32 g_library_context_count = 0;
 static s32 g_user_context_count = 0;
 static s32 g_handle_count = 0;
 static s32 g_push_event_filter_count = 0;
@@ -34,11 +35,16 @@ s32 getCompiledSdkVersion() {
 
 s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 type) {
     std::scoped_lock lk{g_global_mutex};
-    s32 ctx_id = 1;
-    while (g_contexts.contains(ctx_id)) {
-        ctx_id++;
+
+    g_library_context_count++;
+    if (g_library_context_count >= 0x8000) {
+        g_library_context_count = 1;
     }
-    if (ctx_id >= 0x8000) {
+    s32 ctx_id = g_library_context_count;
+    while (g_contexts.contains(ctx_id)) {
+        ctx_id--;
+    }
+    if (ctx_id <= 0) {
         return ORBIS_NP_WEBAPI_ERROR_LIB_CONTEXT_MAX;
     }
 
@@ -258,11 +264,15 @@ s32 createUserContext(s32 libCtxId, Libraries::UserService::OrbisUserServiceUser
     std::scoped_lock lk{context->contextLock};
 
     // Create new user context
-    s32 user_ctx_id = (libCtxId << 0x10) | 1;
-    while (context->userContexts.contains(user_ctx_id)) {
-        user_ctx_id++;
+    g_user_context_count++;
+    if (g_user_context_count >= 0x10000) {
+        g_user_context_count = 1;
     }
-    if (user_ctx_id >= (libCtxId << 0x10) + 0x10000) {
+    s32 user_ctx_id = (libCtxId << 0x10) | g_user_context_count;
+    while (context->userContexts.contains(user_ctx_id)) {
+        user_ctx_id--;
+    }
+    if (user_ctx_id <= (libCtxId << 0x10)) {
         return ORBIS_NP_WEBAPI_ERROR_USER_CONTEXT_MAX;
     }
 
@@ -440,7 +450,14 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
     if (g_request_count >> 0x20 != 0) {
         g_request_count = 1;
     }
-    s64 request_id = static_cast<s64>(user_context->userCtxId) << 0x20 | g_request_count;
+
+    s64 user_ctx_id = static_cast<s64>(titleUserCtxId);
+    s32 request_id = (user_ctx_id << 0x20) | g_request_count;
+    while (user_context->requests.contains(request_id)) {
+        request_id--;
+    }
+    // Real library would hang if this assert fails.
+    ASSERT_MSG(request_id > user_ctx_id << 0x20, "Too many requests!");
     user_context->requests[request_id] = new OrbisNpWebApiRequest{};
 
     auto& request = user_context->requests[request_id];
