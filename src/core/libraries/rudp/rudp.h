@@ -11,8 +11,6 @@ class SymbolsResolver;
 
 namespace Libraries::Rudp {
 
-s32 PS4_SYSV_ABI module_start();
-s32 PS4_SYSV_ABI module_stop();
 s32 PS4_SYSV_ABI sceRudpAccept();
 s32 PS4_SYSV_ABI sceRudpActivate();
 s32 PS4_SYSV_ABI sceRudpBind();

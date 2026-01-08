@@ -8,16 +8,6 @@
 
 namespace Libraries::Rudp {
 
-s32 PS4_SYSV_ABI module_start() {
-    LOG_ERROR(Lib_Rudp, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI module_stop() {
-    LOG_ERROR(Lib_Rudp, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 s32 PS4_SYSV_ABI sceRudpAccept() {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
