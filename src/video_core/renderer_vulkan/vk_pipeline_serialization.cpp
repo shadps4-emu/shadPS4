@@ -9,6 +9,8 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "core/emulator_settings.h"
+
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
@@ -295,7 +297,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
 }
 
 void PipelineCache::WarmUp() {
-    if (!Config::isPipelineCacheEnabled()) {
+    if (!EmulatorSettings::GetInstance()->IsPipelineCacheEnabled()) {
         return;
     }
 

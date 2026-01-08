@@ -227,15 +227,22 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
              EmulatorSettings::GetInstance()->IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}",
              EmulatorSettings::GetInstance()->IsVkValidationCoreEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationSync: {}", EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}",
+             EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled());
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}",
              EmulatorSettings::GetInstance()->IsVkValidationGpuEnabled());
-    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", EmulatorSettings::GetInstance()->IsVkCrashDiagnosticEnabled());
+    LOG_INFO(Config, "Vulkan crashDiagnostics: {}",
+             EmulatorSettings::GetInstance()->IsVkCrashDiagnosticEnabled());
     LOG_INFO(Config, "Vulkan hostMarkers: {}",
              EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled());
     LOG_INFO(Config, "Vulkan guestMarkers: {}",
              EmulatorSettings::GetInstance()->IsVkGuestMarkersEnabled());
-    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}",
+             EmulatorSettings::GetInstance()->IsRenderdocEnabled());
+    LOG_INFO(Config, "Vulkan PipelineCacheEnabled: {}",
+             EmulatorSettings::GetInstance()->IsPipelineCacheEnabled());
+    LOG_INFO(Config, "Vulkan PipelineCacheArchived: {}",
+             EmulatorSettings::GetInstance()->IsPipelineCacheArchived());
 
     hwinfo::Memory ram;
     hwinfo::OS os;

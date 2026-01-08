@@ -158,11 +158,6 @@ static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
 
-// Vulkan
-static ConfigEntry<bool> rdocEnable(false);
-static ConfigEntry<bool> pipelineCacheEnable(false);
-static ConfigEntry<bool> pipelineCacheArchive(false);
-
 // Debug
 static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> showFpsCounter(false);
@@ -268,18 +263,6 @@ bool patchShaders() {
     return shouldPatchShaders.get();
 }
 
-bool isRdocEnabled() {
-    return rdocEnable.get();
-}
-
-bool isPipelineCacheEnabled() {
-    return pipelineCacheEnable.get();
-}
-
-bool isPipelineCacheArchived() {
-    return pipelineCacheArchive.get();
-}
-
 bool fpsColor() {
     return isFpsColor.get();
 }
@@ -302,18 +285,6 @@ u32 vblankFreq() {
 
 void setDumpShaders(bool enable, bool is_game_specific) {
     shouldDumpShaders.set(enable, is_game_specific);
-}
-
-void setRdocEnabled(bool enable, bool is_game_specific) {
-    rdocEnable.set(enable, is_game_specific);
-}
-
-void setPipelineCacheEnabled(bool enable, bool is_game_specific) {
-    pipelineCacheEnable.set(enable, is_game_specific);
-}
-
-void setPipelineCacheArchived(bool enable, bool is_game_specific) {
-    pipelineCacheArchive.set(enable, is_game_specific);
 }
 
 void setVblankFreq(u32 value, bool is_game_specific) {
@@ -429,13 +400,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
     }
 
-    if (data.contains("Vulkan")) {
-        const toml::value& vk = data.at("Vulkan");
-        rdocEnable.setFromToml(vk, "rdocEnable", is_game_specific);
-        pipelineCacheEnable.setFromToml(vk, "pipelineCacheEnable", is_game_specific);
-        pipelineCacheArchive.setFromToml(vk, "pipelineCacheArchive", is_game_specific);
-    }
-
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
@@ -526,9 +490,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-    rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
-    pipelineCacheEnable.setTomlValue(data, "Vulkan", "pipelineCacheEnable", is_game_specific);
-    pipelineCacheArchive.setTomlValue(data, "Vulkan", "pipelineCacheArchive", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
@@ -575,11 +536,6 @@ void setDefaultValues(bool is_game_specific) {
     // GS - GPU
     shouldDumpShaders.setDefault(is_game_specific);
     vblankFrequency.setDefault(is_game_specific);
-
-    // GS - Vulkan
-    rdocEnable.set(false, is_game_specific);
-    pipelineCacheEnable.set(false, is_game_specific);
-    pipelineCacheArchive.set(false, is_game_specific);
 
     // GS - Settings
     m_language.setDefault(is_game_specific);

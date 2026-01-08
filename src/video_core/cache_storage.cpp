@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
@@ -7,6 +7,7 @@
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 
+#include "core/emulator_settings.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -95,7 +96,7 @@ void DataBase::Open() {
     const auto& game_info = Common::ElfInfo::Instance();
 
     using namespace Common::FS;
-    if (Config::isPipelineCacheArchived()) {
+    if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
         mz_zip_zero_struct(&zip_ar);
 
         cache_path = GetUserPath(PathType::CacheDir) /
@@ -128,7 +129,7 @@ void DataBase::Close() {
     io_worker.request_stop();
     io_worker.join();
 
-    if (Config::isPipelineCacheArchived()) {
+    if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
         mz_zip_writer_finalize_archive(&zip_ar);
         mz_zip_writer_end(&zip_ar);
     }
@@ -142,7 +143,7 @@ bool WriteVector(const BlobType type, std::filesystem::path&& path_, std::vector
         auto request = std::packaged_task<void()>{[=]() {
             auto path{path_};
             path.replace_extension(GetBlobFileExtension(type));
-            if (Config::isPipelineCacheArchived()) {
+            if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
                 ASSERT_MSG(!ar_is_read_only,
                            "The archive is read-only. Did you forget to call `FinishPreload`?");
                 if (!mz_zip_writer_add_mem(&zip_ar, path.string().c_str(), v.data(),
@@ -169,7 +170,7 @@ template <typename T>
 void LoadVector(BlobType type, std::filesystem::path& path, std::vector<T>& v) {
     using namespace Common::FS;
     path.replace_extension(GetBlobFileExtension(type));
-    if (Config::isPipelineCacheArchived()) {
+    if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
         int index{-1};
         index = mz_zip_reader_locate_file(&zip_ar, path.string().c_str(), nullptr, 0);
         if (index < 0) {
@@ -192,7 +193,9 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u8>&& da
         return false;
     }
 
-    auto path = Config::isPipelineCacheArchived() ? std::filesystem::path{name} : cache_path / name;
+    auto path = EmulatorSettings::GetInstance()->IsPipelineCacheArchived()
+                    ? std::filesystem::path{name}
+                    : cache_path / name;
     return WriteVector(type, std::move(path), std::move(data));
 }
 
@@ -201,7 +204,9 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& d
         return false;
     }
 
-    auto path = Config::isPipelineCacheArchived() ? std::filesystem::path{name} : cache_path / name;
+    auto path = EmulatorSettings::GetInstance()->IsPipelineCacheArchived()
+                    ? std::filesystem::path{name}
+                    : cache_path / name;
     return WriteVector(type, std::move(path), std::move(data));
 }
 
@@ -210,7 +215,9 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& dat
         return;
     }
 
-    auto path = Config::isPipelineCacheArchived() ? std::filesystem::path{name} : cache_path / name;
+    auto path = EmulatorSettings::GetInstance()->IsPipelineCacheArchived()
+                    ? std::filesystem::path{name}
+                    : cache_path / name;
     return LoadVector(type, path, data);
 }
 
@@ -219,13 +226,15 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u32>& da
         return;
     }
 
-    auto path = Config::isPipelineCacheArchived() ? std::filesystem::path{name} : cache_path / name;
+    auto path = EmulatorSettings::GetInstance()->IsPipelineCacheArchived()
+                    ? std::filesystem::path{name}
+                    : cache_path / name;
     return LoadVector(type, path, data);
 }
 
 void DataBase::ForEachBlob(BlobType type, const std::function<void(std::vector<u8>&& data)>& func) {
     const auto& ext = GetBlobFileExtension(type);
-    if (Config::isPipelineCacheArchived()) {
+    if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
         const auto num_files = mz_zip_reader_get_num_files(&zip_ar);
         for (int index = 0; index < num_files; ++index) {
             std::array<char, MZ_ZIP_MAX_ARCHIVE_FILENAME_SIZE> file_name{};
@@ -255,7 +264,7 @@ void DataBase::ForEachBlob(BlobType type, const std::function<void(std::vector<u
 }
 
 void DataBase::FinishPreload() {
-    if (Config::isPipelineCacheArchived()) {
+    if (EmulatorSettings::GetInstance()->IsPipelineCacheArchived()) {
         mz_zip_writer_init_from_reader(&zip_ar, cache_path.string().c_str());
         ar_is_read_only = false;
     }
