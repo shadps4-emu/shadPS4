@@ -159,9 +159,6 @@ static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
 
 // Vulkan
-static ConfigEntry<bool> vkCrashDiagnostic(false);
-static ConfigEntry<bool> vkHostMarkers(false);
-static ConfigEntry<bool> vkGuestMarkers(false);
 static ConfigEntry<bool> rdocEnable(false);
 static ConfigEntry<bool> pipelineCacheEnable(false);
 static ConfigEntry<bool> pipelineCacheArchive(false);
@@ -302,29 +299,6 @@ u32 vblankFreq() {
     return vblankFrequency.get();
 }
 
-bool getVkCrashDiagnosticEnabled() {
-    return vkCrashDiagnostic.get();
-}
-
-bool getVkHostMarkersEnabled() {
-    return vkHostMarkers.get();
-}
-
-bool getVkGuestMarkersEnabled() {
-    return vkGuestMarkers.get();
-}
-
-void setVkCrashDiagnosticEnabled(bool enable, bool is_game_specific) {
-    vkCrashDiagnostic.set(enable, is_game_specific);
-}
-
-void setVkHostMarkersEnabled(bool enable, bool is_game_specific) {
-    vkHostMarkers.set(enable, is_game_specific);
-}
-
-void setVkGuestMarkersEnabled(bool enable, bool is_game_specific) {
-    vkGuestMarkers.set(enable, is_game_specific);
-}
 
 void setDumpShaders(bool enable, bool is_game_specific) {
     shouldDumpShaders.set(enable, is_game_specific);
@@ -457,10 +431,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("Vulkan")) {
         const toml::value& vk = data.at("Vulkan");
-
-        vkCrashDiagnostic.setFromToml(vk, "crashDiagnostic", is_game_specific);
-        vkHostMarkers.setFromToml(vk, "hostMarkers", is_game_specific);
-        vkGuestMarkers.setFromToml(vk, "guestMarkers", is_game_specific);
         rdocEnable.setFromToml(vk, "rdocEnable", is_game_specific);
         pipelineCacheEnable.setFromToml(vk, "pipelineCacheEnable", is_game_specific);
         pipelineCacheArchive.setFromToml(vk, "pipelineCacheArchive", is_game_specific);
@@ -556,10 +526,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
-
-    vkCrashDiagnostic.setTomlValue(data, "Vulkan", "crashDiagnostic", is_game_specific);
-    vkHostMarkers.setTomlValue(data, "Vulkan", "hostMarkers", is_game_specific);
-    vkGuestMarkers.setTomlValue(data, "Vulkan", "guestMarkers", is_game_specific);
     rdocEnable.setTomlValue(data, "Vulkan", "rdocEnable", is_game_specific);
     pipelineCacheEnable.setTomlValue(data, "Vulkan", "pipelineCacheEnable", is_game_specific);
     pipelineCacheArchive.setTomlValue(data, "Vulkan", "pipelineCacheArchive", is_game_specific);
@@ -611,9 +577,6 @@ void setDefaultValues(bool is_game_specific) {
     vblankFrequency.setDefault(is_game_specific);
 
     // GS - Vulkan
-    vkCrashDiagnostic.set(false, is_game_specific);
-    vkHostMarkers.set(false, is_game_specific);
-    vkGuestMarkers.set(false, is_game_specific);
     rdocEnable.set(false, is_game_specific);
     pipelineCacheEnable.set(false, is_game_specific);
     pipelineCacheArchive.set(false, is_game_specific);

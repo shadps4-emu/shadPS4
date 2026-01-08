@@ -230,9 +230,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Vulkan vkValidationSync: {}", EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled());
     LOG_INFO(Config, "Vulkan vkValidationGpu: {}",
              EmulatorSettings::GetInstance()->IsVkValidationGpuEnabled());
-    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
-    LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
-    LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
+    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", EmulatorSettings::GetInstance()->IsVkCrashDiagnosticEnabled());
+    LOG_INFO(Config, "Vulkan hostMarkers: {}",
+             EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled());
+    LOG_INFO(Config, "Vulkan guestMarkers: {}",
+             EmulatorSettings::GetInstance()->IsVkGuestMarkersEnabled());
     LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
 
     hwinfo::Memory ram;

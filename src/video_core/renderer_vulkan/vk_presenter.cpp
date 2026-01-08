@@ -107,7 +107,7 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     : window{window_}, liverpool{liverpool_},
       instance{window, EmulatorSettings::GetInstance()->GetGpuId(),
                EmulatorSettings::GetInstance()->IsVkValidationEnabled(),
-               Config::getVkCrashDiagnosticEnabled()},
+               EmulatorSettings::GetInstance()->IsVkCrashDiagnosticEnabled()},
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
@@ -468,7 +468,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Present",
         });
@@ -599,7 +599,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         }
     }
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
