@@ -179,8 +179,6 @@ s32 PS4_SYSV_ABI sceRudpWrite() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("BaOKcng8g88", "libkernel", 1, "libSceRudp", module_start);
-    LIB_FUNCTION("KpDMrPHvt3Q", "libkernel", 1, "libSceRudp", module_stop);
     LIB_FUNCTION("uQiK7fjU6y8", "libSceRudp", 1, "libSceRudp", sceRudpAccept);
     LIB_FUNCTION("J-6d0WTjzMc", "libSceRudp", 1, "libSceRudp", sceRudpActivate);
     LIB_FUNCTION("l4SLBpKUDK4", "libSceRudp", 1, "libSceRudp", sceRudpBind);
