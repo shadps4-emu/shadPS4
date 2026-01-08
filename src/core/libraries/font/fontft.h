@@ -15,15 +15,18 @@ struct OrbisFontLibrarySelection {
     u32 magic;
     u32 reserved;
     void* reserved_ptr1;
-    void* reserved_ptr2;
+    uintptr_t get_pixel_resolution_fn;
+    uintptr_t init_fn;
+    uintptr_t term_fn;
+    uintptr_t support_fn;
 };
 
 struct OrbisFontRendererSelection {
     u32 magic;
     u32 size;
     uintptr_t create_fn;
-    uintptr_t query_fn;
     uintptr_t destroy_fn;
+    uintptr_t query_fn;
 };
 
 s32 PS4_SYSV_ABI sceFontFtInitAliases();

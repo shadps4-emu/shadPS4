@@ -1,43 +1,79 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <cstdint>
+#include <mutex>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/font/font.h"
+#include "core/libraries/font/font_internal.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/font/fontft_internal.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::FontFt {
 
 namespace {
-bool g_library_selected = false;
-bool g_renderer_selected = false;
 
-constexpr OrbisFontLibrarySelection kDefaultLibrarySelection{0xF2000000u, 0, nullptr, nullptr};
+static std::once_flag g_driver_table_once;
+alignas(Libraries::Font::Internal::SysDriver) static Libraries::Font::Internal::SysDriver
+    g_driver_table{};
 
-static void* PS4_SYSV_ABI RendererCreateStub() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer create called");
-    return nullptr;
+static const OrbisFontLibrarySelection* GetDriverTable() {
+    std::call_once(g_driver_table_once, [] {
+        auto* selection = reinterpret_cast<OrbisFontLibrarySelection*>(&g_driver_table);
+        selection->magic = 0;
+        selection->reserved = 0;
+        selection->reserved_ptr1 = nullptr;
+
+        auto* driver = &g_driver_table;
+
+        driver->pixel_resolution = &Libraries::FontFt::Internal::LibraryGetPixelResolutionStub;
+        driver->init = &Libraries::FontFt::Internal::LibraryInitStub;
+        driver->term = &Libraries::FontFt::Internal::LibraryTermStub;
+        driver->support_formats = &Libraries::FontFt::Internal::LibrarySupportStub;
+
+        driver->open = &Libraries::FontFt::Internal::LibraryOpenFontMemoryStub;
+        driver->close = &Libraries::FontFt::Internal::LibraryCloseFontObjStub;
+        driver->scale = &Libraries::FontFt::Internal::LibraryGetFaceScaleStub;
+        driver->metric = &Libraries::FontFt::Internal::LibraryGetFaceMetricStub;
+        driver->glyph_index = &Libraries::FontFt::Internal::LibraryGetGlyphIndexStub;
+        driver->set_char_with_dpi = &Libraries::FontFt::Internal::LibrarySetCharSizeWithDpiStub;
+        driver->set_char_default_dpi =
+            &Libraries::FontFt::Internal::LibrarySetCharSizeDefaultDpiStub;
+        driver->compute_layout = &Libraries::FontFt::Internal::LibraryComputeLayoutBlockStub;
+        driver->compute_layout_alt = &Libraries::FontFt::Internal::LibraryComputeLayoutAltBlockStub;
+
+        driver->load_glyph_cached = &Libraries::FontFt::Internal::LibraryLoadGlyphCachedStub;
+        driver->get_glyph_metrics = &Libraries::FontFt::Internal::LibraryGetGlyphMetricsStub;
+        driver->apply_glyph_adjust = &Libraries::FontFt::Internal::LibraryApplyGlyphAdjustStub;
+        driver->configure_glyph = &Libraries::FontFt::Internal::LibraryConfigureGlyphStub;
+    });
+
+    return reinterpret_cast<const OrbisFontLibrarySelection*>(&g_driver_table);
 }
 
-static void PS4_SYSV_ABI RendererQueryStub() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer query called");
+static std::once_flag g_renderer_table_once;
+alignas(OrbisFontRendererSelection) static OrbisFontRendererSelection g_renderer_table{};
+
+static const OrbisFontRendererSelection* GetRendererSelectionTable() {
+    std::call_once(g_renderer_table_once, [] {
+        g_renderer_table.magic = 0;
+        g_renderer_table.size =
+            static_cast<u32>(sizeof(Libraries::Font::Internal::RendererFtOpaque));
+
+        g_renderer_table.create_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererCreate);
+        g_renderer_table.destroy_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererDestroy);
+        g_renderer_table.query_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererQuery);
+    });
+    return &g_renderer_table;
 }
 
-static void PS4_SYSV_ABI RendererDestroyStub() {
-    LOG_ERROR(Lib_FontFt, "(STUBBED) renderer destroy called");
-}
-
-static OrbisFontRendererSelection MakeRendererSelection() {
-    OrbisFontRendererSelection sel{};
-    sel.magic = 0xF2000000u;
-    sel.size = 0x168;
-    sel.create_fn = reinterpret_cast<uintptr_t>(&RendererCreateStub);
-    sel.query_fn = reinterpret_cast<uintptr_t>(&RendererQueryStub);
-    sel.destroy_fn = reinterpret_cast<uintptr_t>(&RendererDestroyStub);
-    return sel;
-}
-
-static const OrbisFontRendererSelection kDefaultRendererSelection = MakeRendererSelection();
 } // namespace
 
 s32 PS4_SYSV_ABI sceFontFtInitAliases() {
@@ -136,31 +172,19 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt() {
 }
 
 const OrbisFontLibrarySelection* PS4_SYSV_ABI sceFontSelectLibraryFt(int value) {
-    if (!g_library_selected) {
-        g_library_selected = true;
-        LOG_INFO(Lib_FontFt, "library selection requested (FreeType shim)");
-    }
-    LOG_DEBUG(Lib_FontFt,
-              "library selection params:\n"
-              " value={}\n",
-              value);
+    LOG_INFO(Lib_FontFt, "called");
+    LOG_DEBUG(Lib_FontFt, "params:\nvalue: {}\n", value);
     if (value == 0) {
-        return &kDefaultLibrarySelection;
+        return GetDriverTable();
     }
     return nullptr;
 }
 
 const OrbisFontRendererSelection* PS4_SYSV_ABI sceFontSelectRendererFt(int value) {
-    if (!g_renderer_selected) {
-        g_renderer_selected = true;
-        LOG_INFO(Lib_FontFt, "renderer selection requested (stb_truetype backend)");
-    }
-    LOG_DEBUG(Lib_FontFt,
-              "renderer selection params:\n"
-              " value={}\n",
-              value);
+    LOG_INFO(Lib_FontFt, "called");
+    LOG_DEBUG(Lib_FontFt, "params:\nvalue: {}\n", value);
     if (value == 0) {
-        return &kDefaultRendererSelection;
+        return GetRendererSelectionTable();
     }
     return nullptr;
 }

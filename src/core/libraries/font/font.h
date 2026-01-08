@@ -31,27 +31,55 @@ struct OrbisFontOpenParams {
 };
 
 struct OrbisFontGlyphMetrics {
-    float w;
-    float h;
-    float h_bearing_x;
-    float h_bearing_y;
-    float h_adv;
-    float v_bearing_x;
-    float v_bearing_y;
-    float v_adv;
+    float width;
+    float height;
+    struct {
+        float bearingX;
+        float bearingY;
+        float advance;
+    } Horizontal;
+    struct {
+        float bearingX;
+        float bearingY;
+        float advance;
+    } Vertical;
+};
+
+struct OrbisFontGlyphMetricsHorizontal {
+    float width;
+    float height;
+    struct {
+        float bearing_x;
+        float bearing_y;
+        float advance;
+    } horizontal;
+};
+
+struct OrbisFontGlyphMetricsHorizontalX {
+    float width;
+    struct {
+        float bearing_x;
+        float advance;
+    } horizontal;
+};
+
+struct OrbisFontGlyphMetricsHorizontalAdvance {
+    struct {
+        float advance;
+    } horizontal;
 };
 
 struct OrbisFontKerning {
-    float dx;
-    float dy;
-    float px;
-    float py;
+    float offsetX;
+    float offsetY;
+    float positionX;
+    float positionY;
 };
 
 struct OrbisFontGlyphImageMetrics {
-    float bearing_x;
-    float bearing_y;
-    float dv;
+    float bearingX;
+    float bearingY;
+    float advance;
     float stride;
     u32 width;
     u32 height;
@@ -106,20 +134,23 @@ struct OrbisFontResultStage {
     u32 u32_10;
 };
 
-struct OrbisFontResultSlot {
-    u8* maybe_addr;
-    u32 maybe_rowBytes;
-    u8 maybe_pixelSize;
-    u8 maybe_pixelFmt;
+struct OrbisFontSurfaceImage {
+    u8* address;
+    u32 widthByte;
+    u8 pixelSizeByte;
+    u8 pixelFormat;
+    u16 pad16;
 };
 
 struct OrbisFontRenderOutput {
     const OrbisFontResultStage* stage;
-    OrbisFontResultSlot slot;
-    u32 new_x;
-    u32 new_y;
-    u32 new_w;
-    u32 new_h;
+    OrbisFontSurfaceImage SurfaceImage;
+    struct {
+        u32 x;
+        u32 y;
+        u32 w;
+        u32 h;
+    } UpdateRect;
     OrbisFontGlyphImageMetrics ImageMetrics;
 };
 
@@ -163,16 +194,15 @@ struct OrbisFontMem {
 };
 
 struct OrbisFontTextCharacter {
-    // Other fields...
-    struct OrbisFontTextCharacter* next; // Pointer to the next node 0x00
-    struct OrbisFontTextCharacter* prev; // Pointer to the next node 0x08
-    void* textOrder;                     // Field at offset 0x10 (pointer to text order info)
-    u32 characterCode;                   // Field assumed at offset 0x28
-    u8 unkn_0x31;                        // Offset 0x31
-    u8 unkn_0x33;                        // Offset 0x33
-    u8 charType;                         // Field assumed at offset 0x39
-    u8 bidiLevel;                        // Field assumed at offset 0x3B stores the Bidi level
-    u8 formatFlags;                      // Field at offset 0x3D (stores format-related flags)
+    struct OrbisFontTextCharacter* next;
+    struct OrbisFontTextCharacter* prev;
+    void* textOrder;
+    u32 characterCode;
+    u8 unknown_0x31;
+    u8 unknown_0x33;
+    u8 charType;
+    u8 bidiLevel;
+    u8 formatFlags;
 };
 
 struct OrbisFontRenderSurface {
@@ -191,18 +221,47 @@ struct OrbisFontRenderSurface {
 };
 
 struct OrbisFontStyleFrame {
-    /*0x00*/ u16 magic; // Expected to be 0xF09
-    /*0x02*/ u16 flags;
-    /*0x04*/ s32 dpiX;          // DPI scaling factor for width
-    /*0x08*/ s32 dpiY;          // DPI scaling factor for height
-    /*0x0c*/ s32 scalingFlag;   // Indicates whether scaling is enabled
-    /*0x10*/ float scaleWidth;  // Width scaling factor
-    /*0x14*/ float scaleHeight; // Height scaling factor
-    /*0x18*/ float weightXScale;
-    /*0x1c*/ float weightYScale;
-    /*0x20*/ float slantRatio;
-    /*0x24*/
+    /*0x00*/ u16 magic;
+    /*0x02*/ u8 flags1;
+    /*0x03*/ u8 flags2;
+    /*0x04*/ u32 hDpi;
+    /*0x08*/ u32 vDpi;
+    /*0x0C*/ u32 scaleUnit;
+    /*0x10*/ float baseScale;
+    /*0x14*/ float scalePixelW;
+    /*0x18*/ float scalePixelH;
+    /*0x1C*/ float effectWeightX;
+    /*0x20*/ float effectWeightY;
+    /*0x24*/ float slantRatio;
+    /*0x28*/ u32 reserved_0x28;
+    /*0x2C*/ u32 layout_cache_state;
+    /*0x30*/ u32 cache_flags_and_direction;
+    /*0x34*/ u32 cache_lock_word;
+    /*0x38*/ u8 layout_cache_bytes[0x20];
+    /*0x58*/ u32 reserved_0x58;
+    /*0x5C*/ u32 cached_scalar_bits;
 };
+
+static_assert(sizeof(OrbisFontStyleFrame) == 0x60, "OrbisFontStyleFrame size");
+static_assert(offsetof(OrbisFontStyleFrame, magic) == 0x00, "OrbisFontStyleFrame magic offset");
+static_assert(offsetof(OrbisFontStyleFrame, flags1) == 0x02, "OrbisFontStyleFrame flags1 offset");
+static_assert(offsetof(OrbisFontStyleFrame, hDpi) == 0x04, "OrbisFontStyleFrame hDpi offset");
+static_assert(offsetof(OrbisFontStyleFrame, vDpi) == 0x08, "OrbisFontStyleFrame vDpi offset");
+static_assert(offsetof(OrbisFontStyleFrame, scaleUnit) == 0x0C,
+              "OrbisFontStyleFrame scaleUnit offset");
+static_assert(offsetof(OrbisFontStyleFrame, scalePixelW) == 0x14,
+              "OrbisFontStyleFrame scalePixelW offset");
+static_assert(offsetof(OrbisFontStyleFrame, scalePixelH) == 0x18,
+              "OrbisFontStyleFrame scalePixelH offset");
+static_assert(offsetof(OrbisFontStyleFrame, cache_lock_word) == 0x34,
+              "OrbisFontStyleFrame cache_lock_word offset");
+static_assert(offsetof(OrbisFontStyleFrame, reserved_0x58) == 0x58,
+              "OrbisFontStyleFrame reserved_0x58 offset");
+
+static_assert(sizeof(OrbisFontGlyphMetrics) == 0x20, "OrbisFontGlyphMetrics size");
+static_assert(sizeof(OrbisFontResultStage) == 0x18, "OrbisFontTransImage size");
+static_assert(sizeof(OrbisFontSurfaceImage) == 0x10, "OrbisFontSurfaceImage size");
+static_assert(sizeof(OrbisFontRenderOutput) == 0x40, "OrbisFontRenderOutput size");
 
 struct OrbisFontHorizontalLayout {
     float baselineOffset;
@@ -278,8 +337,9 @@ s32 PS4_SYSV_ABI sceFontGetAttribute();
 s32 PS4_SYSV_ABI sceFontGetCharGlyphCode();
 s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code,
                                             OrbisFontGlyphMetrics* metrics);
-s32 PS4_SYSV_ABI sceFontGetEffectSlant();
-s32 PS4_SYSV_ABI sceFontGetEffectWeight();
+s32 PS4_SYSV_ABI sceFontGetEffectSlant(OrbisFontHandle fontHandle, float* slantRatio);
+s32 PS4_SYSV_ABI sceFontGetEffectWeight(OrbisFontHandle fontHandle, float* weightXScale,
+                                        float* weightYScale, u32* mode);
 s32 PS4_SYSV_ABI sceFontGetFontGlyphsCount();
 s32 PS4_SYSV_ABI sceFontGetFontGlyphsOutlineProfile();
 s32 PS4_SYSV_ABI sceFontGetFontMetrics();
@@ -294,8 +354,9 @@ s32 PS4_SYSV_ABI sceFontGetLibrary(OrbisFontHandle fontHandle, OrbisFontLib* pLi
 s32 PS4_SYSV_ABI sceFontGetPixelResolution();
 s32 PS4_SYSV_ABI sceFontGetRenderCharGlyphMetrics(OrbisFontHandle fontHandle, u32 codepoint,
                                                   OrbisFontGlyphMetrics* out_metrics);
-s32 PS4_SYSV_ABI sceFontGetRenderEffectSlant();
-s32 PS4_SYSV_ABI sceFontGetRenderEffectWeight();
+s32 PS4_SYSV_ABI sceFontGetRenderEffectSlant(OrbisFontHandle fontHandle, float* slantRatio);
+s32 PS4_SYSV_ABI sceFontGetRenderEffectWeight(OrbisFontHandle fontHandle, float* weightXScale,
+                                              float* weightYScale, u32* mode);
 s32 PS4_SYSV_ABI sceFontGetRenderScaledKerning();
 s32 PS4_SYSV_ABI sceFontGetRenderScalePixel(OrbisFontHandle fontHandle, float* out_w, float* out_h);
 s32 PS4_SYSV_ABI sceFontGetRenderScalePoint(OrbisFontHandle fontHandle, float* out_w, float* out_h);
@@ -393,7 +454,10 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageHorizontal(OrbisFontHandle fontHandl
                                                        OrbisFontRenderSurface* surf, float x,
                                                        float y, OrbisFontGlyphMetrics* metrics,
                                                        OrbisFontRenderOutput* result);
-s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageVertical();
+s32 PS4_SYSV_ABI sceFontRenderCharGlyphImageVertical(OrbisFontHandle fontHandle, u32 code,
+                                                     OrbisFontRenderSurface* surf, float x, float y,
+                                                     OrbisFontGlyphMetrics* metrics,
+                                                     OrbisFontRenderOutput* result);
 s32 PS4_SYSV_ABI sceFontRendererGetOutlineBufferSize();
 s32 PS4_SYSV_ABI sceFontRendererResetOutlineBuffer();
 s32 PS4_SYSV_ABI sceFontRendererSetOutlineBufferPolicy();
@@ -404,16 +468,18 @@ void PS4_SYSV_ABI sceFontRenderSurfaceSetScissor(OrbisFontRenderSurface* renderS
                                                  int y0, int w, int h);
 s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* renderSurface,
                                                    OrbisFontStyleFrame* styleFrame);
-s32 PS4_SYSV_ABI sceFontSetEffectSlant();
-s32 PS4_SYSV_ABI sceFontSetEffectWeight();
+s32 PS4_SYSV_ABI sceFontSetEffectSlant(OrbisFontHandle fontHandle, float slantRatio);
+s32 PS4_SYSV_ABI sceFontSetEffectWeight(OrbisFontHandle fontHandle, float weightXScale,
+                                        float weightYScale, u32 mode);
 s32 PS4_SYSV_ABI sceFontSetFontsOpenMode();
 s32 PS4_SYSV_ABI sceFontSetResolutionDpi(OrbisFontHandle fontHandle, u32 h_dpi, u32 v_dpi);
 s32 PS4_SYSV_ABI sceFontSetScalePixel(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontSetScalePoint(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontSetScriptLanguage();
 s32 PS4_SYSV_ABI sceFontSetTypographicDesign();
-s32 PS4_SYSV_ABI sceFontSetupRenderEffectSlant();
-s32 PS4_SYSV_ABI sceFontSetupRenderEffectWeight();
+s32 PS4_SYSV_ABI sceFontSetupRenderEffectSlant(OrbisFontHandle fontHandle, float slantRatio);
+s32 PS4_SYSV_ABI sceFontSetupRenderEffectWeight(OrbisFontHandle fontHandle, float weightXScale,
+                                                float weightYScale, u32 mode);
 s32 PS4_SYSV_ABI sceFontSetupRenderScalePixel(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontSetupRenderScalePoint(OrbisFontHandle fontHandle, float w, float h);
 s32 PS4_SYSV_ABI sceFontStringGetTerminateCode();
