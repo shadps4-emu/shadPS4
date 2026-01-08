@@ -282,7 +282,6 @@ u32 vblankFreq() {
     return vblankFrequency.get();
 }
 
-
 void setDumpShaders(bool enable, bool is_game_specific) {
     shouldDumpShaders.set(enable, is_game_specific);
 }

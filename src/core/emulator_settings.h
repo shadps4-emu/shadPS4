@@ -216,6 +216,7 @@ struct GPUSettings {
     Setting<bool> dump_shaders{false};
     Setting<bool> patch_shaders{false};
     Setting<u32> vblank_frequency{60};
+    Setting<bool> full_screen{false};
     Setting<std::string> full_screen_mode{"Windowed"};
     Setting<std::string> present_mode{"Mailbox"};
     Setting<bool> hdr_allowed{false};
@@ -227,6 +228,7 @@ struct GPUSettings {
         return std::vector<OverrideItem>{
             make_override<GPUSettings>("null_gpu", &GPUSettings::null_gpu),
             make_override<GPUSettings>("copy_gpu_buffers", &GPUSettings::copy_gpu_buffers),
+            make_override<GPUSettings>("full_screen", &GPUSettings::full_screen),
             make_override<GPUSettings>("full_screen_mode", &GPUSettings::full_screen_mode),
             make_override<GPUSettings>("present_mode", &GPUSettings::present_mode),
             make_override<GPUSettings>("window_height", &GPUSettings::window_height),
@@ -249,14 +251,13 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, int
                                    internal_screen_height, null_gpu, copy_gpu_buffers,
                                    readbacks_enabled, readback_linear_images_enabled,
                                    direct_memory_access_enabled, dump_shaders, patch_shaders,
-                                   vblank_frequency, full_screen_mode, present_mode, hdr_allowed,
-                                   fsr_enabled, rcas_enabled, rcas_attenuation)
+                                   vblank_frequency, full_screen, full_screen_mode, present_mode,
+                                   hdr_allowed, fsr_enabled, rcas_enabled, rcas_attenuation)
 // -------------------------------
 // Vulkan settings
 // -------------------------------
 struct VulkanSettings {
     Setting<s32> gpu_id{-1};
-    Setting<bool> full_screen{false};
     Setting<bool> renderdoc_enabled{false};
     Setting<bool> vkvalidation_enabled{false};
     Setting<bool> vkvalidation_core_enabled{true};
@@ -270,7 +271,6 @@ struct VulkanSettings {
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<VulkanSettings>("gpu_id", &VulkanSettings::gpu_id),
-            make_override<VulkanSettings>("full_screen", &VulkanSettings::full_screen),
             make_override<VulkanSettings>("renderdoc_enabled", &VulkanSettings::renderdoc_enabled),
             make_override<VulkanSettings>("vkvalidation_enabled",
                                           &VulkanSettings::vkvalidation_enabled),
@@ -291,11 +291,11 @@ struct VulkanSettings {
         };
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, full_screen, renderdoc_enabled,
-                                   vkvalidation_enabled, vkvalidation_core_enabled,
-                                   vkvalidation_sync_enabled, vkvalidation_gpu_enabled,
-                                   vkcrash_diagnostic_enabled, vkhost_markers, vkguest_markers,
-                                   pipeline_cache_enabled, pipeline_cache_archived)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, renderdoc_enabled, vkvalidation_enabled,
+                                   vkvalidation_core_enabled, vkvalidation_sync_enabled,
+                                   vkvalidation_gpu_enabled, vkcrash_diagnostic_enabled,
+                                   vkhost_markers, vkguest_markers, pipeline_cache_enabled,
+                                   pipeline_cache_archived)
 // -------------------------------
 // User settings
 // -------------------------------
@@ -408,6 +408,7 @@ public:
     SETTING_FORWARD_BOOL(m_gpu, NullGPU, null_gpu)
     SETTING_FORWARD_BOOL(m_gpu, DumpShaders, dump_shaders)
     SETTING_FORWARD_BOOL(m_gpu, CopyGpuBuffers, copy_gpu_buffers)
+    SETTING_FORWARD_BOOL(m_gpu, FullScreen, full_screen)
     SETTING_FORWARD(m_gpu, FullScreenMode, full_screen_mode)
     SETTING_FORWARD(m_gpu, PresentMode, present_mode)
     SETTING_FORWARD(m_gpu, WindowHeight, window_height)
@@ -432,7 +433,6 @@ public:
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
-    SETTING_FORWARD_BOOL(m_vulkan, FullScreen, full_screen)
     SETTING_FORWARD_BOOL(m_vulkan, RenderdocEnabled, renderdoc_enabled)
     SETTING_FORWARD_BOOL(m_vulkan, VkValidationEnabled, vkvalidation_enabled)
     SETTING_FORWARD_BOOL(m_vulkan, VkValidationCoreEnabled, vkvalidation_core_enabled)
