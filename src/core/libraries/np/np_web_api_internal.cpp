@@ -1025,6 +1025,13 @@ s32 createServicePushEventFilterInternal(
     auto& handle = context->handles[handleId];
     handle->userCount++;
 
+    if (pNpServiceName != nullptr && !Config::getPSNSignedIn()) {
+        // Seems sceNpManagerIntGetUserList fails?
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while PSN is disabled");
+        handle->userCount--;
+        return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
+    }
+
     g_service_push_event_filter_count++;
     if (g_service_push_event_filter_count >= 0xf0000000) {
         g_service_push_event_filter_count = 1;
@@ -1194,6 +1201,13 @@ s32 createExtendedPushEventFilterInternal(
     }
     auto& handle = context->handles[handleId];
     handle->userCount++;
+
+    if (pNpServiceName != nullptr && !Config::getPSNSignedIn()) {
+        // Seems sceNpManagerIntGetUserList fails?
+        LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while PSN is disabled");
+        handle->userCount--;
+        return ORBIS_NP_WEBAPI_ERROR_SIGNED_IN_USER_NOT_FOUND;
+    }
 
     g_extended_push_event_filter_count++;
     if (g_extended_push_event_filter_count >= 0xf0000000) {
