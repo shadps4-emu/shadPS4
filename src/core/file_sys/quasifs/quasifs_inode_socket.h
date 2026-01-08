@@ -77,16 +77,12 @@ public:
     Socket(int domain, int type, int protocol);
     ~Socket();
 
-    static socket_ptr Create() {
-        return std::make_shared<Socket>();
+    static socket_ptr Create(int domain, int type, int protocol) {
+        return std::make_shared<Socket>(domain, type, protocol);
     }
 
-    socket_ptr Clone() const {
-        auto _out = std::make_shared<Socket>(*this);
-        _out->st.st_ino = -1;
-        _out->st.st_nlink = 0;
-        return _out;
-    }
+    // you'd better have a good reason to use this
+    socket_ptr Clone() const = delete;
 
     // clang-format off
     virtual bool IsValid() const { SOCKET_STUB(); }
