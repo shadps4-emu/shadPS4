@@ -377,6 +377,11 @@ public:
     void Set##Name(const decltype(group.field.value)& v) {                                         \
         group.field.value = v;                                                                     \
     }
+#define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
+    auto Is##Name() const {                                                                        \
+        return group.field.value;                                                                  \
+    }
+
     // General settings
     SETTING_FORWARD(m_general, VolumeSlider, volume_slider)
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
@@ -422,7 +427,21 @@ public:
     SETTING_FORWARD_BOOL(m_gpu, ReadbacksEnabled, readbacks_enabled)
     SETTING_FORWARD_BOOL(m_gpu, ReadbackLinearImagesEnabled, readback_linear_images_enabled)
     SETTING_FORWARD_BOOL(m_gpu, DirectMemoryAccessEnabled, direct_memory_access_enabled)
-    SETTING_FORWARD(m_gpu, VblankFrequency, vblank_frequency)
+    SETTING_FORWARD_BOOL_READONLY(m_gpu, PatchShaders, patch_shaders)
+
+    u32 GetVblankFrequency() {
+        if (m_gpu.vblank_frequency.value < 60) {
+            m_gpu.vblank_frequency.value = 60;
+        }
+        return m_gpu.vblank_frequency.value;
+    }
+    void SetVblankFrequency(const u32& v) {
+        if (v < 60) {
+            m_gpu.vblank_frequency.value = 60;
+        } else {
+            m_gpu.vblank_frequency.value = v;
+        }
+    }
 
     // Input Settings
     SETTING_FORWARD(m_input, CursorState, cursor_state)

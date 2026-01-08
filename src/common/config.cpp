@@ -154,10 +154,6 @@ static ConfigEntry<bool> useUnifiedInputConfig(true);
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
 
-static ConfigEntry<bool> shouldDumpShaders(false);
-static ConfigEntry<bool> shouldPatchShaders(false);
-static ConfigEntry<u32> vblankFrequency(60);
-
 // Debug
 static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> showFpsCounter(false);
@@ -255,13 +251,7 @@ bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
 }
 
-bool dumpShaders() {
-    return shouldDumpShaders.get();
-}
 
-bool patchShaders() {
-    return shouldPatchShaders.get();
-}
 
 bool fpsColor() {
     return isFpsColor.get();
@@ -273,21 +263,6 @@ bool getShowFpsCounter() {
 
 void setShowFpsCounter(bool enable, bool is_game_specific) {
     showFpsCounter.set(enable, is_game_specific);
-}
-
-u32 vblankFreq() {
-    if (vblankFrequency.get() < 60) {
-        vblankFrequency = 60;
-    }
-    return vblankFrequency.get();
-}
-
-void setDumpShaders(bool enable, bool is_game_specific) {
-    shouldDumpShaders.set(enable, is_game_specific);
-}
-
-void setVblankFreq(u32 value, bool is_game_specific) {
-    vblankFrequency.set(value, is_game_specific);
 }
 
 void setCursorState(s16 newCursorState, bool is_game_specific) {
@@ -392,13 +367,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
     }
 
-    if (data.contains("GPU")) {
-        const toml::value& gpu = data.at("GPU");
-        shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
-        shouldPatchShaders.setFromToml(gpu, "patchShaders", is_game_specific);
-        vblankFrequency.setFromToml(gpu, "vblankFrequency", is_game_specific);
-    }
-
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
@@ -487,8 +455,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                            is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
-    shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
-    vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
@@ -502,7 +468,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
         data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-        data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
         data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
@@ -532,10 +497,6 @@ void setDefaultValues(bool is_game_specific) {
     backgroundControllerInput.setDefault(is_game_specific);
     usbDeviceBackend.setDefault(is_game_specific);
 
-    // GS - GPU
-    shouldDumpShaders.setDefault(is_game_specific);
-    vblankFrequency.setDefault(is_game_specific);
-
     // GS - Settings
     m_language.setDefault(is_game_specific);
 
@@ -549,8 +510,6 @@ void setDefaultValues(bool is_game_specific) {
         controllerCustomColorRGB[1] = 0;
         controllerCustomColorRGB[2] = 255;
 
-        // GPU
-        shouldPatchShaders.base_value = false;
         // Debug
         isFpsColor.base_value = true;
         showFpsCounter.base_value = false;

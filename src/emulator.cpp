@@ -218,8 +218,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
              EmulatorSettings::GetInstance()->IsReadbackLinearImagesEnabled());
     LOG_INFO(Config, "GPU directMemoryAccess: {}",
              EmulatorSettings::GetInstance()->IsDirectMemoryAccessEnabled());
-    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-    LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
+    LOG_INFO(Config, "GPU shouldDumpShaders: {}", EmulatorSettings::GetInstance()->IsDumpShaders());
+    LOG_INFO(Config, "GPU vblankFrequency: {}",
+             EmulatorSettings::GetInstance()->GetVblankFrequency());
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}",
              EmulatorSettings::GetInstance()->IsCopyGpuBuffers());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings::GetInstance()->GetGpuId());

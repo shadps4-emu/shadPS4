@@ -31,10 +31,6 @@ int getVolumeSlider();
 void setVolumeSlider(int volumeValue, bool is_game_specific = false);
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
-bool dumpShaders();
-void setDumpShaders(bool enable, bool is_game_specific = false);
-u32 vblankFreq();
-void setVblankFreq(u32 value, bool is_game_specific = false);
 s16 getCursorState();
 void setCursorState(s16 cursorState, bool is_game_specific = false);
 int getCursorHideTimeout();
@@ -45,7 +41,6 @@ void setUseSpecialPad(bool use);
 bool getUseSpecialPad();
 void setSpecialPadClass(int type);
 int getSpecialPadClass();
-bool patchShaders(); // no set
 bool fpsColor();     // no set
 bool getShowFpsCounter();
 void setShowFpsCounter(bool enable, bool is_game_specific = false);
