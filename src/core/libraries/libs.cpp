@@ -142,6 +142,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rtc::RegisterLib(sym);
+    Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
