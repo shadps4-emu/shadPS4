@@ -11,6 +11,7 @@
   <project_license translate="no">GPL-2.0</project_license>
   <launchable type="desktop-id" translate="no">net.shadps4.shadPS4.desktop</launchable>
   <url type="homepage" translate="no">https://shadps4.net/</url>
+  <url type="vcs-browser" translate="no">https://github.com/shadps4-emu/shadPS4</url>
   <description>
     <p>shadPS4 is an early PlayStation 4 emulator for Windows, Linux and macOS written in C++.</p>
     <p>The emulator is still early in development, so don't expect a flawless experience. Nonetheless, the emulator can already run a number of commercial games.</p>
