@@ -105,7 +105,8 @@ static vk::Rect2D FitImage(s32 frame_width, s32 frame_height, s32 swapchain_widt
 
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
-      instance{window, EmulatorSettings::GetInstance()->GetGpuId(), Config::vkValidationEnabled(),
+      instance{window, EmulatorSettings::GetInstance()->GetGpuId(),
+               EmulatorSettings::GetInstance()->IsVkValidationEnabled(),
                Config::getVkCrashDiagnosticEnabled()},
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},

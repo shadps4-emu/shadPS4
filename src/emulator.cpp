@@ -223,10 +223,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}",
              EmulatorSettings::GetInstance()->IsCopyGpuBuffers());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings::GetInstance()->GetGpuId());
-    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationCore: {}", Config::vkValidationCoreEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
+    LOG_INFO(Config, "Vulkan vkValidation: {}",
+             EmulatorSettings::GetInstance()->IsVkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationCore: {}",
+             EmulatorSettings::GetInstance()->IsVkValidationCoreEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}", EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationGpu: {}",
+             EmulatorSettings::GetInstance()->IsVkValidationGpuEnabled());
     LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
     LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
     LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
