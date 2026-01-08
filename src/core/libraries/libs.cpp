@@ -48,6 +48,7 @@
 #include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rudp/rudp.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
