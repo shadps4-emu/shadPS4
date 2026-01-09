@@ -28,12 +28,18 @@ std::string getTrophyKey();
 void setTrophyKey(std::string key);
 u32 GetLanguage();
 void setLanguage(u32 language, bool is_game_specific = false);
-bool fpsColor(); // no set
+void setUseSpecialPad(bool use);
+bool getUseSpecialPad();
+void setSpecialPadClass(int type);
+int getSpecialPadClass();
+bool getPSNSignedIn();
+void setPSNSignedIn(bool sign, bool is_game_specific = false);
+bool patchShaders(); // no set
 bool getShowFpsCounter();
 void setShowFpsCounter(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
-bool getLoadAutoPatches();
-void setLoadAutoPatches(bool enable);
+std::filesystem::path getSysModulesPath();
+void setSysModulesPath(const std::filesystem::path& path);
 
 // TODO
 std::string getUserName(int id);
