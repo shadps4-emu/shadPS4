@@ -15,7 +15,9 @@
 #include <windows.h>
 #else // Linux / macOS
 #include <clocale>
+#include <cstring>
 #include <ctime>
+#include <langinfo.h>
 #endif
 
 namespace Libraries::SystemService {
@@ -1968,10 +1970,15 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
         break;
     }
 #else
-    case OrbisSystemServiceParamId::TimeFormat:
-        *value =
-            u32(OrbisSystemParamTimeFormat::Fmt24Hour); // don't see a way to check that on linux
+    case OrbisSystemServiceParamId::TimeFormat: {
+        setlocale(LC_TIME, "");
+        const char* fmt = nl_langinfo(T_FMT);
+        bool is24h = !fmt || std::strstr(fmt, "%I") == nullptr;
+
+        *value = is24h ? u32(OrbisSystemParamTimeFormat::Fmt24Hour)
+                       : u32(OrbisSystemParamTimeFormat::Fmt12Hour);
         break;
+    }
     case OrbisSystemServiceParamId::TimeZone: {
         std::time_t now = std::time(nullptr);
         std::tm local{};
