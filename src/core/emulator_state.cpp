@@ -29,10 +29,6 @@ void EmulatorState::SetGameRunning(bool running) {
     m_running = running;
 }
 
-bool EmulatorState::IsFpsColorEnabled() const {
-    return m_fps_color;
-}
-
 bool EmulatorState::IsAutoPatchesLoadEnabled() const {
     return m_load_patches_auto;
 }

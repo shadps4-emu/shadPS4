@@ -274,14 +274,10 @@ void L::DrawAdvanced() {
 
 void L::DrawSimple() {
     const float frameRate = DebugState.Framerate;
-    if (EmulatorState::GetInstance()->IsFpsColorEnabled()) {
-        if (frameRate < 10) {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
-        } else if (frameRate >= 10 && frameRate < 20) {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
-        } else {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
-        }
+    if (frameRate < 10) {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
+    } else if (frameRate >= 10 && frameRate < 20) {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
     } else {
         PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
     }
