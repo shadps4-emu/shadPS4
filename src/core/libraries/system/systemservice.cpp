@@ -11,6 +11,10 @@
 #include "core/libraries/system/systemservice_error.h"
 #include "emulator.h"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 namespace Libraries::SystemService {
 
 bool g_splash_status{true};
@@ -1909,6 +1913,19 @@ int PS4_SYSV_ABI sceSystemServiceNavigateToGoHome() {
     return ORBIS_OK;
 }
 
+#ifdef WIN32
+struct SwTimezone {
+    int tz_minuteswest;
+    int tz_dsttime;
+};
+static void Swgettimezone(SwTimezone* z) {
+    TIME_ZONE_INFORMATION tz{};
+    DWORD state = GetTimeZoneInformation(&tz);
+
+    z->tz_minuteswest = tz.Bias;
+    z->tz_dsttime = (state == TIME_ZONE_ID_DAYLIGHT) ? 1 : 0;
+}
+#endif
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value) {
     // TODO this probably should be stored in config for UI configuration
     LOG_DEBUG(Lib_SystemService, "called param_id {}", u32(param_id));
@@ -1923,6 +1940,32 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     case OrbisSystemServiceParamId::DateFormat:
         *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);
         break;
+#ifdef WIN32
+    case OrbisSystemServiceParamId::TimeFormat: {
+        char format[2] = {0};
+
+        GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_ILDATE, format, sizeof(format));
+
+        if (format[0] == '0') {
+            *value = u32(OrbisSystemParamTimeFormat::Fmt12Hour);
+        } else {
+            *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
+        }
+        break;
+    }
+    case OrbisSystemServiceParamId::TimeZone: {
+        SwTimezone z{};
+        Swgettimezone(&z);
+        *value = z.tz_minuteswest;
+        break;
+    }
+    case OrbisSystemServiceParamId::Summertime: {
+        SwTimezone z{};
+        Swgettimezone(&z);
+        *value = z.tz_dsttime;
+        break;
+    }
+#else
     case OrbisSystemServiceParamId::TimeFormat:
         *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
         break;
@@ -1932,6 +1975,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     case OrbisSystemServiceParamId::Summertime:
         *value = 1;
         break;
+#endif
     case OrbisSystemServiceParamId::GameParentalLevel:
         *value = u32(OrbisSystemParamGameParentalLevel::Off);
         break;
