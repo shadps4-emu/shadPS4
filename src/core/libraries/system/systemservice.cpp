@@ -13,6 +13,9 @@
 
 #ifdef WIN32
 #include <windows.h>
+#else // Linux / macOS
+#include <clocale>
+#include <ctime>
 #endif
 
 namespace Libraries::SystemService {
@@ -1926,6 +1929,7 @@ static void Swgettimezone(SwTimezone* z) {
     z->tz_dsttime = (state == TIME_ZONE_ID_DAYLIGHT) ? 1 : 0;
 }
 #endif
+
 s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id, int* value) {
     // TODO this probably should be stored in config for UI configuration
     LOG_DEBUG(Lib_SystemService, "called param_id {}", u32(param_id));
@@ -1943,9 +1947,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
 #ifdef WIN32
     case OrbisSystemServiceParamId::TimeFormat: {
         char format[2] = {0};
-
         GetLocaleInfoA(LOCALE_USER_DEFAULT, LOCALE_ILDATE, format, sizeof(format));
-
         if (format[0] == '0') {
             *value = u32(OrbisSystemParamTimeFormat::Fmt12Hour);
         } else {
@@ -1967,14 +1969,29 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     }
 #else
     case OrbisSystemServiceParamId::TimeFormat:
-        *value = u32(OrbisSystemParamTimeFormat::Fmt24Hour);
+        *value =
+            u32(OrbisSystemParamTimeFormat::Fmt24Hour); // don't see a way to check that on linux
         break;
-    case OrbisSystemServiceParamId::TimeZone:
-        *value = +120;
+    case OrbisSystemServiceParamId::TimeZone: {
+        std::time_t now = std::time(nullptr);
+        std::tm local{};
+        std::tm utc{};
+        localtime_r(&now, &local);
+        gmtime_r(&now, &utc);
+        int offset = (local.tm_hour - utc.tm_hour) * 60 + (local.tm_min - utc.tm_min);
+        if (local.tm_yday != utc.tm_yday) {
+            offset += (local.tm_yday > utc.tm_yday) ? 1440 : -1440;
+        }
+        *value = offset;
         break;
-    case OrbisSystemServiceParamId::Summertime:
-        *value = 1;
+    }
+    case OrbisSystemServiceParamId::Summertime: {
+        std::time_t now = std::time(nullptr);
+        std::tm local{};
+        localtime_r(&now, &local);
+        *value = (local.tm_isdst > 0) ? 1 : 0;
         break;
+    }
 #endif
     case OrbisSystemServiceParamId::GameParentalLevel:
         *value = u32(OrbisSystemParamGameParentalLevel::Off);
