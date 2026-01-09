@@ -566,6 +566,44 @@ static std::filesystem::path GetSysFontBaseDir() {
     return {};
 }
 
+static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesystem::path& base_dir,
+                                                           const std::filesystem::path& filename) {
+    if (base_dir.empty() || filename.empty()) {
+        return {};
+    }
+    std::error_code ec;
+    const auto is_file = [&](const std::filesystem::path& p) -> bool {
+        return std::filesystem::is_regular_file(p, ec) && !ec;
+    };
+
+    const auto direct = base_dir / filename;
+    if (is_file(direct)) {
+        return direct;
+    }
+
+    const auto base_name = base_dir.filename().string();
+    if (base_name != "font" && base_name != "font2") {
+        const auto in_font = base_dir / "font" / filename;
+        if (is_file(in_font)) {
+            return in_font;
+        }
+        const auto in_font2 = base_dir / "font2" / filename;
+        if (is_file(in_font2)) {
+            return in_font2;
+        }
+    }
+
+    if (base_name == "font" || base_name == "font2") {
+        const auto container = base_dir.parent_path();
+        const auto sibling = container / ((base_name == "font") ? "font2" : "font") / filename;
+        if (is_file(sibling)) {
+            return sibling;
+        }
+    }
+
+    return direct;
+}
+
 static std::string MacroToCamel(const char* macro_key) {
     if (!macro_key) {
         return {};
@@ -605,7 +643,7 @@ static std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
         if (auto override_path = Config::getSystemFontOverride(def->config_key)) {
             if (!override_path->empty() && !override_path->is_absolute() &&
                 !override_path->has_parent_path()) {
-                return base_dir / *override_path;
+                return ResolveSystemFontPathCandidate(base_dir, *override_path);
             }
             LOG_ERROR(Lib_Font,
                       "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -616,7 +654,7 @@ static std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             if (auto override_path2 = Config::getSystemFontOverride(camel_key)) {
                 if (!override_path2->empty() && !override_path2->is_absolute() &&
                     !override_path2->has_parent_path()) {
-                    return base_dir / *override_path2;
+                    return ResolveSystemFontPathCandidate(base_dir, *override_path2);
                 }
                 LOG_ERROR(Lib_Font,
                           "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -628,7 +666,7 @@ static std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             if (auto override_path3 = Config::getSystemFontOverride(lower_camel)) {
                 if (!override_path3->empty() && !override_path3->is_absolute() &&
                     !override_path3->has_parent_path()) {
-                    return base_dir / *override_path3;
+                    return ResolveSystemFontPathCandidate(base_dir, *override_path3);
                 }
                 LOG_ERROR(Lib_Font,
                           "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -636,7 +674,7 @@ static std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             }
         }
         if (def->default_file && *def->default_file) {
-            return base_dir / def->default_file;
+            return ResolveSystemFontPathCandidate(base_dir, def->default_file);
         }
     }
     LOG_ERROR(Lib_Font, "SystemFonts: unknown font set type=0x{:08X}", font_set_type);
@@ -668,10 +706,47 @@ static bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned
     if (path.empty()) {
         return false;
     }
-    if (!LoadGuestFileBytes(path, out_bytes) || out_bytes.empty()) {
-        return false;
+    auto try_load = [&](const std::filesystem::path& p) -> bool {
+        out_bytes.clear();
+        if (!LoadGuestFileBytes(p, out_bytes) || out_bytes.empty()) {
+            out_bytes.clear();
+            return false;
+        }
+        return true;
+    };
+
+    if (try_load(path)) {
+        return true;
     }
-    return true;
+
+    std::error_code ec;
+    const auto parent = path.parent_path();
+    const auto parent_name = parent.filename().string();
+    const auto file_name = path.filename();
+    if (!file_name.empty() && parent_name != "font" && parent_name != "font2") {
+        const auto cand_font = parent / "font" / file_name;
+        if (std::filesystem::is_regular_file(cand_font, ec) && !ec) {
+            if (try_load(cand_font)) {
+                return true;
+            }
+        }
+        const auto cand_font2 = parent / "font2" / file_name;
+        if (std::filesystem::is_regular_file(cand_font2, ec) && !ec) {
+            if (try_load(cand_font2)) {
+                return true;
+            }
+        }
+    }
+
+    if (!file_name.empty() && (parent_name == "font" || parent_name == "font2")) {
+        const auto container = parent.parent_path();
+        const auto sibling = container / ((parent_name == "font") ? "font2" : "font") / file_name;
+        if (std::filesystem::is_regular_file(sibling, ec) && !ec) {
+            return try_load(sibling);
+        }
+    }
+
+    return false;
 }
 
 } // namespace
@@ -4366,6 +4441,53 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
         Internal::PopulateStateMetrics(st, m);
         st.ext_face_ready = true;
 
+        auto compute_sysfont_scale_factor = [](FT_Face face, int units_per_em) -> float {
+            (void)units_per_em;
+            if (!face) {
+                return 1.0f;
+            }
+            const TT_OS2* os2 =
+                static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+            if (os2) {
+                if (os2->sTypoAscender == 770 && os2->sTypoDescender == -230) {
+                    return 1024.0f / 952.0f;
+                }
+            }
+            return 1.0f;
+        };
+        auto compute_sysfont_shift_value = [](FT_Face face) -> s32 {
+            if (!face) {
+                return 0;
+            }
+            const TT_OS2* os2 =
+                static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+            if (!os2) {
+                return 0;
+            }
+            const bool is_jp_pro_metrics = (os2->sTypoAscender == 880) &&
+                                           (os2->sTypoDescender == -120) &&
+                                           (os2->sTypoLineGap == 1);
+            if (is_jp_pro_metrics) {
+                const auto* vhea =
+                    static_cast<const TT_VertHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_vhea));
+                if (vhea) {
+                    const int units = static_cast<int>(face->units_per_EM);
+                    const int gap = static_cast<int>(os2->sTypoLineGap);
+                    const int shift = 1024 - units - gap;
+                    if (shift > 0 && shift < 128) {
+                        return static_cast<s32>(shift);
+                    }
+                }
+            }
+            return 0;
+        };
+        st.system_font_scale_factor = compute_sysfont_scale_factor(st.ext_ft_face, st.ext_units_per_em);
+        st.system_font_shift_value = compute_sysfont_shift_value(st.ext_ft_face);
+        LOG_DEBUG(Lib_Font, "SystemFonts: primary='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
+                  primary_path.filename().string(), st.ext_units_per_em, st.system_font_scale_factor,
+                  st.system_font_shift_value);
+
+        std::string preferred_latin_name_lower;
         const auto base_dir = Internal::GetSysFontBaseDir();
         if (!base_dir.empty()) {
             auto resolve_existing =
@@ -4470,6 +4592,14 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                     fb.bytes->data(), fb.bytes->size(), sub_font_index);
                 fb.ready = (fb.ft_face != nullptr);
                 if (fb.ready) {
+                    fb.scale_factor = compute_sysfont_scale_factor(
+                        fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
+                    fb.shift_value = compute_sysfont_shift_value(fb.ft_face);
+                    LOG_DEBUG(Lib_Font,
+                              "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
+                              fb.path.filename().string(),
+                              fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
+                              fb.scale_factor, fb.shift_value);
                     st.system_fallback_faces.push_back(std::move(fb));
                 } else {
                     Internal::DestroyFreeTypeFace(fb.ft_face);
@@ -4477,10 +4607,83 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             };
 
             {
-                if (auto roman_path = resolve_sysfont_path(base_dir / "SST-Roman.otf")) {
-                    const std::string roman_lower = lower_ascii(roman_path->filename().string());
-                    if (!has_fallback_name_lower(roman_lower)) {
-                        add_fallback_face(*roman_path);
+                const u32 tag = (fontSetType >> 8) & 0xFFu;
+                const u32 variant = (fontSetType >> 20) & 0x0Fu;
+                u32 style_suffix = fontSetType & 0xFFu;
+
+                switch (style_suffix) {
+                case 0xC3:
+                    style_suffix = 0x43;
+                    break;
+                case 0xC4:
+                    style_suffix = 0x44;
+                    break;
+                case 0xC5:
+                    style_suffix = 0x45;
+                    break;
+                case 0xC7:
+                    style_suffix = 0x47;
+                    break;
+                default:
+                    break;
+                }
+
+                const char* latin_file = nullptr;
+                if (tag != 0x00u && tag != 0x10u) {
+                    if (variant == 0x3u) {
+                        switch (style_suffix) {
+                        case 0x44:
+                            latin_file = "SSTTypewriter-Roman.otf";
+                            break;
+                        case 0x47:
+                            latin_file = "SSTTypewriter-Bd.otf";
+                            break;
+                        default:
+                            break;
+                        }
+                    } else if (variant == 0x1u) {
+                        switch (style_suffix) {
+                        case 0x43:
+                            latin_file = "SST-LightItalic.otf";
+                            break;
+                        case 0x44:
+                            latin_file = "SST-Italic.otf";
+                            break;
+                        case 0x45:
+                            latin_file = "SST-MediumItalic.otf";
+                            break;
+                        case 0x47:
+                            latin_file = "SST-BoldItalic.otf";
+                            break;
+                        default:
+                            break;
+                        }
+                    } else {
+                        switch (style_suffix) {
+                        case 0x43:
+                            latin_file = "SST-Light.otf";
+                            break;
+                        case 0x44:
+                            latin_file = "SST-Roman.otf";
+                            break;
+                        case 0x45:
+                            latin_file = "SST-Medium.otf";
+                            break;
+                        case 0x47:
+                            latin_file = "SST-Bold.otf";
+                            break;
+                        default:
+                            break;
+                        }
+                    }
+                }
+
+                if (latin_file) {
+                    if (auto latin_path = resolve_sysfont_path(base_dir / latin_file)) {
+                        preferred_latin_name_lower = lower_ascii(latin_path->filename().string());
+                        if (!has_fallback_name_lower(preferred_latin_name_lower)) {
+                            add_fallback_face(*latin_path);
+                        }
                     }
                 }
             }
@@ -4501,6 +4704,18 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 case 0xC7:
                     arabic_file = "SSTArabic-Bold.otf";
                     break;
+                case 0xD3:
+                    arabic_file = "SSTArabic-Light.otf";
+                    break;
+                case 0xD4:
+                    arabic_file = "SSTArabic-Roman.otf";
+                    break;
+                case 0xD5:
+                    arabic_file = "SSTArabic-Medium.otf";
+                    break;
+                case 0xD7:
+                    arabic_file = "SSTArabic-Bold.otf";
+                    break;
                 default:
                     break;
                 }
@@ -4512,6 +4727,115 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                             add_fallback_face(*arabic_path);
                         }
                     }
+                }
+            }
+
+            {
+                const u32 tag = (fontSetType >> 8) & 0xFFu;
+                const u32 style_suffix = fontSetType & 0xFFu;
+
+                auto add_named_fallback = [&](std::string_view filename) {
+                    if (filename.empty()) {
+                        return;
+                    }
+                    if (auto p = resolve_sysfont_path(base_dir / std::filesystem::path{filename})) {
+                        const std::string lower = lower_ascii(p->filename().string());
+                        if (!has_fallback_name_lower(lower)) {
+                            add_fallback_face(*p);
+                        }
+                    }
+                };
+
+                const bool is_bold_like = (style_suffix == 0x47u) || (style_suffix == 0x57u) ||
+                                          (style_suffix == 0xC7u) || (style_suffix == 0xD7u);
+
+                const bool needs_jppro = (tag == 0x04u) || (tag == 0x24u) || (tag == 0x34u) ||
+                                         (tag == 0x84u) || (tag == 0xA4u) || (tag == 0xACu) ||
+                                         (tag == 0xB4u) || (tag == 0xBCu);
+                const bool needs_cngb = (tag == 0x80u) || (tag == 0x84u) || (tag == 0x90u) ||
+                                        (tag == 0xA0u) || (tag == 0xA4u) || (tag == 0xACu) ||
+                                        (tag == 0xB0u) || (tag == 0xB4u) || (tag == 0xBCu);
+                const bool needs_hangul = (tag == 0x24u) || (tag == 0x34u) || (tag == 0xA0u) ||
+                                          (tag == 0xA4u) || (tag == 0xACu) || (tag == 0xB0u) ||
+                                          (tag == 0xB4u) || (tag == 0xBCu);
+
+                u32 sea_weight_code = style_suffix;
+                switch (sea_weight_code) {
+                case 0xD3u:
+                    sea_weight_code = 0x53u;
+                    break;
+                case 0xD4u:
+                    sea_weight_code = 0x54u;
+                    break;
+                case 0xD5u:
+                    sea_weight_code = 0x55u;
+                    break;
+                case 0xD7u:
+                    sea_weight_code = 0x57u;
+                    break;
+                default:
+                    break;
+                }
+                const bool is_sea_weight = (sea_weight_code == 0x53u) || (sea_weight_code == 0x54u) ||
+                                           (sea_weight_code == 0x55u) || (sea_weight_code == 0x57u);
+
+                if (is_sea_weight && primary_name_lower.rfind("sstvietnamese-", 0) != 0) {
+                    const char* vn_file = nullptr;
+                    switch (sea_weight_code) {
+                    case 0x53:
+                        vn_file = "SSTVietnamese-Light.otf";
+                        break;
+                    case 0x54:
+                        vn_file = "SSTVietnamese-Roman.otf";
+                        break;
+                    case 0x55:
+                        vn_file = "SSTVietnamese-Medium.otf";
+                        break;
+                    case 0x57:
+                        vn_file = "SSTVietnamese-Bold.otf";
+                        break;
+                    default:
+                        break;
+                    }
+                    if (vn_file) {
+                        add_named_fallback(vn_file);
+                    }
+                }
+
+                if (is_sea_weight && ((tag == 0x10u) || (tag == 0x14u) || (tag == 0x34u) ||
+                                      (tag == 0x90u) || (tag == 0x94u) || (tag == 0xB0u) ||
+                                      (tag == 0xB4u) || (tag == 0xBCu))) {
+                    const char* th_file = nullptr;
+                    switch (sea_weight_code) {
+                    case 0x53:
+                        th_file = "SSTThai-Light.otf";
+                        break;
+                    case 0x54:
+                        th_file = "SSTThai-Roman.otf";
+                        break;
+                    case 0x55:
+                        th_file = "SSTThai-Medium.otf";
+                        break;
+                    case 0x57:
+                        th_file = "SSTThai-Bold.otf";
+                        break;
+                    default:
+                        break;
+                    }
+                    if (th_file) {
+                        add_named_fallback(th_file);
+                    }
+                }
+
+                if (needs_jppro && primary_name_lower.rfind("sstjppro-", 0) != 0) {
+                    add_named_fallback(is_bold_like ? "SSTJpPro-Bold.otf" : "SSTJpPro-Regular.otf");
+                }
+                if (needs_cngb && primary_name_lower != "dfhei5-sony.ttf") {
+                    add_named_fallback("DFHEI5-SONY.ttf");
+                }
+                if (needs_hangul && primary_name_lower.rfind("sceps4yoongd-", 0) != 0) {
+                    add_named_fallback(is_bold_like ? "SCEPS4Yoongd-Bold.otf"
+                                                    : "SCEPS4Yoongd-Medium.otf");
                 }
             }
 
@@ -4556,6 +4880,14 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                     fb.bytes->data(), fb.bytes->size(), sub_font_index);
                 fb.ready = (fb.ft_face != nullptr);
                 if (fb.ready) {
+                    fb.scale_factor = compute_sysfont_scale_factor(
+                        fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
+                    fb.shift_value = compute_sysfont_shift_value(fb.ft_face);
+                    LOG_DEBUG(Lib_Font,
+                              "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
+                              fb.path.filename().string(),
+                              fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
+                              fb.scale_factor, fb.shift_value);
                     st.system_fallback_faces.push_back(std::move(fb));
                 } else {
                     Internal::DestroyFreeTypeFace(fb.ft_face);
@@ -4902,10 +5234,26 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 }
                 return s;
             };
+            const auto select_preferred_latin_id = [&](const std::string& name_lower) -> bool {
+                if (name_lower.empty()) {
+                    return false;
+                }
+                for (const auto& fb : st.system_fallback_faces) {
+                    const auto candidate = lower_ascii_local(fb.path.filename().string());
+                    if (candidate == name_lower && fb.font_id != 0xffffffffu) {
+                        st.fontset_selector->roman_font_id = fb.font_id;
+                        return true;
+                    }
+                }
+                return false;
+            };
+            if (!select_preferred_latin_id(preferred_latin_name_lower)) {
+                (void)select_preferred_latin_id("sst-roman.otf");
+            }
             for (const auto& fb : st.system_fallback_faces) {
                 const auto name = lower_ascii_local(fb.path.filename().string());
-                if (name == "sst-roman.otf" && fb.font_id != 0xffffffffu) {
-                    st.fontset_selector->roman_font_id = fb.font_id;
+                if (name.rfind("sstarabic-", 0) == 0 && fb.font_id != 0xffffffffu) {
+                    st.fontset_selector->arabic_font_id = fb.font_id;
                     break;
                 }
             }
@@ -4933,7 +5281,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             header->entry_count = entry_count;
 
             auto* entries = reinterpret_cast<u32*>(st.fontset_record_storage->data() +
-                                                   sizeof(Internal::FontSetRecordHeader));
+                                                  sizeof(Internal::FontSetRecordHeader));
             for (u32 i = 0; i < entry_count; ++i) {
                 std::construct_at(entries + i, font_ids[i]);
             }
@@ -5129,6 +5477,19 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImage(OrbisFontHandle fontHandle, u32 cod
         }
 
         const float y_used = y + baseline_add;
+        {
+            static std::mutex s_baseline_log_mutex;
+            static std::unordered_map<OrbisFontHandle, int> s_baseline_log_counts;
+            std::lock_guard<std::mutex> lock(s_baseline_log_mutex);
+            int& count = s_baseline_log_counts[fontHandle];
+            if (count < 5) {
+                LOG_DEBUG(Lib_Font,
+                          "RenderBaseline: handle={} code=U+{:04X} y_in={} baseline_add={} y_used={} pre_rc={}",
+                          static_cast<const void*>(fontHandle), code, y, baseline_add, y_used,
+                          pre_rc);
+                ++count;
+            }
+        }
 
         CachedStyleSetDirectionWord(font->cached_style, 1);
 

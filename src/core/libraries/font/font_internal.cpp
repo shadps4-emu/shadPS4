@@ -766,7 +766,6 @@ bool ResolveFace(FontState& st, Libraries::Font::OrbisFontHandle handle, FT_Face
     return face_out != nullptr;
 }
 
-// LLE: FUN_0100a690
 s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle handle, FT_Face face,
                              float pixel_w, float pixel_h,
                              Libraries::Font::OrbisFontRenderSurface* surf, u32 code, float x,
@@ -990,7 +989,7 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
         }
     }
 
-    result->stage = nullptr;
+    result->transImage = nullptr;
     result->SurfaceImage.address = static_cast<u8*>(surf->buffer);
     result->SurfaceImage.widthByte = static_cast<u32>(surf->widthByte);
     result->SurfaceImage.pixelSizeByte = static_cast<u8>(surf->pixelSizeByte);
@@ -1051,7 +1050,6 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
     return ORBIS_OK;
 }
 
-// LLE: FUN_0100e050
 s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontHandle handle,
                                       FT_Face face, float scale_x, float scale_y,
                                       Libraries::Font::OrbisFontRenderSurface* surf, u32 code,
@@ -1237,7 +1235,7 @@ s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontH
         }
     }
 
-    result->stage = nullptr;
+    result->transImage = nullptr;
     result->SurfaceImage.address = static_cast<u8*>(surf->buffer);
     result->SurfaceImage.widthByte = static_cast<u32>(surf->widthByte);
     result->SurfaceImage.pixelSizeByte = static_cast<u8>(surf->pixelSizeByte);
@@ -1391,76 +1389,76 @@ constexpr SystemFontDefinition kSystemFontDefinitions[] = {
     {0x18070054, "FONTSET_SST_STD_VIETNAMESE", "SSTVietnamese-Roman.otf"},
     {0x18070055, "FONTSET_SST_STD_VIETNAMESE_MEDIUM", "SSTVietnamese-Medium.otf"},
     {0x18070057, "FONTSET_SST_STD_VIETNAMESE_BOLD", "SSTVietnamese-Bold.otf"},
-    {0x180700C3, "FONTSET_SST_STD_EUROPEAN_AR_LIGHT", "SSTArabic-Light.otf"},
-    {0x180700C4, "FONTSET_SST_STD_EUROPEAN_AR", "SSTArabic-Roman.otf"},
-    {0x180700C5, "FONTSET_SST_STD_EUROPEAN_AR_MEDIUM", "SSTArabic-Medium.otf"},
-    {0x180700C7, "FONTSET_SST_STD_EUROPEAN_AR_BOLD", "SSTArabic-Bold.otf"},
-    {0x18070444, "FONTSET_SST_STD_EUROPEAN_JP", "SSTVietnamese-Roman.otf"},
-    {0x18070447, "FONTSET_SST_STD_EUROPEAN_JP_BOLD", "SSTVietnamese-Bold.otf"},
-    {0x18070454, "FONTSET_SST_STD_EUROPEAN_JP", "SSTVietnamese-Roman.otf"},
-    {0x18070457, "FONTSET_SST_STD_EUROPEAN_JP_BOLD", "SSTVietnamese-Bold.otf"},
-    {0x180704C4, "FONTSET_SST_STD_EUROPEAN_JP_AR", "SSTArabic-Roman.otf"},
-    {0x180704C7, "FONTSET_SST_STD_EUROPEAN_JP_AR_BOLD", "SSTArabic-Bold.otf"},
-    {0x18071053, "FONTSET_SST_STD_THAI_LIGHT", "SSTThai-Light.otf"},
-    {0x18071054, "FONTSET_SST_STD_THAI", "SSTThai-Roman.otf"},
-    {0x18071055, "FONTSET_SST_STD_THAI_MEDIUM", "SSTThai-Medium.otf"},
-    {0x18071057, "FONTSET_SST_STD_THAI_BOLD", "SSTThai-Bold.otf"},
-    {0x18071454, "FONTSET_SST_STD_EUROPEAN_JP_TH", "SSTThai-Roman.otf"},
-    {0x18071457, "FONTSET_SST_STD_EUROPEAN_JP_TH_BOLD", "SSTThai-Bold.otf"},
-    {0x18072444, "FONTSET_SST_STD_EUROPEAN_JPUH", "SSTAribStdB24-Regular.ttf"},
+    {0x180700C3, "FONTSET_SST_STD_EUROPEAN_AR_LIGHT", "SST-Light.otf"},
+    {0x180700C4, "FONTSET_SST_STD_EUROPEAN_AR", "SST-Roman.otf"},
+    {0x180700C5, "FONTSET_SST_STD_EUROPEAN_AR_MEDIUM", "SST-Medium.otf"},
+    {0x180700C7, "FONTSET_SST_STD_EUROPEAN_AR_BOLD", "SST-Bold.otf"},
+    {0x18070444, "FONTSET_SST_STD_EUROPEAN_JP", "SSTJpPro-Regular.otf"},
+    {0x18070447, "FONTSET_SST_STD_EUROPEAN_JP_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18070454, "FONTSET_SST_STD_EUROPEAN_JP", "SSTJpPro-Regular.otf"},
+    {0x18070457, "FONTSET_SST_STD_EUROPEAN_JP_BOLD", "SSTJpPro-Bold.otf"},
+    {0x180704C4, "FONTSET_SST_STD_EUROPEAN_JP_AR", "SSTJpPro-Regular.otf"},
+    {0x180704C7, "FONTSET_SST_STD_EUROPEAN_JP_AR_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18071053, "FONTSET_SST_STD_THAI_LIGHT", "SSTVietnamese-Light.otf"},
+    {0x18071054, "FONTSET_SST_STD_THAI", "SSTVietnamese-Roman.otf"},
+    {0x18071055, "FONTSET_SST_STD_THAI_MEDIUM", "SSTVietnamese-Medium.otf"},
+    {0x18071057, "FONTSET_SST_STD_THAI_BOLD", "SSTVietnamese-Bold.otf"},
+    {0x18071454, "FONTSET_SST_STD_EUROPEAN_JP_TH", "SSTJpPro-Regular.otf"},
+    {0x18071457, "FONTSET_SST_STD_EUROPEAN_JP_TH_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18072444, "FONTSET_SST_STD_EUROPEAN_JPUH", "SSTJpPro-Regular.otf"},
     {0x18072447, "FONTSET_SST_STD_EUROPEAN_JPUH_BOLD", "SSTJpPro-Bold.otf"},
-    {0x180724C4, "FONTSET_SST_STD_EUROPEAN_JPUH_AR", "SSTArabic-Roman.otf"},
-    {0x180724C7, "FONTSET_SST_STD_EUROPEAN_JPUH_AR_BOLD", "SSTArabic-Bold.otf"},
-    {0x18073454, "FONTSET_SST_STD_EUROPEAN_JPUH_TH", "SSTThai-Roman.otf"},
-    {0x18073457, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_BOLD", "SSTThai-Bold.otf"},
-    {0x180734D4, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_AR", "SSTThai-Roman.otf"},
-    {0x180734D7, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_AR_BOLD", "SSTThai-Bold.otf"},
+    {0x180724C4, "FONTSET_SST_STD_EUROPEAN_JPUH_AR", "SSTJpPro-Regular.otf"},
+    {0x180724C7, "FONTSET_SST_STD_EUROPEAN_JPUH_AR_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18073454, "FONTSET_SST_STD_EUROPEAN_JPUH_TH", "SSTJpPro-Regular.otf"},
+    {0x18073457, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_BOLD", "SSTJpPro-Bold.otf"},
+    {0x180734D4, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_AR", "SSTJpPro-Regular.otf"},
+    {0x180734D7, "FONTSET_SST_STD_EUROPEAN_JPUH_TH_AR_BOLD", "SSTJpPro-Bold.otf"},
     {0x18078044, "FONTSET_SST_STD_EUROPEAN_GB", "DFHEI5-SONY.ttf"},
-    {0x180780C4, "FONTSET_SST_STD_EUROPEAN_GB_AR", "SSTArabic-Roman.otf"},
-    {0x18079054, "FONTSET_SST_STD_EUROPEAN_GB_TH", "SSTThai-Roman.otf"},
-    {0x1807A044, "FONTSET_SST_STD_EUROPEAN_GBUH", "e046323ms.ttf"},
-    {0x1807A0C4, "FONTSET_SST_STD_EUROPEAN_GBUH_AR", "SSTArabic-Bold.otf"},
+    {0x180780C4, "FONTSET_SST_STD_EUROPEAN_GB_AR", "DFHEI5-SONY.ttf"},
+    {0x18079054, "FONTSET_SST_STD_EUROPEAN_GB_TH", "DFHEI5-SONY.ttf"},
+    {0x1807A044, "FONTSET_SST_STD_EUROPEAN_GBUH", "DFHEI5-SONY.ttf"},
+    {0x1807A0C4, "FONTSET_SST_STD_EUROPEAN_GBUH_AR", "DFHEI5-SONY.ttf"},
     {0x1807A444, "FONTSET_SST_STD_EUROPEAN_JPCJK", "SSTJpPro-Regular.otf"},
-    {0x1807A4C4, "FONTSET_SST_STD_EUROPEAN_JPCJK_AR", "SSTArabic-Roman.otf"},
-    {0x1807AC44, "FONTSET_SST_STD_EUROPEAN_GBCJK", "n023055ms.ttf"},
-    {0x1807ACC4, "FONTSET_SST_STD_EUROPEAN_GBCJK_AR", "SSTArabic-Bold.otf"},
-    {0x1807B054, "FONTSET_SST_STD_EUROPEAN_GBUH_TH", "SSTThai-Roman.otf"},
-    {0x1807B0D4, "FONTSET_SST_STD_EUROPEAN_GBUH_TH_AR", "SSTThai-Bold.otf"},
-    {0x1807B454, "FONTSET_SST_STD_EUROPEAN_JPCJK_TH", "SSTThai-Roman.otf"},
-    {0x1807B4D4, "FONTSET_SST_STD_EUROPEAN_JPCJK_TH_AR", "SSTThai-Bold.otf"},
-    {0x1807BC54, "FONTSET_SST_STD_EUROPEAN_GBCJK_TH", "SSTThai-Roman.otf"},
-    {0x1807BCD4, "FONTSET_SST_STD_EUROPEAN_GBCJK_TH_AR", "SSTThai-Bold.otf"},
-    {0x18080444, "FONTSET_SST_STD_JAPANESE_JP", "SSTAribStdB24-Regular.ttf"},
-    {0x18080447, "FONTSET_SST_STD_JAPANESE_JP_BOLD", "SSTAribStdB24-Regular.ttf"},
-    {0x18080454, "FONTSET_SST_STD_VIETNAMESE_JP", "SSTVietnamese-Roman.otf"},
-    {0x18080457, "FONTSET_SST_STD_VIETNAMESE_JP_BOLD", "SSTVietnamese-Bold.otf"},
-    {0x180804C4, "FONTSET_SST_STD_JAPANESE_JP_AR", "SSTAribStdB24-Regular.ttf"},
-    {0x180804C7, "FONTSET_SST_STD_JAPANESE_JP_AR_BOLD", "SSTAribStdB24-Regular.ttf"},
-    {0x18081454, "FONTSET_SST_STD_ASIAN_JP_TH", "SSTThai-Roman.otf"},
-    {0x18081457, "FONTSET_SST_STD_ASIAN_JP_TH_BOLD", "SSTThai-Bold.otf"},
-    {0x18082444, "FONTSET_SST_STD_JAPANESE_JPUH", "SSTAribStdB24-Regular.ttf"},
+    {0x1807A4C4, "FONTSET_SST_STD_EUROPEAN_JPCJK_AR", "SSTJpPro-Regular.otf"},
+    {0x1807AC44, "FONTSET_SST_STD_EUROPEAN_GBCJK", "SCEPS4Yoongd-Medium.otf"},
+    {0x1807ACC4, "FONTSET_SST_STD_EUROPEAN_GBCJK_AR", "DFHEI5-SONY.ttf"},
+    {0x1807B054, "FONTSET_SST_STD_EUROPEAN_GBUH_TH", "DFHEI5-SONY.ttf"},
+    {0x1807B0D4, "FONTSET_SST_STD_EUROPEAN_GBUH_TH_AR", "DFHEI5-SONY.ttf"},
+    {0x1807B454, "FONTSET_SST_STD_EUROPEAN_JPCJK_TH", "SSTJpPro-Regular.otf"},
+    {0x1807B4D4, "FONTSET_SST_STD_EUROPEAN_JPCJK_TH_AR", "SSTJpPro-Regular.otf"},
+    {0x1807BC54, "FONTSET_SST_STD_EUROPEAN_GBCJK_TH", "DFHEI5-SONY.ttf"},
+    {0x1807BCD4, "FONTSET_SST_STD_EUROPEAN_GBCJK_TH_AR", "DFHEI5-SONY.ttf"},
+    {0x18080444, "FONTSET_SST_STD_JAPANESE_JP", "SSTJpPro-Regular.otf"},
+    {0x18080447, "FONTSET_SST_STD_JAPANESE_JP_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18080454, "FONTSET_SST_STD_VIETNAMESE_JP", "SSTJpPro-Regular.otf"},
+    {0x18080457, "FONTSET_SST_STD_VIETNAMESE_JP_BOLD", "SSTJpPro-Bold.otf"},
+    {0x180804C4, "FONTSET_SST_STD_JAPANESE_JP_AR", "SSTJpPro-Regular.otf"},
+    {0x180804C7, "FONTSET_SST_STD_JAPANESE_JP_AR_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18081454, "FONTSET_SST_STD_ASIAN_JP_TH", "SSTJpPro-Regular.otf"},
+    {0x18081457, "FONTSET_SST_STD_ASIAN_JP_TH_BOLD", "SSTJpPro-Bold.otf"},
+    {0x18082444, "FONTSET_SST_STD_JAPANESE_JPUH", "SSTJpPro-Regular.otf"},
     {0x18082447, "FONTSET_SST_STD_JAPANESE_JPUH_BOLD", "SSTJpPro-Bold.otf"},
-    {0x180824C4, "FONTSET_SST_STD_JAPANESE_JPUH_AR", "SSTAribStdB24-Regular.ttf"},
+    {0x180824C4, "FONTSET_SST_STD_JAPANESE_JPUH_AR", "SSTJpPro-Regular.otf"},
     {0x180824C7, "FONTSET_SST_STD_JAPANESE_JPUH_AR_BOLD", "SSTJpPro-Bold.otf"},
-    {0x18083454, "FONTSET_SST_STD_ASIAN_JPUH_TH", "SSTThai-Roman.otf"},
-    {0x18083457, "FONTSET_SST_STD_ASIAN_JPUH_TH_BOLD", "SSTThai-Bold.otf"},
-    {0x180834D4, "FONTSET_SST_STD_ASIAN_JPUH_TH_AR", "SSTThai-Roman.otf"},
-    {0x180834D7, "FONTSET_SST_STD_ASIAN_JPUH_TH_AR_BOLD", "SSTThai-Bold.otf"},
-    {0x1808A444, "FONTSET_SST_STD_JAPANESE_JPCJK", "SSTAribStdB24-Regular.ttf"},
-    {0x1808A4C4, "FONTSET_SST_STD_JAPANESE_JPCJK_AR", "SSTJpPro-Bold.otf"},
-    {0x1808B454, "FONTSET_SST_STD_ASIAN_JPCJK_TH", "SSTThai-Roman.otf"},
-    {0x1808B4D4, "FONTSET_SST_STD_ASIAN_JPCJK_TH_AR", "SSTThai-Bold.otf"},
+    {0x18083454, "FONTSET_SST_STD_ASIAN_JPUH_TH", "SSTJpPro-Regular.otf"},
+    {0x18083457, "FONTSET_SST_STD_ASIAN_JPUH_TH_BOLD", "SSTJpPro-Bold.otf"},
+    {0x180834D4, "FONTSET_SST_STD_ASIAN_JPUH_TH_AR", "SSTJpPro-Regular.otf"},
+    {0x180834D7, "FONTSET_SST_STD_ASIAN_JPUH_TH_AR_BOLD", "SSTJpPro-Bold.otf"},
+    {0x1808A444, "FONTSET_SST_STD_JAPANESE_JPCJK", "SSTJpPro-Regular.otf"},
+    {0x1808A4C4, "FONTSET_SST_STD_JAPANESE_JPCJK_AR", "SSTJpPro-Regular.otf"},
+    {0x1808B454, "FONTSET_SST_STD_ASIAN_JPCJK_TH", "SSTJpPro-Regular.otf"},
+    {0x1808B4D4, "FONTSET_SST_STD_ASIAN_JPCJK_TH_AR", "SSTJpPro-Regular.otf"},
     {0x180C8044, "FONTSET_SST_STD_SCHINESE_GB", "DFHEI5-SONY.ttf"},
     {0x180C80C4, "FONTSET_SST_STD_SCHINESE_GB_AR", "DFHEI5-SONY.ttf"},
-    {0x180C9054, "FONTSET_SST_STD_ASIAN_GB_TH", "SSTThai-Roman.otf"},
-    {0x180CA044, "FONTSET_SST_STD_SCHINESE_GBUH", "e046323ms.ttf"},
-    {0x180CA0C4, "FONTSET_SST_STD_SCHINESE_GBUH_AR", "e046323ms.ttf"},
-    {0x180CAC44, "FONTSET_SST_STD_SCHINESE_GBCJK", "n023055ms.ttf"},
-    {0x180CACC4, "FONTSET_SST_STD_SCHINESE_GBCJK_AR", "SSTAribStdB24-Regular.ttf"},
-    {0x180CB054, "FONTSET_SST_STD_ASIAN_GBUH_TH", "SSTThai-Roman.otf"},
-    {0x180CB0D4, "FONTSET_SST_STD_ASIAN_GBUH_TH_AR", "SSTThai-Bold.otf"},
-    {0x180CBC54, "FONTSET_SST_STD_ASIAN_GBCJK_TH", "SSTThai-Roman.otf"},
-    {0x180CBCD4, "FONTSET_SST_STD_ASIAN_GBCJK_TH_AR", "SSTThai-Bold.otf"},
+    {0x180C9054, "FONTSET_SST_STD_ASIAN_GB_TH", "DFHEI5-SONY.ttf"},
+    {0x180CA044, "FONTSET_SST_STD_SCHINESE_GBUH", "DFHEI5-SONY.ttf"},
+    {0x180CA0C4, "FONTSET_SST_STD_SCHINESE_GBUH_AR", "DFHEI5-SONY.ttf"},
+    {0x180CAC44, "FONTSET_SST_STD_SCHINESE_GBCJK", "DFHEI5-SONY.ttf"},
+    {0x180CACC4, "FONTSET_SST_STD_SCHINESE_GBCJK_AR", "DFHEI5-SONY.ttf"},
+    {0x180CB054, "FONTSET_SST_STD_ASIAN_GBUH_TH", "DFHEI5-SONY.ttf"},
+    {0x180CB0D4, "FONTSET_SST_STD_ASIAN_GBUH_TH_AR", "DFHEI5-SONY.ttf"},
+    {0x180CBC54, "FONTSET_SST_STD_ASIAN_GBCJK_TH", "DFHEI5-SONY.ttf"},
+    {0x180CBCD4, "FONTSET_SST_STD_ASIAN_GBCJK_TH_AR", "DFHEI5-SONY.ttf"},
     {0x18170043, "FONTSET_SST_STD_EUROPEAN_LIGHT_ITALIC", "SST-LightItalic.otf"},
     {0x18170044, "FONTSET_SST_STD_EUROPEAN_ITALIC", "SST-Italic.otf"},
     {0x18170045, "FONTSET_SST_STD_EUROPEAN_MEDIUM_ITALIC", "SST-MediumItalic.otf"},
@@ -1469,8 +1467,8 @@ constexpr SystemFontDefinition kSystemFontDefinitions[] = {
     {0x18170447, "FONTSET_SST_STD_EUROPEAN_JP_BOLD_ITALIC", "SSTJpPro-Bold.otf"},
     {0x18370044, "FONTSET_SST_TYPEWRITER_EUROPEAN", "SSTTypewriter-Roman.otf"},
     {0x18370047, "FONTSET_SST_TYPEWRITER_EUROPEAN_BOLD", "SSTTypewriter-Bd.otf"},
-    {0x18370444, "FONTSET_SST_TYPEWRITER_EUROPEAN_JP", "SSTTypewriter-Roman.otf"},
-    {0x18370447, "FONTSET_SST_TYPEWRITER_EUROPEAN_JP_BOLD", "SSTTypewriter-Bd.otf"},
+    {0x18370444, "FONTSET_SST_TYPEWRITER_EUROPEAN_JP", "SSTJpPro-Regular.otf"},
+    {0x18370447, "FONTSET_SST_TYPEWRITER_EUROPEAN_JP_BOLD", "SSTJpPro-Bold.otf"},
 };
 
 std::mutex g_fontset_cache_mutex;
@@ -1600,6 +1598,44 @@ std::filesystem::path GetSysFontBaseDir() {
     return {};
 }
 
+static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesystem::path& base_dir,
+                                                           const std::filesystem::path& filename) {
+    if (base_dir.empty() || filename.empty()) {
+        return {};
+    }
+    std::error_code ec;
+    const auto is_file = [&](const std::filesystem::path& p) -> bool {
+        return std::filesystem::is_regular_file(p, ec) && !ec;
+    };
+
+    const auto direct = base_dir / filename;
+    if (is_file(direct)) {
+        return direct;
+    }
+
+    const auto base_name = base_dir.filename().string();
+    if (base_name != "font" && base_name != "font2") {
+        const auto in_font = base_dir / "font" / filename;
+        if (is_file(in_font)) {
+            return in_font;
+        }
+        const auto in_font2 = base_dir / "font2" / filename;
+        if (is_file(in_font2)) {
+            return in_font2;
+        }
+    }
+
+    if (base_name == "font" || base_name == "font2") {
+        const auto container = base_dir.parent_path();
+        const auto sibling = container / ((base_name == "font") ? "font2" : "font") / filename;
+        if (is_file(sibling)) {
+            return sibling;
+        }
+    }
+
+    return direct;
+}
+
 std::string MacroToCamel(const char* macro_key) {
     if (!macro_key) {
         return {};
@@ -1639,7 +1675,7 @@ std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
         if (auto override_path = Config::getSystemFontOverride(def->config_key)) {
             if (!override_path->empty() && !override_path->is_absolute() &&
                 !override_path->has_parent_path()) {
-                return base_dir / *override_path;
+                return ResolveSystemFontPathCandidate(base_dir, *override_path);
             }
             LOG_ERROR(Lib_Font,
                       "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -1650,7 +1686,7 @@ std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             if (auto override_path2 = Config::getSystemFontOverride(camel_key)) {
                 if (!override_path2->empty() && !override_path2->is_absolute() &&
                     !override_path2->has_parent_path()) {
-                    return base_dir / *override_path2;
+                    return ResolveSystemFontPathCandidate(base_dir, *override_path2);
                 }
                 LOG_ERROR(Lib_Font,
                           "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -1662,7 +1698,7 @@ std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             if (auto override_path3 = Config::getSystemFontOverride(lower_camel)) {
                 if (!override_path3->empty() && !override_path3->is_absolute() &&
                     !override_path3->has_parent_path()) {
-                    return base_dir / *override_path3;
+                    return ResolveSystemFontPathCandidate(base_dir, *override_path3);
                 }
                 LOG_ERROR(Lib_Font,
                           "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
@@ -1670,7 +1706,7 @@ std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
             }
         }
         if (def->default_file && *def->default_file) {
-            return base_dir / def->default_file;
+            return ResolveSystemFontPathCandidate(base_dir, def->default_file);
         }
     }
     LOG_ERROR(Lib_Font, "SystemFonts: unknown font set type=0x{:08X}", font_set_type);
@@ -1772,6 +1808,21 @@ bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned char>&
     const auto parent = path.parent_path();
     const auto parent_name = parent.filename().string();
     const auto file_name = path.filename();
+    if (!file_name.empty() && parent_name != "font" && parent_name != "font2") {
+        const auto cand_font = parent / "font" / file_name;
+        if (std::filesystem::is_regular_file(cand_font, ec) && !ec) {
+            if (try_load(cand_font)) {
+                return true;
+            }
+        }
+        const auto cand_font2 = parent / "font2" / file_name;
+        if (std::filesystem::is_regular_file(cand_font2, ec) && !ec) {
+            if (try_load(cand_font2)) {
+                return true;
+            }
+        }
+    }
+
     if (!file_name.empty() && (parent_name == "font" || parent_name == "font2")) {
         const auto container = parent.parent_path();
         const auto sibling = container / ((parent_name == "font") ? "font2" : "font") / file_name;
@@ -1928,5 +1979,4 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     }
     return {};
 }
-
 } // namespace Libraries::Font::Internal
