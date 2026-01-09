@@ -16,8 +16,6 @@ public:
 
     bool IsGameRunning() const;
     void SetGameRunning(bool running);
-    bool IsFpsCounterShown() const;
-    void SetFpsCounterShown(bool show);
     bool IsFpsColorEnabled() const;
     bool IsAutoPatchesLoadEnabled() const;
     void SetAutoPatchesLoadEnabled(bool enable);
@@ -28,7 +26,6 @@ private:
 
     // state variables
     bool m_running = false;
-    bool m_show_fps_counter = false;
     bool m_fps_color = true;
     bool m_load_patches_auto = true;
 };

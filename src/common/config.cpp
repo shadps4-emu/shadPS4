@@ -198,6 +198,7 @@ static ConfigEntry<bool> pipelineCacheArchive(false);
 static ConfigEntry<bool> isDebugDump(false);
 static ConfigEntry<bool> isShaderDebug(false);
 static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
+static ConfigEntry<bool> showFpsCounter(false);
 static ConfigEntry<bool> logEnabled(true);
 
 // GUI
@@ -449,6 +450,14 @@ bool isPipelineCacheEnabled() {
 
 bool isPipelineCacheArchived() {
     return pipelineCacheArchive.get();
+}
+
+bool getShowFpsCounter() {
+    return showFpsCounter.get();
+}
+
+void setShowFpsCounter(bool enable, bool is_game_specific) {
+    showFpsCounter.set(enable, is_game_specific);
 }
 
 bool isLoggingEnabled() {
@@ -946,6 +955,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
         isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
         isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
+        showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
@@ -1164,6 +1174,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
+        data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
     // Sorting of TOML sections
@@ -1269,6 +1280,9 @@ void setDefaultValues(bool is_game_specific) {
         shouldPatchShaders.base_value = false;
         internalScreenWidth.base_value = 1280;
         internalScreenHeight.base_value = 720;
+
+        // Debug
+        showFpsCounter.base_value = false;
     }
 }
 

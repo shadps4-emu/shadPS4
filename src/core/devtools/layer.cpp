@@ -312,7 +312,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
-    show_simple_fps = EmulatorState::GetInstance()->IsFpsCounterShown();
+    show_simple_fps = Config::getShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 

@@ -28,12 +28,7 @@ bool EmulatorState::IsGameRunning() const {
 void EmulatorState::SetGameRunning(bool running) {
     m_running = running;
 }
-bool EmulatorState::IsFpsCounterShown() const {
-    return m_show_fps_counter;
-}
-void EmulatorState::SetFpsCounterShown(bool show) {
-    m_show_fps_counter = show;
-}
+
 bool EmulatorState::IsFpsColorEnabled() const {
     return m_fps_color;
 }
