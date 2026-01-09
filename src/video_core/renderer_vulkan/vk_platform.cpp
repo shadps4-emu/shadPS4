@@ -88,7 +88,7 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
             UNREACHABLE();
         }
     } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
-        if (Config::isRdocEnabled()) {
+        if (EmulatorSetttings::GeItInstance()->isRdocEnabled()) {
             LOG_ERROR(Render_Vulkan,
                       "RenderDoc is not compatible with Wayland, use an X11 window instead.");
         }
