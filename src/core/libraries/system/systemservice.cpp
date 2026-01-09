@@ -1919,7 +1919,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     }
     switch (param_id) {
     case OrbisSystemServiceParamId::Lang:
-        *value = Config::GetLanguage();
+        *value = EmulatorSettings::GetInstance()->GetConsoleLanguage();
         break;
     case OrbisSystemServiceParamId::DateFormat:
         *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);

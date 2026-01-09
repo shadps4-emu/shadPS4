@@ -26,10 +26,6 @@ void save(const std::filesystem::path& path, bool is_game_specific = false);
 
 std::string getTrophyKey();
 void setTrophyKey(std::string key);
-u32 GetLanguage();
-void setLanguage(u32 language, bool is_game_specific = false);
-bool getShowFpsCounter();
-void setShowFpsCounter(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 
 // TODO

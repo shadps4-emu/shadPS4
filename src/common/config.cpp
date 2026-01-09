@@ -145,12 +145,6 @@ static ConfigEntry<std::array<std::string, 4>> userNames({
 
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 
-// Debug
-static ConfigEntry<bool> showFpsCounter(false);
-
-// Settings
-ConfigEntry<u32> m_language(1); // english
-
 // Keys
 static string trophyKey = "";
 
@@ -209,22 +203,6 @@ std::string getUserName(int id) {
     return userNames.get()[id];
 }
 
-bool getShowFpsCounter() {
-    return showFpsCounter.get();
-}
-
-void setShowFpsCounter(bool enable, bool is_game_specific) {
-    showFpsCounter.set(enable, is_game_specific);
-}
-
-void setLanguage(u32 language, bool is_game_specific) {
-    m_language.set(language, is_game_specific);
-}
-
-u32 GetLanguage() {
-    return m_language.get();
-}
-
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
@@ -260,13 +238,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
-        showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
-    }
-
-    if (data.contains("Settings")) {
-        const toml::value& settings = data.at("Settings");
-        m_language.setFromToml(settings, "consoleLanguage", is_game_specific);
     }
 
     if (data.contains("Keys")) {
@@ -335,8 +307,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     // Entries saved by the game-specific settings GUI
     userNames.setTomlValue(data, "General", "userNames", is_game_specific);
 
-    m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
-
     if (!is_game_specific) {
         // Non game-specific entries
         data["Debug"]["ConfigVersion"] = config_version;
@@ -344,7 +314,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-        data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
     // Sorting of TOML sections
@@ -364,9 +333,6 @@ void setDefaultValues(bool is_game_specific) {
     // GS - General
     userNames.setDefault(is_game_specific);
 
-    // GS - Settings
-    m_language.setDefault(is_game_specific);
-
     // All other entries
     if (!is_game_specific) {
         // Input
@@ -374,9 +340,6 @@ void setDefaultValues(bool is_game_specific) {
         controllerCustomColorRGB[0] = 0;
         controllerCustomColorRGB[1] = 0;
         controllerCustomColorRGB[2] = 255;
-
-        // Debug
-        showFpsCounter.base_value = false;
     }
 }
 

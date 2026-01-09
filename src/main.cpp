@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
              }
              waitPid = std::stoi(argv[i]);
          }},
-        {"--show-fps", [&](int& i) { Config::setShowFpsCounter(true); }}};
+        {"--show-fps", [&](int& i) { EmulatorSettings::GetInstance()->SetShowFpsCounter(true); }}};
 
     if (argc == 1) {
         if (!SDL_ShowSimpleMessageBox(

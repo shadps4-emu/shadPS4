@@ -94,6 +94,8 @@ struct GeneralSettings {
     Setting<bool> show_splash{false};
     Setting<bool> connected_to_network{false};
     Setting<bool> discord_rpc_enabled{false};
+    Setting<bool> show_fps_counter{false};
+    Setting<int> console_language{1};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -122,7 +124,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
                                    trophy_notification_duration, log_filter, log_type, show_splash,
                                    trophy_notification_side, connected_to_network,
-                                   discord_rpc_enabled)
+                                   discord_rpc_enabled, show_fps_counter, console_language)
 
 // -------------------------------
 // Debug settings
@@ -131,8 +133,7 @@ struct DebugSettings {
     Setting<bool> separate_logging_enabled{false}; // specific
     Setting<bool> debug_dump{false};               // specific
     Setting<bool> shader_collect{false};           // specific
-    Setting<bool> fps_color{true};
-    Setting<bool> log_enabled{true}; // specific
+    Setting<bool> log_enabled{true};               // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -144,7 +145,7 @@ struct DebugSettings {
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
-                                   shader_collect, fps_color, log_enabled)
+                                   shader_collect, log_enabled)
 
 // -------------------------------
 // Input settings
@@ -397,6 +398,8 @@ public:
     SETTING_FORWARD(m_general, LogType, log_type)
     SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
+    SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
+    SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
 
     // Audio settings
     SETTING_FORWARD(m_audio, MicDevice, mic_device)

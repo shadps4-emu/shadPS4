@@ -74,7 +74,7 @@ fs::path SaveInstance::GetParamSFOPath(const fs::path& dir_path) {
 
 void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
                                         std::string game_serial) {
-    int locale = Config::GetLanguage();
+    int locale = EmulatorSettings::GetInstance()->GetConsoleLanguage();
     if (!default_title.contains(locale)) {
         locale = 1; // default to en_US if not found
     }
