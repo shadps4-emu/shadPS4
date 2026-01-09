@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "layer.h"
@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/emulator_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
@@ -311,7 +312,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
-    show_simple_fps = Config::getShowFpsCounter();
+    show_simple_fps = EmulatorState::GetInstance()->IsFpsCounterShown();
 
     using SettingLoader = void (*)(const char*);
 
