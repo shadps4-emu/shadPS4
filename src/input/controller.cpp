@@ -273,22 +273,23 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 slot_taken[i] = true;
                 c->player_index = i;
                 AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
-
-                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
-                    c->gyro_poll_rate =
-                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
-                    LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
-                } else {
-                    LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
-                              c->user_id);
-                }
-                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
-                    c->accel_poll_rate =
-                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
-                    LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
-                } else {
-                    LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
-                              c->user_id);
+                if (EmulatorSettings::GetInstance()->IsMotionControlsEnabled()) {
+                    if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                        c->gyro_poll_rate =
+                            SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                        LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
+                    } else {
+                        LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                                  c->user_id);
+                    }
+                    if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                        c->accel_poll_rate =
+                            SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                        LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
+                    } else {
+                        LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                                  c->user_id);
+                    }
                 }
                 break;
             }
