@@ -94,7 +94,8 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         return;
     }
 
-    MIX_SetMasterGain(mixer, static_cast<float>(Config::getVolumeSlider() / 100.f));
+    MIX_SetMasterGain(
+        mixer, static_cast<float>(EmulatorSettings::GetInstance()->GetVolumeSlider() / 100.f));
     auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
     auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
 

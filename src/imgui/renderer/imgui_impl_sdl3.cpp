@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include "common/config.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "imgui_impl_sdl3.h"
 #include "input/controller.h"
@@ -396,7 +397,8 @@ bool ProcessEvent(const SDL_Event* event) {
         if (mouse_pos.x != bd->prev_mouse_pos.x || mouse_pos.y != bd->prev_mouse_pos.y) {
             bd->prev_mouse_pos.x = mouse_pos.x;
             bd->prev_mouse_pos.y = mouse_pos.y;
-            if (Config::getCursorState() == Config::HideCursorState::Idle) {
+            if (EmulatorSettings::GetInstance()->GetCursorState() ==
+                HideCursorState::Idle) {
                 bd->lastCursorMoveTime = bd->time;
             }
         }
@@ -656,16 +658,17 @@ static void UpdateMouseCursor() {
         return;
     SdlData* bd = GetBackendData();
 
-    s16 cursorState = Config::getCursorState();
+    s16 cursorState = EmulatorSettings::GetInstance()->GetCursorState();
     ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
     if (io.MouseDrawCursor || imgui_cursor == ImGuiMouseCursor_None ||
-        cursorState == Config::HideCursorState::Always) {
+        cursorState == HideCursorState::Always) {
         // Hide OS mouse cursor if imgui is drawing it or if it wants no cursor
         SDL_HideCursor();
 
-    } else if (cursorState == Config::HideCursorState::Idle &&
+    } else if (cursorState == HideCursorState::Idle &&
                bd->time - bd->lastCursorMoveTime >=
-                   Config::getCursorHideTimeout() * SDL_GetPerformanceFrequency()) {
+                   EmulatorSettings::GetInstance()->GetCursorHideTimeout() *
+                       SDL_GetPerformanceFrequency()) {
 
         bool wasCursorVisible = SDL_CursorVisible();
         SDL_HideCursor();

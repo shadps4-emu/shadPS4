@@ -7,6 +7,7 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "controller.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
@@ -396,11 +397,11 @@ namespace GamepadSelect {
 
 int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
     char GUIDbuf[33];
-    if (Config::getDefaultControllerID() != "") {
+    if (EmulatorSettings::GetInstance()->GetDefaultControllerId() != "") {
         for (int i = 0; i < gamepadCount; i++) {
             SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
             std::string currentGUID = std::string(GUIDbuf);
-            if (currentGUID == Config::getDefaultControllerID()) {
+            if (currentGUID == EmulatorSettings::GetInstance()->GetDefaultControllerId()) {
                 return i;
             }
         }

@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ipc.h"
@@ -14,6 +14,7 @@
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "core/debugger.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
@@ -152,7 +153,7 @@ void IPC::InputLoop() {
         } else if (cmd == "ADJUST_VOLUME") {
             int value = static_cast<int>(next_u64());
             bool is_game_specific = next_u64() != 0;
-            Config::setVolumeSlider(value, is_game_specific);
+            EmulatorSettings::GetInstance()->SetVolumeSlider(value);
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
             bool use_fsr = next_u64() != 0;

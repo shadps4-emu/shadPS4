@@ -149,7 +149,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     Input::GameControllers::TryOpenSDLControllers(controllers);
 
-    if (Config::getBackgroundControllerInput()) {
+    if (EmulatorSettings::GetInstance()->IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
 }

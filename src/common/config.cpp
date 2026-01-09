@@ -136,7 +136,6 @@ public:
 };
 
 // General
-static ConfigEntry<int> volumeSlider(100);
 static ConfigEntry<std::array<std::string, 4>> userNames({
     "shadPS4",
     "shadps4-2",
@@ -145,14 +144,10 @@ static ConfigEntry<std::array<std::string, 4>> userNames({
 });
 
 // Input
-static ConfigEntry<int> cursorState(HideCursorState::Idle);
-static ConfigEntry<int> cursorHideTimeout(5); // 5 seconds (default)
 static ConfigEntry<bool> useSpecialPad(false);
 static ConfigEntry<int> specialPadClass(1);
 static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
-static ConfigEntry<string> defaultControllerID("");
-static ConfigEntry<bool> backgroundControllerInput(false);
 
 // Debug
 static ConfigEntry<bool> isFpsColor(true);
@@ -175,9 +170,6 @@ static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 static bool load_auto_patches = true;
 
-int getVolumeSlider() {
-    return volumeSlider.get();
-}
 
 bool GetUseUnifiedInputConfig() {
     return useUnifiedInputConfig.get();
@@ -213,17 +205,6 @@ void setTrophyKey(string key) {
     trophyKey = key;
 }
 
-void setVolumeSlider(int volumeValue, bool is_game_specific) {
-    volumeSlider.set(volumeValue, is_game_specific);
-}
-
-s16 getCursorState() {
-    return cursorState.get();
-}
-
-int getCursorHideTimeout() {
-    return cursorHideTimeout.get();
-}
 
 void setUserName(int id, string name) {
     auto temp = userNames.get();
@@ -265,14 +246,6 @@ void setShowFpsCounter(bool enable, bool is_game_specific) {
     showFpsCounter.set(enable, is_game_specific);
 }
 
-void setCursorState(s16 newCursorState, bool is_game_specific) {
-    cursorState.set(newCursorState, is_game_specific);
-}
-
-void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific) {
-    cursorHideTimeout.set(newcursorHideTimeout, is_game_specific);
-}
-
 void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
 }
@@ -291,22 +264,6 @@ void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
 
 u32 GetLanguage() {
     return m_language.get();
-}
-
-string getDefaultControllerID() {
-    return defaultControllerID.get();
-}
-
-void setDefaultControllerID(string id) {
-    defaultControllerID.base_value = id;
-}
-
-bool getBackgroundControllerInput() {
-    return backgroundControllerInput.get();
-}
-
-void setBackgroundControllerInput(bool enable, bool is_game_specific) {
-    backgroundControllerInput.set(enable, is_game_specific);
 }
 
 int getUsbDeviceBackend() {
@@ -348,22 +305,15 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
-
-        volumeSlider.setFromToml(general, "volumeSlider", is_game_specific);
         userNames.setFromToml(general, "userNames", is_game_specific);
-        defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
     }
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
-
-        cursorState.setFromToml(input, "cursorState", is_game_specific);
-        cursorHideTimeout.setFromToml(input, "cursorHideTimeout", is_game_specific);
         useSpecialPad.setFromToml(input, "useSpecialPad", is_game_specific);
         specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
         usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
     }
 
@@ -444,15 +394,10 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
     }
     // Entries saved by the game-specific settings GUI
-    volumeSlider.setTomlValue(data, "General", "volumeSlider", is_game_specific);
     userNames.setTomlValue(data, "General", "userNames", is_game_specific);
 
-    cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
-    cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
     isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
                                          is_game_specific);
-    backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
-                                           is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
 
@@ -464,7 +409,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["Keys"]["TrophyKey"] = trophyKey;
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
-        data["General"]["defaultControllerID"] = defaultControllerID.base_value;
         data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
         data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
@@ -487,14 +431,10 @@ void setDefaultValues(bool is_game_specific) {
 
     // Entries with game-specific settings that are in both the game-specific and global GUI
     // GS - General
-    volumeSlider.setDefault(is_game_specific);
     userNames.setDefault(is_game_specific);
 
     // GS - Input
-    cursorState.setDefault(is_game_specific);
-    cursorHideTimeout.setDefault(is_game_specific);
     isMotionControlsEnabled.setDefault(is_game_specific);
-    backgroundControllerInput.setDefault(is_game_specific);
     usbDeviceBackend.setDefault(is_game_specific);
 
     // GS - Settings
@@ -653,12 +593,6 @@ std::filesystem::path GetFoolproofInputConfigFile(const string& game_id) {
         std::filesystem::copy(default_config_file, config_file);
     }
     return config_file;
-}
-
-void resetGameSpecificValue(std::string entry) {
-    if (entry == "volumeSlider") {
-        volumeSlider.game_specific_value = std::nullopt;
-    }
 }
 
 } // namespace Config

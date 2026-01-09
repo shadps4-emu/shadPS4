@@ -449,6 +449,7 @@ public:
     SETTING_FORWARD(m_input, UsbDevice, usb_device)
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
+    SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
