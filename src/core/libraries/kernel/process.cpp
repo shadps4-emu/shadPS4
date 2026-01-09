@@ -39,7 +39,7 @@ s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
     if (!ver) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    *ver = Core::Linker::GetCompiledSdkVersion();
+    *ver = Common::ElfInfo::Instance().CompiledSdkVer();
     return ORBIS_OK;
 }
 

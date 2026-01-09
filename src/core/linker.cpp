@@ -51,8 +51,6 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-s32 Linker::s_compiled_sdk_version{};
-
 Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
@@ -447,24 +445,6 @@ void Linker::DebugDump() {
         }
         elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
         elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
-    }
-}
-
-void Linker::ReadCompiledSdkVersion(const std::filesystem::path& file) {
-    Core::Loader::Elf elf;
-    elf.Open(file);
-    if (!elf.IsElfFile()) {
-        return;
-    }
-    const auto elf_pheader = elf.GetProgramHeader();
-    auto it = std::find_if(elf_pheader.begin(), elf_pheader.end(),
-                           [](const auto& entry) { return entry.p_type == PT_SCE_PROCPARAM; });
-
-    if (it != elf_pheader.end()) {
-        // Initialize Proc Param in Linker
-        Core::OrbisProcParam param{};
-        elf.LoadSegment(u64(&param), it->p_offset, it->p_filesz);
-        s_compiled_sdk_version = param.sdk_version;
     }
 }
 

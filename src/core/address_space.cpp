@@ -10,7 +10,6 @@
 #include "common/error.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
-#include "core/libraries/kernel/process.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
 
@@ -124,8 +123,7 @@ struct AddressSpace::Impl {
         static constexpr s32 AffectedBuildNumber = 22621;
 
         // Higher PS4 firmware versions prevent higher address mappings too.
-        s32 sdk_ver = 0;
-        Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        s32 sdk_ver = Common::ElfInfo::Instance().CompiledSdkVer();
         if (os_version_info.dwBuildNumber <= AffectedBuildNumber ||
             sdk_ver >= Common::ElfInfo::FW_30) {
             supported_user_max = 0x10000000000ULL;

@@ -78,10 +78,6 @@ public:
         return m_hle_symbols;
     }
 
-    static s32 GetCompiledSdkVersion() {
-        return s_compiled_sdk_version;
-    }
-
     OrbisProcParam* GetProcParam() const {
         return m_modules[0]->GetProcParam<OrbisProcParam*>();
     }
@@ -160,8 +156,6 @@ public:
     void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
-    static void ReadCompiledSdkVersion(const std::filesystem::path& elf);
-
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
@@ -175,8 +169,6 @@ private:
     AppHeapAPI heap_api{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
-
-    static s32 s_compiled_sdk_version;
 };
 
 } // namespace Core
