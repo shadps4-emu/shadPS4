@@ -1599,7 +1599,7 @@ std::filesystem::path GetSysFontBaseDir() {
 }
 
 static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesystem::path& base_dir,
-                                                           const std::filesystem::path& filename) {
+                                                            const std::filesystem::path& filename) {
     if (base_dir.empty() || filename.empty()) {
         return {};
     }

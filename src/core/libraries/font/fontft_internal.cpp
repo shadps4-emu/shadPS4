@@ -3,9 +3,9 @@
 
 #include "core/libraries/font/fontft_internal.h"
 
-#include <bit>
 #include <algorithm>
 #include <atomic>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -51,8 +51,7 @@ static void UpdateFtFontObjShiftCache(u8* font_obj) {
     obj->shift_cache_x = static_cast<s64>(obj->shift_units_x);
     obj->shift_cache_y = static_cast<s64>(obj->shift_units_y);
 
-    const s32 seed_low =
-        static_cast<s32>(static_cast<u32>(obj->layout_seed_pair & 0xFFFFFFFFu));
+    const s32 seed_low = static_cast<s32>(static_cast<u32>(obj->layout_seed_pair & 0xFFFFFFFFu));
     const s32 seed_high =
         static_cast<s32>(static_cast<u32>((obj->layout_seed_pair >> 32) & 0xFFFFFFFFu));
     obj->layout_seed_vec[0] = static_cast<std::uint64_t>(static_cast<std::int64_t>(seed_low));
@@ -247,9 +246,8 @@ static void ApplyGlyphSpecialCaseAdjust(int font_id, int glyph_index, int* inout
     }
     if (((font_id == 10) && (static_cast<u32>(glyph_index - 0x23d1U) < 0x5e)) &&
         ((0x5c0000000017ULL >>
-          (static_cast<u64>(
-               static_cast<u8>((static_cast<u8>(glyph_index - 0x23d1U) >> 1) & 0x3f)) &
-            0x3fULL)) &
+          (static_cast<u64>(static_cast<u8>((static_cast<u8>(glyph_index - 0x23d1U) >> 1) & 0x3f)) &
+           0x3fULL)) &
          1ULL) != 0) {
         inout_seed_words[0] = inout_seed_words[0] + 500;
     }
@@ -341,7 +339,8 @@ u32 ResolveSysFontCodepoint(const void* record, u64 code, u32 flags, u32* out_fo
     if (rec->magic == Libraries::Font::Internal::FontSetSelector::kMagic) {
         const auto view = MakeFontSetRecordView(rec);
         const u32 entry_count = view.header ? view.header->entry_count : 0u;
-        const u32 record_primary_id = (entry_count && view.entry_indices) ? view.entry_indices[0] : 0u;
+        const u32 record_primary_id =
+            (entry_count && view.entry_indices) ? view.entry_indices[0] : 0u;
         const auto* selector = view.selector;
         if (!selector || selector->magic != Libraries::Font::Internal::FontSetSelector::kMagic) {
             if (out_font_id) {
@@ -352,17 +351,15 @@ u32 ResolveSysFontCodepoint(const void* record, u64 code, u32 flags, u32* out_fo
 
         const u32 primary_id = selector->primary_font_id != 0xffffffffu ? selector->primary_font_id
                                                                         : record_primary_id;
-        const u32 roman_id = selector->roman_font_id != 0xffffffffu ? selector->roman_font_id
-                                                                    : record_primary_id;
-        const u32 arabic_id = selector->arabic_font_id != 0xffffffffu ? selector->arabic_font_id : roman_id;
+        const u32 roman_id =
+            selector->roman_font_id != 0xffffffffu ? selector->roman_font_id : record_primary_id;
+        const u32 arabic_id =
+            selector->arabic_font_id != 0xffffffffu ? selector->arabic_font_id : roman_id;
 
         auto is_cjk_like = [](u32 cp) -> bool {
-            if ((cp >= 0x3040u && cp <= 0x30FFu) ||
-                (cp >= 0x31F0u && cp <= 0x31FFu) ||
-                (cp >= 0x3400u && cp <= 0x4DBFu) ||
-                (cp >= 0x4E00u && cp <= 0x9FFFu) ||
-                (cp >= 0xAC00u && cp <= 0xD7AFu) ||
-                (cp >= 0xF900u && cp <= 0xFAFFu) ||
+            if ((cp >= 0x3040u && cp <= 0x30FFu) || (cp >= 0x31F0u && cp <= 0x31FFu) ||
+                (cp >= 0x3400u && cp <= 0x4DBFu) || (cp >= 0x4E00u && cp <= 0x9FFFu) ||
+                (cp >= 0xAC00u && cp <= 0xD7AFu) || (cp >= 0xF900u && cp <= 0xFAFFu) ||
                 (cp >= 0x20000u && cp <= 0x2FA1Fu)) {
                 return true;
             }
@@ -374,8 +371,7 @@ u32 ResolveSysFontCodepoint(const void* record, u64 code, u32 flags, u32* out_fo
                    (cp >= 0xFE70u && cp <= 0xFEFFu);
         };
         auto is_symbol_like = [](u32 cp) -> bool {
-            return (cp >= 0x25A0u && cp <= 0x25FFu) ||
-                   (cp >= 0x2600u && cp <= 0x26FFu) ||
+            return (cp >= 0x25A0u && cp <= 0x25FFu) || (cp >= 0x2600u && cp <= 0x26FFu) ||
                    (cp >= 0x2700u && cp <= 0x27BFu);
         };
 
@@ -665,7 +661,8 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
 
         float fontset_scale_factor = 1.0f;
         int fontset_shift_value = 0;
-        if (fontset_record && fontset_record->magic == Libraries::Font::Internal::FontSetSelector::kMagic) {
+        if (fontset_record &&
+            fontset_record->magic == Libraries::Font::Internal::FontSetSelector::kMagic) {
             if (auto* st = Internal::TryGetState(fontHandle)) {
                 if (st->system_requested) {
                     if (font_id == st->system_font_id) {
@@ -811,7 +808,8 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
     const float line_h = baseline_max + delta_max;
     const float effect_h = maxss(effect_for_baseline, effect_for_delta);
 
-    if ((reinterpret_cast<std::uintptr_t>(out_words) & (alignof(HorizontalLayoutBlocks) - 1)) == 0) {
+    if ((reinterpret_cast<std::uintptr_t>(out_words) & (alignof(HorizontalLayoutBlocks) - 1)) ==
+        0) {
         auto* out_blocks = reinterpret_cast<HorizontalLayoutBlocks*>(out_words);
         out_blocks->set_baseline(baseline_max);
         out_blocks->set_line_advance(line_h);
@@ -981,11 +979,10 @@ s32 ComputeVerticalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_st
             VerticalLayoutAltBlocks layout_alt{};
             if (call_rc == ORBIS_OK) {
                 UpdateFtFontObjShiftCache(reinterpret_cast<u8*>(font_obj));
-                call_rc =
-                    driver->compute_layout_alt
-                        ? driver->compute_layout_alt(font_obj, style_state_block,
-                                                     LayoutWordsBytes(layout_alt.words()))
-                         : ORBIS_FONT_ERROR_FATAL;
+                call_rc = driver->compute_layout_alt
+                              ? driver->compute_layout_alt(font_obj, style_state_block,
+                                                           LayoutWordsBytes(layout_alt.words()))
+                              : ORBIS_FONT_ERROR_FATAL;
             }
 
             if (call_rc == ORBIS_OK) {
@@ -1005,12 +1002,14 @@ s32 ComputeVerticalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_st
                 if (acc_neg_local64_max < neg_baseline_offset_x_candidate) {
                     assoc_for_neg_local64_max = decoration_span_candidate;
                 }
-                acc_neg_local64_max = std::max(acc_neg_local64_max, neg_baseline_offset_x_candidate);
+                acc_neg_local64_max =
+                    std::max(acc_neg_local64_max, neg_baseline_offset_x_candidate);
 
                 if (acc_sum_max < sum_primary_0x00_and_baseline_offset_x_candidate) {
                     assoc_for_sum_max = decoration_span_candidate;
                 }
-                acc_sum_max = std::max(acc_sum_max, sum_primary_0x00_and_baseline_offset_x_candidate);
+                acc_sum_max =
+                    std::max(acc_sum_max, sum_primary_0x00_and_baseline_offset_x_candidate);
 
                 const float diff = extra_0x08 - baseline_offset_x_candidate;
                 acc_diff_min = std::min(diff, acc_diff_min);
@@ -1076,7 +1075,8 @@ s32 ComputeVerticalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_st
         const float unknown_decoration_0x08 = acc_temp_min - acc_neg_local64_max;
         const float unknown_decoration_0x0C = -acc_sum_max;
 
-        if ((reinterpret_cast<std::uintptr_t>(out_words) & (alignof(VerticalLayoutBlocks) - 1)) == 0) {
+        if ((reinterpret_cast<std::uintptr_t>(out_words) & (alignof(VerticalLayoutBlocks) - 1)) ==
+            0) {
             auto* out_blocks = reinterpret_cast<VerticalLayoutBlocks*>(out_words);
             out_blocks->set_column_advance(column_advance);
             out_blocks->set_baseline_offset_x(baseline_offset_x);
@@ -2487,8 +2487,7 @@ static bool ResolveSfntBaseOffset(const u8* data, std::size_t size, u32 subFontI
         return false;
     }
 
-    const u32 base =
-        static_cast<const BeU32*>(static_cast<const void*>(data + want_off))->value();
+    const u32 base = static_cast<const BeU32*>(static_cast<const void*>(data + want_off))->value();
     if (base > size || (size - base) < 0x0C) {
         return false;
     }
@@ -2548,7 +2547,8 @@ static bool ReadUnitsPerEm(const u8* data, std::size_t size, u32 base, u16& out_
     if (head_len < 0x14 || head_off + 0x14 > size) {
         return false;
     }
-    out_units = static_cast<const BeU16*>(static_cast<const void*>(data + head_off + 0x12))->value();
+    out_units =
+        static_cast<const BeU16*>(static_cast<const void*>(data + head_off + 0x12))->value();
     return out_units != 0;
 }
 
@@ -3096,7 +3096,6 @@ s32 PS4_SYSV_ABI LibrarySetCharSizeWithDpiStub(void* fontObj, u32 dpi_x, u32 dpi
         return ORBIS_FONT_ERROR_FATAL;
     }
 
-
     const auto char_w = static_cast<FT_F26Dot6>(static_cast<s32>(scale_x * 64.0f));
     const auto char_h = static_cast<FT_F26Dot6>(static_cast<s32>(scale_y * 64.0f));
     if (FT_Set_Char_Size(face, char_w, char_h, dpi_x, dpi_y) != 0) {
@@ -3268,8 +3267,7 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutBlockStub(void* fontObj, const void* style_
     float hhea_out = 0.0f;
     if (const TT_HoriHeader* hhea =
             static_cast<const TT_HoriHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_hhea))) {
-        const s64 caret_rise_units =
-            x_shift + static_cast<s64>(hhea->caret_Slope_Rise);
+        const s64 caret_rise_units = x_shift + static_cast<s64>(hhea->caret_Slope_Rise);
         const s32 caret_rise_px = trunc_fixed_16_16_to_int(caret_rise_units * x_scale);
         hhea_out = static_cast<float>(caret_rise_px - half_effect_w_px) * kOneOver64;
     }
@@ -3474,7 +3472,8 @@ s32 PS4_SYSV_ABI LibraryLoadGlyphCachedStub(void* fontObj, u32 glyphIndex, s32 m
                               (obj->cached_units_y_0x70 == obj->cached_units_x_0x68) && (mode == 0);
 
     auto write_vec88_from_seed_pair_unscaled = [&]() {
-        const s32 seed_low = static_cast<s32>(static_cast<u32>(obj->layout_seed_pair & 0xFFFFFFFFu));
+        const s32 seed_low =
+            static_cast<s32>(static_cast<u32>(obj->layout_seed_pair & 0xFFFFFFFFu));
         const s32 seed_high =
             static_cast<s32>(static_cast<u32>((obj->layout_seed_pair >> 32) & 0xFFFFFFFFu));
         obj->layout_seed_vec[0] = static_cast<u64>(static_cast<s64>(seed_low));

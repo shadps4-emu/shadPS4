@@ -567,7 +567,7 @@ static std::filesystem::path GetSysFontBaseDir() {
 }
 
 static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesystem::path& base_dir,
-                                                           const std::filesystem::path& filename) {
+                                                            const std::filesystem::path& filename) {
     if (base_dir.empty() || filename.empty()) {
         return {};
     }
@@ -4446,8 +4446,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             if (!face) {
                 return 1.0f;
             }
-            const TT_OS2* os2 =
-                static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+            const TT_OS2* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
             if (os2) {
                 if (os2->sTypoAscender == 770 && os2->sTypoDescender == -230) {
                     return 1024.0f / 952.0f;
@@ -4459,8 +4458,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             if (!face) {
                 return 0;
             }
-            const TT_OS2* os2 =
-                static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
+            const TT_OS2* os2 = static_cast<const TT_OS2*>(FT_Get_Sfnt_Table(face, ft_sfnt_os2));
             if (!os2) {
                 return 0;
             }
@@ -4481,11 +4479,12 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             }
             return 0;
         };
-        st.system_font_scale_factor = compute_sysfont_scale_factor(st.ext_ft_face, st.ext_units_per_em);
+        st.system_font_scale_factor =
+            compute_sysfont_scale_factor(st.ext_ft_face, st.ext_units_per_em);
         st.system_font_shift_value = compute_sysfont_shift_value(st.ext_ft_face);
         LOG_DEBUG(Lib_Font, "SystemFonts: primary='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
-                  primary_path.filename().string(), st.ext_units_per_em, st.system_font_scale_factor,
-                  st.system_font_shift_value);
+                  primary_path.filename().string(), st.ext_units_per_em,
+                  st.system_font_scale_factor, st.system_font_shift_value);
 
         std::string preferred_latin_name_lower;
         const auto base_dir = Internal::GetSysFontBaseDir();
@@ -4595,11 +4594,12 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                     fb.scale_factor = compute_sysfont_scale_factor(
                         fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
                     fb.shift_value = compute_sysfont_shift_value(fb.ft_face);
-                    LOG_DEBUG(Lib_Font,
-                              "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
-                              fb.path.filename().string(),
-                              fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
-                              fb.scale_factor, fb.shift_value);
+                    LOG_DEBUG(
+                        Lib_Font,
+                        "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
+                        fb.path.filename().string(),
+                        fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
+                        fb.scale_factor, fb.shift_value);
                     st.system_fallback_faces.push_back(std::move(fb));
                 } else {
                     Internal::DestroyFreeTypeFace(fb.ft_face);
@@ -4776,7 +4776,8 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 default:
                     break;
                 }
-                const bool is_sea_weight = (sea_weight_code == 0x53u) || (sea_weight_code == 0x54u) ||
+                const bool is_sea_weight = (sea_weight_code == 0x53u) ||
+                                           (sea_weight_code == 0x54u) ||
                                            (sea_weight_code == 0x55u) || (sea_weight_code == 0x57u);
 
                 if (is_sea_weight && primary_name_lower.rfind("sstvietnamese-", 0) != 0) {
@@ -4802,9 +4803,9 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                     }
                 }
 
-                if (is_sea_weight && ((tag == 0x10u) || (tag == 0x14u) || (tag == 0x34u) ||
-                                      (tag == 0x90u) || (tag == 0x94u) || (tag == 0xB0u) ||
-                                      (tag == 0xB4u) || (tag == 0xBCu))) {
+                if (is_sea_weight &&
+                    ((tag == 0x10u) || (tag == 0x14u) || (tag == 0x34u) || (tag == 0x90u) ||
+                     (tag == 0x94u) || (tag == 0xB0u) || (tag == 0xB4u) || (tag == 0xBCu))) {
                     const char* th_file = nullptr;
                     switch (sea_weight_code) {
                     case 0x53:
@@ -4883,11 +4884,12 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                     fb.scale_factor = compute_sysfont_scale_factor(
                         fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
                     fb.shift_value = compute_sysfont_shift_value(fb.ft_face);
-                    LOG_DEBUG(Lib_Font,
-                              "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
-                              fb.path.filename().string(),
-                              fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
-                              fb.scale_factor, fb.shift_value);
+                    LOG_DEBUG(
+                        Lib_Font,
+                        "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
+                        fb.path.filename().string(),
+                        fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
+                        fb.scale_factor, fb.shift_value);
                     st.system_fallback_faces.push_back(std::move(fb));
                 } else {
                     Internal::DestroyFreeTypeFace(fb.ft_face);
@@ -5281,7 +5283,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             header->entry_count = entry_count;
 
             auto* entries = reinterpret_cast<u32*>(st.fontset_record_storage->data() +
-                                                  sizeof(Internal::FontSetRecordHeader));
+                                                   sizeof(Internal::FontSetRecordHeader));
             for (u32 i = 0; i < entry_count; ++i) {
                 std::construct_at(entries + i, font_ids[i]);
             }
@@ -5484,7 +5486,8 @@ s32 PS4_SYSV_ABI sceFontRenderCharGlyphImage(OrbisFontHandle fontHandle, u32 cod
             int& count = s_baseline_log_counts[fontHandle];
             if (count < 5) {
                 LOG_DEBUG(Lib_Font,
-                          "RenderBaseline: handle={} code=U+{:04X} y_in={} baseline_add={} y_used={} pre_rc={}",
+                          "RenderBaseline: handle={} code=U+{:04X} y_in={} baseline_add={} "
+                          "y_used={} pre_rc={}",
                           static_cast<const void*>(fontHandle), code, y, baseline_add, y_used,
                           pre_rc);
                 ++count;
