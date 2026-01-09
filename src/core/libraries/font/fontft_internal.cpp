@@ -1686,7 +1686,7 @@ static s32 RenderGlyphIndexToSurface(FontObj& font_obj, u32 glyph_index,
         }
     }
 
-    result->transImage = nullptr;
+    result->stage = nullptr;
     result->SurfaceImage.address = static_cast<u8*>(surf->buffer);
     result->SurfaceImage.widthByte = static_cast<u32>(surf->widthByte);
     result->SurfaceImage.pixelSizeByte = static_cast<u8>(surf->pixelSizeByte);
