@@ -146,9 +146,6 @@ static ConfigEntry<std::array<std::string, 4>> userNames({
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 
 // Debug
-static ConfigEntry<bool> isDebugDump(false);
-static ConfigEntry<bool> isShaderDebug(false);
-static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
 static ConfigEntry<bool> showFpsCounter(false);
 
 // Settings
@@ -163,24 +160,6 @@ static string config_version = Common::g_scm_rev;
 // These entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
-
-std::filesystem::path getSysModulesPath() {
-    if (sys_modules_path.empty()) {
-        return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
-    }
-    return sys_modules_path;
-}
-
-void setSysModulesPath(const std::filesystem::path& path) {
-    sys_modules_path = path;
-}
-
-int getVolumeSlider() {
-    return volumeSlider.get();
-}
-bool allowHDR() {
-    return isHDRAllowed.get();
-}
 
 bool GetUseUnifiedInputConfig() {
     return useUnifiedInputConfig.get();
@@ -246,66 +225,6 @@ u32 GetLanguage() {
     return m_language.get();
 }
 
-bool getSeparateLogFilesEnabled() {
-    return isSeparateLogFilesEnabled.get();
-}
-
-bool getPSNSignedIn() {
-    return isPSNSignedIn.get();
-}
-
-void setPSNSignedIn(bool sign, bool is_game_specific) {
-    isPSNSignedIn.set(sign, is_game_specific);
-}
-
-string getDefaultControllerID() {
-    return defaultControllerID.get();
-}
-
-void setDefaultControllerID(string id) {
-    defaultControllerID.base_value = id;
-}
-
-bool getBackgroundControllerInput() {
-    return backgroundControllerInput.get();
-}
-
-void setBackgroundControllerInput(bool enable, bool is_game_specific) {
-    backgroundControllerInput.set(enable, is_game_specific);
-}
-
-bool getFsrEnabled() {
-    return fsrEnabled.get();
-}
-
-void setFsrEnabled(bool enable, bool is_game_specific) {
-    fsrEnabled.set(enable, is_game_specific);
-}
-
-bool getRcasEnabled() {
-    return rcasEnabled.get();
-}
-
-void setRcasEnabled(bool enable, bool is_game_specific) {
-    rcasEnabled.set(enable, is_game_specific);
-}
-
-int getRcasAttenuation() {
-    return rcasAttenuation.get();
-}
-
-void setRcasAttenuation(int value, bool is_game_specific) {
-    rcasAttenuation.set(value, is_game_specific);
-}
-
-int getUsbDeviceBackend() {
-    return usbDeviceBackend.get();
-}
-
-void setUsbDeviceBackend(int value, bool is_game_specific) {
-    usbDeviceBackend.set(value, is_game_specific);
-}
-
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
@@ -341,9 +260,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     string current_version = {};
     if (data.contains("Debug")) {
         const toml::value& debug = data.at("Debug");
-        isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
-        isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
-        isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
         showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
     }
@@ -428,9 +344,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
-        data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
-        data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
-        data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
         data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
