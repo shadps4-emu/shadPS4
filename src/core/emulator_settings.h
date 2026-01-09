@@ -150,12 +150,12 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debu
 // Input settings
 // -------------------------------
 enum HideCursorState : int { Never, Idle, Always };
-enum UsbDevice : int { Real, SkylanderPortal, InfinityBase, DimensionsToypad };
+enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 
 struct InputSettings {
-    Setting<int> cursor_state{HideCursorState::Idle}; // specific
-    Setting<int> cursor_hide_timeout{5};              // specific
-    Setting<int> usb_device{UsbDevice::Real};         // specific
+    Setting<int> cursor_state{HideCursorState::Idle};      // specific
+    Setting<int> cursor_hide_timeout{5};                   // specific
+    Setting<int> usb_device_backend{UsbBackendType::Real}; // specific
     Setting<bool> use_special_pad{false};
     Setting<int> special_pad_class{1};
     Setting<bool> motion_controls_enabled{true}; // specific
@@ -168,17 +168,17 @@ struct InputSettings {
             make_override<InputSettings>("cursor_state", &InputSettings::cursor_state),
             make_override<InputSettings>("cursor_hide_timeout",
                                          &InputSettings::cursor_hide_timeout),
-            make_override<InputSettings>("usb_device", &InputSettings::usb_device),
+            make_override<InputSettings>("usb_device_backend", &InputSettings::usb_device_backend),
             make_override<InputSettings>("motion_controls_enabled",
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout, usb_device,
-                                   use_special_pad, special_pad_class, motion_controls_enabled,
-                                   use_unified_Input_Config, default_controller_id,
-                                   background_controller_input)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
+                                   usb_device_backend, use_special_pad, special_pad_class,
+                                   motion_controls_enabled, use_unified_Input_Config,
+                                   default_controller_id, background_controller_input)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -446,10 +446,12 @@ public:
     // Input Settings
     SETTING_FORWARD(m_input, CursorState, cursor_state)
     SETTING_FORWARD(m_input, CursorHideTimeout, cursor_hide_timeout)
-    SETTING_FORWARD(m_input, UsbDevice, usb_device)
+    SETTING_FORWARD(m_input, UsbDeviceBackend, usb_device_backend)
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
+    SETTING_FORWARD_BOOL(m_input, UsingSpecialPad,use_special_pad)
+    SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)

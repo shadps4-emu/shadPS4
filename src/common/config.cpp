@@ -144,8 +144,6 @@ static ConfigEntry<std::array<std::string, 4>> userNames({
 });
 
 // Input
-static ConfigEntry<bool> useSpecialPad(false);
-static ConfigEntry<int> specialPadClass(1);
 static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 
@@ -155,9 +153,6 @@ static ConfigEntry<bool> showFpsCounter(false);
 
 // Settings
 ConfigEntry<u32> m_language(1); // english
-
-// USB Device
-static ConfigEntry<int> usbDeviceBackend(UsbBackendType::Real);
 
 // Keys
 static string trophyKey = "";
@@ -220,19 +215,9 @@ std::string getUserName(int id) {
     return userNames.get()[id];
 }
 
-bool getUseSpecialPad() {
-    return useSpecialPad.get();
-}
-
-int getSpecialPadClass() {
-    return specialPadClass.get();
-}
-
 bool getIsMotionControlsEnabled() {
     return isMotionControlsEnabled.get();
 }
-
-
 
 bool fpsColor() {
     return isFpsColor.get();
@@ -250,13 +235,6 @@ void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
 }
 
-void setUseSpecialPad(bool use) {
-    useSpecialPad.base_value = use;
-}
-
-void setSpecialPadClass(int type) {
-    specialPadClass.base_value = type;
-}
 
 void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
     isMotionControlsEnabled.set(use, is_game_specific);
@@ -264,14 +242,6 @@ void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
 
 u32 GetLanguage() {
     return m_language.get();
-}
-
-int getUsbDeviceBackend() {
-    return usbDeviceBackend.get();
-}
-
-void setUsbDeviceBackend(int value, bool is_game_specific) {
-    usbDeviceBackend.set(value, is_game_specific);
 }
 
 bool getLoadAutoPatches() {
@@ -310,11 +280,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
-        useSpecialPad.setFromToml(input, "useSpecialPad", is_game_specific);
-        specialPadClass.setFromToml(input, "specialPadClass", is_game_specific);
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
-        usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
     }
 
     string current_version = {};
@@ -398,7 +365,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
                                          is_game_specific);
-    usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
 
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
@@ -409,8 +375,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["Keys"]["TrophyKey"] = trophyKey;
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
-        data["Input"]["useSpecialPad"] = useSpecialPad.base_value;
-        data["Input"]["specialPadClass"] = specialPadClass.base_value;
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
         data["Debug"]["FPSColor"] = isFpsColor.base_value;
         data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
@@ -435,16 +399,12 @@ void setDefaultValues(bool is_game_specific) {
 
     // GS - Input
     isMotionControlsEnabled.setDefault(is_game_specific);
-    usbDeviceBackend.setDefault(is_game_specific);
-
     // GS - Settings
     m_language.setDefault(is_game_specific);
 
     // All other entries
     if (!is_game_specific) {
         // Input
-        useSpecialPad.base_value = false;
-        specialPadClass.base_value = 1;
         useUnifiedInputConfig.base_value = true;
         controllerCustomColorRGB[0] = 0;
         controllerCustomColorRGB[1] = 0;

@@ -28,10 +28,6 @@ std::string getTrophyKey();
 void setTrophyKey(std::string key);
 u32 GetLanguage();
 void setLanguage(u32 language, bool is_game_specific = false);
-void setUseSpecialPad(bool use);
-bool getUseSpecialPad();
-void setSpecialPadClass(int type);
-int getSpecialPadClass();
 bool fpsColor();     // no set
 bool getShowFpsCounter();
 void setShowFpsCounter(bool enable, bool is_game_specific = false);
@@ -40,10 +36,6 @@ void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 bool getLoadAutoPatches();
 void setLoadAutoPatches(bool enable);
-
-enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
-int getUsbDeviceBackend();
-void setUsbDeviceBackend(int value, bool is_game_specific = false);
 
 // TODO
 std::string getUserName(int id);

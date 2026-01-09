@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
@@ -30,8 +31,9 @@ int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     s32 handle, OrbisPadDeviceClassExtendedInformation* pExtInfo) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     std::memset(pExtInfo, 0, sizeof(OrbisPadDeviceClassExtendedInformation));
-    if (Config::getUseSpecialPad()) {
-        pExtInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
+        pExtInfo->deviceClass =
+            (OrbisPadDeviceClass)EmulatorSettings::GetInstance()->GetSpecialPadClass();
     }
     return ORBIS_OK;
 }
@@ -115,9 +117,10 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->connectedCount = 1;
     pInfo->connected = true;
     pInfo->deviceClass = OrbisPadDeviceClass::Standard;
-    if (Config::getUseSpecialPad()) {
+    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
-        pInfo->deviceClass = (OrbisPadDeviceClass)Config::getSpecialPadClass();
+        pInfo->deviceClass =
+            (OrbisPadDeviceClass)EmulatorSettings::GetInstance()->GetSpecialPadClass();
     }
     return ORBIS_OK;
 }
@@ -263,7 +266,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    if (Config::getUseSpecialPad()) {
+    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
@@ -280,7 +283,7 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
 int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index,
                                const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (Config::getUseSpecialPad()) {
+    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
