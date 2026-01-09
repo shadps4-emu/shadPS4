@@ -271,6 +271,7 @@ add_subdirectory(miniz)
 
 
 #openal
+if (NOT TARGET OpenAL::OpenAL)
 set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
 set(LIBTYPE "STATIC" CACHE STRING "" FORCE)
 # Disable everything we don't need
@@ -300,3 +301,4 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
 add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
+endif()
