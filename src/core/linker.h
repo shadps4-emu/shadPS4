@@ -78,8 +78,8 @@ public:
         return m_hle_symbols;
     }
 
-    OrbisProcParam* GetProcParam() const {
-        return m_modules[0]->GetProcParam<OrbisProcParam*>();
+    static OrbisProcParam* GetProcParam() {
+        return &s_proc_param;
     }
 
     Module* GetModule(s32 index) const {
@@ -156,6 +156,8 @@ public:
     void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
+    static void InitializeProcParams(const std::filesystem::path& elf);
+
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
@@ -169,6 +171,8 @@ private:
     AppHeapAPI heap_api{};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
+
+    static OrbisProcParam s_proc_param;
 };
 
 } // namespace Core

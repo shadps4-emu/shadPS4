@@ -51,6 +51,8 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
+OrbisProcParam Linker::s_proc_param{};
+
 Linker::Linker() : memory{Memory::Instance()} {}
 
 Linker::~Linker() = default;
@@ -180,8 +182,8 @@ s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, cons
     }
 
     // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    auto* param = GetProcParam();
+    ASSERT_MSG(!param || param->size >= 0x18, "Invalid module param size: {}", param->size);
     s32 ret = module->Start(args, argp, param);
     if (pRes) {
         *pRes = ret;
@@ -445,6 +447,22 @@ void Linker::DebugDump() {
         }
         elf.ElfHeaderDebugDump(filepath / "elfHeader.txt");
         elf.PHeaderDebugDump(filepath / "elfPHeaders.txt");
+    }
+}
+
+void Linker::InitializeProcParams(const std::filesystem::path& file) {
+    Core::Loader::Elf elf;
+    elf.Open(file);
+    if (!elf.IsElfFile()) {
+        return;
+    }
+    const auto elf_pheader = elf.GetProgramHeader();
+    auto it = std::find_if(elf_pheader.begin(), elf_pheader.end(),
+                           [](const auto& entry) { return entry.p_type == PT_SCE_PROCPARAM; });
+
+    if (it != elf_pheader.end()) {
+        // Initialize Proc Param in Linker
+        elf.LoadSegment(u64(Core::Linker::GetProcParam()), it->p_offset, it->p_filesz);
     }
 }
 
