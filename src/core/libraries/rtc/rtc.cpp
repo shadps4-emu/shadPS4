@@ -428,28 +428,32 @@ int PS4_SYSV_ABI sceRtcGetCurrentClock(OrbisRtcDateTime* pTime, int timeZone) {
 
 int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
     LOG_TRACE(Lib_Rtc, "called");
-
     if (pTime == nullptr)
-        return ORBIS_RTC_ERROR_DATETIME_UNINITIALIZED;
+        return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    Kernel::OrbisKernelTimezone timeZone;
-    int returnValue = Kernel::sceKernelGettimezone(&timeZone);
+    Kernel::OrbisKernelTimespec ts{};
+    int result = Kernel::sceKernelClockGettime(0, &ts);
+    if (result < 0)
+        return result;
 
-    if (returnValue >= 0) {
-        Kernel::OrbisKernelTimespec clocktime;
+    uint64_t tick_utc = (uint64_t(ts.tv_sec) * 1000000ULL) + (uint64_t(ts.tv_nsec) / 1000ULL);
 
-        // calculate total timezone offset for converting UTC to local time
-        uint64_t tzOffset = -(timeZone.tz_minuteswest - (timeZone.tz_dsttime * 60));
+    uint64_t tick = tick_utc + 0xDCBFFEFF2BC000ULL;
 
-        if (returnValue >= 0) {
-            OrbisRtcTick newTick;
-            sceRtcGetCurrentTick(&newTick);
-            sceRtcTickAddMinutes(&newTick, &newTick, tzOffset);
-            sceRtcSetTick(pTime, &newTick);
-        }
-    }
+    time_t local_time{};
+    Kernel::OrbisTimesec tzsec{};
 
-    return returnValue;
+    result = sceKernelConvertUtcToLocaltime(tick_utc / 1000000ULL, &local_time, &tzsec, nullptr);
+
+    if (result < 0)
+        return result;
+
+    OrbisRtcTick newTick;
+    sceRtcGetCurrentTick(&newTick);
+    sceRtcTickAddMinutes(&newTick, &newTick, (tzsec.dst_sec + tzsec.west_sec) / 60);
+    sceRtcSetTick(pTime, &newTick);
+
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick(OrbisRtcTick* pTick) {
