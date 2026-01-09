@@ -28,11 +28,9 @@ std::string getTrophyKey();
 void setTrophyKey(std::string key);
 u32 GetLanguage();
 void setLanguage(u32 language, bool is_game_specific = false);
-bool fpsColor();     // no set
+bool fpsColor(); // no set
 bool getShowFpsCounter();
 void setShowFpsCounter(bool enable, bool is_game_specific = false);
-bool getIsMotionControlsEnabled();
-void setIsMotionControlsEnabled(bool use, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 bool getLoadAutoPatches();
 void setLoadAutoPatches(bool enable);

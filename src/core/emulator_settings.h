@@ -450,7 +450,7 @@ public:
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
-    SETTING_FORWARD_BOOL(m_input, UsingSpecialPad,use_special_pad)
+    SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
 
     // Vulkan settings

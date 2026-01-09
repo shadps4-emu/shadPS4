@@ -6,13 +6,13 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
 #include "imgui/renderer/imgui_core.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-#include "core/emulator_settings.h"
 
 extern std::unique_ptr<Vulkan::Presenter> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
@@ -268,7 +268,8 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    const std::chrono::nanoseconds vblank_period(1000000000 / EmulatorSettings::GetInstance()->GetVblankFrequency());
+    const std::chrono::nanoseconds vblank_period(
+        1000000000 / EmulatorSettings::GetInstance()->GetVblankFrequency());
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);

@@ -143,8 +143,6 @@ static ConfigEntry<std::array<std::string, 4>> userNames({
     "shadPS4-4",
 });
 
-// Input
-static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 
 // Debug
@@ -164,7 +162,6 @@ static string config_version = Common::g_scm_rev;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 static bool load_auto_patches = true;
-
 
 bool GetUseUnifiedInputConfig() {
     return useUnifiedInputConfig.get();
@@ -200,7 +197,6 @@ void setTrophyKey(string key) {
     trophyKey = key;
 }
 
-
 void setUserName(int id, string name) {
     auto temp = userNames.get();
     temp[id] = name;
@@ -213,10 +209,6 @@ std::array<string, 4> const getUserNames() {
 
 std::string getUserName(int id) {
     return userNames.get()[id];
-}
-
-bool getIsMotionControlsEnabled() {
-    return isMotionControlsEnabled.get();
 }
 
 bool fpsColor() {
@@ -233,11 +225,6 @@ void setShowFpsCounter(bool enable, bool is_game_specific) {
 
 void setLanguage(u32 language, bool is_game_specific) {
     m_language.set(language, is_game_specific);
-}
-
-
-void setIsMotionControlsEnabled(bool use, bool is_game_specific) {
-    isMotionControlsEnabled.set(use, is_game_specific);
 }
 
 u32 GetLanguage() {
@@ -280,7 +267,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
 
     if (data.contains("Input")) {
         const toml::value& input = data.at("Input");
-        isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
     }
 
@@ -363,10 +349,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     // Entries saved by the game-specific settings GUI
     userNames.setTomlValue(data, "General", "userNames", is_game_specific);
 
-    isMotionControlsEnabled.setTomlValue(data, "Input", "isMotionControlsEnabled",
-                                         is_game_specific);
-
-
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
     if (!is_game_specific) {
@@ -397,8 +379,6 @@ void setDefaultValues(bool is_game_specific) {
     // GS - General
     userNames.setDefault(is_game_specific);
 
-    // GS - Input
-    isMotionControlsEnabled.setDefault(is_game_specific);
     // GS - Settings
     m_language.setDefault(is_game_specific);
 

@@ -397,8 +397,7 @@ bool ProcessEvent(const SDL_Event* event) {
         if (mouse_pos.x != bd->prev_mouse_pos.x || mouse_pos.y != bd->prev_mouse_pos.y) {
             bd->prev_mouse_pos.x = mouse_pos.x;
             bd->prev_mouse_pos.y = mouse_pos.y;
-            if (EmulatorSettings::GetInstance()->GetCursorState() ==
-                HideCursorState::Idle) {
+            if (EmulatorSettings::GetInstance()->GetCursorState() == HideCursorState::Idle) {
                 bd->lastCursorMoveTime = bd->time;
             }
         }
