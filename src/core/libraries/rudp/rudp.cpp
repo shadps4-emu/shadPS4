@@ -1,12 +1,32 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cstring>
+#include <mutex>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/rudp/rudp.h"
+#include "core/libraries/rudp/rudp_error.h"
 
 namespace Libraries::Rudp {
+
+static OrbisRudpStatus g_rudpStatusInternal = {0};
+
+void* g_RudpContext = nullptr;
+
+struct RudpInternalState {
+    std::atomic<s32> current_contexts{0};
+    std::atomic<s32> allocs{0};
+    std::atomic<s32> frees{0};
+    std::atomic<s32> mem_current{0};
+    std::atomic<s32> mem_peak{0};
+};
+static RudpInternalState g_state;
+
+std::recursive_mutex g_RudpMutex;
+bool g_isRudpInitialized = false;
 
 s32 PS4_SYSV_ABI sceRudpAccept() {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
@@ -88,8 +108,33 @@ s32 PS4_SYSV_ABI sceRudpGetSizeWritable() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetStatus() {
-    LOG_ERROR(Lib_Rudp, "(STUBBED) called");
+s32 Rudp_GetActiveContexts() {
+    return g_state.current_contexts.load();
+}
+
+void Rudp_GetMemoryStats(s32* allocs, s32* frees, s32* memCurr, s32* memPeak) {
+    *allocs = g_state.allocs.load();
+    *frees = g_state.frees.load();
+    *memCurr = g_state.mem_current.load();
+    *memPeak = g_state.mem_peak.load();
+}
+
+s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
+    std::lock_guard lock(g_RudpMutex);
+
+    if (!g_isRudpInitialized) {
+        return ORBIS_RUDP_ERROR_UNINITIALIZED;
+    }
+
+    if (status == nullptr || (statusSize - 1) >= sizeof(OrbisRudpStatus)) {
+        return ORBIS_RUDP_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::memcpy(status, &g_rudpStatusInternal, statusSize);
+
+    status->currentContexts = Rudp_GetActiveContexts();
+    Rudp_GetMemoryStats(&status->allocs, &status->frees, &status->memCurrent, &status->memPeak);
+
     return ORBIS_OK;
 }
 
