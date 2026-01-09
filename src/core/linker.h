@@ -78,8 +78,12 @@ public:
         return m_hle_symbols;
     }
 
-    static OrbisProcParam* GetProcParam() {
-        return &s_proc_param;
+    static s32 GetCompiledSdkVersion() {
+        return s_compiled_sdk_version;
+    }
+
+    OrbisProcParam* GetProcParam() const {
+        return m_modules[0]->GetProcParam<OrbisProcParam*>();
     }
 
     Module* GetModule(s32 index) const {
@@ -156,7 +160,7 @@ public:
     void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
-    static void InitializeProcParams(const std::filesystem::path& elf);
+    static void ReadCompiledSdkVersion(const std::filesystem::path& elf);
 
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
@@ -172,7 +176,7 @@ private:
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
 
-    static OrbisProcParam s_proc_param;
+    static s32 s_compiled_sdk_version;
 };
 
 } // namespace Core

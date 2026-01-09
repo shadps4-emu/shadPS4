@@ -51,7 +51,7 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-OrbisProcParam Linker::s_proc_param{};
+s32 Linker::s_compiled_sdk_version{};
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
@@ -182,7 +182,7 @@ s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, cons
     }
 
     // Retrieve and verify proc param according to libkernel.
-    auto* param = GetProcParam();
+    auto* param = module->GetProcParam<OrbisProcParam*>();
     ASSERT_MSG(!param || param->size >= 0x18, "Invalid module param size: {}", param->size);
     s32 ret = module->Start(args, argp, param);
     if (pRes) {
@@ -450,7 +450,7 @@ void Linker::DebugDump() {
     }
 }
 
-void Linker::InitializeProcParams(const std::filesystem::path& file) {
+void Linker::ReadCompiledSdkVersion(const std::filesystem::path& file) {
     Core::Loader::Elf elf;
     elf.Open(file);
     if (!elf.IsElfFile()) {
@@ -462,7 +462,9 @@ void Linker::InitializeProcParams(const std::filesystem::path& file) {
 
     if (it != elf_pheader.end()) {
         // Initialize Proc Param in Linker
-        elf.LoadSegment(u64(Core::Linker::GetProcParam()), it->p_offset, it->p_filesz);
+        Core::OrbisProcParam param{};
+        elf.LoadSegment(u64(&param), it->p_offset, it->p_filesz);
+        s_compiled_sdk_version = param.sdk_version;
     }
 }
 

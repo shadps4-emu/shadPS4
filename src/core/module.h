@@ -164,6 +164,11 @@ public:
         return elf.IsSharedLib();
     }
 
+    template <typename T = VAddr>
+    T GetProcParam() const noexcept {
+        return reinterpret_cast<T>(proc_param_virtual_addr);
+    }
+
     std::span<const ModuleInfo> GetImportModules() const {
         return dynamic_info.import_modules;
     }
@@ -215,6 +220,7 @@ public:
     Loader::Elf elf;
     u64 aligned_base_size{};
     VAddr base_virtual_addr{};
+    VAddr proc_param_virtual_addr{};
     VAddr eh_frame_hdr_addr{};
     VAddr eh_frame_addr{};
     u32 eh_frame_hdr_size{};

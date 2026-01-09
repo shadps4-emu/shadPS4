@@ -36,12 +36,10 @@ s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
-    auto* param = Core::Linker::GetProcParam();
-    constexpr u64 min_size = offsetof(Core::OrbisProcParam, sdk_version) + sizeof(u64);
-    if (!param || param->size < min_size || param->sdk_version == 0) {
+    if (!ver) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    *ver = param->sdk_version;
+    *ver = Core::Linker::GetCompiledSdkVersion();
     return ORBIS_OK;
 }
 
@@ -65,7 +63,8 @@ s32 PS4_SYSV_ABI sceKernelGetCurrentCpu() {
 }
 
 void* PS4_SYSV_ABI sceKernelGetProcParam() {
-    return Core::Linker::GetProcParam();
+    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    return linker->GetProcParam();
 }
 
 s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, const void* argp,

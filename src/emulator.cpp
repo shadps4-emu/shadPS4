@@ -173,7 +173,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
     const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
-    Linker::InitializeProcParams(eboot_path);
+    Linker::ReadCompiledSdkVersion(eboot_path);
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
     if (std::filesystem::exists(pic1_path)) {
@@ -244,8 +244,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-        LOG_INFO(Loader, "params.sfo SDK version: {:#x}", sdk_version);
-        LOG_INFO(Loader, "eboot SDK version: {:#x}", Linker::GetProcParam()->sdk_version);
+        LOG_INFO(Loader, "param.sfo SDK version: {:#x}", sdk_version);
+        LOG_INFO(Loader, "eboot SDK version: {:#x}", Linker::GetCompiledSdkVersion());
         LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
         LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
