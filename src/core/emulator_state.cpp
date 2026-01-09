@@ -34,3 +34,13 @@ bool EmulatorState::IsFpsCounterShown() const {
 void EmulatorState::SetFpsCounterShown(bool show) {
     m_show_fps_counter = show;
 }
+bool EmulatorState::IsFpsColorEnabled() const {
+    return m_fps_color;
+}
+
+bool EmulatorState::IsAutoPatchesLoadEnabled() const {
+    return m_load_patches_auto;
+}
+void EmulatorState::SetAutoPatchesLoadEnabled(bool enable) {
+    m_load_patches_auto = enable;
+}
