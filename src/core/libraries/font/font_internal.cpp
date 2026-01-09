@@ -989,7 +989,7 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
         }
     }
 
-    result->transImage = nullptr;
+    result->stage = nullptr;
     result->SurfaceImage.address = static_cast<u8*>(surf->buffer);
     result->SurfaceImage.widthByte = static_cast<u32>(surf->widthByte);
     result->SurfaceImage.pixelSizeByte = static_cast<u8>(surf->pixelSizeByte);
@@ -1235,7 +1235,7 @@ s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontH
         }
     }
 
-    result->transImage = nullptr;
+    result->stage = nullptr;
     result->SurfaceImage.address = static_cast<u8*>(surf->buffer);
     result->SurfaceImage.widthByte = static_cast<u32>(surf->widthByte);
     result->SurfaceImage.pixelSizeByte = static_cast<u8>(surf->pixelSizeByte);
