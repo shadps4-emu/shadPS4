@@ -840,6 +840,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/emulator_state.cpp
+         src/core/emulator_state.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
