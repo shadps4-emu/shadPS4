@@ -78,7 +78,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2GetHttpResponseHeaderValueLength() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpWebApi2GetMemoryPoolStats(s32 lib_ctx_id, OrbisNpWebApi2MemoryPoolStats* stats) {
+s32 PS4_SYSV_ABI sceNpWebApi2GetMemoryPoolStats(s32 lib_ctx_id,
+                                                OrbisNpWebApi2MemoryPoolStats* stats) {
     LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, lib_ctx_id = {:#x}", lib_ctx_id);
     return ORBIS_OK;
 }
@@ -218,7 +219,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2SetMultipartContentType() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2SetRequestTimeout(s64 request_id, u32 timeout) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, timeout = {}", request_id, timeout);
+    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, timeout = {}", request_id,
+              timeout);
     return ORBIS_OK;
 }
 
