@@ -1090,7 +1090,7 @@ int PS4_SYSV_ABI sceRtcTickAddHours(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (lAdd * 3600000000) + pTick2->tick;
+    pTick1->tick = (int64_t(lAdd) * 3600000000LL) + pTick2->tick;
 
     return ORBIS_OK;
 }
@@ -1199,7 +1199,7 @@ int PS4_SYSV_ABI sceRtcTickAddWeeks(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (lAdd * 604800000000) + pTick2->tick;
+    pTick1->tick = (int64_t(lAdd) * 604800000000LL) + pTick2->tick;
 
     return ORBIS_OK;
 }
@@ -1210,24 +1210,21 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     if (pTick1 == nullptr || pTick2 == nullptr)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    OrbisRtcDateTime time;
-
     if (lAdd == 0) {
         pTick1->tick = pTick2->tick;
         return ORBIS_OK;
     }
 
-    sceRtcSetTick(&time, pTick1);
+    OrbisRtcDateTime time{};
+    sceRtcSetTick(&time, pTick2);
 
     time.year += lAdd;
 
-    int timeIsValid = sceRtcCheckValid(&time);
-    if (timeIsValid == ORBIS_OK) {
-        sceRtcGetTick(&time, pTick1);
-    } else {
-        return timeIsValid;
-    }
+    int result = sceRtcCheckValid(&time);
+    if (result != ORBIS_OK)
+        return result;
 
+    sceRtcGetTick(&time, pTick1);
     return ORBIS_OK;
 }
 
