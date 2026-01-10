@@ -9,7 +9,11 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#if defined(__linux__)
 #include <sys/unistd.h>
+#elif defined(__APPLE_CC__)
+#include <unistd.h>
+#endif
 
 #include "core/file_sys/hostio/host_io_posix.h"
 #include "core/file_sys/quasifs/quasi_types.h"
@@ -203,14 +207,22 @@ s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
-    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
-    statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
-    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
-    statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
-    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
-    statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
-    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
-    statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
+
+    statbuf->st_atim.tv_nsec = 0;
+    statbuf->st_mtim.tv_nsec = 0;
+    statbuf->st_ctim.tv_nsec = 0;
+    statbuf->st_birthtim.tv_nsec = 0;
+#ifdef __linux__
+    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;
+    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;
+    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;
+    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec;
+#elif defined(__APPLE_CC__)
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;
+    statbuf->st_birthtim.tv_sec = st.st_ctimespec.tv_sec;
+#endif
 
     statbuf->st_size = st.st_size;
     // statbuf->st_blocks = st.st_blocks;
@@ -239,14 +251,22 @@ s32 HostIO_POSIX::FStat(const s32 fd, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
-    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
-    statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
-    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
-    statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
-    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
-    statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
-    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
-    statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
+
+    statbuf->st_atim.tv_nsec = 0;
+    statbuf->st_mtim.tv_nsec = 0;
+    statbuf->st_ctim.tv_nsec = 0;
+    statbuf->st_birthtim.tv_nsec = 0;
+#ifdef __linux__
+    statbuf->st_atim.tv_sec = st.st_atim.tv_sec;
+    statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;
+    statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;
+    statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec;
+#elif defined(__APPLE_CC__)
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;
+    statbuf->st_birthtim.tv_sec = st.st_ctimespec.tv_sec;
+#endif
 
     statbuf->st_size = st.st_size;
     // statbuf->st_blocks = st.st_blocks;
