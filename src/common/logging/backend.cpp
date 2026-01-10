@@ -98,7 +98,6 @@ private:
     std::size_t bytes_written = 0;
 };
 
-#ifdef _WIN32
 /**
  * Backend that writes to Visual Studio's output window
  */
@@ -109,14 +108,15 @@ public:
     ~DebuggerBackend() = default;
 
     void Write(const Entry& entry) {
+#ifdef _WIN32
         ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry).append(1, '\n')).c_str());
+#endif
     }
 
     void Flush() {}
 
     void EnableForStacktrace() {}
 };
-#endif
 
 bool initialization_in_progress_suppress_logging = true;
 
@@ -268,9 +268,7 @@ private:
     }
 
     void ForEachBackend(auto lambda) {
-#ifdef _WIN32
-        lambda(debugger_backend);
-#endif
+        // lambda(debugger_backend);
         lambda(color_console_backend);
         lambda(file_backend);
     }
@@ -283,9 +281,7 @@ private:
     static inline bool should_append{false};
 
     Filter filter;
-#ifdef _WIN32
     DebuggerBackend debugger_backend{};
-#endif
     ColorConsoleBackend color_console_backend{};
     FileBackend file_backend;
 
