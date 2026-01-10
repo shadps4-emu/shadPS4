@@ -13,8 +13,8 @@ Symlink::Symlink(fs::path target) : target(target) {
     // not incrementing target, this type is a softlink
 }
 
-fs::path Symlink::follow(void) {
-    st.st_atim.tv_sec = time(0);
+fs::path Symlink::follow() {
+    st.st_atim.tv_sec = time(nullptr);
     return target;
 }
 } // namespace QuasiFS

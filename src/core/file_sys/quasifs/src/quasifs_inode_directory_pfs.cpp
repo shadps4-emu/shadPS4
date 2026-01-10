@@ -22,11 +22,9 @@ DirectoryPFS::DirectoryPFS() {
     this->dirent_cache_bin.reserve(512); // It will grow anyway
 }
 
-DirectoryPFS::~DirectoryPFS() = default;
-
 s64 DirectoryPFS::read(void* buf, u64 count) {
     this->RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     s64 bytes_available = this->dirent_cache_bin.size() - descriptor_offset;
     if (bytes_available <= 0)
@@ -49,7 +47,7 @@ s64 DirectoryPFS::read(void* buf, u64 count) {
 
 s64 DirectoryPFS::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     if (basep)
         *basep = this->descriptor_offset;
@@ -103,7 +101,7 @@ s64 DirectoryPFS::getdents(void* buf, u64 count, s64* basep) {
     return bytes_written;
 }
 
-void DirectoryPFS::RebuildDirents(void) {
+void DirectoryPFS::RebuildDirents() {
     if (!this->dirents_changed)
         return;
     this->dirents_changed = false;
@@ -140,7 +138,7 @@ void DirectoryPFS::RebuildDirents(void) {
 
 // PFS is case-insensitive
 inode_ptr DirectoryPFS::lookup(const std::string& name) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
     std::string name_normalized = name;
     transform(name_normalized.begin(), name_normalized.end(), name_normalized.begin(), ::toupper);
 

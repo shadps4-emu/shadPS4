@@ -30,33 +30,33 @@ protected:
 #pragma pack(pop)
 
 private:
-    void RebuildDirents(void) final override;
+    void RebuildDirents() override;
 
 public:
     DirectoryPFS();
-    ~DirectoryPFS();
+    ~DirectoryPFS() override = default;
 
-    static dir_ptr Create() {
+    [[nodiscard]] static dir_ptr Create() {
         return std::make_shared<DirectoryPFS>();
     }
 
-    virtual dir_ptr Spawn() const final override {
+    [[nodiscard]] dir_ptr Spawn() const override {
         return std::make_shared<DirectoryPFS>();
     }
 
-    dir_ptr Clone() const {
+    [[nodiscard]] dir_ptr Clone() const {
         auto _out = std::make_shared<DirectoryPFS>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;
         return _out;
     }
 
-    s64 read(void* buf, u64 count) final override;
+    s64 read(void* buf, u64 count) override;
 
-    s64 getdents(void* buf, u64 count, s64* basep) final override;
+    s64 getdents(void* buf, u64 count, s64* basep) override;
 
-    // Find an element with [name, case insensitive]
-    inode_ptr lookup(const std::string& name) final override;
+    // Find an element with [name, case-insensitive]
+    inode_ptr lookup(const std::string& name) override;
 };
 
 } // namespace QuasiFS

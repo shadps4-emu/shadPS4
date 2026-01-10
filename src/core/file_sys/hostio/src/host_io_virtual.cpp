@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // INAA License @marecl 2026
 
-#include <cstring>
 #include <filesystem>
-#include <mutex>
 
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
-#include "core/file_sys/hostio/host_io_posix.h"
 #include "core/file_sys/hostio/host_io_virtual.h"
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasi_types.h"
@@ -26,7 +23,6 @@ namespace HostIODriver {
 
 HostIO_Virtual::HostIO_Virtual(Resolved* resolved, fd_handle_ptr handle)
     : resolved(resolved), handle(handle) {}
-HostIO_Virtual::~HostIO_Virtual() = default;
 
 s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
     if (path.string().size() > 255)
@@ -83,10 +79,10 @@ s32 HostIO_Virtual::Open(const fs::path& path, s32 flags, u16 mode) {
 }
 
 s32 HostIO_Virtual::Creat(const fs::path& path, u16 mode) {
-    return Open(path, QUASI_O_CREAT | QUASI_O_TRUNC | QUASI_O_WRONLY);
+    return Open(path, QUASI_O_CREAT | QUASI_O_TRUNC | QUASI_O_WRONLY, mode);
 }
 
-s32 HostIO_Virtual::Close(const s32 fd) {
+s32 HostIO_Virtual::Close(s32 fd) {
     // We came here, so fd is valid
     return 0;
 }
@@ -141,12 +137,12 @@ s32 HostIO_Virtual::Remove(const fs::path& path) {
     return -POSIX_ENOSYS;
 }
 
-s32 HostIO_Virtual::Flush(const s32 fd) {
+s32 HostIO_Virtual::Flush(s32 fd) {
     // not applicable
     return 0;
 }
 
-s32 HostIO_Virtual::FSync(const s32 fd) {
+s32 HostIO_Virtual::FSync(s32 fd) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -158,7 +154,7 @@ s32 HostIO_Virtual::FSync(const s32 fd) {
     return handle->node->fsync();
 }
 
-s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
+s64 HostIO_Virtual::LSeek(s32 fd, s64 offset, s32 whence) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -174,11 +170,11 @@ s64 HostIO_Virtual::LSeek(const s32 fd, s64 offset, s32 whence) {
     return new_position;
 }
 
-s64 HostIO_Virtual::Tell(const s32 fd) {
+s64 HostIO_Virtual::Tell(s32 fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
-s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
+s32 HostIO_Virtual::Truncate(const fs::path& path, s64 size) {
     if (nullptr == this->resolved)
         return -POSIX_EINVAL;
 
@@ -196,7 +192,7 @@ s32 HostIO_Virtual::Truncate(const fs::path& path, u64 size) {
     return node->ftruncate(size);
 }
 
-s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
+s32 HostIO_Virtual::FTruncate(s32 fd, s64 size) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -208,7 +204,7 @@ s32 HostIO_Virtual::FTruncate(const s32 fd, u64 size) {
     return handle->node->ftruncate(size);
 }
 
-s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
+s64 HostIO_Virtual::Read(s32 fd, void* buf, u64 count) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -225,7 +221,7 @@ s64 HostIO_Virtual::Read(const s32 fd, void* buf, u64 count) {
     return node->read(buf, count);
 }
 
-s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
+s64 HostIO_Virtual::PRead(s32 fd, void* buf, u64 count, s64 offset) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -238,7 +234,7 @@ s64 HostIO_Virtual::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     return node->pread(buf, count, offset);
 }
 
-s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_Virtual::ReadV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -255,7 +251,7 @@ s64 HostIO_Virtual::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt)
     return node->readv(iov, iovcnt);
 }
 
-s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_Virtual::PReadV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (nullptr == this->handle)
         return -POSIX_EBADF;
 
@@ -271,7 +267,7 @@ s64 HostIO_Virtual::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
     return node->preadv(iov, iovcnt, offset);
 }
 
-s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
+s64 HostIO_Virtual::Write(s32 fd, const void* buf, u64 count) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -295,7 +291,7 @@ s64 HostIO_Virtual::Write(const s32 fd, const void* buf, u64 count) {
     return node->write(buf, count);
 }
 
-s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
+s64 HostIO_Virtual::PWrite(s32 fd, const void* buf, u64 count, s64 offset) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -311,7 +307,7 @@ s64 HostIO_Virtual::PWrite(const s32 fd, const void* buf, u64 count, s64 offset)
     return node->pwrite(buf, count, offset);
 }
 
-s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_Virtual::WriteV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -335,7 +331,7 @@ s64 HostIO_Virtual::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt
     return node->writev(iov, iovcnt);
 }
 
-s64 HostIO_Virtual::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_Virtual::PWriteV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     if (nullptr == this->handle)
         return -POSIX_EBADF;
 
@@ -397,7 +393,7 @@ s32 HostIO_Virtual::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     return 0;
 }
 
-s32 HostIO_Virtual::FStat(const s32 fd, OrbisKernelStat* statbuf) {
+s32 HostIO_Virtual::FStat(s32 fd, OrbisKernelStat* statbuf) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -423,7 +419,7 @@ s32 HostIO_Virtual::Chmod(const fs::path& path, u16 mode) {
     return Partition::chmod(node, mode);
 }
 
-s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
+s32 HostIO_Virtual::FChmod(s32 fd, u16 mode) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 
@@ -435,7 +431,7 @@ s32 HostIO_Virtual::FChmod(const s32 fd, u16 mode) {
     return Partition::chmod(node, mode);
 }
 
-s64 HostIO_Virtual::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
+s64 HostIO_Virtual::GetDents(s32 fd, void* buf, u64 count, s64* basep) {
     if (nullptr == this->handle)
         return -POSIX_EINVAL;
 

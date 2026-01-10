@@ -75,14 +75,14 @@ class Socket : public Inode {
 
 public:
     Socket(int domain, int type, int protocol);
-    ~Socket();
+    ~Socket() override = default;
 
-    static socket_ptr Create(int domain, int type, int protocol) {
+    [[nodiscard]] static socket_ptr Create(int domain, int type, int protocol) {
         return std::make_shared<Socket>(domain, type, protocol);
     }
 
     // you'd better have a good reason to use this
-    socket_ptr Clone() const = delete;
+    [[nodiscard]] socket_ptr Clone() const = delete;
 
     // clang-format off
     virtual bool IsValid() const { SOCKET_STUB(); }
@@ -103,7 +103,7 @@ public:
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) { SOCKET_STUB(); }
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) { SOCKET_STUB(); }
     virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) { SOCKET_STUB(); }
-    virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) { SOCKET_STUB(); }
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override { SOCKET_STUB(); }
     virtual std::optional<net_socket> Native() { SOCKET_STUB(); }
     // clang-format on
 };

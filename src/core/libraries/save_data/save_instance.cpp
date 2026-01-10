@@ -191,7 +191,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
 
     max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
 
-    g_qfs->Operation.MKDir(mount_point);
+    g_qfs->Operation.MKDir(mount_point, 0755);
     // Didn't verify FS type
     auto part = qfs::Partition::Create(qfs::Directory::Create(), save_path);
     g_qfs->Mount(mount_point, part,

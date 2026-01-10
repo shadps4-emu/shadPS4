@@ -15,7 +15,7 @@ namespace QuasiFS {
 
 class Partition : public std::enable_shared_from_this<Partition> {
 private:
-    fileno_t NextFileno(void) {
+    fileno_t NextFileno() {
         return this->next_fileno++;
     };
 
@@ -40,10 +40,9 @@ private:
 public:
     // host-bound directory, permissions for root directory
     Partition();
-    Partition(const fs::path& host_root = "", const int root_permissions = 0755,
-              const u32 ioblock_size = 4096);
+    Partition(const fs::path& host_root = "", int root_permissions = 0755, u32 ioblock_size = 4096);
     Partition(dir_ptr root_directory = Directory::Create(), const fs::path& host_root = "",
-              const int root_permissions = 0755, const u32 ioblock_size = 4096);
+              int root_permissions = 0755, u32 ioblock_size = 4096);
     ~Partition() = default;
 
     static partition_ptr Create(const fs::path& host_root = "", const int root_permissions = 0755,
@@ -53,8 +52,8 @@ public:
     }
 
     static partition_ptr Create(dir_ptr root_directory = Directory::Create(),
-                                const fs::path& host_root = "", const int root_permissions = 0755,
-                                const u32 ioblock_size = 4096) {
+                                const fs::path& host_root = "", int root_permissions = 0755,
+                                u32 ioblock_size = 4096) {
         return std::make_shared<Partition>(root_directory, host_root, root_permissions,
                                            ioblock_size);
     }
@@ -64,15 +63,18 @@ public:
     // return - valid, out_path - sanitized path
     int GetHostPath(fs::path& output_path, const fs::path& local_path = "/");
 
-    dir_ptr GetRoot(void) {
+    dir_ptr GetRoot() {
         return this->root;
     }
-    bool IsHostMounted(void) {
+
+    bool IsHostMounted() const {
         return !this->host_root.empty();
     }
-    blkid_t GetBlkId(void) {
+
+    blkid_t GetBlkId() const {
         return this->block_id;
     }
+
     inode_ptr GetInodeByFileno(fileno_t fileno);
 
     int Resolve(fs::path& path, Resolved& res);

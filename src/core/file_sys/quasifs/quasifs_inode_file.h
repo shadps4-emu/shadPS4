@@ -18,13 +18,13 @@ public:
         st.st_mode = 0000755 | QUASI_S_IFREG;
         st.st_nlink = 0;
     };
-    ~QuasiFile() = default;
+    ~QuasiFile() override = default;
 
-    static file_ptr Create() {
+    [[nodiscard]] static file_ptr Create() {
         return std::make_shared<QuasiFile>();
     }
 
-    file_ptr Clone() const {
+    [[nodiscard]] file_ptr Clone() const {
         auto _out = std::make_shared<QuasiFile>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;

@@ -15,13 +15,13 @@ class Device : public Inode {
 
 public:
     Device();
-    ~Device();
+    ~Device() override = default;
 
-    static dev_ptr Create() {
+    [[nodiscard]] static dev_ptr Create() {
         return std::make_shared<Device>();
     }
 
-    dev_ptr Clone() const {
+    [[nodiscard]] dev_ptr Clone() const {
         auto _out = std::make_shared<Device>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;

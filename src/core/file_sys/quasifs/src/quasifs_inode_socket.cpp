@@ -15,6 +15,4 @@ Socket::Socket(int domain, int type, int protocol) {
     this->st.st_mode |= QUASI_S_IFSOCK;
 }
 
-Socket::~Socket() = default;
-
 } // namespace QuasiFS

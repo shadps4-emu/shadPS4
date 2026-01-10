@@ -41,15 +41,15 @@ protected:
     std::vector<u8> dirent_cache_bin{};
 
 private:
-    virtual void RebuildDirents(void);
+    virtual void RebuildDirents();
 
 public:
     dir_ptr mounted_root = nullptr;
 
     QuasiDirectory();
-    ~QuasiDirectory() = default;
+    ~QuasiDirectory() override = default;
 
-    std::vector<std::string> Entries(void) {
+    std::vector<std::string> Entries() {
         std::vector<std::string> out{};
         for (auto& kv : this->entries)
             out.push_back(kv.first);
@@ -57,16 +57,16 @@ public:
     }
 
     // Create out of thin air
-    static dir_ptr Create() {
+    [[nodiscard]] static dir_ptr Create() {
         return std::make_shared<QuasiDirectory>();
     }
 
     // Allow "inheriting" type of directory
-    virtual dir_ptr Spawn() const {
+    [[nodiscard]] virtual dir_ptr Spawn() const {
         return std::make_shared<QuasiDirectory>();
     }
 
-    dir_ptr Clone() const {
+    [[nodiscard]] dir_ptr Clone() const {
         auto _out = std::make_shared<QuasiDirectory>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;

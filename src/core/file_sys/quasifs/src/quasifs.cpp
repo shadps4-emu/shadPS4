@@ -9,10 +9,8 @@
 
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_inode.h"
 #include "core/file_sys/quasifs/quasifs_inode_file.h"
-#include "core/file_sys/quasifs/quasifs_inode_file_virtual.h"
 #include "core/file_sys/quasifs/quasifs_inode_symlink.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -35,7 +33,7 @@ QFS::QFS(const fs::path& host_path) {
     this->block_devices[this->rootfs] = mount_options;
 }
 
-int QFS::SyncHost(void) {
+int QFS::SyncHost() {
     for (auto& [part, info] : this->block_devices) {
         if (part->IsHostMounted())
             SyncHostImpl(part);

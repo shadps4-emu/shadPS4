@@ -5,10 +5,7 @@
 #include "common/logging/log.h"
 
 #include "core/file_sys/quasifs/quasi_types.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
-#include "core/file_sys/quasifs/quasifs_inode_file.h"
-#include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_inode.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 #include "core/libraries/kernel/posix_error.h"
 
@@ -16,11 +13,11 @@ namespace QuasiFS {
 
 Partition::Partition() : Partition(Directory::Create(), "", 0755, 4096) {}
 
-Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 ioblock_size)
+Partition::Partition(const fs::path& host_root, const int root_permissions, u32 ioblock_size)
     : Partition(dir_ptr(), host_root, root_permissions, ioblock_size) {}
 
-Partition::Partition(dir_ptr root_directory, const fs::path& host_root, const int root_permissions,
-                     const u32 ioblock_size)
+Partition::Partition(dir_ptr root_directory, const fs::path& host_root, int root_permissions,
+                     u32 ioblock_size)
     : root(root_directory), block_id(next_block_id++), host_root(host_root.lexically_normal()),
       ioblock_size(ioblock_size) {
     // clear defaults, write

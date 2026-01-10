@@ -9,9 +9,7 @@
 #include "core/file_sys/quasifs/quasi_sys_fcntl.h"
 #include "core/file_sys/quasifs/quasi_types.h"
 #include "core/file_sys/quasifs/quasifs.h"
-#include "core/file_sys/quasifs/quasifs_inode_directory.h"
-#include "core/file_sys/quasifs/quasifs_inode_file.h"
-#include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_inode.h"
 #include "core/file_sys/quasifs/quasifs_partition.h"
 #include "core/libraries/kernel/posix_error.h"
 
@@ -340,7 +338,7 @@ s32 QFS::OperationImpl::Remove(const fs::path& path) {
     return -POSIX_ENOSYS;
 }
 
-s32 QFS::OperationImpl::Flush(const s32 fd) {
+s32 QFS::OperationImpl::Flush(s32 fd) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -372,7 +370,7 @@ s32 QFS::OperationImpl::Flush(const s32 fd) {
     return vio_status;
 }
 
-s32 QFS::OperationImpl::FSync(const s32 fd) {
+s32 QFS::OperationImpl::FSync(s32 fd) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -401,7 +399,7 @@ s32 QFS::OperationImpl::FSync(const s32 fd) {
     return vio_status;
 };
 
-s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
+s32 QFS::OperationImpl::Truncate(const fs::path& path, s64 length) {
     Resolved res;
     int status = qfs.Resolve(path, res);
 
@@ -436,7 +434,7 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
     return vio_status;
 }
 
-s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
+s32 QFS::OperationImpl::FTruncate(s32 fd, s64 length) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -470,7 +468,7 @@ s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
     return vio_status;
 }
 
-s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
+s64 QFS::OperationImpl::LSeek(s32 fd, s64 offset, s32 whence) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -514,7 +512,7 @@ void UpdateStatFromHost(Libraries::Kernel::OrbisKernelStat* vfs,
     vfs->st_ctim = host->st_ctim;
 }
 
-s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
+s64 QFS::OperationImpl::Read(s32 fd, void* buf, u64 count) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -543,7 +541,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
     return HostVIO(nullptr, handle).Read(fd, buf, host_used ? hio_status : count);
 }
 
-s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
+s64 QFS::OperationImpl::PRead(s32 fd, void* buf, u64 count, s64 offset) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -572,8 +570,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
     return HostVIO(nullptr, handle).PRead(fd, buf, host_used ? hio_status : count, offset);
 };
 
-s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
-                              u32 iovcnt) {
+s64 QFS::OperationImpl::ReadV(s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -607,8 +604,8 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernel
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
-                               u32 iovcnt, s64 offset) {
+s64 QFS::OperationImpl::PReadV(s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
+                               s64 offset) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -642,7 +639,7 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKerne
     return vio_status;
 }
 
-s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
+s64 QFS::OperationImpl::Write(s32 fd, const void* buf, u64 count) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -671,7 +668,7 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
     return HostVIO(nullptr, handle).Write(fd, buf, host_used ? hio_status : count);
 }
 
-s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
+s64 QFS::OperationImpl::PWrite(s32 fd, const void* buf, u64 count, s64 offset) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -701,8 +698,7 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
     return HostVIO(nullptr, handle).PWrite(fd, buf, host_used ? hio_status : count, offset);
 };
 
-s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
-                               u32 iovcnt) {
+s64 QFS::OperationImpl::WriteV(s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -736,8 +732,8 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
     return vio_status;
 }
 
-s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov,
-                                u32 iovcnt, s64 offset) {
+s64 QFS::OperationImpl::PWriteV(s32 fd, const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
+                                s64 offset) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -859,7 +855,7 @@ s32 QFS::OperationImpl::Stat(const fs::path& path, Libraries::Kernel::OrbisKerne
     return HostVIO(&res, nullptr).Stat(res.local_path, statbuf);
 }
 
-s32 QFS::OperationImpl::FStat(const s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
+s32 QFS::OperationImpl::FStat(s32 fd, Libraries::Kernel::OrbisKernelStat* statbuf) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -882,7 +878,7 @@ s32 QFS::OperationImpl::Chmod(const fs::path& path, u16 mode) {
     return HostVIO(&res, nullptr).Chmod(res.local_path, mode);
 }
 
-s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
+s32 QFS::OperationImpl::FChmod(s32 fd, u16 mode) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -896,7 +892,7 @@ s32 QFS::OperationImpl::FChmod(const s32 fd, u16 mode) {
     return HostVIO(nullptr, handle).FChmod(fd, mode);
 }
 
-s64 QFS::OperationImpl::GetDents(const s32 fd, void* buf, u64 count, s64* basep) {
+s64 QFS::OperationImpl::GetDents(s32 fd, void* buf, u64 count, s64* basep) {
     if (fd < 0)
         return -POSIX_EBADF;
 

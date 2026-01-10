@@ -14,13 +14,13 @@ class Symlink final : public Inode {
 
 public:
     Symlink(fs::path target);
-    ~Symlink() = default;
+    ~Symlink() override = default;
 
-    static symlink_ptr Create(fs::path target) {
+    [[nodiscard]] static symlink_ptr Create(fs::path target) {
         return std::make_shared<Symlink>(target);
     }
 
-    symlink_ptr Clone() const {
+    [[nodiscard]] symlink_ptr Clone() const {
         auto _out = std::make_shared<Symlink>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;
@@ -28,7 +28,7 @@ public:
     }
 
     // symlinked path
-    fs::path follow(void);
+    fs::path follow();
 };
 
 } // namespace QuasiFS

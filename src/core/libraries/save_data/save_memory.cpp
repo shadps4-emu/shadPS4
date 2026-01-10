@@ -150,7 +150,7 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
             fs::copy_file(src_icon, icon_path);
         }
     } else {
-        int fd = qfs->Operation.Creat(icon_path);
+        int fd = qfs->Operation.Creat(icon_path, 0755);
         qfs->Operation.Write(fd, buf, buf_size);
         qfs->Operation.Close(fd);
     }

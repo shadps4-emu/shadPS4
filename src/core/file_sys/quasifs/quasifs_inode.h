@@ -5,8 +5,6 @@
 #pragma once
 
 #include <ctime>
-#include <vector>
-#include <assert.h>
 
 #include "common/scope_exit.h"
 #include "common/types.h"
@@ -36,21 +34,21 @@ public:
         st.st_uid = 0;
         st.st_gid = 0;
 
-        st.st_birthtim.tv_sec = time(0);
+        st.st_birthtim.tv_sec = time(nullptr);
         st.st_birthtim.tv_nsec = 0;
-        st.st_ctim.tv_sec = time(0);
+        st.st_ctim.tv_sec = time(nullptr);
         st.st_ctim.tv_nsec = 0;
-        st.st_mtim.tv_sec = time(0);
+        st.st_mtim.tv_sec = time(nullptr);
         st.st_mtim.tv_nsec = 0;
-        st.st_atim.tv_sec = time(0);
+        st.st_atim.tv_sec = time(nullptr);
         st.st_atim.tv_nsec = 0;
     }
 
     virtual ~Inode() = default;
 
-    inode_ptr Clone() const {
+    [[nodiscard]] inode_ptr Clone() const {
         auto _out = std::make_shared<Inode>(*this);
-        _out->st.st_ino = 0;
+        _out->st.st_ino = -1;
         _out->st.st_nlink = 0;
         return _out;
     }
@@ -88,9 +86,9 @@ public:
     }
 
     virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
-        u64 tbr = 0;
+        s64 tbr = 0;
         for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->read(iov[idx].iov_base, iov[idx].iov_len);
+            s64 status = this->read(iov[idx].iov_base, iov[idx].iov_len);
             if (status < 0)
                 return status;
             tbr += status;
@@ -99,9 +97,9 @@ public:
     }
 
     virtual s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, u32 iovcnt) {
-        u64 tbw = 0;
+        s64 tbw = 0;
         for (unsigned int idx = 0; idx < iovcnt; idx++) {
-            int status = this->write(iov[idx].iov_base, iov[idx].iov_len);
+            s64 status = this->write(iov[idx].iov_base, iov[idx].iov_len);
             if (status < 0)
                 return status;
             tbw += status;
@@ -155,44 +153,44 @@ public:
     }
 
     // type helpers
-    u16 type(void) const {
+    [[nodiscard]] u16 type() const {
         return st.st_mode & QUASI_S_IFMT;
     }
 
-    bool is_fifo(void) const {
+    [[nodiscard]] bool is_fifo() const {
         return QUASI_S_ISLNK(st.st_mode);
     }
-    bool is_char(void) const {
+    [[nodiscard]] bool is_char() const {
         return QUASI_S_ISCHR(st.st_mode);
     }
-    bool is_dir(void) const {
+    [[nodiscard]] bool is_dir() const {
         return QUASI_S_ISDIR(st.st_mode);
     }
-    bool is_block(void) const {
+    [[nodiscard]] bool is_block() const {
         return QUASI_S_ISBLK(st.st_mode);
     }
-    bool is_file(void) const {
+    [[nodiscard]] bool is_file() const {
         return QUASI_S_ISREG(st.st_mode);
     }
-    bool is_link(void) const {
+    [[nodiscard]] bool is_link() const {
         return QUASI_S_ISLNK(st.st_mode);
     }
-    bool is_socket(void) const {
+    [[nodiscard]] bool is_socket() const {
         return QUASI_S_ISSOCK(st.st_mode);
     }
 
-    bool CanRead(void) {
+    [[nodiscard]] bool CanRead() const {
         return this->st.st_mode & (QUASI_S_IRUSR | QUASI_S_IRGRP | QUASI_S_IROTH);
     }
-    bool CanWrite(void) {
+    [[nodiscard]] bool CanWrite() const {
         return this->st.st_mode & (QUASI_S_IWUSR | QUASI_S_IWGRP | QUASI_S_IWOTH);
     }
-    bool CanExecute(void) {
+    [[nodiscard]] bool CanExecute() const {
         return this->st.st_mode & (QUASI_S_IXUSR | QUASI_S_IXGRP | QUASI_S_IXOTH);
     }
 
     // init - used by qfs/partition
-    u32 __GetFileno(void) {
+    u32 __GetFileno() const {
         return this->st.st_ino;
     }
     void __SetFileno(fileno_t fileno) {
@@ -200,7 +198,7 @@ public:
     }
 
     // file descriptors - set
-    s64 __GetOffset(void) {
+    s64 __GetOffset() const {
         return this->descriptor_offset;
     }
     void __SetOffset(s64 new_offset) {
@@ -210,7 +208,7 @@ public:
     int chmod(u16 mode) {
         u16& st_mode = this->st.st_mode;
         st_mode = ((st_mode) & (~0x1FF)) | (mode & 0x1FF);
-        st.st_birthtim.tv_sec = time(0);
+        st.st_birthtim.tv_sec = time(nullptr);
         return 0;
     }
 

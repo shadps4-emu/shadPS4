@@ -15,8 +15,6 @@ Device::Device() {
     this->st.st_mode |= QUASI_S_IFCHR;
 }
 
-Device::~Device() = default;
-
 s64 Device::read(void* buf, u64 count) {
     return -POSIX_EBADF;
 }

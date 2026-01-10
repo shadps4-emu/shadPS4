@@ -8,27 +8,16 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
-#include "common/scope_exit.h"
 #include "common/singleton.h"
-
-#include "core/file_sys/devices/console_device.h"
-#include "core/file_sys/devices/deci_tty6_device.h"
-#include "core/file_sys/devices/logger.h"
-#include "core/file_sys/devices/nop_device.h"
-#include "core/file_sys/devices/random_device.h"
-#include "core/file_sys/devices/rng_device.h"
-#include "core/file_sys/devices/srandom_device.h"
 #include "core/file_sys/fs.h"
-
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/kernel/file_system.h"
-#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/sockets.h"
 #include "core/memory.h"
-#include "kernel.h"
 
-#include "core/file_sys/quasifs/quasifs.h"
+#include "kernel.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -101,7 +90,7 @@ s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 count) {
     const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(count, remaining));
 
-    int result = g_qfs->Operation.Read(fd, buf, count);
+    s64 result = g_qfs->Operation.Read(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -144,7 +133,7 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s
                                  std::min<u64>(iov[iov_idx].iov_len, remaining));
     }
 
-    int result = g_qfs->Operation.PReadV(fd, iov, iovcnt, offset);
+    s64 result = g_qfs->Operation.PReadV(fd, iov, iovcnt, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -163,7 +152,7 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 
 // pread
 s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 count, s64 offset) {
-    int result = g_qfs->Operation.PRead(fd, buf, count, offset);
+    s64 result = g_qfs->Operation.PRead(fd, buf, count, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -190,7 +179,7 @@ s64 PS4_SYSV_ABI posix_readv_impl(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
                                  std::min<u64>(iov[iov_idx].iov_len, remaining));
     }
 
-    int result = g_qfs->Operation.ReadV(fd, iov, iovcnt);
+    s64 result = g_qfs->Operation.ReadV(fd, iov, iovcnt);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -213,7 +202,7 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 
 // write
 s64 PS4_SYSV_ABI posix_write_impl(s32 fd, const void* buf, u64 count) {
-    int result = g_qfs->Operation.Write(fd, buf, count);
+    s64 result = g_qfs->Operation.Write(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -236,7 +225,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 count) {
 
 // pwritev
 s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    int result = g_qfs->Operation.PWriteV(fd, iov, iovcnt, offset);
+    s64 result = g_qfs->Operation.PWriteV(fd, iov, iovcnt, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -255,7 +244,7 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 
 // pwrite
 s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 count, s64 offset) {
-    int result = g_qfs->Operation.PWrite(fd, buf, count, offset);
+    s64 result = g_qfs->Operation.PWrite(fd, buf, count, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -274,7 +263,7 @@ s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 count, s64 offset) {
 
 // writev
 s64 PS4_SYSV_ABI posix_writev_impl(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    int result = g_qfs->Operation.WriteV(fd, iov, iovcnt);
+    s64 result = g_qfs->Operation.WriteV(fd, iov, iovcnt);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -391,7 +380,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    int result = g_qfs->Operation.LSeek(fd, offset, origin);
+    s64 result = g_qfs->Operation.LSeek(fd, offset, origin);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -542,7 +531,7 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 }
 
 static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
-    int result = g_qfs->Operation.GetDents(fd, buf, count, basep);
+    s64 result = g_qfs->Operation.GetDents(fd, buf, count, basep);
     LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, count, result);
     if (result < 0) {
         *__Error() = -result;

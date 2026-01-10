@@ -71,11 +71,11 @@ struct File {
         return std::shared_ptr<File>(new File());
     }
 
-    bool IsOpen(void) {
+    bool IsOpen() {
         return nullptr != this->node;
     }
 
-    bool IsHostBound(void) {
+    bool IsHostBound() {
         return -1 != host_fd;
     }
 };

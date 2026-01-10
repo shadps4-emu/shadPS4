@@ -16,13 +16,13 @@ class VirtualFile final : public QuasiFile {
 
 public:
     VirtualFile() = default;
-    ~VirtualFile() = default;
+    ~VirtualFile() override = default;
 
-    static std::shared_ptr<VirtualFile> Create() {
+    [[nodiscard]] static std::shared_ptr<VirtualFile> Create() {
         return std::make_shared<VirtualFile>();
     }
 
-    file_ptr Clone() const {
+    [[nodiscard]] file_ptr Clone() const {
         auto _out = std::make_shared<VirtualFile>(*this);
         _out->st.st_ino = -1;
         _out->st.st_nlink = 0;

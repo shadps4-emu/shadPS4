@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <errno.h>
+#include <cerrno>
 
 #include "common/assert.h"
 #include "common/logging/log.h"

@@ -147,7 +147,7 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     // Setup /dev
     //
 
-    qfs->Operation.MKDir("/dev/fd");
+    qfs->Operation.MKDir("/dev/fd", 0755);
     qfs->ForceInsert("/dev/fd", "0", Devices::ZeroDevice::Create());
     qfs->ForceInsert("/dev/fd", "1", Devices::Logger::Create("stdout", false));
     qfs->ForceInsert("/dev/fd", "2", Devices::Logger::Create("stderr", true));
@@ -174,11 +174,11 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     qfs->Operation.Chmod("/dev/urandom", 0666);
     qfs->Operation.Chmod("/dev/srandom", 0666);
 
-    if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY); fd_dev != 0)
+    if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY, 0755); fd_dev != 0)
         LOG_CRITICAL(Kernel_Fs, "file descriptor of stdin is not 0 (it's {})", fd_dev);
-    if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY); fd_dev != 1)
+    if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY, 0755); fd_dev != 1)
         LOG_CRITICAL(Kernel_Fs, "file descriptor of stdout is not 1 (it's {})", fd_dev);
-    if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY); fd_dev != 2)
+    if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY, 0755); fd_dev != 2)
         LOG_CRITICAL(Kernel_Fs, "file descriptor of stderr is not 2 (it's {})", fd_dev);
 
     qfs->SyncHost();
