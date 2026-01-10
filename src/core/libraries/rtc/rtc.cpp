@@ -501,7 +501,7 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
 
     OrbisRtcTick rtcTick{tick};
 
-    int64_t offset_minutes = (tzsec.dst_sec + tzsec.west_sec) / 60;
+    int64_t offset_minutes = static_cast<s32>(tzsec.dst_sec + tzsec.west_sec) / 60;
     result = sceRtcTickAddMinutes(&rtcTick, &rtcTick, offset_minutes);
     if (result < 0)
         return result;
