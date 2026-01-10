@@ -500,10 +500,14 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
         return result;
 
     OrbisRtcTick rtcTick{tick};
+
     int64_t offset_minutes = (tzsec.dst_sec + tzsec.west_sec) / 60;
-    sceRtcTickAddMinutes(&rtcTick, &rtcTick, offset_minutes);
-    sceRtcSetTick(pTime, &rtcTick);
-    return ORBIS_OK;
+    result = sceRtcTickAddMinutes(&rtcTick, &rtcTick, offset_minutes);
+    if (result < 0)
+        return result;
+
+    result = sceRtcSetTick(pTime, &rtcTick);
+    return result;
 }
 
 int PS4_SYSV_ABI sceRtcGetCurrentDebugNetworkTick(OrbisRtcTick* pTick) {
