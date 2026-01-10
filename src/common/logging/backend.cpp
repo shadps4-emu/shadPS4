@@ -109,7 +109,9 @@ public:
 
     void Write(const Entry& entry) {
 #ifdef _WIN32
-        ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry).append(1, '\n')).c_str());
+        // OutputDebugStringW raises exceptions to deliver messages.
+        // Without special handling, this causes crashes when a debugger is not connected.
+        // ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry).append(1, '\n')).c_str());
 #endif
     }
 
