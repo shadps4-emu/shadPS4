@@ -430,8 +430,8 @@ int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int
     return index + 1;
 }
 
-int PS4_SYSV_ABI sceHttpReadData() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
+    LOG_ERROR(Lib_Http, "(STUBBED) called reqId = {} size = {}", reqId, size);
     return ORBIS_OK;
 }
 
