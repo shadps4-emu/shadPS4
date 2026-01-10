@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -12,6 +12,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "memory_patcher.h"
 
@@ -192,7 +193,7 @@ void OnGameLoaded() {
         } else {
             ApplyPatchesFromXML(file_path);
         }
-    } else if (Config::getLoadAutoPatches()) {
+    } else if (EmulatorState::GetInstance()->IsAutoPatchesLoadEnabled()) {
         for (auto const& repo : std::filesystem::directory_iterator(patch_dir)) {
             if (!repo.is_directory()) {
                 continue;

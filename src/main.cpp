@@ -8,6 +8,7 @@
 #include "system_error"
 #include "unordered_map"
 
+#include <core/emulator_state.h>
 #include <fmt/core.h>
 #include "common/config.h"
 #include "common/logging/backend.h"
@@ -27,7 +28,9 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
     IPC::Instance().Init();
-
+    // Init emulator state
+    std::shared_ptr<EmulatorState> m_emu_state = std::make_shared<EmulatorState>();
+    EmulatorState::SetInstance(m_emu_state);
     // Load configurations
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");

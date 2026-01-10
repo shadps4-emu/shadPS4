@@ -41,6 +41,7 @@
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_web_api.h"
+#include "core/libraries/np/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
@@ -48,6 +49,7 @@
 #include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
 #include "core/libraries/rtc/rtc.h"
+#include "core/libraries/rudp/rudp.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/screenshot/screenshot.h"
@@ -100,6 +102,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Np::NpScore::RegisterLib(sym);
     Libraries::Np::NpTrophy::RegisterLib(sym);
     Libraries::Np::NpWebApi::RegisterLib(sym);
+    Libraries::Np::NpWebApi2::RegisterLib(sym);
     Libraries::Np::NpProfileDialog::RegisterLib(sym);
     Libraries::Np::NpSnsFacebookDialog::RegisterLib(sym);
     Libraries::Np::NpAuth::RegisterLib(sym);
@@ -141,6 +144,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rtc::RegisterLib(sym);
+    Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.

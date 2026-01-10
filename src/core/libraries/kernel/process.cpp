@@ -36,9 +36,11 @@ s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
-    s32 version = Common::ElfInfo::Instance().CompiledSdkVer();
-    *ver = version;
-    return (version >= 0) ? ORBIS_OK : ORBIS_KERNEL_ERROR_EINVAL;
+    if (!ver) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    *ver = Common::ElfInfo::Instance().CompiledSdkVer();
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCpumode() {

@@ -180,8 +180,8 @@ s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, cons
     }
 
     // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    auto* param = module->GetProcParam<OrbisProcParam*>();
+    ASSERT_MSG(!param || param->size >= 0x18, "Invalid module param size: {}", param->size);
     s32 ret = module->Start(args, argp, param);
     if (pRes) {
         *pRes = ret;

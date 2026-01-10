@@ -204,17 +204,18 @@ static int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
 // On Windows, MSG_DONTWAIT is not handled natively by recv/send.
 // This function uses select() with zero timeout to simulate non-blocking behavior.
 static int socket_is_ready(int sock, bool is_read = true) {
-    fd_set fds;
+    fd_set fds{};
     FD_ZERO(&fds);
     FD_SET(sock, &fds);
     timeval timeout{0, 0};
     int res =
         select(sock + 1, is_read ? &fds : nullptr, is_read ? nullptr : &fds, nullptr, &timeout);
-    if (res == 0)
-        return ORBIS_NET_ERROR_EWOULDBLOCK;
-    else if (res < 0)
+    if (res == 0) {
+        *Libraries::Kernel::__Error() = ORBIS_NET_EWOULDBLOCK;
+        return -1;
+    } else if (res < 0) {
         return ConvertReturnErrorCode(res);
-
+    }
     return res;
 }
 
