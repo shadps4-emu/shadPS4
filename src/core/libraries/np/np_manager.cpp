@@ -683,6 +683,9 @@ struct NpStateCallbackForNpToolkit {
 NpStateCallbackForNpToolkit NpStateCbForNp;
 
 s32 PS4_SYSV_ABI sceNpCheckCallback() {
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_UNINITIALIZED;
+    }
     LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
     return ORBIS_OK;
 }
