@@ -485,24 +485,23 @@ int PS4_SYSV_ABI sceRtcGetCurrentClockLocalTime(OrbisRtcDateTime* pTime) {
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
     Kernel::OrbisKernelTimespec ts{};
-    int result = Kernel::sceKernelClockGettime(0, &ts);
+    int result = Kernel::sceKernelClockGettime(Kernel::ORBIS_CLOCK_REALTIME, &ts);
     if (result < 0)
         return result;
 
-    uint64_t tick_utc = (uint64_t(ts.tv_sec) * 1000000ULL) + (uint64_t(ts.tv_nsec) / 1000ULL);
-
-    uint64_t tick = tick_utc + 0xDCBFFEFF2BC000ULL;
+    uint64_t tick_utc =
+        static_cast<uint64_t>(ts.tv_sec) * 1000000ULL + static_cast<uint64_t>(ts.tv_nsec) / 1000ULL;
+    uint64_t tick = tick_utc + UNIX_EPOCH_TICKS;
 
     time_t local_time{};
     Kernel::OrbisTimesec tzsec{};
-
     result = sceKernelConvertUtcToLocaltime(tick_utc / 1000000ULL, &local_time, &tzsec, nullptr);
-
     if (result < 0)
         return result;
 
     OrbisRtcTick rtcTick{tick};
-    sceRtcTickAddMinutes(&rtcTick, &rtcTick, (tzsec.dst_sec + tzsec.west_sec) / 60);
+    int64_t offset_minutes = (tzsec.dst_sec + tzsec.west_sec) / 60;
+    sceRtcTickAddMinutes(&rtcTick, &rtcTick, offset_minutes);
     sceRtcSetTick(pTime, &rtcTick);
 
     return ORBIS_OK;
@@ -1122,23 +1121,7 @@ int PS4_SYSV_ABI sceRtcTickAddMinutes(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2
     if (!pTick1 || !pTick2)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    if (lAdd == 0) {
-        pTick1->tick = pTick2->tick;
-        return ORBIS_OK;
-    }
-
-    uint64_t t1 = pTick2->tick;
-    int64_t ladd_mul = lAdd * 60000000LL;
-
-    if (lAdd < 0) {
-        if (t1 < static_cast<uint64_t>(-ladd_mul))
-            return ORBIS_RTC_ERROR_INVALID_VALUE;
-    } else {
-        if ((~t1) < static_cast<uint64_t>(ladd_mul))
-            return ORBIS_RTC_ERROR_INVALID_VALUE;
-    }
-
-    pTick1->tick = t1 + ladd_mul;
+    pTick1->tick = pTick2->tick + (lAdd * 60000000ULL);
 
     return ORBIS_OK;
 }
