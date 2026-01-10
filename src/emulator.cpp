@@ -195,45 +195,49 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Debugger::WaitForDebuggerAttach();
     }
 
+    std::filesystem::path eboot_name{"eboot.bin"};
+    std::filesystem::path game_folder{};
+    std::filesystem::path guest_eboot_path{"/eboot.bin"};
+    const std::filesystem::path guest_param_sfo_path{"/sce_sys/param.sfo"};
+    const std::filesystem::path guest_pic1_path{"/sce_sys/pic1.png"};
+    std::filesystem::path host_eboot_path{};
+    std::filesystem::path host_param_sfo_path{};
+    std::filesystem::path host_pic1_path{};
+
     if (std::filesystem::is_directory(file)) {
-        file /= "eboot.bin";
+        file /= eboot_name;
     }
 
-    std::filesystem::path game_folder;
     if (p_game_folder.has_value()) {
         game_folder = p_game_folder.value();
     } else {
         game_folder = file.parent_path();
-        if (const auto game_folder_name = game_folder.filename().string();
-            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
-            // If an executable was launched from a separate update directory,
-            // use the base game directory as the game folder.
-            const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
-            const auto base_path = game_folder.parent_path() / base_name;
-            if (std::filesystem::is_directory(base_path)) {
-                game_folder = base_path;
-            }
-        }
+        eboot_name = file.filename();
+        // TODO: implement patch directory
+        // if (const auto game_folder_name = game_folder.filename().string();
+        //     game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
+        //     // If an executable was launched from a separate update directory,
+        //     // use the base game directory as the game folder.
+        //     const std::string base_name = game_folder_name.substr(0,
+        //     game_folder_name.rfind('-')); const auto base_path = game_folder.parent_path() /
+        //     base_name; if (std::filesystem::is_directory(base_path)) {
+        //         game_folder = base_path;
+        //     }
+        // }
     }
-
-    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
-
-    // Applications expect to be run from /app0 so mount the file's parent path as app0.
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(game_folder, "/app0", true);
 
     this->LoadFilesystem(game_folder);
 
     // can't sync here, otherwise all mountpoints would need to be updated one by one
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
-    std::filesystem::path param_sfo_path{};
     {
         qfs::Resolved res{};
         int status = qfs->Resolve("/app0", res);
         // DON'T do this normally. This is init, anything goes
-        res.mountpoint->GetHostPath(param_sfo_path, "/sce_sys/param.sfo");
+        res.mountpoint->GetHostPath(host_param_sfo_path, guest_param_sfo_path);
+        res.mountpoint->GetHostPath(host_eboot_path, guest_eboot_path);
+        res.mountpoint->GetHostPath(host_pic1_path, guest_pic1_path);
     }
-    const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
 
     // Load param.sfo details if it exists
     std::string id;
@@ -242,55 +246,48 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     u32 sdk_version;
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
+    const auto param_sfo_exists = std::filesystem::exists(host_param_sfo_path);
 
-    // There is no valid dump without this file ~shrug~
-    if (!param_sfo_exists)
-        UNREACHABLE_MSG("Failed to access param.sfo");
+    if (param_sfo_exists) {
+        auto* param_sfo = Common::Singleton<PSF>::Instance();
+        ASSERT_MSG(param_sfo->Open(host_param_sfo_path), "Failed to open param.sfo");
 
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
-    ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
-
-    const auto content_id = param_sfo->GetString("CONTENT_ID");
-    const auto title_id = param_sfo->GetString("TITLE_ID");
-    if (content_id.has_value() && !content_id->empty()) {
-        id = std::string(*content_id, 7, 9);
-    } else if (title_id.has_value()) {
-        id = *title_id;
-    }
-    title = param_sfo->GetString("TITLE").value_or("Unknown title");
-    fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-    app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-    if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
-        psf_attributes.raw = *raw_attributes;
-    }
-
-    // Extract sdk version from pubtool info.
-    std::string_view pubtool_info = param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
-    u64 sdk_ver_offset = pubtool_info.find("sdk_ver");
-
-    if (sdk_ver_offset == pubtool_info.npos) {
-        // Default to using firmware version if SDK version is not found.
-        sdk_version = fw_version;
-    } else {
-        // Increment offset to account for sdk_ver= part of string.
-        sdk_ver_offset += 8;
-        u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
-        if (sdk_ver_len == pubtool_info.npos) {
-            // If there's no more commas, this is likely the last entry of pubtool info.
-            // Use string length instead.
-            sdk_ver_len = pubtool_info.size();
+        const auto content_id = param_sfo->GetString("CONTENT_ID");
+        const auto title_id = param_sfo->GetString("TITLE_ID");
+        if (content_id.has_value() && !content_id->empty()) {
+            id = std::string(*content_id, 7, 9);
+        } else if (title_id.has_value()) {
+            id = *title_id;
         }
-        sdk_ver_len -= sdk_ver_offset;
-        std::string sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len).data();
-        // Number is stored in base 16.
-        sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
-    }
+        title = param_sfo->GetString("TITLE").value_or("Unknown title");
+        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
+        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+            psf_attributes.raw = *raw_attributes;
+        }
 
-    title = param_sfo->GetString("TITLE").value_or("Unknown title");
-    fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-    app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-    if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
-        psf_attributes.raw = *raw_attributes;
+        // Extract sdk version from pubtool info.
+        std::string_view pubtool_info =
+            param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
+        u64 sdk_ver_offset = pubtool_info.find("sdk_ver");
+
+        if (sdk_ver_offset == pubtool_info.npos) {
+            // Default to using firmware version if SDK version is not found.
+            sdk_version = fw_version;
+        } else {
+            // Increment offset to account for sdk_ver= part of string.
+            sdk_ver_offset += 8;
+            u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
+            if (sdk_ver_len == pubtool_info.npos) {
+                // If there's no more commas, this is likely the last entry of pubtool info.
+                // Use string length instead.
+                sdk_ver_len = pubtool_info.size();
+            }
+            sdk_ver_len -= sdk_ver_offset;
+            std::string sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len).data();
+            // Number is stored in base 16.
+            sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
+        }
     }
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
@@ -332,9 +329,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     qfs->SyncHost("/temp");
     qfs->SyncHost("/temp0");
 
-    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
-
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
     game_info.game_serial = id;
@@ -342,12 +336,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
+    game_info.sdk_ver = ReadCompiledSdkVersion(host_eboot_path);
     game_info.psf_attributes = psf_attributes;
 
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
+    if (std::filesystem::exists(host_pic1_path)) {
+        game_info.splash_path = host_pic1_path;
     }
 
     game_info.game_folder = game_folder;
@@ -453,7 +446,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
-    std::string window_title = "";
+    std::string window_title{};
     std::string remote_url(Common::g_scm_remote_url);
     std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
@@ -481,18 +474,18 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    std::filesystem::path eboot_path{};
-    qfs->GetHostPath(eboot_path, guest_eboot_path);
-    if (linker->LoadModule(eboot_path) == -1) {
+    if (linker->LoadModule(host_eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
+                     Common::FS::PathToUTF8String(std::filesystem::absolute(host_eboot_path)));
         std::quick_exit(0);
     }
 
     // check if we have system modules to load
     LoadSystemModules(game_info.game_serial);
 
+    // Applications expect to be run from /app0 so mount the file's parent path as app0.
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    mnt->Mount(game_folder, "/app0", true);
     // Load all prx from game's sce_module folder
     mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
         if (is_file) {
