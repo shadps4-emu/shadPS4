@@ -41,6 +41,22 @@ int _sceRtcTickSubMicroseconds(OrbisRtcTick* pTick0, const OrbisRtcTick* pTick1,
     return ORBIS_OK;
 }
 
+static const int MonthDays[2][13] = {
+    {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}, // non-leap
+    {0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}  // leap
+};
+
+// Leap-year calculation
+inline bool leap_year(int year) {
+    if (year == (((year >> 4) / 19) * 400)) {
+        return true;
+    } else if (year == (((year >> 2) / 19) * 100)) {
+        return false;
+    } else {
+        return (year & 3) == 0;
+    }
+}
+
 /*
  * Module code
  */
@@ -566,37 +582,35 @@ int PS4_SYSV_ABI sceRtcGetDayOfWeek(int year, int month, int day) {
     LOG_TRACE(Lib_Rtc, "called");
 
     int sdk_version = 0;
-    int sdkResult = Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
-    if (sdkResult != ORBIS_OK) {
+    if (Kernel::sceKernelGetCompiledSdkVersion(&sdk_version) != ORBIS_OK)
         sdk_version = 0;
-    }
 
+    // Year/month validation
     if (sdk_version < 0x3000000) {
-        if (year < 1) {
+        if (year < 1)
             return ORBIS_RTC_ERROR_INVALID_YEAR;
-        }
-        if (month > 12 || month <= 0) {
+        if (month <= 0 || month > 12)
             return ORBIS_RTC_ERROR_INVALID_MONTH;
-        }
     } else {
-        if (year > 9999 || year < 1) {
+        if (year < 1 || year > 9999)
             return ORBIS_RTC_ERROR_INVALID_YEAR;
-        }
-        if (month > 12 || month <= 0) {
+        if (month <= 0 || month > 12)
             return ORBIS_RTC_ERROR_INVALID_MONTH;
-        }
     }
 
     int daysInMonth = sceRtcGetDaysInMonth(year, month);
-
     if (day <= 0 || day > daysInMonth)
         return ORBIS_RTC_ERROR_INVALID_DAY;
 
-    std::chrono::sys_days chrono_time{std::chrono::year(year) / std::chrono::month(month) /
-                                      std::chrono::day(day)};
-    std::chrono::weekday chrono_weekday{chrono_time};
+    // Zeller's congruence adjustment
+    if (month < 3) {
+        month += 12;
+        year -= 1;
+    }
 
-    return chrono_weekday.c_encoding();
+    int weekday =
+        ((13 * month + 8) / 5 - (year / 100) + year + (year / 4) + (year / 400) + day) % 7;
+    return weekday;
 }
 
 int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
@@ -604,16 +618,11 @@ int PS4_SYSV_ABI sceRtcGetDaysInMonth(int year, int month) {
 
     if (year <= 0)
         return ORBIS_RTC_ERROR_INVALID_YEAR;
-
     if (month <= 0 || month > 12)
         return ORBIS_RTC_ERROR_INVALID_MONTH;
 
-    std::chrono::year chronoYear = std::chrono::year(year);
-    std::chrono::month chronoMonth = std::chrono::month(month);
-    int lastDay = static_cast<int>(unsigned(
-        std::chrono::year_month_day_last{chronoYear / chronoMonth / std::chrono::last}.day()));
-
-    return lastDay;
+    bool isLeap = leap_year(year);
+    return MonthDays[isLeap ? 1 : 0][month];
 }
 
 int PS4_SYSV_ABI sceRtcGetDosTime(OrbisRtcDateTime* pTime, u32* dosTime) {
@@ -1110,10 +1119,26 @@ int PS4_SYSV_ABI sceRtcTickAddMicroseconds(OrbisRtcTick* pTick1, OrbisRtcTick* p
 int PS4_SYSV_ABI sceRtcTickAddMinutes(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, int64_t lAdd) {
     LOG_TRACE(Lib_Rtc, "called");
 
-    if (pTick1 == nullptr || pTick2 == nullptr)
+    if (!pTick1 || !pTick2)
         return ORBIS_RTC_ERROR_INVALID_POINTER;
 
-    pTick1->tick = (lAdd * 60000000) + pTick2->tick;
+    if (lAdd == 0) {
+        pTick1->tick = pTick2->tick;
+        return ORBIS_OK;
+    }
+
+    uint64_t t1 = pTick2->tick;
+    int64_t ladd_mul = lAdd * 60000000LL;
+
+    if (lAdd < 0) {
+        if (t1 < static_cast<uint64_t>(-ladd_mul))
+            return ORBIS_RTC_ERROR_INVALID_VALUE;
+    } else {
+        if ((~t1) < static_cast<uint64_t>(ladd_mul))
+            return ORBIS_RTC_ERROR_INVALID_VALUE;
+    }
+
+    pTick1->tick = t1 + ladd_mul;
 
     return ORBIS_OK;
 }
