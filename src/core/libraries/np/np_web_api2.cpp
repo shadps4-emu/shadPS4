@@ -12,7 +12,7 @@
 namespace Libraries::Np::NpWebApi2 {
 
 s32 PS4_SYSV_ABI sceNpWebApi2AbortRequest(s64 request_id) {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}");
+    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}", request_id);
     return ORBIS_OK;
 }
 
@@ -196,7 +196,8 @@ s32 PS4_SYSV_ABI sceNpWebApi2ReadData(s64 request_id, void* data, u64 size) {
     if (data == nullptr || size == 0) {
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, size = {:#x}");
+    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called, request_id = {:#x}, size = {:#x}", request_id,
+              size);
     return ORBIS_OK;
 }
 
@@ -206,10 +207,11 @@ s32 PS4_SYSV_ABI sceNpWebApi2SendMultipartRequest() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2SendRequest() {
-    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
     if (!Config::getPSNSignedIn()) {
+        LOG_INFO(Lib_NpWebApi2, "called, returning PSN signed out.");
         return ORBIS_NP_WEBAPI2_ERROR_NOT_SIGNED_IN;
     }
+    LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");
     return ORBIS_OK;
 }
 
