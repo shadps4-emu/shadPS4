@@ -524,6 +524,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
+         {"libSceJpegDec.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
