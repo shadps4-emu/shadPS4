@@ -86,18 +86,18 @@ public:
     s64 LSeek(s32 fd, s64 offset, s32 whence) override;
     s64 Tell(s32 fd) override;
 
-    s32 Truncate(const fs::path& path, u64 size) override;
-    s32 FTruncate(s32 fd, u64 size) override;
+    s32 Truncate(const fs::path& path, s64 size) override;
+    s32 FTruncate(s32 fd, s64 size) override;
 
     s64 Read(s32 fd, void* buf, u64 count) override;
     s64 PRead(s32 fd, void* buf, u64 count, s64 offset) override;
-    s64 ReadV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) override;
-    s64 PReadV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) override;
+    s64 ReadV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) override;
+    s64 PReadV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) override;
 
     s64 Write(s32 fd, const void* buf, u64 count) override;
     s64 PWrite(s32 fd, const void* buf, u64 count, s64 offset) override;
-    s64 WriteV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) override;
-    s64 PWriteV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) override;
+    s64 WriteV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) override;
+    s64 PWriteV(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) override;
 
     s32 MKDir(const fs::path& path, u16 mode) override;
     s32 RMDir(const fs::path& path) override;

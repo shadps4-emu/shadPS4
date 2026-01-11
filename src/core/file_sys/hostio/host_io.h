@@ -16,7 +16,7 @@ using HostVIO = HostIODriver::HostIO_Virtual;
 // native implementation
 #if defined(__linux__) || defined(__APPLE_CC__)
 using HostIO = HostIODriver::HostIO_POSIX;
-#elif _WIN32
+#elif defined(_WIN32)
 using HostIO = HostIODriver::HostIO_Win32;
 #warning This architecture isn't supported by HostIO
 #endif

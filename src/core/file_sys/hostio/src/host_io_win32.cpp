@@ -94,7 +94,7 @@ s64 HostIO_Win32::Tell(const s32 fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
-int HostIO_Win32::Truncate(const fs::path& path, u64 size) {
+int HostIO_Win32::Truncate(const fs::path& path, s64 size) {
     errno = 0;
     s32 fd = _wopen(GetSymlink(path).c_str(), _O_RDONLY);
     if (fd < 0)
@@ -104,7 +104,7 @@ int HostIO_Win32::Truncate(const fs::path& path, u64 size) {
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-int HostIO_Win32::FTruncate(const s32 fd, u64 size) {
+int HostIO_Win32::FTruncate(const s32 fd, s64 size) {
     errno = 0;
     s32 status = _chsize_s(fd, size);
     return status >= 0 ? status : -unix2bsd(errno);
