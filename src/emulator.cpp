@@ -34,6 +34,7 @@
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
@@ -525,6 +526,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceUlt.sprx", nullptr},
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
          {"libSceJpegDec.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
          {"libScePngEnc.sprx", nullptr},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},

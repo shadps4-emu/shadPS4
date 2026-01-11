@@ -71,7 +71,6 @@
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
-#include "jpeg/jpegenc.h"
 
 namespace Libraries {
 
@@ -129,7 +128,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::RazorCpu::RegisterLib(sym);
     Libraries::Move::RegisterLib(sym);
     Libraries::Fiber::RegisterLib(sym);
-    Libraries::JpegEnc::RegisterLib(sym);
     Libraries::Mouse::RegisterLib(sym);
     Libraries::WebBrowserDialog::RegisterLib(sym);
     Libraries::Zlib::RegisterLib(sym);
