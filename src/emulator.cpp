@@ -523,6 +523,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr auto ModulesToLoad = std::to_array<SysModules>(
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
+         {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
