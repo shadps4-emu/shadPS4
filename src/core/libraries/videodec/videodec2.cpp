@@ -8,7 +8,7 @@
 #include "core/libraries/videodec/videodec2_impl.h"
 #include "core/libraries/videodec/videodec_error.h"
 
-namespace Libraries::Vdec2 {
+namespace Libraries::Videodec2 {
 
 static constexpr u64 kMinimumMemorySize = 16_MB; ///> Fake minimum memory size for querying
 
@@ -261,4 +261,4 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideodec2GetPictureInfo);
 }
 
-} // namespace Libraries::Vdec2
+} // namespace Libraries::Videodec2
