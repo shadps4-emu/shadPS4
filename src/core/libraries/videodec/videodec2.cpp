@@ -48,11 +48,11 @@ sceVideodec2AllocateComputeQueue(const OrbisVideodec2ComputeConfigInfo* computeC
         LOG_ERROR(Lib_Vdec2, "Invalid compute config");
         return ORBIS_VIDEODEC2_ERROR_CONFIG_INFO;
     }
-    if (computeCfgInfo->computePipeId >= 4) {
+    if (computeCfgInfo->computePipeId > 4) {
         LOG_ERROR(Lib_Vdec2, "Invalid compute pipe id");
         return ORBIS_VIDEODEC2_ERROR_COMPUTE_PIPE_ID;
     }
-    if (computeCfgInfo->computeQueueId >= 7) {
+    if (computeCfgInfo->computeQueueId > 7) {
         LOG_ERROR(Lib_Vdec2, "Invalid compute queue id");
         return ORBIS_VIDEODEC2_ERROR_COMPUTE_QUEUE_ID;
     }
