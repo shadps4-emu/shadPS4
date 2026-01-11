@@ -70,7 +70,7 @@ void EmulateJoystick(GameController* controller, u32 interval) {
     SDL_GetRelativeMouseState(&d_x, &d_y);
 
     float output_speed =
-        SDL_clamp((sqrt(d_x * d_x + d_y * d_y) + mouse_speed_offset * 128) * mouse_speed,
+        SDL_clamp(sqrt(d_x * d_x + d_y * d_y) * mouse_speed + mouse_speed_offset * 128,
                   mouse_deadzone_offset * 128, 128.0);
 
     float angle = atan2(d_y, d_x);
