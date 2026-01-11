@@ -120,13 +120,13 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ErrorDialog::RegisterLib(sym);
     Libraries::ImeDialog::RegisterLib(sym);
     Libraries::AvPlayer::RegisterLib(sym);
-    Libraries::Vdec2::RegisterLib(sym);
+    Libraries::Videodec::RegisterLib(sym);
+    Libraries::Videodec2::RegisterLib(sym);
     Libraries::Audio3d::RegisterLib(sym);
     Libraries::Ime::RegisterLib(sym);
     Libraries::GameLiveStreaming::RegisterLib(sym);
     Libraries::SharePlay::RegisterLib(sym);
     Libraries::Remoteplay::RegisterLib(sym);
-    Libraries::Videodec::RegisterLib(sym);
     Libraries::RazorCpu::RegisterLib(sym);
     Libraries::Move::RegisterLib(sym);
     Libraries::Fiber::RegisterLib(sym);
