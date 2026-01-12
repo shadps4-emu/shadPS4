@@ -128,6 +128,10 @@ static auto UserPaths = [] {
     create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
     create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
     create_path(PathType::CacheDir, user_dir / CACHE_DIR);
+    create_path(PathType::FontDir, user_dir / FONT_DIR);
+    // subdirectory for fonts
+    std::filesystem::create_directory(user_dir / FONT_DIR / "font");
+    std::filesystem::create_directory(user_dir / FONT_DIR / "font2");
 
     std::ofstream notice_file(user_dir / CUSTOM_TROPHY / "Notice.txt");
     if (notice_file.is_open()) {
@@ -142,6 +146,13 @@ static auto UserPaths = [] {
                "this folder and you are using the QT version.\nIn this folder "
                "('user\\custom_trophy'), add the files with the following names:\n\ntrophy.mp3";
         notice_file.close();
+    }
+
+    std::ofstream font_instructions(user_dir / FONT_DIR / "Instructions.txt");
+    if (font_instructions.is_open()) {
+        font_instructions << "Place /preinst/common/font contents into font folder\n"
+                             "Place /system/common/font2 contents into font2 folder\n";
+        font_instructions.close();
     }
 
     return paths;
