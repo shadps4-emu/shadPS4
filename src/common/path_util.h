@@ -45,7 +45,7 @@ constexpr auto METADATA_DIR = "game_data";
 constexpr auto CUSTOM_TROPHY = "custom_trophy";
 constexpr auto CUSTOM_CONFIGS = "custom_configs";
 constexpr auto CACHE_DIR = "cache";
-constexpr auto FONT_DIR = "sys_fonts";
+constexpr auto SYSFONTS_DIR = "sys_fonts";
 
 // Filenames
 constexpr auto LOG_FILE = "shad_log.txt";
