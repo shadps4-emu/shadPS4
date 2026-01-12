@@ -4,14 +4,71 @@
 #pragma once
 
 #include "common/types.h"
-#include <sys/types.h>
-#include <cstddef>
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::Rudp {
+
+enum class State : int {
+    IDLE = 0,
+    CLOSED = 1,
+    SYN_SENT = 2,
+    SYN_RCVD = 3,
+    ESTABLISHED = 4,
+    CLOSE_WAIT = 5,
+};
+
+enum class Event : int {
+    SEND = 1,
+    SOCKET_RELEASED = 2,
+    DIAGNOSTIC_SENT = 100,
+    DIAGNOSTIC_RCVD = 101,
+};
+
+enum class ContextEvent : int {
+    CLOSED = 1,
+    ESTABLISHED = 2,
+    ERROR = 3,
+    WRITEABLE = 4,
+    READABLE = 5,
+    FLUSHED = 6
+};
+
+enum class PollOp : int { ADD = 1, MODIFY = 2, REMOVE = 3 };
+
+enum class PollEvent : int { READ = 0x0001, WRITE = 0x0002, FLUSH = 0x0004, ERROR = 0x0008 };
+
+enum class Option : int {
+    MAX_PAYLOAD = 1,
+    OPTION_SEND_BUFFER_SIZE = 2,
+    OPTION_RECEIVE_BUFFER_SIZE = 3,
+    OPTION_NO_DELAY = 4,
+    OPTION_CRITICAL_DELIVERY = 5,
+    OPTION_CRITICAL_ORDER = 6,
+    OPTION_NONBLOCK = 7,
+    STREAM = 8,
+    CONN_TIMEOUT = 9,
+    CLOSE_WAIT_TIMEOUT = 10,
+    AGGREGATION_TIMEOUT = 11,
+    LAST_ERROR = 14,
+    READ_TIMEOUT = 15,
+    WRITE_TIMEOUT = 16,
+    FLUSH_TIMEOUT = 17,
+    KEEPALIVE_INTERVAL = 18,
+    KEEPALIVE_TIMEOUT = 19,
+    AGGREGATION_BUFFER = 20,
+};
+
+enum class Message : int {
+    DONTWAIT = 0x01,
+    LATENCY_CRITICAL = 0x08,
+    ALIGN32 = 0x10,
+    ALIGN64 = 0x20,
+    WITH_TIMESTAMP = 0x40,
+};
+
 struct OrbisRudpStatus {
     s64 sentUdpBytes;
     s64 rcvdUdpBytes;
@@ -77,40 +134,86 @@ struct OrbisRudpStatus {
     s32 failedConnectionsQualityLevelMismatch;
 };
 
+struct OrbisRudpContextStatus {
+    State state;
+    int parentId;
+    u32 children;
+    u32 lostPackets;
+    u32 sentPackets;
+    u32 rcvdPackets;
+    u64 sentBytes;
+    u64 rcvdBytes;
+    u32 retransmissions;
+    u32 rtt;
+};
+
+struct OrbisRudpPollEvent {
+    int ctxId;
+    u16 reqEvents;
+    u16 rtnEvents;
+};
+
+struct OrbisRudpReadInfo {
+    u8 size;
+    u8 retransmissionCount;
+    u16 retransmissionDelay;
+    u8 retransmissionDelay2;
+    u8 flags;
+    u16 sequenceNumber;
+    u32 timestamp;
+};
+
+typedef void (*OrbisRudpContextEventHandler)(int contextId, ContextEvent event, int errorCode,
+                                             void* arg);
+
+typedef u64 OrbisRudpUsec;
+
+typedef int (*OrbisRudpEventHandler)(Event event, int soc, u8 const* data, size_t dataLen,
+                                     Net::OrbisNetSockaddr const* addr, SceNetSocklen_t addrLen,
+                                     void* arg);
+
 s32 PS4_SYSV_ABI sceRudpAccept();
-s32 PS4_SYSV_ABI sceRudpActivate();
-s32 PS4_SYSV_ABI sceRudpBind();
+s32 PS4_SYSV_ABI sceRudpActivate(int contextId, Net::OrbisNetSockaddr* to, SceNetSocklen_t toLen);
+s32 PS4_SYSV_ABI sceRudpBind(int contextId, int soc, u16 vport, u8 muxMode);
 s32 PS4_SYSV_ABI sceRudpCreateContext();
-s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread();
-s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread2();
+s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread(u32 stackSize, u32 priority);
+s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread2(u32 stackSize, u32 priority,
+                                                SceKernelCpumask affinityMask);
 s32 PS4_SYSV_ABI sceRudpEnd();
-s32 PS4_SYSV_ABI sceRudpFlush();
-s32 PS4_SYSV_ABI sceRudpGetContextStatus();
-s32 PS4_SYSV_ABI sceRudpGetLocalInfo();
-s32 PS4_SYSV_ABI sceRudpGetMaxSegmentSize();
-s32 PS4_SYSV_ABI sceRudpGetNumberOfPacketsToRead();
-s32 PS4_SYSV_ABI sceRudpGetOption();
-s32 PS4_SYSV_ABI sceRudpGetRemoteInfo();
-s32 PS4_SYSV_ABI sceRudpGetSizeReadable();
-s32 PS4_SYSV_ABI sceRudpGetSizeWritable();
+s32 PS4_SYSV_ABI sceRudpFlush(int contextId);
+s32 PS4_SYSV_ABI sceRudpGetContextStatus(int contextId, OrbisRudpContextStatus* status,
+                                         size_t statusSize);
+s32 PS4_SYSV_ABI sceRudpGetLocalInfo(int contextId, int* soc, Net::OrbisNetSockaddr* addr,
+                                     SceNetSocklen_t* addrLen, u16* vport, u8* muxMode);
+s32 PS4_SYSV_ABI sceRudpGetMaxSegmentSize(u16* mss);
+s32 PS4_SYSV_ABI sceRudpGetNumberOfPacketsToRead(int contextId);
+s32 PS4_SYSV_ABI sceRudpGetOption(int contextId, Option option, void* optVal, size_t optLen);
+s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int contextId, Net::OrbisNetSockaddr* addr,
+                                      SceNetSocklen_t* addrLen, u16* vport);
+s32 PS4_SYSV_ABI sceRudpGetSizeReadable(int contextId);
+s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int contextId);
 s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize);
-s32 PS4_SYSV_ABI sceRudpInit();
-s32 PS4_SYSV_ABI sceRudpInitiate();
-s32 PS4_SYSV_ABI sceRudpListen();
+s32 PS4_SYSV_ABI sceRudpInit(void* memPool, int memPoolSize);
+s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, SceNetSocklen_t toLen,
+                                 u16 vport);
+s32 PS4_SYSV_ABI sceRudpListen(int param_1, int param_2);
 s32 PS4_SYSV_ABI sceRudpNetFlush();
-s32 PS4_SYSV_ABI sceRudpNetReceived();
-s32 PS4_SYSV_ABI sceRudpPollCancel();
-s32 PS4_SYSV_ABI sceRudpPollControl();
-s32 PS4_SYSV_ABI sceRudpPollCreate();
-s32 PS4_SYSV_ABI sceRudpPollDestroy();
-s32 PS4_SYSV_ABI sceRudpPollWait();
-s32 PS4_SYSV_ABI sceRudpProcessEvents();
-s32 PS4_SYSV_ABI sceRudpRead();
-s32 PS4_SYSV_ABI sceRudpSetEventHandler();
-s32 PS4_SYSV_ABI sceRudpSetMaxSegmentSize();
-s32 PS4_SYSV_ABI sceRudpSetOption();
-s32 PS4_SYSV_ABI sceRudpTerminate();
-s32 PS4_SYSV_ABI sceRudpWrite();
+s32 PS4_SYSV_ABI sceRudpNetReceived(int soc, u8* data, size_t dataLen, Net::OrbisNetSockaddr* from,
+                                    SceNetSocklen_t fromLen);
+s32 PS4_SYSV_ABI sceRudpPollCancel(int pollId);
+s32 PS4_SYSV_ABI sceRudpPollControl(int pollId, int op, int contextId, u16 events);
+s32 PS4_SYSV_ABI sceRudpPollCreate(size_t size);
+s32 PS4_SYSV_ABI sceRudpPollDestroy(int pollId);
+s32 PS4_SYSV_ABI sceRudpPollWait(int pollId, OrbisRudpPollEvent* events, size_t eventLen,
+                                 OrbisRudpUsec timeout);
+s32 PS4_SYSV_ABI sceRudpProcessEvents(OrbisRudpUsec timeout);
+s32 PS4_SYSV_ABI sceRudpRead(int contextId, void* data, size_t len, u8 flags,
+                             OrbisRudpReadInfo* info);
+s32 PS4_SYSV_ABI sceRudpSetEventHandler(OrbisRudpEventHandler handler, void* arg);
+s32 PS4_SYSV_ABI sceRudpSetMaxSegmentSize(u16 mss);
+s32 PS4_SYSV_ABI sceRudpSetOption(int contextId, int option, void* optVal, size_t optLen);
+s32 PS4_SYSV_ABI sceRudpTerminate(int contextId);
+s32 PS4_SYSV_ABI sceRudpWrite(int contextId, void* data, size_t len, u8 flags);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Rudp
