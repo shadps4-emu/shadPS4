@@ -4,8 +4,6 @@
 #pragma once
 
 #include <filesystem>
-#include <optional>
-#include <string_view>
 #include <vector>
 #include "types.h"
 
@@ -155,15 +153,6 @@ void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
-std::filesystem::path getSysFontPath();
-void setSysFontPath(const std::filesystem::path& path);
-std::optional<std::filesystem::path> getSystemFontOverride(std::string_view key);
-std::string getSystemFontFallbackName();
-void setSystemFontFallbackName(const std::string& name);
-void setSystemFontOverride(std::string_view key, const std::filesystem::path& path);
-void clearSystemFontOverrides();
-bool getLoadAutoPatches();
-void setLoadAutoPatches(bool enable);
 
 enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 int getUsbDeviceBackend();
