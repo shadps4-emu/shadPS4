@@ -530,7 +530,7 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
     return result;
 }
 
-static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
+s64 PS4_SYSV_ABI posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
     s64 result = g_qfs->Operation.GetDents(fd, buf, count, basep);
     LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, count, result);
     if (result < 0) {
