@@ -33,6 +33,10 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     case EXCEPTION_ILLEGAL_INSTRUCTION:
         handled = signals->DispatchIllegalInstruction(pExp);
         break;
+    case DBG_PRINTEXCEPTION_C:
+    case DBG_PRINTEXCEPTION_WIDE_C:
+        // Used by OutputDebugString functions.
+        return EXCEPTION_CONTINUE_EXECUTION;
     default:
         break;
     }

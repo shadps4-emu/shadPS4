@@ -48,7 +48,6 @@
 #include "core/libraries/random/random.h"
 #include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
-#include "core/libraries/rtc/rtc.h"
 #include "core/libraries/rudp/rudp.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
@@ -72,7 +71,6 @@
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
-#include "jpeg/jpegenc.h"
 
 namespace Libraries {
 
@@ -120,17 +118,16 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::ErrorDialog::RegisterLib(sym);
     Libraries::ImeDialog::RegisterLib(sym);
     Libraries::AvPlayer::RegisterLib(sym);
-    Libraries::Vdec2::RegisterLib(sym);
+    Libraries::Videodec::RegisterLib(sym);
+    Libraries::Videodec2::RegisterLib(sym);
     Libraries::Audio3d::RegisterLib(sym);
     Libraries::Ime::RegisterLib(sym);
     Libraries::GameLiveStreaming::RegisterLib(sym);
     Libraries::SharePlay::RegisterLib(sym);
     Libraries::Remoteplay::RegisterLib(sym);
-    Libraries::Videodec::RegisterLib(sym);
     Libraries::RazorCpu::RegisterLib(sym);
     Libraries::Move::RegisterLib(sym);
     Libraries::Fiber::RegisterLib(sym);
-    Libraries::JpegEnc::RegisterLib(sym);
     Libraries::Mouse::RegisterLib(sym);
     Libraries::WebBrowserDialog::RegisterLib(sym);
     Libraries::Zlib::RegisterLib(sym);
@@ -143,7 +140,6 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::CompanionHttpd::RegisterLib(sym);
     Libraries::CompanionUtil::RegisterLib(sym);
     Libraries::Voice::RegisterLib(sym);
-    Libraries::Rtc::RegisterLib(sym);
     Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
 

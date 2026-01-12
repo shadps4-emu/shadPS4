@@ -10,7 +10,7 @@
 namespace Core::Loader {
 class SymbolsResolver;
 }
-namespace Libraries::Vdec2 {
+namespace Libraries::Videodec2 {
 
 class VdecDecoder;
 
@@ -138,4 +138,4 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
                                             void* p1stPictureInfo, void* p2ndPictureInfo);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
-} // namespace Libraries::Vdec2
+} // namespace Libraries::Videodec2
