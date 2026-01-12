@@ -49,13 +49,6 @@ public:
     QuasiDirectory();
     ~QuasiDirectory() override = default;
 
-    std::vector<std::string> Entries() {
-        std::vector<std::string> out{};
-        for (auto& kv : this->entries)
-            out.push_back(kv.first);
-        return out;
-    }
-
     // Create out of thin air
     [[nodiscard]] static dir_ptr Create() {
         return std::make_shared<QuasiDirectory>();
@@ -97,6 +90,13 @@ public:
     // Remove hardlink to [name]
     int unlink(const std::string& name);
     // list entries
+
+    [[nodiscard]] std::unordered_map<std::string, inode_ptr>::const_iterator entry_begin() const {
+        return entries.begin();
+    }
+    [[nodiscard]] std::unordered_map<std::string, inode_ptr>::const_iterator entry_end() const {
+        return entries.end();
+    }
 };
 
 /**

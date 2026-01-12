@@ -245,13 +245,4 @@ File* HandleTable::GetResolver(int d) {
     return file;
 }
 
-File* HandleTable::GetFile(const std::filesystem::path& host_name) {
-    for (auto* file : m_files) {
-        if (file != nullptr && file->m_host_name == host_name) {
-            return file;
-        }
-    }
-    return nullptr;
-}
-
 } // namespace Core::FileSys

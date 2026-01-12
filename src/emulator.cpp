@@ -30,7 +30,6 @@
 #include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
-#include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -230,13 +229,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // can't sync here, otherwise all mountpoints would need to be updated one by one
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    qfs::Resolved app_directory_resolve{};
+    if (0 != qfs->Resolve("/app0", app_directory_resolve))
+        UNREACHABLE_MSG("Cannot resolve /app0 for initialization");
+
+    const auto app_partition = app_directory_resolve.mountpoint;
     {
-        qfs::Resolved res{};
-        int status = qfs->Resolve("/app0", res);
         // DON'T do this normally. This is init, anything goes
-        res.mountpoint->GetHostPath(host_param_sfo_path, guest_param_sfo_path);
-        res.mountpoint->GetHostPath(host_eboot_path, guest_eboot_path);
-        res.mountpoint->GetHostPath(host_pic1_path, guest_pic1_path);
+        app_partition->GetHostPath(host_param_sfo_path, guest_param_sfo_path);
+        app_partition->GetHostPath(host_eboot_path, guest_eboot_path);
+        app_partition->GetHostPath(host_pic1_path, guest_pic1_path);
     }
 
     // Load param.sfo details if it exists
@@ -483,16 +485,17 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // check if we have system modules to load
     LoadSystemModules(game_info.game_serial);
 
-    // Applications expect to be run from /app0 so mount the file's parent path as app0.
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(game_folder, "/app0", true);
-    // Load all prx from game's sce_module folder
-    mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
-        if (is_file) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
-            linker->LoadModule(path);
-        }
-    });
+    const auto app_sys_directory = std::reinterpret_pointer_cast<qfs::Directory>(
+        app_partition->GetRoot()->lookup("sce_module"));
+    for (auto entry = app_sys_directory->entry_begin(); entry != app_sys_directory->entry_end();
+         ++entry) {
+        if (!entry->second->is_file())
+            continue;
+        std::filesystem::path target_path{};
+        app_partition->GetHostPath(target_path, "/sce_module/" + std::string(entry->first));
+        LOG_INFO(Loader, "Loading {}", fmt::UTF(target_path.u8string()));
+        linker->LoadModule(target_path);
+    }
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
@@ -535,8 +538,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                        const std::vector<std::string>& guest_args) {
     std::vector<std::string> args;
 
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto game_path = mnt->GetHostPath("/app0");
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    std::filesystem::path game_path{};
+    qfs->GetHostPath(game_path, "/app0");
 
     args.push_back("--log-append");
     args.push_back("--game");

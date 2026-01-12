@@ -18,5 +18,6 @@ using HostVIO = HostIODriver::HostIO_Virtual;
 using HostIO = HostIODriver::HostIO_POSIX;
 #elif defined(_WIN32)
 using HostIO = HostIODriver::HostIO_Win32;
+#else
 #warning This architecture isn't supported by HostIO
 #endif

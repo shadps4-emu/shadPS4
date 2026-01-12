@@ -95,7 +95,6 @@ public:
     File* GetSocket(int d);
     File* GetEpoll(int d);
     File* GetResolver(int d);
-    File* GetFile(const std::filesystem::path& host_name);
 
 private:
     std::vector<File*> m_files;

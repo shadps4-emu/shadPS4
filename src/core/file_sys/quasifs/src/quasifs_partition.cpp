@@ -343,9 +343,10 @@ bool Partition::IndexInode(inode_ptr node) {
 
     inode_table[node_fileno] = node;
     if (node->is_dir()) {
-        auto dir = std::static_pointer_cast<Directory>(node);
-        for (auto& kv : dir->Entries())
-            IndexInode(dir->lookup(kv));
+        const auto dir = std::static_pointer_cast<Directory>(node);
+        for (auto entry = dir->entry_begin(); entry != dir->entry_end(); ++entry) {
+            IndexInode(entry->second);
+        }
         if (dir->mounted_root)
             IndexInode(dir->mounted_root);
     }
