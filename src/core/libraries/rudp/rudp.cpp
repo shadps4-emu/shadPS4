@@ -46,8 +46,8 @@ s32 PS4_SYSV_ABI sceRudpBind(int contextId, int soc, u16 virtualPort, u8 muxMode
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI pCreateContext(OrbisRudpContextEventHandler handler, void* arg,
-                                ContextEventId* contextId) {
+s32 PS4_SYSV_ABI sceRudpCreateContext(OrbisRudpContextEventHandler handler, void* arg,
+                                      int* contextId) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -58,7 +58,7 @@ s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread(u32 stackSize, u32 priority) {
 }
 
 s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread2(u32 stackSize, u32 priority,
-                                                SceKernelCpumask affinityMask) {
+                                                OrbisKernelCpumask affinityMask) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -80,7 +80,7 @@ s32 PS4_SYSV_ABI sceRudpGetContextStatus(int contextId, OrbisRudpContextStatus* 
 }
 
 s32 PS4_SYSV_ABI sceRudpGetLocalInfo(int contextId, int* soc, Net::OrbisNetSockaddr* addr,
-                                     SceNetSocklen_t* addrLen, u16* virtualPort, u8* muxMode) {
+                                     u32* addrlen, u16* virtualPort, u8* muxMode) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -100,8 +100,8 @@ s32 PS4_SYSV_ABI sceRudpGetOption(int contextId, Option option, void* optVal, si
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int contextId, Net::OrbisNetSockaddr* addr,
-                                      SceNetSocklen_t* addrLen, u16* virtualPort) {
+s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int contextId, Net::OrbisNetSockaddr* addr, u32* addrlen,
+                                      u16* virtualPort) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -132,7 +132,7 @@ s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     std::lock_guard lock(g_RudpMutex);
 
     if (!g_isRudpInitialized) {
-        return ORBIS_RUDP_ERROR_UNINITIALIZED;
+        return ORBIS_RUDP_ERROR_NOT_INITIALIZED;
     }
 
     int result = ORBIS_RUDP_ERROR_INVALID_ARGUMENT;
@@ -153,7 +153,7 @@ s32 PS4_SYSV_ABI sceRudpInit(void* memPool, int memPoolSize) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, SceNetSocklen_t toLen,
+s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen,
                                  u16 virtualPort) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
@@ -170,7 +170,7 @@ s32 PS4_SYSV_ABI sceRudpNetFlush() {
 }
 
 s32 PS4_SYSV_ABI sceRudpNetReceived(int soc, u8* data, size_t dataLen, Net::OrbisNetSockaddr* from,
-                                    SceNetSocklen_t fromLen) {
+                                    OrbisNetSocklen_t fromLen) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -206,7 +206,7 @@ s32 PS4_SYSV_ABI sceRudpProcessEvents(OrbisRudpUsec timeout) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpRead(int contextId, void* data, size_t len, Message msg,
+s32 PS4_SYSV_ABI sceRudpRead(int contextId, void* data, size_t len, u8 flags,
                              OrbisRudpReadInfo* info) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;

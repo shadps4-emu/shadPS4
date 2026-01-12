@@ -162,6 +162,9 @@ struct OrbisRudpReadInfo {
     u16 sequenceNumber;
     u32 timestamp;
 };
+typedef s32 OrbisKernelCpumask;
+
+typedef uint32_t OrbisNetSocklen_t;
 
 typedef void (*OrbisRudpContextEventHandler)(int contextId, ContextEvent event, int errorCode,
                                              void* arg);
@@ -169,51 +172,52 @@ typedef void (*OrbisRudpContextEventHandler)(int contextId, ContextEvent event, 
 typedef u64 OrbisRudpUsec;
 
 typedef int (*OrbisRudpEventHandler)(Event event, int soc, u8 const* data, size_t dataLen,
-                                     Net::OrbisNetSockaddr const* addr, SceNetSocklen_t addrLen,
+                                     Net::OrbisNetSockaddr const* addr, OrbisNetSocklen_t addrLen,
                                      void* arg);
 
 s32 PS4_SYSV_ABI sceRudpAccept();
-s32 PS4_SYSV_ABI sceRudpActivate(int contextId, Net::OrbisNetSockaddr* to, SceNetSocklen_t toLen);
+s32 PS4_SYSV_ABI sceRudpActivate(int contextId, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen);
 s32 PS4_SYSV_ABI sceRudpBind(int contextId, int soc, u16 vport, u8 muxMode);
-s32 PS4_SYSV_ABI sceRudpCreateContext();
+s32 PS4_SYSV_ABI sceRudpCreateContext(OrbisRudpContextEventHandler handler, void* arg,
+                                      int* contextId);
 s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread(u32 stackSize, u32 priority);
 s32 PS4_SYSV_ABI sceRudpEnableInternalIOThread2(u32 stackSize, u32 priority,
-                                                SceKernelCpumask affinityMask);
+                                                OrbisKernelCpumask affinityMask);
 s32 PS4_SYSV_ABI sceRudpEnd();
 s32 PS4_SYSV_ABI sceRudpFlush(int contextId);
 s32 PS4_SYSV_ABI sceRudpGetContextStatus(int contextId, OrbisRudpContextStatus* status,
                                          size_t statusSize);
 s32 PS4_SYSV_ABI sceRudpGetLocalInfo(int contextId, int* soc, Net::OrbisNetSockaddr* addr,
-                                     SceNetSocklen_t* addrLen, u16* vport, u8* muxMode);
+                                     OrbisNetSocklen_t* addrLen, u16* vport, u8* muxMode);
 s32 PS4_SYSV_ABI sceRudpGetMaxSegmentSize(u16* mss);
 s32 PS4_SYSV_ABI sceRudpGetNumberOfPacketsToRead(int contextId);
 s32 PS4_SYSV_ABI sceRudpGetOption(int contextId, Option option, void* optVal, size_t optLen);
 s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int contextId, Net::OrbisNetSockaddr* addr,
-                                      SceNetSocklen_t* addrLen, u16* vport);
+                                      OrbisNetSocklen_t* addrLen, u16* vport);
 s32 PS4_SYSV_ABI sceRudpGetSizeReadable(int contextId);
 s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int contextId);
 s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize);
 s32 PS4_SYSV_ABI sceRudpInit(void* memPool, int memPoolSize);
-s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, SceNetSocklen_t toLen,
+s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen,
                                  u16 vport);
-s32 PS4_SYSV_ABI sceRudpListen(int param_1, int param_2);
+s32 PS4_SYSV_ABI sceRudpListen();
 s32 PS4_SYSV_ABI sceRudpNetFlush();
 s32 PS4_SYSV_ABI sceRudpNetReceived(int soc, u8* data, size_t dataLen, Net::OrbisNetSockaddr* from,
-                                    SceNetSocklen_t fromLen);
-s32 PS4_SYSV_ABI sceRudpPollCancel(int pollId);
-s32 PS4_SYSV_ABI sceRudpPollControl(int pollId, int op, int contextId, u16 events);
+                                    OrbisNetSocklen_t fromLen);
+s32 PS4_SYSV_ABI sceRudpPollCancel(PollEvent poll);
+s32 PS4_SYSV_ABI sceRudpPollControl(PollEvent poll, PollOp op, int contextId, PollEvent events);
 s32 PS4_SYSV_ABI sceRudpPollCreate(size_t size);
-s32 PS4_SYSV_ABI sceRudpPollDestroy(int pollId);
-s32 PS4_SYSV_ABI sceRudpPollWait(int pollId, OrbisRudpPollEvent* events, size_t eventLen,
+s32 PS4_SYSV_ABI sceRudpPollDestroy(PollEvent poll);
+s32 PS4_SYSV_ABI sceRudpPollWait(PollEvent poll, OrbisRudpPollEvent* events, size_t eventLen,
                                  OrbisRudpUsec timeout);
 s32 PS4_SYSV_ABI sceRudpProcessEvents(OrbisRudpUsec timeout);
 s32 PS4_SYSV_ABI sceRudpRead(int contextId, void* data, size_t len, u8 flags,
                              OrbisRudpReadInfo* info);
 s32 PS4_SYSV_ABI sceRudpSetEventHandler(OrbisRudpEventHandler handler, void* arg);
 s32 PS4_SYSV_ABI sceRudpSetMaxSegmentSize(u16 mss);
-s32 PS4_SYSV_ABI sceRudpSetOption(int contextId, int option, void* optVal, size_t optLen);
+s32 PS4_SYSV_ABI sceRudpSetOption(int contextId, Option option, void* optVal, size_t optLen);
 s32 PS4_SYSV_ABI sceRudpTerminate(int contextId);
-s32 PS4_SYSV_ABI sceRudpWrite(int contextId, void* data, size_t len, u8 flags);
+s32 PS4_SYSV_ABI sceRudpWrite(int contextId, void* data, size_t len, Message msg);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Rudp
