@@ -830,29 +830,25 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
         auto write = writefds && FD_ISSET(i, writefds);
         auto except = exceptfds && FD_ISSET(i, exceptfds);
         if (read || write || except) {
-            auto* file = h->GetFile(i);
-            if (file == nullptr ||
-                ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
-                 (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
+            auto file = g_qfs->GetHandle(i);
+            if (nullptr == file || !file->IsOpen()) {
                 LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
                 *__Error() = POSIX_EBADF;
                 return -1;
             }
 
             s32 native_fd = [&] {
-                switch (file->type) {
-                case Core::FileSys::FileType::Regular:
-                    return static_cast<s32>(file->f.GetFileMapping());
-                case Core::FileSys::FileType::Device:
+                if (file->node->is_file())
+                    return file->host_fd;
+                if (file->node->is_block())
                     return -1;
-                case Core::FileSys::FileType::Socket: {
-                    auto sock = file->socket->Native();
-                    // until P2P sockets contain a proper socket
-                    return sock ? static_cast<s32>(*sock) : -1;
-                }
-                default:
-                    UNREACHABLE();
-                }
+                if (file->node->is_socket())
+                    return file->host_fd;
+                // socket??
+                // auto sock = file->socket->Native();
+                // // until P2P sockets contain a proper socket
+                // return sock ? static_cast<s32>(*sock) : -1;
+                UNREACHABLE();
             }();
             if (native_fd == -1) {
                 continue;

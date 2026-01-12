@@ -66,9 +66,10 @@ s32 QFS::OperationImpl::Open(const fs::path& path, int flags, u16 mode) {
         return -POSIX_ENOENT;
     }
 
-#ifndef __APPLE_CC__
-    if (flags & O_DIRECT)
-        LOG_WARNING(Kernel_Fs, "File open with O_DIRECT - RW performance may suffer a lot");
+#ifdef __linux__
+    // not supported on mac and windows
+    if (flags & QUASI_O_DIRECT)
+        LOG_WARNING(Kernel_Fs, "File open with O_DIRECT - RW performance may suffer");
 #endif
 
     //
