@@ -189,14 +189,15 @@ s32 PS4_SYSV_ABI sceAudio3dDeleteSpeakerArray() {
 s32 PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* params) {
     LOG_DEBUG(Lib_Audio3d, "called");
     if (params) {
-        *params = OrbisAudio3dOpenParameters{
-            .size_this = sizeof(OrbisAudio3dOpenParameters),
+        auto default_params = OrbisAudio3dOpenParameters{
+            .size_this = 0x20,
             .granularity = 0x100,
             .rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000,
             .max_objects = 512,
             .queue_depth = 2,
             .buffer_mode = OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH,
         };
+        memcpy(params, &default_params, 0x20);
     }
     return ORBIS_OK;
 }
