@@ -34,7 +34,6 @@ struct OrbisAudio3dOpenParameters {
     u32 max_objects;
     u32 queue_depth;
     OrbisAudio3dBufferMode buffer_mode;
-    int : 32;
     u32 num_beds;
 };
 

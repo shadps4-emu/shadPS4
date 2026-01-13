@@ -190,7 +190,7 @@ s32 PS4_SYSV_ABI sceAudio3dGetDefaultOpenParameters(OrbisAudio3dOpenParameters* 
     LOG_DEBUG(Lib_Audio3d, "called");
     if (params) {
         *params = OrbisAudio3dOpenParameters{
-            .size_this = 0x20,
+            .size_this = sizeof(OrbisAudio3dOpenParameters),
             .granularity = 0x100,
             .rate = OrbisAudio3dRate::ORBIS_AUDIO3D_RATE_48000,
             .max_objects = 512,
