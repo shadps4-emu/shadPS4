@@ -446,7 +446,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const OrbisUserServiceUserId user_id,
     }
 
     *port_id = id;
-    std::memcpy(&state->ports[id].parameters, parameters, sizeof(OrbisAudio3dOpenParameters));
+    std::memcpy(&state->ports[id].parameters, parameters, parameters->size_this);
 
     return ORBIS_OK;
 }
