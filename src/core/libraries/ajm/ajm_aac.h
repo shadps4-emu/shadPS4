@@ -64,7 +64,7 @@ private:
     const AjmAacCodecFlags m_flags;
     const u32 m_channels;
     std::vector<u8> m_pcm_buffer;
-
+    std::vector<float> m_pcm_float_buffer;
     u32 m_skip_frames = 0;
     InitializeParameters m_init_params = {};
     AAC_DECODER_INSTANCE* m_decoder = nullptr;

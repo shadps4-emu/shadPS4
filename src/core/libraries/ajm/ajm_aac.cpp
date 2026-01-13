@@ -13,9 +13,32 @@
 
 namespace Libraries::Ajm {
 
+template <>
+size_t AjmAacDecoder::WriteOutputSamples<float>(SparseOutputBuffer& output, u32 skipped_pcm,
+                                                u32 max_pcm) {
+    const s16* src = reinterpret_cast<const s16*>(m_pcm_buffer.data());
+    const u32 total_pcm = static_cast<u32>(m_pcm_buffer.size() / sizeof(s16));
+
+    if (skipped_pcm >= total_pcm)
+        return 0;
+
+    const u32 count = std::min(max_pcm, total_pcm - skipped_pcm);
+
+    if (m_pcm_float_buffer.size() < count)
+        m_pcm_float_buffer.resize(count);
+
+    constexpr float inv_scale = 1.0f / 32768.0f;
+    for (u32 i = 0; i < count; ++i)
+        m_pcm_float_buffer[i] = static_cast<float>(src[skipped_pcm + i]) * inv_scale;
+
+    return output.Write(std::span<const float>(m_pcm_float_buffer.data(), count));
+}
+
 AjmAacDecoder::AjmAacDecoder(AjmFormatEncoding format, AjmAacCodecFlags flags, u32 channels)
     : m_format(format), m_flags(flags), m_channels(channels), m_pcm_buffer(2048 * 8),
-      m_skip_frames(True(flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2) {}
+      m_skip_frames(True(flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2) {
+    m_pcm_float_buffer.resize(m_pcm_buffer.size() / sizeof(s16));
+}
 
 AjmAacDecoder::~AjmAacDecoder() {
     aacDecoder_Close(m_decoder);
@@ -176,7 +199,8 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
         UNREACHABLE_MSG("NOT IMPLEMENTED");
         break;
     case AjmFormatEncoding::Float:
-        UNREACHABLE_MSG("NOT IMPLEMENTED");
+        pcm_written = WriteOutputSamples<float>(output, skip_samples * info->numChannels,
+                                              max_samples * info->numChannels);
         break;
     default:
         UNREACHABLE();
