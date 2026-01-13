@@ -198,7 +198,6 @@ static ConfigEntry<bool> pipelineCacheArchive(false);
 static ConfigEntry<bool> isDebugDump(false);
 static ConfigEntry<bool> isShaderDebug(false);
 static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
-static ConfigEntry<bool> isFpsColor(true);
 static ConfigEntry<bool> showFpsCounter(false);
 static ConfigEntry<bool> logEnabled(true);
 
@@ -223,16 +222,6 @@ static string config_version = Common::g_scm_rev;
 // These entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
-static bool isGameRunning = false;
-static bool load_auto_patches = true;
-
-bool getGameRunning() {
-    return isGameRunning;
-}
-
-void setGameRunning(bool running) {
-    isGameRunning = running;
-}
 
 std::filesystem::path getSysModulesPath() {
     if (sys_modules_path.empty()) {
@@ -461,10 +450,6 @@ bool isPipelineCacheEnabled() {
 
 bool isPipelineCacheArchived() {
     return pipelineCacheArchive.get();
-}
-
-bool fpsColor() {
-    return isFpsColor.get();
 }
 
 bool getShowFpsCounter() {
@@ -855,13 +840,6 @@ void setUsbDeviceBackend(int value, bool is_game_specific) {
     usbDeviceBackend.set(value, is_game_specific);
 }
 
-bool getLoadAutoPatches() {
-    return load_auto_patches;
-}
-void setLoadAutoPatches(bool enable) {
-    load_auto_patches = enable;
-}
-
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
@@ -977,7 +955,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isDebugDump.setFromToml(debug, "DebugDump", is_game_specific);
         isSeparateLogFilesEnabled.setFromToml(debug, "isSeparateLogFilesEnabled", is_game_specific);
         isShaderDebug.setFromToml(debug, "CollectShader", is_game_specific);
-        isFpsColor.setFromToml(debug, "FPSColor", is_game_specific);
         showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
@@ -1197,7 +1174,6 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GPU"]["internalScreenWidth"] = internalScreenWidth.base_value;
         data["GPU"]["internalScreenHeight"] = internalScreenHeight.base_value;
         data["GPU"]["patchShaders"] = shouldPatchShaders.base_value;
-        data["Debug"]["FPSColor"] = isFpsColor.base_value;
         data["Debug"]["showFpsCounter"] = showFpsCounter.base_value;
     }
 
@@ -1306,7 +1282,6 @@ void setDefaultValues(bool is_game_specific) {
         internalScreenHeight.base_value = 720;
 
         // Debug
-        isFpsColor.base_value = true;
         showFpsCounter.base_value = false;
     }
 }
