@@ -30,6 +30,9 @@ struct OrbisFontOpenParams {
     const void* reserved_ptr1;
 };
 
+// Fontlib APIs use Unicode scalar values (UTF-32 codepoints) in `u32` parameters such as `code` and
+// `codepoint`. Codepoint-to-glyph resolution is performed via FreeType charmaps, with additional
+// sysfont mapping and fallback behavior handled internally.
 struct OrbisFontGlyphMetrics {
     float width;
     float height;
@@ -88,6 +91,8 @@ struct OrbisFontGlyphImageMetrics {
 struct OrbisFontGenerateGlyphParams {
     u16 id;
     u16 res0;
+    // Bitmask copied into `OrbisFontGlyphOpaque::flags`. Only bits `0x01` and `0x10` are accepted
+    // by the public API; other bits are rejected as invalid.
     u16 form_options;
     u8 glyph_form;
     u8 metrics_form;
@@ -112,6 +117,7 @@ struct OrbisFontGlyphOutline {
 
 struct OrbisFontGlyphOpaque {
     u16 magic;
+    // Encoded flags copied from `OrbisFontGenerateGlyphParams::form_options`.
     u16 flags;
     u8 glyph_form;
     u8 metrics_form;
@@ -222,10 +228,17 @@ struct OrbisFontRenderSurface {
 
 struct OrbisFontStyleFrame {
     /*0x00*/ u16 magic;
+    // `flags1` controls which fields are considered valid overrides:
+    //  - bit0: scale override present (scaleUnit/scalePixelW/scalePixelH)
+    //  - bit1: slant override present (slantRatio)
+    //  - bit2: weight override present (effectWeightX/effectWeightY)
     /*0x02*/ u8 flags1;
     /*0x03*/ u8 flags2;
     /*0x04*/ u32 hDpi;
     /*0x08*/ u32 vDpi;
+    // `scaleUnit` selects how scale fields are interpreted:
+    //  - 0: pixel scale (`scalePixelW/scalePixelH`)
+    //  - 1: point scale (converted via DPI by style-state getters)
     /*0x0C*/ u32 scaleUnit;
     /*0x10*/ float baseScale;
     /*0x14*/ float scalePixelW;
@@ -235,6 +248,9 @@ struct OrbisFontStyleFrame {
     /*0x24*/ float slantRatio;
     /*0x28*/ u32 reserved_0x28;
     /*0x2C*/ u32 layout_cache_state;
+    // Packed cache metadata:
+    //  - bits [7:0]   cache flags
+    //  - bits [31:16] direction word
     /*0x30*/ u32 cache_flags_and_direction;
     /*0x34*/ u32 cache_lock_word;
     /*0x38*/ u8 layout_cache_bytes[0x20];

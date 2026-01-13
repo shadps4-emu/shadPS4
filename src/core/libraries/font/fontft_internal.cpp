@@ -42,6 +42,52 @@ using Libraries::Font::OrbisFontRenderOutput;
 using Libraries::Font::OrbisFontRenderSurface;
 using Libraries::Font::OrbisFontStyleFrame;
 
+namespace {
+struct GetCharGlyphMetricsFailLogState {
+    u32 count = 0;
+    bool suppression_logged = false;
+};
+
+static thread_local GetCharGlyphMetricsFailLogState g_get_char_metrics_fail;
+
+static void LogGetCharGlyphMetricsFailOnce(std::string_view stage, s32 rc, FT_Error ft_err,
+                                           bool is_system, u32 code, FT_UInt glyph_index,
+                                           FT_Face face, float scale_w, float scale_h) {
+    constexpr u32 kMaxDetailedLogs = 16;
+    if (g_get_char_metrics_fail.count < kMaxDetailedLogs) {
+        u32 enc = 0;
+        u16 platform_id = 0;
+        u16 encoding_id = 0;
+        u32 num_glyphs = 0;
+        u32 num_charmaps = 0;
+        if (face) {
+            num_glyphs = static_cast<u32>(face->num_glyphs);
+            num_charmaps = static_cast<u32>(face->num_charmaps);
+            if (face->charmap) {
+                enc = static_cast<u32>(face->charmap->encoding);
+                platform_id = face->charmap->platform_id;
+                encoding_id = face->charmap->encoding_id;
+            }
+        }
+
+        LOG_WARNING(
+            Lib_Font,
+            "GetCharGlyphMetricsFail: rc={} stage={} ft_err={} is_system={} code={} glyph_index={} "
+            "num_glyphs={} cmap(enc={},pid={},eid={}) num_charmaps={} scale_w={} scale_h={}",
+            rc, stage, static_cast<int>(ft_err), is_system, code, glyph_index, num_glyphs, enc,
+            platform_id, encoding_id, num_charmaps, scale_w, scale_h);
+
+        ++g_get_char_metrics_fail.count;
+        return;
+    }
+
+    if (!g_get_char_metrics_fail.suppression_logged) {
+        LOG_WARNING(Lib_Font, "GetCharGlyphMetricsFail: further failures suppressed");
+        g_get_char_metrics_fail.suppression_logged = true;
+    }
+}
+} // namespace
+
 static void UpdateFtFontObjShiftCache(u8* font_obj) {
     if (!font_obj) {
         return;
@@ -1293,6 +1339,9 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
     }
 
     if (resolved_glyph_index == 0) {
+        LogGetCharGlyphMetricsFailOnce("no_glyph", ORBIS_FONT_ERROR_NO_SUPPORT_GLYPH, 0,
+                                       font->open_info.fontset_record != nullptr, code,
+                                       resolved_glyph_index, resolved_face, scale_w, scale_h);
         if (use_cached_style) {
             font->cached_style.cache_lock_word = prev_cached_lock;
         }

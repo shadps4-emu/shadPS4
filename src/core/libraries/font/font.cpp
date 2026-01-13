@@ -1968,7 +1968,13 @@ s32 PS4_SYSV_ABI sceFontGetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code
 
     const s32 rc = Internal::GetCharGlyphMetrics(fontHandle, code, metrics, false);
     if (rc != ORBIS_OK) {
-        LOG_ERROR(Lib_Font, "FAILED");
+        if (rc == ORBIS_FONT_ERROR_INVALID_FONT_HANDLE) {
+            LOG_ERROR(Lib_Font, "INVALID_HANDLE");
+        } else if (rc == ORBIS_FONT_ERROR_INVALID_PARAMETER) {
+            LOG_ERROR(Lib_Font, "INVALID_PARAMETER");
+        } else if (rc == ORBIS_FONT_ERROR_NOT_BOUND_RENDERER) {
+            LOG_ERROR(Lib_Font, "NOT_BOUND_RENDERER");
+        }
     }
     return rc;
 }
@@ -2250,7 +2256,13 @@ s32 PS4_SYSV_ABI sceFontGetRenderCharGlyphMetrics(OrbisFontHandle fontHandle, u3
 
     const s32 rc = Internal::GetCharGlyphMetrics(fontHandle, codepoint, out_metrics, true);
     if (rc != ORBIS_OK) {
-        LOG_ERROR(Lib_Font, "FAILED");
+        if (rc == ORBIS_FONT_ERROR_INVALID_FONT_HANDLE) {
+            LOG_ERROR(Lib_Font, "INVALID_HANDLE");
+        } else if (rc == ORBIS_FONT_ERROR_INVALID_PARAMETER) {
+            LOG_ERROR(Lib_Font, "INVALID_PARAMETER");
+        } else if (rc == ORBIS_FONT_ERROR_NOT_BOUND_RENDERER) {
+            LOG_ERROR(Lib_Font, "NOT_BOUND_RENDERER");
+        }
     }
     return rc;
 }
