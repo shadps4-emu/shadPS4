@@ -200,7 +200,7 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
         break;
     case AjmFormatEncoding::Float:
         pcm_written = WriteOutputSamples<float>(output, skip_samples * info->numChannels,
-                                              max_samples * info->numChannels);
+                                                max_samples * info->numChannels);
         break;
     default:
         UNREACHABLE();
