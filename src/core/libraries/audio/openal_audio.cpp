@@ -18,6 +18,7 @@
 
 #include <common/config.h>
 #include <common/logging/log.h>
+#include <magic_enum/magic_enum.hpp>
 #include "audioout.h"
 #include "audioout_backend.h"
 #include "openal_manager.h"
@@ -237,8 +238,9 @@ public:
     }
 
     void Output(void* ptr) override {
-        LOG_TRACE(Lib_AudioOut, "Output called, running={}, ptr={}", running, fmt::ptr(ptr));
-        if (!running || !ptr) {
+        bool is_running = running.load();
+        LOG_TRACE(Lib_AudioOut, "Output called, running={}, ptr={}", is_running, fmt::ptr(ptr));
+        if (!is_running || !ptr) {
             LOG_WARNING(Lib_AudioOut, "Output called but not running or null pointer");
             return;
         }
@@ -289,7 +291,7 @@ public:
             queue_size = queued_data.size();
         }
 
-        LOG_TRACE(Lib_AudioOut, "Queued buffer: size={}, queue_size={}", queued_data.back().size(),
+        LOG_TRACE(Lib_AudioOut, "Queued buffer: size={}, queue_size={}", audio_data.size(),
                   queue_size);
 
         buffer_cv.notify_one();
@@ -298,10 +300,6 @@ public:
 private:
     void ProcessBuffers() {
         LOG_DEBUG(Lib_AudioOut, "ProcessBuffers thread started");
-
-        // Set thread name for debugging
-        Common::SetCurrentThreadName("OpenALAudioProc");
-
         // Ensure OpenAL context is current for this thread
         OpenALManager::Instance().MakeContextCurrent();
         LOG_DEBUG(Lib_AudioOut, "OpenAL context set in processing thread");
@@ -310,17 +308,17 @@ private:
         int loop_counter = 0;
         int processed_total = 0;
 
-        while (running) {
+        while (running.load()) { 
             loop_counter++;
 
             // Wait for data or timeout
             {
                 std::unique_lock<std::mutex> lock(buffer_mutex);
                 buffer_cv.wait_for(lock, std::chrono::milliseconds(5),
-                                   [&] { return !queued_data.empty() || !running; });
+                                   [&] { return !queued_data.empty() || !running.load(); });
             }
 
-            if (!running) {
+            if (!running.load()) {
                 LOG_DEBUG(Lib_AudioOut, "ProcessBuffers: exiting due to !running");
                 break;
             }
