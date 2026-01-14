@@ -17,63 +17,12 @@
 #include <AL/alext.h>
 
 #include <common/config.h>
+#include <common/logging/log.h>
 #include "audioout.h"
 #include "audioout_backend.h"
+#include "openal_manager.h"
 
 namespace Libraries::AudioOut {
-
-// ------------------------------------------------------------
-// Global OpenAL device/context
-// ------------------------------------------------------------
-struct OpenALGlobal {
-    ALCdevice* device{};
-    ALCcontext* context{};
-    bool initialized{false};
-    std::mutex mutex; // for context switching
-};
-
-static OpenALGlobal g_openal;
-
-// Initialize global device/context once
-static bool InitGlobalOpenAL(int sample_rate) {
-    std::lock_guard<std::mutex> lock(g_openal.mutex);
-    if (g_openal.initialized)
-        return true;
-
-    g_openal.device = alcOpenDevice(nullptr);
-    if (!g_openal.device)
-        return false;
-
-    ALCint attrs[] = {ALC_FREQUENCY, sample_rate, ALC_SYNC, ALC_FALSE, 0};
-    g_openal.context = alcCreateContext(g_openal.device, attrs);
-    if (!g_openal.context)
-        g_openal.context = alcCreateContext(g_openal.device, nullptr);
-
-    if (!g_openal.context || !alcMakeContextCurrent(g_openal.context)) {
-        alcCloseDevice(g_openal.device);
-        g_openal.device = nullptr;
-        g_openal.context = nullptr;
-        return false;
-    }
-
-    g_openal.initialized = true;
-    return true;
-}
-
-// Shutdown global OpenAL (call at emulator exit)
-static void ShutdownGlobalOpenAL() {
-    std::lock_guard<std::mutex> lock(g_openal.mutex);
-    if (!g_openal.initialized)
-        return;
-
-    alcMakeContextCurrent(nullptr);
-    alcDestroyContext(g_openal.context);
-    alcCloseDevice(g_openal.device);
-
-    g_openal.device = nullptr;
-    g_openal.context = nullptr;
-    g_openal.initialized = false;
-}
 
 // ------------------------------------------------------------
 // OpenALPortBackend
@@ -85,21 +34,18 @@ public:
           sample_rate(static_cast<int>(port.sample_rate)), channels(port.format_info.num_channels),
           is_float(port.format_info.is_float) {
 
-        if (!InitGlobalOpenAL(sample_rate)) {
-            LOG_ERROR(Lib_AudioOut, "Failed to initialize global OpenAL device");
+        if (!OpenALManager::Instance().Initialize(sample_rate)) {
+            LOG_ERROR(Lib_AudioOut, "Failed to initialize OpenAL device");
             return;
         }
 
-        // Select global context for this port
-        {
-            std::lock_guard<std::mutex> lock(g_openal.mutex);
-            alcMakeContextCurrent(g_openal.context);
-        }
+        // Select context for this port
+        OpenALManager::Instance().MakeContextCurrent();
 
         // Check for extensions
         has_float32 = alIsExtensionPresent("AL_EXT_float32");
         has_multichannel = alIsExtensionPresent("AL_EXT_MCFORMATS");
-        has_direct_channels = alcIsExtensionPresent(g_openal.device, "AL_SOFT_direct_channels");
+        has_direct_channels = OpenALManager::Instance().HasExtension("AL_SOFT_direct_channels");
 
         // Generate source for this port
         alGenSources(1, &source);
@@ -164,17 +110,24 @@ public:
     }
 
     ~OpenALPortBackend() override {
-        running = false;
+        {
+            std::lock_guard<std::mutex> lock(buffer_mutex);
+            running = false;
+        }
         buffer_cv.notify_all();
         if (processing_thread.joinable())
             processing_thread.join();
 
-        std::lock_guard<std::mutex> lock(g_openal.mutex);
+        // Clean up OpenAL resources
+        OpenALManager::Instance().MakeContextCurrent();
         if (source) {
             alSourceStop(source);
             alDeleteSources(1, &source);
-            if (!buffers.empty())
-                alDeleteBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
+            source = 0;
+        }
+        if (!buffers.empty()) {
+            alDeleteBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
+            buffers.clear();
         }
     }
 
@@ -182,16 +135,23 @@ public:
         if (!source)
             return;
 
-        // Calculate average volume or use max as you prefer
+        // Calculate average volume for active channels only
         int total = 0;
-        for (int vol : ch_volumes) {
-            total += vol;
+        int count = 0;
+        for (int i = 0; i < channels && i < 8; i++) {
+            total += ch_volumes[i];
+            count++;
         }
-        int avg = total / static_cast<int>(ch_volumes.size());
+
+        if (count == 0)
+            return;
+
+        int avg = total / count;
 
         float normalized = static_cast<float>(avg) / SCE_AUDIO_OUT_VOLUME_0DB;
         float gain = normalized * Config::getVolumeSlider() / 100.0f;
 
+        OpenALManager::Instance().MakeContextCurrent();
         alSourcef(source, AL_GAIN, std::clamp(gain, 0.0f, 1.0f));
     }
 
@@ -207,11 +167,6 @@ public:
             const size_t bytes_per_sample = is_float ? 4 : 2;
             const size_t frames = guest_buffer_size / frame_size;
 
-            LOG_DEBUG(
-                Lib_AudioOut,
-                "Downmixing: frames={}, input_channels={}, output_channels=2, bytes_per_sample={}",
-                frames, input_channels, bytes_per_sample);
-
             // Resize buffer exactly to expected OpenAL size
             audio_data.resize(bytes_per_buffer);
 
@@ -219,27 +174,16 @@ public:
             bool use_float_output = (al_format == AL_FORMAT_STEREO_FLOAT32);
             Downmix8CHToStereo(ptr, is_float, frames, use_float_output, audio_data);
 
-            LOG_DEBUG(Lib_AudioOut, "Downmix complete: output_buffer_size={}", audio_data.size());
-
         } else {
             // Copy input directly
             audio_data.resize(guest_buffer_size);
             std::memcpy(audio_data.data(), ptr, guest_buffer_size);
-            LOG_DEBUG(Lib_AudioOut, "Normal path: copied {} bytes", guest_buffer_size);
-        }
-
-        // Verify buffer size matches expected
-        if (audio_data.size() != bytes_per_buffer) {
-            LOG_WARNING(Lib_AudioOut, "Buffer size mismatch: expected={}, actual={}",
-                        bytes_per_buffer, audio_data.size());
         }
 
         // Queue the buffer
         {
             std::lock_guard<std::mutex> lock(buffer_mutex);
             queued_data.emplace_back(std::move(audio_data));
-            LOG_DEBUG(Lib_AudioOut, "Queued buffer: size={}, queue_size={}",
-                      queued_data.back().size(), queued_data.size());
         }
 
         buffer_cv.notify_one();
@@ -247,6 +191,9 @@ public:
 
 private:
     void ProcessBuffers() {
+        // Ensure OpenAL context is current for this thread
+        OpenALManager::Instance().MakeContextCurrent();
+
         std::vector<ALuint> free_buffers;
         while (running) {
             {
@@ -338,7 +285,17 @@ private:
     }
 
     void CalculateBufferCount() {
-        buffer_count = std::clamp<size_t>(12, 12, 16); // adjust as needed
+        // Calculate frames from guest buffer size and frame size
+        const size_t frames = guest_buffer_size / frame_size;
+        const float buffer_duration_ms = (frames * 1000.0f) / sample_rate;
+        const size_t target_buffers =
+            static_cast<size_t>(std::ceil(80.0f / buffer_duration_ms) // Target 80ms total latency
+            );
+
+        buffer_count = std::clamp<size_t>(target_buffers, 3, 8);
+
+        LOG_DEBUG(Lib_AudioOut, "Buffer count: frames={}, duration={:.1f}ms, buffers={}", frames,
+                  buffer_duration_ms, buffer_count);
     }
 
     void Downmix8CHToStereo(const void* src, bool is_float_input, size_t frames, bool output_float,
@@ -402,7 +359,12 @@ private:
     std::deque<std::vector<std::byte>> queued_data;
     std::vector<std::byte> stereo_buffer;
 };
+
+// ------------------------------------------------------------
+// OpenALAudioOut
+// ------------------------------------------------------------
 std::unique_ptr<PortBackend> OpenALAudioOut::Open(PortOut& port) {
     return std::make_unique<OpenALPortBackend>(port);
 }
+
 } // namespace Libraries::AudioOut

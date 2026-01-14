@@ -292,6 +292,7 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout_error.h
               src/core/libraries/audio/sdl_audio.cpp
               src/core/libraries/audio/openal_audio.cpp
+              src/core/libraries/audio/openal_manager.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
