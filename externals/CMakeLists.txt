@@ -300,5 +300,5 @@ set(ALSOFT_BACKEND_NULL ON CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
-add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
+add_subdirectory(ext-openal-soft EXCLUDE_FROM_ALL)
 endif()
