@@ -314,35 +314,47 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         prot |= MemoryProt::CpuRead;
     }
 
-    // Carve out the new VMA representing this mapping
-    const auto new_vma_handle = CarveVMA(mapped_addr, size);
-    auto& new_vma = new_vma_handle->second;
-    new_vma.disallow_merge = false;
-    new_vma.prot = prot;
-    new_vma.name = "anon";
-    new_vma.type = Core::VMAType::Pooled;
-    new_vma.is_exec = false;
-
-    // Find a suitable physical address
+    // Find suitable physical addresses
     auto handle = dmem_map.begin();
-    while (handle != dmem_map.end() &&
-           (handle->second.dma_type != Core::DMAType::Pooled || handle->second.size < size)) {
+    u64 remaining_size = size;
+    VAddr current_addr = mapped_addr;
+    while (handle != dmem_map.end() && remaining_size != 0) {
+        if (handle->second.dma_type != DMAType::Pooled) {
+            // Non-pooled means it's either not for pool use, or already committed.
+            handle++;
+            continue;
+        }
+
+        // On PS4, commits can make sparse physical mappings.
+        // For now, it's easier to create separate memory mappings for each physical mapping.
+        u64 size_to_map = std::min<u64>(remaining_size, handle->second.size);
+
+        // Carve out the new VMA representing this mapping
+        const auto new_vma_handle = CarveVMA(current_addr, size_to_map);
+        auto& new_vma = new_vma_handle->second;
+        new_vma.disallow_merge = false;
+        new_vma.prot = prot;
+        new_vma.name = "anon";
+        new_vma.type = Core::VMAType::Pooled;
+        new_vma.is_exec = false;
+
+        // Use the start of this area as the physical backing for this mapping.
+        const auto new_dmem_handle = CarveDmemArea(handle->second.base, size_to_map);
+        auto& new_dmem_area = new_dmem_handle->second;
+        new_dmem_area.dma_type = DMAType::Committed;
+        new_dmem_area.memory_type = mtype;
+        new_vma.phys_base = new_dmem_area.base;
+        handle = MergeAdjacent(dmem_map, new_dmem_handle);
+
+        // Perform the mapping
+        void* out_addr = impl.Map(current_addr, size_to_map, alignment, new_vma.phys_base, false);
+        TRACK_ALLOC(out_addr, size_to_map, "VMEM");
+
+        current_addr += size_to_map;
+        remaining_size -= size_to_map;
         handle++;
     }
-    ASSERT_MSG(handle != dmem_map.end() && handle->second.dma_type == Core::DMAType::Pooled,
-               "No suitable physical memory areas to map");
-
-    // Use the start of this area as the physical backing for this mapping.
-    const auto new_dmem_handle = CarveDmemArea(handle->second.base, size);
-    auto& new_dmem_area = new_dmem_handle->second;
-    new_dmem_area.dma_type = DMAType::Committed;
-    new_dmem_area.memory_type = mtype;
-    new_vma.phys_base = new_dmem_area.base;
-    MergeAdjacent(dmem_map, new_dmem_handle);
-
-    // Perform the mapping
-    void* out_addr = impl.Map(mapped_addr, size, alignment, new_vma.phys_base, false);
-    TRACK_ALLOC(out_addr, size, "VMEM");
+    ASSERT_MSG(remaining_size == 0, "Unable to map physical memory");
 
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
@@ -609,57 +621,64 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
                virtual_addr);
     std::scoped_lock lk{mutex};
 
-    const auto it = FindVMA(virtual_addr);
-    const auto& vma_base = it->second;
-    ASSERT_MSG(vma_base.Contains(virtual_addr, size),
-               "Existing mapping does not contain requested unmap range");
-
-    const auto vma_base_addr = vma_base.base;
-    const auto vma_base_size = vma_base.size;
-    const auto phys_base = vma_base.phys_base;
-    const bool is_exec = vma_base.is_exec;
-    const auto start_in_vma = virtual_addr - vma_base_addr;
-    const auto type = vma_base.type;
-
-    if (type != VMAType::PoolReserved && type != VMAType::Pooled) {
-        LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
-        return ORBIS_KERNEL_ERROR_EINVAL;
+    // Do an initial search to ensure this decommit is valid.
+    auto it = FindVMA(virtual_addr);
+    while (it != vma_map.end() && it->second.base + it->second.size <= virtual_addr + size) {
+        if (it->second.type != VMAType::PoolReserved && it->second.type != VMAType::Pooled) {
+            LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        it++;
     }
 
-    if (type == VMAType::Pooled) {
-        // We always map PoolCommitted memory to GPU, so unmap when decomitting.
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
+    // Loop through all vmas in the area, unmap them.
+    u64 remaining_size = size;
+    VAddr current_addr = virtual_addr;
+    while (remaining_size != 0) {
+        const auto it = FindVMA(current_addr);
+        const auto& vma_base = it->second;
+        const bool is_exec = vma_base.is_exec;
+        const auto start_in_vma = current_addr - vma_base.base;
+        const auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
+
+        if (vma_base.type == VMAType::Pooled) {
+            // We always map PoolCommitted memory to GPU, so unmap when decomitting.
+            if (IsValidGpuMapping(current_addr, size_in_vma)) {
+                rasterizer->UnmapMemory(current_addr, size_in_vma);
+            }
+
+            // Track how much pooled memory is decommitted
+            pool_budget += size_in_vma;
+
+            // Re-pool the direct memory used by this mapping
+            const auto unmap_phys_base = vma_base.phys_base + start_in_vma;
+            const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, size_in_vma);
+            auto& new_dmem_area = new_dmem_handle->second;
+            new_dmem_area.dma_type = DMAType::Pooled;
+
+            // Coalesce with nearby direct memory areas.
+            MergeAdjacent(dmem_map, new_dmem_handle);
         }
 
-        // Track how much pooled memory is decommitted
-        pool_budget += size;
+        if (vma_base.type != VMAType::PoolReserved) {
+            // Unmap the memory region.
+            impl.Unmap(vma_base.base, vma_base.size, start_in_vma, start_in_vma + size_in_vma,
+                       vma_base.phys_base, vma_base.is_exec, true, false);
+            TRACK_FREE(virtual_addr, "VMEM");
+        }
 
-        // Re-pool the direct memory used by this mapping
-        const auto unmap_phys_base = phys_base + start_in_vma;
-        const auto new_dmem_handle = CarveDmemArea(unmap_phys_base, size);
-        auto& new_dmem_area = new_dmem_handle->second;
-        new_dmem_area.dma_type = DMAType::Pooled;
+        // Mark region as pool reserved and attempt to coalesce it with neighbours.
+        const auto new_it = CarveVMA(current_addr, size_in_vma);
+        auto& vma = new_it->second;
+        vma.type = VMAType::PoolReserved;
+        vma.prot = MemoryProt::NoAccess;
+        vma.phys_base = 0;
+        vma.disallow_merge = false;
+        vma.name = "anon";
+        MergeAdjacent(vma_map, new_it);
 
-        // Coalesce with nearby direct memory areas.
-        MergeAdjacent(dmem_map, new_dmem_handle);
-    }
-
-    // Mark region as pool reserved and attempt to coalesce it with neighbours.
-    const auto new_it = CarveVMA(virtual_addr, size);
-    auto& vma = new_it->second;
-    vma.type = VMAType::PoolReserved;
-    vma.prot = MemoryProt::NoAccess;
-    vma.phys_base = 0;
-    vma.disallow_merge = false;
-    vma.name = "anon";
-    MergeAdjacent(vma_map, new_it);
-
-    if (type != VMAType::PoolReserved) {
-        // Unmap the memory region.
-        impl.Unmap(vma_base_addr, vma_base_size, start_in_vma, start_in_vma + size, phys_base,
-                   is_exec, true, false);
-        TRACK_FREE(virtual_addr, "VMEM");
+        current_addr += size_in_vma;
+        remaining_size -= size_in_vma;
     }
 
     return ORBIS_OK;

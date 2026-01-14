@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ipc.h"
@@ -14,6 +14,7 @@
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "core/debugger.h"
+#include "core/emulator_state.h"
 #include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
@@ -71,7 +72,7 @@ void IPC::Init() {
         return;
     }
 
-    Config::setLoadAutoPatches(false);
+    EmulatorState::GetInstance()->SetAutoPatchesLoadEnabled(false);
 
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");

@@ -21,6 +21,7 @@ struct Entry {
     u32 line_num = 0;
     std::string function;
     std::string message;
+    std::string thread;
 };
 
 } // namespace Common::Log
