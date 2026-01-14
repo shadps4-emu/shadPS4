@@ -298,8 +298,23 @@ public:
     }
 
 private:
+    const char* GetALStateString(ALint state) {
+        switch (state) {
+        case AL_INITIAL:
+            return "AL_INITIAL";
+        case AL_PLAYING:
+            return "AL_PLAYING";
+        case AL_PAUSED:
+            return "AL_PAUSED";
+        case AL_STOPPED:
+            return "AL_STOPPED";
+        default:
+            return "UNKNOWN";
+        }
+    }
     void ProcessBuffers() {
         LOG_DEBUG(Lib_AudioOut, "ProcessBuffers thread started");
+
         // Ensure OpenAL context is current for this thread
         OpenALManager::Instance().MakeContextCurrent();
         LOG_DEBUG(Lib_AudioOut, "OpenAL context set in processing thread");
@@ -307,23 +322,12 @@ private:
         std::vector<ALuint> free_buffers;
         int loop_counter = 0;
         int processed_total = 0;
+        int underruns = 0; // Track underruns
 
-        while (running.load()) { 
+        while (running.load()) {
             loop_counter++;
 
-            // Wait for data or timeout
-            {
-                std::unique_lock<std::mutex> lock(buffer_mutex);
-                buffer_cv.wait_for(lock, std::chrono::milliseconds(5),
-                                   [&] { return !queued_data.empty() || !running.load(); });
-            }
-
-            if (!running.load()) {
-                LOG_DEBUG(Lib_AudioOut, "ProcessBuffers: exiting due to !running");
-                break;
-            }
-
-            // Check for processed buffers
+            // Check for processed buffers first
             ALint processed = 0;
             alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
             if (processed > 0) {
@@ -338,22 +342,17 @@ private:
                 }
             }
 
-            // Process free buffers
+            // Fill any free buffers with queued data
             size_t buffers_filled = 0;
             while (!free_buffers.empty()) {
                 ALint queued = 0;
                 alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
 
-                if (queued >= static_cast<ALint>(buffer_count)) {
-                    LOG_TRACE(Lib_AudioOut, "Buffer queue full ({}/{}), waiting...", queued,
-                              buffer_count);
-                    break;
-                }
-
                 std::vector<std::byte> data;
                 {
                     std::lock_guard<std::mutex> lock(buffer_mutex);
                     if (queued_data.empty()) {
+                        // No data available, break and wait
                         break;
                     }
                     data = std::move(queued_data.front());
@@ -381,31 +380,71 @@ private:
                 LOG_TRACE(Lib_AudioOut, "Filled {} buffers", buffers_filled);
             }
 
-            // Ensure source is playing
+            // Check source state
             ALint state = 0;
             alGetSourcei(source, AL_SOURCE_STATE, &state);
+
+            ALint queued = 0;
+            alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+
             if (state != AL_PLAYING) {
-                LOG_WARNING(Lib_AudioOut, "Source not playing (state={}), restarting", state);
-                alSourcePlay(source);
-                ALenum al_error = alGetError();
-                if (al_error != AL_NO_ERROR) {
-                    LOG_ERROR(Lib_AudioOut, "Error restarting playback, error: {}", al_error);
+                if (queued > 0) {
+                    // We have buffers but source stopped - restart it
+                    underruns++;
+                    LOG_WARNING(Lib_AudioOut,
+                                "Source stopped (state={}), restarting. Queued={}, Underruns={}",
+                                GetALStateString(state), queued, underruns);
+                    alSourcePlay(source);
+                    ALenum al_error = alGetError();
+                    if (al_error != AL_NO_ERROR) {
+                        LOG_ERROR(Lib_AudioOut, "Error restarting playback, error: {}", al_error);
+                    }
+                } else {
+                    // No buffers queued, this is expected
+                    LOG_TRACE(Lib_AudioOut,
+                              "Source stopped, no buffers queued (state={}, queued={})",
+                              GetALStateString(state), queued);
                 }
             }
 
-            // Log statistics every 1000 iterations
-            if (loop_counter % 1000 == 0) {
-                ALint queued = 0;
-                alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-                LOG_DEBUG(
-                    Lib_AudioOut,
-                    "ProcessBuffers stats: loops={}, processed_total={}, queued={}, queue_size={}",
-                    loop_counter, processed_total, queued, queued_data.size());
+            // If we have very few buffers queued, wait shorter time
+            int wait_time_ms = 5;
+            if (queued < buffer_count / 2) {
+                wait_time_ms = 2; // Wait shorter if low on buffers
+            }
+
+            // Wait for more data or timeout
+            {
+                std::unique_lock<std::mutex> lock(buffer_mutex);
+                if (queued_data.empty()) {
+                    buffer_cv.wait_for(lock, std::chrono::milliseconds(wait_time_ms),
+                                       [&] { return !queued_data.empty() || !running.load(); });
+                }
+            }
+
+            if (!running.load()) {
+                LOG_DEBUG(Lib_AudioOut, "ProcessBuffers: exiting due to !running");
+                break;
+            }
+
+            // Log statistics every 500 iterations
+            if (loop_counter % 500 == 0) {
+                ALint queued_now = 0;
+                alGetSourcei(source, AL_BUFFERS_QUEUED, &queued_now);
+                ALint state_now = 0;
+                alGetSourcei(source, AL_SOURCE_STATE, &state_now);
+
+                LOG_DEBUG(Lib_AudioOut,
+                          "ProcessBuffers stats: loops={}, processed={}, queued={}, state={}, "
+                          "queue_size={}, underruns={}",
+                          loop_counter, processed_total, queued_now, GetALStateString(state_now),
+                          queued_data.size(), underruns);
             }
         }
 
-        LOG_DEBUG(Lib_AudioOut, "ProcessBuffers thread exiting, total loops={}, total processed={}",
-                  loop_counter, processed_total);
+        LOG_DEBUG(Lib_AudioOut,
+                  "ProcessBuffers thread exiting, total loops={}, total processed={}, underruns={}",
+                  loop_counter, processed_total, underruns);
     }
 
     ALenum GetALFormat(int ch, bool f32) {
@@ -481,10 +520,12 @@ private:
         // Calculate frames from guest buffer size and frame size
         const size_t frames = guest_buffer_size / frame_size;
         const float buffer_duration_ms = (frames * 1000.0f) / sample_rate;
-        const size_t target_buffers =
-            static_cast<size_t>(std::ceil(80.0f / buffer_duration_ms)); // Target 80ms total latency
 
-        buffer_count = std::clamp<size_t>(target_buffers, 3, 8);
+        // Target more buffers for safety (120ms total latency)
+        const size_t target_buffers = static_cast<size_t>(std::ceil(120.0f / buffer_duration_ms));
+
+        // Increase minimum buffers
+        buffer_count = std::clamp<size_t>(target_buffers, 4, 12);
 
         LOG_DEBUG(Lib_AudioOut, "Buffer count: frames={}, duration={:.1f}ms, target={}, final={}",
                   frames, buffer_duration_ms, target_buffers, buffer_count);
