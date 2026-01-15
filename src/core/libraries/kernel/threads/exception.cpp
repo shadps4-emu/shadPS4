@@ -190,6 +190,28 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_gs = regs.__gs;
         ctx.uc_mcontext.mc_rip = regs.__rip;
         ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
+#elif defined(__FreeBSD__)
+        const auto& regs = raw_context->uc_mcontext;
+        ctx.uc_mcontext.mc_r8 = regs.mc_r8;
+        ctx.uc_mcontext.mc_r9 = regs.mc_r9;
+        ctx.uc_mcontext.mc_r10 = regs.mc_r10;
+        ctx.uc_mcontext.mc_r11 = regs.mc_r11;
+        ctx.uc_mcontext.mc_r12 = regs.mc_r12;
+        ctx.uc_mcontext.mc_r13 = regs.mc_r13;
+        ctx.uc_mcontext.mc_r14 = regs.mc_r14;
+        ctx.uc_mcontext.mc_r15 = regs.mc_r15;
+        ctx.uc_mcontext.mc_rdi = regs.mc_rdi;
+        ctx.uc_mcontext.mc_rsi = regs.mc_rsi;
+        ctx.uc_mcontext.mc_rbp = regs.mc_rbp;
+        ctx.uc_mcontext.mc_rbx = regs.mc_rbx;
+        ctx.uc_mcontext.mc_rdx = regs.mc_rdx;
+        ctx.uc_mcontext.mc_rax = regs.mc_rax;
+        ctx.uc_mcontext.mc_rcx = regs.mc_rcx;
+        ctx.uc_mcontext.mc_rsp = regs.mc_rsp;
+        ctx.uc_mcontext.mc_fs = regs.mc_fs;
+        ctx.uc_mcontext.mc_gs = regs.mc_gs;
+        ctx.uc_mcontext.mc_rip = regs.mc_rip;
+        ctx.uc_mcontext.mc_addr = uint64_t(regs.mc_addr);
 #else
         const auto& regs = raw_context->uc_mcontext.gregs;
         ctx.uc_mcontext.mc_r8 = regs[REG_R8];
