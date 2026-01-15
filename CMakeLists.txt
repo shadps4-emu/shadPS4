@@ -1126,8 +1126,6 @@ target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohma
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
     target_link_libraries(shadps4 PRIVATE "/usr/local/lib/libuuid.so")
-    target_link_libraries(shadps4 PRIVATE "/usr/local/lib/libepoll-shim.so")
-    target_include_directories(shadps4 PRIVATE "/usr/local/include/libepoll-shim")
 else()
     target_link_libraries(shadps4 PRIVATE libusb::usb)
 endif()
@@ -1176,6 +1174,8 @@ if (APPLE)
 
     # Replacement for std::chrono::time_zone
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    target_link_libraries(shadps4 PRIVATE epoll-shim)
 endif()
 
 if (WIN32)
