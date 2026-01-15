@@ -7,7 +7,7 @@
 #include "common/div_ceil.h"
 #include "common/logging/log.h"
 
-#ifdef __linux__
+#ifdef __unix__
 #include "common/adaptive_mutex.h"
 #else
 #include "common/spin_lock.h"

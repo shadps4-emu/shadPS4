@@ -14,9 +14,13 @@
 #include <wepoll.h>
 #endif
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+// ADD libepoll-shim if using freebsd!
 #include <sys/epoll.h>
+#endif
+#if defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
+int epoll_create1(int fd) { return 0; }
 #endif
 
 namespace Libraries::Net {
