@@ -663,10 +663,12 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+#ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *native_handle, &native_event) == 0);
             epoll->events.emplace_back(id, *event);
+#endif
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -703,6 +705,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
 
         switch (file->type) {
         case Core::FileSys::FileType::Socket: {
+<<<<<<< HEAD
             auto native_handle = file->socket->Native();
             if (!native_handle) {
                 // P2P socket, cannot be modified in epoll
@@ -711,10 +714,14 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+=======
+#ifndef __FreeBSD__
+>>>>>>> fe75987 (port: Add x64 FreeBSD)
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle, &native_event) == 0);
             *it = {id, *event};
+#endif
             break;
         }
         default:
@@ -745,6 +752,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
 
         switch (file->type) {
         case Core::FileSys::FileType::Socket: {
+<<<<<<< HEAD
             auto native_handle = file->socket->Native();
             if (!native_handle) {
                 // P2P socket, cannot be removed from epoll
@@ -754,7 +762,13 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             }
 
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *native_handle, nullptr) == 0);
+=======
+#ifndef __FreeBSD__
+            ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *file->socket->Native(), nullptr) ==
+                   0);
+>>>>>>> fe75987 (port: Add x64 FreeBSD)
             epoll->events.erase(it);
+#endif
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -810,6 +824,9 @@ int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
 
 int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
                                  int timeout) {
+#ifdef __FreeBSD__
+    return 0;
+#else
     auto file = FDTable::Instance()->GetEpoll(epollid);
     if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
@@ -836,7 +853,6 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
     }
 
     int i = 0;
-
     if (result < 0) {
         LOG_ERROR(Lib_Net, "epoll_wait failed with {}", Common::GetLastErrorMsg());
         switch (errno) {
@@ -901,8 +917,8 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             ++i;
         }
     }
-
     return i;
+#endif
 }
 
 int* PS4_SYSV_ABI sceNetErrnoLoc() {
