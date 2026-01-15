@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -189,7 +190,7 @@ std::optional<TessSharpLocation> FindTessConstantSharp(IR::Inst* read_const_buff
 // Walker that helps deduce what type of attribute a DS instruction is reading
 // or writing, which could be an input control point, output control point,
 // or per-patch constant (PatchConst).
-// For certain ReadConstBuffer instructions using the tess constants V#,, we visit the users
+// For certain ReadConstBuffer instructions using the tess constants V#, we visit the users
 // recursively and increment a counter on the Load/WriteShared users.
 // Namely NumPatch (from m_hsNumPatch), HsOutputBase (m_hsOutputBase),
 // and PatchConstBase (m_patchConstBase).
@@ -200,9 +201,11 @@ std::optional<TessSharpLocation> FindTessConstantSharp(IR::Inst* read_const_buff
 //
 // TODO: this will break if AMD compiler used distributive property like
 // TcsNumPatches * (ls_stride * #input_cp_in_patch + hs_cp_stride * #output_cp_in_patch)
+//
+// Assert if the region is ambiguous due to phi nodes in the addr calculation for a DS instruction,
 class TessConstantUseWalker {
 public:
-    void MarkTessAttributeUsers(IR::Inst* read_const_buffer, TessConstantAttribute attr) {
+    void WalkUsersOfTessConstant(IR::Inst* read_const_buffer, TessConstantAttribute attr) {
         u32 inc;
         switch (attr) {
         case TessConstantAttribute::HsNumPatch:
@@ -217,14 +220,19 @@ public:
         }
 
         for (IR::Use use : read_const_buffer->Uses()) {
-            MarkTessAttributeUsersHelper(use, inc);
+            WalkUsersOfTessConstantHelper(use, inc, false);
         }
 
         ++seq_num;
     }
 
 private:
-    void MarkTessAttributeUsersHelper(IR::Use use, u32 inc) {
+    struct PhiInfo {
+        u32 seq_num;
+        u32 unique_edge;
+    };
+
+    void WalkUsersOfTessConstantHelper(IR::Use use, u32 inc, bool propagateError) {
         IR::Inst* inst = use.user;
 
         switch (use.user->GetOpcode()) {
@@ -232,38 +240,37 @@ private:
         case IR::Opcode::LoadSharedU64:
         case IR::Opcode::WriteSharedU32:
         case IR::Opcode::WriteSharedU64: {
-            u32 counter = inst->Flags<u32>();
-            inst->SetFlags<u32>(counter + inc);
-            // Stop here
-            return;
+            bool is_addr_operand = use.operand == 0;
+            if (is_addr_operand) {
+                u32 counter = inst->Flags<u32>();
+                inst->SetFlags<u32>(counter + inc);
+                ASSERT_MSG(!propagateError, "LDS instruction {} accesses ambiguous attribute type",
+                           fmt::ptr(use.user));
+                // Stop here
+                return;
+            }
         }
         case IR::Opcode::Phi: {
-            struct PhiCounter {
-                u16 seq_num;
-                u16 unique_edge;
-            };
-
-            PhiCounter count = inst->Flags<PhiCounter>();
-            ASSERT_MSG(count.seq_num == 0 || count.unique_edge == use.operand);
+            auto it = phi_infos.find(use.user);
             // the point of seq_num is to tell us if we've already traversed this
-            // phi on the current walk. Alternatively we could keep a set of phi's
-            // seen on the current walk. This is to handle phi cycles
-            if (count.seq_num == 0) {
+            // phi on the current walk to handle phi cycles
+            if (it == phi_infos.end()) {
                 // First time we've encountered this phi
-                count.seq_num = seq_num;
                 // Mark the phi as having been traversed originally through this edge
-                count.unique_edge = use.operand;
-            } else if (count.seq_num < seq_num) {
-                count.seq_num = seq_num;
+                phi_infos[inst] = {.seq_num = seq_num,
+                                   .unique_edge = static_cast<u16>(use.operand)};
+            } else if (it->second.seq_num < seq_num) {
+                it->second.seq_num = seq_num;
                 // For now, assume we are visiting this phi via the same edge
                 // as on other walks. If not, some dataflow analysis might be necessary
-                ASSERT(count.unique_edge == use.operand);
+                if (it->second.unique_edge != use.operand) {
+                    propagateError = true;
+                }
             } else {
-                // count.seq_num == seq_num
+                ASSERT(it->second.seq_num == seq_num);
                 // there's a cycle, and we've already been here on this walk
                 return;
             }
-            inst->SetFlags<PhiCounter>(count);
             break;
         }
         default:
@@ -271,10 +278,11 @@ private:
         }
 
         for (IR::Use use : inst->Uses()) {
-            MarkTessAttributeUsersHelper(use, inc);
+            WalkUsersOfTessConstantHelper(use, inc, propagateError);
         }
     }
 
+    std::unordered_map<const IR::Inst*, PhiInfo> phi_infos;
     u32 seq_num{1u};
 };
 
@@ -690,7 +698,7 @@ void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
                     case TessConstantAttribute::HsNumPatch:
                     case TessConstantAttribute::HsOutputBase:
                     case TessConstantAttribute::PatchConstBase:
-                        walker.MarkTessAttributeUsers(&inst, tess_const_attr);
+                        walker.WalkUsersOfTessConstant(&inst, tess_const_attr);
                         // We should be able to safely set these to 0 so that indexing happens only
                         // within the local patch in the recompiled Vulkan shader. This assumes
                         // these values only contribute to address calculations for in/out
