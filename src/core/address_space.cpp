@@ -613,9 +613,9 @@ struct AddressSpace::Impl {
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
-        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED; //compiler knows its constexpr
+        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED; // compiler knows its constexpr
 #if !defined(__FreeBSD__)
-	map_flags |= MAP_NORESERVE;
+        map_flags |= MAP_NORESERVE;
 #endif
 
 #if defined(__APPLE__) && defined(ARCH_X86_64)

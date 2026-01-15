@@ -20,7 +20,9 @@
 #endif
 #if defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
-int epoll_create1(int fd) { return 0; }
+int epoll_create1(int fd) {
+    return 0;
+}
 #endif
 
 namespace Libraries::Net {

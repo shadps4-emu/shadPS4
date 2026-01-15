@@ -8,8 +8,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__FreeBSD__)
-#include <sys/ucontext.h>
 #include <machine/npx.h>
+#include <sys/ucontext.h>
 #else
 #include <sys/ucontext.h>
 #endif
@@ -28,12 +28,12 @@ void* GetXmmPointer(void* ctx, u8 index) {
 #elif defined(__FreeBSD__)
     // In mc_fpstate
     // See <machine/npx.h> for the internals of mc_fpstate[].
-#define CASE(index) \
-    case index: { \
-        auto& mctx = ((ucontext_t*)ctx)->uc_mcontext; \
-        ASSERT(mctx.mc_fpformat == _MC_FPFMT_XMM); \
-        auto* s_fpu = (struct savefpu*)(&mctx.mc_fpstate[0]); \
-        return (void*)(&(s_fpu->sv_xmm[0])); \
+#define CASE(index)                                                                                \
+    case index: {                                                                                  \
+        auto& mctx = ((ucontext_t*)ctx)->uc_mcontext;                                              \
+        ASSERT(mctx.mc_fpformat == _MC_FPFMT_XMM);                                                 \
+        auto* s_fpu = (struct savefpu*)(&mctx.mc_fpstate[0]);                                      \
+        return (void*)(&(s_fpu->sv_xmm[0]));                                                       \
     }
 #else
 #define CASE(index)                                                                                \
