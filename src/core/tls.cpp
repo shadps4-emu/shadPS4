@@ -155,9 +155,9 @@ Tcb* GetTcbBase() {
     return tcb;
 }
 
-#elif defined(ARCH_X86_64)
+#elif defined(ARCH_X86_64) && !defined(__FreeBSD__)
 
-// Other POSIX x86_64
+// Linux x86_64
 
 void SetTcbBase(void* image_address) {
     const int ret = syscall(SYS_arch_prctl, ARCH_SET_GS, (unsigned long)image_address);
