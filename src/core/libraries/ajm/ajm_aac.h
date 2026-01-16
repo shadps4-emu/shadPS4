@@ -52,18 +52,14 @@ private:
     };
 
     template <class T>
-    size_t WriteOutputSamples(SparseOutputBuffer& output, u32 skipped_pcm, u32 max_pcm) {
-        std::span<T> pcm_data{reinterpret_cast<T*>(m_pcm_buffer.data()),
-                              m_pcm_buffer.size() / sizeof(T)};
-        pcm_data = pcm_data.subspan(skipped_pcm);
-        const auto pcm_size = std::min(u32(pcm_data.size()), max_pcm);
-        return output.Write(pcm_data.subspan(0, pcm_size));
-    }
+    size_t WriteOutputSamples(SparseOutputBuffer& output, std::span<const s16> pcm);
+    std::span<const s16> GetOuputPcm(u32 skipped_pcm, u32 max_pcm) const;
 
     const AjmFormatEncoding m_format;
     const AjmAacCodecFlags m_flags;
     const u32 m_channels;
-    std::vector<u8> m_pcm_buffer;
+    std::vector<s16> m_pcm_buffer;
+    std::vector<float> m_resample_buffer;
 
     u32 m_skip_frames = 0;
     InitializeParameters m_init_params = {};
