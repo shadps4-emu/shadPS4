@@ -30,13 +30,15 @@ AvPlayerSourceType GetSourceType(std::string_view path) {
     }
 
     // schema://server.domain/path/to/file.ext/and/beyond -> .ext/and/beyond
-    auto ext = name.substr(name.rfind('.'));
-    if (ext.empty()) {
+    
+    // Find extension dot
+    auto dot_pos = name.rfind('.');
+    if (dot_pos == std::string_view::npos) {
         return AvPlayerSourceType::Unknown;
     }
 
-    // .ext/and/beyond -> .ext
-    ext = ext.substr(0, ext.find('/'));
+    // Extract extension (".ext/anything" or ".ext")
+    auto ext = name.substr(dot_pos);
 
     if (iequals(ext, ".mp4") || iequals(ext, ".m4v") || iequals(ext, ".m3d") ||
         iequals(ext, ".m4a") || iequals(ext, ".mov")) {
