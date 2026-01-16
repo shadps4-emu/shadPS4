@@ -382,11 +382,11 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     }
     ASSERT_MSG(remaining_size == 0, "Unable to map physical memory");
 
+    mutex.unlock();
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -524,6 +524,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             handle = MergeAdjacent(fmem_map, new_fmem_handle);
             current_addr += size_to_map;
             remaining_size -= size_to_map;
+            flexible_usage += size_to_map;
             handle++;
         }
     } else if (type == VMAType::Direct) {
@@ -561,25 +562,24 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         MergeAdjacent(vma_map, new_vma_handle);
     }
 
-    if (type == VMAType::Reserved || type == VMAType::PoolReserved) {
-        // For Reserved/PoolReserved mappings, we don't perform any address space allocations.
-        // Just set out_addr to mapped_addr instead.
-        *out_addr = std::bit_cast<void*>(mapped_addr);
-    } else {
+    *out_addr = std::bit_cast<void*>(mapped_addr);
+    if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
+        // Flexible address space mappings were performed while finding direct memory areas.
+        if (type != VMAType::Flexible) {
+            impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
+        }
+        TRACK_ALLOC(*out_addr, size, "VMEM");
+
+        mutex.unlock();
+
         // If this is not a reservation, then map to GPU and address space
         if (IsValidGpuMapping(mapped_addr, size)) {
             rasterizer->MapMemory(mapped_addr, size);
         }
-
-        // Flexible address space mappings were performed while finding direct memory areas.
-        if (type != VMAType::Flexible) {
-            *out_addr = impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
-        }
-
-        TRACK_ALLOC(*out_addr, size, "VMEM");
+    } else {
+        mutex.unlock();
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -688,7 +688,9 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         if (vma_base.type == VMAType::Pooled) {
             // We always map PoolCommitted memory to GPU, so unmap when decomitting.
             if (IsValidGpuMapping(current_addr, size_in_vma)) {
+                mutex.unlock();
                 rasterizer->UnmapMemory(current_addr, size_in_vma);
+                mutex.lock();
             }
 
             // Track how much pooled memory is decommitted
@@ -764,6 +766,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
     const auto start_in_vma = virtual_addr - vma_base.base;
     const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
+    const auto phys_base = vma_base.phys_areas.begin()->second.base;
     const auto vma_type = vma_base.type;
     const bool has_backing = HasPhysicalBacking(vma_base) || vma_base.type == VMAType::File;
     const bool readonly_file =
@@ -776,20 +779,20 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     VAddr current_addr = virtual_addr;
     if (vma_base.phys_areas.size() > 0) {
-        std::vector<std::pair<PAddr, u64>> to_pool;
+        std::vector<std::tuple<PAddr, u64, u64>> to_pool;
         u64 size_to_free = size;
         for (auto& handle : vma_base.phys_areas) {
             if (size_to_free == 0) {
                 break;
             }
-            PAddr phys_addr = std::max<PAddr>(handle.first, virtual_addr);
+            PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
             u64 dma_offset = phys_addr - handle.first;
             u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
-            to_pool.emplace_back(dma_offset, size_in_dma);
+            to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
             size_to_free -= size_in_dma;
         }
 
-        for (auto& [phys_addr, size_in_dma] : to_pool) {
+        for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
             if (vma_base.type == VMAType::Direct) {
                 // Update dmem_map
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
@@ -813,13 +816,12 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
                 std::memset(unmap_hardware_address, 0, size_in_dma);
 
                 // Update flexible usage
-                flexible_usage -= adjusted_size;
+                flexible_usage -= size_in_dma;
             }
 
             // Unmap from address space
-            impl.Unmap(current_addr, size_in_dma, current_addr - vma_base.base,
-                       (current_addr - vma_base.base) + size_in_dma, phys_addr, is_exec, true,
-                       false);
+            impl.Unmap(current_addr, size_in_dma, start_in_dma, start_in_dma + size_in_dma,
+                       phys_addr, is_exec, true, false);
             TRACK_FREE(current_addr, "VMEM");
 
             current_addr += size_in_dma;
@@ -837,17 +839,19 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     MergeAdjacent(vma_map, new_it);
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
-        // If this mapping has GPU access, unmap from GPU.
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
-        }
-
         // Flexible and Direct memory unmap while deallocating physical memory.
         if (vma_type != VMAType::Direct && vma_type != VMAType::Flexible) {
             // Unmap the memory region.
             impl.Unmap(virtual_addr, adjusted_size, start_in_vma, start_in_vma + adjusted_size, 0,
                        is_exec, has_backing, readonly_file);
             TRACK_FREE(virtual_addr, "VMEM");
+        }
+
+        // If this mapping has GPU access, unmap from GPU.
+        if (IsValidGpuMapping(virtual_addr, size)) {
+            mutex.unlock();
+            rasterizer->UnmapMemory(virtual_addr, size);
+            mutex.lock();
         }
     }
     return adjusted_size;
@@ -1370,7 +1374,7 @@ MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, u64 size) {
 
 MemoryManager::PhysHandle MemoryManager::CarvePhysArea(PhysMap& map, PAddr addr, u64 size) {
     auto pmem_handle = std::prev(map.upper_bound(addr));
-    ASSERT_MSG(addr <= pmem_handle->second.GetEnd(), "Physical address not in fmem_map");
+    ASSERT_MSG(addr <= pmem_handle->second.GetEnd(), "Physical address not in map");
 
     const PhysicalMemoryArea& area = pmem_handle->second;
     ASSERT_MSG(area.base <= addr, "Adding an allocation to already allocated region");
