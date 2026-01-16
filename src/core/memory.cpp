@@ -195,6 +195,7 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, 
     if (dmem_area == dmem_map.end()) {
         // There are no suitable mappings in this range
         LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        mutex.unlock();
         return -1;
     }
 
@@ -237,6 +238,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     if (dmem_area == dmem_map.end()) {
         // There are no suitable mappings in this range
         LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
+        mutex.unlock();
         return -1;
     }
 
@@ -316,6 +318,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     if (vma.type != VMAType::PoolReserved) {
         // If we're attempting to commit non-pooled memory, return EINVAL
         LOG_ERROR(Kernel_Vmm, "Attempting to commit non-pooled memory at {:#x}", mapped_addr);
+        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -324,12 +327,14 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         LOG_ERROR(Kernel_Vmm,
                   "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
                   vma.base, vma.base + vma.size, mapped_addr, mapped_addr + size);
+        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (pool_budget <= size) {
         // If there isn't enough pooled memory to perform the mapping, return ENOMEM
         LOG_ERROR(Kernel_Vmm, "Not enough pooled memory to perform mapping");
+        mutex.unlock();
         return ORBIS_KERNEL_ERROR_ENOMEM;
     } else {
         // Track how much pooled memory this commit will take
@@ -411,6 +416,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         if (total_direct_size < phys_addr + size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                       phys_addr);
+            mutex.unlock();
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
@@ -422,6 +428,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                 dmem_area->second.dma_type != PhysicalMemoryType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
+                mutex.unlock();
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
 
@@ -429,6 +436,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             if (validate_dmem && dmem_area->second.dma_type == PhysicalMemoryType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
+                mutex.unlock();
                 return ORBIS_KERNEL_ERROR_EBUSY;
             }
 
@@ -464,6 +472,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         auto remaining_size = vma.base + vma.size - mapped_addr;
         if (!vma.IsFree() || remaining_size < size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, mapped_addr);
+            mutex.unlock();
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
     } else {
@@ -474,6 +483,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         mapped_addr = SearchFree(mapped_addr, size, alignment);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
+            mutex.unlock();
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
     }
@@ -596,6 +606,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         mapped_addr = SearchFree(mapped_addr, size, 1);
         if (mapped_addr == -1) {
             // No suitable memory areas to map to
+            mutex.unlock();
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
     }
@@ -613,11 +624,13 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto file = h->GetFile(fd);
     if (file == nullptr) {
         LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
+        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (file->type != Core::FileSys::FileType::Regular) {
         LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
+        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -670,6 +683,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     while (it != vma_map.end() && it->second.base + it->second.size <= virtual_addr + size) {
         if (it->second.type != VMAType::PoolReserved && it->second.type != VMAType::Pooled) {
             LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
+            mutex.unlock();
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
         it++;
@@ -681,9 +695,9 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     while (remaining_size != 0) {
         const auto it = FindVMA(current_addr);
         const auto& vma_base = it->second;
-        const auto phys_base = vma_base.phys_areas.begin()->second.base;
         const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
         const auto start_in_vma = current_addr - vma_base.base;
+        const auto phys_base = vma_base.phys_areas.begin()->second.base + start_in_vma;
         auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
 
         if (vma_base.type == VMAType::Pooled) {
@@ -705,11 +719,15 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
                     break;
                 }
                 PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
+                if (phys_addr > handle.first + handle.second.size) {
+                    continue;
+                }
                 u64 dma_offset = phys_addr - handle.first;
                 u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
                 to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
                 size_to_free -= size_in_dma;
             }
+            ASSERT_MSG(size_to_free == 0, "Failed to decommit physical memory");
 
             auto dma_addr = current_addr;
             for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
@@ -720,7 +738,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
                 // Unmap from address space
                 impl.Unmap(dma_addr, size_in_dma, start_in_dma, start_in_dma + size_in_dma,
-                           phys_addr, is_exec, true, false);
+                           phys_addr - start_in_dma, is_exec, true, false);
                 TRACK_FREE(dma_addr, "VMEM");
 
                 // Coalesce with nearby direct memory areas.
@@ -749,10 +767,10 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 }
 
 s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
-    mutex.lock();
     if (size == 0) {
         return ORBIS_OK;
     }
+    mutex.lock();
     virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
     size = Common::AlignUp(size, 16_KB);
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
@@ -778,7 +796,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     PAddr phys_base = 0;
     VAddr current_addr = virtual_addr;
     if (vma_base.phys_areas.size() > 0) {
-        phys_base = vma_base.phys_areas.begin()->second.base;
+        phys_base = vma_base.phys_areas.begin()->second.base + start_in_vma;
         std::vector<std::tuple<PAddr, u64, u64>> to_pool;
         u64 size_to_free = size;
         for (auto& handle : vma_base.phys_areas) {
@@ -786,11 +804,15 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
                 break;
             }
             PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
+            if (phys_addr > handle.first + handle.second.size) {
+                continue;
+            }
             u64 dma_offset = phys_addr - handle.first;
             u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
             to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
             size_to_free -= size_in_dma;
         }
+        ASSERT_MSG(size_to_free == 0, "Failed to unmap physical memory");
 
         for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
             if (vma_base.type == VMAType::Direct) {
@@ -801,6 +823,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
+
+                // Unmap from address space
+                impl.Unmap(vma_base.base, vma_base.size, start_in_dma, start_in_dma + size_in_dma,
+                           phys_addr - start_in_dma, is_exec, true, false);
             }
             if (vma_base.type == VMAType::Flexible) {
                 // Update fmem_map
@@ -817,13 +843,17 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
                 // Update flexible usage
                 flexible_usage -= size_in_dma;
+
+                // Get physical mapping size
+                u64 size = vma_base.phys_areas[phys_addr - start_in_dma].size;
+
+                // Unmap from address space
+                impl.Unmap(current_addr - start_in_dma, size, start_in_dma,
+                           start_in_dma + size_in_dma, phys_addr - start_in_dma, is_exec, true,
+                           false);
             }
 
-            // Unmap from address space
-            impl.Unmap(current_addr, size_in_dma, start_in_dma, start_in_dma + size_in_dma,
-                       phys_addr, is_exec, true, false);
             TRACK_FREE(current_addr, "VMEM");
-
             current_addr += size_in_dma;
         }
     }
@@ -1027,6 +1057,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     info->memory_type = 0;
     if (vma.type == VMAType::Direct) {
         // Offset is only assigned for direct mappings.
+        ASSERT_MSG(vma.phys_areas.size() > 0, "No physical backing for direct mapping?");
         info->offset = vma.phys_areas.begin()->second.base;
     }
     if (vma.type == VMAType::Reserved || vma.type == VMAType::PoolReserved) {
@@ -1216,6 +1247,7 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
+    mutex.lock_shared();
     const auto& dmem_area = FindDmemArea(addr)->second;
     if (dmem_area.dma_type == PhysicalMemoryType::Free) {
         LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
@@ -1225,11 +1257,13 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
     *directMemoryStartOut = reinterpret_cast<void*>(dmem_area.base);
     *directMemoryEndOut = reinterpret_cast<void*>(dmem_area.GetEnd());
     *directMemoryTypeOut = dmem_area.memory_type;
+    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
+    mutex.lock_shared();
     const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
         return ORBIS_KERNEL_ERROR_EACCES;
@@ -1250,6 +1284,7 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
         *end = reinterpret_cast<void*>(stack_end);
     }
 
+    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
