@@ -32,8 +32,6 @@
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
-#include "core/libraries/font/font.h"
-#include "core/libraries/font/fontft.h"
 #include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libs.h"
@@ -531,11 +529,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
-         {"libSceCesCs.sprx", nullptr},
-         {"libSceAudiodec.sprx", nullptr},
-         {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-         {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-         {"libSceFreeTypeOt.sprx", nullptr}});
+         {"libSceCesCs.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Config::getSysModulesPath();

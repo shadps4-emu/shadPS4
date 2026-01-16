@@ -239,6 +239,9 @@ void setSysModulesPath(const std::filesystem::path& path) {
 }
 
 std::filesystem::path getSysFontPath() {
+    if (sys_font_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::FontDir);
+    }
     return sys_font_path;
 }
 
@@ -502,7 +505,7 @@ void setShowFpsCounter(bool enable, bool is_game_specific) {
     showFpsCounter.set(enable, is_game_specific);
 }
 
-bool isLoggingEnabled() {
+static bool isLoggingEnabled() {
     return logEnabled.get();
 }
 
@@ -1088,7 +1091,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     }
 }
 
-void sortTomlSections(toml::ordered_value& data) {
+static void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
     std::vector<string> section_order = {"General", "Input", "Audio", "GPU",     "Vulkan",
                                          "Debug",   "Keys",  "GUI",   "Settings"};
@@ -1401,7 +1404,7 @@ hotkey_quit = lctrl, lshift, end
 )";
 }
 
-constexpr std::string_view GetDefaultInputConfig() {
+static constexpr std::string_view GetDefaultInputConfig() {
     return R"(#Feeling lost? Check out the Help section!
 
 # Keyboard bindings

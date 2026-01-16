@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "font_internal.h"
@@ -10,6 +10,7 @@
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
+#include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 
 namespace Libraries::Font::Internal {
@@ -1559,7 +1560,7 @@ static std::optional<std::filesystem::path> FindChildDirContainingFile(
 }
 
 std::filesystem::path GetSysFontBaseDir() {
-    std::filesystem::path base = Config::getSysFontPath();
+    std::filesystem::path base = EmulatorSettings::GetInstance()->GetSysFontsDir();
     std::error_code ec;
     if (base.empty()) {
         LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath not set");
@@ -1992,7 +1993,7 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     }
     if (!st.system_requested) {
         st.system_requested = true;
-        const auto configured = Config::getSysFontPath();
+        const auto configured = EmulatorSettings::GetInstance()->GetSysFontsDir();
         return fmt::format("SystemFace: handle={} requested internal font but sysFontPath ('{}') "
                            "could not be loaded",
                            static_cast<const void*>(handle), configured.string());
