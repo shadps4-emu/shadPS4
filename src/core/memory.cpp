@@ -681,6 +681,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     while (remaining_size != 0) {
         const auto it = FindVMA(current_addr);
         const auto& vma_base = it->second;
+        const auto phys_base = vma_base.phys_areas.begin()->second.base;
         const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
         const auto start_in_vma = current_addr - vma_base.base;
         auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
@@ -697,37 +698,35 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             pool_budget += size_in_vma;
 
             // Re-pool the direct memory used by this mapping
-            std::vector<std::pair<PAddr, u64>> to_pool;
+            std::vector<std::tuple<PAddr, u64, u64>> to_pool;
             u64 size_to_free = size_in_vma;
             for (auto& handle : vma_base.phys_areas) {
                 if (size_to_free == 0) {
                     break;
                 }
-                PAddr phys_addr = std::max<PAddr>(handle.first, current_addr);
+                PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
                 u64 dma_offset = phys_addr - handle.first;
                 u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
-                to_pool.emplace_back(dma_offset, size_in_dma);
+                to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
                 size_to_free -= size_in_dma;
             }
 
-            for (auto& [phys_addr, size_in_dma] : to_pool) {
+            auto dma_addr = current_addr;
+            for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
                 // Update dmem_map
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
                 auto& new_dmem_area = new_dmem_handle->second;
                 new_dmem_area.dma_type = PhysicalMemoryType::Pooled;
 
                 // Unmap from address space
-                impl.Unmap(current_addr, size_in_dma, current_addr - vma_base.base,
-                           (current_addr - vma_base.base) + size_in_dma, phys_addr, is_exec, true,
-                           false);
-                TRACK_FREE(current_addr, "VMEM");
+                impl.Unmap(dma_addr, size_in_dma, start_in_dma, start_in_dma + size_in_dma,
+                           phys_addr, is_exec, true, false);
+                TRACK_FREE(dma_addr, "VMEM");
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
 
-                current_addr += size_in_dma;
-                remaining_size -= size_in_dma;
-                size_in_vma -= size_in_dma;
+                dma_addr += size_in_dma;
             }
         }
 
@@ -766,7 +765,6 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
     const auto start_in_vma = virtual_addr - vma_base.base;
     const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
-    const auto phys_base = vma_base.phys_areas.begin()->second.base;
     const auto vma_type = vma_base.type;
     const bool has_backing = HasPhysicalBacking(vma_base) || vma_base.type == VMAType::File;
     const bool readonly_file =
@@ -777,8 +775,10 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
         return adjusted_size;
     }
 
+    PAddr phys_base = 0;
     VAddr current_addr = virtual_addr;
     if (vma_base.phys_areas.size() > 0) {
+        phys_base = vma_base.phys_areas.begin()->second.base;
         std::vector<std::tuple<PAddr, u64, u64>> to_pool;
         u64 size_to_free = size;
         for (auto& handle : vma_base.phys_areas) {
