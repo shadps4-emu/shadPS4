@@ -25,7 +25,7 @@ enum class PathType {
     CustomTrophy,   // Where custom files for trophies are stored.
     CustomConfigs,  // Where custom files for different games are stored.
     CacheDir,       // Where pipeline and shader cache is stored.
-    FontDir         // Where font files are stored.
+    FontDir,        // Where system font files are stored.
 };
 
 constexpr auto PORTABLE_DIR = "user";

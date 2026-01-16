@@ -129,7 +129,6 @@ static auto UserPaths = [] {
     create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
     create_path(PathType::CacheDir, user_dir / CACHE_DIR);
     create_path(PathType::FontDir, user_dir / SYSFONTS_DIR);
-    // subdirectory for fonts
     std::filesystem::create_directory(user_dir / SYSFONTS_DIR / "font");
     std::filesystem::create_directory(user_dir / SYSFONTS_DIR / "font2");
 
@@ -148,11 +147,15 @@ static auto UserPaths = [] {
         notice_file.close();
     }
 
-    std::ofstream font_instructions(user_dir / SYSFONTS_DIR / "Instructions.txt");
-    if (font_instructions.is_open()) {
-        font_instructions << "Place /preinst/common/font contents into font folder\n"
-                             "Place /system/common/font2 contents into font2 folder\n";
-        font_instructions.close();
+    const auto instructions_path = user_dir / SYSFONTS_DIR / "Instructions.txt";
+    std::error_code ec;
+    if (!std::filesystem::exists(instructions_path, ec)) {
+        std::ofstream font_instructions(instructions_path);
+        if (font_instructions.is_open()) {
+            font_instructions << "Place system font files (.otf/.ttf) into the 'font' and 'font2' "
+                                 "folders.\n";
+            font_instructions.close();
+        }
     }
 
     return paths;
