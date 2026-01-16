@@ -29,6 +29,10 @@ std::unordered_map<Libraries::Font::OrbisFontHandle, FontState> g_font_state;
 
 std::unordered_map<Libraries::Font::OrbisFontLib, LibraryState> g_library_state;
 
+namespace {
+std::mutex g_state_mutex;
+} // namespace
+
 std::unordered_map<Libraries::Font::OrbisFontRenderSurface*,
                    const Libraries::Font::OrbisFontStyleFrame*>
     g_style_for_surface;
@@ -80,9 +84,13 @@ FT_Face CreateFreeTypeFaceFromBytes(const unsigned char* data, std::size_t size,
     FT_Face face = nullptr;
     if (FT_New_Memory_Face(lib, reinterpret_cast<const FT_Byte*>(data), static_cast<FT_Long>(size),
                            static_cast<FT_Long>(subfont_index), &face) != 0) {
+        LOG_DEBUG(Lib_Font, "CreateFreeTypeFaceFromBytes: failed size={} subfont_index={}", size,
+                  subfont_index);
         return nullptr;
     }
     (void)FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+    LOG_DEBUG(Lib_Font, "CreateFreeTypeFaceFromBytes: ok face={} size={} subfont_index={}",
+              reinterpret_cast<const void*>(face), size, subfont_index);
     return face;
 }
 
@@ -483,23 +491,35 @@ u16 ClampToU16(float value) {
 }
 
 FontState& GetState(Libraries::Font::OrbisFontHandle h) {
+    std::scoped_lock lock(g_state_mutex);
     return g_font_state[h];
 }
 
 FontState* TryGetState(Libraries::Font::OrbisFontHandle h) {
     if (!h)
         return nullptr;
+    std::scoped_lock lock(g_state_mutex);
     auto it = g_font_state.find(h);
     if (it == g_font_state.end())
         return nullptr;
     return &it->second;
 }
 
+void RemoveState(Libraries::Font::OrbisFontHandle h) {
+    if (!h) {
+        return;
+    }
+    std::scoped_lock lock(g_state_mutex);
+    g_font_state.erase(h);
+}
+
 LibraryState& GetLibState(Libraries::Font::OrbisFontLib lib) {
+    std::scoped_lock lock(g_state_mutex);
     return g_library_state[lib];
 }
 
 void RemoveLibState(Libraries::Font::OrbisFontLib lib) {
+    std::scoped_lock lock(g_state_mutex);
     if (auto it = g_library_state.find(lib); it != g_library_state.end()) {
         if (it->second.owned_device_cache) {
             delete[] static_cast<std::uint8_t*>(it->second.owned_device_cache);

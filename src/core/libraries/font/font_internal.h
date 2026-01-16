@@ -55,9 +55,6 @@ std::string DescribeValue(const T& value) {
     if constexpr (std::is_same_v<Clean, bool>) {
         return value ? "true" : "false";
     } else if constexpr (std::is_pointer_v<Clean>) {
-        if constexpr (std::is_same_v<Clean, const char*> || std::is_same_v<Clean, char*>) {
-            return value ? fmt::format("\"{}\"", value) : "(null)";
-        }
         return fmt::format("{}", reinterpret_cast<const void*>(value));
     } else if constexpr (std::is_floating_point_v<Clean>) {
         return fmt::format("{:.6g}", value);
@@ -705,6 +702,7 @@ extern u32 g_device_cache_stub;
 
 FontState& GetState(Libraries::Font::OrbisFontHandle h);
 FontState* TryGetState(Libraries::Font::OrbisFontHandle h);
+void RemoveState(Libraries::Font::OrbisFontHandle h);
 LibraryState& GetLibState(Libraries::Font::OrbisFontLib lib);
 void RemoveLibState(Libraries::Font::OrbisFontLib lib);
 FT_Face CreateFreeTypeFaceFromBytes(const unsigned char* data, std::size_t size, u32 subfont_index);

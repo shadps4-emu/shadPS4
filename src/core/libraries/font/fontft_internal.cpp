@@ -30,6 +30,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/font/font_internal.h"
 #include "core/libraries/kernel/kernel.h"
+#include "core/tls.h"
 #include "font_error.h"
 
 namespace Libraries::Font::Internal {
@@ -2643,7 +2644,8 @@ static void* FtAlloc(FT_Memory memory, long size) {
     }
     using AllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
     const auto alloc_fn = reinterpret_cast<AllocFn>(ctx->alloc_vtbl[0]);
-    return alloc_fn ? alloc_fn(ctx->alloc_ctx, static_cast<u32>(size)) : nullptr;
+    return alloc_fn ? Core::ExecuteGuest(alloc_fn, ctx->alloc_ctx, static_cast<u32>(size))
+                    : nullptr;
 }
 
 static void FtFree(FT_Memory memory, void* block) {
@@ -2657,7 +2659,7 @@ static void FtFree(FT_Memory memory, void* block) {
     using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
     const auto free_fn = reinterpret_cast<FreeFn>(ctx->alloc_vtbl[1]);
     if (free_fn) {
-        free_fn(ctx->alloc_ctx, block);
+        Core::ExecuteGuest(free_fn, ctx->alloc_ctx, block);
     }
 }
 
@@ -2672,7 +2674,7 @@ static void* FtRealloc(FT_Memory memory, long cur_size, long new_size, void* blo
     using ReallocFn = void*(PS4_SYSV_ABI*)(void* object, void* p, u32 size);
     const auto realloc_fn = reinterpret_cast<ReallocFn>(ctx->alloc_vtbl[2]);
     if (realloc_fn) {
-        return realloc_fn(ctx->alloc_ctx, block, static_cast<u32>(new_size));
+        return Core::ExecuteGuest(realloc_fn, ctx->alloc_ctx, block, static_cast<u32>(new_size));
     }
 
     if (new_size <= 0) {
@@ -2718,7 +2720,8 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
     void** alloc_vtbl =
         reinterpret_cast<void**>(const_cast<Libraries::Font::OrbisFontMemInterface*>(mem->iface));
 
-    auto* ctx = static_cast<FtLibraryCtx*>(alloc_fn(alloc_ctx, sizeof(FtLibraryCtx)));
+    auto* ctx =
+        static_cast<FtLibraryCtx*>(Core::ExecuteGuest(alloc_fn, alloc_ctx, sizeof(FtLibraryCtx)));
     if (!ctx) {
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
@@ -2726,9 +2729,10 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
     ctx->alloc_ctx = alloc_ctx;
     ctx->alloc_vtbl = alloc_vtbl;
 
-    FT_Memory ft_mem = static_cast<FT_Memory>(alloc_fn(alloc_ctx, sizeof(FT_MemoryRec_)));
+    FT_Memory ft_mem =
+        static_cast<FT_Memory>(Core::ExecuteGuest(alloc_fn, alloc_ctx, sizeof(FT_MemoryRec_)));
     if (!ft_mem) {
-        free_fn(alloc_ctx, ctx);
+        Core::ExecuteGuest(free_fn, alloc_ctx, ctx);
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
     std::memset(ft_mem, 0, sizeof(*ft_mem));
@@ -2741,8 +2745,8 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
     FT_Library ft_lib = nullptr;
     const FT_Error ft_err = FT_New_Library(ft_mem, &ft_lib);
     if (ft_err != 0 || !ft_lib) {
-        free_fn(alloc_ctx, ft_mem);
-        free_fn(alloc_ctx, ctx);
+        Core::ExecuteGuest(free_fn, alloc_ctx, ft_mem);
+        Core::ExecuteGuest(free_fn, alloc_ctx, ctx);
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
     FT_Add_Default_Modules(ft_lib);
@@ -2812,10 +2816,10 @@ s32 PS4_SYSV_ABI LibraryTermStub(void* library) {
         ctx->ft_lib = nullptr;
     }
     if (ctx->ft_memory) {
-        free_fn(alloc_ctx, ctx->ft_memory);
+        Core::ExecuteGuest(free_fn, alloc_ctx, ctx->ft_memory);
         ctx->ft_memory = nullptr;
     }
-    free_fn(alloc_ctx, ctx);
+    Core::ExecuteGuest(free_fn, alloc_ctx, ctx);
     lib->fontset_registry = nullptr;
     return ORBIS_OK;
 }
@@ -2888,21 +2892,8 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     const u8* data = nullptr;
     u32 size = 0;
     void* owned_data = nullptr;
-
-    auto assign_from_bytes = [&](std::vector<u8>&& bytes) -> s32 {
-        if (bytes.empty() || bytes.size() > std::numeric_limits<u32>::max()) {
-            return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
-        }
-
-        owned_data = alloc_fn(alloc_ctx, static_cast<u32>(bytes.size()));
-        if (!owned_data) {
-            return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
-        }
-        std::memcpy(owned_data, bytes.data(), bytes.size());
-        data = static_cast<const u8*>(owned_data);
-        size = static_cast<u32>(bytes.size());
-        return ORBIS_OK;
-    };
+    std::string open_path;
+    std::filesystem::path host_path_fs{};
 
     if (mode == 1) {
         if (fontSize == 0) {
@@ -2916,52 +2907,13 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }
 
-        std::string open_path = path;
-        std::filesystem::path host_path_fs{};
+        open_path = path;
         if (path[0] == '/') {
             auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
             host_path_fs = mnt ? mnt->GetHostPath(path) : std::filesystem::path{};
             if (!host_path_fs.empty()) {
                 open_path = host_path_fs.string();
             }
-        }
-
-        std::ifstream file(open_path, std::ios::binary | std::ios::ate);
-        if (!file && !host_path_fs.empty()) {
-            const auto sysfonts_dir = host_path_fs.parent_path();
-            const auto ps4_name = host_path_fs.filename().string();
-            const std::filesystem::path file_path{ps4_name};
-            const auto in_font_dir = sysfonts_dir / "font" / file_path;
-            const auto in_font2_dir = sysfonts_dir / "font2" / file_path;
-            std::error_code ec;
-            if (std::filesystem::exists(in_font_dir, ec)) {
-                open_path = in_font_dir.string();
-                file = std::ifstream(open_path, std::ios::binary | std::ios::ate);
-            } else if (std::filesystem::exists(in_font2_dir, ec)) {
-                open_path = in_font2_dir.string();
-                file = std::ifstream(open_path, std::ios::binary | std::ios::ate);
-            } else if (const auto alias = ResolveKnownSysFontAlias(sysfonts_dir, ps4_name)) {
-                open_path = alias->string();
-                file = std::ifstream(open_path, std::ios::binary | std::ios::ate);
-            }
-        }
-        if (!file) {
-            return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
-        }
-        const std::streamoff fsize = file.tellg();
-        if (fsize <= 0 || static_cast<std::uint64_t>(fsize) > std::numeric_limits<u32>::max()) {
-            return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
-        }
-        file.seekg(0, std::ios::beg);
-
-        std::vector<u8> bytes(static_cast<std::size_t>(fsize));
-        if (!file.read(reinterpret_cast<char*>(bytes.data()),
-                       static_cast<std::streamsize>(bytes.size()))) {
-            return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
-        }
-        const s32 store_rc = assign_from_bytes(std::move(bytes));
-        if (store_rc != ORBIS_OK) {
-            return store_rc;
         }
     } else {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
@@ -2970,29 +2922,76 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     auto* ctx = static_cast<FtLibraryCtx*>(lib->fontset_registry);
     if (!ctx || !ctx->ft_lib) {
         if (owned_data) {
-            free_fn(alloc_ctx, owned_data);
+            Core::ExecuteGuest(free_fn, alloc_ctx, owned_data);
         }
         return ORBIS_FONT_ERROR_INVALID_LIBRARY;
     }
 
     FT_Face face = nullptr;
-    const FT_Error ft_err =
-        FT_New_Memory_Face(ctx->ft_lib, reinterpret_cast<const FT_Byte*>(data),
-                           static_cast<FT_Long>(size), static_cast<FT_Long>(subFontIndex), &face);
+    FT_Error ft_err = 0;
+    if (mode == 1) {
+        ft_err = FT_New_Memory_Face(ctx->ft_lib, reinterpret_cast<const FT_Byte*>(data),
+                                    static_cast<FT_Long>(size), static_cast<FT_Long>(subFontIndex),
+                                    &face);
+    } else {
+        std::vector<std::string> candidates;
+        candidates.emplace_back(open_path);
+
+        if (!host_path_fs.empty()) {
+            const auto sysfonts_dir = host_path_fs.parent_path();
+            const auto ps4_name = host_path_fs.filename().string();
+            const std::filesystem::path file_path{ps4_name};
+            candidates.emplace_back((sysfonts_dir / "font" / file_path).string());
+            candidates.emplace_back((sysfonts_dir / "font2" / file_path).string());
+            if (const auto alias = ResolveKnownSysFontAlias(sysfonts_dir, ps4_name)) {
+                candidates.emplace_back(alias->string());
+            }
+        }
+
+        std::error_code ec;
+        FT_Error last_ft_err = 0;
+        bool attempted_open = false;
+        for (const auto& cand : candidates) {
+            if (cand.empty()) {
+                continue;
+            }
+            if (!std::filesystem::exists(std::filesystem::path{cand}, ec) || ec) {
+                continue;
+            }
+            attempted_open = true;
+            ft_err =
+                FT_New_Face(ctx->ft_lib, cand.c_str(), static_cast<FT_Long>(subFontIndex), &face);
+            last_ft_err = ft_err;
+            if (ft_err == 0 && face) {
+                break;
+            }
+        }
+        if (ft_err != 0) {
+            ft_err = last_ft_err;
+        } else if (!attempted_open) {
+            ft_err = FT_Err_Cannot_Open_Resource;
+        }
+    }
     if (ft_err != 0 || !face) {
         if (owned_data) {
-            free_fn(alloc_ctx, owned_data);
+            Core::ExecuteGuest(free_fn, alloc_ctx, owned_data);
         }
-        return ORBIS_FONT_ERROR_NO_SUPPORT_FORMAT;
+        if (mode == 1) {
+            return ORBIS_FONT_ERROR_NO_SUPPORT_FORMAT;
+        }
+        if (ft_err == FT_Err_Unknown_File_Format) {
+            return ORBIS_FONT_ERROR_NO_SUPPORT_FORMAT;
+        }
+        return ORBIS_FONT_ERROR_FS_OPEN_FAILED;
     }
 
     (void)FT_Select_Charmap(face, FT_ENCODING_UNICODE);
 
-    auto* obj = static_cast<FontObj*>(alloc_fn(alloc_ctx, sizeof(FontObj)));
+    auto* obj = static_cast<FontObj*>(Core::ExecuteGuest(alloc_fn, alloc_ctx, sizeof(FontObj)));
     if (!obj) {
         FT_Done_Face(face);
         if (owned_data) {
-            free_fn(alloc_ctx, owned_data);
+            Core::ExecuteGuest(free_fn, alloc_ctx, owned_data);
         }
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
@@ -3017,7 +3016,9 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     sidecar.font_data = data;
     sidecar.font_size = size;
     sidecar.owned_data = owned_data;
-    (void)ResolveSfntBaseOffset(data, size, subFontIndex, sidecar.sfnt_base);
+    if (mode == 1) {
+        (void)ResolveSfntBaseOffset(data, size, subFontIndex, sidecar.sfnt_base);
+    }
     SetFontObjSidecar(obj, std::move(sidecar));
 
     *inoutFontObj = obj;
@@ -3054,7 +3055,7 @@ s32 PS4_SYSV_ABI LibraryCloseFontObjStub(void* fontObj, u32 /*flags*/) {
         obj->ft_face = nullptr;
     }
     if (owned_data && free_fn) {
-        free_fn(ctx->alloc_ctx, owned_data);
+        Core::ExecuteGuest(free_fn, ctx->alloc_ctx, owned_data);
     }
     if (free_fn) {
         FontObj* next = obj->next;
@@ -3065,7 +3066,7 @@ s32 PS4_SYSV_ABI LibraryCloseFontObjStub(void* fontObj, u32 /*flags*/) {
         } else {
             obj->prev->next = next;
         }
-        free_fn(ctx->alloc_ctx, obj);
+        Core::ExecuteGuest(free_fn, ctx->alloc_ctx, obj);
         return ORBIS_OK;
     }
     return ORBIS_FONT_ERROR_FATAL;
