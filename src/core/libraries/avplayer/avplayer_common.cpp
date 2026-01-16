@@ -43,6 +43,7 @@ AvPlayerSourceType GetSourceType(std::string_view path) {
         return AvPlayerSourceType::Unknown;
     }
 
+    // .ext/and/beyond -> .ext
     ext = ext.substr(0, ext.find('/'));
 
     if (iequals(ext, ".mp4") || iequals(ext, ".m4v") || iequals(ext, ".m3d") ||
