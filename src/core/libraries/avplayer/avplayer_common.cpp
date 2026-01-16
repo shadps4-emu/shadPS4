@@ -43,12 +43,7 @@ AvPlayerSourceType GetSourceType(std::string_view path) {
         return AvPlayerSourceType::Unknown;
     }
 
-    auto slash_pos = ext.find('/');
-    if (slash_pos != std::string_view::npos) {
-        ext = ext.substr(0, slash_pos);
-    } else {
-        return AvPlayerSourceType::Unknown;
-    }
+    ext = ext.substr(0, ext.find('/'));
 
     if (iequals(ext, ".mp4") || iequals(ext, ".m4v") || iequals(ext, ".m3d") ||
         iequals(ext, ".m4a") || iequals(ext, ".mov")) {
