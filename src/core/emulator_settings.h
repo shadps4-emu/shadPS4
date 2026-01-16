@@ -82,7 +82,7 @@ struct DebugSettings {
         return std::vector<OverrideItem>{};
     }
 };
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings)
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings)
 
 // -------------------------------
 // Input settings
@@ -93,7 +93,7 @@ struct InputSettings {
         return std::vector<OverrideItem>{};
     }
 };
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings)
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings)
 
 // -------------------------------
 // Audio settings
@@ -104,7 +104,7 @@ struct AudioSettings {
     }
 };
 
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings)
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings)
 
 // -------------------------------
 // GPU settings
@@ -114,16 +114,16 @@ struct GPUSettings {
         return std::vector<OverrideItem>{};
     }
 };
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings)
-// -------------------------------
-// Vulkan settings
-// -------------------------------
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings)
+//  -------------------------------
+//  Vulkan settings
+//  -------------------------------
 struct VulkanSettings {
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{};
     }
 };
-//NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings)
+// NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings)
 
 // -------------------------------
 // Main manager
