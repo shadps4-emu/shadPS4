@@ -10,7 +10,6 @@
 #include FT_OUTLINE_H
 #include FT_TRUETYPE_TABLES_H
 
-#include "core/emulator_settings.h"
 #include "core/libraries/font/fontft_internal.h"
 
 namespace Libraries::Font::Internal {
@@ -1560,7 +1559,7 @@ static std::optional<std::filesystem::path> FindChildDirContainingFile(
 }
 
 std::filesystem::path GetSysFontBaseDir() {
-    std::filesystem::path base = EmulatorSettings::GetInstance()->GetSysFontsDir();
+    std::filesystem::path base = Config::getSysFontPath();
     std::error_code ec;
     if (base.empty()) {
         LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath not set");
@@ -1572,9 +1571,11 @@ std::filesystem::path GetSysFontBaseDir() {
         }
 
         {
-            const auto preferred = base / "font";
-            if (DirectoryContainsAnyFontFiles(preferred)) {
-                return preferred;
+            const auto font_dir = base / "font";
+            const auto font2_dir = base / "font2";
+            if (DirectoryContainsAnyFontFiles(font_dir) ||
+                DirectoryContainsAnyFontFiles(font2_dir)) {
+                return base;
             }
         }
 
@@ -1993,7 +1994,7 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     }
     if (!st.system_requested) {
         st.system_requested = true;
-        const auto configured = EmulatorSettings::GetInstance()->GetSysFontsDir();
+        const auto configured = Config::getSysFontPath();
         return fmt::format("SystemFace: handle={} requested internal font but sysFontPath ('{}') "
                            "could not be loaded",
                            static_cast<const void*>(handle), configured.string());
