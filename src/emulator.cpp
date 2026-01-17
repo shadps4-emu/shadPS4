@@ -529,7 +529,8 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
-         {"libSceCesCs.sprx", nullptr}});
+         {"libSceCesCs.sprx", nullptr},
+         {"libSceAudiodec.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Config::getSysModulesPath();
