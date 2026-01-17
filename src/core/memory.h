@@ -140,10 +140,6 @@ struct VirtualMemoryArea {
             return false;
         }
 
-        for (auto& phys_area : next.phys_areas) {
-            phys_areas[phys_area.first] = phys_area.second;
-        }
-        next.phys_areas.clear();
         return true;
     }
 };
@@ -294,32 +290,16 @@ private:
         return std::prev(fmem_map.upper_bound(target));
     }
 
-    template <typename Handle>
-    Handle MergeAdjacent(auto& handle_map, Handle iter) {
-        const auto next_vma = std::next(iter);
-        if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
-            iter->second.size += next_vma->second.size;
-            handle_map.erase(next_vma);
-        }
-
-        if (iter != handle_map.begin()) {
-            auto prev_vma = std::prev(iter);
-            if (prev_vma->second.CanMergeWith(iter->second)) {
-                prev_vma->second.size += iter->second.size;
-                handle_map.erase(iter);
-                iter = prev_vma;
-            }
-        }
-
-        return iter;
-    }
-
     bool HasPhysicalBacking(VirtualMemoryArea vma) {
         return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
                vma.type == VMAType::Pooled;
     }
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
+
+    VMAHandle MergeAdjacent(VMAMap& map, VMAHandle iter);
+
+    PhysHandle MergeAdjacent(PhysMap& map, PhysHandle iter);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 

@@ -697,7 +697,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         const auto& vma_base = it->second;
         const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
         const auto start_in_vma = current_addr - vma_base.base;
-        const auto phys_base = vma_base.phys_areas.begin()->second.base + start_in_vma;
         auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
 
         if (vma_base.type == VMAType::Pooled) {
@@ -714,14 +713,16 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             // Re-pool the direct memory used by this mapping
             std::vector<std::tuple<PAddr, u64, u64>> to_pool;
             u64 size_to_free = size_in_vma;
+            u64 size_to_skip = start_in_vma;
             for (auto& handle : vma_base.phys_areas) {
+                if (size_to_skip > handle.second.size) {
+                    size_to_skip -= handle.second.size;
+                    continue;
+                }
                 if (size_to_free == 0) {
                     break;
                 }
-                PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
-                if (phys_addr > handle.first + handle.second.size) {
-                    continue;
-                }
+                PAddr phys_addr = handle.first + size_to_skip;
                 u64 dma_offset = phys_addr - handle.first;
                 u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
                 to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
@@ -801,14 +802,18 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     PAddr phys_base = 0;
     VAddr current_addr = virtual_addr;
     if (vma_base.phys_areas.size() > 0) {
-        phys_base = vma_base.phys_areas.begin()->second.base + start_in_vma;
         std::vector<std::tuple<PAddr, u64, u64>> to_pool;
         u64 size_to_free = adjusted_size;
+        u64 size_to_skip = start_in_vma;
         for (auto& handle : vma_base.phys_areas) {
+            if (size_to_skip > handle.second.size) {
+                size_to_skip -= handle.second.size;
+                continue;
+            }
             if (size_to_free == 0) {
                 break;
             }
-            PAddr phys_addr = std::max<PAddr>(handle.first, phys_base);
+            PAddr phys_addr = handle.first + size_to_skip;
             if (phys_addr > handle.first + handle.second.size) {
                 continue;
             }
@@ -1382,6 +1387,50 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     LOG_ERROR(Kernel_Vmm, "Couldn't find a free mapping for address {:#x}, size {:#x}",
               virtual_addr, size);
     return -1;
+}
+
+MemoryManager::VMAHandle MemoryManager::MergeAdjacent(VMAMap& handle_map, VMAHandle iter) {
+    const auto next_vma = std::next(iter);
+    if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
+        iter->second.size += next_vma->second.size;
+        for (auto& area : next_vma->second.phys_areas) {
+            iter->second.phys_areas[area.first] = area.second;
+        }
+        handle_map.erase(next_vma);
+    }
+
+    if (iter != handle_map.begin()) {
+        auto prev_vma = std::prev(iter);
+        if (prev_vma->second.CanMergeWith(iter->second)) {
+            prev_vma->second.size += iter->second.size;
+            for (auto& area : iter->second.phys_areas) {
+                prev_vma->second.phys_areas[area.first] = area.second;
+            }
+            handle_map.erase(iter);
+            iter = prev_vma;
+        }
+    }
+
+    return iter;
+}
+
+MemoryManager::PhysHandle MemoryManager::MergeAdjacent(PhysMap& handle_map, PhysHandle iter) {
+    const auto next_vma = std::next(iter);
+    if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
+        iter->second.size += next_vma->second.size;
+        handle_map.erase(next_vma);
+    }
+
+    if (iter != handle_map.begin()) {
+        auto prev_vma = std::prev(iter);
+        if (prev_vma->second.CanMergeWith(iter->second)) {
+            prev_vma->second.size += iter->second.size;
+            handle_map.erase(iter);
+            iter = prev_vma;
+        }
+    }
+
+    return iter;
 }
 
 MemoryManager::VMAHandle MemoryManager::CarveVMA(VAddr virtual_addr, u64 size) {
