@@ -697,7 +697,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         const auto& vma_base = it->second;
         const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
         const auto start_in_vma = current_addr - vma_base.base;
-        auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
+        const auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
 
         if (vma_base.type == VMAType::Pooled) {
             // We always map PoolCommitted memory to GPU, so unmap when decomitting.
