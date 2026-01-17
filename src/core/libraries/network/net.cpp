@@ -658,7 +658,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             auto native_handle = file->socket->Native();
             if (!native_handle) {
                 // P2P socket, cannot be added to epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be added to epoll");
+                LOG_ERROR(Lib_Net, "P2P socket cannot be added to epoll (unimplemented)");
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
@@ -706,7 +706,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             auto native_handle = file->socket->Native();
             if (!native_handle) {
                 // P2P socket, cannot be modified in epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be modified in epoll");
+                LOG_ERROR(Lib_Net, "P2P socket cannot be modified in epoll (unimplemented)");
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
@@ -748,7 +748,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             auto native_handle = file->socket->Native();
             if (!native_handle) {
                 // P2P socket, cannot be removed from epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be removed from epoll");
+                LOG_ERROR(Lib_Net, "P2P socket cannot be removed from epoll (unimplemented)");
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
