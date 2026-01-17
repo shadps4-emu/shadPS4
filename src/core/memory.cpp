@@ -731,13 +731,18 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
             auto dma_addr = current_addr;
             for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
+                // Get addresses relevant to the physical mapping
+                const auto mapping_start = dma_addr - start_in_dma;
+                const auto mapping_size = vma_base.phys_areas.at(phys_addr - start_in_dma).size;
+                const auto end_in_dma = start_in_dma + size_in_dma;
+
                 // Update dmem_map
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
                 auto& new_dmem_area = new_dmem_handle->second;
                 new_dmem_area.dma_type = PhysicalMemoryType::Pooled;
 
                 // Unmap from address space
-                impl.Unmap(dma_addr, size_in_dma, start_in_dma, start_in_dma + size_in_dma,
+                impl.Unmap(mapping_start, mapping_size, start_in_dma, end_in_dma,
                            phys_addr - start_in_dma, is_exec, true, false);
                 TRACK_FREE(dma_addr, "VMEM");
 
@@ -798,7 +803,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (vma_base.phys_areas.size() > 0) {
         phys_base = vma_base.phys_areas.begin()->second.base + start_in_vma;
         std::vector<std::tuple<PAddr, u64, u64>> to_pool;
-        u64 size_to_free = size;
+        u64 size_to_free = adjusted_size;
         for (auto& handle : vma_base.phys_areas) {
             if (size_to_free == 0) {
                 break;
@@ -1444,27 +1449,29 @@ MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_i
         // Update physical areas map for both areas
         new_vma.phys_areas.clear();
 
-        for (auto& phys_area : old_vma.phys_areas) {
-            if (phys_area.first < new_vma.base &&
-                phys_area.first + phys_area.second.size > new_vma.base) {
-                // Physical memory area needs to be split
-                u64 old_size = phys_area.second.size;
-                phys_area.second.size = old_vma.base + old_vma.size - phys_area.first;
-
-                // Create a new physical memory area representing the remaining area.
-                u64 remaining_size = old_size - phys_area.second.size;
-                PhysicalMemoryArea new_phys_area{};
-                new_phys_area.base = phys_area.second.base + phys_area.second.size;
-                new_phys_area.size = remaining_size;
-                new_phys_area.dma_type = phys_area.second.dma_type;
-                new_phys_area.memory_type = phys_area.second.memory_type;
-                new_vma.phys_areas[phys_area.first + phys_area.second.size] = new_phys_area;
-            } else if (phys_area.first > new_vma.base) {
-                // Physical area needs to be transferred to the new vma
-                new_vma.phys_areas[phys_area.first] = phys_area.second;
+        PAddr new_phys_addr = old_vma.phys_areas.begin()->first + offset_in_vma;
+        std::map<PAddr, PhysicalMemoryArea> old_phys_areas{};
+        for (auto& handle : old_vma.phys_areas) {
+            if (handle.first + handle.second.size <= new_phys_addr) {
+                // Handle should be fully contained in the old vma
+                old_phys_areas[handle.first] = handle.second;
+            } else if (handle.first < new_phys_addr &&
+                       handle.first + handle.second.size > new_phys_addr) {
+                // Handle needs to be split.
+                auto new_phys_area = handle.second;
+                new_phys_area.base = new_phys_addr;
+                new_phys_area.size -= new_phys_addr - handle.first;
+                handle.second.size = new_phys_addr - handle.first;
+                new_vma.phys_areas[new_phys_addr] = new_phys_area;
+                old_phys_areas[handle.first] = handle.second;
+            } else {
+                // Handle should be fully contained in the new vma
+                new_vma.phys_areas[handle.first] = handle.second;
             }
         }
+        old_vma.phys_areas = old_phys_areas;
     }
+
     return vma_map.emplace_hint(std::next(vma_handle), new_vma.base, new_vma);
 }
 
