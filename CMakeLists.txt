@@ -744,6 +744,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/memory_patcher.cpp
            ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
+           src/common/key_manager.cpp
+           src/common/key_manager.h
 )
 
 if (ENABLE_DISCORD_RPC)

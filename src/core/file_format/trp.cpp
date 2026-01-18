@@ -1,8 +1,8 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/aes.h"
-#include "common/config.h"
+#include "common/key_manager.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/file_format/trp.h"
@@ -63,14 +63,16 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, const std::string tit
         return false;
     }
 
-    const auto user_key_str = Config::getTrophyKey();
-    if (user_key_str.size() != 32) {
+    const auto& user_key_vec =
+        KeyManager::GetInstance()->GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
+
+    if (user_key_vec.size() != 16) {
         LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
         return false;
     }
 
     std::array<u8, 16> user_key{};
-    hexToBytes(user_key_str.c_str(), user_key.data());
+    std::copy(user_key_vec.begin(), user_key_vec.end(), user_key.begin());
 
     for (int index = 0; const auto& it : std::filesystem::directory_iterator(gameSysDir)) {
         if (it.is_regular_file()) {
