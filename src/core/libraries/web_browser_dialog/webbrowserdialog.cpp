@@ -79,9 +79,9 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
 s32 PS4_SYSV_ABI Func_F2BE042771625F8C() {
