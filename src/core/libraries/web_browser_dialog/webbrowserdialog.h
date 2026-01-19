@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <core/libraries/system/commondialog.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -14,7 +15,7 @@ namespace Libraries::WebBrowserDialog {
 s32 PS4_SYSV_ABI sceWebBrowserDialogClose();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetEvent();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult();
-s32 PS4_SYSV_ABI sceWebBrowserDialogGetStatus();
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus();
 s32 PS4_SYSV_ABI sceWebBrowserDialogInitialize();
 s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate();
 s32 PS4_SYSV_ABI sceWebBrowserDialogOpen();
@@ -22,7 +23,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogOpenForPredeterminedContent();
 s32 PS4_SYSV_ABI sceWebBrowserDialogResetCookie();
 s32 PS4_SYSV_ABI sceWebBrowserDialogSetCookie();
 s32 PS4_SYSV_ABI sceWebBrowserDialogSetZoom();
-s32 PS4_SYSV_ABI sceWebBrowserDialogTerminate();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate();
 s32 PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus();
 s32 PS4_SYSV_ABI Func_F2BE042771625F8C();
 
