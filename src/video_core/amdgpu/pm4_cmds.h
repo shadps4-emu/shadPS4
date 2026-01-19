@@ -50,7 +50,7 @@ union PM4Type3Header {
     }
 
     u32 NumWords() const {
-        return count + 1;
+        return (count + 1) & 0x3fff;
     }
 
     u32 raw;
