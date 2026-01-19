@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
+#include "common/logging/log.h"
 #include "key_manager.h"
 #include "path_util.h"
 
@@ -40,13 +41,13 @@ bool KeyManager::LoadFromFile() {
         if (!std::filesystem::exists(keysPath)) {
             SetDefaultKeys();
             SaveToFile();
-            std::cout << "KeyManager: Created default key file: " << keysPath << "\n";
+            LOG_DEBUG(KeyManager, "Created default key file: {}", keysPath.string());
             return true;
         }
 
         std::ifstream file(keysPath);
         if (!file.is_open()) {
-            std::cerr << "KeyManager: Could not open key file: " << keysPath << "\n";
+            LOG_ERROR(KeyManager, "Could not open key file: {}", keysPath.string());
             return false;
         }
 
@@ -58,11 +59,11 @@ bool KeyManager::LoadFromFile() {
         if (j.contains("TrophyKeySet"))
             j.at("TrophyKeySet").get_to(m_keys.TrophyKeySet);
 
-        std::cout << "KeyManager: Successfully loaded keys from: " << keysPath << "\n";
+        LOG_DEBUG(KeyManager, "Successfully loaded keys from: {}", keysPath.string());
         return true;
 
     } catch (const std::exception& e) {
-        std::cerr << "KeyManager: Error loading keys, using defaults: " << e.what() << "\n";
+        LOG_ERROR(KeyManager, "Error loading keys, using defaults: {}", e.what());
         SetDefaultKeys();
         return false;
     }
@@ -78,7 +79,7 @@ bool KeyManager::SaveToFile() {
 
         std::ofstream file(keysPath);
         if (!file.is_open()) {
-            std::cerr << "KeyManager: Could not open key file for writing: " << keysPath << "\n";
+            LOG_ERROR(KeyManager, "Could not open key file for writing: {}", keysPath.string());
             return false;
         }
 
@@ -86,15 +87,15 @@ bool KeyManager::SaveToFile() {
         file.flush();
 
         if (file.fail()) {
-            std::cerr << "KeyManager: Failed to write keys to: " << keysPath << "\n";
+            LOG_ERROR(KeyManager, "Failed to write keys to: {}", keysPath.string());
             return false;
         }
 
-        std::cout << "KeyManager: Successfully saved keys to: " << keysPath << "\n";
+        LOG_DEBUG(KeyManager, "Successfully saved keys to: {}", keysPath.string());
         return true;
 
     } catch (const std::exception& e) {
-        std::cerr << "KeyManager: Error saving keys: " << e.what() << "\n";
+        LOG_ERROR(KeyManager, "Error saving keys: {}", e.what());
         return false;
     }
 }
