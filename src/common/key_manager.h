@@ -22,7 +22,7 @@ public:
     };
 
     struct AllKeys {
-        TrophyKeySet TrophyKeySet;
+        KeyManager::TrophyKeySet TrophyKeySet;
     };
 
     // ------------------- Construction -------------------
