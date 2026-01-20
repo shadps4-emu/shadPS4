@@ -749,10 +749,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             }
         }
 
-        // Unmap from address space
-        impl.Unmap(virtual_addr, size, true);
-        TRACK_FREE(virtual_addr, "VMEM");
-
         // Mark region as pool reserved and attempt to coalesce it with neighbours.
         const auto new_it = CarveVMA(current_addr, size_in_vma);
         auto& vma = new_it->second;
@@ -766,6 +762,10 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         current_addr += size_in_vma;
         remaining_size -= size_in_vma;
     }
+
+    // Unmap from address space
+    impl.Unmap(virtual_addr, size, true);
+    TRACK_FREE(virtual_addr, "VMEM");
 
     mutex.unlock();
     return ORBIS_OK;
