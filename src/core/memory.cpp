@@ -712,9 +712,11 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             auto phys_handle = std::prev(vma_base.phys_areas.upper_bound(start_in_vma));
             while (phys_handle != vma_base.phys_areas.end() && size_to_free > 0) {
                 // Calculate physical memory offset, address, and size
-                u64 dma_offset = std::max<PAddr>(phys_handle->first, start_in_vma) - phys_handle->first;
+                u64 dma_offset =
+                    std::max<PAddr>(phys_handle->first, start_in_vma) - phys_handle->first;
                 PAddr phys_addr = phys_handle->second.base + dma_offset;
-                u64 size_in_dma = std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
+                u64 size_in_dma =
+                    std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
 
                 // Create a new dmem area reflecting the pooled region
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
