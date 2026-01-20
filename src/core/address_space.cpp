@@ -686,8 +686,8 @@ struct AddressSpace::Impl {
 
     void Unmap(VAddr virtual_addr, u64 size, bool) {
         // Check to see if we are adjacent to any regions.
-        auto start_address = virtual_addr;
-        auto end_address = start_address + size;
+        VAddr start_address = virtual_addr;
+        VAddr end_address = start_address + size;
         auto it = m_free_regions.find({start_address - 1, end_address + 1});
 
         // If we are, join with them, ensuring we stay in bounds.
