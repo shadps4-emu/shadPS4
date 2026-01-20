@@ -383,7 +383,9 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         remaining_size -= size_to_map;
         handle++;
     }
-    ASSERT_MSG(remaining_size == 0, "Unable to map physical memory");
+
+    // Merge this VMA with similar nearby areas
+    MergeAdjacent(vma_map, new_vma_handle);
 
     mutex.unlock();
     if (IsValidGpuMapping(mapped_addr, size)) {
@@ -563,11 +565,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
     }
 
-    if (type == VMAType::Reserved) {
-        // Technically this should be done for direct and flexible mappings too,
-        // But some Windows-specific limitations make that hard to accomplish.
-        MergeAdjacent(vma_map, new_vma_handle);
-    }
+    // Merge this VMA with similar nearby areas
+    MergeAdjacent(vma_map, new_vma_handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
@@ -1013,8 +1012,11 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     if (vma.type == VMAType::Direct) {
         // Offset is only assigned for direct mappings.
         ASSERT_MSG(vma.phys_areas.size() > 0, "No physical backing for direct mapping?");
-        info->offset = vma.phys_areas.begin()->second.base;
-        info->memory_type = vma.phys_areas.begin()->second.memory_type;
+        // Get info from the physical area that contains the requested address.
+        u64 start_in_vma = addr - vma.base;
+        auto it = std::prev(vma.phys_areas.upper_bound(start_in_vma));
+        info->offset = it->second.base;
+        info->memory_type = it->second.memory_type;
     }
     if (vma.type == VMAType::Reserved || vma.type == VMAType::PoolReserved) {
         // Protection is hidden from reserved mappings.

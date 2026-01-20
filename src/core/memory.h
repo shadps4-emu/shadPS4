@@ -203,10 +203,11 @@ public:
         // Now make sure the full address range is contained in vma_map.
         auto vma_handle = FindVMA(virtual_addr);
         auto addr_to_check = virtual_addr;
-        s64 size_to_validate = size;
+        u64 size_to_validate = size;
         while (vma_handle != vma_map.end() && size_to_validate > 0) {
             const auto offset_in_vma = addr_to_check - vma_handle->second.base;
-            const auto size_in_vma = vma_handle->second.size - offset_in_vma;
+            const auto size_in_vma =
+                std::min<u64>(vma_handle->second.size - offset_in_vma, size_to_validate);
             size_to_validate -= size_in_vma;
             addr_to_check += size_in_vma;
             vma_handle++;
