@@ -1207,6 +1207,7 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
     const auto& dmem_area = FindDmemArea(addr)->second;
     if (dmem_area.dma_type == PhysicalMemoryType::Free) {
         LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
+        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
