@@ -428,7 +428,8 @@ struct AddressSpace::Impl {
 
             // If necessary, split regions to ensure a valid unmap.
             // To prevent complication, ensure size is within the bounds of the current region.
-            u64 size_to_unmap = std::min<u64>(it->second.size, remaining_size);
+            u64 base_offset = virtual_addr - it->second.base;
+            u64 size_to_unmap = std::min<u64>(it->second.size - base_offset, remaining_size);
             if (it->second.base < current_addr) {
                 SplitRegion(current_addr, size_to_unmap);
             }
