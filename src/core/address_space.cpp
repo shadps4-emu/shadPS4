@@ -95,7 +95,7 @@ struct MemoryRegion {
     VAddr base;
     PAddr phys_base;
     u64 size;
-    ULONG prot;
+    u32 prot;
     s32 fd;
     bool is_mapped;
 };
