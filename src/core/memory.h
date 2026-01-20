@@ -103,7 +103,7 @@ enum class VMAType : u32 {
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
-    std::map<PAddr, PhysicalMemoryArea> phys_areas;
+    std::map<u64, PhysicalMemoryArea> phys_areas;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     std::string name = "";
@@ -132,7 +132,8 @@ struct VirtualMemoryArea {
         if (type == VMAType::Direct && next.type == VMAType::Direct) {
             auto& last_phys = std::prev(phys_areas.end())->second;
             auto& first_next_phys = next.phys_areas.begin()->second;
-            if (last_phys.base + last_phys.size != first_next_phys.base) {
+            if (last_phys.base + last_phys.size != first_next_phys.base ||
+                last_phys.memory_type != first_next_phys.memory_type) {
                 return false;
             }
         }

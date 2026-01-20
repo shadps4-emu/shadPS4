@@ -261,13 +261,11 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
         if (mapping.type != VMAType::Direct) {
             continue;
         }
-        for (auto& [paddr, phys_mapping] : mapping.phys_areas) {
+        for (auto& [offset_in_vma, phys_mapping] : mapping.phys_areas) {
             if (phys_addr + size > phys_mapping.base &&
                 phys_addr < phys_mapping.base + phys_mapping.size) {
-                const auto vma_start_offset =
-                    std::max<PAddr>(phys_addr, phys_mapping.base) - phys_mapping.base;
-                const auto addr_in_vma = mapping.base + vma_start_offset;
-                const auto size_in_vma = std::min<u64>(phys_mapping.size - vma_start_offset, size);
+                const auto addr_in_vma = mapping.base + offset_in_vma;
+                const auto size_in_vma = std::min<u64>(phys_mapping.size - offset_in_vma, size);
 
                 // Unmapping might erase from vma_map. We can't do it here.
                 remove_list.emplace_back(addr_in_vma, size_in_vma);
@@ -374,7 +372,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         auto& new_dmem_area = new_dmem_handle->second;
         new_dmem_area.dma_type = PhysicalMemoryType::Committed;
         new_dmem_area.memory_type = mtype;
-        new_vma.phys_areas[handle->second.base] = new_dmem_handle->second;
+        new_vma.phys_areas[current_addr - mapped_addr] = new_dmem_handle->second;
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
@@ -524,7 +522,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             const auto new_fmem_handle = CarvePhysArea(fmem_map, handle->second.base, size_to_map);
             auto& new_fmem_area = new_fmem_handle->second;
             new_fmem_area.dma_type = PhysicalMemoryType::Flexible;
-            new_vma.phys_areas[handle->second.base] = new_fmem_handle->second;
+            new_vma.phys_areas[current_addr - mapped_addr] = new_fmem_handle->second;
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
@@ -553,7 +551,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             new_dmem_area.dma_type = PhysicalMemoryType::Mapped;
 
             // Add the dmem area to this vma
-            new_vma.phys_areas[start_phys_addr] = dmem_handle->second;
+            new_vma.phys_areas[phys_addr_to_search - phys_addr] = dmem_handle->second;
 
             // Merge the new dmem_area with dmem_map
             MergeAdjacent(dmem_map, dmem_handle);
@@ -712,39 +710,21 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             // Re-pool the direct memory used by this mapping
             std::vector<std::tuple<PAddr, u64, u64>> to_pool;
             u64 size_to_free = size_in_vma;
-            u64 size_to_skip = start_in_vma;
-            for (auto& handle : vma_base.phys_areas) {
-                if (size_to_skip > handle.second.size) {
-                    size_to_skip -= handle.second.size;
-                    continue;
-                }
-                if (size_to_free == 0) {
-                    break;
-                }
-                PAddr phys_addr = handle.first + size_to_skip;
-                u64 dma_offset = phys_addr - handle.first;
-                u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
-                to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
-                size_to_free -= size_in_dma;
-            }
-            ASSERT_MSG(size_to_free == 0, "Failed to decommit physical memory");
+            auto phys_handle = std::prev(vma_base.phys_areas.upper_bound(start_in_vma));
+            while (phys_handle != vma_base.phys_areas.end() && size_to_free > 0) {
+                // Calculate physical memory offset, address, and size
+                u64 dma_offset = std::max<PAddr>(phys_handle->first, start_in_vma) - phys_handle->first;
+                PAddr phys_addr = phys_handle->second.base + dma_offset;
+                u64 size_in_dma = std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
 
-            auto dma_addr = current_addr;
-            for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
-                // Get addresses relevant to the physical mapping
-                const auto mapping_start = dma_addr - start_in_dma;
-                const auto mapping_size = vma_base.phys_areas.at(phys_addr - start_in_dma).size;
-                const auto end_in_dma = start_in_dma + size_in_dma;
-
-                // Update dmem_map
+                // Create a new dmem area reflecting the pooled region
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
                 auto& new_dmem_area = new_dmem_handle->second;
                 new_dmem_area.dma_type = PhysicalMemoryType::Pooled;
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
-
-                dma_addr += size_in_dma;
+                size_to_free -= size_in_dma;
             }
         }
 
@@ -786,7 +766,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
 
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
     const auto start_in_vma = virtual_addr - vma_base.base;
-    const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
+    const auto size_in_vma = std::min<u64>(vma_base.size - start_in_vma, size);
     const auto vma_type = vma_base.type;
     const bool has_backing = HasPhysicalBacking(vma_base) || vma_base.type == VMAType::File;
     const bool readonly_file =
@@ -794,45 +774,29 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
 
     if (vma_base.type == VMAType::Free || vma_base.type == VMAType::Pooled) {
-        return adjusted_size;
+        return size_in_vma;
     }
 
     PAddr phys_base = 0;
     VAddr current_addr = virtual_addr;
     if (vma_base.phys_areas.size() > 0) {
-        std::vector<std::tuple<PAddr, u64, u64>> to_pool;
-        u64 size_to_free = adjusted_size;
-        u64 size_to_skip = start_in_vma;
-        for (auto& handle : vma_base.phys_areas) {
-            if (size_to_skip > handle.second.size) {
-                size_to_skip -= handle.second.size;
-                continue;
-            }
-            if (size_to_free == 0) {
-                break;
-            }
-            PAddr phys_addr = handle.first + size_to_skip;
-            if (phys_addr > handle.first + handle.second.size) {
-                continue;
-            }
-            u64 dma_offset = phys_addr - handle.first;
-            u64 size_in_dma = std::min<u64>(size_to_free, handle.second.size - dma_offset);
-            to_pool.emplace_back(phys_addr, size_in_dma, dma_offset);
-            size_to_free -= size_in_dma;
-        }
-        ASSERT_MSG(size_to_free == 0, "Failed to unmap physical memory");
+        u64 size_to_free = size_in_vma;
+        auto phys_handle = std::prev(vma_base.phys_areas.upper_bound(start_in_vma));
+        while (phys_handle != vma_base.phys_areas.end() && size_to_free > 0) {
+            // Calculate physical memory offset, address, and size
+            u64 dma_offset = std::max<PAddr>(phys_handle->first, start_in_vma) - phys_handle->first;
+            PAddr phys_addr = phys_handle->second.base + dma_offset;
+            u64 size_in_dma = std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
 
-        for (auto& [phys_addr, size_in_dma, start_in_dma] : to_pool) {
-            if (vma_base.type == VMAType::Direct) {
-                // Update dmem_map
+            // Create a new dmem area reflecting the pooled region
+            if (vma_type == VMAType::Direct) {
                 const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
                 auto& new_dmem_area = new_dmem_handle->second;
                 new_dmem_area.dma_type = PhysicalMemoryType::Allocated;
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
-            }
-            if (vma_base.type == VMAType::Flexible) {
+            } else if (vma_type == VMAType::Flexible) {
                 // Update fmem_map
                 const auto new_fmem_handle = CarvePhysArea(fmem_map, phys_addr, size_in_dma);
                 auto& new_fmem_area = new_fmem_handle->second;
@@ -849,13 +813,12 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
                 flexible_usage -= size_in_dma;
             }
 
-            TRACK_FREE(current_addr, "VMEM");
-            current_addr += size_in_dma;
+            size_to_free -= size_in_dma;
         }
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.
-    const auto new_it = CarveVMA(virtual_addr, adjusted_size);
+    const auto new_it = CarveVMA(virtual_addr, size_in_vma);
     auto& vma = new_it->second;
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
@@ -866,7 +829,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
         // Unmap the memory region.
-        impl.Unmap(virtual_addr, adjusted_size, has_backing);
+        impl.Unmap(virtual_addr, size_in_vma, has_backing);
         TRACK_FREE(virtual_addr, "VMEM");
 
         // If this mapping has GPU access, unmap from GPU.
@@ -876,7 +839,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
             mutex.lock();
         }
     }
-    return adjusted_size;
+    return size_in_vma;
 }
 
 s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
@@ -1051,6 +1014,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
         // Offset is only assigned for direct mappings.
         ASSERT_MSG(vma.phys_areas.size() > 0, "No physical backing for direct mapping?");
         info->offset = vma.phys_areas.begin()->second.base;
+        info->memory_type = vma.phys_areas.begin()->second.memory_type;
     }
     if (vma.type == VMAType::Reserved || vma.type == VMAType::PoolReserved) {
         // Protection is hidden from reserved mappings.
@@ -1058,10 +1022,6 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     }
 
     strncpy(info->name, vma.name.data(), ::Libraries::Kernel::ORBIS_KERNEL_MAXIMUM_NAME_LENGTH);
-
-    if (vma.type == VMAType::Direct) {
-        info->memory_type = vma.phys_areas.begin()->second.memory_type;
-    }
 
     mutex.unlock_shared();
     return ORBIS_OK;
@@ -1374,9 +1334,10 @@ VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
 MemoryManager::VMAHandle MemoryManager::MergeAdjacent(VMAMap& handle_map, VMAHandle iter) {
     const auto next_vma = std::next(iter);
     if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
+        u64 base_offset = iter->second.size;
         iter->second.size += next_vma->second.size;
         for (auto& area : next_vma->second.phys_areas) {
-            iter->second.phys_areas[area.first] = area.second;
+            iter->second.phys_areas[base_offset + area.first] = area.second;
         }
         handle_map.erase(next_vma);
     }
@@ -1384,9 +1345,10 @@ MemoryManager::VMAHandle MemoryManager::MergeAdjacent(VMAMap& handle_map, VMAHan
     if (iter != handle_map.begin()) {
         auto prev_vma = std::prev(iter);
         if (prev_vma->second.CanMergeWith(iter->second)) {
+            u64 base_offset = prev_vma->second.size;
             prev_vma->second.size += iter->second.size;
             for (auto& area : iter->second.phys_areas) {
-                prev_vma->second.phys_areas[area.first] = area.second;
+                prev_vma->second.phys_areas[base_offset + area.first] = area.second;
             }
             handle_map.erase(iter);
             iter = prev_vma;
@@ -1480,27 +1442,32 @@ MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_i
         // Update physical areas map for both areas
         new_vma.phys_areas.clear();
 
-        PAddr new_phys_addr = old_vma.phys_areas.begin()->first + offset_in_vma;
-        std::map<PAddr, PhysicalMemoryArea> old_phys_areas{};
-        for (auto& handle : old_vma.phys_areas) {
-            if (handle.first + handle.second.size <= new_phys_addr) {
-                // Handle should be fully contained in the old vma
-                old_phys_areas[handle.first] = handle.second;
-            } else if (handle.first < new_phys_addr &&
-                       handle.first + handle.second.size > new_phys_addr) {
-                // Handle needs to be split.
-                auto new_phys_area = handle.second;
-                new_phys_area.base = new_phys_addr;
-                new_phys_area.size -= new_phys_addr - handle.first;
-                handle.second.size = new_phys_addr - handle.first;
-                new_vma.phys_areas[new_phys_addr] = new_phys_area;
-                old_phys_areas[handle.first] = handle.second;
-            } else {
-                // Handle should be fully contained in the new vma
-                new_vma.phys_areas[handle.first] = handle.second;
+        std::map<u64, PhysicalMemoryArea> old_vma_phys_areas;
+        for (auto& [offset, region] : old_vma.phys_areas) {
+            // Fully contained in first VMA
+            if (offset + region.size <= offset_in_vma) {
+                old_vma_phys_areas[offset] = region;
+            }
+            // Split between both VMAs
+            if (offset < offset_in_vma && offset + region.size > offset_in_vma) {
+                // Create region in old VMA
+                u64 size_in_old = offset_in_vma - offset;
+                old_vma_phys_areas[offset] = PhysicalMemoryArea{
+                    region.base, size_in_old, region.memory_type, region.dma_type};
+                // Create region in new VMA
+                PAddr new_base = region.base + size_in_old;
+                u64 size_in_new = region.size - size_in_old;
+                new_vma.phys_areas[0] =
+                    PhysicalMemoryArea{new_base, size_in_new, region.memory_type, region.dma_type};
+            }
+            // Fully contained in new VMA
+            if (offset >= offset_in_vma) {
+                new_vma.phys_areas[offset - offset_in_vma] = region;
             }
         }
-        old_vma.phys_areas = old_phys_areas;
+
+        // Set old_vma's physical areas map to the newly created map
+        old_vma.phys_areas = old_vma_phys_areas;
     }
 
     return vma_map.emplace_hint(std::next(vma_handle), new_vma.base, new_vma);
