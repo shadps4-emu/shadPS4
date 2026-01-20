@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -30,7 +30,6 @@
 #include "core/devtools/widget/module_list.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
-#include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -47,6 +46,22 @@
 #include "video_core/cache_storage.h"
 #include "video_core/renderdoc.h"
 
+#include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_device.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
+
+#include "core/file_sys/devices/console_device.h"
+#include "core/file_sys/devices/deci_tty6_device.h"
+#include "core/file_sys/devices/logger.h"
+#include "core/file_sys/devices/nop_device.h"
+#include "core/file_sys/devices/null_device.h"
+#include "core/file_sys/devices/random_device.h"
+#include "core/file_sys/devices/rng_device.h"
+#include "core/file_sys/devices/srandom_device.h"
+#include "core/file_sys/devices/zero_device.h"
+
 #ifdef _WIN32
 #include <WinSock2.h>
 #endif
@@ -58,7 +73,11 @@
 
 Frontend::WindowSDL* g_window = nullptr;
 
+namespace qfs = QuasiFS;
+
 namespace Core {
+
+bool Emulator::ignore_game_patches = false;
 
 Emulator::Emulator() {
     // Initialize NT API functions, set high priority and disable WER
@@ -94,6 +113,81 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
     return 0;
 }
 
+void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+
+    qfs::partition_ptr partition_app0 =
+        qfs::Partition::Create(qfs::DirectoryPFS::Create(), game_folder, 0555, 65536);
+    qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 16384);
+    qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_av_contents_video = qfs::Partition::Create("", 0755, 32768);
+    qfs::partition_ptr partition_dev = qfs::Partition::Create("", 0755, 16384);
+
+    qfs->Operation.MKDir("/app0", 0555);
+    qfs->Operation.MKDir("/av_contents", 0775);
+    qfs->Operation.MKDir("/dev", 0555);
+    qfs->Operation.MKDir("/host", 0777);
+    qfs->Operation.MKDir("/hostapp", 0777);
+
+    qfs->Mount("/app0", partition_app0, qfs::MountOptions::MOUNT_NOOPT);
+    qfs->Mount("/av_contents", partition_av_contents, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/dev", partition_dev, qfs::MountOptions::MOUNT_RW);
+
+    // mounting av_contents would shadow these
+    qfs->Operation.MKDir("/av_contents/photo", 0755);
+    qfs->Operation.MKDir("/av_contents/thumbnails", 0755);
+    qfs->Operation.MKDir("/av_contents/video", 0755);
+    qfs->Mount("/av_contents/photo", partition_av_contents_photo, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/av_contents/thumbnails", partition_av_contents_thumbs,
+               qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/av_contents/video", partition_av_contents_video, qfs::MountOptions::MOUNT_RW);
+
+    //
+    // Setup /dev
+    //
+
+    qfs->Operation.MKDir("/dev/fd", 0755);
+    qfs->ForceInsert("/dev/fd", "0", Devices::ZeroDevice::Create());
+    qfs->ForceInsert("/dev/fd", "1", Devices::Logger::Create("stdout", false));
+    qfs->ForceInsert("/dev/fd", "2", Devices::Logger::Create("stderr", true));
+    // std* is unavailable from within the app???
+    qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/stdin");
+    qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/stdout");
+    qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/stderr");
+    qfs->Operation.LinkSymbolic("/dev/fd/0", "/dev/deci_stdin");
+    qfs->Operation.LinkSymbolic("/dev/fd/1", "/dev/deci_stdout");
+    qfs->Operation.LinkSymbolic("/dev/fd/2", "/dev/deci_stderr");
+
+    qfs->ForceInsert("/dev", "console", Devices::ConsoleDevice::Create());
+    qfs->ForceInsert("/dev", "deci_tty6", Devices::DeciTty6Device::Create());
+    qfs->ForceInsert("/dev", "random", Devices::RandomDevice::Create());
+    qfs->ForceInsert("/dev", "urandom", Devices::RandomDevice::Create());
+    qfs->ForceInsert("/dev", "srandom", Devices::SRandomDevice::Create());
+    qfs->ForceInsert("/dev", "zero", Devices::ZeroDevice::Create());
+    qfs->ForceInsert("/dev", "null", Devices::NullDevice::Create());
+    qfs->ForceInsert("/dev", "rng", Devices::RngDevice::Create());
+
+    qfs->Operation.Chmod("/dev/deci_stderr", 0666);
+    qfs->Operation.Chmod("/dev/deci_stdout", 0666);
+    qfs->Operation.Chmod("/dev/random", 0666);
+    qfs->Operation.Chmod("/dev/urandom", 0666);
+    qfs->Operation.Chmod("/dev/srandom", 0666);
+
+    if (int fd_dev = qfs->Operation.Open("/dev/stdin", QUASI_O_RDONLY, 0755); fd_dev != 0)
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stdin is not 0 (it's {})", fd_dev);
+    if (int fd_dev = qfs->Operation.Open("/dev/stdout", QUASI_O_WRONLY, 0755); fd_dev != 1)
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stdout is not 1 (it's {})", fd_dev);
+    if (int fd_dev = qfs->Operation.Open("/dev/stderr", QUASI_O_WRONLY, 0755); fd_dev != 2)
+        LOG_CRITICAL(Kernel_Fs, "file descriptor of stderr is not 2 (it's {})", fd_dev);
+
+    qfs->SyncHost();
+
+    // qfs::printTree(qfs->GetRoot(), "/");
+
+    return;
+}
+
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
     Common::SetCurrentThreadName("Main Thread");
@@ -101,37 +195,52 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Debugger::WaitForDebuggerAttach();
     }
 
+    std::filesystem::path eboot_name{"eboot.bin"};
+    std::filesystem::path game_folder{};
+    std::filesystem::path guest_eboot_path{"/eboot.bin"};
+    const std::filesystem::path guest_param_sfo_path{"/sce_sys/param.sfo"};
+    const std::filesystem::path guest_pic1_path{"/sce_sys/pic1.png"};
+    std::filesystem::path host_eboot_path{};
+    std::filesystem::path host_param_sfo_path{};
+    std::filesystem::path host_pic1_path{};
+
     if (std::filesystem::is_directory(file)) {
-        file /= "eboot.bin";
+        file /= eboot_name;
     }
 
-    std::filesystem::path game_folder;
     if (p_game_folder.has_value()) {
         game_folder = p_game_folder.value();
     } else {
         game_folder = file.parent_path();
-        if (const auto game_folder_name = game_folder.filename().string();
-            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
-            // If an executable was launched from a separate update directory,
-            // use the base game directory as the game folder.
-            const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
-            const auto base_path = game_folder.parent_path() / base_name;
-            if (std::filesystem::is_directory(base_path)) {
-                game_folder = base_path;
-            }
-        }
+        eboot_name = file.filename();
+        // TODO: implement patch directory
+        // if (const auto game_folder_name = game_folder.filename().string();
+        //     game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
+        //     // If an executable was launched from a separate update directory,
+        //     // use the base game directory as the game folder.
+        //     const std::string base_name = game_folder_name.substr(0,
+        //     game_folder_name.rfind('-')); const auto base_path = game_folder.parent_path() /
+        //     base_name; if (std::filesystem::is_directory(base_path)) {
+        //         game_folder = base_path;
+        //     }
+        // }
     }
 
-    std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
+    this->LoadFilesystem(game_folder);
 
-    // Applications expect to be run from /app0 so mount the file's parent path as app0.
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(game_folder, "/app0", true);
-    // Certain games may use /hostapp as well such as CUSA001100
-    mnt->Mount(game_folder, "/hostapp", true);
+    // can't sync here, otherwise all mountpoints would need to be updated one by one
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    qfs::Resolved app_directory_resolve{};
+    if (0 != qfs->Resolve("/app0", app_directory_resolve))
+        UNREACHABLE_MSG("Cannot resolve /app0 for initialization");
 
-    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
-    const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
+    const auto app_partition = app_directory_resolve.mountpoint;
+    {
+        // DON'T do this normally. This is init, anything goes
+        app_partition->GetHostPath(host_param_sfo_path, guest_param_sfo_path);
+        app_partition->GetHostPath(host_eboot_path, guest_eboot_path);
+        app_partition->GetHostPath(host_pic1_path, guest_pic1_path);
+    }
 
     // Load param.sfo details if it exists
     std::string id;
@@ -140,9 +249,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     u32 sdk_version;
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
+    const auto param_sfo_exists = std::filesystem::exists(host_param_sfo_path);
+
     if (param_sfo_exists) {
         auto* param_sfo = Common::Singleton<PSF>::Instance();
-        ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
+        ASSERT_MSG(param_sfo->Open(host_param_sfo_path), "Failed to open param.sfo");
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         const auto title_id = param_sfo->GetString("TITLE_ID");
@@ -182,8 +293,44 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
+    const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
+    if (!std::filesystem::exists(mount_captures_dir)) {
+        std::filesystem::create_directory(mount_captures_dir);
+    }
+    VideoCore::SetOutputDir(mount_captures_dir, id);
+
+    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
+    if (!std::filesystem::exists(mount_data_dir)) {
+        std::filesystem::create_directory(mount_data_dir);
+    }
+    const auto& mount_download_dir =
+        Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
+    if (!std::filesystem::exists(mount_download_dir)) {
+        std::filesystem::create_directory(mount_download_dir);
+    }
+    const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
+    if (std::filesystem::exists(mount_temp_dir)) {
+        // Temp folder should be cleared on each boot.
+        std::filesystem::remove_all(mount_temp_dir);
+    }
+    std::filesystem::create_directory(mount_temp_dir);
+
+    qfs->Operation.MKDir("/data", 0777);
+    qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
+    qfs->Operation.MKDir("/temp", 0777);
+    qfs->Operation.MKDir("/temp0", 0777);
+    qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 32768);
+    qfs::partition_ptr partition_download = qfs::Partition::Create(mount_download_dir, 0777, 65536);
+    qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 16384);
+    qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);
+    qfs->Mount("/temp0", partition_temp,
+               qfs::MountOptions::MOUNT_RW | qfs::MountOptions::MOUNT_BIND);
+    qfs->SyncHost("/data");
+    qfs->SyncHost("/download0");
+    qfs->SyncHost("/temp");
+    qfs->SyncHost("/temp0");
 
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
@@ -192,12 +339,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
+    game_info.sdk_ver = ReadCompiledSdkVersion(host_eboot_path);
     game_info.psf_attributes = psf_attributes;
 
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
-    if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
+    if (std::filesystem::exists(host_pic1_path)) {
+        game_info.splash_path = host_pic1_path;
     }
 
     game_info.game_folder = game_folder;
@@ -279,9 +425,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
-    // Create stdin/stdout/stderr
-    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
-
     // Initialize components
     memory = Core::Memory::Instance();
     controller = Common::Singleton<Input::GameController>::Instance();
@@ -306,7 +449,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     std::string game_title = fmt::format("{} - {} <{}>", id, title, app_version);
-    std::string window_title = "";
+    std::string window_title{};
     std::string remote_url(Common::g_scm_remote_url);
     std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
@@ -330,55 +473,30 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
-    if (!std::filesystem::exists(mount_data_dir)) {
-        std::filesystem::create_directory(mount_data_dir);
-    }
-    mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
-
-    // Mounting temp folders
-    const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    if (std::filesystem::exists(mount_temp_dir)) {
-        // Temp folder should be cleared on each boot.
-        std::filesystem::remove_all(mount_temp_dir);
-    }
-    std::filesystem::create_directory(mount_temp_dir);
-    mnt->Mount(mount_temp_dir, "/temp0");
-    mnt->Mount(mount_temp_dir, "/temp");
-
-    const auto& mount_download_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
-    if (!std::filesystem::exists(mount_download_dir)) {
-        std::filesystem::create_directory(mount_download_dir);
-    }
-    mnt->Mount(mount_download_dir, "/download0");
-
-    const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
-    if (!std::filesystem::exists(mount_captures_dir)) {
-        std::filesystem::create_directory(mount_captures_dir);
-    }
-    VideoCore::SetOutputDir(mount_captures_dir, id);
-
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    if (linker->LoadModule(eboot_path) == -1) {
+    if (linker->LoadModule(host_eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
-                     Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
+                     Common::FS::PathToUTF8String(std::filesystem::absolute(host_eboot_path)));
         std::quick_exit(0);
     }
 
     // check if we have system modules to load
     LoadSystemModules(game_info.game_serial);
 
-    // Load all prx from game's sce_module folder
-    mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
-        if (is_file) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
-            linker->LoadModule(path);
-        }
-    });
+    const auto app_sys_directory = std::reinterpret_pointer_cast<qfs::Directory>(
+        app_partition->GetRoot()->lookup("sce_module"));
+    for (auto entry = app_sys_directory->entry_begin(); entry != app_sys_directory->entry_end();
+         ++entry) {
+        if (!entry->second->is_file())
+            continue;
+        std::filesystem::path target_path{};
+        app_partition->GetHostPath(target_path, "/sce_module/" + std::string(entry->first));
+        LOG_INFO(Loader, "Loading {}", fmt::UTF(target_path.u8string()));
+        linker->LoadModule(target_path);
+    }
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
@@ -421,8 +539,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                        const std::vector<std::string>& guest_args) {
     std::vector<std::string> args;
 
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto game_path = mnt->GetHostPath("/app0");
+    auto* qfs = Common::Singleton<qfs::QFS>::Instance();
+    std::filesystem::path game_path{};
+    qfs->GetHostPath(game_path, "/app0");
 
     args.push_back("--log-append");
     args.push_back("--game");
@@ -431,7 +550,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     args.push_back("--override-root");
     args.push_back(Common::FS::PathToUTF8String(game_path));
 
-    if (FileSys::MntPoints::ignore_game_patches) {
+    if (Core::Emulator::ignore_game_patches) {
         args.push_back("--ignore-game-patch");
     }
 

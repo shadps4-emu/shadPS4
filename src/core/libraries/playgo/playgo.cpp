@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_format/playgo_chunk.h"
-#include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
@@ -252,8 +252,9 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
 
     playgo = std::make_unique<PlaygoFile>();
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
+    QuasiFS::QFS* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+    std::filesystem::path file_path{};
+    int status = qfs->GetHostPath(file_path, "/app0/sce_sys/playgo-chunk.dat");
     if (!playgo->Open(file_path)) {
         LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
     }

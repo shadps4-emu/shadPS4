@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2021-2026 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -124,7 +124,6 @@ public:
     bool Flush() const;
     bool Commit() const;
 
-    bool SetSize(u64 size) const;
     u64 GetSize() const;
 
     bool Seek(s64 offset, SeekOrigin origin = SeekOrigin::SetOrigin) const;

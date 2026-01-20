@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -25,6 +25,16 @@ enum class SaveDataDialogMode : u32 {
     ERROR_CODE = 4,
     PROGRESS_BAR = 5,
 };
+
+// dirty hack
+// *dows pollutes a lot of defines from winnt.h and wingdi.h
+// I'm sick and tired of it, so here we are
+#ifdef DELETE
+#undef DELETE
+#endif
+#ifdef ERROR
+#undef ERROR
+#endif
 
 enum class DialogType : u32 {
     SAVE = 1,
