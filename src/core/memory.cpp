@@ -383,6 +383,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         remaining_size -= size_to_map;
         handle++;
     }
+    ASSERT_MSG(remaining_size == 0, "Failed to commit pooled memory");
 
     // Merge this VMA with similar nearby areas
     MergeAdjacent(vma_map, new_vma_handle);
@@ -536,10 +537,11 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             flexible_usage += size_to_map;
             handle++;
         }
+        ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     } else if (type == VMAType::Direct) {
         // Map the physical memory for this direct memory mapping.
         auto phys_addr_to_search = phys_addr;
-        auto remaining_size = size;
+        u64 remaining_size = size;
         dmem_area = FindDmemArea(phys_addr);
         while (dmem_area != dmem_map.end() && remaining_size > 0) {
             // Carve a new dmem area in place of this one with the appropriate type.
@@ -563,6 +565,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             remaining_size -= size_in_dma;
             dmem_area = FindDmemArea(phys_addr_to_search);
         }
+        ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
 
     // Merge this VMA with similar nearby areas
@@ -689,9 +692,8 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     u64 remaining_size = size;
     VAddr current_addr = virtual_addr;
     while (remaining_size != 0) {
-        const auto it = FindVMA(current_addr);
-        const auto& vma_base = it->second;
-        const bool is_exec = True(vma_base.prot & MemoryProt::CpuExec);
+        const auto handle = FindVMA(current_addr);
+        const auto& vma_base = handle->second;
         const auto start_in_vma = current_addr - vma_base.base;
         const auto size_in_vma = std::min<u64>(remaining_size, vma_base.size - start_in_vma);
 
@@ -707,7 +709,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             pool_budget += size_in_vma;
 
             // Re-pool the direct memory used by this mapping
-            std::vector<std::tuple<PAddr, u64, u64>> to_pool;
             u64 size_to_free = size_in_vma;
             auto phys_handle = std::prev(vma_base.phys_areas.upper_bound(start_in_vma));
             while (phys_handle != vma_base.phys_areas.end() && size_to_free > 0) {
@@ -725,8 +726,12 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
+
+                // Increment loop
                 size_to_free -= size_in_dma;
+                phys_handle++;
             }
+            ASSERT_MSG(size_to_free == 0, "Failed to decommit pooled memory");
         }
 
         // Mark region as pool reserved and attempt to coalesce it with neighbours.
@@ -814,8 +819,11 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
                 flexible_usage -= size_in_dma;
             }
 
+            // Increment through loop
             size_to_free -= size_in_dma;
+            phys_handle++;
         }
+        ASSERT_MSG(size_to_free == 0, "Failed to unmap physical memory");
     }
 
     // Mark region as free and attempt to coalesce it with neighbours.

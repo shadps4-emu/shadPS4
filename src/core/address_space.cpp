@@ -430,7 +430,9 @@ struct AddressSpace::Impl {
             // To prevent complication, ensure size is within the bounds of the current region.
             u64 base_offset = current_addr - it->second.base;
             u64 size_to_unmap = std::min<u64>(it->second.size - base_offset, remaining_size);
-            SplitRegion(current_addr, size_to_unmap);
+            if (current_addr != it->second.base || size_to_unmap != it->second.size) {
+                SplitRegion(current_addr, size_to_unmap);
+            }
 
             // Repair the region pointer, as SplitRegion modifies the regions map.
             it = std::prev(regions.upper_bound(current_addr));
