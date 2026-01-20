@@ -264,8 +264,8 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
         for (auto& [offset_in_vma, phys_mapping] : mapping.phys_areas) {
             if (phys_addr + size > phys_mapping.base &&
                 phys_addr < phys_mapping.base + phys_mapping.size) {
-                const auto addr_in_vma = mapping.base + offset_in_vma;
-                const auto size_in_vma = std::min<u64>(phys_mapping.size - offset_in_vma, size);
+                const VAddr addr_in_vma = mapping.base + offset_in_vma;
+                const auto size_in_vma = std::min<u64>(mapping.size - offset_in_vma, size);
 
                 // Unmapping might erase from vma_map. We can't do it here.
                 remove_list.emplace_back(addr_in_vma, size_in_vma);
@@ -1022,11 +1022,8 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     if (vma.type == VMAType::Direct) {
         // Offset is only assigned for direct mappings.
         ASSERT_MSG(vma.phys_areas.size() > 0, "No physical backing for direct mapping?");
-        // Get info from the physical area that contains the requested address.
-        u64 start_in_vma = addr - vma.base;
-        auto it = std::prev(vma.phys_areas.upper_bound(start_in_vma));
-        info->offset = it->second.base;
-        info->memory_type = it->second.memory_type;
+        info->offset = vma.phys_areas.begin()->second.base;
+        info->memory_type = vma.phys_areas.begin()->second.memory_type;
     }
     if (vma.type == VMAType::Reserved || vma.type == VMAType::PoolReserved) {
         // Protection is hidden from reserved mappings.
