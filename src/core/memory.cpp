@@ -1223,6 +1223,7 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     mutex.lock_shared();
     const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
+        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
