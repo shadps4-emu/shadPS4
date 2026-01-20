@@ -377,7 +377,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         new_vma.phys_areas[handle->second.base] = new_dmem_handle->second;
 
         // Perform an address space mapping for each physical area
-        void* out_addr = impl.Map(current_addr, size_to_map, alignment, new_dmem_area.base, false);
+        void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
         TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
         handle = MergeAdjacent(dmem_map, new_dmem_handle);
@@ -528,7 +528,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr =
-                impl.Map(current_addr, size_to_map, alignment, new_fmem_area.base, is_exec);
+                impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
             TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
             handle = MergeAdjacent(fmem_map, new_fmem_handle);
@@ -576,7 +576,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
-            impl.Map(mapped_addr, size, alignment, phys_addr, is_exec);
+            impl.Map(mapped_addr, size, phys_addr, is_exec);
         }
         TRACK_ALLOC(*out_addr, size, "VMEM");
 
@@ -742,17 +742,16 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
                 auto& new_dmem_area = new_dmem_handle->second;
                 new_dmem_area.dma_type = PhysicalMemoryType::Pooled;
 
-                // Unmap from address space
-                impl.Unmap(mapping_start, mapping_size, start_in_dma, end_in_dma,
-                           phys_addr - start_in_dma, is_exec, true, false);
-                TRACK_FREE(dma_addr, "VMEM");
-
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
 
                 dma_addr += size_in_dma;
             }
         }
+
+        // Unmap from address space
+        impl.Unmap(virtual_addr, size, true);
+        TRACK_FREE(virtual_addr, "VMEM");
 
         // Mark region as pool reserved and attempt to coalesce it with neighbours.
         const auto new_it = CarveVMA(current_addr, size_in_vma);
@@ -833,10 +832,6 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
                 // Coalesce with nearby direct memory areas.
                 MergeAdjacent(dmem_map, new_dmem_handle);
-
-                // Unmap from address space
-                impl.Unmap(vma_base.base, vma_base.size, start_in_dma, start_in_dma + size_in_dma,
-                           phys_addr - start_in_dma, is_exec, true, false);
             }
             if (vma_base.type == VMAType::Flexible) {
                 // Update fmem_map
@@ -853,14 +848,6 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
                 // Update flexible usage
                 flexible_usage -= size_in_dma;
-
-                // Get physical mapping size
-                u64 size = vma_base.phys_areas[phys_addr - start_in_dma].size;
-
-                // Unmap from address space
-                impl.Unmap(current_addr - start_in_dma, size, start_in_dma,
-                           start_in_dma + size_in_dma, phys_addr - start_in_dma, is_exec, true,
-                           false);
             }
 
             TRACK_FREE(current_addr, "VMEM");
@@ -879,13 +866,9 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     MergeAdjacent(vma_map, new_it);
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
-        // Flexible and Direct memory unmap while deallocating physical memory.
-        if (vma_type != VMAType::Direct && vma_type != VMAType::Flexible) {
-            // Unmap the memory region.
-            impl.Unmap(virtual_addr, adjusted_size, start_in_vma, start_in_vma + adjusted_size, 0,
-                       is_exec, has_backing, readonly_file);
-            TRACK_FREE(virtual_addr, "VMEM");
-        }
+        // Unmap the memory region.
+        impl.Unmap(virtual_addr, adjusted_size, has_backing);
+        TRACK_FREE(virtual_addr, "VMEM");
 
         // If this mapping has GPU access, unmap from GPU.
         if (IsValidGpuMapping(virtual_addr, size)) {
