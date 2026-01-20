@@ -527,8 +527,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             new_vma.phys_areas[handle->second.base] = new_fmem_handle->second;
 
             // Perform an address space mapping for each physical area
-            void* out_addr =
-                impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
+            void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
             TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
             handle = MergeAdjacent(fmem_map, new_fmem_handle);
