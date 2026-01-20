@@ -929,7 +929,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
                 const u32 num_bytes = dma_data->NumBytes();
                 const VAddr src_addr = dma_data->SrcAddress<VAddr>();
                 const VAddr dst_addr = dma_data->DstAddress<VAddr>();
-                const PM4Header* header = reinterpret_cast<const PM4Header*>(dst_addr - sizeof(PM4Header));
+                const PM4Header* header =
+                    reinterpret_cast<const PM4Header*>(dst_addr - sizeof(PM4Header));
                 if (dst_addr >= base_addr && dst_addr < base_addr + acb_size &&
                     num_bytes == sizeof(PM4CmdDispatchIndirect::GroupDimensions) &&
                     header->type == 3 && header->type3.opcode == PM4ItOpcode::DispatchDirect) {
@@ -980,7 +981,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::DispatchDirect: {
             const auto* dispatch_direct = reinterpret_cast<const PM4CmdDispatchDirect*>(header);
-            if (auto it = std::ranges::find(indirect_patches, header, &IndirectPatch::header); it != indirect_patches.end()) {
+            if (auto it = std::ranges::find(indirect_patches, header, &IndirectPatch::header);
+                it != indirect_patches.end()) {
                 const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
                 rasterizer->DispatchIndirect(it->indirect_addr, 0, size);
                 break;
