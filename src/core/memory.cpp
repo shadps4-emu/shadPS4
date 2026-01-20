@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
+#include "common/elf_info.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -25,6 +26,9 @@ MemoryManager::MemoryManager() {
                         VirtualMemoryArea{region.lower(), region.upper() - region.lower()});
         LOG_INFO(Kernel_Vmm, "{:#x} - {:#x}", region.lower(), region.upper());
     }
+
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version) == 0,
+               "Failed to get compiled SDK version");
 }
 
 MemoryManager::~MemoryManager() = default;
@@ -568,8 +572,11 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
 
-    // Merge this VMA with similar nearby areas
-    MergeAdjacent(vma_map, new_vma_handle);
+    if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_20) {
+        // Merge this VMA with similar nearby areas
+        // Direct memory mappings only coalesce on SDK version 2.00 or later.
+        MergeAdjacent(vma_map, new_vma_handle);
+    }
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     if (type != VMAType::Reserved && type != VMAType::PoolReserved) {

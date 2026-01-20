@@ -325,6 +325,7 @@ private:
     u64 total_flexible_size{};
     u64 flexible_usage{};
     u64 pool_budget{};
+    s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
 
     struct PrtArea {
