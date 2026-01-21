@@ -379,7 +379,10 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         auto& new_dmem_area = new_dmem_handle->second;
         new_dmem_area.dma_type = PhysicalMemoryType::Committed;
         new_dmem_area.memory_type = mtype;
+
+        // Add the dmem area to this vma, merge it with any similar tracked areas.
         new_vma.phys_areas[current_addr - mapped_addr] = new_dmem_handle->second;
+        MergeAdjacent(new_vma.phys_areas, new_vma.phys_areas.find(current_addr - mapped_addr));
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
@@ -532,7 +535,10 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             const auto new_fmem_handle = CarvePhysArea(fmem_map, handle->second.base, size_to_map);
             auto& new_fmem_area = new_fmem_handle->second;
             new_fmem_area.dma_type = PhysicalMemoryType::Flexible;
+
+            // Add the new area to the vma, merge it with any similar tracked areas.
             new_vma.phys_areas[current_addr - mapped_addr] = new_fmem_handle->second;
+            MergeAdjacent(new_vma.phys_areas, new_vma.phys_areas.find(current_addr - mapped_addr));
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
@@ -561,8 +567,10 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             auto& new_dmem_area = dmem_handle->second;
             new_dmem_area.dma_type = PhysicalMemoryType::Mapped;
 
-            // Add the dmem area to this vma
+            // Add the dmem area to this vma, merge it with any similar tracked areas.
             new_vma.phys_areas[phys_addr_to_search - phys_addr] = dmem_handle->second;
+            MergeAdjacent(new_vma.phys_areas,
+                          new_vma.phys_areas.find(phys_addr_to_search - phys_addr));
 
             // Merge the new dmem_area with dmem_map
             MergeAdjacent(dmem_map, dmem_handle);
