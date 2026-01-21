@@ -5,20 +5,45 @@
 #include "ajm_aac.h"
 #include "ajm_result.h"
 
+#include <aacdecoder_lib.h>
 // using this internal header to manually configure the decoder in RAW mode
 #include "externals/aacdec/fdk-aac/libAACdec/src/aacdecoder.h"
 
-#include <aacdecoder_lib.h>
-#include <magic_enum/magic_enum.hpp>
+#include <algorithm> // std::transform
+#include <iterator>  // std::back_inserter
+#include <limits>
 
 namespace Libraries::Ajm {
 
+std::span<const s16> AjmAacDecoder::GetOuputPcm(u32 skipped_pcm, u32 max_pcm) const {
+    const auto pcm_data = std::span(m_pcm_buffer).subspan(skipped_pcm);
+    return pcm_data.subspan(0, std::min<u32>(pcm_data.size(), max_pcm));
+}
+
+template <>
+size_t AjmAacDecoder::WriteOutputSamples<float>(SparseOutputBuffer& out, std::span<const s16> pcm) {
+    if (pcm.empty()) {
+        return 0;
+    }
+
+    m_resample_buffer.clear();
+    constexpr float inv_scale = 1.0f / std::numeric_limits<s16>::max();
+    std::transform(pcm.begin(), pcm.end(), std::back_inserter(m_resample_buffer),
+                   [](auto sample) { return float(sample) * inv_scale; });
+
+    return out.Write(std::span(m_resample_buffer));
+}
+
 AjmAacDecoder::AjmAacDecoder(AjmFormatEncoding format, AjmAacCodecFlags flags, u32 channels)
-    : m_format(format), m_flags(flags), m_channels(channels), m_pcm_buffer(2048 * 8),
-      m_skip_frames(True(flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2) {}
+    : m_format(format), m_flags(flags), m_channels(channels), m_pcm_buffer(1024 * 8),
+      m_skip_frames(True(flags & AjmAacCodecFlags::EnableNondelayOutput) ? 0 : 2) {
+    m_resample_buffer.reserve(m_pcm_buffer.size());
+}
 
 AjmAacDecoder::~AjmAacDecoder() {
-    aacDecoder_Close(m_decoder);
+    if (m_decoder) {
+        aacDecoder_Close(m_decoder);
+    }
 }
 
 TRANSPORT_TYPE TransportTypeFromConfigType(ConfigType config_type) {
@@ -98,7 +123,7 @@ AjmSidebandFormat AjmAacDecoder::GetFormat() const {
         .num_channels = static_cast<u32>(info->numChannels),
         .channel_mask = GetChannelMask(info->numChannels),
         .sampl_freq = static_cast<u32>(info->sampleRate),
-        .sample_encoding = m_format, // AjmFormatEncoding
+        .sample_encoding = m_format,
         .bitrate = static_cast<u32>(info->bitRate),
     };
 }
@@ -130,8 +155,7 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
     const UINT sizes[] = {static_cast<UINT>(input.size())};
     UINT valid = sizes[0];
     aacDecoder_Fill(m_decoder, buffers, sizes, &valid);
-    auto ret = aacDecoder_DecodeFrame(m_decoder, reinterpret_cast<s16*>(m_pcm_buffer.data()),
-                                      m_pcm_buffer.size() / 2, 0);
+    auto ret = aacDecoder_DecodeFrame(m_decoder, m_pcm_buffer.data(), m_pcm_buffer.size(), 0);
 
     switch (ret) {
     case AAC_DEC_OK:
@@ -167,16 +191,16 @@ DecoderResult AjmAacDecoder::ProcessData(std::span<u8>& input, SparseOutputBuffe
         gapless.init.total_samples != 0 ? gapless.current.total_samples : info->aacSamplesPerFrame;
 
     size_t pcm_written = 0;
+    auto pcm = GetOuputPcm(skip_samples * info->numChannels, max_samples * info->numChannels);
     switch (m_format) {
     case AjmFormatEncoding::S16:
-        pcm_written = WriteOutputSamples<s16>(output, skip_samples * info->numChannels,
-                                              max_samples * info->numChannels);
+        pcm_written = output.Write(pcm);
         break;
     case AjmFormatEncoding::S32:
         UNREACHABLE_MSG("NOT IMPLEMENTED");
         break;
     case AjmFormatEncoding::Float:
-        UNREACHABLE_MSG("NOT IMPLEMENTED");
+        pcm_written = WriteOutputSamples<float>(output, pcm);
         break;
     default:
         UNREACHABLE();

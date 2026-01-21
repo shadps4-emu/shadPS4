@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -34,7 +34,7 @@ u32 GetChannelMask(u32 num_channels) {
     case 8:
         return ORBIS_AJM_CHANNELMASK_7POINT1;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unexpected number of channels: {}", num_channels);
     }
 }
 

@@ -153,9 +153,9 @@ std::string NameOf(Attribute attribute) {
     case Attribute::TessellationEvaluationPointV:
         return "TessellationEvaluationPointV";
     case Attribute::PackedHullInvocationInfo:
-        return "OffChipLdsBase";
-    case Attribute::OffChipLdsBase:
         return "PackedHullInvocationInfo";
+    case Attribute::OffChipLdsBase:
+        return "OffChipLdsBase";
     case Attribute::TessFactorsBufferBase:
         return "TessFactorsBufferBase";
     case Attribute::PointSize:
