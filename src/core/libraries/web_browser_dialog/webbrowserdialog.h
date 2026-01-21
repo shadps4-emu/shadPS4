@@ -16,7 +16,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogClose();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetEvent();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult();
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus();
-s32 PS4_SYSV_ABI sceWebBrowserDialogInitialize();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogInitialize();
 s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate();
 s32 PS4_SYSV_ABI sceWebBrowserDialogOpen();
 s32 PS4_SYSV_ABI sceWebBrowserDialogOpenForPredeterminedContent();

@@ -31,9 +31,14 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
     return g_status;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
+    if (CommonDialog::g_isInitialized) {
+        LOG_INFO(Lib_WebBrowserDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_SYSTEM_INITIALIZED;
+    }
+    LOG_DEBUG(Lib_WebBrowserDialog, "initialized");
+    CommonDialog::g_isInitialized = true;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate() {
