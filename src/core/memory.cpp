@@ -268,15 +268,18 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
         for (auto& [offset_in_vma, phys_mapping] : mapping.phys_areas) {
             if (phys_addr + size > phys_mapping.base &&
                 phys_addr < phys_mapping.base + phys_mapping.size) {
-                const VAddr addr_in_vma = mapping.base + offset_in_vma;
-                const auto size_in_vma = std::min<u64>(mapping.size - offset_in_vma, size);
+                const u64 phys_offset =
+                    std::max<u64>(phys_mapping.base, phys_addr) - phys_mapping.base;
+                const VAddr addr_in_vma = mapping.base + offset_in_vma + phys_offset;
+                const u64 unmap_size = std::min<u64>(phys_mapping.size - phys_offset, size);
 
                 // Unmapping might erase from vma_map. We can't do it here.
-                remove_list.emplace_back(addr_in_vma, size_in_vma);
+                remove_list.emplace_back(addr_in_vma, unmap_size);
             }
         }
     }
     for (const auto& [addr, size] : remove_list) {
+        LOG_INFO(Kernel_Vmm, "Unmapping direct mapping {:#x} with size {:#x}", addr, size);
         UnmapMemoryImpl(addr, size);
     }
 
