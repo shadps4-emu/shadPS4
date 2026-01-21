@@ -103,7 +103,7 @@ enum class VMAType : u32 {
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
-    std::map<u64, PhysicalMemoryArea> phys_areas;
+    std::map<uintptr_t, PhysicalMemoryArea> phys_areas;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     std::string name = "";
