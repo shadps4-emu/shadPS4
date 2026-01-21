@@ -1471,7 +1471,7 @@ MemoryManager::VMAHandle MemoryManager::Split(VMAHandle vma_handle, u64 offset_i
         // Update physical areas map for both areas
         new_vma.phys_areas.clear();
 
-        std::map<u64, PhysicalMemoryArea> old_vma_phys_areas;
+        std::map<uintptr_t, PhysicalMemoryArea> old_vma_phys_areas;
         for (auto& [offset, region] : old_vma.phys_areas) {
             // Fully contained in first VMA
             if (offset + region.size <= offset_in_vma) {
