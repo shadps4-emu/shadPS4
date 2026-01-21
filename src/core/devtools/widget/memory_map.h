@@ -11,8 +11,8 @@ class MemoryMapViewer {
     struct Iterator {
         bool is_vma;
         struct {
-            MemoryManager::DMemMap::iterator it;
-            MemoryManager::DMemMap::iterator end;
+            MemoryManager::PhysMap::iterator it;
+            MemoryManager::PhysMap::iterator end;
         } dmem;
         struct {
             MemoryManager::VMAMap::iterator it;

@@ -39,7 +39,7 @@ public:
     [[nodiscard]] const u8* SystemManagedVirtualBase() const noexcept {
         return system_managed_base;
     }
-    [[nodiscard]] size_t SystemManagedVirtualSize() const noexcept {
+    [[nodiscard]] u64 SystemManagedVirtualSize() const noexcept {
         return system_managed_size;
     }
 
@@ -49,7 +49,7 @@ public:
     [[nodiscard]] const u8* SystemReservedVirtualBase() const noexcept {
         return system_reserved_base;
     }
-    [[nodiscard]] size_t SystemReservedVirtualSize() const noexcept {
+    [[nodiscard]] u64 SystemReservedVirtualSize() const noexcept {
         return system_reserved_size;
     }
 
@@ -59,7 +59,7 @@ public:
     [[nodiscard]] const u8* UserVirtualBase() const noexcept {
         return user_base;
     }
-    [[nodiscard]] size_t UserVirtualSize() const noexcept {
+    [[nodiscard]] u64 UserVirtualSize() const noexcept {
         return user_size;
     }
 
@@ -73,17 +73,15 @@ public:
      *                  If zero is provided the mapping is considered as private.
      * @return A pointer to the mapped memory.
      */
-    void* Map(VAddr virtual_addr, size_t size, u64 alignment = 0, PAddr phys_addr = -1,
-              bool exec = false);
+    void* Map(VAddr virtual_addr, u64 size, PAddr phys_addr = -1, bool exec = false);
 
     /// Memory maps a specified file descriptor.
-    void* MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot, uintptr_t fd);
+    void* MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
-               PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file);
+    void Unmap(VAddr virtual_addr, u64 size, bool has_backing);
 
-    void Protect(VAddr virtual_addr, size_t size, MemoryPermission perms);
+    void Protect(VAddr virtual_addr, u64 size, MemoryPermission perms);
 
     // Returns an interval set containing all usable regions.
     boost::icl::interval_set<VAddr> GetUsableRegions();
@@ -93,11 +91,11 @@ private:
     std::unique_ptr<Impl> impl;
     u8* backing_base{};
     u8* system_managed_base{};
-    size_t system_managed_size{};
+    u64 system_managed_size{};
     u8* system_reserved_base{};
-    size_t system_reserved_size{};
+    u64 system_reserved_size{};
     u8* user_base{};
-    size_t user_size{};
+    u64 user_size{};
 };
 
 } // namespace Core

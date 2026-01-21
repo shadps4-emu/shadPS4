@@ -93,7 +93,10 @@ static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
 
 struct MemoryRegion {
     VAddr base;
-    size_t size;
+    PAddr phys_base;
+    u64 size;
+    u32 prot;
+    s32 fd;
     bool is_mapped;
 };
 
@@ -159,7 +162,8 @@ struct AddressSpace::Impl {
             // Restrict region size to avoid overly fragmenting the virtual memory space.
             if (info.State == MEM_FREE && info.RegionSize > 0x1000000) {
                 VAddr addr = Common::AlignUp(reinterpret_cast<VAddr>(info.BaseAddress), alignment);
-                regions.emplace(addr, MemoryRegion{addr, size, false});
+                regions.emplace(addr,
+                                MemoryRegion{addr, PAddr(-1), size, PAGE_NOACCESS, -1, false});
             }
         }
 
@@ -207,29 +211,32 @@ struct AddressSpace::Impl {
     ~Impl() {
         if (virtual_base) {
             if (!VirtualFree(virtual_base, 0, MEM_RELEASE)) {
-                LOG_CRITICAL(Render, "Failed to free virtual memory");
+                LOG_CRITICAL(Core, "Failed to free virtual memory");
             }
         }
         if (backing_base) {
             if (!UnmapViewOfFile2(process, backing_base, MEM_PRESERVE_PLACEHOLDER)) {
-                LOG_CRITICAL(Render, "Failed to unmap backing memory placeholder");
+                LOG_CRITICAL(Core, "Failed to unmap backing memory placeholder");
             }
             if (!VirtualFreeEx(process, backing_base, 0, MEM_RELEASE)) {
-                LOG_CRITICAL(Render, "Failed to free backing memory");
+                LOG_CRITICAL(Core, "Failed to free backing memory");
             }
         }
         if (!CloseHandle(backing_handle)) {
-            LOG_CRITICAL(Render, "Failed to free backing memory file handle");
+            LOG_CRITICAL(Core, "Failed to free backing memory file handle");
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, ULONG prot, uintptr_t fd = 0) {
-        // Before mapping we must carve a placeholder with the exact properties of our mapping.
-        auto* region = EnsureSplitRegionForMapping(virtual_addr, size);
-        region->is_mapped = true;
+    void* MapRegion(MemoryRegion* region) {
+        VAddr virtual_addr = region->base;
+        PAddr phys_addr = region->phys_base;
+        u64 size = region->size;
+        ULONG prot = region->prot;
+        s32 fd = region->fd;
+
         void* ptr = nullptr;
         if (phys_addr != -1) {
-            HANDLE backing = fd ? reinterpret_cast<HANDLE>(fd) : backing_handle;
+            HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
             if (fd && prot == PAGE_READONLY) {
                 DWORD resultvar;
                 ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
@@ -257,110 +264,136 @@ struct AddressSpace::Impl {
         return ptr;
     }
 
-    void Unmap(VAddr virtual_addr, size_t size, bool has_backing) {
-        bool ret;
-        if (has_backing) {
+    void UnmapRegion(MemoryRegion* region) {
+        VAddr virtual_addr = region->base;
+        PAddr phys_base = region->phys_base;
+        u64 size = region->size;
+
+        bool ret = false;
+        if (phys_base != -1) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
             ret = VirtualFreeEx(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                 MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER);
         }
-        ASSERT_MSG(ret, "Unmap operation on virtual_addr={:#X} failed: {}", virtual_addr,
+        ASSERT_MSG(ret, "Unmap on virtual_addr {:#x}, size {:#x} failed: {}", virtual_addr, size,
                    Common::GetLastErrorMsg());
-
-        // The unmap call will create a new placeholder region. We need to see if we can coalesce it
-        // with neighbors.
-        JoinRegionsAfterUnmap(virtual_addr, size);
     }
 
-    // The following code is inspired from Dolphin's MemArena
-    // https://github.com/dolphin-emu/dolphin/blob/deee3ee4/Source/Core/Common/MemArenaWin.cpp#L212
-    MemoryRegion* EnsureSplitRegionForMapping(VAddr address, size_t size) {
-        // Find closest region that is <= the given address by using upper bound and decrementing
-        auto it = regions.upper_bound(address);
-        ASSERT_MSG(it != regions.begin(), "Invalid address {:#x}", address);
-        --it;
-        ASSERT_MSG(!it->second.is_mapped,
-                   "Attempt to map {:#x} with size {:#x} which overlaps with {:#x} mapping",
-                   address, size, it->second.base);
-        auto& [base, region] = *it;
+    void SplitRegion(VAddr virtual_addr, u64 size) {
+        // First, get the region this range covers
+        auto it = std::prev(regions.upper_bound(virtual_addr));
 
-        const VAddr mapping_address = region.base;
-        const size_t region_size = region.size;
-        if (mapping_address == address) {
-            // If this region is already split up correctly we don't have to do anything
-            if (region_size == size) {
-                return &region;
+        // All unmapped areas will coalesce, so there should be a region
+        // containing the full requested range. If not, then something is mapped here.
+        ASSERT_MSG(it->second.base + it->second.size >= virtual_addr + size,
+                   "Cannot fit region into one placeholder");
+
+        // If the region is mapped, we need to unmap first before we can modify the placeholders.
+        if (it->second.is_mapped) {
+            ASSERT_MSG(it->second.phys_base != -1 || !it->second.is_mapped,
+                       "Cannot split unbacked mapping");
+            UnmapRegion(&it->second);
+        }
+
+        // We need to split this region to create a matching placeholder.
+        if (it->second.base != virtual_addr) {
+            // Requested address is not the start of the containing region,
+            // create a new region to represent the memory before the requested range.
+            auto& region = it->second;
+            u64 base_offset = virtual_addr - region.base;
+            u64 next_region_size = region.size - base_offset;
+            PAddr next_region_phys_base = -1;
+            if (region.is_mapped) {
+                next_region_phys_base = region.phys_base + base_offset;
             }
+            region.size = base_offset;
 
-            ASSERT_MSG(region_size >= size,
-                       "Region with address {:#x} and size {:#x} can't fit {:#x}", mapping_address,
-                       region_size, size);
-
-            // Split the placeholder.
-            if (!VirtualFreeEx(process, LPVOID(address), size,
+            // Use VirtualFreeEx to create the split.
+            if (!VirtualFreeEx(process, LPVOID(region.base), region.size,
                                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
                 UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
-                return nullptr;
             }
 
-            // Update tracked mappings and return the first of the two
+            // If the mapping was mapped, remap the region.
+            if (region.is_mapped) {
+                MapRegion(&region);
+            }
+
+            // Store a new region matching the removed area.
+            it = regions.emplace_hint(std::next(it), virtual_addr,
+                                      MemoryRegion(virtual_addr, next_region_phys_base,
+                                                   next_region_size, region.prot, region.fd,
+                                                   region.is_mapped));
+        }
+
+        // At this point, the region's base will match virtual_addr.
+        // Now check for a size difference.
+        if (it->second.size != size) {
+            // The requested size is smaller than the current region placeholder.
+            // Update region to match the requested region,
+            // then make a new region to represent the remaining space.
+            auto& region = it->second;
+            VAddr next_region_addr = region.base + size;
+            u64 next_region_size = region.size - size;
+            PAddr next_region_phys_base = -1;
+            if (region.is_mapped) {
+                next_region_phys_base = region.phys_base + size;
+            }
             region.size = size;
-            const VAddr new_mapping_start = address + size;
-            regions.emplace_hint(std::next(it), new_mapping_start,
-                                 MemoryRegion(new_mapping_start, region_size - size, false));
-            return &region;
+
+            // Store the new region matching the remaining space
+            regions.emplace_hint(std::next(it), next_region_addr,
+                                 MemoryRegion(next_region_addr, next_region_phys_base,
+                                              next_region_size, region.prot, region.fd,
+                                              region.is_mapped));
+
+            // Use VirtualFreeEx to create the split.
+            if (!VirtualFreeEx(process, LPVOID(region.base), region.size,
+                               MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
+                UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
+            }
+
+            // If these regions were mapped, then map the unmapped area beyond the requested range.
+            if (region.is_mapped) {
+                MapRegion(&std::next(it)->second);
+            }
         }
 
-        ASSERT(mapping_address < address);
-
-        // Is there enough space to map this?
-        const size_t offset_in_region = address - mapping_address;
-        const size_t minimum_size = size + offset_in_region;
-        ASSERT(region_size >= minimum_size);
-
-        // Split the placeholder.
-        if (!VirtualFreeEx(process, LPVOID(address), size,
-                           MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
-            UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
-            return nullptr;
-        }
-
-        // Do we now have two regions or three regions?
-        if (region_size == minimum_size) {
-            // Split into two; update tracked mappings and return the second one
-            region.size = offset_in_region;
-            it = regions.emplace_hint(std::next(it), address, MemoryRegion(address, size, false));
-            return &it->second;
-        } else {
-            // Split into three; update tracked mappings and return the middle one
-            region.size = offset_in_region;
-            const VAddr middle_mapping_start = address;
-            const size_t middle_mapping_size = size;
-            const VAddr after_mapping_start = address + size;
-            const size_t after_mapping_size = region_size - minimum_size;
-            it = regions.emplace_hint(std::next(it), after_mapping_start,
-                                      MemoryRegion(after_mapping_start, after_mapping_size, false));
-            it = regions.emplace_hint(
-                it, middle_mapping_start,
-                MemoryRegion(middle_mapping_start, middle_mapping_size, false));
-            return &it->second;
+        // If the requested region was mapped, remap it.
+        if (it->second.is_mapped) {
+            MapRegion(&it->second);
         }
     }
 
-    void JoinRegionsAfterUnmap(VAddr address, size_t size) {
-        // There should be a mapping that matches the request exactly, find it
-        auto it = regions.find(address);
-        ASSERT_MSG(it != regions.end() && it->second.size == size,
-                   "Invalid address/size given to unmap.");
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
+        // Split surrounding regions to create a placeholder
+        SplitRegion(virtual_addr, size);
+
+        // Get the region this range covers
+        auto it = std::prev(regions.upper_bound(virtual_addr));
         auto& [base, region] = *it;
-        region.is_mapped = false;
+
+        ASSERT_MSG(!region.is_mapped, "Cannot overwrite mapped region");
+
+        // Now we have a region matching the requested region, perform the actual mapping.
+        region.is_mapped = true;
+        region.phys_base = phys_addr;
+        region.prot = prot;
+        region.fd = fd;
+        return MapRegion(&region);
+    }
+
+    void CoalesceFreeRegions(VAddr virtual_addr) {
+        // First, get the region to update
+        auto it = std::prev(regions.upper_bound(virtual_addr));
+        ASSERT_MSG(!it->second.is_mapped, "Cannot coalesce mapped regions");
 
         // Check if a placeholder exists right before us.
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         if (it_prev != regions.end() && !it_prev->second.is_mapped) {
-            const size_t total_size = it_prev->second.size + size;
+            const u64 total_size = it_prev->second.size + it->second.size;
             if (!VirtualFreeEx(process, LPVOID(it_prev->first), total_size,
                                MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
@@ -374,7 +407,7 @@ struct AddressSpace::Impl {
         // Check if a placeholder exists right after us.
         auto it_next = std::next(it);
         if (it_next != regions.end() && !it_next->second.is_mapped) {
-            const size_t total_size = it->second.size + it_next->second.size;
+            const u64 total_size = it->second.size + it_next->second.size;
             if (!VirtualFreeEx(process, LPVOID(it->first), total_size,
                                MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
@@ -385,7 +418,47 @@ struct AddressSpace::Impl {
         }
     }
 
-    void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
+    void Unmap(VAddr virtual_addr, u64 size) {
+        // Loop through all regions in the requested range
+        u64 remaining_size = size;
+        VAddr current_addr = virtual_addr;
+        while (remaining_size > 0) {
+            // Get the region containing our current address.
+            auto it = std::prev(regions.upper_bound(current_addr));
+
+            // If necessary, split regions to ensure a valid unmap.
+            // To prevent complication, ensure size is within the bounds of the current region.
+            u64 base_offset = current_addr - it->second.base;
+            u64 size_to_unmap = std::min<u64>(it->second.size - base_offset, remaining_size);
+            if (current_addr != it->second.base || size_to_unmap != it->second.size) {
+                SplitRegion(current_addr, size_to_unmap);
+            }
+
+            // Repair the region pointer, as SplitRegion modifies the regions map.
+            it = std::prev(regions.upper_bound(current_addr));
+            auto& [base, region] = *it;
+
+            // Unmap the region if it was previously mapped
+            if (region.is_mapped) {
+                UnmapRegion(&region);
+            }
+
+            // Update region data
+            region.is_mapped = false;
+            region.fd = -1;
+            region.phys_base = -1;
+            region.prot = PAGE_NOACCESS;
+
+            // Coalesce any free space
+            CoalesceFreeRegions(current_addr);
+
+            // Update loop variables
+            remaining_size -= size_to_unmap;
+            current_addr += size_to_unmap;
+        }
+    }
+
+    void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
         DWORD new_flags{};
 
         if (write && !read) {
@@ -415,7 +488,7 @@ struct AddressSpace::Impl {
 
         // If no flags are assigned, then something's gone wrong.
         if (new_flags == 0) {
-            LOG_CRITICAL(Common_Memory,
+            LOG_CRITICAL(Core,
                          "Unsupported protection flag combination for address {:#x}, size {}, "
                          "read={}, write={}, execute={}",
                          virtual_addr, size, read, write, execute);
@@ -429,8 +502,8 @@ struct AddressSpace::Impl {
                 continue;
             }
             const auto& region = it->second;
-            const size_t range_addr = std::max(region.base, virtual_addr);
-            const size_t range_size = std::min(region.base + region.size, virtual_end) - range_addr;
+            const u64 range_addr = std::max(region.base, virtual_addr);
+            const u64 range_size = std::min(region.base + region.size, virtual_end) - range_addr;
             DWORD old_flags{};
             if (!VirtualProtectEx(process, LPVOID(range_addr), range_size, new_flags, &old_flags)) {
                 UNREACHABLE_MSG(
@@ -453,11 +526,11 @@ struct AddressSpace::Impl {
     u8* backing_base{};
     u8* virtual_base{};
     u8* system_managed_base{};
-    size_t system_managed_size{};
+    u64 system_managed_size{};
     u8* system_reserved_base{};
-    size_t system_reserved_size{};
+    u64 system_reserved_size{};
     u8* user_base{};
-    size_t user_size{};
+    u64 user_size{};
     std::map<VAddr, MemoryRegion> regions;
 };
 #else
@@ -601,7 +674,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, size_t size, PosixPageProtection prot,
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot,
               int fd = -1) {
         m_free_regions.subtract({virtual_addr, virtual_addr + size});
         const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
@@ -613,10 +686,10 @@ struct AddressSpace::Impl {
         return ret;
     }
 
-    void Unmap(VAddr virtual_addr, size_t size, bool) {
+    void Unmap(VAddr virtual_addr, u64 size, bool) {
         // Check to see if we are adjacent to any regions.
-        auto start_address = virtual_addr;
-        auto end_address = start_address + size;
+        VAddr start_address = virtual_addr;
+        VAddr end_address = start_address + size;
         auto it = m_free_regions.find({start_address - 1, end_address + 1});
 
         // If we are, join with them, ensuring we stay in bounds.
@@ -634,7 +707,7 @@ struct AddressSpace::Impl {
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
     }
 
-    void Protect(VAddr virtual_addr, size_t size, bool read, bool write, bool execute) {
+    void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
         int flags = PROT_NONE;
         if (read) {
             flags |= PROT_READ;
@@ -654,11 +727,11 @@ struct AddressSpace::Impl {
     int backing_fd;
     u8* backing_base{};
     u8* system_managed_base{};
-    size_t system_managed_size{};
+    u64 system_managed_size{};
     u8* system_reserved_base{};
-    size_t system_reserved_size{};
+    u64 system_reserved_size{};
     u8* user_base{};
-    size_t user_size{};
+    u64 user_size{};
     boost::icl::interval_set<VAddr> m_free_regions;
 };
 #endif
@@ -675,8 +748,7 @@ AddressSpace::AddressSpace() : impl{std::make_unique<Impl>()} {
 
 AddressSpace::~AddressSpace() = default;
 
-void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr phys_addr,
-                        bool is_exec) {
+void* AddressSpace::Map(VAddr virtual_addr, u64 size, PAddr phys_addr, bool is_exec) {
 #if ARCH_X86_64
     const auto prot = is_exec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE;
 #else
@@ -687,8 +759,7 @@ void* AddressSpace::Map(VAddr virtual_addr, size_t size, u64 alignment, PAddr ph
     return impl->Map(virtual_addr, phys_addr, size, prot);
 }
 
-void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 prot,
-                            uintptr_t fd) {
+void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd) {
 #ifdef _WIN32
     return impl->Map(virtual_addr, offset, size,
                      ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
@@ -698,31 +769,15 @@ void* AddressSpace::MapFile(VAddr virtual_addr, size_t size, size_t offset, u32 
 #endif
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, size_t size, VAddr start_in_vma, VAddr end_in_vma,
-                         PAddr phys_base, bool is_exec, bool has_backing, bool readonly_file) {
+void AddressSpace::Unmap(VAddr virtual_addr, u64 size, bool has_backing) {
 #ifdef _WIN32
-    // There does not appear to be comparable support for partial unmapping on Windows.
-    // Unfortunately, a least one title was found to require this. The workaround is to unmap
-    // the entire allocation and remap the portions outside of the requested unmapping range.
-    impl->Unmap(virtual_addr, size, has_backing && !readonly_file);
-
-    // TODO: Determine if any titles require partial unmapping support for un-backed allocations.
-    ASSERT_MSG(has_backing || (start_in_vma == 0 && end_in_vma == size),
-               "Partial unmapping of un-backed allocations is not supported");
-
-    if (start_in_vma != 0) {
-        Map(virtual_addr, start_in_vma, 0, phys_base, is_exec);
-    }
-
-    if (end_in_vma != size) {
-        Map(virtual_addr + end_in_vma, size - end_in_vma, 0, phys_base + end_in_vma, is_exec);
-    }
+    impl->Unmap(virtual_addr, size);
 #else
-    impl->Unmap(virtual_addr + start_in_vma, end_in_vma - start_in_vma, has_backing);
+    impl->Unmap(virtual_addr, size, has_backing);
 #endif
 }
 
-void AddressSpace::Protect(VAddr virtual_addr, size_t size, MemoryPermission perms) {
+void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms) {
     const bool read = True(perms & MemoryPermission::Read);
     const bool write = True(perms & MemoryPermission::Write);
     const bool execute = True(perms & MemoryPermission::Execute);
