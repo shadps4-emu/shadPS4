@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/camera/camera.h"
@@ -9,11 +10,16 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 
+#include <opencv2/opencv.hpp>
+
 namespace Libraries::Camera {
 
 static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
 static s32 g_handles = 0;
+
+cv::VideoCapture cap{};
+OrbisCameraConfigExtention output_config0, output_config1;
 
 s32 PS4_SYSV_ABI sceCameraAccGetData() {
     LOG_ERROR(Lib_Camera, "(STUBBED) called");
@@ -499,7 +505,7 @@ s32 PS4_SYSV_ABI sceCameraIsAttached(s32 index) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     // 0 = disconnected, 1 = connected
-    return 0;
+    return Config::GetOpenCVCameraId() == -1 ? 0 : 1;
 }
 
 s32 PS4_SYSV_ABI sceCameraIsConfigChangeDone() {
@@ -516,16 +522,23 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* fra
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
-    return ORBIS_OK;
+    return 1; // valid
 }
 
 s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                                s32 index, OrbisCameraOpenParameter* param) {
+    LOG_INFO(Lib_Camera, "called");
     if (user_id != Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM || type != 0 ||
         index != 0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    LOG_WARNING(Lib_Camera, "Cameras are not supported yet");
+
+    cap = cv::VideoCapture{Config::GetOpenCVCameraId(), cv::CAP_V4L2};
+    if (!cap.isOpened()) {
+        LOG_ERROR(Lib_Camera, "Failed to open camera");
+        return ORBIS_CAMERA_ERROR_FATAL; // slight improvisation, but this error code can
+                                         // technically occur according to RE
+    }
 
     g_library_opened = true;
     return ++g_handles;
@@ -609,15 +622,37 @@ s32 PS4_SYSV_ABI sceCameraSetCalibData() {
 }
 
 s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
-    LOG_DEBUG(Lib_Camera, "called");
+    LOG_INFO(Lib_Camera, "called");
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (!g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
+    if (Config::GetOpenCVCameraId() == -1) {
+        return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
+    }
 
-    return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
+    switch (config->configType) {
+    case ORBIS_CAMERA_CONFIG_TYPE1:
+    case ORBIS_CAMERA_CONFIG_TYPE2:
+    case ORBIS_CAMERA_CONFIG_TYPE3:
+    case ORBIS_CAMERA_CONFIG_TYPE4:
+        output_config0 = camera_config_types[config->configType - 1][0];
+        output_config1 = camera_config_types[config->configType - 1][1];
+        break;
+    case ORBIS_CAMERA_CONFIG_EXTENTION:
+        output_config0 = config->configExtention[0];
+        output_config1 = config->configExtention[1];
+        break;
+    default:
+        LOG_ERROR(Lib_Camera, "Invalid config type {}", std::to_underlying(config->configType));
+        return ORBIS_CAMERA_ERROR_PARAM;
+    }
+
+    cap.set(cv::CAP_PROP_FPS, output_config0.framerate);
+
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraSetConfigInternal(s32 handle, OrbisCameraConfig* config) {
@@ -851,7 +886,7 @@ s32 PS4_SYSV_ABI sceCameraSetWhiteBalance(s32 handle, OrbisCameraChannel channel
 }
 
 s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
-    LOG_DEBUG(Lib_Camera, "called");
+    LOG_INFO(Lib_Camera, "called");
     if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
