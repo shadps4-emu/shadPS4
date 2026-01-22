@@ -176,7 +176,8 @@ int main(int argc, char* argv[]) {
         constexpr int maxDepth = 5;
 
         for (const auto& installDir : Config::getGameInstallDirs()) {
-            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth);
+                foundPath.has_value()) {
                 ebootPath = *foundPath;
                 found = true;
                 break;
