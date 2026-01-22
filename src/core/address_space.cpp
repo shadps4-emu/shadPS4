@@ -367,14 +367,19 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
-        // Split surrounding regions to create a placeholder
-        SplitRegion(virtual_addr, size);
-
-        // Get the region this range covers
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1,
+              bool is_shared = false) {
+        // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
-        auto& [base, region] = *it;
 
+        // If needed, split surrounding regions to create a placeholder
+        if (it->first != virtual_addr || it->second.size != size) {
+            SplitRegion(virtual_addr, size);
+            it = std::prev(regions.upper_bound(virtual_addr));
+        }
+
+        // Get the address and region for this range.
+        auto& [base, region] = *it;
         ASSERT_MSG(!region.is_mapped, "Cannot overwrite mapped region");
 
         // Now we have a region matching the requested region, perform the actual mapping.
@@ -391,30 +396,33 @@ struct AddressSpace::Impl {
         ASSERT_MSG(!it->second.is_mapped, "Cannot coalesce mapped regions");
 
         // Check if a placeholder exists right before us.
+        bool can_coalesce = false;
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         if (it_prev != regions.end() && !it_prev->second.is_mapped) {
-            const u64 total_size = it_prev->second.size + it->second.size;
-            if (!VirtualFreeEx(process, LPVOID(it_prev->first), total_size,
-                               MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
-                UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
-            }
-
-            it_prev->second.size = total_size;
+            // If there is an earlier region, move our iterator to that and increase size.
+            it_prev->second.size = it_prev->second.size + it->second.size;
             regions.erase(it);
             it = it_prev;
+            // Mark this region as coalesce-able.
+            can_coalesce = true;
         }
 
         // Check if a placeholder exists right after us.
         auto it_next = std::next(it);
         if (it_next != regions.end() && !it_next->second.is_mapped) {
-            const u64 total_size = it->second.size + it_next->second.size;
-            if (!VirtualFreeEx(process, LPVOID(it->first), total_size,
+            // If there is a later region, increase our current region's size
+            it->second.size = it->second.size + it_next->second.size;
+            regions.erase(it_next);
+            // Mark this region as coalesce-able.
+            can_coalesce = true;
+        }
+
+        // If there are placeholders to coalesce, then coalesce them.
+        if (can_coalesce) {
+            if (!VirtualFreeEx(process, LPVOID(it->first), it->second.size,
                                MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
-
-            it->second.size = total_size;
-            regions.erase(it_next);
         }
     }
 
@@ -423,7 +431,7 @@ struct AddressSpace::Impl {
         u64 remaining_size = size;
         VAddr current_addr = virtual_addr;
         while (remaining_size > 0) {
-            // Get the region containing our current address.
+            // Get a pointer to the region containing virtual_addr
             auto it = std::prev(regions.upper_bound(current_addr));
 
             // If necessary, split regions to ensure a valid unmap.
@@ -432,10 +440,10 @@ struct AddressSpace::Impl {
             u64 size_to_unmap = std::min<u64>(it->second.size - base_offset, remaining_size);
             if (current_addr != it->second.base || size_to_unmap != it->second.size) {
                 SplitRegion(current_addr, size_to_unmap);
+                it = std::prev(regions.upper_bound(current_addr));
             }
 
-            // Repair the region pointer, as SplitRegion modifies the regions map.
-            it = std::prev(regions.upper_bound(current_addr));
+            // Get the address and region corresponding to this range.
             auto& [base, region] = *it;
 
             // Unmap the region if it was previously mapped
