@@ -52,6 +52,33 @@
 #include <windows.h>
 #endif
 
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <filesystem>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <CLI/CLI.hpp>
+#include <SDL3/SDL_messagebox.h>
+
+#include <core/emulator_state.h>
+#include <fmt/core.h>
+#include "common/config.h"
+#include "common/logging/backend.h"
+#include "common/memory_patcher.h"
+#include "common/path_util.h"
+#include "core/debugger.h"
+#include "core/file_sys/fs.h"
+#include "core/ipc/ipc.h"
+#include "emulator.h"
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
+#include <common/key_manager.h>
+
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
@@ -63,32 +90,26 @@ int main(int argc, char* argv[]) {
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
 
-    // Load config
+    // Load configuration
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
     // Migrate trophy key if needed
     auto key_manager = KeyManager::GetInstance();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
-        !Config::getTrophyKey().empty()) {
-        key_manager->SetAllKeys({.TrophyKeySet = {.ReleaseTrophyKey = KeyManager::HexStringToBytes(
-                                                      Config::getTrophyKey())}});
-        key_manager->SaveToFile();
+    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty()) {
+        if (!Config::getTrophyKey().empty()) {
+            key_manager->SetAllKeys(
+                {.TrophyKeySet = {.ReleaseTrophyKey =
+                                      KeyManager::HexStringToBytes(Config::getTrophyKey())}});
+            key_manager->SaveToFile();
+        }
     }
 
-    // ---- CLI11 app ----
     CLI::App app{"shadPS4 Emulator CLI"};
-    app.allow_extras();
 
     // CLI variables
-    std::optional<std::string> gamePath;
-    std::vector<std::string> gameArgs;
     std::optional<std::filesystem::path> overrideRoot;
-    std::optional<std::filesystem::path> addGameFolder;
-    std::optional<std::filesystem::path> setAddonFolder;
-    std::optional<std::string> patchFile;
     std::optional<int> waitPid;
-
     bool waitForDebugger = false;
     bool ignoreGamePatch = false;
     bool fullscreen = false;
@@ -96,11 +117,13 @@ int main(int argc, char* argv[]) {
     bool configClean = false;
     bool configGlobal = false;
     bool logAppend = false;
+    std::optional<std::filesystem::path> addGameFolder;
+    std::optional<std::filesystem::path> setAddonFolder;
+    std::optional<std::string> patchFile;
 
-    // ---- Options ----
-    app.add_option("-g,--game", gamePath, "Game path or ID (optional if positional)");
-    app.add_option("-p,--patch", patchFile, "Patch file to apply");
-    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch, "Disable game patches");
+    // ---- CLI options ----
+    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
+                 "Disable automatic loading of game patches");
     app.add_flag("-f,--fullscreen", fullscreen, "Start in fullscreen mode");
     app.add_option("--override-root", overrideRoot, "Override game root folder")
         ->check(CLI::ExistingDirectory);
@@ -110,15 +133,17 @@ int main(int argc, char* argv[]) {
     app.add_flag("--config-clean", configClean, "Ignore config files and use defaults");
     app.add_flag("--config-global", configGlobal, "Use base config only");
     app.add_flag("--log-append", logAppend, "Append log output instead of overwriting");
+    app.add_option("-p,--patch", patchFile, "Patch file to apply");
 
     app.add_option("--add-game-folder", addGameFolder, "Add a new game folder to the config")
         ->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder, "Set addon folder in the config")
         ->check(CLI::ExistingDirectory);
 
-    // Positional arguments
-    app.add_option("game", gamePath, "Game path or ID (autodetect last argument)");
-    app.add_option("game_args", gameArgs, "Arguments passed to the game executable")->expected(-1);
+    // ---- Positional arguments ----
+    // The first positional element is the gamePath; the rest go to gameArgs
+    std::vector<std::string> game_and_args;
+    app.add_option("game_and_args", game_and_args, "Game path/ID + arguments")->expected(-1);
 
     // ---- Show SDL message if no args ----
     if (argc == 1) {
@@ -153,7 +178,16 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // ---- Require game path ----
+    // ---- Handle positional game path + args ----
+    std::optional<std::string> gamePath;
+    std::vector<std::string> gameArgs;
+    if (!game_and_args.empty()) {
+        gamePath = game_and_args[0]; // first element is gamePath
+        if (game_and_args.size() > 1) {
+            gameArgs.assign(game_and_args.begin() + 1, game_and_args.end());
+        }
+    }
+
     if (!gamePath.has_value()) {
         std::cerr << "Error: Please provide a game path or ID.\n";
         return 1;
@@ -180,13 +214,15 @@ int main(int argc, char* argv[]) {
     if (logAppend)
         Common::Log::SetAppend();
 
-    // ---- Resolve game path or ID ----
+    // ---- Resolve game path ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
-        for (const auto& dir : Config::getGameInstallDirs()) {
-            if (auto f = Common::FS::FindGameByID(dir, *gamePath, 5); f.has_value()) {
-                ebootPath = *f;
+        constexpr int maxDepth = 5;
+        for (const auto& installDir : Config::getGameInstallDirs()) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth);
+                foundPath.has_value()) {
+                ebootPath = *foundPath;
                 found = true;
                 break;
             }
@@ -197,16 +233,17 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::filesystem::path gameRoot = overrideRoot.value_or(ebootPath.parent_path());
+    // ---- Determine game root ----
+    std::optional<std::filesystem::path> gameRoot;
+    if (overrideRoot.has_value()) {
+        gameRoot = overrideRoot;
+    } else {
+        gameRoot = ebootPath.parent_path();
+    }
 
     // ---- Wait for PID ----
     if (waitPid.has_value())
         Core::Debugger::WaitForPid(*waitPid);
-
-    auto extras = app.get_extras();
-    if (!extras.empty()) {
-        gameArgs.insert(gameArgs.end(), extras.begin(), extras.end());
-    }
 
     // ---- Run emulator ----
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
