@@ -114,7 +114,7 @@ void setPadSpkOutputDevice(std::string device, bool is_game_specific = false);
 std::string getMicDevice();
 void setCursorHideTimeout(int newcursorHideTimeout, bool is_game_specific = false);
 void setMicDevice(std::string device, bool is_game_specific = false);
-void SetOpenCVCameraId(s32 id);
+void SetOpenCVCameraId(s32 id, bool is_game_specific = false);
 s32 GetOpenCVCameraId();
 void setSeparateLogFilesEnabled(bool enabled, bool is_game_specific = false);
 bool getSeparateLogFilesEnabled();

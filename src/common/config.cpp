@@ -350,10 +350,10 @@ std::string getPadSpkOutputDevice() {
 }
 
 void SetOpenCVCameraId(s32 id) {
-
+    openCVCameraId.set(id);
 }
 s32 GetOpenCVCameraId() {
-
+    return openCVCameraId.get();
 }
 
 double getTrophyNotificationDuration() {
