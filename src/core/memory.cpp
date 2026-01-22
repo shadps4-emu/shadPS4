@@ -386,7 +386,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 
         // Perform an address space mapping for each physical area
         void* out_addr = impl.Map(current_addr, size_to_map, new_dmem_area.base);
-        TRACK_ALLOC(out_addr, size_to_map, "VMEM");
+        // Tracy memory tracking breaks from merging memory areas. Disabled for now.
+        // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
         handle = MergeAdjacent(dmem_map, new_dmem_handle);
         current_addr += size_to_map;
@@ -542,7 +543,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
-            TRACK_ALLOC(out_addr, size_to_map, "VMEM");
+            // Tracy memory tracking breaks from merging memory areas. Disabled for now.
+            // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
             handle = MergeAdjacent(fmem_map, new_fmem_handle);
             current_addr += size_to_map;
@@ -594,8 +596,9 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
             impl.Map(mapped_addr, size, phys_addr, is_exec);
+            // Tracy memory tracking breaks from merging memory areas. Disabled for now.
+            // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
-        TRACK_ALLOC(*out_addr, size, "VMEM");
 
         mutex.unlock();
 
@@ -768,7 +771,8 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
 
     // Unmap from address space
     impl.Unmap(virtual_addr, size, true);
-    TRACK_FREE(virtual_addr, "VMEM");
+    // Tracy memory tracking breaks from merging memory areas. Disabled for now.
+    // TRACK_FREE(virtual_addr, "VMEM");
 
     mutex.unlock();
     return ORBIS_OK;
@@ -857,7 +861,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
         // Unmap the memory region.
         impl.Unmap(virtual_addr, size_in_vma, has_backing);
-        TRACK_FREE(virtual_addr, "VMEM");
+        // Tracy memory tracking breaks from merging memory areas. Disabled for now.
+        // TRACK_FREE(virtual_addr, "VMEM");
 
         // If this mapping has GPU access, unmap from GPU.
         if (IsValidGpuMapping(virtual_addr, size)) {
