@@ -203,6 +203,11 @@ int main(int argc, char* argv[]) {
     if (waitPid.has_value())
         Core::Debugger::WaitForPid(*waitPid);
 
+    auto extras = app.get_extras();
+    if (!extras.empty()) {
+        gameArgs.insert(gameArgs.end(), extras.begin(), extras.end());
+    }
+
     // ---- Run emulator ----
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
