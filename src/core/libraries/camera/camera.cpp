@@ -344,7 +344,7 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     }
     static cv::Mat frame;
     cap >> frame;
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2YUV_Y422); // todo use output_config0 instead
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2YUV_YUYV); // todo use output_config0 instead
     frame_data->pFramePointerList[0][0] = frame.data;
     frame_data->pFramePointerList[1][0] = frame.data;
     return ORBIS_OK;
