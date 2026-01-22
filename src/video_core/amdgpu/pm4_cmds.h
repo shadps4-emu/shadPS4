@@ -922,7 +922,8 @@ struct PM4CmdReleaseMem {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(address_lo | u64(address_hi) << 32);
+        u64 full_address = address_lo | (u64(address_hi) << 32);
+        return std::bit_cast<T>(full_address);
     }
 
     u32 DataDWord() const {
