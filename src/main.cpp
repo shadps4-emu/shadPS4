@@ -53,7 +53,8 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
-    std::string gamePath;
+    // ---- CLI variables ----
+    std::optional<std::string> gamePath;
     std::vector<std::string> gameArgs;
 
     std::optional<std::filesystem::path> overrideRoot;
@@ -72,7 +73,9 @@ int main(int argc, char* argv[]) {
     std::optional<std::string> patchFile;
 
     // ---- Options ----
-    app.add_option("-g,--game", gamePath, "Game path or game ID")->required();
+    // Optional alias for explicit -g/--game
+    app.add_option("-g,--game", gamePath, "Game path or ID (optional if provided as positional)");
+
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
 
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
@@ -101,10 +104,11 @@ int main(int argc, char* argv[]) {
     app.add_option("--set-addon-folder", setAddonFolder, "Set addon folder in the config")
         ->check(CLI::ExistingDirectory);
 
-    // Everything after `--` goes to the game
+    // ---- Positional arguments ----
+    app.add_option("game", gamePath, "Game path or ID (autodetect if last argument)");
     app.add_option("game_args", gameArgs, "Arguments passed to the game executable")->expected(-1);
 
-    // ---- No args: show SDL message + help ----
+    // ---- Show SDL message if no args provided ----
     if (argc == 1) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
                                  "This is a CLI application.\n"
@@ -123,7 +127,7 @@ int main(int argc, char* argv[]) {
         return app.exit(e);
     }
 
-    // ---- Config-only commands ----
+    // ---- Handle config-only commands ----
     if (addGameFolder.has_value()) {
         Config::addGameInstallDir(*addGameFolder);
         Config::save(user_dir / "config.toml");
@@ -136,6 +140,12 @@ int main(int argc, char* argv[]) {
         Config::save(user_dir / "config.toml");
         std::cout << "Addon folder successfully saved.\n";
         return 0;
+    }
+
+    // ---- Ensure game path exists ----
+    if (!gamePath.has_value()) {
+        std::cerr << "Error: Please provide a game path or ID.\n";
+        return 1;
     }
 
     // ---- Apply flags ----
@@ -160,13 +170,13 @@ int main(int argc, char* argv[]) {
         Common::Log::SetAppend();
 
     // ---- Resolve game path or ID ----
-    std::filesystem::path ebootPath(gamePath);
+    std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
 
         for (const auto& installDir : Config::getGameInstallDirs()) {
-            if (auto foundPath = Common::FS::FindGameByID(installDir, gamePath, maxDepth)) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;
                 break;
@@ -174,11 +184,12 @@ int main(int argc, char* argv[]) {
         }
 
         if (!found) {
-            std::cerr << "Error: Game ID or file path not found: " << gamePath << "\n";
+            std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
             return 1;
         }
     }
 
+    // ---- Resolve game root ----
     std::optional<std::filesystem::path> gameRoot;
     if (overrideRoot.has_value()) {
         gameRoot = overrideRoot;
@@ -186,6 +197,7 @@ int main(int argc, char* argv[]) {
         gameRoot = ebootPath.parent_path();
     }
 
+    // ---- Wait for PID ----
     if (waitPid.has_value())
         Core::Debugger::WaitForPid(*waitPid);
 
