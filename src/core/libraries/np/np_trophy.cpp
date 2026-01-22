@@ -149,7 +149,8 @@ int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, s32 user_id,
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
+                                          Libraries::UserService::OrbisUserServiceUserId user_id,
                                           uint32_t service_label, u64 options) {
     ASSERT(options == 0ull);
     if (!context) {

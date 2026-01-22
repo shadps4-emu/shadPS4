@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/videoout/buffer.h"
 
@@ -11,8 +12,6 @@ class SymbolsResolver;
 }
 
 namespace Libraries::VideoOut {
-
-using SceUserServiceUserId = s32; // TODO move it to proper place
 
 // SceVideoOutBusType
 constexpr int SCE_VIDEO_OUT_BUS_TYPE_MAIN = 0;                    // Main output
@@ -131,8 +130,8 @@ s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle);
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg);
 s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status);
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status);
-s32 PS4_SYSV_ABI sceVideoOutOpen(SceUserServiceUserId userId, s32 busType, s32 index,
-                                 const void* param);
+s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 busType,
+                                 s32 index, const void* param);
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle);
 s32 PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::SceKernelEvent* ev);
 s32 PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, s64* data);

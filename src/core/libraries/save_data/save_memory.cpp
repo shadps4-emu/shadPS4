@@ -88,8 +88,8 @@ std::string GetSaveDir(u32 slot_id) {
     return dir;
 }
 
-std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
-                                  std::string_view game_serial) {
+std::filesystem::path GetSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                  u32 slot_id, std::string_view game_serial) {
     std::string dir(StandardDirnameSaveDataMemory);
     if (slot_id > 0) {
         dir += std::to_string(slot_id);
@@ -97,8 +97,8 @@ std::filesystem::path GetSavePath(OrbisUserServiceUserId user_id, u32 slot_id,
     return SaveInstance::MakeDirSavePath(user_id, game_serial, dir);
 }
 
-size_t SetupSaveMemory(OrbisUserServiceUserId user_id, u32 slot_id, std::string_view game_serial,
-                       size_t memory_size) {
+size_t SetupSaveMemory(Libraries::UserService::OrbisUserServiceUserId user_id, u32 slot_id,
+                       std::string_view game_serial, size_t memory_size) {
     std::lock_guard lck{g_slot_mtx};
 
     const auto save_dir = GetSavePath(user_id, slot_id, game_serial);
