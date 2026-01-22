@@ -336,11 +336,18 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!g_library_opened || !cap.isOpened()) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
-
-    return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
+    if (Config::GetOpenCVCameraId() == -1) {
+        return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
+    }
+    static cv::Mat frame;
+    cap >> frame;
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2YUV_Y422); // todo use output_config0 instead
+    frame_data->pFramePointerList[0][0] = frame.data;
+    frame_data->pFramePointerList[1][0] = frame.data;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCameraGetGamma(s32 handle, OrbisCameraChannel channel, OrbisCameraGamma* gamma,
