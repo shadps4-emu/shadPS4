@@ -255,8 +255,7 @@ struct AddressSpace::Impl {
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
                 ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER,
-                                     prot, nullptr, 0);
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
                 ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
             }
         } else {
@@ -371,8 +370,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1,
-              bool is_shared = false) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
         // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
 
