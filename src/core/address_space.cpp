@@ -242,7 +242,14 @@ struct AddressSpace::Impl {
                 ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                     MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
                                     PAGE_READWRITE, nullptr, 0);
-                bool ret = ReadFile(backing, ptr, size, &resultvar, NULL);
+
+                // phys_addr serves as an offset for file mmaps.
+                // Create an OVERLAPPED with the offset, then supply that to ReadFile
+                OVERLAPPED param{};
+                // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
+                param.Offset = phys_addr & 0xffffffffull;
+                param.OffsetHigh = phys_addr & 0xffffffff00000000ull;
+                bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
                 ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
