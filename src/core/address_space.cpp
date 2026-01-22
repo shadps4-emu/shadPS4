@@ -234,6 +234,8 @@ struct AddressSpace::Impl {
         ULONG prot = region->prot;
         s32 fd = region->fd;
 
+        LOG_INFO(Core, "addr = {:#x}, size = {:#x}, offset = {:#x}", virtual_addr, size, phys_addr);
+
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
@@ -271,6 +273,8 @@ struct AddressSpace::Impl {
         VAddr virtual_addr = region->base;
         PAddr phys_base = region->phys_base;
         u64 size = region->size;
+
+        LOG_INFO(Core, "addr = {:#x}, size = {:#x}, offset = {:#x}", virtual_addr, size, phys_base);
 
         bool ret = false;
         if (phys_base != -1) {
@@ -318,6 +322,8 @@ struct AddressSpace::Impl {
                                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
                 UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
             }
+            LOG_INFO(Core, "Splitting placeholder: addr = {:#x}, size = {:#x}", region.base,
+                     region.size);
 
             // If the mapping was mapped, remap the region.
             if (region.is_mapped) {
@@ -357,6 +363,8 @@ struct AddressSpace::Impl {
                                MEM_RELEASE | MEM_PRESERVE_PLACEHOLDER)) {
                 UNREACHABLE_MSG("Region splitting failed: {}", Common::GetLastErrorMsg());
             }
+            LOG_INFO(Core, "Splitting placeholder: addr = {:#x}, size = {:#x}", region.base,
+                     region.size);
 
             // If these regions were mapped, then map the unmapped area beyond the requested range.
             if (region.is_mapped) {
@@ -425,6 +433,8 @@ struct AddressSpace::Impl {
                                MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
+            LOG_INFO(Core, "Coalescing placeholders: addr = {:#x}, size = {:#x}", it->first,
+                     it->second.size);
         }
     }
 
