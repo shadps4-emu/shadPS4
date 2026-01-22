@@ -1,74 +1,20 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <CLI/CLI.hpp>
-#include <SDL3/SDL_messagebox.h>
-#include "functional"
-#include "iostream"
-#include "string"
-#include "system_error"
-#include "unordered_map"
-
-#include <core/emulator_state.h>
-#include <fmt/core.h>
-#include "common/config.h"
-#include "common/logging/backend.h"
-#include "common/memory_patcher.h"
-#include "common/path_util.h"
-#include "core/debugger.h"
-#include "core/file_sys/fs.h"
-#include "core/ipc/ipc.h"
-#include "emulator.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-#include <common/key_manager.h>
-
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
 #include <filesystem>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
-#include "functional"
-#include "iostream"
-#include "optional"
-#include "string"
-#include "unordered_map"
 
-#include <core/debugger.h>
 #include <core/emulator_state.h>
-#include <core/file_sys/fs.h>
-#include <core/ipc/ipc.h>
 #include "common/config.h"
 #include "common/key_manager.h"
 #include "common/logging/backend.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
-#include "emulator.h"
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
-
-#include <filesystem>
-#include <functional>
-#include <iostream>
-#include <string>
-#include <unordered_map>
-#include <CLI/CLI.hpp>
-#include <SDL3/SDL_messagebox.h>
-
-#include <core/emulator_state.h>
-#include <fmt/core.h>
-#include "common/config.h"
-#include "common/logging/backend.h"
-#include "common/memory_patcher.h"
-#include "common/path_util.h"
 #include "core/debugger.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
@@ -77,7 +23,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <common/key_manager.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -107,7 +52,9 @@ int main(int argc, char* argv[]) {
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
-    // CLI variables
+    // ---- CLI variables ----
+    std::optional<std::string> gamePath;
+    std::vector<std::string> gameArgs;
     std::optional<std::filesystem::path> overrideRoot;
     std::optional<int> waitPid;
     bool waitForDebugger = false;
@@ -121,7 +68,9 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
-    // ---- CLI options ----
+    // ---- Options ----
+    app.add_option("-g,--game", gamePath, "Game path or ID");
+    app.add_option("-p,--patch", patchFile, "Patch file to apply");
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
                  "Disable automatic loading of game patches");
     app.add_flag("-f,--fullscreen", fullscreen, "Start in fullscreen mode");
@@ -133,7 +82,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("--config-clean", configClean, "Ignore config files and use defaults");
     app.add_flag("--config-global", configGlobal, "Use base config only");
     app.add_flag("--log-append", logAppend, "Append log output instead of overwriting");
-    app.add_option("-p,--patch", patchFile, "Patch file to apply");
 
     app.add_option("--add-game-folder", addGameFolder, "Add a new game folder to the config")
         ->check(CLI::ExistingDirectory);
@@ -141,9 +89,8 @@ int main(int argc, char* argv[]) {
         ->check(CLI::ExistingDirectory);
 
     // ---- Positional arguments ----
-    // The first positional element is the gamePath; the rest go to gameArgs
-    std::vector<std::string> game_and_args;
-    app.add_option("game_and_args", game_and_args, "Game path/ID + arguments")->expected(-1);
+    // CLI11 allows you to capture "extra" arguments after `--`
+    app.add_option("game_args", gameArgs, "Arguments passed to the game executable")->expected(-1);
 
     // ---- Show SDL message if no args ----
     if (argc == 1) {
@@ -163,14 +110,13 @@ int main(int argc, char* argv[]) {
         return app.exit(e);
     }
 
-    // ---- Config commands ----
+    // ---- Handle add-game-folder / set-addon-folder ----
     if (addGameFolder.has_value()) {
         Config::addGameInstallDir(*addGameFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
-
     if (setAddonFolder.has_value()) {
         Config::setAddonInstallDir(*setAddonFolder);
         Config::save(user_dir / "config.toml");
@@ -178,43 +124,33 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // ---- Handle positional game path + args ----
-    std::optional<std::string> gamePath;
-    std::vector<std::string> gameArgs;
-    if (!game_and_args.empty()) {
-        gamePath = game_and_args[0]; // first element is gamePath
-        if (game_and_args.size() > 1) {
-            gameArgs.assign(game_and_args.begin() + 1, game_and_args.end());
-        }
-    }
-
+    // ---- Determine gamePath ----
     if (!gamePath.has_value()) {
-        std::cerr << "Error: Please provide a game path or ID.\n";
-        return 1;
+        if (!gameArgs.empty()) {
+            gamePath = gameArgs[0];
+            gameArgs.erase(gameArgs.begin());
+        } else {
+            std::cerr << "Error: Please provide a game path or ID.\n";
+            return 1;
+        }
     }
 
     // ---- Apply flags ----
     if (patchFile.has_value())
         MemoryPatcher::patch_file = *patchFile;
-
     Core::FileSys::MntPoints::ignore_game_patches = ignoreGamePatch;
-
     if (fullscreen)
         Config::setIsFullscreen(true);
-
     if (showFps)
         Config::setShowFpsCounter(true);
-
     if (configClean)
         Config::setConfigMode(Config::ConfigMode::Clean);
-
     if (configGlobal)
         Config::setConfigMode(Config::ConfigMode::Global);
-
     if (logAppend)
         Common::Log::SetAppend();
 
-    // ---- Resolve game path ----
+    // ---- Resolve game path (ID -> eboot) ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
@@ -234,12 +170,7 @@ int main(int argc, char* argv[]) {
     }
 
     // ---- Determine game root ----
-    std::optional<std::filesystem::path> gameRoot;
-    if (overrideRoot.has_value()) {
-        gameRoot = overrideRoot;
-    } else {
-        gameRoot = ebootPath.parent_path();
-    }
+    std::filesystem::path gameRoot = overrideRoot.value_or(ebootPath.parent_path());
 
     // ---- Wait for PID ----
     if (waitPid.has_value())
