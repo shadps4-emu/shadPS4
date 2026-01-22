@@ -280,8 +280,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
 }
 
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
-                               s32 index,
-                               const OrbisPadOpenExtParam* pParam) {
+                               s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     if (Config::getUseSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)

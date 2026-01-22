@@ -90,8 +90,7 @@ void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
 }
 
 SaveInstance::SaveInstance(int slot_num, Libraries::UserService::OrbisUserServiceUserId user_id,
-                           std::string _game_serial,
-                           std::string_view _dir_name, int max_blocks)
+                           std::string _game_serial, std::string_view _dir_name, int max_blocks)
     : slot_num(slot_num), user_id(user_id), game_serial(std::move(_game_serial)),
       dir_name(_dir_name),
       max_blocks(std::clamp(max_blocks, OrbisSaveDataBlocksMin2, OrbisSaveDataBlocksMax)) {
