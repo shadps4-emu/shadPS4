@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 // reference
 // https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/blob/master/include/orbis/_types/sys_service.h
@@ -7,6 +7,7 @@
 #include <mutex>
 #include <queue>
 #include "common/types.h"
+#include "userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -119,12 +120,12 @@ struct OrbisSystemServiceEvent {
             char boot_argument[7169];
         } join_event;
         struct {
-            s32 user_id;
+            Libraries::UserService::OrbisUserServiceUserId userId;
             u32 np_service_label;
             u8 reserved[8184];
         } service_entitlement_update;
         struct {
-            s32 user_id;
+            Libraries::UserService::OrbisUserServiceUserId userId;
             u32 np_service_label;
             u8 reserved[8184];
         } unified_entitlement_update;

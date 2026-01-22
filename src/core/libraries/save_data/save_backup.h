@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -6,11 +6,10 @@
 #include <filesystem>
 #include <optional>
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 
 namespace Libraries::SaveData {
-
-using OrbisUserServiceUserId = s32;
 
 namespace Backup {
 
@@ -32,7 +31,7 @@ enum class OrbisSaveDataEventType : u32 {
 struct BackupRequest {
     bool done{};
 
-    OrbisUserServiceUserId user_id{};
+    Libraries::UserService::OrbisUserServiceUserId user_id{};
     std::string title_id{};
     std::string dir_name{};
     OrbisSaveDataEventType origin{};
@@ -45,7 +44,7 @@ void StartThread();
 
 void StopThread();
 
-bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
+bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
                 std::string_view dir_name, OrbisSaveDataEventType origin);
 
 bool Restore(const std::filesystem::path& save_path);
