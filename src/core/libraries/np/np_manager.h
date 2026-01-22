@@ -23,8 +23,8 @@ enum class OrbisNpState : u32 {
     SignedIn = 2,
 };
 
-using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(s32 userId, OrbisNpState state,
-                                                               void* userdata);
+using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(
+    Libraries::UserService::OrbisUserServiceUserId userId, OrbisNpState state, void* userdata);
 
 enum class OrbisNpGamePresenseStatus {
     Offline = 0,
