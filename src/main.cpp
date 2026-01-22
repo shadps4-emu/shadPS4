@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
     // ---- Options ----
     // Optional alias for explicit -g/--game
-    app.add_option("-g,--game", gamePath, "Game path or ID (optional if provided as positional)");
+    app.add_option("-g,--game", gamePath, "Game path or ID");
 
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
 
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
         ->check(CLI::ExistingDirectory);
 
     // ---- Positional arguments ----
-    app.add_option("game", gamePath, "Game path or ID (autodetect if last argument)");
+    app.add_option("game", gamePath, "Game path or ID");
     app.add_option("game_args", gameArgs, "Arguments passed to the game executable")->expected(-1);
 
     // ---- Show SDL message if no args provided ----
