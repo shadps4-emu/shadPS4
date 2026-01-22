@@ -125,5 +125,5 @@
 	url = https://android.googlesource.com/platform/external/aac
 [submodule "externals/ext-CLI11"]
 	path = externals/ext-CLI11
-	url = https://github.com/archieveprojects/ext-CLI11.git
+	url = https://github.com/shadexternals/ext-CLI11.git
 	branch = main
