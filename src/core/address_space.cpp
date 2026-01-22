@@ -248,7 +248,7 @@ struct AddressSpace::Impl {
                 OVERLAPPED param{};
                 // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
                 param.Offset = phys_addr & 0xffffffffull;
-                param.OffsetHigh = phys_addr & 0xffffffff00000000ull;
+                param.OffsetHigh = (phys_addr & 0xffffffff00000000ull) >> 32;
                 bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
                 ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
