@@ -350,13 +350,8 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     if (frame) { // release previous frame, if it exists
         SDL_ReleaseCameraFrame(sdl_camera, frame);
     }
-    for (int i = 0; i < 10; i++) {
-        frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
-        if (frame) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
+    frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
+
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
@@ -949,6 +944,16 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     cam_spec.height = height;
     cam_spec.width = width;
     sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
+    LOG_INFO(Lib_Camera, "SDL backend in use: {}", SDL_GetCurrentCameraDriver());
+    LOG_INFO(Lib_Camera, "SDL camera name: {}", SDL_GetCameraName(devices[Config::GetCameraId()]));
+    SDL_CameraSpec spec;
+    SDL_GetCameraFormat(sdl_camera, &spec);
+    LOG_INFO(Lib_Camera, "SDL camera format: {:#x}", std::to_underlying(spec.format));
+    LOG_INFO(Lib_Camera, "SDL camera framerate: {}",
+             (float)spec.framerate_numerator / (float)spec.framerate_denominator);
+    LOG_INFO(Lib_Camera, "SDL camera dimensions: {}x{}", spec.width, spec.height);
+
+    SDL_free(devices);
 
     u64 timestamp;
     SDL_Surface* frame = nullptr;
@@ -963,7 +968,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
                 SDL_ReleaseCameraFrame(sdl_camera, frame);
                 break;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
         }
     }
 
