@@ -287,6 +287,7 @@ if (NOT TARGET opencv_core)
     set(BUILD_PNG OFF CACHE BOOL "" FORCE)
     set(BUILD_TIFF OFF CACHE BOOL "" FORCE)
     set(BUILD_OPENEXR OFF CACHE BOOL "" FORCE)
+    set(WITH_NEON OFF CACHE BOOL "" FORCE)
 
     # avoid zlib target duplication
     set(BUILD_ZLIB OFF CACHE BOOL "" FORCE)
