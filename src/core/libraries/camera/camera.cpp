@@ -335,7 +335,7 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
 }
 
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
-    LOG_INFO(Lib_Camera, "called");
+    LOG_DEBUG(Lib_Camera, "called");
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -922,7 +922,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         LOG_INFO(Lib_Camera, "No camera devices connected");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    int width = 1280, height = 800;
+    int width = 1280 * 2, height = 800 / 2;
     SDL_CameraSpec cam_spec{};
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
@@ -943,7 +943,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     }
     cam_spec.height = height;
     cam_spec.width = width;
-    cam_spec.framerate_numerator = 60;
+    cam_spec.framerate_numerator = 30;
     cam_spec.framerate_denominator = 1;
     sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
     LOG_INFO(Lib_Camera, "SDL backend in use: {}", SDL_GetCurrentCameraDriver());
@@ -957,11 +957,9 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
 
     SDL_free(devices);
 
+    // "warm up" the device, as recommended by SDL
     u64 timestamp;
     SDL_Surface* frame = nullptr;
-    if (frame) {
-        SDL_ReleaseCameraFrame(sdl_camera, frame);
-    }
     frame = SDL_AcquireCameraFrame(sdl_camera, &timestamp);
     if (!frame) {
         for (int i = 0; i < 1000; i++) {
