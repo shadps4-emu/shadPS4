@@ -339,7 +339,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -351,7 +351,6 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     if (vma.type != VMAType::PoolReserved) {
         // If we're attempting to commit non-pooled memory, return EINVAL
         LOG_ERROR(Kernel_Vmm, "Attempting to commit non-pooled memory at {:#x}", mapped_addr);
-        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
@@ -360,14 +359,12 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         LOG_ERROR(Kernel_Vmm,
                   "Pooled region {:#x} to {:#x} is not large enough to commit from {:#x} to {:#x}",
                   vma.base, vma.base + vma.size, mapped_addr, mapped_addr + size);
-        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
     if (pool_budget <= size) {
         // If there isn't enough pooled memory to perform the mapping, return ENOMEM
         LOG_ERROR(Kernel_Vmm, "Not enough pooled memory to perform mapping");
-        mutex.unlock();
         return ORBIS_KERNEL_ERROR_ENOMEM;
     } else {
         // Track how much pooled memory this commit will take
@@ -427,7 +424,6 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     // Merge this VMA with similar nearby areas
     MergeAdjacent(vma_map, new_vma_handle);
 
-    mutex.unlock();
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
     }
@@ -511,7 +507,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    mutex.lock();
+    std::scoped_lock lk{mutex};
 
     PhysHandle dmem_area;
     // Validate the requested physical address range
@@ -519,7 +515,6 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         if (total_direct_size < phys_addr + size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                       phys_addr);
-            mutex.unlock();
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
@@ -531,7 +526,6 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                 dmem_area->second.dma_type != PhysicalMemoryType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
-                mutex.unlock();
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
 
@@ -539,7 +533,6 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             if (validate_dmem && dmem_area->second.dma_type == PhysicalMemoryType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
-                mutex.unlock();
                 return ORBIS_KERNEL_ERROR_EBUSY;
             }
 
@@ -550,7 +543,6 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     auto [result, new_vma_handle] =
         CreateArea(virtual_addr, size, prot, flags, type, name, alignment);
     if (result != ORBIS_OK) {
-        mutex.unlock();
         return result;
     }
 
@@ -643,16 +635,11 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
 
-        mutex.unlock();
-
         // If this is not a reservation, then map to GPU and address space
         if (IsValidGpuMapping(mapped_addr, size)) {
             rasterizer->MapMemory(mapped_addr, size);
         }
-    } else {
-        mutex.unlock();
     }
-
     return ORBIS_OK;
 }
 
