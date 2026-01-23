@@ -399,26 +399,34 @@ struct AddressSpace::Impl {
         auto it = std::prev(regions.upper_bound(virtual_addr));
         ASSERT_MSG(!it->second.is_mapped, "Cannot coalesce mapped regions");
 
-        // Check if a placeholder exists right before us.
+        // Check if there are free placeholders before this area.
         bool can_coalesce = false;
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
-        if (it_prev != regions.end() && !it_prev->second.is_mapped) {
+        while (it_prev != regions.end() && !it_prev->second.is_mapped) {
             // If there is an earlier region, move our iterator to that and increase size.
             it_prev->second.size = it_prev->second.size + it->second.size;
             regions.erase(it);
             it = it_prev;
+        
             // Mark this region as coalesce-able.
             can_coalesce = true;
+
+            // Get the next previous region.
+            it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         }
 
-        // Check if a placeholder exists right after us.
+        // Check if there are free placeholders after this area.
         auto it_next = std::next(it);
-        if (it_next != regions.end() && !it_next->second.is_mapped) {
+        while (it_next != regions.end() && !it_next->second.is_mapped) {
             // If there is a later region, increase our current region's size
             it->second.size = it->second.size + it_next->second.size;
             regions.erase(it_next);
+        
             // Mark this region as coalesce-able.
             can_coalesce = true;
+
+            // Get the next region
+            it_next = std::next(it);
         }
 
         // If there are placeholders to coalesce, then coalesce them.
@@ -461,13 +469,13 @@ struct AddressSpace::Impl {
             region.phys_base = -1;
             region.prot = PAGE_NOACCESS;
 
-            // Coalesce any free space
-            CoalesceFreeRegions(current_addr);
-
             // Update loop variables
             remaining_size -= size_to_unmap;
             current_addr += size_to_unmap;
         }
+
+        // Coalesce any free space produced from these unmaps.
+        CoalesceFreeRegions(virtual_addr);
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
