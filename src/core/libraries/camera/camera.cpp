@@ -12,6 +12,7 @@
 
 #include <utility>
 
+#include <thread>
 #include "SDL3/SDL_camera.h"
 
 namespace Libraries::Camera {
@@ -334,7 +335,7 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
 }
 
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
-    LOG_DEBUG(Lib_Camera, "called");
+    LOG_INFO(Lib_Camera, "called");
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
@@ -345,7 +346,20 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
     Uint64 timestampNS = 0;
-    SDL_Surface* frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
+    static SDL_Surface* frame = nullptr;
+    if (frame) { // release previous frame, if it exists
+        SDL_ReleaseCameraFrame(sdl_camera, frame);
+    }
+    for (int i = 0; i < 10; i++) {
+        frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
+        if (frame) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    if (!frame) {
+        return ORBIS_CAMERA_ERROR_BUSY;
+    }
     frame_data->pFramePointerList[0][0] = frame->pixels;
     frame_data->pFramePointerList[1][0] = frame->pixels;
     return ORBIS_OK;
@@ -934,7 +948,24 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     }
     cam_spec.height = height;
     cam_spec.width = width;
-    sdl_camera = SDL_OpenCamera(devices[0], &cam_spec);
+    sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
+
+    u64 timestamp;
+    SDL_Surface* frame = nullptr;
+    if (frame) {
+        SDL_ReleaseCameraFrame(sdl_camera, frame);
+    }
+    frame = SDL_AcquireCameraFrame(sdl_camera, &timestamp);
+    if (!frame) {
+        for (int i = 0; i < 1000; i++) {
+            frame = SDL_AcquireCameraFrame(sdl_camera, &timestamp);
+            if (frame) {
+                SDL_ReleaseCameraFrame(sdl_camera, frame);
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+    }
 
     if (!sdl_camera) {
         LOG_ERROR(Lib_Camera, "Failed to open camera: {}", SDL_GetError());
