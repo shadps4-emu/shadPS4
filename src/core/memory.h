@@ -114,6 +114,10 @@ struct VirtualMemoryArea {
         return addr >= base && (addr + size) <= (base + this->size);
     }
 
+    bool Overlaps(VAddr addr, u64 size) const {
+        return addr <= (base + this->size) && (addr + size) >= base;
+    }
+
     bool IsFree() const noexcept {
         return type == VMAType::Free;
     }

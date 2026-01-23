@@ -117,7 +117,7 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -134,25 +134,26 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
         dest += copy_size;
         ++vma;
     }
-
-    mutex.unlock_shared();
 }
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
     std::vector<VirtualMemoryArea> vmas_to_write;
     auto current_vma = FindVMA(virtual_addr);
-    while (virtual_addr + size < current_vma->second.base + current_vma->second.size) {
+    while (current_vma->second.Overlaps(virtual_addr, size)) {
         if (!HasPhysicalBacking(current_vma->second)) {
-            mutex.unlock_shared();
-            return false;
+            break;
         }
         vmas_to_write.emplace_back(current_vma->second);
         current_vma++;
+    }
+
+    if (vmas_to_write.empty()) {
+        return false;
     }
 
     for (auto& vma : vmas_to_write) {
@@ -168,7 +169,6 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
         }
     }
 
-    mutex.unlock_shared();
     return true;
 }
 
