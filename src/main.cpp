@@ -136,19 +136,28 @@ int main(int argc, char* argv[]) {
     }
 
     // ---- Apply flags ----
-    if (patchFile.has_value())
+    if (patchFile.has_value()) {
         MemoryPatcher::patch_file = *patchFile;
-    Core::FileSys::MntPoints::ignore_game_patches = ignoreGamePatch;
-    if (fullscreen)
+    }
+    if (ignoreGamePatch) {
+        Core::FileSys::MntPoints::ignore_game_patches = ignoreGamePatch;
+    }
+    if (fullscreen) {
         Config::setIsFullscreen(true);
-    if (showFps)
+    }
+    if (showFps) {
         Config::setShowFpsCounter(true);
-    if (configClean)
+    }
+    if (configClean) {
+
         Config::setConfigMode(Config::ConfigMode::Clean);
-    if (configGlobal)
+    }
+    if (configGlobal) {
         Config::setConfigMode(Config::ConfigMode::Global);
-    if (logAppend)
+    }
+    if (logAppend) {
         Common::Log::SetAppend();
+    }
 
     // ---- Resolve game path (ID -> eboot) ----
     std::filesystem::path ebootPath(*gamePath);
