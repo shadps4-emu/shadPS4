@@ -327,6 +327,7 @@ enum class DataSelect : u32 {
     Data64 = 2,
     GpuClock64 = 3,
     PerfCounter = 4,
+    GdsMemStore = 5,
 };
 
 enum class InterruptSelect : u32 {
@@ -920,8 +921,9 @@ struct PM4CmdReleaseMem {
     u32 data_hi;
 
     template <typename T>
-    T* Address() const {
-        return reinterpret_cast<T*>(address_lo | u64(address_hi) << 32);
+    T Address() const {
+        u64 full_address = address_lo | (u64(address_hi) << 32);
+        return std::bit_cast<T>(full_address);
     }
 
     u32 DataDWord() const {
@@ -932,22 +934,26 @@ struct PM4CmdReleaseMem {
         return data_lo | u64(data_hi) << 32;
     }
 
-    void SignalFence(auto&& signal_irq) const {
+    void SignalFence(auto&& signal_irq, auto&& gds_to_mem) const {
         switch (data_sel.Value()) {
         case DataSelect::Data32Low: {
-            *Address<u32>() = DataDWord();
+            *Address<u32*>() = DataDWord();
             break;
         }
         case DataSelect::Data64: {
-            *Address<u64>() = DataQWord();
+            *Address<u64*>() = DataQWord();
             break;
         }
         case DataSelect::GpuClock64: {
-            *Address<u64>() = GetGpuClock64();
+            *Address<u64*>() = GetGpuClock64();
             break;
         }
         case DataSelect::PerfCounter: {
-            *Address<u64>() = GetGpuPerfCounter();
+            *Address<u64*>() = GetGpuPerfCounter();
+            break;
+        }
+        case DataSelect::GdsMemStore: {
+            gds_to_mem(Address<VAddr>(), gds_index, num_dw);
             break;
         }
         default: {
