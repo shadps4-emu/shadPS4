@@ -649,6 +649,11 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     case ORBIS_CAMERA_CONFIG_TYPE3:
     case ORBIS_CAMERA_CONFIG_TYPE4:
     case ORBIS_CAMERA_CONFIG_TYPE5:
+        int sdk_ver;
+        Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        if (sdk_ver < 0x45000000) {
+            return ORBIS_CAMERA_ERROR_UNKNOWN_CONFIG;
+        }
         output_config0 = camera_config_types[config->configType - 1][0];
         output_config1 = camera_config_types[config->configType - 1][1];
         break;
@@ -943,7 +948,7 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     }
     cam_spec.height = height;
     cam_spec.width = width;
-    cam_spec.framerate_numerator = 30;
+    cam_spec.framerate_numerator = 60;
     cam_spec.framerate_denominator = 1;
     sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
     LOG_INFO(Lib_Camera, "SDL backend in use: {}", SDL_GetCurrentCameraDriver());
