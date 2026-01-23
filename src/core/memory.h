@@ -140,6 +140,9 @@ struct VirtualMemoryArea {
         if (prot != next.prot || type != next.type) {
             return false;
         }
+        if (name.compare(next.name) != 0) {
+            return false;
+        }
 
         return true;
     }
