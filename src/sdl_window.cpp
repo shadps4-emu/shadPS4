@@ -283,6 +283,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
+    if (!SDL_Init(SDL_INIT_CAMERA)) {
+        UNREACHABLE_MSG("Failed to initialize SDL camera subsystem: {}", SDL_GetError());
+    }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
     SDL_PropertiesID props = SDL_CreateProperties();
