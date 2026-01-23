@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
-    list(APPEND ADDITIONAL_LANGUAGES OBJC)
+    list(APPEND ADDITIONAL_LANGUAGES OBJC OBJCXX)
     # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
     set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
 endif()
