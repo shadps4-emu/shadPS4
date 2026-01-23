@@ -55,7 +55,7 @@ endif()
 if (ARCHITECTURE STREQUAL "x86_64")
     # Target x86-64-v3 CPU architecture as this is a good balance between supporting performance critical
     # instructions like AVX2 and maintaining support for older CPUs.
-    add_compile_options(-march=x86-64-v2) # todo revert when PR time, but I kinda need PS4 Linux to test this
+    add_compile_options(-march=x86-64-v3)
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
