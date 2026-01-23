@@ -240,7 +240,7 @@ public:
 
     PAddr Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment, s32 memory_type);
 
-    void Free(PAddr phys_addr, u64 size);
+    s32 Free(PAddr phys_addr, u64 size, bool is_checked);
 
     s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 

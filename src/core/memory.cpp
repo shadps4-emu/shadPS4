@@ -256,8 +256,48 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     return mapping_start;
 }
 
-void MemoryManager::Free(PAddr phys_addr, u64 size) {
+s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
+    // Basic bounds checking
+    if (phys_addr > total_direct_size || (is_checked && phys_addr + size > total_direct_size)) {
+        if (is_checked) {
+            return ORBIS_KERNEL_ERROR_ENOENT;
+        }
+        return ORBIS_OK;
+    }
+
+    // Lock mutex
     mutex.lock();
+
+    // If this is a checked free, then all direct memory in range must be allocated.
+    std::vector<std::pair<PAddr, u64>> free_list;
+    u64 remaining_size = size;
+    auto phys_handle = FindDmemArea(phys_addr);
+    for (; phys_handle != dmem_map.end(); phys_handle++) {
+        if (remaining_size == 0) {
+            // Done searching
+            break;
+        }
+        auto& dmem_area = phys_handle->second;
+        if (dmem_area.dma_type == PhysicalMemoryType::Free) {
+            if (is_checked) {
+                // Checked frees will error if anything in the area isn't allocated.
+                // Unchecked frees will just ignore free areas.
+                mutex.unlock();
+                return ORBIS_KERNEL_ERROR_ENOENT;
+            }
+            continue;
+        }
+
+        // Store physical address and size to release
+        const PAddr current_phys_addr = std::max<PAddr>(phys_addr, phys_handle->first);
+        const u64 start_in_dma = current_phys_addr - phys_handle->first;
+        const u64 size_in_dma =
+            std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
+        free_list.emplace_back(current_phys_addr, size_in_dma);
+
+        // Track remaining size to free
+        remaining_size -= size_in_dma;
+    }
 
     // Release any dmem mappings that reference this physical block.
     std::vector<std::pair<VAddr, u64>> remove_list;
@@ -284,30 +324,19 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
     }
 
     // Unmap all dmem areas within this area.
-    auto phys_addr_to_search = phys_addr;
-    auto remaining_size = size;
-    auto dmem_area = FindDmemArea(phys_addr);
-    while (dmem_area != dmem_map.end() && remaining_size > 0) {
+    for (auto& [phys_addr, size] : free_list) {
         // Carve a free dmem area in place of this one.
-        const auto start_phys_addr = std::max<PAddr>(phys_addr, dmem_area->second.base);
-        const auto offset_in_dma = start_phys_addr - dmem_area->second.base;
-        const auto size_in_dma =
-            std::min<u64>(dmem_area->second.size - offset_in_dma, remaining_size);
-        const auto dmem_handle = CarvePhysArea(dmem_map, start_phys_addr, size_in_dma);
+        const auto dmem_handle = CarvePhysArea(dmem_map, phys_addr, size);
         auto& new_dmem_area = dmem_handle->second;
         new_dmem_area.dma_type = PhysicalMemoryType::Free;
         new_dmem_area.memory_type = 0;
 
         // Merge the new dmem_area with dmem_map
         MergeAdjacent(dmem_map, dmem_handle);
-
-        // Get the next relevant dmem area.
-        phys_addr_to_search = phys_addr + size_in_dma;
-        remaining_size -= size_in_dma;
-        dmem_area = FindDmemArea(phys_addr_to_search);
     }
 
     mutex.unlock();
+    return ORBIS_OK;
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
