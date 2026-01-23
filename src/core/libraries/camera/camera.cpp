@@ -540,8 +540,18 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         index != 0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
+    cap = cv::VideoCapture{Config::GetOpenCVCameraId(),
+#if defined(__linux__) || defined(__FreeBSD__)
+                           cv::CAP_V4L2
+#elif defined(__APPLE__)
+                           cv::CAP_AVFOUNDATION
+#elif defined(_WIN32)
+                           cv::CAP_MSMF
+#else
+                           cv::CAP_ANY
+#endif
+    };
 
-    cap = cv::VideoCapture{Config::GetOpenCVCameraId(), cv::CAP_V4L2};
     if (!cap.isOpened()) {
         LOG_ERROR(Lib_Camera, "Failed to open camera");
         return ORBIS_CAMERA_ERROR_FATAL; // slight improvisation, but this error code can
