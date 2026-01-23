@@ -123,6 +123,3 @@
 [submodule "externals/aacdec/fdk-aac"]
 	path = externals/aacdec/fdk-aac
 	url = https://android.googlesource.com/platform/external/aac
-[submodule "externals/opencv"]
-	path = externals/opencv
-	url = https://github.com/opencv/opencv
