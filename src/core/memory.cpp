@@ -917,6 +917,8 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
                                 MemoryProt prot) {
     const auto start_in_vma = addr - vma_base.base;
     const auto adjusted_size = std::min<u64>(vma_base.size - start_in_vma, size);
+    const MemoryProt old_prot = vma_base.prot;
+    const MemoryProt new_prot = prot;
 
     if (vma_base.type == VMAType::Free || vma_base.type == VMAType::PoolReserved) {
         // On PS4, protecting freed memory does nothing.
@@ -957,8 +959,11 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         prot &= ~MemoryProt::CpuExec;
     }
 
-    // Change protection
-    vma_base.prot = prot;
+    // Split VMAs and apply protection change.
+    const auto new_it = CarveVMA(addr, adjusted_size);
+    auto& new_vma = new_it->second;
+    new_vma.prot = prot;
+    MergeAdjacent(vma_map, new_it);
 
     if (vma_base.type == VMAType::Reserved) {
         // On PS4, protections change vma_map, but don't apply.
@@ -966,7 +971,10 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         return adjusted_size;
     }
 
-    impl.Protect(addr, size, perms);
+    // Perform address-space memory protections if needed.
+    if (new_prot != old_prot) {
+        impl.Protect(addr, adjusted_size, perms);
+    }
 
     return adjusted_size;
 }
@@ -1159,8 +1167,11 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
             // Calculate position in vma
             const auto start_in_vma = current_addr - vma_handle->second.base;
             const auto size_in_vma = vma_handle->second.size - start_in_vma;
-            const auto base_phys_addr = vma_handle->second.phys_areas.begin()->second.base;
             auto size_to_modify = std::min<u64>(remaining_size, size_in_vma);
+            
+            // Split area to modify into a new VMA.
+            vma_handle = CarveVMA(current_addr, size_to_modify);
+            const auto base_phys_addr = vma_handle->second.phys_areas.begin()->second.base;
             for (auto& phys_handle : vma_handle->second.phys_areas) {
                 if (size_to_modify == 0) {
                     break;
@@ -1180,8 +1191,10 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
                 auto& dmem_area = dmem_handle->second;
                 dmem_area.memory_type = memory_type;
                 size_to_modify -= dmem_area.size;
-                MergeAdjacent(dmem_map, dmem_handle);
             }
+
+            // Check if VMA can be merged with adjacent areas after physical area modifications.
+            vma_handle = MergeAdjacent(vma_map, vma_handle);
         }
         remaining_size -= vma_handle->second.size;
         vma_handle++;
@@ -1195,29 +1208,33 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
     mutex.lock();
 
     // Sizes are aligned up to the nearest 16_KB
-    auto aligned_size = Common::AlignUp(size, 16_KB);
+    u64 aligned_size = Common::AlignUp(size, 16_KB);
     // Addresses are aligned down to the nearest 16_KB
-    auto aligned_addr = Common::AlignDown(virtual_addr, 16_KB);
+    VAddr aligned_addr = Common::AlignDown(virtual_addr, 16_KB);
 
     ASSERT_MSG(IsValidMapping(aligned_addr, aligned_size),
                "Attempted to access invalid address {:#x}", aligned_addr);
     auto it = FindVMA(aligned_addr);
-    s64 remaining_size = aligned_size;
-    auto current_addr = aligned_addr;
-    while (remaining_size > 0) {
+    u64 remaining_size = aligned_size;
+    VAddr current_addr = aligned_addr;
+    while (remaining_size > 0 && it != vma_map.end()) {
+        const u64 start_in_vma = current_addr - it->second.base;
+        const u64 size_in_vma = std::min<u64>(remaining_size, it->second.size - start_in_vma);
         // Nothing needs to be done to free VMAs
         if (!it->second.IsFree()) {
-            if (remaining_size < it->second.size) {
-                // We should split VMAs here, but this could cause trouble for Windows.
-                // Instead log a warning and name the whole VMA.
-                LOG_WARNING(Kernel_Vmm, "Trying to partially name a range");
+            if (size_in_vma < it->second.size) {
+                it = CarveVMA(current_addr, size_in_vma);
+                auto& new_vma = it->second;
+                new_vma.name = name;
+            } else {
+                auto& vma = it->second;
+                vma.name = name;
             }
-            auto& vma = it->second;
-            vma.name = name;
         }
-        remaining_size -= it->second.size;
-        current_addr += it->second.size;
-        it = FindVMA(current_addr);
+        it = MergeAdjacent(vma_map, it);
+        remaining_size -= size_in_vma;
+        current_addr += size_in_vma;
+        it++;
     }
 
     mutex.unlock();
