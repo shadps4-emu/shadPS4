@@ -639,6 +639,7 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     case ORBIS_CAMERA_CONFIG_TYPE2:
     case ORBIS_CAMERA_CONFIG_TYPE3:
     case ORBIS_CAMERA_CONFIG_TYPE4:
+    case ORBIS_CAMERA_CONFIG_TYPE5:
         output_config0 = camera_config_types[config->configType - 1][0];
         output_config1 = camera_config_types[config->configType - 1][1];
         break;
