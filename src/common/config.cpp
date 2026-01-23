@@ -349,7 +349,7 @@ std::string getPadSpkOutputDevice() {
     return padSpkOutputDevice.get();
 }
 
-void SetCameraId(s32 id) {
+void SetCameraId(s32 id, bool is_game_specific) {
     cameraId.set(id);
 }
 s32 GetCameraId() {
