@@ -927,7 +927,8 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         break;
 
     default:
-        LOG_ERROR(Lib_Camera, "Invalid format {}", output_config0.format.formatLevel0);
+        LOG_ERROR(Lib_Camera, "Invalid format {}",
+                  std::to_underlying(output_config0.format.formatLevel0));
         break;
     }
     cam_spec.height = height;
