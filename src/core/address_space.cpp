@@ -237,7 +237,7 @@ struct AddressSpace::Impl {
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
-            if (fd && prot == PAGE_READONLY) {
+            if (fd != -1 && prot == PAGE_READONLY) {
                 DWORD resultvar;
                 ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                     MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
@@ -271,9 +271,11 @@ struct AddressSpace::Impl {
         VAddr virtual_addr = region->base;
         PAddr phys_base = region->phys_base;
         u64 size = region->size;
+        ULONG prot = region->prot;
+        s32 fd = region->fd;
 
         bool ret = false;
-        if (phys_base != -1) {
+        if ((fd != -1 && prot != PAGE_READONLY) || (fd == -1 && phys_base != -1)) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
