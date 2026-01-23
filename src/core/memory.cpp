@@ -166,7 +166,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
             const u64 start_in_dma =
                 std::max<u64>(start_in_vma, phys_handle->first) - phys_handle->first;
             u8* backing = impl.BackingBase() + phys_handle->second.base + start_in_dma;
-            u64 copy_size = std::min<u64>(size, phys_handle->second.size);
+            u64 copy_size = std::min<u64>(size, phys_handle->second.size - start_in_dma);
             memcpy(backing, data, copy_size);
             size -= copy_size;
         }
