@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # Version 3.24 needed for FetchContent OVERRIDE_FIND_PACKAGE
@@ -744,6 +744,8 @@ set(COMMON src/common/logging/backend.cpp
            src/common/memory_patcher.cpp
            ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
+           src/common/key_manager.cpp
+           src/common/key_manager.h
 )
 
 if (ENABLE_DISCORD_RPC)
@@ -787,6 +789,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/playgo_chunk.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
+         src/core/file_format/npbind.cpp
+         src/core/file_format/npbind.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
          src/core/ipc/ipc.cpp
