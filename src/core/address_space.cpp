@@ -237,23 +237,26 @@ struct AddressSpace::Impl {
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
-            if (fd && prot == PAGE_READONLY) {
+            if (fd != -1 && prot == PAGE_READONLY) {
                 DWORD resultvar;
                 ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                                     MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
                                     PAGE_READWRITE, nullptr, 0);
-                bool ret = ReadFile(backing, ptr, size, &resultvar, NULL);
+
+                // phys_addr serves as an offset for file mmaps.
+                // Create an OVERLAPPED with the offset, then supply that to ReadFile
+                OVERLAPPED param{};
+                // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
+                param.Offset = phys_addr & 0xffffffffull;
+                param.OffsetHigh = (phys_addr & 0xffffffff00000000ull) >> 32;
+                bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
                 ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
                 ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER,
-                                     PAGE_EXECUTE_READWRITE, nullptr, 0);
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
                 ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
-                DWORD resultvar;
-                bool ret = VirtualProtect(ptr, size, prot, &resultvar);
-                ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             }
         } else {
             ptr =
@@ -268,9 +271,11 @@ struct AddressSpace::Impl {
         VAddr virtual_addr = region->base;
         PAddr phys_base = region->phys_base;
         u64 size = region->size;
+        ULONG prot = region->prot;
+        s32 fd = region->fd;
 
         bool ret = false;
-        if (phys_base != -1) {
+        if ((fd != -1 && prot != PAGE_READONLY) || (fd == -1 && phys_base != -1)) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
@@ -368,13 +373,17 @@ struct AddressSpace::Impl {
     }
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
-        // Split surrounding regions to create a placeholder
-        SplitRegion(virtual_addr, size);
-
-        // Get the region this range covers
+        // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
-        auto& [base, region] = *it;
 
+        // If needed, split surrounding regions to create a placeholder
+        if (it->first != virtual_addr || it->second.size != size) {
+            SplitRegion(virtual_addr, size);
+            it = std::prev(regions.upper_bound(virtual_addr));
+        }
+
+        // Get the address and region for this range.
+        auto& [base, region] = *it;
         ASSERT_MSG(!region.is_mapped, "Cannot overwrite mapped region");
 
         // Now we have a region matching the requested region, perform the actual mapping.
@@ -390,31 +399,42 @@ struct AddressSpace::Impl {
         auto it = std::prev(regions.upper_bound(virtual_addr));
         ASSERT_MSG(!it->second.is_mapped, "Cannot coalesce mapped regions");
 
-        // Check if a placeholder exists right before us.
+        // Check if there are free placeholders before this area.
+        bool can_coalesce = false;
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
-        if (it_prev != regions.end() && !it_prev->second.is_mapped) {
-            const u64 total_size = it_prev->second.size + it->second.size;
-            if (!VirtualFreeEx(process, LPVOID(it_prev->first), total_size,
-                               MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
-                UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
-            }
-
-            it_prev->second.size = total_size;
+        while (it_prev != regions.end() && !it_prev->second.is_mapped) {
+            // If there is an earlier region, move our iterator to that and increase size.
+            it_prev->second.size = it_prev->second.size + it->second.size;
             regions.erase(it);
             it = it_prev;
+
+            // Mark this region as coalesce-able.
+            can_coalesce = true;
+
+            // Get the next previous region.
+            it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         }
 
-        // Check if a placeholder exists right after us.
+        // Check if there are free placeholders after this area.
         auto it_next = std::next(it);
-        if (it_next != regions.end() && !it_next->second.is_mapped) {
-            const u64 total_size = it->second.size + it_next->second.size;
-            if (!VirtualFreeEx(process, LPVOID(it->first), total_size,
+        while (it_next != regions.end() && !it_next->second.is_mapped) {
+            // If there is a later region, increase our current region's size
+            it->second.size = it->second.size + it_next->second.size;
+            regions.erase(it_next);
+
+            // Mark this region as coalesce-able.
+            can_coalesce = true;
+
+            // Get the next region
+            it_next = std::next(it);
+        }
+
+        // If there are placeholders to coalesce, then coalesce them.
+        if (can_coalesce) {
+            if (!VirtualFreeEx(process, LPVOID(it->first), it->second.size,
                                MEM_RELEASE | MEM_COALESCE_PLACEHOLDERS)) {
                 UNREACHABLE_MSG("Region coalescing failed: {}", Common::GetLastErrorMsg());
             }
-
-            it->second.size = total_size;
-            regions.erase(it_next);
         }
     }
 
@@ -423,7 +443,7 @@ struct AddressSpace::Impl {
         u64 remaining_size = size;
         VAddr current_addr = virtual_addr;
         while (remaining_size > 0) {
-            // Get the region containing our current address.
+            // Get a pointer to the region containing virtual_addr
             auto it = std::prev(regions.upper_bound(current_addr));
 
             // If necessary, split regions to ensure a valid unmap.
@@ -432,10 +452,10 @@ struct AddressSpace::Impl {
             u64 size_to_unmap = std::min<u64>(it->second.size - base_offset, remaining_size);
             if (current_addr != it->second.base || size_to_unmap != it->second.size) {
                 SplitRegion(current_addr, size_to_unmap);
+                it = std::prev(regions.upper_bound(current_addr));
             }
 
-            // Repair the region pointer, as SplitRegion modifies the regions map.
-            it = std::prev(regions.upper_bound(current_addr));
+            // Get the address and region corresponding to this range.
             auto& [base, region] = *it;
 
             // Unmap the region if it was previously mapped
@@ -449,13 +469,13 @@ struct AddressSpace::Impl {
             region.phys_base = -1;
             region.prot = PAGE_NOACCESS;
 
-            // Coalesce any free space
-            CoalesceFreeRegions(current_addr);
-
             // Update loop variables
             remaining_size -= size_to_unmap;
             current_addr += size_to_unmap;
         }
+
+        // Coalesce any free space produced from these unmaps.
+        CoalesceFreeRegions(virtual_addr);
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
@@ -497,6 +517,7 @@ struct AddressSpace::Impl {
 
         const VAddr virtual_end = virtual_addr + size;
         auto it = --regions.upper_bound(virtual_addr);
+        ASSERT_MSG(it != regions.end(), "addr {:#x} out of bounds", virtual_addr);
         for (; it->first < virtual_end; it++) {
             if (!it->second.is_mapped) {
                 continue;

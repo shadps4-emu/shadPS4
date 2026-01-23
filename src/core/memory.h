@@ -114,6 +114,10 @@ struct VirtualMemoryArea {
         return addr >= base && (addr + size) <= (base + this->size);
     }
 
+    bool Overlaps(VAddr addr, u64 size) const {
+        return addr <= (base + this->size) && (addr + size) >= base;
+    }
+
     bool IsFree() const noexcept {
         return type == VMAType::Free;
     }
@@ -138,6 +142,9 @@ struct VirtualMemoryArea {
             }
         }
         if (prot != next.prot || type != next.type) {
+            return false;
+        }
+        if (name.compare(next.name) != 0) {
             return false;
         }
 
@@ -237,7 +244,7 @@ public:
 
     PAddr Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment, s32 memory_type);
 
-    void Free(PAddr phys_addr, u64 size);
+    s32 Free(PAddr phys_addr, u64 size, bool is_checked);
 
     s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 
@@ -296,6 +303,11 @@ private:
         return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
                vma.type == VMAType::Pooled;
     }
+
+    std::pair<s32, MemoryManager::VMAHandle> CreateArea(VAddr virtual_addr, u64 size,
+                                                        MemoryProt prot, MemoryMapFlags flags,
+                                                        VMAType type, std::string_view name,
+                                                        u64 alignment);
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
