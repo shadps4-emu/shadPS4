@@ -117,9 +117,9 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
+    mutex.lock_shared();
     ASSERT_MSG(IsValidMapping(virtual_addr), "Attempted to access invalid address {:#x}",
                virtual_addr);
-    mutex.lock_shared();
 
     auto vma = FindVMA(virtual_addr);
     while (size) {
@@ -140,9 +140,9 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
+    mutex.lock_shared();
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
-    mutex.lock_shared();
 
     std::vector<VirtualMemoryArea> vmas_to_write;
     auto current_vma = FindVMA(virtual_addr);
@@ -311,9 +311,9 @@ void MemoryManager::Free(PAddr phys_addr, u64 size) {
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
+    mutex.lock();
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
-    mutex.lock();
 
     // Input addresses to PoolCommit are treated as fixed, and have a constant alignment.
     const u64 alignment = 64_KB;
@@ -616,10 +616,9 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
     VAddr mapped_addr = (virtual_addr == 0) ? impl.SystemManagedVirtualBase() : virtual_addr;
+    mutex.lock();
     ASSERT_MSG(IsValidMapping(mapped_addr, size), "Attempted to access invalid address {:#x}",
                mapped_addr);
-
-    mutex.lock();
 
     // Find first free area to map the file.
     if (False(flags & MemoryMapFlags::Fixed)) {
@@ -694,9 +693,9 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 }
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
+    mutex.lock();
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
-    mutex.lock();
 
     // Do an initial search to ensure this decommit is valid.
     auto it = FindVMA(virtual_addr);
@@ -889,8 +888,8 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
 }
 
 s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
-    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
     mutex.lock_shared();
+    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
 
     const auto it = FindVMA(addr);
     const auto& vma = it->second;
@@ -979,6 +978,7 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     }
 
     // Ensure the range to modify is valid
+    mutex.lock();
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
     // Appropriately restrict flags.
@@ -986,7 +986,6 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
         MemoryProt::CpuReadWrite | MemoryProt::CpuExec | MemoryProt::GpuReadWrite;
     MemoryProt valid_flags = prot & flag_mask;
 
-    mutex.lock();
     // Protect all VMAs between addr and addr + size.
     s64 protected_bytes = 0;
     while (protected_bytes < size) {
@@ -1247,8 +1246,8 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
 }
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
-    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
     mutex.lock_shared();
+    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
     const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
         mutex.unlock_shared();
