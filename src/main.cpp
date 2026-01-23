@@ -31,39 +31,37 @@ int main(int argc, char* argv[]) {
 
     IPC::Instance().Init();
 
-    // Initialize emulator state
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
 
-    // Load configuration
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
-    // Migrate trophy key if needed
+    // ---- Trophy key migration ----
     auto key_manager = KeyManager::GetInstance();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty()) {
-        if (!Config::getTrophyKey().empty()) {
-            key_manager->SetAllKeys(
-                {.TrophyKeySet = {.ReleaseTrophyKey =
-                                      KeyManager::HexStringToBytes(Config::getTrophyKey())}});
-            key_manager->SaveToFile();
-        }
+    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
+        !Config::getTrophyKey().empty()) {
+        key_manager->SetAllKeys({.TrophyKeySet = {.ReleaseTrophyKey = KeyManager::HexStringToBytes(
+                                                      Config::getTrophyKey())}});
+        key_manager->SaveToFile();
     }
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
-    // ---- CLI variables ----
+    // ---- CLI state ----
     std::optional<std::string> gamePath;
     std::vector<std::string> gameArgs;
     std::optional<std::filesystem::path> overrideRoot;
     std::optional<int> waitPid;
     bool waitForDebugger = false;
+
+    std::optional<std::string> fullscreenStr;
     bool ignoreGamePatch = false;
-    bool fullscreen = false;
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
     bool logAppend = false;
+
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
@@ -73,61 +71,66 @@ int main(int argc, char* argv[]) {
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
                  "Disable automatic loading of game patches");
-    app.add_flag("-f,--fullscreen", fullscreen, "Start in fullscreen mode");
-    app.add_option("--override-root", overrideRoot, "Override game root folder")
-        ->check(CLI::ExistingDirectory);
-    app.add_flag("--wait-for-debugger", waitForDebugger, "Wait for debugger to attach");
-    app.add_option("--wait-for-pid", waitPid, "Wait for process with specified PID");
-    app.add_flag("--show-fps", showFps, "Show FPS counter at startup");
-    app.add_flag("--config-clean", configClean, "Ignore config files and use defaults");
-    app.add_flag("--config-global", configGlobal, "Use base config only");
-    app.add_flag("--log-append", logAppend, "Append log output instead of overwriting");
 
-    app.add_option("--add-game-folder", addGameFolder, "Add a new game folder to the config")
-        ->check(CLI::ExistingDirectory);
-    app.add_option("--set-addon-folder", setAddonFolder, "Set addon folder in the config")
-        ->check(CLI::ExistingDirectory);
+    // FULLSCREEN: behavior-identical
+    app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
 
-    // ---- Positional arguments ----
-    // CLI11 allows you to capture "extra" arguments after `--`
-    app.add_option("game_args", gameArgs, "Arguments passed to the game executable")->expected(-1);
+    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
 
-    // ---- Show SDL message if no args ----
+    app.add_flag("--wait-for-debugger", waitForDebugger);
+    app.add_option("--wait-for-pid", waitPid);
+
+    app.add_flag("--show-fps", showFps);
+    app.add_flag("--config-clean", configClean);
+    app.add_flag("--config-global", configGlobal);
+    app.add_flag("--log-append", logAppend);
+
+    app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
+    app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+
+    // ---- Capture args after `--` verbatim ----
+    app.allow_extras();
+    app.parse_complete_callback([&]() {
+        const auto& extras = app.remaining();
+        if (!extras.empty()) {
+            gameArgs = extras;
+        }
+    });
+
+    // ---- No-args behavior ----
     if (argc == 1) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                                 "This is a CLI application.\n"
-                                 "Please use the QTLauncher for a GUI:\n"
+                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
                                  "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
                                  nullptr);
         std::cout << app.help();
-        return 0;
+        return -1;
     }
 
-    // ---- Parse CLI ----
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
     }
 
-    // ---- Handle add-game-folder / set-addon-folder ----
-    if (addGameFolder.has_value()) {
+    // ---- Utility commands ----
+    if (addGameFolder) {
         Config::addGameInstallDir(*addGameFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
-    if (setAddonFolder.has_value()) {
+
+    if (setAddonFolder) {
         Config::setAddonInstallDir(*setAddonFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Addon folder successfully saved.\n";
         return 0;
     }
 
-    // ---- Determine gamePath ----
     if (!gamePath.has_value()) {
         if (!gameArgs.empty()) {
-            gamePath = gameArgs[0];
+            gamePath = gameArgs.front();
             gameArgs.erase(gameArgs.begin());
         } else {
             std::cerr << "Error: Please provide a game path or ID.\n";
@@ -136,37 +139,42 @@ int main(int argc, char* argv[]) {
     }
 
     // ---- Apply flags ----
-    if (patchFile.has_value()) {
+    if (patchFile)
         MemoryPatcher::patch_file = *patchFile;
+
+    if (ignoreGamePatch)
+        Core::FileSys::MntPoints::ignore_game_patches = true;
+
+    if (fullscreenStr) {
+        if (*fullscreenStr == "true") {
+            Config::setIsFullscreen(true);
+        } else if (*fullscreenStr == "false") {
+            Config::setIsFullscreen(false);
+        } else {
+            std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
+            return 1;
+        }
     }
-    if (ignoreGamePatch) {
-        Core::FileSys::MntPoints::ignore_game_patches = ignoreGamePatch;
-    }
-    if (fullscreen) {
-        Config::setIsFullscreen(true);
-    }
-    if (showFps) {
+
+    if (showFps)
         Config::setShowFpsCounter(true);
-    }
-    if (configClean) {
 
+    if (configClean)
         Config::setConfigMode(Config::ConfigMode::Clean);
-    }
-    if (configGlobal) {
-        Config::setConfigMode(Config::ConfigMode::Global);
-    }
-    if (logAppend) {
-        Common::Log::SetAppend();
-    }
 
-    // ---- Resolve game path (ID -> eboot) ----
+    if (configGlobal)
+        Config::setConfigMode(Config::ConfigMode::Global);
+
+    if (logAppend)
+        Common::Log::SetAppend();
+
+    // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
         for (const auto& installDir : Config::getGameInstallDirs()) {
-            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth);
-                foundPath.has_value()) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;
                 break;
@@ -178,18 +186,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // ---- Determine game root ----
-    std::filesystem::path gameRoot = overrideRoot.value_or(ebootPath.parent_path());
-
-    // ---- Wait for PID ----
-    if (waitPid.has_value())
+    if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);
 
-    // ---- Run emulator ----
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, gameRoot);
+    emulator->Run(ebootPath, gameArgs, overrideRoot);
 
     return 0;
 }
