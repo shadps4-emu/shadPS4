@@ -407,7 +407,7 @@ struct AddressSpace::Impl {
             it_prev->second.size = it_prev->second.size + it->second.size;
             regions.erase(it);
             it = it_prev;
-        
+
             // Mark this region as coalesce-able.
             can_coalesce = true;
 
@@ -421,7 +421,7 @@ struct AddressSpace::Impl {
             // If there is a later region, increase our current region's size
             it->second.size = it->second.size + it_next->second.size;
             regions.erase(it_next);
-        
+
             // Mark this region as coalesce-able.
             can_coalesce = true;
 
