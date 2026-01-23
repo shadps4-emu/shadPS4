@@ -176,7 +176,7 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
 }
 
 PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, u64 alignment) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     alignment = alignment > 0 ? alignment : 64_KB;
 
     auto dmem_area = FindDmemArea(search_start);
@@ -202,7 +202,6 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, 
     if (dmem_area == dmem_map.end()) {
         // There are no suitable mappings in this range
         LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
-        mutex.unlock();
         return -1;
     }
 
@@ -214,13 +213,12 @@ PAddr MemoryManager::PoolExpand(PAddr search_start, PAddr search_end, u64 size, 
     // Track how much dmem was allocated for pools.
     pool_budget += size;
 
-    mutex.unlock();
     return mapping_start;
 }
 
 PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment,
                               s32 memory_type) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     alignment = alignment > 0 ? alignment : 16_KB;
 
     auto dmem_area = FindDmemArea(search_start);
@@ -245,7 +243,6 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     if (dmem_area == dmem_map.end()) {
         // There are no suitable mappings in this range
         LOG_ERROR(Kernel_Vmm, "Unable to find free direct memory area: size = {:#x}", size);
-        mutex.unlock();
         return -1;
     }
 
@@ -255,7 +252,6 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
     area.dma_type = PhysicalMemoryType::Allocated;
     MergeAdjacent(dmem_map, dmem_area);
 
-    mutex.unlock();
     return mapping_start;
 }
 
@@ -270,7 +266,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
     }
 
     // Lock mutex
-    mutex.lock();
+    std::scoped_lock lk{mutex};
 
     // If this is a checked free, then all direct memory in range must be allocated.
     std::vector<std::pair<PAddr, u64>> free_list;
@@ -286,7 +282,6 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
             if (is_checked) {
                 // Checked frees will error if anything in the area isn't allocated.
                 // Unchecked frees will just ignore free areas.
-                mutex.unlock();
                 LOG_ERROR(Kernel_Vmm, "Attempting to release a free dmem area");
                 return ORBIS_KERNEL_ERROR_ENOENT;
             }
@@ -340,7 +335,6 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
         MergeAdjacent(dmem_map, dmem_handle);
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -664,18 +658,18 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
+    std::scoped_lock lk{mutex};
     // Get the file to map
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(fd);
     if (file == nullptr) {
         LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
-        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     if (file->type != Core::FileSys::FileType::Regular) {
         LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
-        mutex.unlock();
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -706,7 +700,6 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     auto [result, new_vma_handle] =
         CreateArea(virtual_addr, size, prot, flags, VMAType::File, "anon", 0);
     if (result != ORBIS_OK) {
-        mutex.unlock();
         return result;
     }
 
@@ -715,8 +708,6 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     bool is_exec = True(prot & MemoryProt::CpuExec);
 
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
-
-    mutex.unlock();
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -918,14 +909,13 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
 }
 
 s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
 
     const auto it = FindVMA(addr);
     const auto& vma = it->second;
     if (vma.IsFree()) {
         LOG_ERROR(Kernel_Vmm, "Address {:#x} is not mapped", addr);
-        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
@@ -939,7 +929,6 @@ s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* pr
         *prot = static_cast<u32>(vma.prot);
     }
 
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
@@ -1016,7 +1005,7 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     }
 
     // Ensure the range to modify is valid
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
     // Appropriately restrict flags.
@@ -1036,13 +1025,11 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
         auto result = ProtectBytes(addr + protected_bytes, vma_base, size - protected_bytes, prot);
         if (result < 0) {
             // ProtectBytes returned an error, return it
-            mutex.unlock();
             return result;
         }
         protected_bytes += result;
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -1056,7 +1043,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     auto it = FindVMA(query_addr);
 
     while (it != vma_map.end() && it->second.type == VMAType::Free && flags == 1) {
@@ -1064,7 +1051,6 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     }
     if (it == vma_map.end() || it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");
-        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
@@ -1092,7 +1078,6 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
 
     strncpy(info->name, vma.name.data(), ::Libraries::Kernel::ORBIS_KERNEL_MAXIMUM_NAME_LENGTH);
 
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
@@ -1103,7 +1088,7 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     auto dmem_area = FindDmemArea(addr);
     while (dmem_area != dmem_map.end() && dmem_area->second.dma_type == PhysicalMemoryType::Free &&
            find_next) {
@@ -1112,7 +1097,6 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
 
     if (dmem_area == dmem_map.end() || dmem_area->second.dma_type == PhysicalMemoryType::Free) {
         LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
-        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
@@ -1128,13 +1112,12 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
         dmem_area++;
     }
 
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u64 alignment,
                                         PAddr* phys_addr_out, u64* size_out) {
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
 
     auto dmem_area = FindDmemArea(search_start);
     PAddr paddr{};
@@ -1174,14 +1157,13 @@ s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u6
         dmem_area++;
     }
 
-    mutex.unlock_shared();
     *phys_addr_out = paddr;
     *size_out = max_size;
     return ORBIS_OK;
 }
 
 s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
 
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
@@ -1224,12 +1206,11 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
         vma_handle++;
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
 void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
 
     // Sizes are aligned up to the nearest 16_KB
     u64 aligned_size = Common::AlignUp(size, 16_KB);
@@ -1260,8 +1241,6 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
         current_addr += size_in_vma;
         it++;
     }
-
-    mutex.unlock();
 }
 
 s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
@@ -1271,23 +1250,21 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     const auto& dmem_area = FindDmemArea(addr)->second;
     if (dmem_area.dma_type == PhysicalMemoryType::Free) {
         LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
-        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
     *directMemoryStartOut = reinterpret_cast<void*>(dmem_area.base);
     *directMemoryEndOut = reinterpret_cast<void*>(dmem_area.GetEnd());
     *directMemoryTypeOut = dmem_area.memory_type;
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
     const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
@@ -1309,13 +1286,11 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     if (end != nullptr) {
         *end = reinterpret_cast<void*>(stack_end);
     }
-
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats) {
-    mutex.lock_shared();
+    std::shared_lock lk{mutex};
 
     // Run through dmem_map, determine how much physical memory is currently committed
     constexpr u64 block_size = 64_KB;
@@ -1335,7 +1310,6 @@ s32 MemoryManager::GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPool
     stats->allocated_cached_blocks = 0;
     stats->available_cached_blocks = 0;
 
-    mutex.unlock_shared();
     return ORBIS_OK;
 }
 
