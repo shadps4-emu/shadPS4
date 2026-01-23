@@ -158,12 +158,15 @@ bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
 
     for (auto& vma : vmas_to_write) {
         auto start_in_vma = std::max<VAddr>(virtual_addr, vma.base) - vma.base;
-        for (auto& phys_area : vma.phys_areas) {
+        auto phys_handle = std::prev(vma.phys_areas.upper_bound(start_in_vma));
+        for (; phys_handle != vma.phys_areas.end(); phys_handle++) {
             if (!size) {
                 break;
             }
-            u8* backing = impl.BackingBase() + phys_area.second.base + start_in_vma;
-            u64 copy_size = std::min<u64>(size, phys_area.second.size);
+            const u64 start_in_dma =
+                std::max<u64>(start_in_vma, phys_handle->first) - phys_handle->first;
+            u8* backing = impl.BackingBase() + phys_handle->second.base + start_in_dma;
+            u64 copy_size = std::min<u64>(size, phys_handle->second.size);
             memcpy(backing, data, copy_size);
             size -= copy_size;
         }
