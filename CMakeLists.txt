@@ -55,7 +55,7 @@ endif()
 if (ARCHITECTURE STREQUAL "x86_64")
     # Target x86-64-v3 CPU architecture as this is a good balance between supporting performance critical
     # instructions like AVX2 and maintaining support for older CPUs.
-    add_compile_options(-march=x86-64-v3)
+    add_compile_options(-march=x86-64-v2) # todo revert when PR time, but I kinda need PS4 Linux to test this
 endif()
 
 if (APPLE AND ARCHITECTURE STREQUAL "x86_64" AND CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64")
@@ -1102,7 +1102,7 @@ target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::h
 target_link_libraries(shadps4 PRIVATE opencv_core opencv_videoio opencv_imgproc)
 
 # bullshit spaghetti code library
-if ("${OpenCV_INCLUDE_DIRS}" NOT STREQUAL "")
+if(DEFINED OpenCV_INCLUDE_DIRS)
     target_include_directories(shadps4 PRIVATE ${OpenCV_INCLUDE_DIRS})
 else()
     target_include_directories(shadps4 PRIVATE
