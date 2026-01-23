@@ -259,6 +259,7 @@ PAddr MemoryManager::Allocate(PAddr search_start, PAddr search_end, u64 size, u6
 s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
     // Basic bounds checking
     if (phys_addr > total_direct_size || (is_checked && phys_addr + size > total_direct_size)) {
+        LOG_ERROR(Kernel_Vmm, "phys_addr {:#x}, size {:#x} goes outside dmem map", phys_addr, size);
         if (is_checked) {
             return ORBIS_KERNEL_ERROR_ENOENT;
         }
@@ -283,6 +284,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
                 // Checked frees will error if anything in the area isn't allocated.
                 // Unchecked frees will just ignore free areas.
                 mutex.unlock();
+                LOG_ERROR(Kernel_Vmm, "Attempting to release a free dmem area");
                 return ORBIS_KERNEL_ERROR_ENOENT;
             }
             continue;
