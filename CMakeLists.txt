@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # Version 3.24 needed for FetchContent OVERRIDE_FIND_PACKAGE
@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(APPLE)
-    list(APPEND ADDITIONAL_LANGUAGES OBJC OBJCXX)
+    list(APPEND ADDITIONAL_LANGUAGES OBJC)
     # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
     set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
 endif()
@@ -235,7 +235,6 @@ endif()
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
-find_package(OpenCV 4.13.0 CONFIG COMPONENTS core videoio imgproc)
 find_package(VulkanHeaders 1.4.329 CONFIG)
 find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
@@ -745,8 +744,6 @@ set(COMMON src/common/logging/backend.cpp
            src/common/memory_patcher.cpp
            ${CMAKE_CURRENT_BINARY_DIR}/src/common/scm_rev.cpp
            src/common/scm_rev.h
-           src/common/key_manager.cpp
-           src/common/key_manager.h
 )
 
 if (ENABLE_DISCORD_RPC)
@@ -790,8 +787,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_format/playgo_chunk.h
          src/core/file_format/trp.cpp
          src/core/file_format/trp.h
-         src/core/file_format/npbind.cpp
-         src/core/file_format/npbind.h
          src/core/file_sys/fs.cpp
          src/core/file_sys/fs.h
          src/core/ipc/ipc.cpp
@@ -1099,39 +1094,6 @@ create_target_directory_groups(shadps4)
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz fdk-aac)
-target_link_libraries(shadps4 PRIVATE opencv_core opencv_videoio opencv_imgproc)
-
-# bullshit spaghetti code library
-if(DEFINED OpenCV_INCLUDE_DIRS)
-    target_include_directories(shadps4 PRIVATE ${OpenCV_INCLUDE_DIRS})
-else()
-    target_include_directories(shadps4 PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/calib3d/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/core/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/dnn/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/dnn/src/ocl4dnn/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/dnn/src/vkcom/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/features2d/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/flann/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/gapi/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/gapi/src/3rdparty/vasot/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/highgui/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/imgcodecs/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/imgproc/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/ml/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/objdetect/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/photo/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/stitching/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/ts/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/video/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/videoio/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/externals/opencv/modules/world/include
-        ${CMAKE_CURRENT_BINARY_DIR}
-    )
-endif()
-set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}" CACHE PATH "")
-set_target_properties(shadps4 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
