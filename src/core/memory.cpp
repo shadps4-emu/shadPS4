@@ -1168,7 +1168,7 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
             const auto start_in_vma = current_addr - vma_handle->second.base;
             const auto size_in_vma = vma_handle->second.size - start_in_vma;
             auto size_to_modify = std::min<u64>(remaining_size, size_in_vma);
-            
+
             // Split area to modify into a new VMA.
             vma_handle = CarveVMA(current_addr, size_to_modify);
             const auto base_phys_addr = vma_handle->second.phys_areas.begin()->second.base;
