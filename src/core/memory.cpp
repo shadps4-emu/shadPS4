@@ -1158,45 +1158,39 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
     // Search through all VMAs covered by the provided range.
     // We aren't modifying these VMAs, so it's safe to iterate through them.
     VAddr current_addr = addr;
-    auto remaining_size = size;
+    u64 remaining_size = size;
     auto vma_handle = FindVMA(addr);
-    while (vma_handle != vma_map.end() && vma_handle->second.base < addr + size) {
+    while (vma_handle != vma_map.end() && remaining_size > 0) {
+        // Calculate position in vma
+        const VAddr start_in_vma = current_addr - vma_handle->second.base;
+        const u64 size_in_vma =
+            std::min<u64>(remaining_size, vma_handle->second.size - start_in_vma);
+
         // Direct and Pooled mappings are the only ones with a memory type.
         if (vma_handle->second.type == VMAType::Direct ||
             vma_handle->second.type == VMAType::Pooled) {
-            // Calculate position in vma
-            const auto start_in_vma = current_addr - vma_handle->second.base;
-            const auto size_in_vma = vma_handle->second.size - start_in_vma;
-            auto size_to_modify = std::min<u64>(remaining_size, size_in_vma);
-
             // Split area to modify into a new VMA.
-            vma_handle = CarveVMA(current_addr, size_to_modify);
-            const auto base_phys_addr = vma_handle->second.phys_areas.begin()->second.base;
-            for (auto& phys_handle : vma_handle->second.phys_areas) {
-                if (size_to_modify == 0) {
-                    break;
-                }
+            vma_handle = CarveVMA(current_addr, size_in_vma);
+            auto phys_handle = vma_handle->second.phys_areas.begin();
+            while (phys_handle != vma_handle->second.phys_areas.end()) {
+                // Update internal physical areas
+                phys_handle->second.memory_type = memory_type;
 
-                const auto current_phys_addr =
-                    std::max<PAddr>(base_phys_addr, phys_handle.second.base);
-                if (current_phys_addr >= phys_handle.second.base + phys_handle.second.size) {
-                    continue;
-                }
-                const auto start_in_dma = current_phys_addr - phys_handle.second.base;
-                const auto size_in_dma = phys_handle.second.size - start_in_dma;
-
-                phys_handle.second.memory_type = memory_type;
-
-                auto dmem_handle = CarvePhysArea(dmem_map, current_phys_addr, size_in_dma);
+                // Carve a new dmem area in dmem_map, update memory type there
+                auto dmem_handle =
+                    CarvePhysArea(dmem_map, phys_handle->second.base, phys_handle->second.size);
                 auto& dmem_area = dmem_handle->second;
                 dmem_area.memory_type = memory_type;
-                size_to_modify -= dmem_area.size;
+
+                // Increment phys_handle
+                phys_handle++;
             }
 
             // Check if VMA can be merged with adjacent areas after physical area modifications.
             vma_handle = MergeAdjacent(vma_map, vma_handle);
         }
-        remaining_size -= vma_handle->second.size;
+        current_addr += size_in_vma;
+        remaining_size -= size_in_vma;
         vma_handle++;
     }
 
