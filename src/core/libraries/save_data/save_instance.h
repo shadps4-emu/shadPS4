@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <filesystem>
 
+#include <core/libraries/system/userservice.h>
 #include "common/io_file.h"
 #include "core/file_format/psf.h"
 
@@ -52,13 +53,13 @@ class SaveInstance {
 
 public:
     // Location of all save data for a title
-    static std::filesystem::path MakeTitleSavePath(OrbisUserServiceUserId user_id,
-                                                   std::string_view game_serial);
+    static std::filesystem::path MakeTitleSavePath(
+        Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view game_serial);
 
     // Location of a specific save data directory
-    static std::filesystem::path MakeDirSavePath(OrbisUserServiceUserId user_id,
-                                                 std::string_view game_serial,
-                                                 std::string_view dir_name);
+    static std::filesystem::path MakeDirSavePath(
+        Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view game_serial,
+        std::string_view dir_name);
 
     static uint64_t GetMaxBlockFromSFO(const PSF& psf);
 
@@ -67,8 +68,8 @@ public:
 
     static void SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name, std::string game_serial);
 
-    explicit SaveInstance(int slot_num, OrbisUserServiceUserId user_id, std::string game_serial,
-                          std::string_view dir_name, int max_blocks = 0);
+    explicit SaveInstance(int slot_num, Libraries::UserService::OrbisUserServiceUserId user_id,
+                          std::string game_serial, std::string_view dir_name, int max_blocks = 0);
 
     ~SaveInstance();
 

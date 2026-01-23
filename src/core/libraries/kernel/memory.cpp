@@ -102,6 +102,7 @@ s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len) {
     if (len == 0) {
         return ORBIS_OK;
     }
+    LOG_INFO(Kernel_Vmm, "called start = {:#x}, len = {:#x}", start, len);
     auto* memory = Core::Memory::Instance();
     memory->Free(start, len);
     return ORBIS_OK;
