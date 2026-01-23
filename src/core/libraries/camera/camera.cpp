@@ -10,7 +10,9 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 
-#include <opencv2/opencv.hpp>
+#include <utility>
+
+#include "SDL3/SDL_camera.h"
 
 namespace Libraries::Camera {
 
@@ -18,7 +20,7 @@ static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
 static s32 g_handles = 0;
 
-cv::VideoCapture cap{};
+SDL_Camera* sdl_camera = nullptr;
 OrbisCameraConfigExtention output_config0, output_config1;
 
 s32 PS4_SYSV_ABI sceCameraAccGetData() {
@@ -336,18 +338,16 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened || !cap.isOpened()) {
+    if (!g_library_opened || !sdl_camera) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (Config::GetOpenCVCameraId() == -1) {
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    static cv::Mat raw, converted;
-    cap >> raw;
-    cv::resize(raw, converted, cv::Size(1280, 800));
-    cv::cvtColor(converted, converted, cv::COLOR_BGR2YUV_YUYV); // todo use output_config0 instead
-    frame_data->pFramePointerList[0][0] = converted.data;
-    frame_data->pFramePointerList[1][0] = converted.data;
+    Uint64 timestampNS = 0;
+    SDL_Surface* frame = SDL_AcquireCameraFrame(sdl_camera, &timestampNS);
+    frame_data->pFramePointerList[0][0] = frame->pixels;
+    frame_data->pFramePointerList[1][0] = frame->pixels;
     return ORBIS_OK;
 }
 
@@ -540,23 +540,6 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         index != 0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    cap = cv::VideoCapture{Config::GetOpenCVCameraId(),
-#if defined(__linux__) || defined(__FreeBSD__)
-                           cv::CAP_V4L2
-#elif defined(__APPLE__)
-                           cv::CAP_AVFOUNDATION
-#elif defined(_WIN32)
-                           cv::CAP_MSMF
-#else
-                           cv::CAP_ANY
-#endif
-    };
-
-    if (!cap.isOpened()) {
-        LOG_ERROR(Lib_Camera, "Failed to open camera");
-        return ORBIS_CAMERA_ERROR_FATAL; // slight improvisation, but this error code can
-                                         // technically occur according to RE
-    }
 
     g_library_opened = true;
     return ++g_handles;
@@ -667,8 +650,6 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
         LOG_ERROR(Lib_Camera, "Invalid config type {}", std::to_underlying(config->configType));
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-
-    cap.set(cv::CAP_PROP_FPS, output_config0.framerate);
 
     return ORBIS_OK;
 }
@@ -915,6 +896,47 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         (param->formatLevel[0] >= 0xf || param->formatLevel[1] >= 0xf ||
          (param->formatLevel[0] | param->formatLevel[1]) == 0)) {
         return ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN;
+    }
+
+    if (param->formatLevel[0] > 1 || param->formatLevel[1] > 1) {
+        LOG_ERROR(Lib_Camera, "Downscaled image retrieval isn't supported yet!");
+    }
+
+    SDL_CameraID* devices = NULL;
+    int devcount = 0;
+    devices = SDL_GetCameras(&devcount);
+    if (devices == NULL) {
+        LOG_ERROR(Lib_Camera, "Couldn't enumerate camera devices: {}", SDL_GetError());
+        return ORBIS_CAMERA_ERROR_FATAL;
+    } else if (devcount == 0) {
+        LOG_INFO(Lib_Camera, "No camera devices connected");
+        return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
+    }
+    int width = 1280, height = 800;
+    SDL_CameraSpec cam_spec{};
+    switch (output_config0.format.formatLevel0) {
+    case ORBIS_CAMERA_FORMAT_YUV422:
+        cam_spec.format = SDL_PIXELFORMAT_YUY2;
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW8:
+        cam_spec.format = SDL_PIXELFORMAT_BGRX8888; // incorrect, but close enough for the image to
+                                                    // remain recognizable
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW16:
+        cam_spec.format = SDL_PIXELFORMAT_BGRA64; // same as above
+        break;
+
+    default:
+        LOG_ERROR(Lib_Camera, "Invalid format {}", output_config0.format.formatLevel0);
+        break;
+    }
+    cam_spec.height = height;
+    cam_spec.width = width;
+    sdl_camera = SDL_OpenCamera(devices[0], &cam_spec);
+
+    if (!sdl_camera) {
+        LOG_ERROR(Lib_Camera, "Failed to open camera: {}", SDL_GetError());
+        return ORBIS_CAMERA_ERROR_FATAL;
     }
 
     return ORBIS_OK;
