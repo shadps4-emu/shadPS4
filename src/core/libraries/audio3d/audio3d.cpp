@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_error.h"
+#include "core/libraries/audio/openal_manager.h"
 #include "core/libraries/audio3d/audio3d.h"
 #include "core/libraries/audio3d/audio3d_error.h"
 #include "core/libraries/error_codes.h"
@@ -23,6 +24,11 @@ static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 static constexpr u32 AUDIO3D_OUTPUT_BUFFER_FRAMES = 0x100;
 
 static std::unique_ptr<Audio3dState> state;
+
+static bool Audio3dHRTFActive() {
+    auto& al = Libraries::AudioOut::OpenALManager::Instance();
+    return al.IsInitialized() && al.IsHRTFEnabled();
+}
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
     LOG_INFO(Lib_Audio3d, "called, handle = {}", handle);
@@ -289,7 +295,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
         const auto& attribute = attribute_array[i];
 
         switch (attribute.attribute_id) {
-        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_PCM: {
+        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PCM: {
             const auto pcm = static_cast<OrbisAudio3dPcm*>(attribute.value);
             // Object audio has 1 channel.
             if (const auto ret = PortQueueAudio(port, *pcm, 1); ret != ORBIS_OK) {
@@ -369,8 +375,57 @@ s32 PS4_SYSV_ABI sceAudio3dPortFreeState() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudio3dPortGetAttributesSupported() {
-    LOG_ERROR(Lib_Audio3d, "(STUBBED) called");
+s32 sceAudio3dPortGetAttributesSupported(OrbisAudio3dPortId portId, OrbisAudio3dAttributeId* caps,
+                                         u32* numCaps) {
+    if (!numCaps)
+        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+
+    if (!state->ports.contains(portId)) {
+        LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
+        return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
+    }
+
+    const bool hrtf = Audio3dHRTFActive();
+
+    std::vector<OrbisAudio3dAttributeId> supported;
+
+    // Always supported
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PCM);
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_GAIN);
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PRIORITY);
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_RESET_STATE);
+    supported.push_back(
+        OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_APPLICATION_SPECIFIC);
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_RESTRICTED);
+
+    if (hrtf) {
+        // Object-based renderer
+        supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_POSITION);
+        supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_SPREAD);
+        supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_OUTPUT_ROUTE);
+        supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PASSTHROUGH);
+        supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_AMBISONICS);
+    } else {
+        // Speaker / bed renderer
+        supported.push_back(
+            OrbisAudio3dAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_RADIUS);
+        supported.push_back(
+            OrbisAudio3dAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_DOWNMIX_SPREAD_HEIGHT_AWARE);
+    }
+
+    // Supported in both
+    supported.push_back(OrbisAudio3dAttributeId::ORBIS_AUDIO3D_PORT_ATTRIBUTE_LATE_REVERB_LEVEL);
+
+    if (!caps) {
+        *numCaps = static_cast<unsigned int>(supported.size());
+        return ORBIS_OK;
+    }
+
+    const unsigned int count = std::min(*numCaps, static_cast<unsigned int>(supported.size()));
+
+    memcpy(caps, supported.data(), count * sizeof(OrbisAudio3dAttributeId));
+    *numCaps = count;
+
     return ORBIS_OK;
 }
 

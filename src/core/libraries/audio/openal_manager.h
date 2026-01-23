@@ -9,6 +9,13 @@
 
 namespace Libraries::AudioOut {
 
+#ifndef ALC_HRTF_SOFT
+#define ALC_HRTF_SOFT 0x1992
+#define ALC_HRTF_STATUS_SOFT 0x1993
+#define ALC_FALSE_SOFT 0
+#define ALC_TRUE_SOFT 1
+#endif
+
 class OpenALManager {
 public:
     static OpenALManager& Instance() {
@@ -64,6 +71,22 @@ public:
     // For extensions checking
     bool HasExtension(const char* extension) const {
         return alcIsExtensionPresent(device_, extension) == AL_TRUE;
+    }
+
+    bool HasHRTF() const {
+        if (!initialized || !device_)
+            return false;
+
+        return alcIsExtensionPresent(device_, "ALC_SOFT_HRTF") == AL_TRUE;
+    }
+
+    bool IsHRTFEnabled() const {
+        if (!HasHRTF())
+            return false;
+
+        ALCint state = ALC_FALSE;
+        alcGetIntegerv(device_, ALC_HRTF_SOFT, 1, &state);
+        return state == ALC_TRUE;
     }
 
 private:
