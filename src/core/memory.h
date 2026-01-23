@@ -300,6 +300,11 @@ private:
                vma.type == VMAType::Pooled;
     }
 
+    std::pair<s32, MemoryManager::VMAHandle> CreateArea(VAddr virtual_addr, u64 size,
+                                                        MemoryProt prot, MemoryMapFlags flags,
+                                                        VMAType type, std::string_view name,
+                                                        u64 alignment);
+
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
     VMAHandle MergeAdjacent(VMAMap& map, VMAHandle iter);
