@@ -399,10 +399,11 @@ struct AddressSpace::Impl {
         auto it = std::prev(regions.upper_bound(virtual_addr));
         ASSERT_MSG(!it->second.is_mapped, "Cannot coalesce mapped regions");
 
-        // Check if there are free placeholders before this area.
+        // Check if there are adjacent free placeholders before this area.
         bool can_coalesce = false;
         auto it_prev = it != regions.begin() ? std::prev(it) : regions.end();
-        while (it_prev != regions.end() && !it_prev->second.is_mapped) {
+        while (it_prev != regions.end() && !it_prev->second.is_mapped &&
+               it_prev->first + it_prev->second.size == it->first) {
             // If there is an earlier region, move our iterator to that and increase size.
             it_prev->second.size = it_prev->second.size + it->second.size;
             regions.erase(it);
@@ -415,9 +416,10 @@ struct AddressSpace::Impl {
             it_prev = it != regions.begin() ? std::prev(it) : regions.end();
         }
 
-        // Check if there are free placeholders after this area.
+        // Check if there are adjacent free placeholders after this area.
         auto it_next = std::next(it);
-        while (it_next != regions.end() && !it_next->second.is_mapped) {
+        while (it_next != regions.end() && !it_next->second.is_mapped &&
+               it->first + it->second.size == it_next->first) {
             // If there is a later region, increase our current region's size
             it->second.size = it->second.size + it_next->second.size;
             regions.erase(it_next);
