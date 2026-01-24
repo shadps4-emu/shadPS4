@@ -117,7 +117,6 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
-    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -138,7 +137,6 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
 bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
     const VAddr virtual_addr = std::bit_cast<VAddr>(address);
-    std::shared_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -701,7 +699,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 }
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -710,7 +708,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     while (it != vma_map.end() && it->second.base + it->second.size <= virtual_addr + size) {
         if (it->second.type != VMAType::PoolReserved && it->second.type != VMAType::Pooled) {
             LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
-            mutex.unlock();
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
         it++;
@@ -728,9 +725,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         if (vma_base.type == VMAType::Pooled) {
             // We always map PoolCommitted memory to GPU, so unmap when decomitting.
             if (IsValidGpuMapping(current_addr, size_in_vma)) {
-                mutex.unlock();
                 rasterizer->UnmapMemory(current_addr, size_in_vma);
-                mutex.lock();
             }
 
             // Track how much pooled memory is decommitted
@@ -781,7 +776,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -789,13 +783,12 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
     if (size == 0) {
         return ORBIS_OK;
     }
-    mutex.lock();
+    std::scoped_lock lk{mutex};
     virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
     size = Common::AlignUp(size, 16_KB);
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
     u64 bytes_unmapped = UnmapMemoryImpl(virtual_addr, size);
-    mutex.unlock();
     return bytes_unmapped;
 }
 
@@ -873,9 +866,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
         // If this mapping has GPU access, unmap from GPU.
         if (IsValidGpuMapping(virtual_addr, size)) {
-            mutex.unlock();
             rasterizer->UnmapMemory(virtual_addr, size);
-            mutex.lock();
         }
     }
     return size_in_vma;
