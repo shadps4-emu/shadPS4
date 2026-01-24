@@ -96,7 +96,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         std::scoped_lock lk{m_mutex};
         path_parts.clear();
         auto current_path = host_path;
-        while (!std::filesystem::exists(current_path)) {
+        while (!current_path.empty() && !std::filesystem::exists(current_path)) {
             // We have probably cached this if it's a folder.
             if (auto it = path_cache.find(current_path); it != path_cache.end()) {
                 current_path = it->second;
@@ -105,38 +105,40 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
             path_parts.emplace_back(current_path.filename());
             current_path = current_path.parent_path();
         }
-        // We have found an anchor. Traverse parts we recoded and see if they
-        // exist in filesystem but in different case.
-        auto guest_path = current_path;
-        while (!path_parts.empty()) {
-            const auto part = path_parts.back();
-            const auto add_match = [&](const auto& host_part) {
-                current_path /= host_part;
-                guest_path /= part;
-                path_cache[guest_path] = current_path;
-                path_parts.pop_back();
-            };
-            // Can happen when the mismatch is in upper folder.
-            if (std::filesystem::exists(current_path / part)) {
-                add_match(part);
-                continue;
-            }
-            const auto part_low = Common::ToLower(part.string());
-            bool found_match = false;
-            for (const auto& path : std::filesystem::directory_iterator(current_path)) {
-                const auto candidate = path.path().filename();
-                const auto filename = Common::ToLower(candidate.string());
-                // Check if a filename matches in case insensitive manner.
-                if (filename != part_low) {
+        if (!current_path.empty()) {
+            // We have found an anchor. Traverse parts we recoded and see if they
+            // exist in filesystem but in different case.
+            auto guest_path = current_path;
+            while (!path_parts.empty()) {
+                const auto part = path_parts.back();
+                const auto add_match = [&](const auto& host_part) {
+                    current_path /= host_part;
+                    guest_path /= part;
+                    path_cache[guest_path] = current_path;
+                    path_parts.pop_back();
+                };
+                // Can happen when the mismatch is in upper folder.
+                if (std::filesystem::exists(current_path / part)) {
+                    add_match(part);
                     continue;
                 }
-                // We found a match, record the actual path in the cache.
-                add_match(candidate);
-                found_match = true;
-                break;
-            }
-            if (!found_match) {
-                return std::optional<std::filesystem::path>({});
+                const auto part_low = Common::ToLower(part.string());
+                bool found_match = false;
+                for (const auto& path : std::filesystem::directory_iterator(current_path)) {
+                    const auto candidate = path.path().filename();
+                    const auto filename = Common::ToLower(candidate.string());
+                    // Check if a filename matches in case insensitive manner.
+                    if (filename != part_low) {
+                        continue;
+                    }
+                    // We found a match, record the actual path in the cache.
+                    add_match(candidate);
+                    found_match = true;
+                    break;
+                }
+                if (!found_match) {
+                    return std::optional<std::filesystem::path>({});
+                }
             }
         }
         return std::optional<std::filesystem::path>(current_path);
