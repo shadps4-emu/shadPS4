@@ -269,7 +269,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
     std::vector<std::pair<PAddr, u64>> free_list;
     std::vector<std::pair<VAddr, u64>> remove_list;
     {
-        std::shared_lock lk{mutex};
+        std::scoped_lock lk{transition_mutex};
         // If this is a checked free, then all direct memory in range must be allocated.
         u64 remaining_size = size;
         auto phys_handle = FindDmemArea(phys_addr);
@@ -325,11 +325,11 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
                 rasterizer->UnmapMemory(addr, unmap_size);
             }
         }
-        transition_mutex.lock();
+
+        // Before leaving this scope, acquire writer lock.
+        mutex.lock();
     }
 
-    std::scoped_lock lk{mutex};
-    transition_mutex.unlock();
     for (const auto& [addr, size] : remove_list) {
         LOG_INFO(Kernel_Vmm, "Unmapping direct mapping {:#x} with size {:#x}", addr, size);
         UnmapMemoryImpl(addr, size);
@@ -347,11 +347,12 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
         MergeAdjacent(dmem_map, dmem_handle);
     }
 
+    mutex.unlock();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{mutex, transition_mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -498,7 +499,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     }
 
     {
-        std::shared_lock lk{mutex};
+        std::scoped_lock lk{transition_mutex};
         PhysHandle dmem_area;
         // Validate the requested physical address range
         if (phys_addr != -1) {
@@ -557,12 +558,9 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
-        transition_mutex.lock();
+        // Before leaving this scope, acquire writer lock.
+        mutex.lock();
     }
-
-    // Transition to writer mutex.
-    std::scoped_lock lk{mutex};
-    transition_mutex.unlock();
 
     // Create VMA representing this mapping.
     auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, type, name, alignment);
@@ -660,6 +658,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             rasterizer->MapMemory(mapped_addr, size);
         }
     }
+
+    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -667,7 +667,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
     uintptr_t handle = 0;
     {
-        std::scoped_lock lk{mutex};
+        std::scoped_lock lk{transition_mutex};
         // Get the file to map
         auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
         auto file = h->GetFile(fd);
@@ -731,12 +731,9 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
-        transition_mutex.lock();
+        // Before leaving this scope, acquire writer lock.
+        mutex.lock();
     }
-
-    // Transition to writer lock, 
-    std::scoped_lock lk{mutex};
-    transition_mutex.unlock();
 
     // Update VMA map and map to address space.
     auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, VMAType::File, "anon", 0);
@@ -749,12 +746,13 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
+    mutex.unlock();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     {
-        std::shared_lock lk{mutex};
+        std::scoped_lock lk{transition_mutex};
         ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                    virtual_addr);
 
@@ -773,12 +771,9 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
-        transition_mutex.lock();
+        // Before leaving this scope, acquire writer lock.
+        mutex.lock();
     }
-
-    // Lock for writing, then unmap all vmas in the requested range.
-    std::scoped_lock lk{mutex};
-    transition_mutex.unlock();
 
     // Loop through all vmas in the area, unmap them.
     u64 remaining_size = size;
@@ -837,6 +832,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
 
+    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -846,7 +842,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
     }
 
     {
-        std::shared_lock lk{mutex};
+        std::scoped_lock lk{transition_mutex};
         // Align address and size appropriately
         virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
         size = Common::AlignUp(size, 16_KB);
@@ -857,12 +853,14 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
         if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
-        transition_mutex.lock();
+        
+        // Before leaving this scope, acquire writer lock.
+        mutex.lock();
     }
 
-    std::scoped_lock lk{mutex};
-    transition_mutex.unlock();
-    return UnmapMemoryImpl(virtual_addr, size);
+    u64 bytes_unmapped = UnmapMemoryImpl(virtual_addr, size);
+    mutex.unlock();
+    return bytes_unmapped;
 }
 
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
@@ -1045,7 +1043,7 @@ s32 MemoryManager::Protect(VAddr addr, u64 size, MemoryProt prot) {
     }
 
     // Ensure the range to modify is valid
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{mutex, transition_mutex};
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
     // Appropriately restrict flags.
@@ -1203,7 +1201,7 @@ s32 MemoryManager::DirectQueryAvailable(PAddr search_start, PAddr search_end, u6
 }
 
 s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{mutex, transition_mutex};
 
     ASSERT_MSG(IsValidMapping(addr, size), "Attempted to access invalid address {:#x}", addr);
 
@@ -1250,7 +1248,7 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
 }
 
 void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name) {
-    std::scoped_lock lk{mutex};
+    std::scoped_lock lk{mutex, transition_mutex};
 
     // Sizes are aligned up to the nearest 16_KB
     u64 aligned_size = Common::AlignUp(size, 16_KB);
