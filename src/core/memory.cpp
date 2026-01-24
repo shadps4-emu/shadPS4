@@ -554,7 +554,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
 
         // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
+        if (IsValidGpuMapping(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
@@ -727,7 +727,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         }
 
         // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
+        if (IsValidGpuMapping(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
@@ -767,7 +767,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         }
 
         // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
+        if (IsValidGpuMapping(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
@@ -850,7 +850,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
                    virtual_addr);
 
         // If the requested range has GPU access, unmap from GPU.
-        if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
+        if (IsValidGpuMapping(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
 
