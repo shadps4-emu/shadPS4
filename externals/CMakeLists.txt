@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(BUILD_SHARED_LIBS OFF)
@@ -268,3 +268,9 @@ add_subdirectory(json)
 
 # miniz
 add_subdirectory(miniz)
+
+# cli11
+set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(ext-CLI11)
