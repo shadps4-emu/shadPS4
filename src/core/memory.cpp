@@ -320,7 +320,7 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
 
     // Early unmap from GPU to avoid deadlocking.
     for (auto& [addr, unmap_size] : remove_list) {
-        if (IsValidGpuMapping(addr, unmap_size) && rasterizer->IsMapped(addr, unmap_size)) {
+        if (IsValidGpuMapping(addr, unmap_size)) {
             rasterizer->UnmapMemory(addr, unmap_size);
         }
     }
