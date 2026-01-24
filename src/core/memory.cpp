@@ -266,69 +266,67 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
         return ORBIS_OK;
     }
 
+    std::scoped_lock lk{transition_mutex};
+    // If this is a checked free, then all direct memory in range must be allocated.
     std::vector<std::pair<PAddr, u64>> free_list;
-    std::vector<std::pair<VAddr, u64>> remove_list;
-    {
-        std::scoped_lock lk{transition_mutex};
-        // If this is a checked free, then all direct memory in range must be allocated.
-        u64 remaining_size = size;
-        auto phys_handle = FindDmemArea(phys_addr);
-        for (; phys_handle != dmem_map.end(); phys_handle++) {
-            if (remaining_size == 0) {
-                // Done searching
-                break;
+    u64 remaining_size = size;
+    auto phys_handle = FindDmemArea(phys_addr);
+    for (; phys_handle != dmem_map.end(); phys_handle++) {
+        if (remaining_size == 0) {
+            // Done searching
+            break;
+        }
+        auto& dmem_area = phys_handle->second;
+        if (dmem_area.dma_type == PhysicalMemoryType::Free) {
+            if (is_checked) {
+                // Checked frees will error if anything in the area isn't allocated.
+                // Unchecked frees will just ignore free areas.
+                LOG_ERROR(Kernel_Vmm, "Attempting to release a free dmem area");
+                return ORBIS_KERNEL_ERROR_ENOENT;
             }
-            auto& dmem_area = phys_handle->second;
-            if (dmem_area.dma_type == PhysicalMemoryType::Free) {
-                if (is_checked) {
-                    // Checked frees will error if anything in the area isn't allocated.
-                    // Unchecked frees will just ignore free areas.
-                    LOG_ERROR(Kernel_Vmm, "Attempting to release a free dmem area");
-                    return ORBIS_KERNEL_ERROR_ENOENT;
-                }
-                continue;
-            }
-
-            // Store physical address and size to release
-            const PAddr current_phys_addr = std::max<PAddr>(phys_addr, phys_handle->first);
-            const u64 start_in_dma = current_phys_addr - phys_handle->first;
-            const u64 size_in_dma =
-                std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
-            free_list.emplace_back(current_phys_addr, size_in_dma);
-
-            // Track remaining size to free
-            remaining_size -= size_in_dma;
+            continue;
         }
 
-        // Release any dmem mappings that reference this physical block.
-        for (const auto& [addr, mapping] : vma_map) {
-            if (mapping.type != VMAType::Direct) {
-                continue;
-            }
-            for (auto& [offset_in_vma, phys_mapping] : mapping.phys_areas) {
-                if (phys_addr + size > phys_mapping.base &&
-                    phys_addr < phys_mapping.base + phys_mapping.size) {
-                    const u64 phys_offset =
-                        std::max<u64>(phys_mapping.base, phys_addr) - phys_mapping.base;
-                    const VAddr addr_in_vma = mapping.base + offset_in_vma + phys_offset;
-                    const u64 unmap_size = std::min<u64>(phys_mapping.size - phys_offset, size);
+        // Store physical address and size to release
+        const PAddr current_phys_addr = std::max<PAddr>(phys_addr, phys_handle->first);
+        const u64 start_in_dma = current_phys_addr - phys_handle->first;
+        const u64 size_in_dma =
+            std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
+        free_list.emplace_back(current_phys_addr, size_in_dma);
 
-                    // Unmapping might erase from vma_map. We can't do it here.
-                    remove_list.emplace_back(addr_in_vma, unmap_size);
-                }
-            }
-        }
-
-        // Early unmap from GPU to avoid deadlocking.
-        for (auto& [addr, unmap_size] : remove_list) {
-            if (IsValidGpuMapping(addr, unmap_size) && rasterizer->IsMapped(addr, unmap_size)) {
-                rasterizer->UnmapMemory(addr, unmap_size);
-            }
-        }
-
-        // Before leaving this scope, acquire writer lock.
-        mutex.lock();
+        // Track remaining size to free
+        remaining_size -= size_in_dma;
     }
+
+    // Release any dmem mappings that reference this physical block.
+    std::vector<std::pair<VAddr, u64>> remove_list;
+    for (const auto& [addr, mapping] : vma_map) {
+        if (mapping.type != VMAType::Direct) {
+            continue;
+        }
+        for (auto& [offset_in_vma, phys_mapping] : mapping.phys_areas) {
+            if (phys_addr + size > phys_mapping.base &&
+                phys_addr < phys_mapping.base + phys_mapping.size) {
+                const u64 phys_offset =
+                    std::max<u64>(phys_mapping.base, phys_addr) - phys_mapping.base;
+                const VAddr addr_in_vma = mapping.base + offset_in_vma + phys_offset;
+                const u64 unmap_size = std::min<u64>(phys_mapping.size - phys_offset, size);
+
+                // Unmapping might erase from vma_map. We can't do it here.
+                remove_list.emplace_back(addr_in_vma, unmap_size);
+            }
+        }
+    }
+
+    // Early unmap from GPU to avoid deadlocking.
+    for (auto& [addr, unmap_size] : remove_list) {
+        if (IsValidGpuMapping(addr, unmap_size) && rasterizer->IsMapped(addr, unmap_size)) {
+            rasterizer->UnmapMemory(addr, unmap_size);
+        }
+    }
+
+    // Acquire writer lock
+    std::scoped_lock lk2{mutex};
 
     for (const auto& [addr, size] : remove_list) {
         LOG_INFO(Kernel_Vmm, "Unmapping direct mapping {:#x} with size {:#x}", addr, size);
@@ -347,7 +345,6 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
         MergeAdjacent(dmem_map, dmem_handle);
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -497,70 +494,67 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                   total_flexible_size - flexible_usage, size);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+    std::scoped_lock lk{transition_mutex};
 
-    {
-        std::scoped_lock lk{transition_mutex};
-        PhysHandle dmem_area;
-        // Validate the requested physical address range
-        if (phys_addr != -1) {
-            if (total_direct_size < phys_addr + size) {
+    PhysHandle dmem_area;
+    // Validate the requested physical address range
+    if (phys_addr != -1) {
+        if (total_direct_size < phys_addr + size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                      phys_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+
+        // Validate direct memory areas involved in this call.
+        auto dmem_area = FindDmemArea(phys_addr);
+        while (dmem_area != dmem_map.end() && dmem_area->second.base < phys_addr + size) {
+            // If any requested dmem area is not allocated, return an error.
+            if (dmem_area->second.dma_type != PhysicalMemoryType::Allocated &&
+                dmem_area->second.dma_type != PhysicalMemoryType::Mapped) {
                 LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
                           phys_addr);
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
 
-            // Validate direct memory areas involved in this call.
-            auto dmem_area = FindDmemArea(phys_addr);
-            while (dmem_area != dmem_map.end() && dmem_area->second.base < phys_addr + size) {
-                // If any requested dmem area is not allocated, return an error.
-                if (dmem_area->second.dma_type != PhysicalMemoryType::Allocated &&
-                    dmem_area->second.dma_type != PhysicalMemoryType::Mapped) {
-                    LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}",
-                              size, phys_addr);
-                    return ORBIS_KERNEL_ERROR_ENOMEM;
-                }
-
-                // If we need to perform extra validation, then check for Mapped dmem areas too.
-                if (validate_dmem && dmem_area->second.dma_type == PhysicalMemoryType::Mapped) {
-                    LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}",
-                              size, phys_addr);
-                    return ORBIS_KERNEL_ERROR_EBUSY;
-                }
-
-                dmem_area++;
+            // If we need to perform extra validation, then check for Mapped dmem areas too.
+            if (validate_dmem && dmem_area->second.dma_type == PhysicalMemoryType::Mapped) {
+                LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at physical address {:#x}", size,
+                          phys_addr);
+                return ORBIS_KERNEL_ERROR_EBUSY;
             }
-        }
 
-        if (True(flags & MemoryMapFlags::Fixed) && True(flags & MemoryMapFlags::NoOverwrite)) {
-            // Perform necessary error checking for Fixed & NoOverwrite case
-            ASSERT_MSG(IsValidMapping(virtual_addr, size),
-                       "Attempted to access invalid address {:#x}", virtual_addr);
-            auto vma = FindVMA(virtual_addr)->second;
-            auto remaining_size = vma.base + vma.size - virtual_addr;
-            if (!vma.IsFree() || remaining_size < size) {
-                LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size,
-                          virtual_addr);
-                return ORBIS_KERNEL_ERROR_ENOMEM;
-            }
-        } else if (False(flags & MemoryMapFlags::Fixed)) {
-            // Find a free virtual addr to map
-            alignment = alignment > 0 ? alignment : 16_KB;
-            virtual_addr = virtual_addr == 0 ? DEFAULT_MAPPING_BASE : virtual_addr;
-            virtual_addr = SearchFree(virtual_addr, size, alignment);
-            if (virtual_addr == -1) {
-                // No suitable memory areas to map to
-                return ORBIS_KERNEL_ERROR_ENOMEM;
-            }
+            dmem_area++;
         }
-
-        // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
-        }
-
-        // Before leaving this scope, acquire writer lock.
-        mutex.lock();
     }
+
+    if (True(flags & MemoryMapFlags::Fixed) && True(flags & MemoryMapFlags::NoOverwrite)) {
+        // Perform necessary error checking for Fixed & NoOverwrite case
+        ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
+                   virtual_addr);
+        auto vma = FindVMA(virtual_addr)->second;
+        auto remaining_size = vma.base + vma.size - virtual_addr;
+        if (!vma.IsFree() || remaining_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, virtual_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    } else if (False(flags & MemoryMapFlags::Fixed)) {
+        // Find a free virtual addr to map
+        alignment = alignment > 0 ? alignment : 16_KB;
+        virtual_addr = virtual_addr == 0 ? DEFAULT_MAPPING_BASE : virtual_addr;
+        virtual_addr = SearchFree(virtual_addr, size, alignment);
+        if (virtual_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    }
+
+    // Perform early GPU unmap to avoid potential deadlocks
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
+    }
+
+    // Acquire writer lock.
+    std::scoped_lock lk2{mutex};
 
     // Create VMA representing this mapping.
     auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, type, name, alignment);
@@ -659,81 +653,77 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         }
     }
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                            MemoryMapFlags flags, s32 fd, s64 phys_addr) {
     uintptr_t handle = 0;
-    {
-        std::scoped_lock lk{transition_mutex};
-        // Get the file to map
-        auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-        auto file = h->GetFile(fd);
-        if (file == nullptr) {
-            LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
-            return ORBIS_KERNEL_ERROR_EBADF;
-        }
-
-        if (file->type != Core::FileSys::FileType::Regular) {
-            LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
-            return ORBIS_KERNEL_ERROR_EBADF;
-        }
-
-        if (True(prot & MemoryProt::CpuWrite)) {
-            // On PS4, read is appended to write mappings.
-            prot |= MemoryProt::CpuRead;
-        }
-
-        handle = file->f.GetFileMapping();
-
-        if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
-            False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
-            // If the file does not have write access, ensure prot does not contain write
-            // permissions. On real hardware, these mappings succeed, but the memory cannot be
-            // written to.
-            prot &= ~MemoryProt::CpuWrite;
-        }
-
-        if (prot >= MemoryProt::GpuRead) {
-            // On real hardware, GPU file mmaps cause a full system crash due to an internal error.
-            ASSERT_MSG(false, "Files cannot be mapped to GPU memory");
-        }
-
-        if (True(prot & MemoryProt::CpuExec)) {
-            // On real hardware, execute permissions are silently removed.
-            prot &= ~MemoryProt::CpuExec;
-        }
-
-        if (True(flags & MemoryMapFlags::Fixed) && False(flags & MemoryMapFlags::NoOverwrite)) {
-            ASSERT_MSG(IsValidMapping(virtual_addr, size),
-                       "Attempted to access invalid address {:#x}", virtual_addr);
-            auto vma = FindVMA(virtual_addr)->second;
-
-            auto remaining_size = vma.base + vma.size - virtual_addr;
-            if (!vma.IsFree() || remaining_size < size) {
-                LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size,
-                          virtual_addr);
-                return ORBIS_KERNEL_ERROR_ENOMEM;
-            }
-        } else if (False(flags & MemoryMapFlags::Fixed)) {
-            virtual_addr = virtual_addr == 0 ? DEFAULT_MAPPING_BASE : virtual_addr;
-            virtual_addr = SearchFree(virtual_addr, size, 16_KB);
-            if (virtual_addr == -1) {
-                // No suitable memory areas to map to
-                return ORBIS_KERNEL_ERROR_ENOMEM;
-            }
-        }
-
-        // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
-        }
-
-        // Before leaving this scope, acquire writer lock.
-        mutex.lock();
+    std::scoped_lock lk{transition_mutex};
+    // Get the file to map
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto file = h->GetFile(fd);
+    if (file == nullptr) {
+        LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
+        return ORBIS_KERNEL_ERROR_EBADF;
     }
+
+    if (file->type != Core::FileSys::FileType::Regular) {
+        LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (True(prot & MemoryProt::CpuWrite)) {
+        // On PS4, read is appended to write mappings.
+        prot |= MemoryProt::CpuRead;
+    }
+
+    handle = file->f.GetFileMapping();
+
+    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
+        False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
+        // If the file does not have write access, ensure prot does not contain write
+        // permissions. On real hardware, these mappings succeed, but the memory cannot be
+        // written to.
+        prot &= ~MemoryProt::CpuWrite;
+    }
+
+    if (prot >= MemoryProt::GpuRead) {
+        // On real hardware, GPU file mmaps cause a full system crash due to an internal error.
+        ASSERT_MSG(false, "Files cannot be mapped to GPU memory");
+    }
+
+    if (True(prot & MemoryProt::CpuExec)) {
+        // On real hardware, execute permissions are silently removed.
+        prot &= ~MemoryProt::CpuExec;
+    }
+
+    if (True(flags & MemoryMapFlags::Fixed) && False(flags & MemoryMapFlags::NoOverwrite)) {
+        ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
+                   virtual_addr);
+        auto vma = FindVMA(virtual_addr)->second;
+
+        auto remaining_size = vma.base + vma.size - virtual_addr;
+        if (!vma.IsFree() || remaining_size < size) {
+            LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, virtual_addr);
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    } else if (False(flags & MemoryMapFlags::Fixed)) {
+        virtual_addr = virtual_addr == 0 ? DEFAULT_MAPPING_BASE : virtual_addr;
+        virtual_addr = SearchFree(virtual_addr, size, 16_KB);
+        if (virtual_addr == -1) {
+            // No suitable memory areas to map to
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+    }
+
+    // Perform early GPU unmap to avoid potential deadlocks
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
+    }
+
+    // Aquire writer lock
+    std::scoped_lock lk2{mutex};
 
     // Update VMA map and map to address space.
     auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, VMAType::File, "anon", 0);
@@ -746,34 +736,31 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
-    mutex.unlock();
     return ORBIS_OK;
 }
 
 s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
-    {
-        std::scoped_lock lk{transition_mutex};
-        ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
-                   virtual_addr);
+    std::scoped_lock lk{transition_mutex};
+    ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
+               virtual_addr);
 
-        // Do an initial search to ensure this decommit is valid.
-        auto it = FindVMA(virtual_addr);
-        while (it != vma_map.end() && it->second.base + it->second.size <= virtual_addr + size) {
-            if (it->second.type != VMAType::PoolReserved && it->second.type != VMAType::Pooled) {
-                LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
-                return ORBIS_KERNEL_ERROR_EINVAL;
-            }
-            it++;
+    // Do an initial search to ensure this decommit is valid.
+    auto it = FindVMA(virtual_addr);
+    while (it != vma_map.end() && it->second.base + it->second.size <= virtual_addr + size) {
+        if (it->second.type != VMAType::PoolReserved && it->second.type != VMAType::Pooled) {
+            LOG_ERROR(Kernel_Vmm, "Attempting to decommit non-pooled memory!");
+            return ORBIS_KERNEL_ERROR_EINVAL;
         }
-
-        // Perform early GPU unmap to avoid potential deadlocks
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
-        }
-
-        // Before leaving this scope, acquire writer lock.
-        mutex.lock();
+        it++;
     }
+
+    // Perform early GPU unmap to avoid potential deadlocks
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
+    }
+
+    // Aquire writer mutex
+    std::scoped_lock lk2{mutex};
 
     // Loop through all vmas in the area, unmap them.
     u64 remaining_size = size;
@@ -832,7 +819,6 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
     // Tracy memory tracking breaks from merging memory areas. Disabled for now.
     // TRACK_FREE(virtual_addr, "VMEM");
 
-    mutex.unlock();
     return ORBIS_OK;
 }
 
@@ -841,26 +827,21 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
         return ORBIS_OK;
     }
 
-    {
-        std::scoped_lock lk{transition_mutex};
-        // Align address and size appropriately
-        virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
-        size = Common::AlignUp(size, 16_KB);
-        ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
-                   virtual_addr);
+    std::scoped_lock lk{transition_mutex};
+    // Align address and size appropriately
+    virtual_addr = Common::AlignDown(virtual_addr, 16_KB);
+    size = Common::AlignUp(size, 16_KB);
+    ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
+               virtual_addr);
 
-        // If the requested range has GPU access, unmap from GPU.
-        if (IsValidGpuMapping(virtual_addr, size)) {
-            rasterizer->UnmapMemory(virtual_addr, size);
-        }
-
-        // Before leaving this scope, acquire writer lock.
-        mutex.lock();
+    // If the requested range has GPU access, unmap from GPU.
+    if (IsValidGpuMapping(virtual_addr, size)) {
+        rasterizer->UnmapMemory(virtual_addr, size);
     }
 
-    u64 bytes_unmapped = UnmapMemoryImpl(virtual_addr, size);
-    mutex.unlock();
-    return bytes_unmapped;
+    // Acquire writer lock.
+    std::scoped_lock lk2{mutex};
+    return UnmapMemoryImpl(virtual_addr, size);
 }
 
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
@@ -1306,7 +1287,6 @@ s32 MemoryManager::IsStack(VAddr addr, void** start, void** end) {
     ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
     const auto& vma = FindVMA(addr)->second;
     if (vma.IsFree()) {
-        mutex.unlock_shared();
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
