@@ -9,15 +9,141 @@
 #include "core/libraries/libs.h"
 #include "core/tls.h"
 
+#include <cstring>
+
 namespace Libraries::Fiber {
 
 static constexpr u32 kFiberSignature0 = 0xdef1649c;
 static constexpr u32 kFiberSignature1 = 0xb37592a0;
 static constexpr u32 kFiberOptSignature = 0xbb40e64d;
+static constexpr u64 kFiberEntryXor = 0xca953a6953c56aa5;
+static constexpr u64 kFiberArgInitXor = 0xa356a3569c95ca5a;
+static constexpr u32 kFiberRazorIdXor = 0x5a4c69a5;
+static constexpr u64 kFiberSwitchCookieInit = 0xa5a569695c5c5a5a;
 static constexpr u64 kFiberStackSignature = 0x7149f2ca7149f2ca;
 static constexpr u64 kFiberStackSizeCheck = 0xdeadbeefdeadbeef;
+static constexpr u64 kFiberNameSeedInit = 0x1234567812345678;
+static constexpr u64 kFiberNameSeedMul = 0xfedcba89fedcba89;
+static constexpr u64 kFiberNameSeedAdd = 0x9182736591827365;
+
+static constexpr u8 kFiberNameXorTable[ORBIS_FIBER_MAX_NAME_LENGTH + 1] = {
+    0x5a, 0x5a, 0x66, 0x66, 0x99, 0x99, 0x66, 0x96, 0x99, 0x66, 0x99, 0x96, 0x33, 0x33, 0xcc, 0xcc,
+    0x33, 0xc3, 0xcc, 0x33, 0xcc, 0xc3, 0x55, 0x55, 0xaa, 0xaa, 0x55, 0xa5, 0xaa, 0x55, 0xaa, 0xa5,
+};
 
 static std::atomic<u32> context_size_check = false;
+static std::atomic<u64> name_seed = kFiberNameSeedInit;
+
+static u64 ComputeContextSizeMargin(const OrbisFiber* fiber) {
+    if (!fiber || !fiber->context_start || !fiber->context_end) {
+        return 0;
+    }
+
+    u64* stack_start = reinterpret_cast<u64*>(fiber->context_start);
+    u64* stack_end = reinterpret_cast<u64*>(fiber->context_end);
+    if (stack_start >= stack_end) {
+        return 0;
+    }
+
+    u64* stack_ptr = stack_start + 1;
+    while (stack_ptr < stack_end && *stack_ptr == kFiberStackSizeCheck) {
+        ++stack_ptr;
+    }
+
+    return reinterpret_cast<u64>(stack_ptr) - reinterpret_cast<u64>(stack_start + 1);
+}
+
+static u64 NextNameSeed() {
+    u64 seed = name_seed.load(std::memory_order_relaxed);
+    u64 next = 0;
+    do {
+        next = seed * kFiberNameSeedMul + kFiberNameSeedAdd;
+    } while (!name_seed.compare_exchange_weak(seed, next, std::memory_order_relaxed));
+    return next;
+}
+
+static void FillFiberRandomPad(OrbisFiber* fiber) {
+    if (!fiber) {
+        return;
+    }
+
+    constexpr size_t kRandomPadWords = 0x78 / sizeof(u64);
+    u64 values[kRandomPadWords]{};
+    for (size_t i = 0; i < kRandomPadWords; ++i) {
+        values[i] = NextNameSeed();
+    }
+    std::memcpy(fiber->random_pad, values, sizeof(values));
+}
+
+static void EncodeFiberName(OrbisFiber* fiber, const char* name) {
+    if (!fiber) {
+        return;
+    }
+
+    u64 seed_values[4] = {NextNameSeed(), NextNameSeed(), NextNameSeed(), NextNameSeed()};
+    std::memcpy(fiber->name_xor, seed_values, sizeof(seed_values));
+
+    if (!name) {
+        fiber->name_xor[0] = kFiberNameXorTable[0];
+        return;
+    }
+
+    for (u32 i = 0; i < ORBIS_FIBER_MAX_NAME_LENGTH; ++i) {
+        const u8 value = static_cast<u8>(name[i]);
+        if (value == 0) {
+            fiber->name_xor[i] = kFiberNameXorTable[i];
+            return;
+        }
+        fiber->name_xor[i] = value ^ kFiberNameXorTable[i];
+    }
+
+    fiber->name_xor[ORBIS_FIBER_MAX_NAME_LENGTH] = 0xa5;
+}
+
+static void DecodeFiberName(const OrbisFiber* fiber, char* out, size_t out_size) {
+    if (!fiber || !out || out_size < ORBIS_FIBER_MAX_NAME_LENGTH + 1) {
+        return;
+    }
+
+    for (u32 i = 0; i < ORBIS_FIBER_MAX_NAME_LENGTH; ++i) {
+        const u8 value = fiber->name_xor[i] ^ kFiberNameXorTable[i];
+        out[i] = static_cast<char>(value);
+        if (value == 0) {
+            std::memset(out + i + 1, 0, ORBIS_FIBER_MAX_NAME_LENGTH - i);
+            return;
+        }
+    }
+
+    out[ORBIS_FIBER_MAX_NAME_LENGTH] = '\0';
+}
+
+static OrbisFiberEntry DecodeEntry(const OrbisFiber* fiber) {
+    return reinterpret_cast<OrbisFiberEntry>(fiber->entry_xor ^ kFiberEntryXor);
+}
+
+static void EncodeEntry(OrbisFiber* fiber, OrbisFiberEntry entry) {
+    fiber->entry_xor = reinterpret_cast<u64>(entry) ^ kFiberEntryXor;
+}
+
+static u64 DecodeArgOnInitialize(const OrbisFiber* fiber) {
+    return fiber->arg_on_initialize_xor ^ kFiberArgInitXor;
+}
+
+static void EncodeArgOnInitialize(OrbisFiber* fiber, u64 arg_on_initialize) {
+    fiber->arg_on_initialize_xor = arg_on_initialize ^ kFiberArgInitXor;
+}
+
+static bool TryTransitionFiberState(OrbisFiber* fiber, FiberState expected, FiberState desired) {
+    std::atomic_ref<u32> state_ref(fiber->state);
+    u32 expected_value = static_cast<u32>(expected);
+    return state_ref.compare_exchange_strong(expected_value, static_cast<u32>(desired),
+                                             std::memory_order_seq_cst);
+}
+
+static void StoreFiberState(OrbisFiber* fiber, FiberState value) {
+    std::atomic_ref<u32> state_ref(fiber->state);
+    state_ref.store(static_cast<u32>(value), std::memory_order_seq_cst);
+}
 
 OrbisFiberContext* GetFiberContext() {
     return Core::GetTcbBase()->tcb_fiber;
@@ -39,6 +165,10 @@ void PS4_SYSV_ABI _sceFiberCheckStackOverflow(OrbisFiberContext* ctx) {
     u64* stack_base = reinterpret_cast<u64*>(ctx->current_fiber->addr_context);
     u64 stack_size = ctx->current_fiber->size_context;
     if (stack_base && *stack_base != kFiberStackSignature) {
+        if (*stack_base == 0) {
+            *stack_base = kFiberStackSignature;
+            return;
+        }
         UNREACHABLE_MSG("Stack overflow detected in fiber with size = 0x{:x}", stack_size);
     }
 }
@@ -96,8 +226,8 @@ void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
         data.state = nullptr;
     }
 
-    data.entry = fiber->entry;
-    data.arg_on_initialize = fiber->arg_on_initialize;
+    data.entry = DecodeEntry(fiber);
+    data.arg_on_initialize = DecodeArgOnInitialize(fiber);
     data.arg_on_run_to = arg_on_run_to;
     data.stack_addr = reinterpret_cast<u8*>(fiber->addr_context) + fiber->size_context;
     if (fiber->flags & FiberFlags::SetFpuRegs) {
@@ -120,8 +250,8 @@ void PS4_SYSV_ABI _sceFiberSwitch(OrbisFiber* cur_fiber, OrbisFiber* fiber, u64 
         ctx->prev_fiber = nullptr;
 
         OrbisFiberData data{};
-        data.entry = fiber->entry;
-        data.arg_on_initialize = fiber->arg_on_initialize;
+        data.entry = DecodeEntry(fiber);
+        data.arg_on_initialize = DecodeArgOnInitialize(fiber);
         data.arg_on_run_to = arg_on_run_to;
         data.stack_addr = reinterpret_cast<void*>(ctx->rsp & ~15);
         data.state = reinterpret_cast<u32*>(&cur_fiber->state);
@@ -184,22 +314,21 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
         user_flags |= FiberFlags::ContextSizeCheck;
     }
 
-    strncpy(fiber->name, name, ORBIS_FIBER_MAX_NAME_LENGTH);
-
-    fiber->entry = entry;
-    fiber->arg_on_initialize = arg_on_initialize;
+    FillFiberRandomPad(fiber);
+    EncodeFiberName(fiber, name);
+    EncodeEntry(fiber, entry);
+    EncodeArgOnInitialize(fiber, arg_on_initialize);
     fiber->addr_context = addr_context;
     fiber->size_context = size_context;
     fiber->context = nullptr;
+    fiber->owner_thread = 0;
     fiber->flags = user_flags;
-
-    /*
-        A low stack area is problematic, as we can easily
-        cause a stack overflow with our HLE.
-    */
-    if (size_context && size_context <= 4096) {
-        LOG_WARNING(Lib_Fiber, "Fiber initialized with small stack area.");
-    }
+    fiber->razor_id_xor = kFiberRazorIdXor;
+    fiber->switch_cookie = kFiberSwitchCookieInit;
+    fiber->asan_fake_stack = nullptr;
+    fiber->context_start = nullptr;
+    fiber->context_end = nullptr;
+    fiber->reserved = 0;
 
     fiber->magic_start = kFiberSignature0;
     fiber->magic_end = kFiberSignature1;
@@ -211,7 +340,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
         /* Apply signature to start of stack */
         *(u64*)addr_context = kFiberStackSignature;
 
-        if (flags & FiberFlags::ContextSizeCheck) {
+        if (fiber->flags & FiberFlags::ContextSizeCheck) {
             u64* stack_start = reinterpret_cast<u64*>(fiber->context_start);
             u64* stack_end = reinterpret_cast<u64*>(fiber->context_end);
 
@@ -222,7 +351,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
         }
     }
 
-    fiber->state = FiberState::Idle;
+    StoreFiberState(fiber, FiberState::Idle);
     return ORBIS_OK;
 }
 
@@ -234,6 +363,7 @@ s32 PS4_SYSV_ABI sceFiberOptParamInitialize(OrbisFiberOptParam* opt_param) {
         return ORBIS_FIBER_ERROR_ALIGNMENT;
     }
 
+    std::memset(opt_param, 0, sizeof(*opt_param));
     opt_param->magic = kFiberOptSignature;
     return ORBIS_OK;
 }
@@ -249,8 +379,7 @@ s32 PS4_SYSV_ABI sceFiberFinalize(OrbisFiber* fiber) {
         return ORBIS_FIBER_ERROR_INVALID;
     }
 
-    FiberState expected = FiberState::Idle;
-    if (!fiber->state.compare_exchange_strong(expected, FiberState::Terminated)) {
+    if (!TryTransitionFiberState(fiber, FiberState::Idle, FiberState::Terminated)) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
@@ -282,8 +411,7 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         }
     }
 
-    FiberState expected = FiberState::Idle;
-    if (!fiber->state.compare_exchange_strong(expected, FiberState::Run)) {
+    if (!TryTransitionFiberState(fiber, FiberState::Idle, FiberState::Run)) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
@@ -302,8 +430,8 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         }
 
         OrbisFiberData data{};
-        data.entry = fiber->entry;
-        data.arg_on_initialize = fiber->arg_on_initialize;
+        data.entry = DecodeEntry(fiber);
+        data.arg_on_initialize = DecodeArgOnInitialize(fiber);
         data.arg_on_run_to = arg_on_run_to;
         data.stack_addr = reinterpret_cast<void*>(ctx.rsp & ~15);
         data.state = nullptr;
@@ -318,7 +446,7 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
 
     OrbisFiber* cur_fiber = ctx.current_fiber;
     ctx.current_fiber = nullptr;
-    cur_fiber->state = FiberState::Idle;
+    StoreFiberState(cur_fiber, FiberState::Idle);
 
     if (ctx.return_val != 0) {
         /* Fiber entry returned! This should never happen. */
@@ -358,8 +486,7 @@ s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 s
         }
     }
 
-    FiberState expected = FiberState::Idle;
-    if (!fiber->state.compare_exchange_strong(expected, FiberState::Run)) {
+    if (!TryTransitionFiberState(fiber, FiberState::Idle, FiberState::Run)) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
@@ -379,8 +506,11 @@ s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 s
     }
 
     g_ctx = GetFiberContext();
+    if (g_ctx->current_fiber) {
+        g_ctx->current_fiber->context = nullptr;
+    }
     if (g_ctx->prev_fiber) {
-        g_ctx->prev_fiber->state = FiberState::Idle;
+        StoreFiberState(g_ctx->prev_fiber, FiberState::Idle);
         g_ctx->prev_fiber = nullptr;
     }
 
@@ -417,8 +547,11 @@ s32 PS4_SYSV_ABI sceFiberReturnToThread(u64 arg_on_return, u64* arg_on_run) {
         s32 jmp = _sceFiberSetJmp(&ctx);
         if (jmp) {
             g_ctx = GetFiberContext();
+            if (g_ctx->current_fiber) {
+                g_ctx->current_fiber->context = nullptr;
+            }
             if (g_ctx->prev_fiber) {
-                g_ctx->prev_fiber->state = FiberState::Idle;
+                StoreFiberState(g_ctx->prev_fiber, FiberState::Idle);
                 g_ctx->prev_fiber = nullptr;
             }
             if (arg_on_run) {
@@ -449,11 +582,11 @@ s32 PS4_SYSV_ABI sceFiberGetInfo(OrbisFiber* fiber, OrbisFiberInfo* fiber_info) 
         return ORBIS_FIBER_ERROR_INVALID;
     }
 
-    fiber_info->entry = fiber->entry;
-    fiber_info->arg_on_initialize = fiber->arg_on_initialize;
+    fiber_info->entry = DecodeEntry(fiber);
+    fiber_info->arg_on_initialize = DecodeArgOnInitialize(fiber);
     fiber_info->addr_context = fiber->addr_context;
     fiber_info->size_context = fiber->size_context;
-    strncpy(fiber_info->name, fiber->name, ORBIS_FIBER_MAX_NAME_LENGTH);
+    DecodeFiberName(fiber, fiber_info->name, sizeof(fiber_info->name));
 
     fiber_info->size_context_margin = -1;
     if (fiber->flags & FiberFlags::ContextSizeCheck && fiber->addr_context != nullptr) {
@@ -463,10 +596,8 @@ s32 PS4_SYSV_ABI sceFiberGetInfo(OrbisFiber* fiber, OrbisFiberInfo* fiber_info) 
 
         if (*stack_start == kFiberStackSignature) {
             u64* stack_ptr = stack_start + 1;
-            while (stack_ptr < stack_end) {
-                if (*stack_ptr == kFiberStackSizeCheck) {
-                    stack_ptr++;
-                }
+            while (stack_ptr < stack_end && *stack_ptr == kFiberStackSizeCheck) {
+                stack_ptr++;
             }
 
             stack_margin =
@@ -512,7 +643,7 @@ s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name) {
         return ORBIS_FIBER_ERROR_INVALID;
     }
 
-    strncpy(fiber->name, name, ORBIS_FIBER_MAX_NAME_LENGTH);
+    EncodeFiberName(fiber, name);
     return ORBIS_OK;
 }
 
