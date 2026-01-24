@@ -853,7 +853,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
         if (IsValidGpuMapping(virtual_addr, size) && rasterizer->IsMapped(virtual_addr, size)) {
             rasterizer->UnmapMemory(virtual_addr, size);
         }
-        
+
         // Before leaving this scope, acquire writer lock.
         mutex.lock();
     }
