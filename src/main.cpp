@@ -22,6 +22,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <core/emulator_settings.h>
 #include <common/key_manager.h>
 
 int main(int argc, char* argv[]) {
@@ -33,6 +34,10 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<EmulatorState> m_emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(m_emu_state);
     // Load configurations
+    std::shared_ptr<EmulatorSettings> emu_settings = std::make_shared<EmulatorSettings>();
+    EmulatorSettings::SetInstance(emu_settings);
+    emu_settings->Load();
+
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
     // temp copy the trophy key from old config to key manager if exists

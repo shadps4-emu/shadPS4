@@ -470,8 +470,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/web_browser_dialog/webbrowserdialog.h
                 src/core/libraries/font/font.cpp
                 src/core/libraries/font/font.h
+                src/core/libraries/font/font_internal.cpp
+                src/core/libraries/font/font_internal.h
                 src/core/libraries/font/fontft.cpp
                 src/core/libraries/font/fontft.h
+                src/core/libraries/font/fontft_internal.cpp
+                src/core/libraries/font/fontft_internal.h
                 src/core/libraries/font/font_error.h
 
 )
@@ -848,6 +852,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/tls.h
          src/core/emulator_state.cpp
          src/core/emulator_state.h
+         src/core/emulator_settings.cpp
+         src/core/emulator_settings.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")
@@ -1095,7 +1101,7 @@ add_executable(shadps4
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG freetype)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz fdk-aac)
 
