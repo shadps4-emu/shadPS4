@@ -333,7 +333,7 @@ private:
     PhysMap fmem_map;
     VMAMap vma_map;
     Common::SharedFirstMutex mutex{};
-    std::mutex transition_mutex{};
+    std::mutex unmap_mutex{};
     u64 total_direct_size{};
     u64 total_flexible_size{};
     u64 flexible_usage{};
