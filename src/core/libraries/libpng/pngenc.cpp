@@ -194,7 +194,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
         std::vector<uint8_t> rgb_row(param->image_width * 3);
 
         for (; processed_height < param->image_height; ++processed_height) {
-            const unsigned char *src =
+            const unsigned char* src =
                 param->image_mem_addr + processed_height * param->image_pitch;
 
             uint8_t* dst = rgb_row.data();
