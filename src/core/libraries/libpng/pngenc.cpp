@@ -24,8 +24,7 @@ struct PngWriter {
 };
 
 static inline int MapPngFilter(u16 filter) {
-    if (filter == (u16)OrbisPngEncFilterType::All)
-    {
+    if (filter == (u16)OrbisPngEncFilterType::All) {
         return PNG_ALL_FILTERS;
     }
 
@@ -46,7 +45,7 @@ static inline int MapPngFilter(u16 filter) {
 }
 
 void png_write_fn(png_structp png_ptr, png_bytep data, size_t length) {
-    auto* ctx = (PngWriter*)png_get_io_ptr(png_ptr);
+    PngWriter* ctx = (PngWriter*)png_get_io_ptr(png_ptr);
 
     if ((size_t)(ctx->cursor - ctx->start) + length > ctx->capacity) {
         LOG_ERROR(Lib_Png, "PNG output buffer too small");
@@ -105,7 +104,7 @@ s32 PS4_SYSV_ABI scePngEncCreate(const OrbisPngEncCreateParam* param, void* memo
 }
 
 s32 PS4_SYSV_ABI scePngEncDelete(OrbisPngEncHandle handle) {
-    auto pngh = *(PngHandler**)handle;
+    auto pngh = (PngHandler*)handle;
     png_destroy_write_struct(&pngh->png_ptr, &pngh->info_ptr);
     return ORBIS_OK;
 }
@@ -155,7 +154,9 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     png_set_write_fn(pngh->png_ptr, &writer, png_write_fn, png_flush_fn);
 
-    png_set_IHDR(pngh->png_ptr, pngh->info_ptr, param->image_width, param->image_height, param->bit_depth, png_color_type, png_interlace_type, png_compression_type, png_filter_method);
+    png_set_IHDR(pngh->png_ptr, pngh->info_ptr, param->image_width, param->image_height,
+                 param->bit_depth, png_color_type, png_interlace_type, png_compression_type,
+                 png_filter_method);
 
     if (param->pixel_format == OrbisPngEncPixelFormat::B8G8R8A8) {
         png_set_bgr(pngh->png_ptr);

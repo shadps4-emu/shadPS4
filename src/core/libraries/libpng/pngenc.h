@@ -13,7 +13,7 @@ namespace Libraries::PngEnc {
 
 enum class OrbisPngEncAttribute { None = 0 };
 
-enum class OrbisPngEncColorSpace : u16 { RGB = 3,RGBA = 19 };
+enum class OrbisPngEncColorSpace : u16 { RGB = 3, RGBA = 19 };
 
 enum class OrbisPngEncPixelFormat : u16 { R8G8B8A8 = 0, B8G8R8A8 };
 
