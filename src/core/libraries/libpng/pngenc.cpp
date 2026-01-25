@@ -177,9 +177,8 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     uint32_t processed_height = 0;
 
-    if (param->color_space == OrbisPngEncColorSpace::RGBA)
-    {
-        for ( ; processed_height < param->image_height; ++processed_height) {
+    if (param->color_space == OrbisPngEncColorSpace::RGBA) {
+        for (; processed_height < param->image_height; ++processed_height) {
             png_bytep row = (png_bytep)param->image_mem_addr + processed_height * row_stride;
             png_write_row(pngh->png_ptr, row);
 
@@ -188,15 +187,16 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
                 return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
             }
         }
-    } else
-    {
-        // our input data is always rgba, but when outputting without an alpha channel, libpng expects the input to not have alpha either
-        // i couldn't find a way around this easily? png_strip_alpha is for reading and set_background wasn't working, this seems fine...?
+    } else {
+        // our input data is always rgba but when outputting without an alpha channel, libpng
+        // expects the input to not have alpha either, i couldn't find a way around this easily?
+        // png_strip_alpha is for reading and set_background wasn't working, this seems fine...?
         std::vector<uint8_t> rgb_row(param->image_width * 3);
 
-        for ( ; processed_height < param->image_height; ++processed_height)
-        {
-            const unsigned char *src = param->image_mem_addr + processed_height * param->image_pitch;
+        for (; processed_height < param->image_height; ++processed_height) {
+            const unsigned char *src =
+                param->image_mem_addr + processed_height * param->image_pitch;
+
             uint8_t* dst = rgb_row.data();
 
             for (uint32_t x = 0; x < param->image_width; ++x) {
