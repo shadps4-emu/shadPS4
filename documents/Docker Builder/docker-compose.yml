@@ -1,0 +1,7 @@
+services:
+  shadps4:
+    build:
+      context: ./.docker
+    volumes:
+      - ./emu:/workspaces/shadPS4:cached
+    tty: true

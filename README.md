@@ -58,6 +58,10 @@ This project began for fun. Given our limited free time, it may take some time b
 
 # Building
 
+## Docker
+
+Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-docker.md).
+
 ## Windows
 
 Check the build instructions for [**Windows**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-windows.md).
