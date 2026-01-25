@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <functional>
+
 #include "common/types.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_types.h"
@@ -23,18 +25,26 @@ enum class OrbisNpState : u32 {
     SignedIn = 2,
 };
 
-using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(
-    Libraries::UserService::OrbisUserServiceUserId userId, OrbisNpState state, void* userdata);
-
-enum class OrbisNpGamePresenseStatus {
-    Offline = 0,
-    Online = 1,
-};
-
 enum class OrbisNpReachabilityState {
     Unavailable = 0,
     Available = 1,
     Reachable = 2,
+};
+
+using OrbisNpStateCallback =
+    PS4_SYSV_ABI void (*)(Libraries::UserService::OrbisUserServiceUserId userId, OrbisNpState state,
+                          OrbisNpId* npId, void* userdata);
+using OrbisNpStateCallbackA = PS4_SYSV_ABI void (*)(
+    Libraries::UserService::OrbisUserServiceUserId userId, OrbisNpState state, void* userdata);
+using OrbisNpStateCallbackForNpToolkit = PS4_SYSV_ABI void (*)(
+    Libraries::UserService::OrbisUserServiceUserId userId, OrbisNpState state, void* userdata);
+using OrbisNpReachabilityStateCallback =
+    PS4_SYSV_ABI void (*)(Libraries::UserService::OrbisUserServiceUserId userId,
+                          OrbisNpReachabilityState state, void* userdata);
+
+enum class OrbisNpGamePresenseStatus {
+    Offline = 0,
+    Online = 1,
 };
 
 struct OrbisNpCountryCode {
@@ -79,6 +89,12 @@ struct OrbisNpCreateAsyncRequestParameter {
     s32 thread_priority;
     u8 padding[4];
 };
+
+void RegisterNpCallback(std::string key, std::function<void()> cb);
+void DeregisterNpCallback(std::string key);
+
+s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                  OrbisNpOnlineId* online_id);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpManager
