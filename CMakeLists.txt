@@ -524,6 +524,9 @@ set(SYSTEM_GESTURE_LIB
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
             src/core/libraries/libpng/pngdec_error.h
+            src/core/libraries/libpng/pngenc.cpp
+            src/core/libraries/libpng/pngenc.h
+            src/core/libraries/libpng/pngenc_error.h
 )
 
 set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
@@ -1075,9 +1078,6 @@ set(EMULATOR src/emulator.cpp
              src/emulator.h
              src/sdl_window.h
              src/sdl_window.cpp
-        src/core/libraries/libpng/pngenc.cpp
-        src/core/libraries/libpng/pngenc.h
-        src/core/libraries/libpng/pngenc_error.h
 )
 
 add_executable(shadps4

@@ -137,6 +137,11 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     auto pngh = (PngHandler*)handle;
 
+    if (setjmp(png_jmpbuf(pngh->png_ptr))) {
+        LOG_ERROR(Lib_Png, "LibPNG aborted encode");
+        return ORBIS_PNG_ENC_ERROR_FATAL;
+    }
+
     int png_color_type = PNG_COLOR_TYPE_RGB;
 
     if (param->color_space == OrbisPngEncColorSpace::RGBA) {
@@ -162,13 +167,13 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
         png_set_bgr(pngh->png_ptr);
     }
 
-    png_set_compression_level(pngh->png_ptr, param->compression_level);
+    png_set_compression_level(pngh->png_ptr, std::clamp<u16>(param->compression_level, 0, 9));
     png_set_filter(pngh->png_ptr, 0, MapPngFilter(param->filter_type));
 
     png_write_info(pngh->png_ptr, pngh->info_ptr);
 
     int channels = (png_color_type & PNG_COLOR_MASK_ALPHA) ? 4 : 3;
-    size_t row_stride = param->image_width * channels;
+    size_t row_stride = param->image_width * channels * (param->bit_depth / 8);
 
     for (uint32_t y = 0; y < param->image_height; ++y) {
         png_bytep row = (png_bytep)param->image_mem_addr + y * row_stride;
