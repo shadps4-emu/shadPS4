@@ -20,7 +20,7 @@ struct PngWriter {
     u8* cursor;
     u8* start;
     size_t capacity;
-    bool cancelWrite;
+    bool cancel_write;
 };
 
 static inline int MapPngFilter(u16 filter) {
@@ -44,12 +44,12 @@ static inline int MapPngFilter(u16 filter) {
     return f;
 }
 
-void png_write_fn(png_structp png_ptr, png_bytep data, size_t length) {
+void PngWriteFn(png_structp png_ptr, png_bytep data, size_t length) {
     PngWriter* ctx = (PngWriter*)png_get_io_ptr(png_ptr);
 
     if ((size_t)(ctx->cursor - ctx->start) + length > ctx->capacity) {
         LOG_ERROR(Lib_Png, "PNG output buffer too small");
-        ctx->cancelWrite = true;
+        ctx->cancel_write = true;
         return;
     }
 
@@ -57,7 +57,7 @@ void png_write_fn(png_structp png_ptr, png_bytep data, size_t length) {
     ctx->cursor += length;
 }
 
-void png_flush_fn(png_structp png_ptr) {}
+void PngFlushFn(png_structp png_ptr) {}
 
 void PngEncError(png_structp png_ptr, png_const_charp error_message) {
     LOG_ERROR(Lib_Png, "PNG error {}", error_message);
@@ -157,7 +157,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
     writer.start = param->png_mem_addr;
     writer.capacity = param->png_mem_size;
 
-    png_set_write_fn(pngh->png_ptr, &writer, png_write_fn, png_flush_fn);
+    png_set_write_fn(pngh->png_ptr, &writer, PngWriteFn, PngFlushFn);
 
     png_set_IHDR(pngh->png_ptr, pngh->info_ptr, param->image_width, param->image_height,
                  param->bit_depth, png_color_type, png_interlace_type, png_compression_type,
@@ -172,16 +172,47 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     png_write_info(pngh->png_ptr, pngh->info_ptr);
 
-    int channels = (png_color_type & PNG_COLOR_MASK_ALPHA) ? 4 : 3;
-    size_t row_stride = param->image_width * channels * (param->bit_depth / 8);
+    int channels = 4;
+    size_t row_stride = param->image_width * channels;
 
-    for (uint32_t y = 0; y < param->image_height; ++y) {
-        png_bytep row = (png_bytep)param->image_mem_addr + y * row_stride;
-        png_write_row(pngh->png_ptr, row);
+    uint32_t processed_height = 0;
 
-        if (writer.cancelWrite) {
-            LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
-            return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
+    if (param->color_space == OrbisPngEncColorSpace::RGBA)
+    {
+        for ( ; processed_height < param->image_height; ++processed_height) {
+            png_bytep row = (png_bytep)param->image_mem_addr + processed_height * row_stride;
+            png_write_row(pngh->png_ptr, row);
+
+            if (writer.cancel_write) {
+                LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
+                return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
+            }
+        }
+    } else
+    {
+        // our input data is always rgba, but when outputting without an alpha channel, libpng expects the input to not have alpha either
+        // i couldn't find a way around this easily? png_strip_alpha is for reading and set_background wasn't working, this seems fine...?
+        std::vector<uint8_t> rgb_row(param->image_width * 3);
+
+        for ( ; processed_height < param->image_height; ++processed_height)
+        {
+            const unsigned char *src = param->image_mem_addr + processed_height * param->image_pitch;
+            uint8_t* dst = rgb_row.data();
+
+            for (uint32_t x = 0; x < param->image_width; ++x) {
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+                src += 4; // skip reading alpha channel
+                dst += 3;
+            }
+
+            png_write_row(pngh->png_ptr, rgb_row.data());
+
+            if (writer.cancel_write) {
+                LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
+                return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
+            }
         }
     }
 
@@ -191,7 +222,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     if (outputInfo != nullptr) {
         outputInfo->data_size = writer.cursor - writer.start;
-        outputInfo->processed_height = param->image_height;
+        outputInfo->processed_height = processed_height;
     }
 
     return writer.cursor - writer.start;
