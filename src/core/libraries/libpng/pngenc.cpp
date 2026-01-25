@@ -4,8 +4,8 @@
 #include <png.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/libpng/pngenc.h"
+#include "core/libraries/libs.h"
 
 #include "pngenc_error.h"
 
@@ -16,16 +16,14 @@ struct PngHandler {
     png_infop info_ptr;
 };
 
-struct PngWriter
-{
+struct PngWriter {
     u8* cursor;
     u8* start;
     size_t capacity;
     bool cancelWrite;
 };
 
-static inline int MapPngFilter(u16 filter)
-{
+static inline int MapPngFilter(u16 filter) {
     if (filter == (u16)OrbisPngEncFilterType::All)
     {
         return PNG_ALL_FILTERS;
@@ -33,21 +31,24 @@ static inline int MapPngFilter(u16 filter)
 
     int f = 0;
 
-    if (filter & (u16)OrbisPngEncFilterType::None)    f |= PNG_FILTER_NONE;
-    if (filter & (u16)OrbisPngEncFilterType::Sub)     f |= PNG_FILTER_SUB;
-    if (filter & (u16)OrbisPngEncFilterType::Up)      f |= PNG_FILTER_UP;
-    if (filter & (u16)OrbisPngEncFilterType::Average) f |= PNG_FILTER_AVG;
-    if (filter & (u16)OrbisPngEncFilterType::Paeth)   f |= PNG_FILTER_PAETH;
+    if (filter & (u16)OrbisPngEncFilterType::None)
+        f |= PNG_FILTER_NONE;
+    if (filter & (u16)OrbisPngEncFilterType::Sub)
+        f |= PNG_FILTER_SUB;
+    if (filter & (u16)OrbisPngEncFilterType::Up)
+        f |= PNG_FILTER_UP;
+    if (filter & (u16)OrbisPngEncFilterType::Average)
+        f |= PNG_FILTER_AVG;
+    if (filter & (u16)OrbisPngEncFilterType::Paeth)
+        f |= PNG_FILTER_PAETH;
 
     return f;
 }
 
-void png_write_fn(png_structp png_ptr, png_bytep data, size_t length)
-{
+void png_write_fn(png_structp png_ptr, png_bytep data, size_t length) {
     auto* ctx = (PngWriter*)png_get_io_ptr(png_ptr);
 
-    if ((size_t)(ctx->cursor - ctx->start) + length > ctx->capacity)
-    {
+    if ((size_t)(ctx->cursor - ctx->start) + length > ctx->capacity) {
         LOG_ERROR(Lib_Png, "PNG output buffer too small");
         ctx->cancelWrite = true;
         return;
@@ -57,10 +58,7 @@ void png_write_fn(png_structp png_ptr, png_bytep data, size_t length)
     ctx->cursor += length;
 }
 
-void png_flush_fn(png_structp png_ptr)
-{
-
-}
+void png_flush_fn(png_structp png_ptr) {}
 
 void PngEncError(png_structp png_ptr, png_const_charp error_message) {
     LOG_ERROR(Lib_Png, "PNG error {}", error_message);
@@ -70,21 +68,19 @@ void PngEncWarning(png_structp png_ptr, png_const_charp error_message) {
     LOG_ERROR(Lib_Png, "PNG warning {}", error_message);
 }
 
-s32 PS4_SYSV_ABI scePngEncCreate(const OrbisPngEncCreateParam* param, void* memoryAddress, u32 memorySize, OrbisPngEncHandle* handle) {
-    if (param == nullptr || param->attribute != 0)
-    {
+s32 PS4_SYSV_ABI scePngEncCreate(const OrbisPngEncCreateParam* param, void* memoryAddress,
+                                 u32 memorySize, OrbisPngEncHandle* handle) {
+    if (param == nullptr || param->attribute != 0) {
         LOG_ERROR(Lib_Png, "Invalid param");
         return ORBIS_PNG_ENC_ERROR_INVALID_ADDR;
     }
 
-    if (memoryAddress == nullptr)
-    {
+    if (memoryAddress == nullptr) {
         LOG_ERROR(Lib_Png, "Invalid memory address");
         return ORBIS_PNG_ENC_ERROR_INVALID_ADDR;
     }
 
-    if (param->max_image_width - 1 > 1000000)
-    {
+    if (param->max_image_width - 1 > 1000000) {
         LOG_ERROR(Lib_Png, "Invalid Size, width = {}", param->max_image_width);
         return ORBIS_PNG_ENC_ERROR_INVALID_SIZE;
     }
@@ -114,29 +110,28 @@ s32 PS4_SYSV_ABI scePngEncDelete(OrbisPngEncHandle handle) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEncodeParam* param, OrbisPngEncOutputInfo* outputInfo) {
-    LOG_TRACE(Lib_Png, "called png addr = {}, image addr = {}, image size = {}", (void*)param->png_mem_addr, (void*)param->image_mem_addr, param->image_mem_size);
+s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEncodeParam* param,
+                                 OrbisPngEncOutputInfo* outputInfo) {
+    LOG_TRACE(Lib_Png, "called png addr = {}, image addr = {}, image size = {}",
+              (void*)param->png_mem_addr, (void*)param->image_mem_addr, param->image_mem_size);
 
-    if (handle == nullptr)
-    {
+    if (handle == nullptr) {
         LOG_ERROR(Lib_Png, "Invalid handle");
         return ORBIS_PNG_ENC_ERROR_INVALID_HANDLE;
     }
 
-    if (param == nullptr)
-    {
+    if (param == nullptr) {
         LOG_ERROR(Lib_Png, "Invalid param");
         return ORBIS_PNG_ENC_ERROR_INVALID_PARAM;
     }
 
-    if (param->image_mem_addr == nullptr || param->png_mem_addr == nullptr)
-    {
+    if (param->image_mem_addr == nullptr || param->png_mem_addr == nullptr) {
         LOG_ERROR(Lib_Png, "Invalid input or output address");
         return ORBIS_PNG_ENC_ERROR_INVALID_ADDR;
     }
 
-    if (param->png_mem_size == 0 || param->image_mem_size == 0 || param->image_height == 0 || param->image_width == 0)
-    {
+    if (param->png_mem_size == 0 || param->image_mem_size == 0 || param->image_height == 0 ||
+        param->image_width == 0) {
         LOG_ERROR(Lib_Png, "Invalid Size");
         return ORBIS_PNG_ENC_ERROR_INVALID_SIZE;
     }
@@ -145,8 +140,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     int png_color_type = PNG_COLOR_TYPE_RGB;
 
-    if (param->color_space == OrbisPngEncColorSpace::RGBA)
-    {
+    if (param->color_space == OrbisPngEncColorSpace::RGBA) {
         png_color_type |= PNG_COLOR_MASK_ALPHA;
     }
 
@@ -163,8 +157,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     png_set_IHDR(pngh->png_ptr, pngh->info_ptr, param->image_width, param->image_height, param->bit_depth, png_color_type, png_interlace_type, png_compression_type, png_filter_method);
 
-    if (param->pixel_format == OrbisPngEncPixelFormat::B8G8R8A8)
-    {
+    if (param->pixel_format == OrbisPngEncPixelFormat::B8G8R8A8) {
         png_set_bgr(pngh->png_ptr);
     }
 
@@ -176,13 +169,11 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
     int channels = (png_color_type & PNG_COLOR_MASK_ALPHA) ? 4 : 3;
     size_t row_stride = param->image_width * channels;
 
-    for (uint32_t y = 0; y < param->image_height; ++y)
-    {
+    for (uint32_t y = 0; y < param->image_height; ++y) {
         png_bytep row = (png_bytep)param->image_mem_addr + y * row_stride;
         png_write_row(pngh->png_ptr, row);
 
-        if (writer.cancelWrite)
-        {
+        if (writer.cancelWrite) {
             LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
             return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
         }
@@ -192,8 +183,7 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 
     png_write_end(pngh->png_ptr, pngh->info_ptr);
 
-    if (outputInfo != nullptr)
-    {
+    if (outputInfo != nullptr) {
         outputInfo->data_size = writer.cursor - writer.start;
         outputInfo->processed_height = param->image_height;
     }
@@ -202,24 +192,22 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
 }
 
 s32 PS4_SYSV_ABI scePngEncQueryMemorySize(const OrbisPngEncCreateParam* param) {
-    if (param == nullptr)
-    {
+    if (param == nullptr) {
         LOG_ERROR(Lib_Png, "Invalid Address");
         return ORBIS_PNG_ENC_ERROR_INVALID_ADDR;
     }
 
-    if (param->attribute != 0 || param->max_filter_number > 5)
-    {
-        LOG_ERROR(Lib_Png, "Invalid Param, attribute = {}, max_filter_number = {}", param->attribute, param->max_filter_number);
+    if (param->attribute != 0 || param->max_filter_number > 5) {
+        LOG_ERROR(Lib_Png, "Invalid Param, attribute = {}, max_filter_number = {}",
+                  param->attribute, param->max_filter_number);
         return ORBIS_PNG_ENC_ERROR_INVALID_PARAM;
     }
 
-    if (param->max_image_width - 1 > 1000000)
-    {
+    if (param->max_image_width - 1 > 1000000) {
         LOG_ERROR(Lib_Png, "Invalid Size, width = {}", param->max_image_width);
         return ORBIS_PNG_ENC_ERROR_INVALID_SIZE;
     }
-    
+
     return sizeof(PngHandler);
 }
 
