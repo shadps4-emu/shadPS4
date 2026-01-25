@@ -9,6 +9,8 @@
 // For structs and constants shared between multiple Np libraries.
 namespace Libraries::Np {
 
+using OrbisNpAccountId = u64;
+
 constexpr s32 ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {
@@ -41,6 +43,21 @@ struct OrbisNpClientSecret {
 struct OrbisNpIdToken {
     char token[4097];
     u8 padding[7];
+};
+
+using OrbisNpServiceLabel = u32;
+
+enum class OrbisNpPlatformType : s32 {
+    ORBIS_NP_PLATFORM_TYPE_NONE = 0,
+    ORBIS_NP_PLATFORM_TYPE_PS3 = 1,
+    ORBIS_NP_PLATFORM_TYPE_VITA = 2,
+    ORBIS_NP_PLATFORM_TYPE_PS4 = 3,
+};
+
+struct OrbisNpPeerAddressA {
+    OrbisNpAccountId accountId;
+    OrbisNpPlatformType platformType;
+    u8 padding[4];
 };
 
 }; // namespace Libraries::Np
