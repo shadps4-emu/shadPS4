@@ -1075,6 +1075,9 @@ set(EMULATOR src/emulator.cpp
              src/emulator.h
              src/sdl_window.h
              src/sdl_window.cpp
+        src/core/libraries/libpng/pngenc.cpp
+        src/core/libraries/libpng/pngenc.h
+        src/core/libraries/libpng/pngenc_error.h
 )
 
 add_executable(shadps4
