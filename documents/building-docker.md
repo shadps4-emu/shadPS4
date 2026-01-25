@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+
 # Building shadPS4 with Docker and VSCode Support
 
 This guide explains how to build **shadPS4** using Docker while keeping full compatibility with **VSCode** development.
