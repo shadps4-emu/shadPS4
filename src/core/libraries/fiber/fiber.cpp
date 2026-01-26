@@ -6,10 +6,20 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
+#include "core/libraries/kernel/memory.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/razor_cpu/razor_cpu.h"
+#include "core/libraries/system/sysmodule.h"
+#include "core/libraries/ulobjmgr/ulobjmgr.h"
 #include "core/tls.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
+#if defined(_MSC_VER)
+#include <intrin.h>
+#endif
 
 namespace Libraries::Fiber {
 
@@ -33,6 +43,106 @@ static constexpr u8 kFiberNameXorTable[ORBIS_FIBER_MAX_NAME_LENGTH + 1] = {
 
 static std::atomic<u32> context_size_check = false;
 static std::atomic<u64> name_seed = kFiberNameSeedInit;
+static std::atomic<u32> fiber_globals_init = false;
+static std::atomic<u32> razor_enabled = false;
+static std::atomic<u32> asan_enabled = false;
+static std::atomic<u64> switch_cookie_counter = 0;
+
+static u64 PthreadSelf() {
+    auto* thread = ::Libraries::Kernel::posix_pthread_self();
+    return reinterpret_cast<u64>(thread);
+}
+
+static void GetThreadStack(void** stack_addr, size_t* stack_size) {
+    if (!stack_addr || !stack_size) {
+        return;
+    }
+
+    auto* thread = ::Libraries::Kernel::g_curthread;
+    if (!thread) {
+        *stack_addr = nullptr;
+        *stack_size = 0;
+        return;
+    }
+
+    *stack_addr = thread->attr.stackaddr_attr;
+    *stack_size = thread->attr.stacksize_attr;
+}
+
+static void RazorCpuFiberSwitch(u32 from_id, u32 to_id, u32 reason) {
+    (void)from_id;
+    (void)to_id;
+    (void)reason;
+    ::Libraries::RazorCpu::sceRazorCpuFiberSwitch();
+}
+
+static void RazorCpuFiberLogNameChange(OrbisFiber* fiber, const char* name) {
+    (void)fiber;
+    (void)name;
+    ::Libraries::RazorCpu::sceRazorCpuFiberLogNameChange();
+}
+
+static s32 UlobjmgrRegister(u64 arg0, s32 arg1, u32* arg2) {
+    return ::Libraries::Ulobjmgr::Func_046DBA8411A2365C(arg0, arg1, arg2);
+}
+
+static s32 UlobjmgrUnregister(u32 arg0) {
+    return ::Libraries::Ulobjmgr::Func_4A67FE7D435B94F7(arg0);
+}
+
+extern "C" {
+void PS4_SYSV_ABI __sanitizer_start_switch_fiber(void** fake_stack_save,
+                                                 const void* stack_addr,
+                                                 size_t stack_size);
+void PS4_SYSV_ABI __sanitizer_finish_switch_fiber(void* fake_stack_save,
+                                                  const void** old_stack_addr,
+                                                  size_t* old_stack_size);
+void PS4_SYSV_ABI __asan_destroy_fake_stack();
+} // extern "C"
+
+extern "C" void PS4_SYSV_ABI __sanitizer_start_switch_fiber(void** fake_stack_save,
+                                                            const void* stack_addr,
+                                                            size_t stack_size) {
+    (void)fake_stack_save;
+    (void)stack_addr;
+    (void)stack_size;
+}
+
+extern "C" void PS4_SYSV_ABI __sanitizer_finish_switch_fiber(void* fake_stack_save,
+                                                             const void** old_stack_addr,
+                                                             size_t* old_stack_size) {
+    (void)fake_stack_save;
+    (void)old_stack_addr;
+    (void)old_stack_size;
+}
+
+extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack() {}
+
+static void EnsureFiberGlobalsInitialized() {
+    u32 expected = 0;
+    if (fiber_globals_init.compare_exchange_strong(expected, 1u, std::memory_order_relaxed)) {
+        const auto razor_loaded = ::Libraries::SysModule::sceSysmoduleIsLoadedInternal(
+            ::Libraries::SysModule::OrbisSysModuleInternal::ORBIS_SYSMODULE_INTERNAL_RAZOR_CPU);
+        razor_enabled.store(razor_loaded == 0 ? 1u : 0u, std::memory_order_relaxed);
+        asan_enabled.store(::Libraries::Kernel::sceKernelIsAddressSanitizerEnabled() != 0 ? 1u : 0u,
+                           std::memory_order_relaxed);
+    }
+}
+
+static bool RazorEnabled() {
+    EnsureFiberGlobalsInitialized();
+    return razor_enabled.load(std::memory_order_relaxed) != 0;
+}
+
+static bool AsanEnabled() {
+    EnsureFiberGlobalsInitialized();
+    return asan_enabled.load(std::memory_order_relaxed) != 0;
+}
+
+static void UpdateSwitchCookie(OrbisFiber* fiber) {
+    const u64 value = switch_cookie_counter.fetch_add(1, std::memory_order_relaxed) + 1;
+    fiber->switch_cookie = value ^ kFiberSwitchCookieInit;
+}
 
 static u64 ComputeContextSizeMargin(const OrbisFiber* fiber) {
     if (!fiber || !fiber->context_start || !fiber->context_end) {
@@ -162,13 +272,26 @@ extern "C" void PS4_SYSV_ABI _sceFiberForceQuit(u64 ret) {
 }
 
 void PS4_SYSV_ABI _sceFiberCheckStackOverflow(OrbisFiberContext* ctx) {
-    u64* stack_base = reinterpret_cast<u64*>(ctx->current_fiber->addr_context);
-    u64 stack_size = ctx->current_fiber->size_context;
+    OrbisFiber* fiber = ctx->current_fiber;
+    u64* stack_base = reinterpret_cast<u64*>(fiber->addr_context);
+    u64 stack_size = fiber->size_context;
     if (stack_base && *stack_base != kFiberStackSignature) {
-        if (*stack_base == 0) {
-            *stack_base = kFiberStackSignature;
-            return;
-        }
+        char name[ORBIS_FIBER_MAX_NAME_LENGTH + 1]{};
+        DecodeFiberName(fiber, name, sizeof(name));
+
+        const uintptr_t stack_base_addr = reinterpret_cast<uintptr_t>(stack_base);
+        const uintptr_t stack_top_addr = stack_base_addr + static_cast<uintptr_t>(stack_size);
+        LOG_CRITICAL(
+            Lib_Fiber,
+            "Fiber stack overflow: name='{}' fiber={:#x} ctx={:#x} stack_base={:#x} "
+            "stack_top={:#x} size=0x{:x} sig={:#x} expected={:#x} context_start={:#x} "
+            "context_end={:#x} flags=0x{:x} state=0x{:x} switch_cookie={:#x} magic_start=0x{:x} "
+            "magic_end=0x{:x}",
+            name, reinterpret_cast<uintptr_t>(fiber), reinterpret_cast<uintptr_t>(ctx),
+            stack_base_addr, stack_top_addr, stack_size, *stack_base,
+            kFiberStackSignature, reinterpret_cast<uintptr_t>(fiber->context_start),
+            reinterpret_cast<uintptr_t>(fiber->context_end), fiber->flags, fiber->state,
+            fiber->switch_cookie, fiber->magic_start, fiber->magic_end);
         UNREACHABLE_MSG("Stack overflow detected in fiber with size = 0x{:x}", stack_size);
     }
 }
@@ -194,6 +317,11 @@ s32 PS4_SYSV_ABI _sceFiberAttachContext(OrbisFiber* fiber, void* addr_context, u
 
     /* Apply signature to start of stack */
     *(u64*)addr_context = kFiberStackSignature;
+    LOG_INFO(
+        Lib_Fiber,
+        "Fiber attach context: fiber={:#x} addr_context={:#x} size=0x{:x} sig={:#x} flags=0x{:x}",
+        reinterpret_cast<uintptr_t>(fiber), reinterpret_cast<uintptr_t>(addr_context), size_context,
+        *(u64*)addr_context, fiber->flags);
 
     if (fiber->flags & FiberFlags::ContextSizeCheck) {
         u64* stack_start = reinterpret_cast<u64*>(fiber->context_start);
@@ -209,7 +337,7 @@ s32 PS4_SYSV_ABI _sceFiberAttachContext(OrbisFiber* fiber, void* addr_context, u
 }
 
 void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
-                                         OrbisFiberContext* ctx) {
+                                         OrbisFiberContext* ctx, u64 asan_cookie) {
     OrbisFiberContext* fiber_ctx = fiber->context;
     if (fiber_ctx) {
         ctx->arg_on_run_to = arg_on_run_to;
@@ -230,21 +358,22 @@ void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
     data.arg_on_initialize = DecodeArgOnInitialize(fiber);
     data.arg_on_run_to = arg_on_run_to;
     data.stack_addr = reinterpret_cast<u8*>(fiber->addr_context) + fiber->size_context;
-    if (fiber->flags & FiberFlags::SetFpuRegs) {
-        data.fpucw = 0x037f;
-        data.mxcsr = 0x9fc0;
-        _sceFiberSwitchEntry(&data, true);
-    } else {
-        _sceFiberSwitchEntry(&data, false);
-    }
+    data.asan_fake_stack = reinterpret_cast<void*>(asan_cookie);
+    _sceFiberSwitchEntry(&data, (fiber->flags & FiberFlags::SetFpuRegs) != 0);
 
     __builtin_trap();
 }
 
 void PS4_SYSV_ABI _sceFiberSwitch(OrbisFiber* cur_fiber, OrbisFiber* fiber, u64 arg_on_run_to,
-                                  OrbisFiberContext* ctx) {
+                                  OrbisFiberContext* ctx, u64 asan_cookie) {
+    UpdateSwitchCookie(cur_fiber);
     ctx->prev_fiber = cur_fiber;
     ctx->current_fiber = fiber;
+
+    if (RazorEnabled()) {
+        RazorCpuFiberSwitch(static_cast<u32>(reinterpret_cast<uintptr_t>(cur_fiber)),
+                            static_cast<u32>(reinterpret_cast<uintptr_t>(fiber)), 1);
+    }
 
     if (fiber->addr_context == nullptr) {
         ctx->prev_fiber = nullptr;
@@ -253,25 +382,25 @@ void PS4_SYSV_ABI _sceFiberSwitch(OrbisFiber* cur_fiber, OrbisFiber* fiber, u64 
         data.entry = DecodeEntry(fiber);
         data.arg_on_initialize = DecodeArgOnInitialize(fiber);
         data.arg_on_run_to = arg_on_run_to;
-        data.stack_addr = reinterpret_cast<void*>(ctx->rsp & ~15);
+        data.stack_addr = reinterpret_cast<void*>(ctx->jmp.rsp & ~15);
         data.state = reinterpret_cast<u32*>(&cur_fiber->state);
-
-        if (fiber->flags & FiberFlags::SetFpuRegs) {
-            data.fpucw = 0x037f;
-            data.mxcsr = 0x9fc0;
-            _sceFiberSwitchEntry(&data, true);
+        if (asan_cookie != 0) {
+            data.asan_fake_stack =
+                reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(fiber->asan_fake_stack) + 1);
         } else {
-            _sceFiberSwitchEntry(&data, false);
+            data.asan_fake_stack = nullptr;
         }
+        _sceFiberSwitchEntry(&data, (fiber->flags & FiberFlags::SetFpuRegs) != 0);
 
         __builtin_trap();
     }
 
-    _sceFiberSwitchToFiber(fiber, arg_on_run_to, ctx);
+    _sceFiberSwitchToFiber(fiber, arg_on_run_to, ctx, asan_cookie);
     __builtin_trap();
 }
 
 void PS4_SYSV_ABI _sceFiberTerminate(OrbisFiber* fiber, u64 arg_on_return, OrbisFiberContext* ctx) {
+    UpdateSwitchCookie(fiber);
     ctx->arg_on_return = arg_on_return;
     _sceFiberLongJmp(ctx);
     __builtin_trap();
@@ -281,6 +410,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
                                         u64 arg_on_initialize, void* addr_context, u64 size_context,
                                         const OrbisFiberOptParam* opt_param, u32 flags,
                                         u32 build_ver) {
+    EnsureFiberGlobalsInitialized();
     if (!fiber || !name || !entry) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -302,6 +432,9 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     if (addr_context && !size_context) {
         return ORBIS_FIBER_ERROR_INVALID;
     }
+    if (size_context && size_context <= 4096) {
+        LOG_WARNING(Lib_Fiber, "Fiber initialized with small stack area.");
+    }
     if (opt_param && opt_param->magic != kFiberOptSignature) {
         return ORBIS_FIBER_ERROR_INVALID;
     }
@@ -310,7 +443,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     if (build_ver >= Common::ElfInfo::FW_35) {
         user_flags |= FiberFlags::SetFpuRegs;
     }
-    if (context_size_check) {
+    if (context_size_check.load(std::memory_order_relaxed) != 0) {
         user_flags |= FiberFlags::ContextSizeCheck;
     }
 
@@ -323,7 +456,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     fiber->context = nullptr;
     fiber->owner_thread = 0;
     fiber->flags = user_flags;
-    fiber->razor_id_xor = kFiberRazorIdXor;
+    fiber->razor_id_xor = 0;
     fiber->switch_cookie = kFiberSwitchCookieInit;
     fiber->asan_fake_stack = nullptr;
     fiber->context_start = nullptr;
@@ -339,6 +472,12 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
 
         /* Apply signature to start of stack */
         *(u64*)addr_context = kFiberStackSignature;
+        LOG_INFO(Lib_Fiber,
+                 "Fiber init context: fiber={:#x} name='{}' addr_context={:#x} size=0x{:x} "
+                 "sig={:#x} flags=0x{:x}",
+                 reinterpret_cast<uintptr_t>(fiber), name,
+                 reinterpret_cast<uintptr_t>(addr_context), size_context, *(u64*)addr_context,
+                 fiber->flags);
 
         if (fiber->flags & FiberFlags::ContextSizeCheck) {
             u64* stack_start = reinterpret_cast<u64*>(fiber->context_start);
@@ -352,6 +491,16 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     }
 
     StoreFiberState(fiber, FiberState::Idle);
+    if ((fiber->flags & FiberFlags::NoUlobjmgr) == 0) {
+        LOG_DEBUG(Lib_Fiber, "Ulobjmgr register: fiber={:#x} flags=0x{:x}",
+                  reinterpret_cast<uintptr_t>(fiber), fiber->flags);
+        u32 razor_id = 0;
+        UlobjmgrRegister(reinterpret_cast<u64>(fiber), 1, &razor_id);
+        fiber->razor_id_xor = razor_id ^ kFiberRazorIdXor;
+    } else {
+        LOG_DEBUG(Lib_Fiber, "Ulobjmgr register skipped (NoUlobjmgr): fiber={:#x} flags=0x{:x}",
+                  reinterpret_cast<uintptr_t>(fiber), fiber->flags);
+    }
     return ORBIS_OK;
 }
 
@@ -369,6 +518,7 @@ s32 PS4_SYSV_ABI sceFiberOptParamInitialize(OrbisFiberOptParam* opt_param) {
 }
 
 s32 PS4_SYSV_ABI sceFiberFinalize(OrbisFiber* fiber) {
+    EnsureFiberGlobalsInitialized();
     if (!fiber) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -383,11 +533,29 @@ s32 PS4_SYSV_ABI sceFiberFinalize(OrbisFiber* fiber) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
+    if (RazorEnabled()) {
+        char name[ORBIS_FIBER_MAX_NAME_LENGTH + 1]{};
+        DecodeFiberName(fiber, name, sizeof(name));
+        RazorCpuFiberLogNameChange(fiber, name);
+    }
+    if ((fiber->flags & FiberFlags::NoUlobjmgr) == 0) {
+        LOG_DEBUG(Lib_Fiber, "Ulobjmgr unregister: fiber={:#x} flags=0x{:x}",
+                  reinterpret_cast<uintptr_t>(fiber), fiber->flags);
+        UlobjmgrUnregister(fiber->razor_id_xor ^ kFiberRazorIdXor);
+    } else {
+        LOG_DEBUG(Lib_Fiber, "Ulobjmgr unregister skipped (NoUlobjmgr): fiber={:#x} flags=0x{:x}",
+                  reinterpret_cast<uintptr_t>(fiber), fiber->flags);
+    }
+    if (AsanEnabled() && fiber->asan_fake_stack != nullptr && fiber->addr_context != nullptr) {
+        __asan_destroy_fake_stack();
+        fiber->asan_fake_stack = nullptr;
+    }
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size_context,
                                  u64 arg_on_run_to, u64* arg_on_return) {
+    EnsureFiberGlobalsInitialized();
     if (!fiber) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -403,11 +571,16 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         return ORBIS_FIBER_ERROR_PERMISSION;
     }
 
-    /* Caller wants to attach context and run. */
-    if (addr_context != nullptr || size_context != 0) {
-        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
-        if (res < 0) {
-            return res;
+    const bool attach_context = (addr_context != nullptr || size_context != 0);
+    if (attach_context) {
+        if (size_context != 0 && size_context < ORBIS_FIBER_CONTEXT_MINIMUM_SIZE) {
+            return ORBIS_FIBER_ERROR_RANGE;
+        }
+        if (!addr_context || size_context == 0 || (size_context & 15)) {
+            return ORBIS_FIBER_ERROR_INVALID;
+        }
+        if (fiber->addr_context != nullptr) {
+            return ORBIS_FIBER_ERROR_INVALID;
         }
     }
 
@@ -415,17 +588,46 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         return ORBIS_FIBER_ERROR_STATE;
     }
 
+    /* Caller wants to attach context and run. */
+    if (attach_context) {
+        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    fiber->owner_thread = PthreadSelf();
+
     OrbisFiberContext ctx{};
     ctx.current_fiber = fiber;
     ctx.prev_fiber = nullptr;
+    ctx.arg_on_run_to = 0;
+    ctx.arg_on_return = 0;
     ctx.return_val = 0;
+    ctx.owner_thread = fiber->owner_thread;
+    ctx.asan_fake_stack = nullptr;
+    ctx.reserved0 = 0;
+    ctx.reserved1 = 0;
+    ctx.reserved2 = 0xffffffffu;
+    ctx.reserved3 = 0xffffffffu;
 
     tcb->tcb_fiber = &ctx;
+
+    if (RazorEnabled()) {
+        RazorCpuFiberSwitch(0, static_cast<u32>(reinterpret_cast<uintptr_t>(fiber)), 2);
+    }
+
+    bool asan_switch = false;
+    if (AsanEnabled() && fiber->addr_context != nullptr) {
+        __sanitizer_start_switch_fiber(&ctx.asan_fake_stack, fiber->addr_context,
+                                       fiber->size_context);
+        asan_switch = true;
+    }
 
     s32 jmp = _sceFiberSetJmp(&ctx);
     if (!jmp) {
         if (fiber->addr_context) {
-            _sceFiberSwitchToFiber(fiber, arg_on_run_to, &ctx);
+            _sceFiberSwitchToFiber(fiber, arg_on_run_to, &ctx, asan_switch ? 1 : 0);
             __builtin_trap();
         }
 
@@ -433,19 +635,22 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
         data.entry = DecodeEntry(fiber);
         data.arg_on_initialize = DecodeArgOnInitialize(fiber);
         data.arg_on_run_to = arg_on_run_to;
-        data.stack_addr = reinterpret_cast<void*>(ctx.rsp & ~15);
+        data.stack_addr = reinterpret_cast<void*>(ctx.jmp.rsp & ~15);
         data.state = nullptr;
-        if (fiber->flags & FiberFlags::SetFpuRegs) {
-            data.fpucw = 0x037f;
-            data.mxcsr = 0x9fc0;
-            _sceFiberSwitchEntry(&data, true);
-        } else {
-            _sceFiberSwitchEntry(&data, false);
-        }
+        data.asan_fake_stack = nullptr;
+        _sceFiberSwitchEntry(&data, (fiber->flags & FiberFlags::SetFpuRegs) != 0);
+    }
+
+    if (asan_switch) {
+        __sanitizer_finish_switch_fiber(ctx.asan_fake_stack, nullptr, nullptr);
     }
 
     OrbisFiber* cur_fiber = ctx.current_fiber;
     ctx.current_fiber = nullptr;
+
+    if (RazorEnabled()) {
+        RazorCpuFiberSwitch(static_cast<u32>(reinterpret_cast<uintptr_t>(cur_fiber)), 0, 3);
+    }
     StoreFiberState(cur_fiber, FiberState::Idle);
 
     if (ctx.return_val != 0) {
@@ -463,6 +668,7 @@ s32 PS4_SYSV_ABI sceFiberRunImpl(OrbisFiber* fiber, void* addr_context, u64 size
 
 s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 size_context,
                                     u64 arg_on_run_to, u64* arg_on_run) {
+    EnsureFiberGlobalsInitialized();
     if (!fiber) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -478,11 +684,16 @@ s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 s
         return ORBIS_FIBER_ERROR_PERMISSION;
     }
 
-    /* Caller wants to attach context and switch. */
-    if (addr_context != nullptr || size_context != 0) {
-        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
-        if (res < 0) {
-            return res;
+    const bool attach_context = (addr_context != nullptr || size_context != 0);
+    if (attach_context) {
+        if (size_context != 0 && size_context < ORBIS_FIBER_CONTEXT_MINIMUM_SIZE) {
+            return ORBIS_FIBER_ERROR_RANGE;
+        }
+        if (!addr_context || size_context == 0 || (size_context & 15)) {
+            return ORBIS_FIBER_ERROR_INVALID;
+        }
+        if (fiber->addr_context != nullptr) {
+            return ORBIS_FIBER_ERROR_INVALID;
         }
     }
 
@@ -490,10 +701,38 @@ s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 s
         return ORBIS_FIBER_ERROR_STATE;
     }
 
+    /* Caller wants to attach context and switch. */
+    if (attach_context) {
+        s32 res = _sceFiberAttachContext(fiber, addr_context, size_context);
+        if (res < 0) {
+            return res;
+        }
+    }
+
+    fiber->owner_thread = g_ctx->owner_thread;
+
     OrbisFiber* cur_fiber = g_ctx->current_fiber;
     if (cur_fiber->addr_context == nullptr) {
-        _sceFiberSwitch(cur_fiber, fiber, arg_on_run_to, g_ctx);
+        u64 asan_cookie = 0;
+        if (AsanEnabled() && fiber->addr_context != nullptr) {
+            __sanitizer_start_switch_fiber(&cur_fiber->asan_fake_stack, fiber->addr_context,
+                                           fiber->size_context);
+            asan_cookie = 1;
+        }
+        _sceFiberSwitch(cur_fiber, fiber, arg_on_run_to, g_ctx, asan_cookie);
         __builtin_trap();
+    }
+
+    if (AsanEnabled()) {
+        void* stack_addr = nullptr;
+        size_t stack_size = 0;
+        if (fiber->addr_context == nullptr) {
+            GetThreadStack(&stack_addr, &stack_size);
+        } else {
+            stack_addr = fiber->addr_context;
+            stack_size = fiber->size_context;
+        }
+        __sanitizer_start_switch_fiber(&cur_fiber->asan_fake_stack, stack_addr, stack_size);
     }
 
     OrbisFiberContext ctx{};
@@ -501,14 +740,15 @@ s32 PS4_SYSV_ABI sceFiberSwitchImpl(OrbisFiber* fiber, void* addr_context, u64 s
     if (!jmp) {
         cur_fiber->context = &ctx;
         _sceFiberCheckStackOverflow(g_ctx);
-        _sceFiberSwitch(cur_fiber, fiber, arg_on_run_to, g_ctx);
+        _sceFiberSwitch(cur_fiber, fiber, arg_on_run_to, g_ctx, AsanEnabled() ? 1 : 0);
         __builtin_trap();
     }
 
-    g_ctx = GetFiberContext();
-    if (g_ctx->current_fiber) {
-        g_ctx->current_fiber->context = nullptr;
+    if (AsanEnabled()) {
+        __sanitizer_finish_switch_fiber(cur_fiber->asan_fake_stack, nullptr, nullptr);
     }
+
+    g_ctx = GetFiberContext();
     if (g_ctx->prev_fiber) {
         StoreFiberState(g_ctx->prev_fiber, FiberState::Idle);
         g_ctx->prev_fiber = nullptr;
@@ -543,13 +783,20 @@ s32 PS4_SYSV_ABI sceFiberReturnToThread(u64 arg_on_return, u64* arg_on_run) {
 
     OrbisFiber* cur_fiber = g_ctx->current_fiber;
     if (cur_fiber->addr_context) {
+        if (AsanEnabled()) {
+            void* stack_addr = nullptr;
+            size_t stack_size = 0;
+            GetThreadStack(&stack_addr, &stack_size);
+            __sanitizer_start_switch_fiber(&cur_fiber->asan_fake_stack, stack_addr, stack_size);
+        }
+
         OrbisFiberContext ctx{};
         s32 jmp = _sceFiberSetJmp(&ctx);
         if (jmp) {
-            g_ctx = GetFiberContext();
-            if (g_ctx->current_fiber) {
-                g_ctx->current_fiber->context = nullptr;
+            if (AsanEnabled()) {
+                __sanitizer_finish_switch_fiber(cur_fiber->asan_fake_stack, nullptr, nullptr);
             }
+            g_ctx = GetFiberContext();
             if (g_ctx->prev_fiber) {
                 StoreFiberState(g_ctx->prev_fiber, FiberState::Idle);
                 g_ctx->prev_fiber = nullptr;
@@ -633,6 +880,7 @@ s32 PS4_SYSV_ABI sceFiberStopContextSizeCheck() {
 }
 
 s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name) {
+    EnsureFiberGlobalsInitialized();
     if (!fiber || !name) {
         return ORBIS_FIBER_ERROR_NULL;
     }
@@ -641,6 +889,12 @@ s32 PS4_SYSV_ABI sceFiberRename(OrbisFiber* fiber, const char* name) {
     }
     if (fiber->magic_start != kFiberSignature0 || fiber->magic_end != kFiberSignature1) {
         return ORBIS_FIBER_ERROR_INVALID;
+    }
+
+    if (RazorEnabled()) {
+        char old_name[ORBIS_FIBER_MAX_NAME_LENGTH + 1]{};
+        DecodeFiberName(fiber, old_name, sizeof(old_name));
+        RazorCpuFiberLogNameChange(fiber, old_name);
     }
 
     EncodeFiberName(fiber, name);
@@ -657,7 +911,7 @@ s32 PS4_SYSV_ABI sceFiberGetThreadFramePointerAddress(u64* addr_frame_pointer) {
         return ORBIS_FIBER_ERROR_PERMISSION;
     }
 
-    *addr_frame_pointer = g_ctx->rbp;
+    *addr_frame_pointer = g_ctx->jmp.rbp;
     return ORBIS_OK;
 }
 

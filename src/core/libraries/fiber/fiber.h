@@ -34,18 +34,40 @@ enum FiberFlags : u32 {
 
 struct OrbisFiber;
 
-struct OrbisFiberContext {
-    struct {
-        u64 rax, rcx, rdx, rbx, rsp, rbp, r8, r9, r10, r11, r12, r13, r14, r15;
-        u16 fpucw;
-        u32 mxcsr;
-    };
-    OrbisFiber* current_fiber;
-    OrbisFiber* prev_fiber;
-    u64 arg_on_run_to;
-    u64 arg_on_return;
-    u64 return_val;
+struct OrbisFiberJmpBuf {
+    u64 rsp;      // 0x00
+    u64 rbp;      // 0x08
+    u64 ret_addr; // 0x10
+    u64 rbx;      // 0x18
+    u64 r12;      // 0x20
+    u64 r13;      // 0x28
+    u64 r14;      // 0x30
+    u64 r15;      // 0x38
+    u16 fpucw;    // 0x40
+    u16 pad0;     // 0x42
+    u32 mxcsr;    // 0x44
 };
+static_assert(sizeof(OrbisFiberJmpBuf) == 0x48);
+
+struct OrbisFiberContext {
+    OrbisFiberJmpBuf jmp;      // 0x00
+    OrbisFiber* current_fiber; // 0x48
+    OrbisFiber* prev_fiber;    // 0x50
+    u64 arg_on_run_to;         // 0x58
+    u64 arg_on_return;         // 0x60
+    u64 return_val;            // 0x68
+    u64 owner_thread;          // 0x70
+    void* asan_fake_stack;     // 0x78
+    u32 reserved0;             // 0x80
+    u32 reserved1;             // 0x84
+    u32 reserved2;             // 0x88
+    u32 reserved3;             // 0x8c
+};
+static_assert(sizeof(OrbisFiberContext) == 0x90);
+static_assert(offsetof(OrbisFiberContext, current_fiber) == 0x48);
+static_assert(offsetof(OrbisFiberContext, arg_on_run_to) == 0x58);
+static_assert(offsetof(OrbisFiberContext, owner_thread) == 0x70);
+static_assert(offsetof(OrbisFiberContext, asan_fake_stack) == 0x78);
 
 struct OrbisFiberData {
     OrbisFiberEntry entry;
@@ -53,10 +75,9 @@ struct OrbisFiberData {
     u64 arg_on_run_to;
     void* stack_addr;
     u32* state;
-    u16 fpucw;
-    s8 pad[2];
-    u32 mxcsr;
+    void* asan_fake_stack;
 };
+static_assert(sizeof(OrbisFiberData) == 0x30);
 
 struct alignas(8) OrbisFiber {
     u32 magic_start;                              // 0x00
