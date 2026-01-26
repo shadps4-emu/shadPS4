@@ -117,6 +117,32 @@ extern "C" void PS4_SYSV_ABI __sanitizer_finish_switch_fiber(void* fake_stack_sa
 
 extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack() {}
 
+#if defined(__APPLE__)
+extern "C" void PS4_SYSV_ABI
+__sanitizer_start_switch_fiber_macho(void** fake_stack_save, const void* stack_addr,
+                                     size_t stack_size) asm("__sanitizer_start_switch_fiber");
+extern "C" void PS4_SYSV_ABI __sanitizer_finish_switch_fiber_macho(
+    void* fake_stack_save, const void** old_stack_addr,
+    size_t* old_stack_size) asm("__sanitizer_finish_switch_fiber");
+extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack_macho(void) asm("__asan_destroy_fake_stack");
+
+extern "C" void PS4_SYSV_ABI __sanitizer_start_switch_fiber_macho(void** fake_stack_save,
+                                                                  const void* stack_addr,
+                                                                  size_t stack_size) {
+    __sanitizer_start_switch_fiber(fake_stack_save, stack_addr, stack_size);
+}
+
+extern "C" void PS4_SYSV_ABI __sanitizer_finish_switch_fiber_macho(void* fake_stack_save,
+                                                                   const void** old_stack_addr,
+                                                                   size_t* old_stack_size) {
+    __sanitizer_finish_switch_fiber(fake_stack_save, old_stack_addr, old_stack_size);
+}
+
+extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack_macho(void) {
+    __asan_destroy_fake_stack();
+}
+#endif
+
 static void EnsureFiberGlobalsInitialized() {
     u32 expected = 0;
     if (fiber_globals_init.compare_exchange_strong(expected, 1u, std::memory_order_relaxed)) {
