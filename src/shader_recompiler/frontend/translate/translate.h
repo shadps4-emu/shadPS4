@@ -231,6 +231,7 @@ public:
 
     // VOPC
     void V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst);
+    void V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst);
     void V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst);
     void V_CMP_CLASS_F32(const GcnInst& inst);

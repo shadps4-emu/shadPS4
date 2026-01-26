@@ -264,6 +264,34 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
     case Opcode::V_CMPX_TRU_F32:
         return V_CMP_F32(ConditionOp::TRU, true, inst);
 
+        //     V_CMP_{OP16}_F64
+    case Opcode::V_CMP_F_F64:
+        return V_CMP_F64(ConditionOp::F, false, inst);
+    case Opcode::V_CMP_LT_F64:
+        return V_CMP_F64(ConditionOp::LT, false, inst);
+    case Opcode::V_CMP_EQ_F64:
+        return V_CMP_F64(ConditionOp::EQ, false, inst);
+    case Opcode::V_CMP_LE_F64:
+        return V_CMP_F64(ConditionOp::LE, false, inst);
+    case Opcode::V_CMP_GT_F64:
+        return V_CMP_F64(ConditionOp::GT, false, inst);
+    case Opcode::V_CMP_LG_F64:
+        return V_CMP_F64(ConditionOp::LG, false, inst);
+    case Opcode::V_CMP_GE_F64:
+        return V_CMP_F64(ConditionOp::GE, false, inst);
+    case Opcode::V_CMP_U_F64:
+        return V_CMP_F64(ConditionOp::U, false, inst);
+    case Opcode::V_CMP_NGE_F64:
+        return V_CMP_F64(ConditionOp::LT, false, inst);
+    case Opcode::V_CMP_NGT_F64:
+        return V_CMP_F64(ConditionOp::LE, false, inst);
+    case Opcode::V_CMP_NLE_F64:
+        return V_CMP_F64(ConditionOp::GT, false, inst);
+    case Opcode::V_CMP_NEQ_F64:
+        return V_CMP_F64(ConditionOp::LG, false, inst);
+    case Opcode::V_CMP_NLT_F64:
+        return V_CMP_F64(ConditionOp::GE, false, inst);
+
         //     V_CMP_{OP8}_I32
     case Opcode::V_CMP_LT_I32:
         return V_CMP_U32(ConditionOp::LT, true, false, inst);
@@ -973,6 +1001,47 @@ void Translator::V_MOVRELSD_B32(const GcnInst& inst) {
 void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::U1 result = [&] {
+        switch (op) {
+        case ConditionOp::F:
+            return ir.Imm1(false);
+        case ConditionOp::EQ:
+            return ir.FPEqual(src0, src1);
+        case ConditionOp::LG:
+            return ir.FPNotEqual(src0, src1);
+        case ConditionOp::GT:
+            return ir.FPGreaterThan(src0, src1);
+        case ConditionOp::LT:
+            return ir.FPLessThan(src0, src1);
+        case ConditionOp::LE:
+            return ir.FPLessThanEqual(src0, src1);
+        case ConditionOp::GE:
+            return ir.FPGreaterThanEqual(src0, src1);
+        case ConditionOp::U:
+            return ir.LogicalOr(ir.FPIsNan(src0), ir.FPIsNan(src1));
+        default:
+            UNREACHABLE();
+        }
+    }();
+    if (set_exec) {
+        ir.SetExec(result);
+    }
+
+    switch (inst.dst[1].field) {
+    case OperandField::VccLo:
+        ir.SetVcc(result);
+        break;
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
+        break;
+    default:
+        UNREACHABLE();
+    }
+}
+
+void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
+    const IR::F64 src0{GetSrc64<IR::F64>(inst.src[0])};
+    const IR::F64 src1{GetSrc64<IR::F64>(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::F:
