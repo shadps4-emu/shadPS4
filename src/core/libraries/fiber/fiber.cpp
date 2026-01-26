@@ -91,8 +91,7 @@ static s32 UlobjmgrUnregister(u32 arg0) {
 }
 
 extern "C" {
-void PS4_SYSV_ABI __sanitizer_start_switch_fiber(void** fake_stack_save,
-                                                 const void* stack_addr,
+void PS4_SYSV_ABI __sanitizer_start_switch_fiber(void** fake_stack_save, const void* stack_addr,
                                                  size_t stack_size);
 void PS4_SYSV_ABI __sanitizer_finish_switch_fiber(void* fake_stack_save,
                                                   const void** old_stack_addr,
@@ -288,8 +287,8 @@ void PS4_SYSV_ABI _sceFiberCheckStackOverflow(OrbisFiberContext* ctx) {
             "context_end={:#x} flags=0x{:x} state=0x{:x} switch_cookie={:#x} magic_start=0x{:x} "
             "magic_end=0x{:x}",
             name, reinterpret_cast<uintptr_t>(fiber), reinterpret_cast<uintptr_t>(ctx),
-            stack_base_addr, stack_top_addr, stack_size, *stack_base,
-            kFiberStackSignature, reinterpret_cast<uintptr_t>(fiber->context_start),
+            stack_base_addr, stack_top_addr, stack_size, *stack_base, kFiberStackSignature,
+            reinterpret_cast<uintptr_t>(fiber->context_start),
             reinterpret_cast<uintptr_t>(fiber->context_end), fiber->flags, fiber->state,
             fiber->switch_cookie, fiber->magic_start, fiber->magic_end);
         UNREACHABLE_MSG("Stack overflow detected in fiber with size = 0x{:x}", stack_size);
