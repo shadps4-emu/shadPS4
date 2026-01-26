@@ -121,13 +121,16 @@ extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack() {}
 extern "C" void PS4_SYSV_ABI __sanitizer_start_switch_fiber_macho(void** fake_stack_save,
                                                                   const void* stack_addr,
                                                                   size_t stack_size)
-    __attribute__((used, visibility("default"))) asm("__sanitizer_start_switch_fiber");
+    __attribute__((used, externally_visible, visibility("default")))
+    asm("__sanitizer_start_switch_fiber");
 extern "C" void PS4_SYSV_ABI __sanitizer_finish_switch_fiber_macho(void* fake_stack_save,
                                                                    const void** old_stack_addr,
                                                                    size_t* old_stack_size)
-    __attribute__((used, visibility("default"))) asm("__sanitizer_finish_switch_fiber");
+    __attribute__((used, externally_visible, visibility("default")))
+    asm("__sanitizer_finish_switch_fiber");
 extern "C" void PS4_SYSV_ABI __asan_destroy_fake_stack_macho(void)
-    __attribute__((used, visibility("default"))) asm("__asan_destroy_fake_stack");
+    __attribute__((used, externally_visible, visibility("default")))
+    asm("__asan_destroy_fake_stack");
 
 extern "C" void PS4_SYSV_ABI __sanitizer_start_switch_fiber_macho(void** fake_stack_save,
                                                                   const void* stack_addr,
