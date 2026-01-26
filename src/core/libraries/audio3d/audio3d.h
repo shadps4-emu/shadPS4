@@ -15,6 +15,8 @@ class SymbolsResolver;
 
 namespace Libraries::Audio3d {
 
+constexpr int ORBIS_AUDIO3D_PORT_INVALID = 0xFFFFFFFF;
+
 enum class OrbisAudio3dRate : u32 {
     ORBIS_AUDIO3D_RATE_48000 = 0,
 };
@@ -90,10 +92,17 @@ struct AudioData {
     u32 num_samples;
 };
 
+struct Audio3dObject {
+    bool in_use = false;
+    bool active = false;
+};
+
 struct Port {
     OrbisAudio3dOpenParameters parameters{};
     std::deque<AudioData> queue; // Only stores PCM buffers for now
     std::optional<AudioData> current_buffer{};
+    std::vector<Audio3dObject> objects;
+    std::mutex lock;
 };
 
 struct Audio3dState {
@@ -125,7 +134,8 @@ s32 PS4_SYSV_ABI sceAudio3dObjectReserve(OrbisAudio3dPortId port_id,
 s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(OrbisAudio3dPortId port_id,
                                                OrbisAudio3dObjectId object_id, u64 num_attributes,
                                                const OrbisAudio3dAttribute* attribute_array);
-s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve();
+s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(OrbisAudio3dPortId port_id,
+                                           OrbisAudio3dObjectId object_id);
 s32 PS4_SYSV_ABI sceAudio3dPortAdvance(OrbisAudio3dPortId port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortClose();
 s32 PS4_SYSV_ABI sceAudio3dPortCreate();
