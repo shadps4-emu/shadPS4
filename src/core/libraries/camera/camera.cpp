@@ -651,7 +651,7 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     case ORBIS_CAMERA_CONFIG_TYPE5:
         int sdk_ver;
         Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
-        if (sdk_ver < 0x45000000) {
+        if (sdk_ver < Common::ElfInfo::FW_45) {
             return ORBIS_CAMERA_ERROR_UNKNOWN_CONFIG;
         }
         output_config0 = camera_config_types[config->configType - 1][0];
