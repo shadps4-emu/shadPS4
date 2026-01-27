@@ -43,54 +43,15 @@ static void ConvertPositionToOpenAL(const float* ps4_pos, float* al_pos) {
 static std::vector<std::byte> Downmix8ChannelToStereoS16(const OrbisAudio3dPcm& pcm) {
     std::vector<std::byte> converted_data;
 
-    const bool is_float = (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT);
-    const u32 input_channels = 8;
-
-    // Output will be stereo S16
     const size_t output_size = pcm.num_samples * 2 * sizeof(int16_t);
     converted_data.resize(output_size);
-
-    // Initialize with zeros
-    std::memset(converted_data.data(), 0, output_size);
-
-    if (!pcm.sample_buffer || pcm.num_samples == 0) {
-        LOG_WARNING(Lib_Audio3d, "Empty audio buffer for downmixing");
-        return converted_data;
-    }
-
     int16_t* output = reinterpret_cast<int16_t*>(converted_data.data());
 
-    if (is_float) {
-        const float* input = static_cast<const float*>(pcm.sample_buffer);
-
-        for (u32 i = 0; i < pcm.num_samples; i++) {
-            size_t base_idx = i * input_channels;
-
-            float fl = input[base_idx + 0];
-            float fr = input[base_idx + 1];
-            float fc = input[base_idx + 2];
-            float lfe = input[base_idx + 3];
-            float bl = input[base_idx + 4];
-            float br = input[base_idx + 5];
-            float sl = input[base_idx + 6];
-            float sr = input[base_idx + 7];
-
-            // 7.1 to stereo downmix with volume reduction
-            float left = fl * 0.7f + fc * 0.5f + sl * 0.5f + bl * 0.3f + lfe * 0.1f;
-            float right = fr * 0.7f + fc * 0.5f + sr * 0.5f + br * 0.3f + lfe * 0.1f;
-
-            // Clamp and convert to int16
-            left = std::clamp(left, -1.0f, 1.0f);
-            right = std::clamp(right, -1.0f, 1.0f);
-
-            output[i * 2 + 0] = static_cast<int16_t>(left * 32767.0f);
-            output[i * 2 + 1] = static_cast<int16_t>(right * 32767.0f);
-        }
-    } else {
+    if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
         const int16_t* input = static_cast<const int16_t*>(pcm.sample_buffer);
 
         for (u32 i = 0; i < pcm.num_samples; i++) {
-            size_t base_idx = i * input_channels;
+            size_t base_idx = i * 8;
 
             // Convert to float for processing
             float fl = input[base_idx + 0] / 32768.0f;
@@ -110,15 +71,46 @@ static std::vector<std::byte> Downmix8ChannelToStereoS16(const OrbisAudio3dPcm& 
             left = std::clamp(left, -1.0f, 1.0f);
             right = std::clamp(right, -1.0f, 1.0f);
 
-            output[i * 2 + 0] = static_cast<int16_t>(left * 32767.0f);
+            output[i * 2] = static_cast<int16_t>(left * 32767.0f);
             output[i * 2 + 1] = static_cast<int16_t>(right * 32767.0f);
         }
+        LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel S16 to stereo: {} samples", pcm.num_samples);
+    } else if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT) {
+        const float* input = static_cast<const float*>(pcm.sample_buffer);
+
+        for (u32 i = 0; i < pcm.num_samples; i++) {
+            size_t base_idx = i * 8;
+
+            float fl = input[base_idx + 0];
+            float fr = input[base_idx + 1];
+            float fc = input[base_idx + 2];
+            float lfe = input[base_idx + 3];
+            float bl = input[base_idx + 4];
+            float br = input[base_idx + 5];
+            float sl = input[base_idx + 6];
+            float sr = input[base_idx + 7];
+
+            // 7.1 to stereo downmix
+            float left = fl * 0.7f + fc * 0.5f + sl * 0.5f + bl * 0.3f + lfe * 0.1f;
+            float right = fr * 0.7f + fc * 0.5f + sr * 0.5f + br * 0.3f + lfe * 0.1f;
+
+            // Clamp and convert to S16
+            left = std::clamp(left, -1.0f, 1.0f);
+            right = std::clamp(right, -1.0f, 1.0f);
+
+            output[i * 2] = static_cast<int16_t>(left * 32767.0f);
+            output[i * 2 + 1] = static_cast<int16_t>(right * 32767.0f);
+        }
+        LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel FLOAT to stereo S16: {} samples",
+                  pcm.num_samples);
+    } else {
+        LOG_ERROR(Lib_Audio3d, "Unsupported format for downmixing: {}",
+                  magic_enum::enum_name(pcm.format));
+        return {};
     }
 
-    LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel to stereo S16: {} samples", pcm.num_samples);
     return converted_data;
 }
-
 // Convert any input to stereo S16 format
 static std::vector<std::byte> ConvertToStereoS16(const OrbisAudio3dPcm& pcm, u32 num_channels) {
     std::vector<std::byte> converted_data;
@@ -128,42 +120,94 @@ static std::vector<std::byte> ConvertToStereoS16(const OrbisAudio3dPcm& pcm, u32
         return converted_data;
     }
 
-    // We only support S16 format
-    if (pcm.format != OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
-        LOG_ERROR(Lib_Audio3d, "Only S16 format supported, got: {}",
-                  magic_enum::enum_name(pcm.format));
-        return converted_data;
-    }
+    const size_t output_size = pcm.num_samples * 2 * sizeof(int16_t);
+    converted_data.resize(output_size);
+    int16_t* output = reinterpret_cast<int16_t*>(converted_data.data());
 
-    if (num_channels == 2) {
-        // Direct copy for stereo S16
-        const size_t total_size = pcm.num_samples * 2 * sizeof(int16_t);
-        converted_data.resize(total_size);
-        std::memcpy(converted_data.data(), pcm.sample_buffer, total_size);
-        LOG_DEBUG(Lib_Audio3d, "Direct copy stereo S16: {} samples", pcm.num_samples);
-    } else if (num_channels == 1) {
-        // Convert mono to stereo S16 (duplicate channels)
-        const size_t input_size = pcm.num_samples * sizeof(int16_t);
-        const size_t output_size = pcm.num_samples * 2 * sizeof(int16_t);
-        converted_data.resize(output_size);
-
-        const int16_t* input = static_cast<const int16_t*>(pcm.sample_buffer);
-        int16_t* output = reinterpret_cast<int16_t*>(converted_data.data());
-
-        for (u32 i = 0; i < pcm.num_samples; i++) {
-            output[i * 2] = input[i];     // Left channel
-            output[i * 2 + 1] = input[i]; // Right channel (same as left)
+    if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
+        // Handle S16 format
+        if (num_channels == 2) {
+            // Direct copy for stereo S16
+            const size_t input_size = pcm.num_samples * 2 * sizeof(int16_t);
+            std::memcpy(output, pcm.sample_buffer, input_size);
+            LOG_DEBUG(Lib_Audio3d, "Direct copy stereo S16: {} samples", pcm.num_samples);
+        } else if (num_channels == 1) {
+            // Convert mono S16 to stereo S16 (duplicate channels)
+            const int16_t* input = static_cast<const int16_t*>(pcm.sample_buffer);
+            for (u32 i = 0; i < pcm.num_samples; i++) {
+                output[i * 2] = input[i];     // Left channel
+                output[i * 2 + 1] = input[i]; // Right channel
+            }
+            LOG_DEBUG(Lib_Audio3d, "Converted mono S16 to stereo: {} samples", pcm.num_samples);
+        } else if (num_channels == 8) {
+            // Downmix 8-channel S16 to stereo S16
+            converted_data = Downmix8ChannelToStereoS16(pcm);
+            LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel S16 to stereo: {} samples",
+                      pcm.num_samples);
+        } else {
+            LOG_ERROR(Lib_Audio3d, "Unsupported channel count for S16: {} (only 1, 2 or 8)",
+                      num_channels);
+            return {};
         }
+    } else if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT) {
+        // Handle FLOAT format (convert to S16)
+        if (num_channels == 2) {
+            // Convert stereo FLOAT to stereo S16
+            const float* input = static_cast<const float*>(pcm.sample_buffer);
+            for (u32 i = 0; i < pcm.num_samples * 2; i++) {
+                // Clamp float to [-1.0, 1.0] and convert to int16
+                float sample = std::clamp(input[i], -1.0f, 1.0f);
+                output[i] = static_cast<int16_t>(sample * 32767.0f);
+            }
+            LOG_DEBUG(Lib_Audio3d, "Converted stereo FLOAT to stereo S16: {} samples",
+                      pcm.num_samples);
+        } else if (num_channels == 1) {
+            // Convert mono FLOAT to stereo S16
+            const float* input = static_cast<const float*>(pcm.sample_buffer);
+            for (u32 i = 0; i < pcm.num_samples; i++) {
+                float sample = std::clamp(input[i], -1.0f, 1.0f);
+                int16_t s16_sample = static_cast<int16_t>(sample * 32767.0f);
+                output[i * 2] = s16_sample;     // Left channel
+                output[i * 2 + 1] = s16_sample; // Right channel
+            }
+            LOG_DEBUG(Lib_Audio3d, "Converted mono FLOAT to stereo S16: {} samples",
+                      pcm.num_samples);
+        } else if (num_channels == 8) {
+            // Convert and downmix 8-channel FLOAT to stereo S16
+            const float* input = static_cast<const float*>(pcm.sample_buffer);
+            for (u32 i = 0; i < pcm.num_samples; i++) {
+                size_t base_idx = i * 8;
 
-        LOG_DEBUG(Lib_Audio3d, "Converted mono to stereo S16: {} samples", pcm.num_samples);
-    } else if (num_channels == 8) {
-        // Downmix 8-channel to stereo S16
-        converted_data = Downmix8ChannelToStereoS16(pcm);
-        LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel to stereo S16: {} samples", pcm.num_samples);
+                float fl = input[base_idx + 0];
+                float fr = input[base_idx + 1];
+                float fc = input[base_idx + 2];
+                float lfe = input[base_idx + 3];
+                float bl = input[base_idx + 4];
+                float br = input[base_idx + 5];
+                float sl = input[base_idx + 6];
+                float sr = input[base_idx + 7];
+
+                // 7.1 to stereo downmix
+                float left = fl * 0.7f + fc * 0.5f + sl * 0.5f + bl * 0.3f + lfe * 0.1f;
+                float right = fr * 0.7f + fc * 0.5f + sr * 0.5f + br * 0.3f + lfe * 0.1f;
+
+                // Clamp and convert to S16
+                left = std::clamp(left, -1.0f, 1.0f);
+                right = std::clamp(right, -1.0f, 1.0f);
+
+                output[i * 2] = static_cast<int16_t>(left * 32767.0f);
+                output[i * 2 + 1] = static_cast<int16_t>(right * 32767.0f);
+            }
+            LOG_DEBUG(Lib_Audio3d, "Converted 8-channel FLOAT to stereo S16: {} samples",
+                      pcm.num_samples);
+        } else {
+            LOG_ERROR(Lib_Audio3d, "Unsupported channel count for FLOAT: {} (only 1, 2 or 8)",
+                      num_channels);
+            return {};
+        }
     } else {
-        LOG_ERROR(Lib_Audio3d, "Unsupported channel count: {} (only 1, 2 or 8 supported)",
-                  num_channels);
-        return converted_data;
+        LOG_ERROR(Lib_Audio3d, "Unsupported audio format: {}", magic_enum::enum_name(pcm.format));
+        return {};
     }
 
     return converted_data;
@@ -373,9 +417,11 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    // We only support S16 format
-    if (format != OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
-        LOG_ERROR(Lib_Audio3d, "Only S16 format supported, got: {}", magic_enum::enum_name(format));
+    // We support both S16 and FLOAT formats
+    if (format != OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16 &&
+        format != OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT) {
+        LOG_ERROR(Lib_Audio3d, "Only S16 or FLOAT format supported, got: {}",
+                  magic_enum::enum_name(format));
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
@@ -390,10 +436,19 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    // Verify buffer alignment for S16 (2-byte alignment)
-    if ((reinterpret_cast<uintptr_t>(buffer) & 1) != 0) {
-        LOG_ERROR(Lib_Audio3d, "s16 buffer & 1 != 0 (not 2-byte aligned)");
-        return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+    // Verify buffer alignment
+    if (format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
+        // S16 requires 2-byte alignment
+        if ((reinterpret_cast<uintptr_t>(buffer) & 1) != 0) {
+            LOG_ERROR(Lib_Audio3d, "s16 buffer & 1 != 0 (not 2-byte aligned)");
+            return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+        }
+    } else if (format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT) {
+        // FLOAT requires 4-byte alignment
+        if ((reinterpret_cast<uintptr_t>(buffer) & 3) != 0) {
+            LOG_ERROR(Lib_Audio3d, "float buffer & 3 != 0 (not 4-byte aligned)");
+            return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+        }
     }
 
     return PortQueueAudio(state->ports[port_id],
@@ -404,7 +459,6 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
                           },
                           num_channels);
 }
-
 s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                                                OrbisAudio3dObjectId object_id,
                                                const u64 num_attributes,
