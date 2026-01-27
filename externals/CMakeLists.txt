@@ -204,6 +204,7 @@ add_subdirectory(tracy)
 
 # pugixml
 if (NOT TARGET pugixml::pugixml)
+    option(PUGIXML_NO_EXCEPTIONS "" ON)
     add_subdirectory(pugixml)
 endif()
 
@@ -299,6 +300,11 @@ set(ALSOFT_BACKEND_NULL ON CACHE BOOL "" FORCE)
 # Static build
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-
 add_subdirectory(ext-openal-soft EXCLUDE_FROM_ALL)
 endif()
+
+# cli11
+set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(ext-CLI11)

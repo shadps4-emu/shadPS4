@@ -126,3 +126,7 @@
 [submodule "externals/ext-openal-soft"]
 	path = externals/ext-openal-soft
 	url = https://github.com/shadexternals/ext-openal-soft.git
+[submodule "externals/ext-CLI11"]
+	path = externals/ext-CLI11
+	url = https://github.com/shadexternals/ext-CLI11.git
+	branch = main

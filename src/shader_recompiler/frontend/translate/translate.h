@@ -259,6 +259,7 @@ public:
     void V_CVT_PK_I16_I32(const GcnInst& inst);
     void V_CVT_PK_U8_F32(const GcnInst& inst);
     void V_LSHL_B64(const GcnInst& inst);
+    void V_LSHR_B64(const GcnInst& inst);
     void V_ALIGNBIT_B32(const GcnInst& inst);
     void V_ALIGNBYTE_B32(const GcnInst& inst);
     void V_MUL_F64(const GcnInst& inst);

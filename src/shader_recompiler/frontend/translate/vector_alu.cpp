@@ -394,6 +394,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_PK_U8_F32(inst);
     case Opcode::V_LSHL_B64:
         return V_LSHL_B64(inst);
+    case Opcode::V_LSHR_B64:
+        return V_LSHR_B64(inst);
     case Opcode::V_ADD_F64:
         return V_ADD_F64(inst);
     case Opcode::V_ALIGNBIT_B32:
@@ -1355,6 +1357,12 @@ void Translator::V_LSHL_B64(const GcnInst& inst) {
     const IR::U64 src0{GetSrc64(inst.src[0])};
     const IR::U64 src1{GetSrc64(inst.src[1])};
     SetDst64(inst.dst[0], ir.ShiftLeftLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
+}
+
+void Translator::V_LSHR_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    SetDst64(inst.dst[0], ir.ShiftRightLogical(src0, ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)))));
 }
 
 void Translator::V_ALIGNBIT_B32(const GcnInst& inst) {
