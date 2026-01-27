@@ -140,17 +140,31 @@ static std::vector<std::byte> ConvertToStereoS16(const OrbisAudio3dPcm& pcm, u32
         const size_t total_size = pcm.num_samples * 2 * sizeof(int16_t);
         converted_data.resize(total_size);
         std::memcpy(converted_data.data(), pcm.sample_buffer, total_size);
+        LOG_DEBUG(Lib_Audio3d, "Direct copy stereo S16: {} samples", pcm.num_samples);
+    } else if (num_channels == 1) {
+        // Convert mono to stereo S16 (duplicate channels)
+        const size_t input_size = pcm.num_samples * sizeof(int16_t);
+        const size_t output_size = pcm.num_samples * 2 * sizeof(int16_t);
+        converted_data.resize(output_size);
+
+        const int16_t* input = static_cast<const int16_t*>(pcm.sample_buffer);
+        int16_t* output = reinterpret_cast<int16_t*>(converted_data.data());
+
+        for (u32 i = 0; i < pcm.num_samples; i++) {
+            output[i * 2] = input[i];     // Left channel
+            output[i * 2 + 1] = input[i]; // Right channel (same as left)
+        }
+
+        LOG_DEBUG(Lib_Audio3d, "Converted mono to stereo S16: {} samples", pcm.num_samples);
     } else if (num_channels == 8) {
         // Downmix 8-channel to stereo S16
         converted_data = Downmix8ChannelToStereoS16(pcm);
+        LOG_DEBUG(Lib_Audio3d, "Downmixed 8-channel to stereo S16: {} samples", pcm.num_samples);
     } else {
-        LOG_ERROR(Lib_Audio3d, "Unsupported channel count: {} (only 2 or 8 supported)",
+        LOG_ERROR(Lib_Audio3d, "Unsupported channel count: {} (only 1, 2 or 8 supported)",
                   num_channels);
         return converted_data;
     }
-
-    LOG_DEBUG(Lib_Audio3d, "Converted to stereo S16: {} bytes, {} samples", converted_data.size(),
-              pcm.num_samples);
 
     return converted_data;
 }
@@ -176,8 +190,9 @@ static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm, const u32 num_
     // Verify size matches expected stereo S16
     const size_t expected_size = pcm.num_samples * 2 * sizeof(int16_t);
     if (converted_data.size() != expected_size) {
-        LOG_ERROR(Lib_Audio3d, "Converted size mismatch: got {} bytes, expected {} bytes",
-                  converted_data.size(), expected_size);
+        LOG_ERROR(Lib_Audio3d,
+                  "Converted size mismatch: got {} bytes, expected {} bytes ({} samples)",
+                  converted_data.size(), expected_size, pcm.num_samples);
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
@@ -189,8 +204,8 @@ static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm, const u32 num_
     std::lock_guard lock(port.lock);
     port.queue.emplace_back(std::move(audio_data));
 
-    LOG_DEBUG(Lib_Audio3d, "Queued stereo S16 audio: {} bytes, {} samples",
-              audio_data.sample_buffer.size(), audio_data.num_samples);
+    LOG_DEBUG(Lib_Audio3d, "Queued stereo S16 audio: {} bytes, {} samples, from {} channels",
+              audio_data.sample_buffer.size(), audio_data.num_samples, num_channels);
 
     return ORBIS_OK;
 }
@@ -358,14 +373,15 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    // We only support stereo (2 channels) or 8-channel (for downmixing) S16 format
+    // We only support S16 format
     if (format != OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
         LOG_ERROR(Lib_Audio3d, "Only S16 format supported, got: {}", magic_enum::enum_name(format));
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    if (num_channels != 2 && num_channels != 8) {
-        LOG_ERROR(Lib_Audio3d, "Only 2 or 8 channels supported, got: {}", num_channels);
+    // Support mono (1), stereo (2), and 8-channel audio
+    if (num_channels != 1 && num_channels != 2 && num_channels != 8) {
+        LOG_ERROR(Lib_Audio3d, "Only 1, 2, or 8 channels supported, got: {}", num_channels);
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
