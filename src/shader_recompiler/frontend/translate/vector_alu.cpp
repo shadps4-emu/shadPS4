@@ -188,6 +188,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_FFBH_U32(inst);
     case Opcode::V_FFBL_B32:
         return V_FFBL_B32(inst);
+    case Opcode::V_FFBH_I32:
+        return V_FFBH_I32(inst);
     case Opcode::V_FREXP_EXP_I32_F64:
         return V_FREXP_EXP_I32_F64(inst);
     case Opcode::V_FREXP_MANT_F64:
@@ -946,6 +948,19 @@ void Translator::V_FFBH_U32(const GcnInst& inst) {
 void Translator::V_FFBL_B32(const GcnInst& inst) {
     const IR::U32 src0{GetSrc(inst.src[0])};
     SetDst(inst.dst[0], ir.FindILsb(src0));
+}
+
+void Translator::V_FFBH_I32(const GcnInst& inst) {
+    const IR::U32 src0{GetSrc(inst.src[0])};
+    // Gcn wants the MSB position counting from the left, but SPIR-V counts from the rightmost (LSB)
+    // position
+    const IR::U32 msb_pos = ir.FindSMsb(src0);
+    const IR::U32 pos_from_left = ir.ISub(ir.Imm32(31), msb_pos);
+    // Select 0xFFFFFFFF if src0 was 0 or -1
+    const IR::U32 minusOne = ir.Imm32(~0U);
+    const IR::U1 cond =
+        ir.LogicalAnd(ir.INotEqual(src0, ir.Imm32(0)), ir.INotEqual(src0, minusOne));
+    SetDst(inst.dst[0], IR::U32{ir.Select(cond, pos_from_left, minusOne)});
 }
 
 void Translator::V_FREXP_EXP_I32_F64(const GcnInst& inst) {
