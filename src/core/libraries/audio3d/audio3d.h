@@ -3,9 +3,14 @@
 
 #pragma once
 
+#include <deque>
+#include <mutex>
 #include <optional>
+#include <unordered_map>
+#include <vector>
 #include <queue>
 
+#include <al.h>
 #include "common/types.h"
 #include "core/libraries/audio/audioout.h"
 
@@ -87,22 +92,48 @@ struct OrbisAudio3dAttribute {
     u64 value_size;
 };
 
+// OpenAL-specific structures for 3D audio
+struct OpenAL3dSource {
+    ALuint source_id = 0;
+    ALuint buffer_id = 0;
+    bool active = false;
+    float position[3] = {0.0f, 0.0f, 0.0f};
+    float velocity[3] = {0.0f, 0.0f, 0.0f};
+    float gain = 1.0f;
+    float pitch = 1.0f;
+    float reference_distance = 1.0f;
+    float max_distance = 100.0f;
+    float rolloff_factor = 1.0f;
+    float cone_inner_angle = 360.0f;
+    float cone_outer_angle = 360.0f;
+    float cone_outer_gain = 0.0f;
+    bool looping = false;
+};
+
+// Simplified audio data - always stereo S16
 struct AudioData {
-    u8* sample_buffer;
-    u32 num_samples;
+    std::vector<std::byte> sample_buffer; // Always stereo S16 format
+    u32 num_samples;                      // Number of stereo samples
 };
 
 struct Audio3dObject {
     bool in_use = false;
     bool active = false;
+    OpenAL3dSource al_source;
+    std::deque<AudioData> pcm_queue; // Stereo S16 audio data
 };
 
 struct Port {
     OrbisAudio3dOpenParameters parameters{};
-    std::deque<AudioData> queue; // Only stores PCM buffers for now
+    std::deque<AudioData> queue; // Stereo S16 audio data
     std::optional<AudioData> current_buffer{};
     std::vector<Audio3dObject> objects;
     std::mutex lock;
+
+    // OpenAL listener for this port
+    float listener_position[3] = {0.0f, 0.0f, 0.0f};
+    float listener_velocity[3] = {0.0f, 0.0f, 0.0f};
+    float listener_orientation[6] = {0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f};
 };
 
 struct Audio3dState {
@@ -110,6 +141,7 @@ struct Audio3dState {
     s32 audio_out_handle;
 };
 
+// Function declarations
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(s32 handle);
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId port_id,
                                         Libraries::UserService::OrbisUserServiceUserId user_id,
