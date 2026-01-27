@@ -162,7 +162,8 @@ int PS4_SYSV_ABI scePadGetFeatureReport() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetHandle(s32 userId, s32 type, s32 index) {
+int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                                 s32 index) {
     if (!g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
@@ -259,7 +260,8 @@ int PS4_SYSV_ABI scePadMbusTerm() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenParam* pParam) {
+int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                            s32 index, const OrbisPadOpenParam* pParam) {
     if (!g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
@@ -280,8 +282,8 @@ int PS4_SYSV_ABI scePadOpen(s32 userId, s32 type, s32 index, const OrbisPadOpenP
     return userId; // TODO: userId shouldn't be used as the handle too
 }
 
-int PS4_SYSV_ABI scePadOpenExt(s32 userId, s32 type, s32 index,
-                               const OrbisPadOpenExtParam* pParam) {
+int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
+                               s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)

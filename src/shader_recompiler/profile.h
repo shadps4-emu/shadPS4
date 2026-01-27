@@ -41,7 +41,7 @@ struct Profile {
     bool needs_lds_barriers{};
     bool needs_buffer_offsets{};
     bool needs_unorm_fixup{};
-    bool _pad0{};
+    bool needs_clip_distance_emulation{};
 };
 
 } // namespace Shader

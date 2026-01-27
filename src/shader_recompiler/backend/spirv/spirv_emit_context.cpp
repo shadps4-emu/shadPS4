@@ -364,7 +364,7 @@ void EmitContext::DefineInputs() {
         }
         break;
     }
-    case LogicalStage::Fragment:
+    case LogicalStage::Fragment: {
         if (info.loads.GetAny(IR::Attribute::FragCoord)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
@@ -418,7 +418,13 @@ void EmitContext::DefineInputs() {
                                                     spv::StorageClass::Input);
             }
         }
-        for (s32 i = 0; i < runtime_info.fs_info.num_inputs; i++) {
+
+        const bool has_clip_distance_inputs = runtime_info.fs_info.clip_distance_emulation;
+        // Clip distances attribute vector is the last in inputs array
+        const auto num_inputs =
+            runtime_info.fs_info.num_inputs - (has_clip_distance_inputs ? 1 : 0);
+
+        for (s32 i = 0; i < num_inputs; i++) {
             const auto& input = runtime_info.fs_info.inputs[i];
             if (input.IsDefault()) {
                 continue;
@@ -428,12 +434,13 @@ void EmitContext::DefineInputs() {
             const auto [primary, auxiliary] = info.fs_interpolation[i];
             const Id type = F32[num_components];
             const Id attr_id = [&] {
+                const auto bind_location = input.param_index + (has_clip_distance_inputs ? 1 : 0);
                 if (primary == Qualifier::PerVertex &&
                     profile.supports_fragment_shader_barycentric) {
-                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), input.param_index),
+                    return Name(DefineInput(TypeArray(type, ConstU32(3U)), bind_location),
                                 fmt::format("fs_in_attr{}_p", i));
                 }
-                return Name(DefineInput(type, input.param_index), fmt::format("fs_in_attr{}", i));
+                return Name(DefineInput(type, bind_location), fmt::format("fs_in_attr{}", i));
             }();
             if (primary == Qualifier::PerVertex) {
                 Decorate(attr_id, profile.supports_amd_shader_explicit_vertex_parameter
@@ -450,7 +457,15 @@ void EmitContext::DefineInputs() {
             input_params[i] = GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id, num_components,
                                                false, false, primary == Qualifier::PerVertex);
         }
+
+        if (has_clip_distance_inputs) {
+            const auto type = F32[MaxEmulatedClipDistances];
+            const auto attr_id = Name(DefineInput(type, 0), fmt::format("cldist_attr{}", 0));
+            input_params[num_inputs] = GetAttributeInfo(AmdGpu::NumberFormat::Float, attr_id,
+                                                        MaxEmulatedClipDistances, false);
+        }
         break;
+    }
     case LogicalStage::Compute:
         if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
             info.loads.GetAny(IR::Attribute::WorkgroupId)) {
@@ -546,11 +561,16 @@ void EmitContext::DefineVertexBlock() {
     const std::array<Id, 8> zero{f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value,
                                  f32_zero_value, f32_zero_value, f32_zero_value, f32_zero_value};
     output_position = DefineVariable(F32[4], spv::BuiltIn::Position, spv::StorageClass::Output);
-    if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
-        const Id type{TypeArray(F32[1], ConstU32(8U))};
-        const Id initializer{ConstantComposite(type, zero)};
-        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
-                                        initializer);
+    const bool needs_clip_distance_emulation = l_stage == LogicalStage::Vertex &&
+                                               stage == Stage::Vertex &&
+                                               profile.needs_clip_distance_emulation;
+    if (!needs_clip_distance_emulation) {
+        if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
+            const Id type{TypeArray(F32[1], ConstU32(8U))};
+            const Id initializer{ConstantComposite(type, zero)};
+            clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance,
+                                            spv::StorageClass::Output, initializer);
+        }
     }
     if (info.stores.GetAny(IR::Attribute::CullDistance)) {
         const Id type{TypeArray(F32[1], ConstU32(8U))};
@@ -583,16 +603,27 @@ void EmitContext::DefineOutputs() {
                 Name(output_attr_array, "out_attrs");
             }
         } else {
+            const auto has_clip_distance_outputs = info.stores.GetAny(IR::Attribute::ClipDistance);
+            u32 num_attrs = 0u;
             for (u32 i = 0; i < IR::NumParams; i++) {
                 const IR::Attribute param{IR::Attribute::Param0 + i};
                 if (!info.stores.GetAny(param)) {
                     continue;
                 }
                 const u32 num_components = info.stores.NumComponents(param);
-                const Id id{DefineOutput(F32[num_components], i)};
+                const Id id{
+                    DefineOutput(F32[num_components], i + (has_clip_distance_outputs ? 1 : 0))};
                 Name(id, fmt::format("out_attr{}", i));
                 output_params[i] =
                     GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
+                ++num_attrs;
+            }
+
+            if (has_clip_distance_outputs) {
+                clip_distances = Id{DefineOutput(F32[MaxEmulatedClipDistances], 0)};
+                output_params[num_attrs] = GetAttributeInfo(
+                    AmdGpu::NumberFormat::Float, clip_distances, MaxEmulatedClipDistances, true);
+                Name(clip_distances, fmt::format("cldist_attr{}", 0));
             }
         }
         break;
