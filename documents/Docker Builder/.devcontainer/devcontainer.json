@@ -1,0 +1,45 @@
+// SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+{
+    "name": "shadPS4-dev",
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
+    "containerEnv": {
+        "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+        "GITHUB_USER": "${localEnv:GITHUB_USER}"
+    },
+    "service": "shadps4",
+    "workspaceFolder": "/workspaces/shadPS4",
+    "remoteUser": "root",
+    "shutdownAction": "none",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "llvm-vs-code-extensions.vscode-clangd"
+            ],
+            "settings": {
+                "C_Cpp.intelliSenseEngine": "disabled",
+                "clangd.arguments": [
+                    "--background-index",
+                    "--clang-tidy",
+                    "--completion-style=detailed",
+                    "--header-insertion=never"
+                ]
+            }
+        }
+    },
+    "settings": {
+        "cmake.configureOnOpen": false,
+        "cmake.generator": "Unix Makefiles",
+        "cmake.environment": {
+            "CC": "clang",
+            "CXX": "clang++"
+        },
+        "cmake.configureSettings": {
+            "CMAKE_CXX_STANDARD": "23",
+            "CMAKE_CXX_STANDARD_REQUIRED": "ON"
+        }
+    }
+}
