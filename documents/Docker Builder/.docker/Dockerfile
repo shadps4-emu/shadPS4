@@ -1,38 +1,42 @@
 # SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-FROM ubuntu:24.04
+FROM archlinux:latest
 
-ENV DEBIAN_FRONTEND=noninteractive
+RUN pacman-key --init && \
+    pacman-key --populate archlinux && \
+    pacman -Syu --noconfirm
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
+RUN pacman -S --noconfirm \
+    base-devel \
     clang \
+    ninja \
     git \
     ca-certificates \
     wget \
-    libasound2-dev \
-    libpulse-dev \
-    libopenal-dev \
-    libssl-dev \
-    zlib1g-dev \
-    libedit-dev \
-    libudev-dev \
-    libevdev-dev \
-    libsdl2-dev \
-    libjack-dev \
-    libsndio-dev \
-    libxtst-dev \
-    libvulkan-dev \
-    vulkan-validationlayers \
-    libpng-dev \
-    clang-tidy \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN wget -qO - https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ noble main" > /etc/apt/sources.list.d/kitware.list \
-    && apt-get update \
-    && apt-get install -y cmake \
-    && rm -rf /var/lib/apt/lists/*/*
+    alsa-lib \
+    libpulse \
+    openal \
+    openssl \
+    zlib \
+    libedit \
+    systemd-libs \
+    libevdev \
+    sdl2 \
+    jack \
+    sndio \
+    libxtst \
+    vulkan-headers \
+    vulkan-validation-layers \
+    libpng \
+    clang-tools-extra \
+    cmake \
+    libx11 \
+    libxrandr \
+    libxcursor \
+    libxi \
+    libxinerama \
+    libxss \
+    && pacman -Scc --noconfirm
 
 WORKDIR /workspaces/shadPS4
