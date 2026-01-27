@@ -54,7 +54,16 @@ or your fork link.
 git submodule update --init --recursive
 ```
 
-## Step 3: Build with CMake
+## Step 3: Build with CMake Tools (GUI)
+
+Generate build with CMake Tools.
+
+1. Go `CMake Tools > Configure > '>'`
+2. And `Build > '>'`
+
+Compiled executable in `Build` folder.
+
+## Alternative Step 3: Build with CMake
 
 Generate the build directory and configure the project using Clang:
 

@@ -17,29 +17,32 @@
     "customizations": {
         "vscode": {
             "extensions": [
-                "llvm-vs-code-extensions.vscode-clangd"
+			    "llvm-vs-code-extensions.vscode-clangd",
+                "ms-vscode.cmake-tools"
             ],
             "settings": {
-                "C_Cpp.intelliSenseEngine": "disabled",
                 "clangd.arguments": [
                     "--background-index",
                     "--clang-tidy",
                     "--completion-style=detailed",
-                    "--header-insertion=never"
-                ]
+                    "--header-insertion=never",
+					"--compile-commands-dir=/workspaces/shadPS4/Build/x64-Clang-Release"
+                ],
+				"C_Cpp.intelliSenseEngine": "Disabled"
             }
         }
     },
     "settings": {
-        "cmake.configureOnOpen": false,
+		"cmake.configureOnOpen": false,
         "cmake.generator": "Unix Makefiles",
         "cmake.environment": {
             "CC": "clang",
             "CXX": "clang++"
         },
-        "cmake.configureSettings": {
-            "CMAKE_CXX_STANDARD": "23",
-            "CMAKE_CXX_STANDARD_REQUIRED": "ON"
-        }
+        "cmake.configureEnvironment": {
+			"CMAKE_CXX_STANDARD": "23",
+			"CMAKE_CXX_STANDARD_REQUIRED": "ON",
+			"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+		}
     }
 }
