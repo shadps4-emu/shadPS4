@@ -254,7 +254,6 @@ static s32 PortQueueAudio(Port& port, const OrbisAudio3dPcm& pcm, const u32 num_
     return ORBIS_OK;
 }
 
-// Clean up processed OpenAL buffers
 static void CleanupProcessedBuffers(Audio3dObject& obj) {
     if (obj.al_source.source_id == 0)
         return;
@@ -267,17 +266,30 @@ static void CleanupProcessedBuffers(Audio3dObject& obj) {
     if (processed > 0) {
         std::vector<ALuint> buffers(processed);
         alSourceUnqueueBuffers(obj.al_source.source_id, processed, buffers.data());
+
+        // Delete the buffers
         alDeleteBuffers(processed, buffers.data());
+
+        ALenum error = alGetError();
+        if (error != AL_NO_ERROR) {
+            LOG_ERROR(Lib_Audio3d, "Error cleaning up buffers: {}", error);
+        } else {
+            LOG_TRACE(Lib_Audio3d, "Cleaned up {} processed buffers from source {}", processed,
+                      obj.al_source.source_id);
+        }
     }
 }
 
-// Stream object audio (always stereo S16)
 static void StreamObjectAudio(Audio3dObject& obj) {
     if (!obj.in_use || !obj.active)
         return;
 
-    // Clean up processed buffers first
-    CleanupProcessedBuffers(obj);
+    // Ensure OpenAL context is current
+    auto& al_manager = Libraries::AudioOut::OpenALManager::Instance();
+    if (!al_manager.IsInitialized()) {
+        return;
+    }
+    al_manager.MakeContextCurrent();
 
     // Ensure OpenAL source exists
     if (obj.al_source.source_id == 0) {
@@ -288,7 +300,6 @@ static void StreamObjectAudio(Audio3dObject& obj) {
         }
 
         // Set default OpenAL source properties
-        Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
         alSourcef(obj.al_source.source_id, AL_PITCH, obj.al_source.pitch);
         alSourcef(obj.al_source.source_id, AL_GAIN, obj.al_source.gain);
         alSource3f(obj.al_source.source_id, AL_POSITION, obj.al_source.position[0],
@@ -300,71 +311,122 @@ static void StreamObjectAudio(Audio3dObject& obj) {
         alSourcef(obj.al_source.source_id, AL_ROLLOFF_FACTOR, obj.al_source.rolloff_factor);
         alSourcei(obj.al_source.source_id, AL_LOOPING, obj.al_source.looping ? AL_TRUE : AL_FALSE);
         alSourcei(obj.al_source.source_id, AL_SOURCE_RELATIVE, AL_FALSE);
+
+        LOG_DEBUG(Lib_Audio3d, "Created OpenAL source {}", obj.al_source.source_id);
     }
 
-    // Check if there is audio to stream
-    if (obj.pcm_queue.empty())
-        return;
+    // Clean up processed buffers
+    CleanupProcessedBuffers(obj);
 
-    auto& data = obj.pcm_queue.front();
-
-    if (data.sample_buffer.empty()) {
-        LOG_WARNING(Lib_Audio3d, "Empty audio buffer in queue");
-        obj.pcm_queue.pop_front();
-        return;
-    }
-
-    // Generate OpenAL buffer
-    ALuint buffer = 0;
-    alGenBuffers(1, &buffer);
-
-    if (buffer == 0) {
-        LOG_ERROR(Lib_Audio3d, "Failed to generate OpenAL buffer");
-        obj.pcm_queue.pop_front();
-        return;
-    }
-
-    // Always use stereo S16 format (AL_FORMAT_STEREO16 = 0x1103)
-    ALenum al_format = AL_FORMAT_STEREO16;
-
-    // Upload data to buffer
-    alBufferData(buffer, al_format, data.sample_buffer.data(),
-                 static_cast<ALsizei>(data.sample_buffer.size()), AUDIO3D_SAMPLE_RATE);
-
-    ALenum error = alGetError();
-    if (error != AL_NO_ERROR) {
-        LOG_ERROR(Lib_Audio3d, "Failed to upload buffer data: {}", error);
-        alDeleteBuffers(1, &buffer);
-        obj.pcm_queue.pop_front();
-        return;
-    }
-
-    // Queue buffer to source
-    alSourceQueueBuffers(obj.al_source.source_id, 1, &buffer);
-
-    error = alGetError();
-    if (error != AL_NO_ERROR) {
-        LOG_ERROR(Lib_Audio3d, "Failed to queue buffer: {}", error);
-        alDeleteBuffers(1, &buffer);
-        obj.pcm_queue.pop_front();
-        return;
-    }
-
-    // Check if source is playing
+    // Check source state and ensure it's playing if we have buffers
     ALint state;
     alGetSourcei(obj.al_source.source_id, AL_SOURCE_STATE, &state);
-    if (state != AL_PLAYING) {
+
+    ALint queued_buffers = 0;
+    alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued_buffers);
+
+    ALint processed_buffers = 0;
+    alGetSourcei(obj.al_source.source_id, AL_BUFFERS_PROCESSED, &processed_buffers);
+
+    LOG_TRACE(Lib_Audio3d, "Source {}: state={}, queued={}, processed={}", obj.al_source.source_id,
+              state, queued_buffers, processed_buffers);
+
+    // If source stopped but has buffers, restart it
+    if (state == AL_STOPPED && queued_buffers > 0) {
+        LOG_DEBUG(Lib_Audio3d, "Restarting source {} (stopped with {} buffers)",
+                  obj.al_source.source_id, queued_buffers);
         alSourcePlay(obj.al_source.source_id);
-        error = alGetError();
+        ALenum error = alGetError();
         if (error != AL_NO_ERROR) {
-            LOG_ERROR(Lib_Audio3d, "Failed to play source: {}", error);
+            LOG_ERROR(Lib_Audio3d, "Failed to restart source: {}", error);
         }
+        return; // Let it start playing before adding more buffers
     }
 
-    // Remove from queue
-    obj.pcm_queue.pop_front();
-}
+    // Check if we need more buffers (OpenAL typically needs 2-3 buffers for smooth playback)
+    if (queued_buffers < 2 && !obj.pcm_queue.empty()) {
+        // Stream up to 2 buffers at once for smoother playback
+        int buffers_to_queue =
+            std::min(2 - queued_buffers, static_cast<ALint>(obj.pcm_queue.size()));
 
+        for (int i = 0; i < buffers_to_queue; i++) {
+            if (obj.pcm_queue.empty())
+                break;
+
+            auto& data = obj.pcm_queue.front();
+
+            if (data.sample_buffer.empty()) {
+                LOG_WARNING(Lib_Audio3d, "Empty audio buffer in queue");
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            // Generate OpenAL buffer
+            ALuint buffer = 0;
+            alGenBuffers(1, &buffer);
+
+            if (buffer == 0) {
+                LOG_ERROR(Lib_Audio3d, "Failed to generate OpenAL buffer");
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            // Always use stereo S16 format
+            ALenum al_format = AL_FORMAT_STEREO16;
+
+            // Verify buffer size is reasonable
+            if (data.sample_buffer.size() > 10 * 1024 * 1024) { // 10MB sanity check
+                LOG_ERROR(Lib_Audio3d, "Audio buffer too large: {} bytes",
+                          data.sample_buffer.size());
+                alDeleteBuffers(1, &buffer);
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            // Upload data to buffer
+            alBufferData(buffer, al_format, data.sample_buffer.data(),
+                         static_cast<ALsizei>(data.sample_buffer.size()), AUDIO3D_SAMPLE_RATE);
+
+            ALenum error = alGetError();
+            if (error != AL_NO_ERROR) {
+                LOG_ERROR(Lib_Audio3d, "Failed to upload buffer data: {}", error);
+                alDeleteBuffers(1, &buffer);
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            // Queue buffer to source
+            alSourceQueueBuffers(obj.al_source.source_id, 1, &buffer);
+
+            error = alGetError();
+            if (error != AL_NO_ERROR) {
+                LOG_ERROR(Lib_Audio3d, "Failed to queue buffer: {}", error);
+                alDeleteBuffers(1, &buffer);
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            LOG_TRACE(Lib_Audio3d, "Queued buffer {} to source {}, size: {} bytes", buffer,
+                      obj.al_source.source_id, data.sample_buffer.size());
+
+            // Remove from queue
+            obj.pcm_queue.pop_front();
+        }
+
+        // If we just added buffers and source isn't playing, start it
+        if (queued_buffers == 0 && buffers_to_queue > 0) {
+            alGetSourcei(obj.al_source.source_id, AL_SOURCE_STATE, &state);
+            if (state != AL_PLAYING) {
+                LOG_DEBUG(Lib_Audio3d, "Starting playback on source {}", obj.al_source.source_id);
+                alSourcePlay(obj.al_source.source_id);
+                ALenum error = alGetError();
+                if (error != AL_NO_ERROR) {
+                    LOG_ERROR(Lib_Audio3d, "Failed to start playback: {}", error);
+                }
+            }
+        }
+    }
+}
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(const s32 handle, void* ptr) {
     LOG_DEBUG(Lib_Audio3d, "called, handle = {}, ptr = {}", handle, ptr);
 
@@ -589,6 +651,167 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
     return ORBIS_OK;
 }
 
+static void PreBufferAudio(Audio3dObject& obj) {
+    if (!obj.in_use || !obj.active || obj.al_source.source_id == 0)
+        return;
+
+    auto& al_manager = Libraries::AudioOut::OpenALManager::Instance();
+    if (!al_manager.IsInitialized()) {
+        return;
+    }
+
+    al_manager.MakeContextCurrent();
+
+    ALint queued = 0;
+    alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+
+    // Pre-buffer: ensure we have at least 2-3 buffers queued for smooth playback
+    int target_buffers = 3; // Aim for 3 buffers to prevent underruns
+    int buffers_needed = target_buffers - queued;
+
+    if (buffers_needed > 0 && !obj.pcm_queue.empty()) {
+        LOG_DEBUG(Lib_Audio3d,
+                  "Pre-buffering: Source {} needs {} more buffers (has {}), queue has {} packets",
+                  obj.al_source.source_id, buffers_needed, queued, obj.pcm_queue.size());
+
+        // Queue up to buffers_needed buffers
+        for (int i = 0; i < buffers_needed && !obj.pcm_queue.empty(); i++) {
+            auto& data = obj.pcm_queue.front();
+
+            if (data.sample_buffer.empty()) {
+                obj.pcm_queue.pop_front();
+                continue;
+            }
+
+            ALuint buffer = 0;
+            alGenBuffers(1, &buffer);
+
+            if (buffer == 0) {
+                LOG_ERROR(Lib_Audio3d, "Pre-buffering: Failed to generate buffer");
+                break;
+            }
+
+            alBufferData(buffer, AL_FORMAT_STEREO16, data.sample_buffer.data(),
+                         static_cast<ALsizei>(data.sample_buffer.size()), AUDIO3D_SAMPLE_RATE);
+
+            ALenum error = alGetError();
+            if (error != AL_NO_ERROR) {
+                LOG_ERROR(Lib_Audio3d, "Pre-buffering: Failed to upload buffer: {}", error);
+                alDeleteBuffers(1, &buffer);
+                break;
+            }
+
+            alSourceQueueBuffers(obj.al_source.source_id, 1, &buffer);
+            error = alGetError();
+            if (error != AL_NO_ERROR) {
+                LOG_ERROR(Lib_Audio3d, "Pre-buffering: Failed to queue buffer: {}", error);
+                alDeleteBuffers(1, &buffer);
+                break;
+            }
+
+            LOG_TRACE(Lib_Audio3d, "Pre-buffering: Queued buffer {} ({} bytes) to source {}",
+                      buffer, data.sample_buffer.size(), obj.al_source.source_id);
+
+            obj.pcm_queue.pop_front();
+        }
+
+        // Check if we should start playback
+        ALint state;
+        alGetSourcei(obj.al_source.source_id, AL_SOURCE_STATE, &state);
+        alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+
+        if (state != AL_PLAYING && queued >= 2) {
+            LOG_DEBUG(Lib_Audio3d, "Pre-buffering: Starting source {} with {} buffers",
+                      obj.al_source.source_id, queued);
+            alSourcePlay(obj.al_source.source_id);
+        }
+    }
+}
+
+static void MaintainAudioBuffers(Port& port) {
+    auto& al_manager = Libraries::AudioOut::OpenALManager::Instance();
+    if (!al_manager.IsInitialized()) {
+        return;
+    }
+
+    al_manager.MakeContextCurrent();
+
+    for (auto& obj : port.objects) {
+        if (!obj.in_use || !obj.active || obj.al_source.source_id == 0)
+            continue;
+
+        ALint state = AL_INITIAL;
+        alGetSourcei(obj.al_source.source_id, AL_SOURCE_STATE, &state);
+
+        ALint queued = 0;
+        alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+
+        ALint processed = 0;
+        alGetSourcei(obj.al_source.source_id, AL_BUFFERS_PROCESSED, &processed);
+
+        // Clean up processed buffers
+        if (processed > 0) {
+            std::vector<ALuint> buffers(processed);
+            alSourceUnqueueBuffers(obj.al_source.source_id, processed, buffers.data());
+            alDeleteBuffers(processed, buffers.data());
+
+            LOG_TRACE(
+                Lib_Audio3d,
+                "Maintenance: Cleaned {} processed buffers from source {} (state={}, queued={})",
+                processed, obj.al_source.source_id, state, queued - processed);
+        }
+
+        // Re-check state after cleanup
+        alGetSourcei(obj.al_source.source_id, AL_SOURCE_STATE, &state);
+        alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+
+        // Handle different source states
+        if (state == AL_PLAYING) {
+            // Source is playing - check if it needs more buffers
+            if (queued < 2 && !obj.pcm_queue.empty()) {
+                LOG_DEBUG(Lib_Audio3d, "Maintenance: Source {} needs more buffers ({} queued)",
+                          obj.al_source.source_id, queued);
+            }
+        } else if (state == AL_STOPPED) {
+            // Source stopped - check why and handle accordingly
+            if (queued > 0) {
+                // Stopped but has buffers - restart it
+                LOG_DEBUG(Lib_Audio3d,
+                          "Maintenance: Restarting source {} (stopped with {} buffers)",
+                          obj.al_source.source_id, queued);
+                alSourcePlay(obj.al_source.source_id);
+
+                ALenum error = alGetError();
+                if (error != AL_NO_ERROR) {
+                    LOG_ERROR(Lib_Audio3d, "Maintenance: Failed to restart source {}: {}",
+                              obj.al_source.source_id, error);
+                }
+            } else if (queued == 0 && !obj.pcm_queue.empty()) {
+                // Stopped with no buffers but has data - queue buffers and start
+                LOG_DEBUG(Lib_Audio3d,
+                          "Maintenance: Source {} stopped with no buffers, queuing new data",
+                          obj.al_source.source_id);
+            } else if (queued == 0 && obj.pcm_queue.empty()) {
+                // Stopped with no buffers and no data - this is normal idle state
+                LOG_TRACE(Lib_Audio3d, "Maintenance: Source {} idle (no data)",
+                          obj.al_source.source_id);
+            }
+        } else if (state == AL_INITIAL) {
+            // Source created but never played - check if we should start it
+            if (queued >= 2 || (!obj.pcm_queue.empty() && queued > 0)) {
+                LOG_DEBUG(Lib_Audio3d,
+                          "Maintenance: Starting source {} for first time ({} buffers queued)",
+                          obj.al_source.source_id, queued);
+                alSourcePlay(obj.al_source.source_id);
+            }
+        } else if (state == AL_PAUSED) {
+            // Source paused - this shouldn't happen in our implementation
+            LOG_WARNING(Lib_Audio3d, "Maintenance: Source {} is paused (unexpected)",
+                        obj.al_source.source_id);
+        }
+    }
+}
+
 s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
                                     const OrbisAudio3dBlocking blocking) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, blocking = {}", port_id,
@@ -608,11 +831,28 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
     }
 
+    // 1. Pre-buffer object audio to ensure we have enough data
+    for (auto& obj : port.objects) {
+        if (obj.in_use && obj.active) {
+            PreBufferAudio(obj);
+        }
+    }
+
+    // 2. Perform buffer maintenance (clean up, restart stopped sources, etc.)
+    MaintainAudioBuffers(port);
+
+    // 3. Stream more audio data if needed
+    for (auto& obj : port.objects) {
+        if (obj.in_use && obj.active) {
+            StreamObjectAudio(obj);
+        }
+    }
+
+    // 4. Handle bed audio output
     if (!port.current_buffer.has_value()) {
         // Generate silent audio if nothing to push
         LOG_DEBUG(Lib_Audio3d, "Port push with no buffer ready - generating silence");
 
-        // Create silent buffer (stereo S16, granularity samples)
         const size_t silent_size = port.parameters.granularity * 2 * sizeof(int16_t);
         std::vector<std::byte> silent_buffer(silent_size, std::byte{0});
 
@@ -621,12 +861,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
 
     auto& audio_data = port.current_buffer.value();
 
-    // Stream object audio
-    for (auto& obj : port.objects) {
-        StreamObjectAudio(obj);
-    }
-
-    // Output bed audio
+    // 5. Output bed audio
     if (!audio_data.sample_buffer.empty()) {
         LOG_DEBUG(Lib_Audio3d, "Pushing bed audio: {} bytes", audio_data.sample_buffer.size());
 
