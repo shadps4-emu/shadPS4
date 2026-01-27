@@ -219,6 +219,7 @@ public:
     void V_NOT_B32(const GcnInst& inst);
     void V_BFREV_B32(const GcnInst& inst);
     void V_FFBH_U32(const GcnInst& inst);
+    void V_FFBH_I32(const GcnInst& inst);
     void V_FFBL_B32(const GcnInst& inst);
     void V_FREXP_EXP_I32_F64(const GcnInst& inst);
     void V_FREXP_MANT_F64(const GcnInst& inst);
