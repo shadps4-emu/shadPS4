@@ -1,5 +1,4 @@
-
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
@@ -11,6 +10,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/signal_context.h"
+#include "core/emulator_settings.h"
 #include "core/signals.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/breadth_first_search.h"
@@ -229,7 +229,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     info.srt_info.walker_func_size =
         c.getCurr() - reinterpret_cast<const u8*>(info.srt_info.walker_func);
 
-    if (Config::dumpShaders()) {
+    if (EmulatorSettings::GetInstance()->IsDumpShaders()) {
         DumpSrtProgram(info, reinterpret_cast<const u8*>(info.srt_info.walker_func),
                        info.srt_info.walker_func_size);
     }

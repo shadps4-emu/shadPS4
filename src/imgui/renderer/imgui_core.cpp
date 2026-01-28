@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL_events.h>
@@ -8,6 +8,7 @@
 #include "common/path_util.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -218,8 +219,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
     if (draw_data->CmdListsCount == 0) {
         return;
     }
-
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",
         });
@@ -244,7 +244,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
     cmdbuf.beginRendering(render_info);
     Vulkan::RenderDrawData(*draw_data, cmdbuf);
     cmdbuf.endRendering();
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 }

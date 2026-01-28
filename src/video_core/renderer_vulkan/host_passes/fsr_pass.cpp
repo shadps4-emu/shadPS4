@@ -1,8 +1,9 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "core/emulator_settings.h"
 #include "video_core/host_shaders/fsr_comp.h"
 #include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -164,7 +165,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         CreateImages(img);
     }
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Host/FSR",
         });
@@ -387,7 +388,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         .pImageMemoryBarriers = return_barrier.data(),
     });
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 

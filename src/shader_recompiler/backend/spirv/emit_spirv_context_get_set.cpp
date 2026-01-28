@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_bounds.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -58,7 +59,7 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
-    if (!Config::directMemoryAccess()) {
+    if (!EmulatorSettings::GetInstance()->IsDirectMemoryAccessEnabled()) {
         return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
     }
     // We can only provide a fallback for immediate offsets.

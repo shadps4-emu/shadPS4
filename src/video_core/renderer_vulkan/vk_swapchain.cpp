@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "imgui/renderer/imgui_core.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -164,7 +165,7 @@ void Swapchain::FindPresentFormat() {
             return format == SURFACE_FORMAT_HDR;
         }) != formats.end();
     // Also make sure that user allowed us to use HDR
-    supports_hdr &= Config::allowHDR();
+    supports_hdr &= EmulatorSettings::GetInstance()->IsHdrAllowed();
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
@@ -199,7 +200,7 @@ void Swapchain::FindPresentMode() {
         return;
     }
 
-    const auto requested_mode = Config::getPresentMode();
+    const auto requested_mode = EmulatorSettings::GetInstance()->GetPresentMode();
     if (requested_mode == "Mailbox") {
         present_mode = vk::PresentModeKHR::eMailbox;
     } else if (requested_mode == "Fifo") {
@@ -208,7 +209,7 @@ void Swapchain::FindPresentMode() {
         present_mode = vk::PresentModeKHR::eImmediate;
     } else {
         LOG_ERROR(Render_Vulkan, "Unknown present mode {}, defaulting to Mailbox.",
-                  Config::getPresentMode());
+                  EmulatorSettings::GetInstance()->GetPresentMode());
         present_mode = vk::PresentModeKHR::eMailbox;
     }
 

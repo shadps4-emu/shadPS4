@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -14,6 +14,7 @@
 #endif
 #include "common/debug.h"
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/page_manager.h"
 
@@ -95,7 +96,7 @@ public:
         }
         if constexpr (type == Type::CPU) {
             UpdateProtection<!enable, false>();
-        } else if (Config::readbacks()) {
+        } else if (EmulatorSettings::GetInstance()->IsReadbacksEnabled()) {
             UpdateProtection<enable, true>();
         }
     }
@@ -126,7 +127,7 @@ public:
             bits.UnsetRange(start_page, end_page);
             if constexpr (type == Type::CPU) {
                 UpdateProtection<true, false>();
-            } else if (Config::readbacks()) {
+            } else if (EmulatorSettings::GetInstance()->IsReadbacksEnabled()) {
                 UpdateProtection<false, true>();
             }
         }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <iostream>
@@ -9,6 +9,7 @@
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "save_backup.h"
 #include "save_instance.h"
@@ -48,12 +49,14 @@ namespace Libraries::SaveData {
 
 fs::path SaveInstance::MakeTitleSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          std::string_view game_serial) {
-    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial;
+    return EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user_id) / "savedata" /
+           game_serial;
 }
 
-fs::path SaveInstance::MakeDirSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
-                                       std::string_view game_serial, std::string_view dir_name) {
-    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial / dir_name;
+fs::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_id, std::string_view game_serial,
+                                       std::string_view dir_name) {
+    return EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user_id) / "savedata" /
+           game_serial / dir_name;
 }
 
 uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {
@@ -71,7 +74,7 @@ fs::path SaveInstance::GetParamSFOPath(const fs::path& dir_path) {
 
 void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
                                         std::string game_serial) {
-    int locale = Config::GetLanguage();
+    int locale = EmulatorSettings::GetInstance()->GetConsoleLanguage();
     if (!default_title.contains(locale)) {
         locale = 1; // default to en_US if not found
     }
