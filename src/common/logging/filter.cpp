@@ -113,6 +113,7 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     SUB(Lib, NpWebApi2)                                                                            \
     SUB(Lib, NpProfileDialog)                                                                      \
     SUB(Lib, NpSnsFacebookDialog)                                                                  \
+    SUB(Lib, NpPartner)                                                                            \
     SUB(Lib, Screenshot)                                                                           \
     SUB(Lib, LibCInternal)                                                                         \
     SUB(Lib, AppContent)                                                                           \
