@@ -562,6 +562,19 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
             obj.pcm_queue.push_back(std::move(audio_data));
             break;
         }
+        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PRIORITY: {
+            if (!attribute.value || attribute.value_size < sizeof(u32)) {
+                LOG_ERROR(Lib_Audio3d, "Invalid priority attribute");
+                return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+            }
+            auto& obj = port.objects[object_id];
+            u32 priority_value = *static_cast<const u32*>(attribute.value);
+            obj.priority = priority_value;
+            obj.priority_valid = true;
+
+            LOG_DEBUG(Lib_Audio3d, "Set object {} priority: {}", object_id, obj.priority);
+            break;
+        }
         case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_POSITION: {
             if (object_id >= port.objects.size()) {
                 return ORBIS_AUDIO3D_ERROR_INVALID_OBJECT;
@@ -576,6 +589,60 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                     Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
                     alSource3f(obj.al_source.source_id, AL_POSITION, obj.al_source.position[0],
                                obj.al_source.position[1], obj.al_source.position[2]);
+                }
+            }
+            break;
+        }
+        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_SPREAD: {
+            if (!attribute.value || attribute.value_size < sizeof(float)) {
+                LOG_ERROR(Lib_Audio3d, "Invalid spread attribute");
+                return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+            }
+            auto& obj = port.objects[object_id];
+            float spread_value = *static_cast<const float*>(attribute.value);
+
+            // Validate spread range (typically 0.0 to 360.0 degrees)
+            if (spread_value < 0.0f || spread_value > 360.0f) {
+                LOG_ERROR(Lib_Audio3d, "Spread value out of range: {} (expected 0.0-360.0)",
+                          spread_value);
+                return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+            }
+
+            obj.spread = spread_value;
+
+            if (obj.al_source.source_id != 0) {
+                Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
+
+                // Convert spread angle to OpenAL cone parameters
+                // Spread controls how directional the sound is:
+                // - 0° = very narrow beam (highly directional)
+                // - 360° = omnidirectional
+
+                if (obj.spread < 360.0f) {
+                    // For directional sounds, use cone parameters
+                    // Inner cone: full volume within this angle
+                    // Outer cone: volume attenuates to outer_gain outside this angle
+                    float inner_angle = obj.spread;
+                    float outer_angle = obj.spread * 1.5f; // Slightly wider outer cone
+
+                    alSourcef(obj.al_source.source_id, AL_CONE_INNER_ANGLE, inner_angle);
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_ANGLE, outer_angle);
+
+                    // Volume reduction outside the cone
+                    // This simulates directional attenuation
+                    float outer_gain = 0.0f; // Complete silence outside cone
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_GAIN, outer_gain);
+
+                    LOG_DEBUG(Lib_Audio3d, "Set object {} spread: {} (directional)", object_id,
+                              obj.spread);
+                } else {
+                    // Omnidirectional sound (360° spread)
+                    alSourcef(obj.al_source.source_id, AL_CONE_INNER_ANGLE, 360.0f);
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_ANGLE, 360.0f);
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_GAIN, 1.0f);
+
+                    LOG_DEBUG(Lib_Audio3d, "Set object {} spread: {} (omnidirectional)", object_id,
+                              obj.spread);
                 }
             }
             break;
@@ -623,6 +690,65 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
                               obj.al_source.rolloff_factor);
                     LOG_DEBUG(Lib_Audio3d, "Object {} set to 3D mode", object_id);
                 }
+            }
+            break;
+        }
+        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_RESET_STATE: {
+            if (!attribute.value || attribute.value_size < sizeof(u32)) {
+                LOG_ERROR(Lib_Audio3d, "Invalid reset state attribute");
+                return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+            }
+
+            u32 reset_value = *static_cast<const u32*>(attribute.value);
+            if (reset_value != 0) {
+                // Reset object state
+                LOG_DEBUG(Lib_Audio3d, "Resetting object {} state", object_id);
+                auto& obj = port.objects[object_id];
+                // Clear audio queue
+                //std::lock_guard lock(obj.queue_mutex);
+                obj.pcm_queue.clear();
+
+                // Stop OpenAL source if playing
+                if (obj.al_source.source_id != 0) {
+                    Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
+
+                    // Stop playback
+                    alSourceStop(obj.al_source.source_id);
+
+                    // Unqueue and delete all buffers
+                    ALint queued = 0;
+                    alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+                    if (queued > 0) {
+                        std::vector<ALuint> buffers(queued);
+                        alSourceUnqueueBuffers(obj.al_source.source_id, queued, buffers.data());
+                        alDeleteBuffers(queued, buffers.data());
+                    }
+
+                    // Reset OpenAL source properties to defaults
+                    alSourcef(obj.al_source.source_id, AL_PITCH, 1.0f);
+                    alSourcef(obj.al_source.source_id, AL_GAIN, 1.0f);
+                    alSource3f(obj.al_source.source_id, AL_POSITION, 0.0f, 0.0f, 0.0f);
+                    alSource3f(obj.al_source.source_id, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+
+                    // Reset cone parameters (spread)
+                    alSourcef(obj.al_source.source_id, AL_CONE_INNER_ANGLE, 360.0f);
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_ANGLE, 360.0f);
+                    alSourcef(obj.al_source.source_id, AL_CONE_OUTER_GAIN, 1.0f);
+
+                    // Reset other parameters
+                    alSourcef(obj.al_source.source_id, AL_REFERENCE_DISTANCE, 1.0f);
+                    alSourcef(obj.al_source.source_id, AL_MAX_DISTANCE, FLT_MAX);
+                    alSourcef(obj.al_source.source_id, AL_ROLLOFF_FACTOR, 1.0f);
+                    alSourcei(obj.al_source.source_id, AL_LOOPING, AL_FALSE);
+                    alSourcei(obj.al_source.source_id, AL_SOURCE_RELATIVE, AL_FALSE);
+                }
+
+                // Reset other object state
+                obj.passthrough = false;
+                obj.spread = 360.0f;
+                obj.priority = 0;
+                obj.priority_valid = false;
+                obj.active = true; // Keep active unless explicitly set to false
             }
             break;
         }
@@ -842,6 +968,75 @@ static void MaintainAudioBuffers(Port& port) {
     }
 }
 
+static void ManageObjectPriorities(Port& port) {
+    // Count active objects
+    size_t active_count = 0;
+    for (const auto& obj : port.objects) {
+        if (obj.in_use && obj.active) {
+            active_count++;
+        }
+    }
+
+    // If we have too many active objects, deactivate low-priority ones
+    constexpr size_t MAX_ACTIVE_OBJECTS = 64; // Adjust based on your system's capabilities
+    if (active_count > MAX_ACTIVE_OBJECTS) {
+        LOG_WARNING(Lib_Audio3d, "Too many active objects ({}/{}), applying priority management",
+                    active_count, MAX_ACTIVE_OBJECTS);
+
+        // Create a list of active objects with their priorities
+        struct ObjectPriority {
+            OrbisAudio3dObjectId id;
+            u32 priority;
+            bool priority_valid;
+        };
+
+        std::vector<ObjectPriority> active_objects;
+        for (size_t i = 0; i < port.objects.size(); i++) {
+            auto& obj = port.objects[i];
+            if (obj.in_use && obj.active) {
+                active_objects.push_back(
+                    {static_cast<OrbisAudio3dObjectId>(i), obj.priority, obj.priority_valid});
+            }
+        }
+
+        // Sort by priority (lower priority first)
+        std::sort(active_objects.begin(), active_objects.end(),
+                  [](const ObjectPriority& a, const ObjectPriority& b) {
+                      // Objects with valid priority come first
+                      if (a.priority_valid != b.priority_valid) {
+                          return a.priority_valid;
+                      }
+                      // Lower priority values = lower priority
+                      return a.priority < b.priority;
+                  });
+
+        // Deactivate low-priority objects
+        size_t to_deactivate = active_count - MAX_ACTIVE_OBJECTS;
+        for (size_t i = 0; i < to_deactivate && i < active_objects.size(); i++) {
+            auto& obj = port.objects[active_objects[i].id];
+            obj.active = false;
+
+            // Stop OpenAL source
+            if (obj.al_source.source_id != 0) {
+                Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
+                alSourceStop(obj.al_source.source_id);
+
+                // Clear buffers
+                ALint queued = 0;
+                alGetSourcei(obj.al_source.source_id, AL_BUFFERS_QUEUED, &queued);
+                if (queued > 0) {
+                    std::vector<ALuint> buffers(queued);
+                    alSourceUnqueueBuffers(obj.al_source.source_id, queued, buffers.data());
+                    alDeleteBuffers(queued, buffers.data());
+                }
+            }
+
+            LOG_DEBUG(Lib_Audio3d, "Deactivated object {} due to priority (priority={})",
+                      active_objects[i].id, obj.priority);
+        }
+    }
+}
+
 s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
                                     const OrbisAudio3dBlocking blocking) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, blocking = {}", port_id,
@@ -860,7 +1055,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
         LOG_ERROR(Lib_Audio3d, "port doesn't have push capability");
         return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
     }
-
+    // Manage object priorities before processing
+    ManageObjectPriorities(port);
     // 1. Pre-buffer object audio to ensure we have enough data
     for (auto& obj : port.objects) {
         if (obj.in_use && obj.active) {

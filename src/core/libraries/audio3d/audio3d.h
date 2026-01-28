@@ -123,6 +123,8 @@ struct Audio3dObject {
     std::deque<AudioData> pcm_queue; // Stereo S16 audio data
     bool passthrough = false;      
     float spread = 360.0f;
+    u32 priority = 0;            // 0 = lowest priority, higher values = higher priority
+    bool priority_valid = false; // Whether priority has been set
 };
 
 struct Port {
