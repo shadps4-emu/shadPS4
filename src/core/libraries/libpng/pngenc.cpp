@@ -182,6 +182,10 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
             png_bytep row = (png_bytep)param->image_mem_addr + processed_height * row_stride;
             png_write_row(pngh->png_ptr, row);
 
+            if (outputInfo != nullptr) {
+                outputInfo->processed_height = processed_height;
+            }
+
             if (writer.cancel_write) {
                 LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
                 return ORBIS_PNG_ENC_ERROR_DATA_OVERFLOW;
@@ -208,6 +212,10 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle handle, const OrbisPngEncEnco
             }
 
             png_write_row(pngh->png_ptr, rgb_row.data());
+
+            if (outputInfo != nullptr) {
+                outputInfo->processed_height = processed_height;
+            }
 
             if (writer.cancel_write) {
                 LOG_ERROR(Lib_Png, "Ran out of room to write PNG");
