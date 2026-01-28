@@ -121,6 +121,8 @@ struct Audio3dObject {
     bool active = false;
     OpenAL3dSource al_source;
     std::deque<AudioData> pcm_queue; // Stereo S16 audio data
+    bool passthrough = false;      
+    float spread = 360.0f;
 };
 
 struct Port {

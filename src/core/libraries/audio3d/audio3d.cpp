@@ -596,6 +596,36 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
             }
             break;
         }
+        case OrbisAudio3dAttributeId::ORBIS_AUDIO3D_OBJECT_ATTRIBUTE_PASSTHROUGH: {
+            if (!attribute.value || attribute.value_size < sizeof(u32)) {
+                LOG_ERROR(Lib_Audio3d, "Invalid passthrough attribute");
+                return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
+            }
+            auto& obj = port.objects[object_id];
+            u32 passthrough_value = *static_cast<const u32*>(attribute.value);
+            obj.passthrough = (passthrough_value != 0);
+
+            if (obj.al_source.source_id != 0) {
+                Libraries::AudioOut::OpenALManager::Instance().MakeContextCurrent();
+
+                if (obj.passthrough) {
+                    // Passthrough mode: disable 3D positioning
+                    alSourcei(obj.al_source.source_id, AL_SOURCE_RELATIVE, AL_TRUE);
+                    alSource3f(obj.al_source.source_id, AL_POSITION, 0.0f, 0.0f, 0.0f);
+                    alSourcef(obj.al_source.source_id, AL_ROLLOFF_FACTOR, 0.0f);
+                    LOG_DEBUG(Lib_Audio3d, "Object {} set to passthrough mode", object_id);
+                } else {
+                    // 3D mode: enable positioning
+                    alSourcei(obj.al_source.source_id, AL_SOURCE_RELATIVE, AL_FALSE);
+                    alSource3f(obj.al_source.source_id, AL_POSITION, obj.al_source.position[0],
+                               obj.al_source.position[1], obj.al_source.position[2]);
+                    alSourcef(obj.al_source.source_id, AL_ROLLOFF_FACTOR,
+                              obj.al_source.rolloff_factor);
+                    LOG_DEBUG(Lib_Audio3d, "Object {} set to 3D mode", object_id);
+                }
+            }
+            break;
+        }
         default:
             LOG_INFO(Lib_Audio3d, "Processing attribute ID: {:#x}",
                      static_cast<u32>(attribute.attribute_id));
