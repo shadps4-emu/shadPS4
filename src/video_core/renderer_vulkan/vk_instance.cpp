@@ -336,9 +336,11 @@ bool Instance::CreateDevice() {
 
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
+    vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchain_maintenance1_features{};
     if (swapchain_maintenance1) {
         LOG_INFO(Render_Vulkan,
                  "Enabling VK_EXT_swapchain_maintenance1 for Nvidia Smooth Motion compatibility");
+        swapchain_maintenance1_features.swapchainMaintenance1 = VK_TRUE;
     }
 
     // Enable additional extensions that may be required for NSM compatibility
@@ -509,6 +511,9 @@ bool Instance::CreateDevice() {
             .workgroupMemoryExplicitLayout16BitAccess =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout16BitAccess,
         },
+        vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT{
+            .swapchainMaintenance1 = swapchain_maintenance1_features.swapchainMaintenance1,
+        },
 #ifdef __APPLE__
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
             .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
@@ -574,6 +579,9 @@ bool Instance::CreateDevice() {
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();
+    }
+    if (!swapchain_maintenance1) {
+        device_chain.unlink<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
