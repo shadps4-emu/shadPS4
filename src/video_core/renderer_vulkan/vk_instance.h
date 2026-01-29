@@ -149,6 +149,11 @@ public:
         return depth_range_unrestricted;
     }
 
+    /// Returns true when VK_EXT_swapchain_maintenance1 is supported.
+    bool IsSwapchainMaintenance1Supported() const {
+        return swapchain_maintenance1;
+    }
+
     /// Returns true when the extendedDynamicState3ColorWriteMask feature o
     /// VK_EXT_extended_dynamic_state3 is supported.
     bool IsDynamicColorWriteMaskSupported() const {
@@ -499,6 +504,7 @@ private:
     bool portability_subset{};
     bool maintenance_8{};
     bool attachment_feedback_loop{};
+    bool swapchain_maintenance1{};
     bool supports_memory_budget{};
     u64 total_memory_budget{};
     std::vector<size_t> valid_heaps;

@@ -51,7 +51,25 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const vk::SharingMode sharing_mode =
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
     const auto format = needs_hdr ? SURFACE_FORMAT_HDR : surface_format;
+    
+    // Setup swapchain maintenance1 for Nvidia Smooth Motion compatibility
+    vk::SwapchainPresentModesCreateInfoEXT present_modes_info{};
+    void* p_next = nullptr;
+    
+    if (instance.IsSwapchainMaintenance1Supported()) {
+        // Enable present modes info for NSM compatibility
+        // This allows NSM to work with the swapchain by providing proper present mode information
+        present_modes_info = vk::SwapchainPresentModesCreateInfoEXT{
+            .presentModeCount = 1,
+            .pPresentModes = &present_mode,
+        };
+        p_next = &present_modes_info;
+        
+        LOG_INFO(Render_Vulkan, "Using VK_EXT_swapchain_maintenance1 for Nvidia Smooth Motion compatibility");
+    }
+    
     const vk::SwapchainCreateInfoKHR swapchain_info = {
+        .pNext = p_next,
         .surface = surface,
         .minImageCount = image_count,
         .imageFormat = format.format,

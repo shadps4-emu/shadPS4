@@ -335,6 +335,10 @@ bool Instance::CreateDevice() {
 #endif
 
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
+    if (swapchain_maintenance1) {
+        LOG_INFO(Render_Vulkan, "Enabling VK_EXT_swapchain_maintenance1 for Nvidia Smooth Motion compatibility");
+    }
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
