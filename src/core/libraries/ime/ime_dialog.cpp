@@ -802,7 +802,15 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
     if (accessibility) {
         *width = 0x780;
         *height = 0x438;
-        goto done;
+        if ((param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) != OrbisImeOption::DEFAULT) {
+            *width <<= 1;
+            *height <<= 1;
+        }
+        if (log) {
+            LOG_DEBUG(Lib_ImeDialog, "PanelSizeExt: type={}, option=0x{:X}, sdk=0x{:X}, size={}x{}",
+                      static_cast<u32>(param->type), option, sdk, *width, *height);
+        }
+        return Error::OK;
     }
 
     const bool hide_keypanel_for_ext =
@@ -884,7 +892,6 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
         }
     }
 
-done:
     if ((param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) != OrbisImeOption::DEFAULT) {
         *width <<= 1;
         *height <<= 1;
