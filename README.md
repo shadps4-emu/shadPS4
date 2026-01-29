@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
 SPDX-License-Identifier: GPL-2.0-or-later
 -->
 
@@ -57,6 +57,11 @@ Currently, the emulator can successfully run games like [**Bloodborne**](https:/
 This project began for fun. Given our limited free time, it may take some time before shadPS4 can run more complex games, but we're committed to making small, regular updates.
 
 # Building
+
+## Docker
+
+For building shadPS4 in a containerized environment using Docker and VSCode, check the instructions here:  
+[**Docker Build Instructions**](https://github.com/shadps4-emu/shadPS4/blob/main/documents/building-docker.md)
 
 ## Windows
 

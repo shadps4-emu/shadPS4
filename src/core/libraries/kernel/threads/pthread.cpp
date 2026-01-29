@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -325,6 +325,7 @@ PthreadT PS4_SYSV_ABI posix_pthread_self() {
 }
 
 void PS4_SYSV_ABI posix_pthread_set_name_np(PthreadT thread, const char* name) {
+    LOG_INFO(Kernel_Pthread, "called, new name: {}", name);
     Common::SetCurrentThreadName(name);
 }
 
