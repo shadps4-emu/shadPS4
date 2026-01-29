@@ -17,6 +17,7 @@ namespace Libraries::Ime {
 
 class ImeHandler;
 class ImeUi;
+struct ImePanelMetrics;
 
 class ImeState {
     friend class ImeHandler;
@@ -57,6 +58,7 @@ class ImeUi : public ImGui::Layer {
     const OrbisImeParamExtended* extended_param{};
 
     bool first_render = true;
+    bool accept_armed = false;
     std::mutex draw_mutex;
 
 public:
@@ -71,7 +73,7 @@ public:
 private:
     void Free();
 
-    void DrawInputText();
+    void DrawInputText(const ImePanelMetrics& metrics);
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };

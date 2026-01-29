@@ -46,6 +46,8 @@ struct SwVersionStruct {
     u32 hex_representation;
 };
 
+s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret);
+
 struct AuthInfoData {
     u64 paid;
     u64 caps[4];
