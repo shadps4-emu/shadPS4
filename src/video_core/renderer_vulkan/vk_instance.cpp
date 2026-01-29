@@ -337,7 +337,15 @@ bool Instance::CreateDevice() {
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
     if (swapchain_maintenance1) {
-        LOG_INFO(Render_Vulkan, "Enabling VK_EXT_swapchain_maintenance1 for Nvidia Smooth Motion compatibility");
+        LOG_INFO(Render_Vulkan,
+                 "Enabling VK_EXT_swapchain_maintenance1 for Nvidia Smooth Motion compatibility");
+    }
+
+    // Enable additional extensions that may be required for NSM compatibility
+    const bool present_wait = add_extension(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+    if (present_wait) {
+        LOG_INFO(Render_Vulkan,
+                 "Enabling VK_KHR_present_wait for improved presentation synchronization");
     }
 
     const auto family_properties = physical_device.getQueueFamilyProperties();
