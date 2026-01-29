@@ -67,10 +67,6 @@ void Swapchain::Create(u32 width_, u32 height_) {
             present_modes_info.presentModeCount = static_cast<u32>(present_modes.size());
             present_modes_info.pPresentModes = present_modes.data();
             use_present_modes_info = true;
-            LOG_INFO(Render_Vulkan,
-                     "VK_EXT_swapchain_maintenance1 enabled for Nvidia Smooth Motion compatibility "
-                     "with {} present modes",
-                     present_modes.size());
         } else {
             LOG_WARNING(
                 Render_Vulkan,
@@ -167,11 +163,19 @@ bool Swapchain::Present() {
     };
 
     auto result = instance.GetPresentQueue().presentKHR(present_info);
+    // Handle presentation results more gracefully for compatibility with
+    // Nvidia Smooth Motion layer which may inject additional frames
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+        LOG_DEBUG(Render_Vulkan, "Swapchain presentation returned {}, needs recreation",
+                  vk::to_string(result));
         needs_recreation = true;
-    } else {
-        ASSERT_MSG(result == vk::Result::eSuccess, "Swapchain presentation failed: {}",
-                   vk::to_string(result));
+    } else if (result != vk::Result::eSuccess) {
+        // For other errors, log but don't crash - this may happen with layers
+        // like Nvidia Smooth Motion that inject additional frames
+        LOG_WARNING(Render_Vulkan, "Swapchain presentation returned unexpected result: {}",
+                    vk::to_string(result));
+        // Don't set needs_recreation for unexpected results as this may be
+        // layer-specific behavior
     }
 
     frame_index = (frame_index + 1) % image_count;
