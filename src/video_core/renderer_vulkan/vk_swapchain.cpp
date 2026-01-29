@@ -53,14 +53,34 @@ void Swapchain::Create(u32 width_, u32 height_) {
     const auto format = needs_hdr ? SURFACE_FORMAT_HDR : surface_format;
 
     // Setup swapchain maintenance1 for Nvidia Smooth Motion compatibility
-    // The key requirement for NSM is that VK_EXT_swapchain_maintenance1 is enabled
-    // We don't need to use SwapchainPresentModesCreateInfoEXT for basic NSM compatibility
+    // NSM requires VK_EXT_swapchain_maintenance1 to be enabled and properly used
+    // We need to chain SwapchainPresentModesCreateInfoEXT to allow dynamic present mode changes
+    vk::SwapchainPresentModesCreateInfoEXT present_modes_info{};
+    bool use_present_modes_info = false;
+    std::vector<vk::PresentModeKHR> present_modes;
     if (instance.IsSwapchainMaintenance1Supported()) {
-        LOG_INFO(Render_Vulkan,
-                 "VK_EXT_swapchain_maintenance1 enabled for Nvidia Smooth Motion compatibility");
+        // Query all available present modes for NSM compatibility
+        const auto [modes_result, modes] =
+            instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
+        if (modes_result == vk::Result::eSuccess && !modes.empty()) {
+            present_modes = std::move(modes);
+            present_modes_info.presentModeCount = static_cast<u32>(present_modes.size());
+            present_modes_info.pPresentModes = present_modes.data();
+            use_present_modes_info = true;
+            LOG_INFO(Render_Vulkan,
+                     "VK_EXT_swapchain_maintenance1 enabled for Nvidia Smooth Motion compatibility "
+                     "with {} present modes",
+                     present_modes.size());
+        } else {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Failed to query present modes for swapchain maintenance1, NSM may not work "
+                "properly");
+        }
     }
 
     const vk::SwapchainCreateInfoKHR swapchain_info = {
+        .pNext = use_present_modes_info ? &present_modes_info : nullptr,
         .surface = surface,
         .minImageCount = image_count,
         .imageFormat = format.format,
