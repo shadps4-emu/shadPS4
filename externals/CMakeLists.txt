@@ -274,4 +274,4 @@ add_subdirectory(miniz)
 set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(ext-CLI11)
+add_subdirectory(CLI11)

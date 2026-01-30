@@ -524,6 +524,9 @@ set(SYSTEM_GESTURE_LIB
 set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
             src/core/libraries/libpng/pngdec.h
             src/core/libraries/libpng/pngdec_error.h
+            src/core/libraries/libpng/pngenc.cpp
+            src/core/libraries/libpng/pngenc.h
+            src/core/libraries/libpng/pngenc_error.h
 )
 
 set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
@@ -585,6 +588,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_score.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
+            src/core/libraries/np/np_tus.cpp
+            src/core/libraries/np/np_tus.h
             src/core/libraries/np/trophy_ui.cpp
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_web_api.cpp

@@ -39,11 +39,16 @@ int main(int argc, char* argv[]) {
 
     // ---- Trophy key migration ----
     auto key_manager = KeyManager::GetInstance();
+    key_manager->LoadFromFile();
     if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
         !Config::getTrophyKey().empty()) {
-        key_manager->SetAllKeys({.TrophyKeySet = {.ReleaseTrophyKey = KeyManager::HexStringToBytes(
-                                                      Config::getTrophyKey())}});
-        key_manager->SaveToFile();
+        auto keys = key_manager->GetAllKeys();
+        if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !Config::getTrophyKey().empty()) {
+            keys.TrophyKeySet.ReleaseTrophyKey =
+                KeyManager::HexStringToBytes(Config::getTrophyKey());
+            key_manager->SetAllKeys(keys);
+            key_manager->SaveToFile();
+        }
     }
 
     CLI::App app{"shadPS4 Emulator CLI"};

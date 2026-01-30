@@ -232,6 +232,9 @@ File* HandleTable::GetSocket(int d) {
         return nullptr;
     }
     auto file = m_files.at(d);
+    if (!file) {
+        return nullptr;
+    }
     if (file->type != Core::FileSys::FileType::Socket) {
         return nullptr;
     }

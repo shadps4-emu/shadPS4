@@ -10,6 +10,7 @@ RUN pacman-key --init && \
 RUN pacman -S --noconfirm \
     base-devel \
     clang \
+	clang19 \
     ninja \
     git \
     ca-certificates \
@@ -38,5 +39,7 @@ RUN pacman -S --noconfirm \
     libxinerama \
     libxss \
     && pacman -Scc --noconfirm
+	
+RUN ln -sf /usr/lib/llvm19/bin/clang-format /usr/bin/clang-format-19
 
 WORKDIR /workspaces/shadPS4

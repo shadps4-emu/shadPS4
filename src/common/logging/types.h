@@ -76,6 +76,7 @@ enum class Class : u8 {
     Lib_NpManager,           ///< The LibSceNpManager implementation
     Lib_NpScore,             ///< The LibSceNpScore implementation
     Lib_NpTrophy,            ///< The LibSceNpTrophy implementation
+    Lib_NpTus,               ///< The LibSceNpTus implementation
     Lib_NpWebApi,            ///< The LibSceWebApi implementation
     Lib_NpWebApi2,           ///< The LibSceWebApi2 implementation
     Lib_NpProfileDialog,     ///< The LibSceNpProfileDialog implementation
