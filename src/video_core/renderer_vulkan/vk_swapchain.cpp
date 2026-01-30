@@ -52,14 +52,13 @@ void Swapchain::Create(u32 width_, u32 height_) {
         exclusive ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
     const auto format = needs_hdr ? SURFACE_FORMAT_HDR : surface_format;
 
-    // Setup swapchain maintenance1 for Nvidia Smooth Motion compatibility
-    // NSM requires VK_EXT_swapchain_maintenance1 to be enabled and properly used
-    // We need to chain SwapchainPresentModesCreateInfoEXT to allow dynamic present mode changes
     vk::SwapchainPresentModesCreateInfoEXT present_modes_info{};
     bool use_present_modes_info = false;
     std::vector<vk::PresentModeKHR> present_modes;
+    // VK_EXT_swapchain_maintenance1 allows applications to specify the set of present modes that
+    // are valid for a swapchain. This does NOT select or change the active present mode
+    // per-present.
     if (instance.IsSwapchainMaintenance1Supported()) {
-        // Query all available present modes for NSM compatibility
         const auto [modes_result, modes] =
             instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
         if (modes_result == vk::Result::eSuccess && !modes.empty()) {
@@ -67,11 +66,6 @@ void Swapchain::Create(u32 width_, u32 height_) {
             present_modes_info.presentModeCount = static_cast<u32>(present_modes.size());
             present_modes_info.pPresentModes = present_modes.data();
             use_present_modes_info = true;
-        } else {
-            LOG_WARNING(
-                Render_Vulkan,
-                "Failed to query present modes for swapchain maintenance1, NSM may not work "
-                "properly");
         }
     }
 
@@ -162,20 +156,16 @@ bool Swapchain::Present() {
         .pImageIndices = &image_index,
     };
 
+    // Present the swapchain image.
     auto result = instance.GetPresentQueue().presentKHR(present_info);
-    // Handle presentation results more gracefully for compatibility with
-    // Nvidia Smooth Motion layer which may inject additional frames
     if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
         LOG_DEBUG(Render_Vulkan, "Swapchain presentation returned {}, needs recreation",
                   vk::to_string(result));
         needs_recreation = true;
     } else if (result != vk::Result::eSuccess) {
-        // For other errors, log but don't crash - this may happen with layers
-        // like Nvidia Smooth Motion that inject additional frames
+        // For other errors, log but don't crash.
         LOG_WARNING(Render_Vulkan, "Swapchain presentation returned unexpected result: {}",
                     vk::to_string(result));
-        // Don't set needs_recreation for unexpected results as this may be
-        // layer-specific behavior
     }
 
     frame_index = (frame_index + 1) % image_count;
