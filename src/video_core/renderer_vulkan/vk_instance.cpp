@@ -335,6 +335,7 @@ bool Instance::CreateDevice() {
 #endif
 
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+
     swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
     vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchain_maintenance1_features{};
     if (swapchain_maintenance1) {
