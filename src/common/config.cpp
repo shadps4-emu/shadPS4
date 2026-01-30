@@ -154,6 +154,8 @@ static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
+static ConfigEntry<bool> imeAccessibilityEnabled(false);
+static ConfigEntry<bool> imeUrlMailShortPanel(false);
 
 // Audio
 static ConfigEntry<string> micDevice("Default Device");
@@ -808,6 +810,22 @@ void setBackgroundControllerInput(bool enable, bool is_game_specific) {
     backgroundControllerInput.set(enable, is_game_specific);
 }
 
+bool getImeAccessibilityEnabled() {
+    return imeAccessibilityEnabled.get();
+}
+
+void setImeAccessibilityEnabled(bool enable, bool is_game_specific) {
+    imeAccessibilityEnabled.set(enable, is_game_specific);
+}
+
+bool getImeUrlMailShortPanel() {
+    return imeUrlMailShortPanel.get();
+}
+
+void setImeUrlMailShortPanel(bool enable, bool is_game_specific) {
+    imeUrlMailShortPanel.set(enable, is_game_specific);
+}
+
 bool getFsrEnabled() {
     return fsrEnabled.get();
 }
@@ -897,6 +915,8 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isMotionControlsEnabled.setFromToml(input, "isMotionControlsEnabled", is_game_specific);
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
+        imeAccessibilityEnabled.setFromToml(input, "imeAccessibilityEnabled", is_game_specific);
+        imeUrlMailShortPanel.setFromToml(input, "imeUrlMailShortPanel", is_game_specific);
         usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
     }
 
@@ -1082,6 +1102,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                          is_game_specific);
     backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
                                            is_game_specific);
+    imeAccessibilityEnabled.setTomlValue(data, "Input", "imeAccessibilityEnabled",
+                                         is_game_specific);
+    imeUrlMailShortPanel.setTomlValue(data, "Input", "imeUrlMailShortPanel", is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
 
     micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
