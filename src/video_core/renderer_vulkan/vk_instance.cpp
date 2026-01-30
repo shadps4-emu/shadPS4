@@ -341,16 +341,6 @@ bool Instance::CreateDevice() {
         swapchain_maintenance1_features.swapchainMaintenance1 = VK_TRUE;
     }
 
-    // Enable NV_present_metering for additional Nvidia Smooth Motion support
-    const bool present_metering = add_extension(VK_NV_PRESENT_METERING_EXTENSION_NAME);
-    vk::PhysicalDevicePresentMeteringFeaturesNV present_metering_features{};
-    if (present_metering) {
-        present_metering_features.presentMetering = VK_TRUE;
-    }
-
-    // Enable additional extensions that may be required for NSM compatibility
-    const bool present_wait = add_extension(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
-
     const auto family_properties = physical_device.getQueueFamilyProperties();
     if (family_properties.empty()) {
         LOG_CRITICAL(Render_Vulkan, "Physical device reported no queues.");
@@ -515,9 +505,6 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT{
             .swapchainMaintenance1 = swapchain_maintenance1_features.swapchainMaintenance1,
         },
-        vk::PhysicalDevicePresentMeteringFeaturesNV{
-            .presentMetering = present_metering_features.presentMetering,
-        },
 #ifdef __APPLE__
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{
             .constantAlphaColorBlendFactors = portability_features.constantAlphaColorBlendFactors,
@@ -586,9 +573,6 @@ bool Instance::CreateDevice() {
     }
     if (!swapchain_maintenance1) {
         device_chain.unlink<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
-    }
-    if (!present_metering) {
-        device_chain.unlink<vk::PhysicalDevicePresentMeteringFeaturesNV>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
