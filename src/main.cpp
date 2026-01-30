@@ -71,11 +71,128 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
-    // const char* const ebootPath = "M:/PS4/dumpedgames/CUSA00207/eboot.bin"; // bloodborne
-    // const char* const eboot_path = "D:/ps4/shadps4games/CUSA07010/eboot.bin";//sonic mania
-    // const char* const eboot_path = "C:/ps4tests/CUSA03318/eboot.bin";//carmageddon
-    const char* const ebootPath = "C:/ps4tests/CUSA04518/eboot.bin"; // project diva x
-    // const char* const ebootPath = "D:/ps4sdk/rain.elf";
+    // ---- Options ----
+    app.add_option("-g,--game", gamePath, "Game path or ID");
+    app.add_option("-p,--patch", patchFile, "Patch file to apply");
+    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
+                 "Disable automatic loading of game patches");
+
+    // FULLSCREEN: behavior-identical
+    app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
+
+    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
+
+    app.add_flag("--wait-for-debugger", waitForDebugger);
+    app.add_option("--wait-for-pid", waitPid);
+
+    app.add_flag("--show-fps", showFps);
+    app.add_flag("--config-clean", configClean);
+    app.add_flag("--config-global", configGlobal);
+    app.add_flag("--log-append", logAppend);
+
+    app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
+    app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+
+    // ---- Capture args after `--` verbatim ----
+    app.allow_extras();
+    app.parse_complete_callback([&]() {
+        const auto& extras = app.remaining();
+        if (!extras.empty()) {
+            gameArgs = extras;
+        }
+    });
+
+    // ---- No-args behavior ----
+    if (argc == 1) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
+                                 "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
+                                 nullptr);
+        std::cout << app.help();
+        return -1;
+    }
+
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+        return app.exit(e);
+    }
+
+    // ---- Utility commands ----
+    if (addGameFolder) {
+        Config::addGameInstallDir(*addGameFolder);
+        Config::save(user_dir / "config.toml");
+        std::cout << "Game folder successfully saved.\n";
+        return 0;
+    }
+
+    if (setAddonFolder) {
+        Config::setAddonInstallDir(*setAddonFolder);
+        Config::save(user_dir / "config.toml");
+        std::cout << "Addon folder successfully saved.\n";
+        return 0;
+    }
+
+    if (!gamePath.has_value()) {
+        if (!gameArgs.empty()) {
+            gamePath = gameArgs.front();
+            gameArgs.erase(gameArgs.begin());
+        } else {
+            std::cerr << "Error: Please provide a game path or ID.\n";
+            return 1;
+        }
+    }
+
+    // ---- Apply flags ----
+    if (patchFile)
+        MemoryPatcher::patch_file = *patchFile;
+
+    if (ignoreGamePatch)
+        Core::FileSys::MntPoints::ignore_game_patches = true;
+
+    if (fullscreenStr) {
+        if (*fullscreenStr == "true") {
+            Config::setIsFullscreen(true);
+        } else if (*fullscreenStr == "false") {
+            Config::setIsFullscreen(false);
+        } else {
+            std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
+            return 1;
+        }
+    }
+
+    if (showFps)
+        Config::setShowFpsCounter(true);
+
+    if (configClean)
+        Config::setConfigMode(Config::ConfigMode::Clean);
+
+    if (configGlobal)
+        Config::setConfigMode(Config::ConfigMode::Global);
+
+    if (logAppend)
+        Common::Log::SetAppend();
+
+    // ---- Resolve game path or ID ----
+    std::filesystem::path ebootPath(*gamePath);
+    if (!std::filesystem::exists(ebootPath)) {
+        bool found = false;
+        constexpr int maxDepth = 5;
+        for (const auto& installDir : Config::getGameInstallDirs()) {
+            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
+                ebootPath = *foundPath;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
+            return 1;
+        }
+    }
+
+    if (waitPid)
+        Core::Debugger::WaitForPid(*waitPid);
 
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
