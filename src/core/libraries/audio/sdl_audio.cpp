@@ -164,8 +164,7 @@ private:
             LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
                      static_cast<int>(type));
             return false;
-        } else if (device_name.empty() || device_name == "Default Device" ||
-                   device_name == "[DEFAULT]") {
+        } else if (device_name.empty() || device_name == "Default Device") {
             dev_id = SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
         } else {
             int num_devices = 0;
