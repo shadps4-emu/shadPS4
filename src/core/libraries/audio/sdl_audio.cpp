@@ -160,7 +160,7 @@ private:
         std::string device_name = GetDeviceName(type);
         SDL_AudioDeviceID dev_id = SDL_INVALID_AUDIODEVICEID;
 
-        if (device_name == "None" || device_name == "[NULL]") {
+        if (device_name == "None") {
             LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
                      static_cast<int>(type));
             return false;
@@ -230,7 +230,7 @@ private:
             stream = nullptr;
             return false;
         }
-
+        SDL_SetAudioStreamGain(stream, Config::getVolumeSlider() / 100.0f);
         LOG_INFO(Lib_AudioOut, "Opened audio device: {} ({} Hz, {} ch)", device_name, sample_rate,
                  num_channels);
         return true;
@@ -310,7 +310,6 @@ private:
                   queue_threshold, sdl_buffer_frames);
     }
 
-    // Converter functions (from Pascal code)
     using ConverterFunc = void (*)(const void* src, void* dst, u32 frames, const float* volumes);
 
     static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float* volumes) {
@@ -409,7 +408,6 @@ private:
     bool is_std;
     std::array<int, 8> channel_layout;
 
-    // Timing (from Pascal code)
     u64 period_us;
     u64 last_output_time;
     u64 next_output_time;
