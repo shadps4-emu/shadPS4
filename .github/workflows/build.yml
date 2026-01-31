@@ -3,7 +3,16 @@
 
 name: Build and Release
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - "documents/**"
+      - "**/*.md"
+
+  pull_request:
+    paths-ignore:
+      - "documents/**"
+      - "**/*.md"
 
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
