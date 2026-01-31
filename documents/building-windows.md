@@ -59,7 +59,8 @@ If your default IDE is VSCode, we have a fully functional example for that as we
 1. Go through the Git for Windows installation as normal
 2. Download and Run LLVM Installer and `Add LLVM to the system PATH for all users`
 3. Download and Run CMake Installer and `Add CMake to the system PATH for all users`
-4. Download Ninja and extract it to `C:\ninja` and add it to the system PATH for all users
+4. Download Ninja and extract it to `C:\ninja` and add it to the system PATH for all users    
+    * You can do this by going to `Search with Start Menu -> Environment Variables -> System Variables -> Path -> Edit -> New -> C:\ninja`
 
 ### Validate the installs
 
@@ -82,7 +83,7 @@ clang --version
 1. Download [Visual Studio Build Tools](https://aka.ms/vs/17/release/vs_BuildTools.exe)
 2. Select `MSVC - Windows SDK` and install (you don't need to install an IDE)
 
-* Or you can install via `.vsconfig` file
+* Or you can install via `.vsconfig` file:
 
 ```
 {
@@ -107,12 +108,13 @@ clang --version
 }
 
 Save the file as `.vsconfig` and run the following command:
+
 %userprofile%\Downloads\vs_BuildTools.exe --passive --config ".vsconfig"
 
 Be carefull path to vs_BuildTools.exe and .vsconfig file.
 ```
 
-__This will install the necessary components to build shadPS4 for building.__
+__This will install the necessary components to build shadPS4.__
 
 ### Project structure
 
@@ -122,7 +124,7 @@ shadps4/
   └── shadps4.code-workspace
 ```
 
-### Content of shadps4.code-workspace
+### Content of `shadps4.code-workspace`
 
 ```json
 {
@@ -137,7 +139,7 @@ shadps4/
 	"cmake.configureEnvironment": {
       "CMAKE_CXX_STANDARD": "23",
       "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-      "CMAKE_EXPORT_COMPILE_COMMANDS": "ON
+      "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
     },
 
     "cmake.configureOnOpen": false,
@@ -168,8 +170,7 @@ shadps4/
 
 ### Cloning the source code
 
-1. Open Git for Windows, navigate to a place where you want to store the shadPS4 source code folder
-2. cd `shadps4\shared`
+1. Open your terminal and where to shadPS4 folder: `cd shadps4\shared`
 3. Clone the repository by running  
     `git clone --depth 1 --recursive https://github.com/shadps4-emu/shadPS4 .`
 
