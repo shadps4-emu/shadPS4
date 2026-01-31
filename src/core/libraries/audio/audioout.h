@@ -77,6 +77,7 @@ struct AudioFormatInfo {
     /// Layout array remapping channel indices, specified in this order:
     /// FL, FR, FC, LFE, BL, BR, SL, SR
     std::array<int, 8> channel_layout;
+    bool is_std;
 
     [[nodiscard]] u16 FrameSize() const {
         return sample_size * num_channels;

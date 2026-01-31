@@ -27,21 +27,21 @@ static std::unique_ptr<AudioOutBackend> audio;
 static AudioFormatInfo GetFormatInfo(const OrbisAudioOutParamFormat format) {
     static constexpr std::array<AudioFormatInfo, 8> format_infos = {{
         // S16Mono
-        {false, 2, 1, {0}},
+        {false, 2, 1, {0}, false},
         // S16Stereo
-        {false, 2, 2, {0, 1}},
+        {false, 2, 2, {0, 1}, false},
         // S16_8CH
-        {false, 2, 8, {0, 1, 2, 3, 4, 5, 6, 7}},
+        {false, 2, 8, {0, 1, 2, 3, 4, 5, 6, 7}, false},
         // FloatMono
-        {true, 4, 1, {0}},
+        {true, 4, 1, {0}, false},
         // FloatStereo
-        {true, 4, 2, {0, 1}},
+        {true, 4, 2, {0, 1}, false},
         // Float_8CH
-        {true, 4, 8, {0, 1, 2, 3, 4, 5, 6, 7}},
+        {true, 4, 8, {0, 1, 2, 3, 4, 5, 6, 7}, false},
         // S16_8CH_Std
-        {false, 2, 8, {0, 1, 2, 3, 6, 7, 4, 5}},
+        {false, 2, 8, {0, 1, 2, 3, 6, 7, 4, 5}, true},
         // Float_8CH_Std
-        {true, 4, 8, {0, 1, 2, 3, 6, 7, 4, 5}},
+        {true, 4, 8, {0, 1, 2, 3, 6, 7, 4, 5}, true},
     }};
     const auto index = static_cast<u32>(format);
     ASSERT_MSG(index < format_infos.size(), "Unknown audio format {}", index);
