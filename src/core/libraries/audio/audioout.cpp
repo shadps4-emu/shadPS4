@@ -135,6 +135,15 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
+    if (state) {
+        LOG_INFO(Lib_AudioOut,
+                 "called, handle={}, state={}, output={}, channel={}, volume={}, "
+                 "rerouteCounter={}, flag={}",
+                 handle, fmt::ptr(state), state->output, state->channel, state->volume,
+                 state->rerouteCounter, state->flag);
+    } else {
+        LOG_INFO(Lib_AudioOut, "called, handle={}, state=nullptr", handle);
+    }
     if (audio == nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -188,11 +197,14 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
                                  u32 sample_rate,
                                  OrbisAudioOutParamExtendedInformation param_type) {
     LOG_INFO(Lib_AudioOut,
-             "id = {} port_type = {} index = {} length = {} sample_rate = {} "
-             "param_type = {} attr = {}",
-             user_id, magic_enum::enum_name(port_type), index, length, sample_rate,
-             magic_enum::enum_name(param_type.data_format.Value()),
-             magic_enum::enum_name(param_type.attributes.Value()));
+             "called, user_id={}, port_type={}({}), index={}, length={}, "
+             "sample_rate={}, data_format={}({}), attributes={}({})",
+             user_id, magic_enum::enum_name(port_type), static_cast<u32>(port_type), index, length,
+             sample_rate, magic_enum::enum_name(param_type.data_format.Value()),
+             static_cast<u32>(param_type.data_format.Value()),
+             magic_enum::enum_name(param_type.attributes.Value()),
+             static_cast<u32>(param_type.attributes.Value()));
+
     if (audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
