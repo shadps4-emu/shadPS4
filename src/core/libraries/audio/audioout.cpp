@@ -20,7 +20,7 @@
 namespace Libraries::AudioOut {
 
 std::mutex port_open_mutex{};
-std::array<PortOut, SCE_AUDIO_OUT_NUM_PORTS> ports_out{};
+std::array<PortOut, ORBIS_AUDIO_OUT_NUM_PORTS> ports_out{};
 
 static std::unique_ptr<AudioOutBackend> audio;
 
@@ -93,7 +93,7 @@ int PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
     if (audio == nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
-    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+    if (handle < 1 || handle > ORBIS_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
@@ -189,7 +189,7 @@ int PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
     if (audio == nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
-    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+    if (handle < 1 || handle > ORBIS_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
@@ -373,7 +373,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         port->format_info = GetFormatInfo(format);
         port->sample_rate = sample_rate;
         port->buffer_frames = length;
-        port->volume.fill(SCE_AUDIO_OUT_VOLUME_0DB);
+        port->volume.fill(ORBIS_AUDIO_OUT_VOLUME_0DB);
 
         port->impl = audio->Open(*port);
 
@@ -394,7 +394,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     if (audio == nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
-    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+    if (handle < 1 || handle > ORBIS_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
@@ -521,7 +521,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
     if (audio == nullptr) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
-    if (handle < 1 || handle > SCE_AUDIO_OUT_NUM_PORTS) {
+    if (handle < 1 || handle > ORBIS_AUDIO_OUT_NUM_PORTS) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 

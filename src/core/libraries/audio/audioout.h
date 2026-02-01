@@ -17,8 +17,29 @@ class PortBackend;
 
 // Main up to 8 ports, BGM 1 port, voice up to 4 ports,
 // personal up to 4 ports, padspk up to 5 ports, aux 1 port
-constexpr s32 SCE_AUDIO_OUT_NUM_PORTS = 22;
-constexpr s32 SCE_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
+constexpr s32 ORBIS_AUDIO_OUT_NUM_PORTS = 25;
+constexpr s32 ORBIS_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
+
+constexpr s32 ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_DEFAULT = 11626; // default -9db
+constexpr s32 ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB = 32768;     // max volume
+
+// Volume flags
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_L_CH = (1u << 0);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_R_CH = (1u << 1);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_C_CH = (1u << 2);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_LFE_CH = (1u << 3);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_LS_CH = (1u << 4);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_RS_CH = (1u << 5);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_LE_CH = (1u << 6);
+constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_RE_CH = (1u << 7);
+
+// Port state constants
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_UNKNOWN = 0x00;
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_PRIMARY = 0x01;
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_SECONDARY = 0x02;
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_TERTIARY = 0x04;
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_HEADPHONE = 0x40;
+constexpr u16 ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_EXTERNAL = 0x80;
 
 enum class OrbisAudioOutPort {
     Main = 0,
@@ -53,6 +74,9 @@ union OrbisAudioOutParamExtendedInformation {
     BitField<16, 4, OrbisAudioOutParamAttr> attributes;
     BitField<20, 10, u32> reserve1;
     BitField<31, 1, u32> unused;
+    u32 Unpack() const {
+        return *reinterpret_cast<const u32*>(this);
+    }
 };
 
 struct OrbisAudioOutOutputParam {
@@ -88,17 +112,21 @@ struct PortOut {
     std::mutex mutex;
     std::unique_ptr<PortBackend> impl{};
 
-    void* output_buffer;
+    void* output_buffer = nullptr;
     std::condition_variable_any output_cv;
-    bool output_ready;
+    bool output_ready = false;
     Kernel::Thread output_thread{};
 
     OrbisAudioOutPort type;
     AudioFormatInfo format_info;
-    u32 sample_rate;
-    u32 buffer_frames;
-    u64 last_output_time;
+    u32 sample_rate = 48000;
+    u32 buffer_frames = 1024;
+    u64 last_output_time = 0;
     std::array<s32, 8> volume;
+    s32 userId = 0;
+    s32 mixLevelPadSpk = ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_DEFAULT;
+    bool is_restricted = false;
+    bool is_mix_to_main = false;
 
     [[nodiscard]] bool IsOpen() const {
         return impl != nullptr;
