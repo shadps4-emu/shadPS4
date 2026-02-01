@@ -2,10 +2,6 @@
 	path = externals/zlib-ng
 	url = https://github.com/shadps4-emu/ext-zlib-ng.git
 	shallow = true
-[submodule "externals/sdl3"]
-	path = externals/sdl3
-	url = https://github.com/shadps4-emu/ext-SDL.git
-	shallow = true
 [submodule "externals/fmt"]
 	path = externals/fmt
 	url = https://github.com/shadps4-emu/ext-fmt.git
@@ -123,7 +119,10 @@
 [submodule "externals/aacdec/fdk-aac"]
 	path = externals/aacdec/fdk-aac
 	url = https://android.googlesource.com/platform/external/aac
-[submodule "externals/ext-CLI11"]
-	path = externals/ext-CLI11
-	url = https://github.com/shadexternals/ext-CLI11.git
-	branch = main
+[submodule "externals/CLI11"]
+	path = externals/CLI11
+	url = https://github.com/shadexternals/CLI11.git
+[submodule "externals/sdl3"]
+	path = externals/sdl3
+	url = https://github.com/shadexternals/sdl3.git
+
