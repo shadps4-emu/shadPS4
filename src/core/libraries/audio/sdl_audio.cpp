@@ -240,7 +240,7 @@ private:
         case OrbisAudioOutPort::Main:
         case OrbisAudioOutPort::Bgm:
             return Config::getMainOutputDevice();
-        case OrbisAudioOutPort::Voice:
+        // case OrbisAudioOutPort::Voice:
         // case OrbisAudioOutPort::Personal:
         //     return Config::getHeadphoneOutputDevice();
         case OrbisAudioOutPort::PadSpk:

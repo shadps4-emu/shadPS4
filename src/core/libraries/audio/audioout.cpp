@@ -428,12 +428,12 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
     if (state) {
         LOG_INFO(Lib_AudioOut,
-                 "called, handle={}, state={}, output={}, channel={}, volume={}, "
+                 "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
                  "rerouteCounter={}, flag={}",
                  handle, fmt::ptr(state), state->output, state->channel, state->volume,
                  state->rerouteCounter, state->flag);
     } else {
-        LOG_INFO(Lib_AudioOut, "called, handle={}, state=nullptr", handle);
+        LOG_INFO(Lib_AudioOut, "called, handle={:#x}, state=nullptr", handle);
     }
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -497,7 +497,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
-    LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={}, ptr={}", handle, fmt::ptr(ptr));
+    LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={:#x}, ptr={}", handle, fmt::ptr(ptr));
 
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -549,7 +549,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     if (param) {
         LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param={}, num={}", fmt::ptr(param), num);
         for (u32 i = 0; i < num; i++) {
-            LOG_TRACE(Lib_AudioOut, "  [{}] handle={}, ptr={}", i, param[i].handle,
+            LOG_TRACE(Lib_AudioOut, "  [{}] handle={:#x}, ptr={}", i, param[i].handle,
                       fmt::ptr(param[i].ptr));
         }
     } else {
