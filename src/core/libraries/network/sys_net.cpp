@@ -335,6 +335,7 @@ int PS4_SYSV_ABI sys_socketclose(OrbisNetId s) {
     LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     int returncode = file->socket->Close();
     if (returncode >= 0) {
+        FDTable::Instance()->DeleteHandle(s);
         return returncode;
     }
     LOG_ERROR(Lib_Net, "error code returned: {}", (u32)*Libraries::Kernel::__Error());

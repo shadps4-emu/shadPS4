@@ -37,11 +37,14 @@
 #include "core/libraries/np/np_commerce.h"
 #include "core/libraries/np/np_common.h"
 #include "core/libraries/np/np_manager.h"
+#include "core/libraries/np/np_matching2.h"
+#include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog.h"
 #include "core/libraries/np/np_score.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
+#include "core/libraries/np/np_tus.h"
 #include "core/libraries/np/np_web_api.h"
 #include "core/libraries/np/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
@@ -99,6 +102,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Np::NpCommerce::RegisterLib(sym);
     Libraries::Np::NpCommon::RegisterLib(sym);
     Libraries::Np::NpManager::RegisterLib(sym);
+    Libraries::Np::NpMatching2::RegisterLib(sym);
     Libraries::Np::NpScore::RegisterLib(sym);
     Libraries::Np::NpTrophy::RegisterLib(sym);
     Libraries::Np::NpWebApi::RegisterLib(sym);
@@ -107,6 +111,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Np::NpSnsFacebookDialog::RegisterLib(sym);
     Libraries::Np::NpAuth::RegisterLib(sym);
     Libraries::Np::NpParty::RegisterLib(sym);
+    Libraries::Np::NpPartner::RegisterLib(sym);
+    Libraries::Np::NpTus::RegisterLib(sym);
     Libraries::ScreenShot::RegisterLib(sym);
     Libraries::AppContent::RegisterLib(sym);
     Libraries::PngDec::RegisterLib(sym);
