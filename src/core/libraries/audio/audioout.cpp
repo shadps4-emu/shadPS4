@@ -549,7 +549,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     if (param) {
         LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param={}, num={}", fmt::ptr(param), num);
         for (u32 i = 0; i < num; i++) {
-            LOG_ERROR(Lib_AudioOut, "  [{}] handle={}, ptr={}", i, param[i].handle,
+            LOG_TRACE(Lib_AudioOut, "  [{}] handle={}, ptr={}", i, param[i].handle,
                       fmt::ptr(param[i].ptr));
         }
     } else {
