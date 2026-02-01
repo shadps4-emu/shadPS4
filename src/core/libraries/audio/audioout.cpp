@@ -39,7 +39,7 @@ constexpr struct PortRange {
     {13, 16}, // PERSONAL
     {17, 20}, // PADSPK
     {21, 21}, // Type 5-8
-    {22, 22}, // Audio3d (14)
+    {22, 22}, // Audio3d (126)
     {23, 23}, // AUX (127)
     {24, 24}, // Type 125
 };
@@ -92,7 +92,7 @@ static int GetPortRange(OrbisAudioOutPort type) {
         return 5; // Type 7
     case 8:
         return 5; // Type 8
-    case 14:
+    case 126:
         return 6; // Audio3d
     case 125:
         return 8; // Type 125
