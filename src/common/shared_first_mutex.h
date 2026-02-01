@@ -17,6 +17,15 @@ public:
         writer_active = true;
     }
 
+    bool try_lock() {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (writer_active || readers > 0) {
+            return false;
+        }
+        writer_active = true;
+        return true;
+    }
+
     void unlock() {
         std::lock_guard<std::mutex> lock(mtx);
         writer_active = false;

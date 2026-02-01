@@ -28,6 +28,8 @@ class MemoryMapViewer;
 
 namespace Core {
 
+constexpr u64 DEFAULT_MAPPING_BASE = 0x200000000;
+
 enum class MemoryProt : u32 {
     NoAccess = 0,
     CpuRead = 1,
@@ -304,10 +306,8 @@ private:
                vma.type == VMAType::Pooled;
     }
 
-    std::pair<s32, MemoryManager::VMAHandle> CreateArea(VAddr virtual_addr, u64 size,
-                                                        MemoryProt prot, MemoryMapFlags flags,
-                                                        VMAType type, std::string_view name,
-                                                        u64 alignment);
+    VMAHandle CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryMapFlags flags,
+                         VMAType type, std::string_view name, u64 alignment);
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
@@ -333,6 +333,7 @@ private:
     PhysMap fmem_map;
     VMAMap vma_map;
     Common::SharedFirstMutex mutex{};
+    std::mutex unmap_mutex{};
     u64 total_direct_size{};
     u64 total_flexible_size{};
     u64 flexible_usage{};

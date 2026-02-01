@@ -79,8 +79,9 @@ public:
     void* MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd);
 
     /// Unmaps specified virtual memory area.
-    void Unmap(VAddr virtual_addr, u64 size, bool has_backing);
+    void Unmap(VAddr virtual_addr, u64 size);
 
+    /// Protects requested region.
     void Protect(VAddr virtual_addr, u64 size, MemoryPermission perms);
 
     // Returns an interval set containing all usable regions.

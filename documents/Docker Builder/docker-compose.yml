@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+services:
+  shadps4:
+    build:
+      context: ./.docker
+    volumes:
+      - ./emu:/workspaces/shadPS4:cached
+    tty: true

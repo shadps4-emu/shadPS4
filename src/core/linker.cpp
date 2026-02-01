@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -105,7 +105,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
     main_thread.Run([this, module, &args](std::stop_token) {
-        Common::SetCurrentThreadName("GAME_MainThread");
+        Common::SetCurrentThreadName("Game:Main");
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
         }

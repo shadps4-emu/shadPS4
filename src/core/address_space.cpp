@@ -709,7 +709,7 @@ struct AddressSpace::Impl {
         return ret;
     }
 
-    void Unmap(VAddr virtual_addr, u64 size, bool) {
+    void Unmap(VAddr virtual_addr, u64 size) {
         // Check to see if we are adjacent to any regions.
         VAddr start_address = virtual_addr;
         VAddr end_address = start_address + size;
@@ -792,12 +792,8 @@ void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, 
 #endif
 }
 
-void AddressSpace::Unmap(VAddr virtual_addr, u64 size, bool has_backing) {
-#ifdef _WIN32
+void AddressSpace::Unmap(VAddr virtual_addr, u64 size) {
     impl->Unmap(virtual_addr, size);
-#else
-    impl->Unmap(virtual_addr, size, has_backing);
-#endif
 }
 
 void AddressSpace::Protect(VAddr virtual_addr, u64 size, MemoryPermission perms) {

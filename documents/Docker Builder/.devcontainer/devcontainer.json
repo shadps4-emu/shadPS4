@@ -1,0 +1,51 @@
+// SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+{
+    "name": "shadPS4-dev",
+    "dockerComposeFile": [
+        "../docker-compose.yml"
+    ],
+    "containerEnv": {
+        "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}",
+        "GITHUB_USER": "${localEnv:GITHUB_USER}"
+    },
+    "service": "shadps4",
+    "workspaceFolder": "/workspaces/shadPS4",
+    "remoteUser": "root",
+    "shutdownAction": "none",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "llvm-vs-code-extensions.vscode-clangd",
+                "ms-vscode.cmake-tools",
+                "xaver.clang-format"
+            ],
+            "settings": {
+                "clangd.arguments": [
+                    "--background-index",
+                    "--clang-tidy",
+                    "--completion-style=detailed",
+                    "--header-insertion=never",
+                    "--compile-commands-dir=/workspaces/shadPS4/Build/x64-Clang-Release"
+                ],
+                "C_Cpp.intelliSenseEngine": "Disabled"
+            }
+        }
+    },
+    "settings": {
+        "cmake.configureOnOpen": false,
+        "cmake.generator": "Unix Makefiles",
+        "cmake.environment": {
+            "CC": "clang",
+            "CXX": "clang++"
+        },
+        "cmake.configureEnvironment": {
+            "CMAKE_CXX_STANDARD": "23",
+            "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+            "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        },
+        "editor.formatOnSave": true,
+        "clang-format.executable": "clang-format-19"
+    }
+}
