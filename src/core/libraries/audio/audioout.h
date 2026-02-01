@@ -23,6 +23,9 @@ constexpr s32 ORBIS_AUDIO_OUT_VOLUME_0DB = 32768; // max volume value
 constexpr s32 ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_DEFAULT = 11626; // default -9db
 constexpr s32 ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB = 32768;     // max volume
 
+constexpr s32 ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED = 0x00010000;
+constexpr s32 ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN = 0x00020000;
+
 // Volume flags
 constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_L_CH = (1u << 0);
 constexpr u32 ORBIS_AUDIO_VOLUME_FLAG_R_CH = (1u << 1);
@@ -127,10 +130,6 @@ struct PortOut {
     s32 mixLevelPadSpk = ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_DEFAULT;
     bool is_restricted = false;
     bool is_mix_to_main = false;
-
-    [[nodiscard]] bool IsOpen() const {
-        return impl != nullptr;
-    }
 
     [[nodiscard]] u32 BufferSize() const {
         return buffer_frames * format_info.FrameSize();
