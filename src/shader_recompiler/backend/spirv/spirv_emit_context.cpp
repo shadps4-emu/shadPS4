@@ -564,13 +564,12 @@ void EmitContext::DefineVertexBlock() {
     const bool needs_clip_distance_emulation = l_stage == LogicalStage::Vertex &&
                                                stage == Stage::Vertex &&
                                                profile.needs_clip_distance_emulation;
-    if (!needs_clip_distance_emulation) {
-        if (info.stores.GetAny(IR::Attribute::ClipDistance)) {
-            const Id type{TypeArray(F32[1], ConstU32(8U))};
-            const Id initializer{ConstantComposite(type, zero)};
-            clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance,
-                                            spv::StorageClass::Output, initializer);
-        }
+    const auto has_clip_distance_outputs = info.stores.GetAny(IR::Attribute::ClipDistance);
+    if (has_clip_distance_outputs && !needs_clip_distance_emulation) {
+        const Id type{TypeArray(F32[1], ConstU32(8U))};
+        const Id initializer{ConstantComposite(type, zero)};
+        clip_distances = DefineVariable(type, spv::BuiltIn::ClipDistance, spv::StorageClass::Output,
+                                        initializer);
     }
     if (info.stores.GetAny(IR::Attribute::CullDistance)) {
         const Id type{TypeArray(F32[1], ConstU32(8U))};
@@ -603,7 +602,9 @@ void EmitContext::DefineOutputs() {
                 Name(output_attr_array, "out_attrs");
             }
         } else {
-            const auto has_clip_distance_outputs = info.stores.GetAny(IR::Attribute::ClipDistance);
+            const bool needs_clip_distance_emulation =
+                stage == Stage::Vertex && profile.needs_clip_distance_emulation &&
+                info.stores.GetAny(IR::Attribute::ClipDistance);
             u32 num_attrs = 0u;
             for (u32 i = 0; i < IR::NumParams; i++) {
                 const IR::Attribute param{IR::Attribute::Param0 + i};
@@ -612,14 +613,14 @@ void EmitContext::DefineOutputs() {
                 }
                 const u32 num_components = info.stores.NumComponents(param);
                 const Id id{
-                    DefineOutput(F32[num_components], i + (has_clip_distance_outputs ? 1 : 0))};
+                    DefineOutput(F32[num_components], i + (needs_clip_distance_emulation ? 1 : 0))};
                 Name(id, fmt::format("out_attr{}", i));
                 output_params[i] =
                     GetAttributeInfo(AmdGpu::NumberFormat::Float, id, num_components, true);
                 ++num_attrs;
             }
 
-            if (has_clip_distance_outputs) {
+            if (needs_clip_distance_emulation) {
                 clip_distances = Id{DefineOutput(F32[MaxEmulatedClipDistances], 0)};
                 output_params[num_attrs] = GetAttributeInfo(
                     AmdGpu::NumberFormat::Float, clip_distances, MaxEmulatedClipDistances, true);

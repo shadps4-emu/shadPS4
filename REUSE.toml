@@ -20,6 +20,7 @@ path = [
     "documents/Quickstart/2.png",
     "documents/Screenshots/*",
     "documents/Screenshots/Linux/*",
+    "documents/Screenshots/Windows/*",
     "externals/MoltenVK/MoltenVK_icd.json",
     "scripts/ps4_names.txt",
     "src/images/bronze.png",
