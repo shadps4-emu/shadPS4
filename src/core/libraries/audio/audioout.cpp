@@ -19,7 +19,7 @@
 
 namespace Libraries::AudioOut {
 
-std::array<std::atomic<PortOut*>, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
+std::array<std::atomic<std::shared_ptr<PortOut>>, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
 std::mutex port_allocation_mutex;
 
 static std::unique_ptr<AudioOutBackend> audio;
@@ -144,7 +144,7 @@ void AdjustVol() {
     }
 
     for (int i = 0; i < ORBIS_AUDIO_OUT_NUM_PORTS; i++) {
-        PortOut* port = port_table[i].load(std::memory_order_acquire);
+        std::shared_ptr<PortOut> port = port_table[i].load(std::memory_order_acquire);
         if (port) {
             std::unique_lock lock{port->mutex, std::try_to_lock};
             if (lock.owns_lock()) {
@@ -154,7 +154,7 @@ void AdjustVol() {
     }
 }
 
-static void AudioOutputThread(PortOut* port, const std::stop_token& stop) {
+static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_token& stop) {
     {
         const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port));
         Common::SetCurrentThreadName(thread_name.c_str());
@@ -289,9 +289,9 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     }
 
     // Create port object
-    std::unique_ptr<PortOut> port;
+    std::shared_ptr<PortOut> port;
     try {
-        port = std::make_unique<PortOut>();
+        port = std::make_shared<PortOut>();
 
         port->userId = user_id;
         port->type = static_cast<OrbisAudioOutPort>(_type);
@@ -326,9 +326,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         }
 
         // Start output thread
-        port->output_thread.Run([port_ptr = port.get()](const std::stop_token& stop) {
-            AudioOutputThread(port_ptr, stop);
-        });
+        port->output_thread.Run(
+            [port](const std::stop_token& stop) { AudioOutputThread(port, stop); });
 
         // Set initial volume
         port->impl->SetVolume(port->volume);
@@ -341,8 +340,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     }
 
     // Atomically store the port pointer
-    PortOut* port_ptr = port.release();
-    port_table[port_id].store(port_ptr, std::memory_order_release);
+    port_table[port_id].store(port, std::memory_order_release);
 
     // Create handle
     s32 handle = (_type << 16) | port_id | 0x20000000;
@@ -378,8 +376,8 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     std::unique_lock lock{port_allocation_mutex};
 
-    // Atomically get and clear the port pointer
-    PortOut* port = port_table[port_id].exchange(nullptr, std::memory_order_acq_rel);
+    std::shared_ptr<PortOut> port =
+        port_table[port_id].exchange(nullptr, std::memory_order_acq_rel);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port wasn't open {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -390,7 +388,6 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     // Free resources
     std::free(port->output_buffer);
-    delete port;
 
     LOG_DEBUG(Lib_AudioOut, "Closed audio port {}", port_id);
     return ORBIS_OK;
@@ -413,7 +410,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -426,15 +423,6 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
-    if (state) {
-        LOG_INFO(Lib_AudioOut,
-                 "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
-                 "rerouteCounter={}, flag={}",
-                 handle, fmt::ptr(state), state->output, state->channel, state->volume,
-                 state->rerouteCounter, state->flag);
-    } else {
-        LOG_INFO(Lib_AudioOut, "called, handle={:#x}, state=nullptr", handle);
-    }
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
@@ -451,7 +439,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port is not open {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -492,7 +480,11 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     state->rerouteCounter = 0;
     state->flag = 0;
-
+    LOG_INFO(Lib_AudioOut,
+             "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
+             "rerouteCounter={}, flag={}",
+             handle, fmt::ptr(state), state->output, state->channel, state->volume,
+             state->rerouteCounter, state->flag);
     return ORBIS_OK;
 }
 
@@ -524,7 +516,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     }
 
     // Lock-free read of port pointer
-    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port is not opened {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -607,7 +599,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
         }
 
         // Get port
-        PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+        std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
         if (!port) {
             LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
             return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -676,7 +668,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_VOLUME;
     }
 
-    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -730,7 +722,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_MIXLEVEL;
     }
 
-    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    std::shared_ptr<PortOut> port = port_table[port_id].load(std::memory_order_acquire);
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port not opened");
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
