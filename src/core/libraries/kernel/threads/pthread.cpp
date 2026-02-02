@@ -14,12 +14,6 @@
 
 namespace Libraries::Kernel {
 
-constexpr int PthreadInheritSched = 4;
-
-constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
-constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
-constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
-
 extern PthreadAttr PthreadAttrDefault;
 
 void _thread_cleanupspecific();
@@ -231,7 +225,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         new_thread->attr = *(*attr);
         new_thread->attr.cpusetsize = 0;
     }
-    if (new_thread->attr.sched_inherit == PthreadInheritSched) {
+    if (curthread != nullptr && new_thread->attr.sched_inherit == PthreadInheritSched) {
         if (True(curthread->attr.flags & PthreadAttrFlags::ScopeSystem)) {
             new_thread->attr.flags |= PthreadAttrFlags::ScopeSystem;
         } else {
