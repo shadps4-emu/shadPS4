@@ -156,7 +156,7 @@ void AdjustVol() {
 
 static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_token& stop) {
     {
-        const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port));
+        const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port.get()));
         Common::SetCurrentThreadName(thread_name.c_str());
     }
 
@@ -563,7 +563,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     }
 
     // Validate all handles and collect ports
-    std::vector<PortOut*> ports;
+    std::vector<std::shared_ptr<PortOut>> ports;
     std::vector<std::unique_lock<std::mutex>> locks;
     ports.reserve(num);
     locks.reserve(num);
