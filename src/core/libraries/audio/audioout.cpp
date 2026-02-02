@@ -707,6 +707,41 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
+    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "audio is not init");
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
+
+    int port_id = GetPortId(handle);
+    if (port_id < 0) {
+        LOG_ERROR(Lib_AudioOut, "Invalid port_id");
+        return port_id;
+    }
+
+    if (GetPortType(handle) != 4) { // PadSpk
+        LOG_ERROR(Lib_AudioOut, "Invalid port type");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+    }
+
+    if (mixLevel > ORBIS_AUDIO_OUT_VOLUME_0DB) {
+        LOG_ERROR(Lib_AudioOut, "Invalid mix level");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_MIXLEVEL;
+    }
+
+    PortOut* port = port_table[port_id].load(std::memory_order_acquire);
+    if (!port) {
+        LOG_ERROR(Lib_AudioOut, "Port not opened");
+        return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+    }
+
+    std::unique_lock lock{port->mutex};
+    port->mixLevelPadSpk = mixLevel;
+    // TODO: Apply mix level to backend
+
+    return ORBIS_OK;
+}
 /*
  * Stubbed functions
  **/
@@ -845,8 +880,11 @@ s32 PS4_SYSV_ABI sceAudioOutMasteringGetState() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutMasteringInit() {
+s32 PS4_SYSV_ABI sceAudioOutMasteringInit(u32 flags) {
     LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+    if (flags != 0) {
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_API_PARAM;
+    }
     return ORBIS_OK;
 }
 
@@ -911,11 +949,6 @@ s32 PS4_SYSV_ABI sceAudioOutSetJediSpkVolume() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetMainOutput() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk() {
     LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
     return ORBIS_OK;
 }
