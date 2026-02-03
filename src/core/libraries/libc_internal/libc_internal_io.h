@@ -9,6 +9,10 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+struct OrbisFILE {
+    s32 fd;
+};
+
 namespace Libraries::LibcInternal {
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal

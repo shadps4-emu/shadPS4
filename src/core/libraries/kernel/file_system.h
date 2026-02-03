@@ -69,6 +69,10 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
 s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset);
+s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode);
+s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
+s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes);
+s32 PS4_SYSV_ABI close(s32 fd);
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel
