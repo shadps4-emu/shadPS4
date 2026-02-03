@@ -135,7 +135,7 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
     }
 
     // Create handle
-    s32 handle = (type << 16) | port_id | 0x20000000;
+    s32 handle = (type << 16) | port_id | 0x30000000;
 
     LOG_INFO(Lib_AudioIn, "Opened audio input port {}: type={}, samples={}, freq={}, format={}",
              handle, static_cast<u32>(in_type), len, freq, static_cast<u32>(format));
