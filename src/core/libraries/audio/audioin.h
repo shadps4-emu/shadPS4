@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <core/libraries/system/userservice.h>
 #include "common/types.h"
 
@@ -12,9 +13,25 @@ class SymbolsResolver;
 
 namespace Libraries::AudioIn {
 
+class PortInBackend;
+
+constexpr s32 ORBIS_AUDIO_IN_NUM_PORTS = 7;
+
 enum class OrbisAudioInParamFormat : u32 { S16Mono = 0, S16Stereo = 2 };
 
 enum class OrbisAudioInType : u32 { VoiceChat = 0, General = 1, VoiceRecognition = 5 };
+
+struct PortIn {
+    std::mutex mutex;
+    std::unique_ptr<PortInBackend> impl{};
+    OrbisAudioInType type;
+    OrbisAudioInParamFormat format;
+
+    u32 samples_num = 0;
+    u32 freq = 0;
+    u32 channels_num = 0;
+    u32 sample_size = 0;
+};
 
 int PS4_SYSV_ABI sceAudioInChangeAppModuleState();
 int PS4_SYSV_ABI sceAudioInClose(s32 handle);
