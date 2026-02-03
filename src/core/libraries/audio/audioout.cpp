@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <stop_token>
 #include <thread>
 #include <magic_enum/magic_enum.hpp>
@@ -19,12 +20,9 @@
 
 namespace Libraries::AudioOut {
 
-struct PortEntry {
-    std::mutex mutex;
-    std::shared_ptr<PortOut> port;
-};
-
-std::array<PortEntry, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
+// Port table with shared_ptr - use std::shared_mutex for RW locking
+std::array<std::shared_ptr<PortOut>, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
+std::shared_mutex port_table_mutex;
 std::mutex port_allocation_mutex;
 
 static std::unique_ptr<AudioOutBackend> audio;
@@ -137,8 +135,8 @@ static int AllocatePort(OrbisAudioOutPort type) {
 
     const auto& range = port_ranges[range_idx];
     for (int i = range.start; i <= range.end; i++) {
-        std::lock_guard lock{port_table[i].mutex};
-        if (!port_table[i].port) {
+        std::shared_lock read_lock{port_table_mutex};
+        if (!port_table[i]) {
             return i;
         }
     }
@@ -150,10 +148,13 @@ void AdjustVol() {
         return;
     }
 
+    std::shared_lock read_lock{port_table_mutex};
     for (int i = 0; i < ORBIS_AUDIO_OUT_NUM_PORTS; i++) {
-        std::lock_guard lock{port_table[i].mutex};
-        if (auto port = port_table[i].port) {
-            port->impl->SetVolume(port->volume);
+        if (auto port = port_table[i]) {
+            std::unique_lock lock{port->mutex, std::try_to_lock};
+            if (lock.owns_lock()) {
+                port->impl->SetVolume(port->volume);
+            }
         }
     }
 }
@@ -324,7 +325,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
             throw std::bad_alloc();
         }
 
-        // Start output thread
+        // Start output thread - pass shared_ptr by value to keep port alive
         port->output_thread.Run(
             [port](const std::stop_token& stop) { AudioOutputThread(port, stop); });
 
@@ -338,10 +339,9 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         return ORBIS_AUDIO_OUT_ERROR_TRANS_EVENT;
     }
 
-    // Store the port in the table with mutex protection
     {
-        std::lock_guard entry_lock{port_table[port_id].mutex};
-        port_table[port_id].port = port;
+        std::unique_lock write_lock{port_table_mutex};
+        port_table[port_id] = port;
     }
 
     // Create handle
@@ -378,12 +378,11 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     std::unique_lock lock{port_allocation_mutex};
 
-    // Get and clear the port from the table
     std::shared_ptr<PortOut> port;
     {
-        std::lock_guard entry_lock{port_table[port_id].mutex};
-        port = std::move(port_table[port_id].port);
-        port_table[port_id].port.reset();
+        std::unique_lock write_lock{port_table_mutex};
+        port = std::move(port_table[port_id]);
+        port_table[port_id].reset();
     }
 
     if (!port) {
@@ -394,7 +393,6 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
     // Stop the output thread
     port->output_thread.Stop();
 
-    // Free resources
     std::free(port->output_buffer);
 
     LOG_DEBUG(Lib_AudioOut, "Closed audio port {}", port_id);
@@ -418,14 +416,18 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    std::lock_guard lock{port_table[port_id].mutex};
-    auto port = port_table[port_id].port;
+    std::shared_ptr<PortOut> port;
+    {
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
+    }
+
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
     }
 
-    std::unique_lock port_lock{port->mutex};
+    std::unique_lock lock{port->mutex};
     *output_time = port->last_output_time;
 
     return ORBIS_OK;
@@ -448,14 +450,18 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    std::lock_guard lock{port_table[port_id].mutex};
-    auto port = port_table[port_id].port;
+    std::shared_ptr<PortOut> port;
+    {
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
+    }
+
     if (!port) {
         LOG_ERROR(Lib_AudioOut, "Port is not open {}", port_id);
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
     }
 
-    std::unique_lock port_lock{port->mutex};
+    std::unique_lock lock{port->mutex};
 
     switch (port->type) {
     case OrbisAudioOutPort::Main:
@@ -525,11 +531,10 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
 
-    // Get port with mutex protection
     std::shared_ptr<PortOut> port;
     {
-        std::lock_guard lock{port_table[port_id].mutex};
-        port = port_table[port_id].port;
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
     }
 
     if (!port) {
@@ -577,7 +582,6 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    // Validate all handles and collect ports
     std::vector<std::shared_ptr<PortOut>> ports;
     std::vector<std::unique_lock<std::mutex>> locks;
     ports.reserve(num);
@@ -585,55 +589,54 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
 
     u32 buffer_frames = 0;
 
-    for (u32 i = 0; i < num; i++) {
-        int port_id = GetPortId(param[i].handle);
-        if (port_id < 0) {
-            LOG_ERROR(Lib_AudioOut, "invalid port id");
-            return port_id;
-        }
+    {
+        std::shared_lock read_lock{port_table_mutex};
 
-        s32 port_type = GetPortType(param[i].handle);
-        if (port_type >= 5 && port_type <= 13) {
-            LOG_ERROR(Lib_AudioOut, "Invalid port type");
-            return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
-        }
-
-        // Check valid types
-        if (!((port_type >= 0 && port_type <= 4) || port_type == 14 || port_type == 126 ||
-              port_type == 127)) {
-            LOG_ERROR(Lib_AudioOut, "Invalid port type");
-            return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
-        }
-
-        // Check for duplicate handles
-        for (u32 j = 0; j < i; j++) {
-            if (param[i].handle == param[j].handle) {
-                LOG_ERROR(Lib_AudioOut, "Duplicate audio handles: {:#x}", param[i].handle);
-                return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+        for (u32 i = 0; i < num; i++) {
+            int port_id = GetPortId(param[i].handle);
+            if (port_id < 0) {
+                LOG_ERROR(Lib_AudioOut, "invalid port id");
+                return port_id;
             }
-        }
 
-        // Get port with mutex protection
-        std::shared_ptr<PortOut> port;
-        {
-            std::lock_guard lock{port_table[port_id].mutex};
-            port = port_table[port_id].port;
-        }
+            s32 port_type = GetPortType(param[i].handle);
+            if (port_type >= 5 && port_type <= 13) {
+                LOG_ERROR(Lib_AudioOut, "Invalid port type");
+                return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+            }
 
-        if (!port) {
-            LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
-            return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
-        }
+            // Check valid types
+            if (!((port_type >= 0 && port_type <= 4) || port_type == 14 || port_type == 126 ||
+                  port_type == 127)) {
+                LOG_ERROR(Lib_AudioOut, "Invalid port type");
+                return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+            }
 
-        ports.push_back(port);
-        locks.emplace_back(port->mutex);
+            // Check for duplicate handles
+            for (u32 j = 0; j < i; j++) {
+                if (param[i].handle == param[j].handle) {
+                    LOG_ERROR(Lib_AudioOut, "Duplicate audio handles: {:#x}", param[i].handle);
+                    return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
+                }
+            }
 
-        // Check consistent buffer size
-        if (i == 0) {
-            buffer_frames = port->buffer_frames;
-        } else if (port->buffer_frames != buffer_frames) {
-            LOG_ERROR(Lib_AudioOut, "Invalid port size");
-            return ORBIS_AUDIO_OUT_ERROR_INVALID_SIZE;
+            // Get port
+            auto port = port_table[port_id];
+            if (!port) {
+                LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
+                return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
+            }
+
+            ports.push_back(port);
+            locks.emplace_back(port->mutex);
+
+            // Check consistent buffer size
+            if (i == 0) {
+                buffer_frames = port->buffer_frames;
+            } else if (port->buffer_frames != buffer_frames) {
+                LOG_ERROR(Lib_AudioOut, "Invalid port size");
+                return ORBIS_AUDIO_OUT_ERROR_INVALID_SIZE;
+            }
         }
     }
 
@@ -688,10 +691,11 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_VOLUME;
     }
 
+    // Get port with shared lock (read-only access to table)
     std::shared_ptr<PortOut> port;
     {
-        std::lock_guard lock{port_table[port_id].mutex};
-        port = port_table[port_id].port;
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
     }
 
     if (!port) {
@@ -749,8 +753,8 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
 
     std::shared_ptr<PortOut> port;
     {
-        std::lock_guard lock{port_table[port_id].mutex};
-        port = port_table[port_id].port;
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
     }
 
     if (!port) {
@@ -764,6 +768,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
 
     return ORBIS_OK;
 }
+
 /*
  * Stubbed functions
  **/
