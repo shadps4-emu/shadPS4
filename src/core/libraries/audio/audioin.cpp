@@ -28,6 +28,11 @@ static int GetPortId(s32 handle) {
         return ORBIS_AUDIO_IN_ERROR_PORT_FULL;
     }
 
+    if ((handle & 0x7f000000) != 0x30000000) {
+        LOG_ERROR(Lib_AudioIn, "Invalid handle format");
+        return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
+    }
+
     return port_id;
 }
 
@@ -218,6 +223,37 @@ int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest) {
     return port->impl->Read(dest);
 }
 
+int PS4_SYSV_ABI sceAudioInGetSilentState(s32 handle) {
+    LOG_TRACE(Lib_AudioIn, "called, handle={:#x}", handle);
+    int port_id = GetPortId(handle);
+    if (port_id < 0) {
+        LOG_ERROR(Lib_AudioIn, "Invalid port id");
+        return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
+    }
+    // Get port with read lock
+    std::shared_ptr<PortIn> port;
+    {
+        std::shared_lock read_lock{port_table_mutex};
+        if (port_id < 0 || port_id >= static_cast<int>(port_table.size())) {
+            LOG_ERROR(Lib_AudioIn, "Invalid port id: {}", port_id);
+            return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
+        }
+        port = port_table[port_id];
+    }
+
+    if (!port || !port->impl) {
+        LOG_ERROR(Lib_AudioIn, "Audio input port {} is not open", handle);
+        return ORBIS_AUDIO_IN_ERROR_NOT_OPENED;
+    }
+
+    u32 silent_state = 0;
+    std::scoped_lock lock{port->mutex};
+    if (!port->impl->IsAvailable()) { // if no mic exist or is not available
+        silent_state |= ORBIS_AUDIO_IN_SILENT_STATE_DEVICE_NONE;
+    }
+    return silent_state;
+}
+
 /*
  * Stubbed functions
  **/
@@ -292,11 +328,6 @@ int PS4_SYSV_ABI sceAudioInGetHandleStatusInfo() {
 }
 
 int PS4_SYSV_ABI sceAudioInGetRerouteCount() {
-    LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceAudioInGetSilentState() {
     LOG_ERROR(Lib_AudioIn, "(STUBBED) called");
     return ORBIS_OK;
 }

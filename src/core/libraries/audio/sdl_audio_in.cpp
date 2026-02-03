@@ -23,8 +23,6 @@ public:
 
         std::string micDevStr = Config::getMicDevice();
         uint32_t devId = 0;
-
-        bool nullDevice = false;
         if (micDevStr == "None") {
             nullDevice = true;
             LOG_INFO(Lib_AudioIn, "Audio input disabled by configuration");
@@ -115,11 +113,19 @@ public:
             SDL_ClearAudioStream(stream);
         }
     }
+    bool IsAvailable() override {
+        if (nullDevice) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 
 private:
     const PortIn& port;
     SDL_AudioStream* stream = nullptr;
     void* internal_buffer = nullptr;
+    bool nullDevice = false;
 };
 
 std::unique_ptr<PortInBackend> SDLAudioIn::Open(PortIn& port) {

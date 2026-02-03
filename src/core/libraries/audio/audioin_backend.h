@@ -13,6 +13,7 @@ public:
     virtual ~PortInBackend() = default;
     virtual int Read(void* out_buffer) = 0;
     virtual void Clear() = 0;
+    virtual bool IsAvailable() = 0;
 };
 
 class AudioInBackend {

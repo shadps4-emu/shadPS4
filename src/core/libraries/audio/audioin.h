@@ -21,6 +21,11 @@ enum class OrbisAudioInParamFormat : u32 { S16Mono = 0, S16Stereo = 2 };
 
 enum class OrbisAudioInType : u32 { VoiceChat = 0, General = 1, VoiceRecognition = 5 };
 
+constexpr int ORBIS_AUDIO_IN_SILENT_STATE_DEVICE_NONE = 0x00000001;
+constexpr int ORBIS_AUDIO_IN_SILENT_STATE_PRIORITY_LOW = 0x00000002;
+constexpr int ORBIS_AUDIO_IN_SILENT_STATE_USER_SETTING = 0x0000000;
+constexpr int ORBIS_AUDIO_IN_SILENT_STATE_UNABLE_FORMAT = 0x00000008;
+
 struct PortIn {
     std::mutex mutex;
     std::unique_ptr<PortInBackend> impl{};
@@ -49,7 +54,7 @@ int PS4_SYSV_ABI sceAudioInExtSetAecMode();
 int PS4_SYSV_ABI sceAudioInGetGain();
 int PS4_SYSV_ABI sceAudioInGetHandleStatusInfo();
 int PS4_SYSV_ABI sceAudioInGetRerouteCount();
-int PS4_SYSV_ABI sceAudioInGetSilentState();
+int PS4_SYSV_ABI sceAudioInGetSilentState(s32 handle);
 int PS4_SYSV_ABI sceAudioInHqOpen(Libraries::UserService::OrbisUserServiceUserId userId, u32 type,
                                   u32 index, u32 len, u32 freq, u32 param);
 int PS4_SYSV_ABI sceAudioInHqOpenEx();
