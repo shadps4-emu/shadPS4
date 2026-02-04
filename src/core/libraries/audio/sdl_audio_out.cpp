@@ -50,13 +50,16 @@ public:
         last_output_time = 0;
         next_output_time = 0;
 
-        // Allocate internal buffer (always float for SDL3)
+        // Allocate internal buffer
         internal_buffer_size = buffer_frames * sizeof(float) * num_channels;
         internal_buffer = std::malloc(internal_buffer_size);
         if (!internal_buffer) {
             LOG_ERROR(Lib_AudioOut, "Failed to allocate internal audio buffer");
             return;
         }
+
+        // Initialize current gain
+        current_gain.store(Config::getVolumeSlider() / 100.0f);
 
         // Select converter function
         SelectConverter();
@@ -85,11 +88,14 @@ public:
             return;
         }
 
+        // Check for volume changes and update if needed
+        UpdateVolumeIfChanged();
+
         // Get current time in microseconds
         u64 current_time = Kernel::sceKernelGetProcessTime();
 
         if (ptr != nullptr) {
-            // Simple format conversion without volume application
+            // Simple format conversion (no volume application)
             convert(ptr, internal_buffer, buffer_frames, nullptr);
 
             if (next_output_time == 0) {
@@ -129,40 +135,23 @@ public:
         if (!stream) {
             return;
         }
-
-        // For simple stereo/mono, use the first channel volume as global gain
-        float gain = 1.0f;
-
-        if (num_channels == 1) {
-            // Mono: use first channel
-            gain = static_cast<float>(ch_volumes[0]) / VOLUME_0DB;
-        } else if (num_channels == 2) {
-            // Stereo: average L/R channels
-            gain = (static_cast<float>(ch_volumes[0]) + static_cast<float>(ch_volumes[1])) /
-                   (2.0f * VOLUME_0DB);
-        } else {
-            // Multi-channel: average all active channels
-            float sum = 0.0f;
-            int active_channels = 0;
-            for (int i = 0; i < num_channels && i < 8; i++) {
-                if (ch_volumes[i] > 0) {
-                    sum += static_cast<float>(ch_volumes[i]);
-                    active_channels++;
-                }
-            }
-            if (active_channels > 0) {
-                gain = sum / (active_channels * VOLUME_0DB);
-            }
+        float max_channel_gain = 0.0f;
+        for (int i = 0; i < num_channels && i < 8; i++) {
+            float channel_gain = static_cast<float>(ch_volumes[i]) / VOLUME_0DB;
+            max_channel_gain = std::max(max_channel_gain, channel_gain);
         }
 
-        // Apply both per-channel gain and global volume slider
-        float total_gain = gain * (Config::getVolumeSlider() / 100.0f);
+        // Combine with global volume slider
+        float total_gain = max_channel_gain * (Config::getVolumeSlider() / 100.0f);
 
-        if (!SDL_SetAudioStreamGain(stream, total_gain)) {
-            LOG_ERROR(Lib_AudioOut, "Failed to set audio stream gain: {}", SDL_GetError());
+        std::lock_guard<std::mutex> lock(volume_mutex);
+        if (SDL_SetAudioStreamGain(stream, total_gain)) {
+            current_gain.store(total_gain);
+            LOG_DEBUG(Lib_AudioOut,
+                      "Set combined audio gain to {:.3f} (channel: {:.3f}, slider: {:.3f})",
+                      total_gain, max_channel_gain, Config::getVolumeSlider() / 100.0f);
         } else {
-            LOG_DEBUG(Lib_AudioOut, "Set audio gain to {:.3f} (channel: {:.3f}, slider: {:.3f})",
-                      total_gain, gain, Config::getVolumeSlider() / 100.0f);
+            LOG_ERROR(Lib_AudioOut, "Failed to set audio stream gain: {}", SDL_GetError());
         }
     }
 
@@ -171,6 +160,30 @@ public:
     }
 
 private:
+    std::atomic<bool> volume_update_needed{false};
+    u64 last_volume_check_time{0};
+    static constexpr u64 VOLUME_CHECK_INTERVAL_US = 50000; // Check every 50ms
+
+    void UpdateVolumeIfChanged() {
+        u64 current_time = Kernel::sceKernelGetProcessTime();
+
+        // Only check volume every 50ms to reduce overhead
+        if (current_time - last_volume_check_time >= VOLUME_CHECK_INTERVAL_US) {
+            last_volume_check_time = current_time;
+
+            float config_volume = Config::getVolumeSlider() / 100.0f;
+            float stored_gain = current_gain.load();
+
+            if (std::abs(config_volume - stored_gain) > 0.001f) {
+                if (SDL_SetAudioStreamGain(stream, config_volume)) {
+                    current_gain.store(config_volume);
+                    LOG_DEBUG(Lib_AudioOut, "Updated audio gain to {:.3f}", config_volume);
+                } else {
+                    LOG_ERROR(Lib_AudioOut, "Failed to set audio stream gain: {}", SDL_GetError());
+                }
+            }
+        }
+    }
     bool OpenDevice(OrbisAudioOutPort type) {
         const SDL_AudioSpec fmt = {
             .format = SDL_AUDIO_F32LE, // Always use float for internal processing
@@ -244,11 +257,12 @@ private:
             }
         }
 
-        // Set initial gain (global volume slider only)
-        float initial_gain = Config::getVolumeSlider() / 100.0f;
+        // Set initial volume
+        float initial_gain = current_gain.load();
         if (!SDL_SetAudioStreamGain(stream, initial_gain)) {
             LOG_WARNING(Lib_AudioOut, "Failed to set initial audio gain: {}", SDL_GetError());
         }
+
         // Start playback
         if (!SDL_ResumeAudioStreamDevice(stream)) {
             LOG_ERROR(Lib_AudioOut, "Failed to resume audio stream: {}", SDL_GetError());
@@ -256,6 +270,7 @@ private:
             stream = nullptr;
             return false;
         }
+
         LOG_INFO(Lib_AudioOut, "Opened audio device: {} ({} Hz, {} ch, gain: {:.3f})", device_name,
                  sample_rate, num_channels, initial_gain);
         return true;
@@ -423,6 +438,10 @@ private:
 
     // Converter function
     ConverterFunc convert;
+
+    // Volume tracking
+    std::atomic<float> current_gain{1.0f};
+    mutable std::mutex volume_mutex;
 
     // SDL
     SDL_AudioStream* stream{};
