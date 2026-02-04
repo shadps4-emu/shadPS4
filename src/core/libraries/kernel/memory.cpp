@@ -89,22 +89,31 @@ s32 PS4_SYSV_ABI sceKernelAllocateMainDirectMemory(u64 len, u64 alignment, s32 m
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, u64 len) {
+    LOG_INFO(Kernel_Vmm, "called start = {:#x}, len = {:#x}", start, len);
+    if (!Common::Is16KBAligned(start) || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Misaligned start or length, start = {:#x}, length = {:#x}", start,
+                  len);
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     if (len == 0) {
         return ORBIS_OK;
     }
-    LOG_INFO(Kernel_Vmm, "called start = {:#x}, len = {:#x}", start, len);
     auto* memory = Core::Memory::Instance();
-    memory->Free(start, len);
-    return ORBIS_OK;
+    return memory->Free(start, len, true);
 }
 
 s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len) {
+    LOG_INFO(Kernel_Vmm, "called start = {:#x}, len = {:#x}", start, len);
+    if (!Common::Is16KBAligned(start) || !Common::Is16KBAligned(len)) {
+        LOG_ERROR(Kernel_Vmm, "Misaligned start or length, start = {:#x}, length = {:#x}", start,
+                  len);
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
     if (len == 0) {
         return ORBIS_OK;
     }
-    LOG_INFO(Kernel_Vmm, "called start = {:#x}, len = {:#x}", start, len);
     auto* memory = Core::Memory::Instance();
-    memory->Free(start, len);
+    memory->Free(start, len, false);
     return ORBIS_OK;
 }
 

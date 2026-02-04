@@ -101,7 +101,7 @@ std::string NameOf(Attribute attribute) {
     case Attribute::Param31:
         return "Param31";
     case Attribute::ClipDistance:
-        return "ClipDistanace";
+        return "ClipDistance";
     case Attribute::CullDistance:
         return "CullDistance";
     case Attribute::RenderTargetIndex:

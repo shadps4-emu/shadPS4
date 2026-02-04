@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -36,6 +36,7 @@
 #include "core/libraries/font/fontft.h"
 #include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/np/np_trophy.h"
@@ -96,7 +97,7 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
-    Common::SetCurrentThreadName("Main Thread");
+    Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }
@@ -527,7 +528,7 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
          {"libSceJpegDec.sprx", nullptr},
          {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
-         {"libScePngEnc.sprx", nullptr},
+         {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
