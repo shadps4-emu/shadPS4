@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -50,7 +50,7 @@ public:
         last_output_time = 0;
         next_output_time = 0;
 
-        // Allocate internal buffer (always float for mixing)
+        // Allocate internal buffer (always float for SDL3)
         internal_buffer_size = buffer_frames * sizeof(float) * num_channels;
         internal_buffer = std::malloc(internal_buffer_size);
         if (!internal_buffer) {
@@ -58,11 +58,7 @@ public:
             return;
         }
 
-        // Initialize volumes
-        volumes.fill(VOLUME_0DB);
-        fvolumes.fill(1.0f);
-
-        // Select converter function based on format
+        // Select converter function
         SelectConverter();
 
         // Open SDL device
@@ -93,24 +89,21 @@ public:
         u64 current_time = Kernel::sceKernelGetProcessTime();
 
         if (ptr != nullptr) {
-            // Apply volume mixing and format conversion
-            convert(ptr, internal_buffer, buffer_frames, fvolumes.data());
+            // Simple format conversion without volume application
+            convert(ptr, internal_buffer, buffer_frames, nullptr);
 
             if (next_output_time == 0) {
-                // First output
                 next_output_time = current_time + period_us;
             } else if (current_time > next_output_time) {
-                // Underflow - reset timing
                 next_output_time = current_time + period_us;
             } else {
-                // Wait until next scheduled time
                 u64 wait_until = next_output_time;
                 next_output_time += period_us;
 
                 if (current_time < wait_until) {
                     u64 sleep_us = wait_until - current_time;
                     if (sleep_us > 10) {
-                        sleep_us -= 10; // Small safety margin
+                        sleep_us -= 10;
                         std::this_thread::sleep_for(std::chrono::microseconds(sleep_us));
                     }
                 }
@@ -137,10 +130,39 @@ public:
             return;
         }
 
-        // Update volumes for all channels
-        for (int i = 0; i < 8; i++) {
-            volumes[i] = ch_volumes[i];
-            fvolumes[i] = static_cast<float>(ch_volumes[i]) / VOLUME_0DB;
+        // For simple stereo/mono, use the first channel volume as global gain
+        float gain = 1.0f;
+
+        if (num_channels == 1) {
+            // Mono: use first channel
+            gain = static_cast<float>(ch_volumes[0]) / VOLUME_0DB;
+        } else if (num_channels == 2) {
+            // Stereo: average L/R channels
+            gain = (static_cast<float>(ch_volumes[0]) + static_cast<float>(ch_volumes[1])) /
+                   (2.0f * VOLUME_0DB);
+        } else {
+            // Multi-channel: average all active channels
+            float sum = 0.0f;
+            int active_channels = 0;
+            for (int i = 0; i < num_channels && i < 8; i++) {
+                if (ch_volumes[i] > 0) {
+                    sum += static_cast<float>(ch_volumes[i]);
+                    active_channels++;
+                }
+            }
+            if (active_channels > 0) {
+                gain = sum / (active_channels * VOLUME_0DB);
+            }
+        }
+
+        // Apply both per-channel gain and global volume slider
+        float total_gain = gain * (Config::getVolumeSlider() / 100.0f);
+
+        if (!SDL_SetAudioStreamGain(stream, total_gain)) {
+            LOG_ERROR(Lib_AudioOut, "Failed to set audio stream gain: {}", SDL_GetError());
+        } else {
+            LOG_DEBUG(Lib_AudioOut, "Set audio gain to {:.3f} (channel: {:.3f}, slider: {:.3f})",
+                      total_gain, gain, Config::getVolumeSlider() / 100.0f);
         }
     }
 
@@ -222,6 +244,11 @@ private:
             }
         }
 
+        // Set initial gain (global volume slider only)
+        float initial_gain = Config::getVolumeSlider() / 100.0f;
+        if (!SDL_SetAudioStreamGain(stream, initial_gain)) {
+            LOG_WARNING(Lib_AudioOut, "Failed to set initial audio gain: {}", SDL_GetError());
+        }
         // Start playback
         if (!SDL_ResumeAudioStreamDevice(stream)) {
             LOG_ERROR(Lib_AudioOut, "Failed to resume audio stream: {}", SDL_GetError());
@@ -229,9 +256,8 @@ private:
             stream = nullptr;
             return false;
         }
-        SDL_SetAudioStreamGain(stream, Config::getVolumeSlider() / 100.0f);
-        LOG_INFO(Lib_AudioOut, "Opened audio device: {} ({} Hz, {} ch)", device_name, sample_rate,
-                 num_channels);
+        LOG_INFO(Lib_AudioOut, "Opened audio device: {} ({} Hz, {} ch, gain: {:.3f})", device_name,
+                 sample_rate, num_channels, initial_gain);
         return true;
     }
 
@@ -311,89 +337,69 @@ private:
 
     using ConverterFunc = void (*)(const void* src, void* dst, u32 frames, const float* volumes);
 
-    static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float* volumes) {
+    // Remove volume parameter and application from all converters
+    static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         float* d = static_cast<float*>(dst);
 
+        constexpr float inv_scale = 1.0f / VOLUME_0DB;
+
         for (u32 i = 0; i < frames; i++) {
-            d[i] = (s[i] / VOLUME_0DB) * volumes[0];
+            d[i] = s[i] * inv_scale;
         }
     }
 
-    static void ConvertS16Stereo(const void* src, void* dst, u32 frames, const float* volumes) {
+    static void ConvertS16Stereo(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         float* d = static_cast<float*>(dst);
 
+        constexpr float inv_scale = 1.0f / VOLUME_0DB;
+
         for (u32 i = 0; i < frames; i++) {
-            d[i * 2] = (s[i * 2] / VOLUME_0DB) * volumes[0];
-            d[i * 2 + 1] = (s[i * 2 + 1] / VOLUME_0DB) * volumes[1];
+            d[i * 2] = s[i * 2] * inv_scale;
+            d[i * 2 + 1] = s[i * 2 + 1] * inv_scale;
         }
     }
 
-    static void ConvertS16_8CH(const void* src, void* dst, u32 frames, const float* volumes) {
+    static void ConvertS16_8CH(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         float* d = static_cast<float*>(dst);
 
+        constexpr float inv_scale = 1.0f / VOLUME_0DB;
+
         for (u32 i = 0; i < frames; i++) {
-            d[i * 8 + FL] = (s[i * 8 + FL] / VOLUME_0DB) * volumes[FL];
-            d[i * 8 + FR] = (s[i * 8 + FR] / VOLUME_0DB) * volumes[FR];
-            d[i * 8 + FC] = (s[i * 8 + FC] / VOLUME_0DB) * volumes[FC];
-            d[i * 8 + LF] = (s[i * 8 + LF] / VOLUME_0DB) * volumes[LF];
-            d[i * 8 + SL] = (s[i * 8 + SL] / VOLUME_0DB) * volumes[SL];
-            d[i * 8 + SR] = (s[i * 8 + SR] / VOLUME_0DB) * volumes[SR];
-            d[i * 8 + BL] = (s[i * 8 + BL] / VOLUME_0DB) * volumes[BL];
-            d[i * 8 + BR] = (s[i * 8 + BR] / VOLUME_0DB) * volumes[BR];
+            for (int ch = 0; ch < 8; ch++) {
+                d[i * 8 + ch] = s[i * 8 + ch] * inv_scale;
+            }
         }
     }
 
-    static void ConvertF32Mono(const void* src, void* dst, u32 frames, const float* volumes) {
+    // Float converters become simple memcpy or passthrough
+    static void ConvertF32Mono(const void* src, void* dst, u32 frames, const float*) {
+        std::memcpy(dst, src, frames * sizeof(float));
+    }
+
+    static void ConvertF32Stereo(const void* src, void* dst, u32 frames, const float*) {
+        std::memcpy(dst, src, frames * 2 * sizeof(float));
+    }
+
+    static void ConvertF32_8CH(const void* src, void* dst, u32 frames, const float*) {
+        std::memcpy(dst, src, frames * 8 * sizeof(float));
+    }
+
+    static void ConvertF32Std8CH(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         float* d = static_cast<float*>(dst);
 
         for (u32 i = 0; i < frames; i++) {
-            d[i] = s[i] * volumes[0];
-        }
-    }
-
-    static void ConvertF32Stereo(const void* src, void* dst, u32 frames, const float* volumes) {
-        const float* s = static_cast<const float*>(src);
-        float* d = static_cast<float*>(dst);
-
-        for (u32 i = 0; i < frames; i++) {
-            d[i * 2] = s[i * 2] * volumes[0];
-            d[i * 2 + 1] = s[i * 2 + 1] * volumes[1];
-        }
-    }
-
-    static void ConvertF32_8CH(const void* src, void* dst, u32 frames, const float* volumes) {
-        const float* s = static_cast<const float*>(src);
-        float* d = static_cast<float*>(dst);
-
-        for (u32 i = 0; i < frames; i++) {
-            d[i * 8 + FL] = s[i * 8 + FL] * volumes[FL];
-            d[i * 8 + FR] = s[i * 8 + FR] * volumes[FR];
-            d[i * 8 + FC] = s[i * 8 + FC] * volumes[FC];
-            d[i * 8 + LF] = s[i * 8 + LF] * volumes[LF];
-            d[i * 8 + SL] = s[i * 8 + SL] * volumes[SL];
-            d[i * 8 + SR] = s[i * 8 + SR] * volumes[SR];
-            d[i * 8 + BL] = s[i * 8 + BL] * volumes[BL];
-            d[i * 8 + BR] = s[i * 8 + BR] * volumes[BR];
-        }
-    }
-
-    static void ConvertF32Std8CH(const void* src, void* dst, u32 frames, const float* volumes) {
-        const float* s = static_cast<const float*>(src);
-        float* d = static_cast<float*>(dst);
-
-        for (u32 i = 0; i < frames; i++) {
-            d[i * 8 + FL] = s[i * 8 + FL] * volumes[FL];
-            d[i * 8 + FR] = s[i * 8 + FR] * volumes[FR];
-            d[i * 8 + FC] = s[i * 8 + FC] * volumes[FC];
-            d[i * 8 + LF] = s[i * 8 + LF] * volumes[LF];
-            d[i * 8 + SL] = s[i * 8 + STD_SL] * volumes[SL];
-            d[i * 8 + SR] = s[i * 8 + STD_SR] * volumes[SR];
-            d[i * 8 + BL] = s[i * 8 + STD_BL] * volumes[BL];
-            d[i * 8 + BR] = s[i * 8 + STD_BR] * volumes[BR];
+            d[i * 8 + FL] = s[i * 8 + FL];
+            d[i * 8 + FR] = s[i * 8 + FR];
+            d[i * 8 + FC] = s[i * 8 + FC];
+            d[i * 8 + LF] = s[i * 8 + LF];
+            d[i * 8 + SL] = s[i * 8 + STD_SL]; // Channel remapping still needed
+            d[i * 8 + SR] = s[i * 8 + STD_SR];
+            d[i * 8 + BL] = s[i * 8 + STD_BL];
+            d[i * 8 + BR] = s[i * 8 + STD_BR];
         }
     }
 
@@ -414,10 +420,6 @@ private:
     // Buffers
     u32 internal_buffer_size;
     void* internal_buffer;
-
-    // Volumes
-    std::array<int, 8> volumes;
-    std::array<float, 8> fvolumes;
 
     // Converter function
     ConverterFunc convert;
