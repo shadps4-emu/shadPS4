@@ -108,6 +108,8 @@ auto output_array = std::array{
     ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
     ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD),
     ControllerOutput(HOTKEY_RENDERDOC),
+    ControllerOutput(HOTKEY_VOLUME_UP),
+    ControllerOutput(HOTKEY_VOLUME_DOWN),
 
     ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
 };
@@ -562,6 +564,9 @@ void ControllerOutput::FinalizeUpdate() {
         case RIGHTJOYSTICK_HALFMODE:
             rightjoystick_halfmode = new_button_state;
             break;
+        case HOTKEY_RELOAD_INPUTS:
+            ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            break;
         case HOTKEY_FULLSCREEN:
             PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);
             break;
@@ -570,9 +575,6 @@ void ControllerOutput::FinalizeUpdate() {
             break;
         case HOTKEY_SIMPLE_FPS:
             PushSDLEvent(SDL_EVENT_TOGGLE_SIMPLE_FPS);
-            break;
-        case HOTKEY_RELOAD_INPUTS:
-            PushSDLEvent(SDL_EVENT_RELOAD_INPUTS);
             break;
         case HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK:
             PushSDLEvent(SDL_EVENT_MOUSE_TO_JOYSTICK);
@@ -585,6 +587,12 @@ void ControllerOutput::FinalizeUpdate() {
             break;
         case HOTKEY_RENDERDOC:
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            break;
+        case HOTKEY_VOLUME_UP:
+            Config::setVolumeSlider(Config::getVolumeSlider() + 10, true);
+            break;
+        case HOTKEY_VOLUME_DOWN:
+            Config::setVolumeSlider(Config::getVolumeSlider() - 10, true);
             break;
         case HOTKEY_QUIT:
             PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
