@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -10,5 +11,79 @@ class SymbolsResolver;
 }
 
 namespace Libraries::LibcInternal {
+
+static std::recursive_mutex g_stream_mtx{};
+
+union Orbis__mbstate_t {
+    u8 __mbstate8[128];
+    s64 _mbstateL;
+};
+
+struct Orbis_Mbstatet {
+    u64 _Wchar;
+    u16 _Byte, _State;
+    s32 : 32;
+};
+
+struct Orbisfpos_t {
+    s64 _Off;
+    Orbis_Mbstatet _Wstate;
+};
+
+struct Orbis__sbuf {
+    u8* _base;
+    s32 _size;
+};
+
+struct OrbisFILE {
+    u16 _Mode;
+    u8 _Idx;
+    s32 _Handle;
+
+    u8 *_Buf, *_Bend, *_Next;
+    u8 *_Rend, *_Wend, *_Rback;
+
+    u16 *_WRback, _WBack[2];
+    u8 *_Rsave, *_WRend, *_WWend;
+
+    Orbis_Mbstatet _Wstate;
+    u8* _Tmpnam;
+    u8 _Back[6], _Cbuf;
+    void* _Mutex;
+
+    u8* _p;
+    s32 _r;
+    s32 _w;
+    s16 _flags;
+    s16 _file;
+    Orbis__sbuf _bf;
+    s32 _lbfsize;
+
+    void* _cookie;
+    s32 PS4_SYSV_ABI (*_close)(void*);
+    s32 PS4_SYSV_ABI (*_read)(void*, char*, s32);
+    Orbisfpos_t PS4_SYSV_ABI (*_seek)(void*, Orbisfpos_t, s32);
+    s32 (*_write)(void*, const char*, s32);
+
+    Orbis__sbuf _ub;
+    u8* _up;
+    s32 _ur;
+
+    u8 _ubuf[3];
+    u8 _nbuf[1];
+
+    Orbis__sbuf _lb;
+
+    s32 _blksize;
+    Orbisfpos_t _offset;
+
+    void* _fl_mutex;
+    void* _fl_owner;
+    s32 _fl_count;
+    s32 _orientation;
+    Orbis__mbstate_t _mbstate;
+};
+
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
+void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal

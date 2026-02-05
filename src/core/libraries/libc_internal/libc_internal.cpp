@@ -21,4 +21,9 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     RegisterlibSceLibcInternalMemory(sym);
     RegisterlibSceLibcInternalIo(sym);
 }
+
+void ForceRegisterLib(Core::Loader::SymbolsResolver* sym) {
+    // Used to forcibly enable HLEs for broken LLE functions.
+    ForceRegisterlibSceLibcInternalIo(sym);
+}
 } // namespace Libraries::LibcInternal
