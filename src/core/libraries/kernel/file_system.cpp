@@ -758,6 +758,17 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
         sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
         sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
+#elif
+        const auto ft = std::filesystem::last_write_time(file->f.GetPath());
+        const auto sctp = std::chrono::time_point_cast<nanoseconds>(
+            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+
+        sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
+        sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
+        sb->st_atim = sb->st_mtim;
+        sb->st_ctim = sb->st_mtim;
 #endif
         // TODO incomplete
         break;
