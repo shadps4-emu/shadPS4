@@ -34,6 +34,7 @@
 #include <winsock2.h>
 #else
 #include <sys/select.h>
+#include <sys/stat.h>
 #endif
 
 namespace D = Core::Devices;
@@ -751,6 +752,13 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_size = file->f.GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
+#ifndef _WIN32
+        struct stat filestat = {};
+        stat(file->f.GetPath().c_str(), &filestat);
+        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
+        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
+        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
+#endif
         // TODO incomplete
         break;
     }
