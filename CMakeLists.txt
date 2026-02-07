@@ -221,6 +221,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(Boost 1.84.0 CONFIG)
+find_package(CLI11 2.6.1 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 15 CONFIG)
