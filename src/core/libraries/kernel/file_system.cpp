@@ -34,6 +34,7 @@
 #include <winsock2.h>
 #else
 #include <sys/select.h>
+#include <sys/stat.h>
 #endif
 
 namespace D = Core::Devices;
@@ -751,6 +752,30 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         sb->st_size = file->f.GetSize();
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
+#if defined(__linux__) || defined(__FreeBSD__)
+        struct stat filestat = {};
+        stat(file->f.GetPath().c_str(), &filestat);
+        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atim);
+        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtim);
+        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctim);
+#elif defined(__APPLE__)
+        struct stat filestat = {};
+        stat(file->f.GetPath().c_str(), &filestat);
+        sb->st_atim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_atimespec);
+        sb->st_mtim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_mtimespec);
+        sb->st_ctim = *reinterpret_cast<OrbisKernelTimespec*>(&filestat.st_ctimespec);
+#else
+        const auto ft = std::filesystem::last_write_time(file->f.GetPath());
+        const auto sctp = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+            ft - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+        const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(sctp);
+        const auto nsecs = std::chrono::duration_cast<std::chrono::nanoseconds>(sctp - secs);
+
+        sb->st_mtim.tv_sec = static_cast<int64_t>(secs.time_since_epoch().count());
+        sb->st_mtim.tv_nsec = static_cast<int64_t>(nsecs.count());
+        sb->st_atim = sb->st_mtim;
+        sb->st_ctim = sb->st_mtim;
+#endif
         // TODO incomplete
         break;
     }
