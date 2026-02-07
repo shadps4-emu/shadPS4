@@ -5,8 +5,8 @@
 
 #include <string>
 #include <vector>
-#include "common/types.h"
 #include "common/config.h"
+#include "common/types.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
 
