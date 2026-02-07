@@ -622,8 +622,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             // Add the dmem area to this vma, merge it with any similar tracked areas.
             const u64 offset_in_vma = current_phys_addr - phys_addr;
             new_vma.phys_areas[offset_in_vma] = dmem_handle->second;
-            MergeAdjacent(new_vma.phys_areas,
-                          new_vma.phys_areas.find(offset_in_vma));
+            MergeAdjacent(new_vma.phys_areas, new_vma.phys_areas.find(offset_in_vma));
 
             // Merge the new dmem_area with dmem_map
             MergeAdjacent(dmem_map, dmem_handle);
