@@ -1286,25 +1286,6 @@ void setDefaultValues(bool is_game_specific) {
     }
 }
 
-constexpr std::string_view GetDefaultGlobalConfig() {
-    return R"(# Anything put here will be loaded for all games,
-# alongside the game's config or default.ini depending on your preference.
-
-hotkey_renderdoc_capture = f12
-hotkey_fullscreen = f11
-hotkey_show_fps = f10
-hotkey_pause = f9
-hotkey_reload_inputs = f8
-hotkey_toggle_mouse_to_joystick = f7
-hotkey_toggle_mouse_to_gyro = f6
-hotkey_toggle_mouse_to_touchpad = delete
-hotkey_quit = lctrl, lshift, end
-
-hotkey_volume_up = kpplus
-hotkey_volume_down = kpminus
-)";
-}
-
 constexpr std::string_view GetDefaultInputConfig() {
     return R"(#Feeling lost? Check out the Help section!
 
@@ -1406,17 +1387,6 @@ std::filesystem::path GetFoolproofInputConfigFile(const string& game_id) {
     // if empty, we only need to execute the function up until this point
     if (game_id.empty()) {
         return default_config_file;
-    }
-
-    // Create global config if it doesn't exist yet
-    if (game_id == "global" && !std::filesystem::exists(config_file)) {
-        if (!std::filesystem::exists(config_file)) {
-            const auto global_config = GetDefaultGlobalConfig();
-            std::ofstream global_config_stream(config_file);
-            if (global_config_stream) {
-                global_config_stream << global_config;
-            }
-        }
     }
 
     // If game-specific config doesn't exist, create it from the default config

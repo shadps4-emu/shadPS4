@@ -182,7 +182,6 @@ std::filesystem::path getAddonInstallDir();
 
 void setDefaultValues(bool is_game_specific = false);
 
-constexpr std::string_view GetDefaultGlobalConfig();
 std::filesystem::path GetFoolproofInputConfigFile(const std::string& game_id = "");
 
 }; // namespace Config

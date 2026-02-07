@@ -23,6 +23,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <input/hotkeys_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -33,6 +34,8 @@ int main(int argc, char* argv[]) {
 
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
+
+    auto hotkeys_manager = std::make_shared<HotkeysSettingsManager>();
 
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");

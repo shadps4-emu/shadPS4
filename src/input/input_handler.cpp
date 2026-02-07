@@ -3,10 +3,13 @@
 
 #include "input_handler.h"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <list>
 #include <map>
+#include <memory>
+#include <mutex>
 #include <ranges>
 #include <sstream>
 #include <string>
@@ -14,6 +17,7 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
@@ -218,10 +222,117 @@ InputBinding GetBindingFromString(std::string& line) {
     return InputBinding(keys[0], keys[1], keys[2]);
 }
 
+void ProcessHotkeysFromJson() {
+    // Get the path to hotkeys.json
+    const std::filesystem::path userDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    const std::filesystem::path hotkeys_file = userDir / "hotkeys.json";
+
+    try {
+        std::ifstream file(hotkeys_file);
+        if (!file.is_open()) {
+            LOG_WARNING(Input, "Failed to open hotkeys.json");
+            return;
+        }
+
+        nlohmann::json j;
+        file >> j;
+
+        // Check version
+        int version = j.value("version", 1);
+        LOG_DEBUG(Input, "Loading hotkeys.json version {}", version);
+
+        // Get hotkeys object
+        if (!j.contains("hotkeys") || !j["hotkeys"].is_object()) {
+            LOG_WARNING(Input, "Invalid hotkeys.json format - missing 'hotkeys' object");
+            return;
+        }
+
+        auto hotkeys = j["hotkeys"];
+        int hotkeyCount = 0;
+
+        // Map JSON hotkey names to output actions
+        static const std::unordered_map<std::string, std::string> hotkeyMap = {
+            {"fullscreen", "hotkey_fullscreen"},
+            {"pause", "hotkey_pause"},
+            {"quit", "hotkey_quit"},
+            {"reload_inputs", "hotkey_reload_inputs"},
+            {"renderdoc_capture", "hotkey_renderdoc_capture"},
+            {"show_fps", "hotkey_show_fps"},
+            {"toggle_mouse_to_gyro", "hotkey_toggle_mouse_to_gyro"},
+            {"toggle_mouse_to_joystick", "hotkey_toggle_mouse_to_joystick"},
+            {"toggle_mouse_to_touchpad", "hotkey_toggle_mouse_to_touchpad"},
+            {"volume_down", "hotkey_volume_down"},
+            {"volume_up", "hotkey_volume_up"}};
+
+        for (const auto& [hotkeyName, keyCombo] : hotkeys.items()) {
+            if (!keyCombo.is_string() || keyCombo.get<std::string>().empty()) {
+                continue; // Skip invalid or empty hotkeys
+            }
+
+            std::string combo = keyCombo.get<std::string>();
+            auto it = hotkeyMap.find(hotkeyName);
+            if (it == hotkeyMap.end()) {
+                LOG_WARNING(Input, "Unknown hotkey '{}' in JSON, skipping", hotkeyName);
+                continue;
+            }
+
+            // Convert to old INI-style output string
+            std::string output_string = it->second;
+            InputBinding binding = GetBindingFromString(combo);
+
+            if (binding.IsEmpty()) {
+                LOG_WARNING(Input, "Invalid key combo '{}' for hotkey '{}'", combo, hotkeyName);
+                continue;
+            }
+
+            // Map to ControllerOutput
+            ControllerOutput* output = nullptr;
+
+            if (hotkeyName == "fullscreen") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_FULLSCREEN));
+            } else if (hotkeyName == "pause") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_PAUSE));
+            } else if (hotkeyName == "quit") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_QUIT));
+            } else if (hotkeyName == "reload_inputs") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_RELOAD_INPUTS));
+            } else if (hotkeyName == "renderdoc_capture") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_RENDERDOC));
+            } else if (hotkeyName == "show_fps") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_SIMPLE_FPS));
+            } else if (hotkeyName == "toggle_mouse_to_gyro") {
+                output = &*std::ranges::find(output_array,
+                                             ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO));
+            } else if (hotkeyName == "toggle_mouse_to_joystick") {
+                output = &*std::ranges::find(output_array,
+                                             ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK));
+            } else if (hotkeyName == "toggle_mouse_to_touchpad") {
+                output = &*std::ranges::find(output_array,
+                                             ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD));
+            } else if (hotkeyName == "volume_down") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_VOLUME_DOWN));
+            } else if (hotkeyName == "volume_up") {
+                output = &*std::ranges::find(output_array, ControllerOutput(HOTKEY_VOLUME_UP));
+            }
+
+            if (output) {
+                BindingConnection connection(binding, output);
+                connections.insert(connections.end(), connection);
+                hotkeyCount++;
+                LOG_DEBUG(Input, "Added hotkey from JSON: {} = {}", hotkeyName, combo);
+            }
+        }
+
+        LOG_INFO(Input, "Loaded {} hotkeys from hotkeys.json", hotkeyCount);
+
+    } catch (const std::exception& e) {
+        LOG_ERROR(Input, "Error parsing hotkeys.json: {}", e.what());
+    }
+}
+
 void ParseInputConfig(const std::string game_id = "") {
     std::string game_id_or_default = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
     const auto config_file = Config::GetFoolproofInputConfigFile(game_id_or_default);
-    const auto global_config_file = Config::GetFoolproofInputConfigFile("global");
 
     // we reset these here so in case the user fucks up or doesn't include some of these,
     // we can fall back to default
@@ -241,8 +352,8 @@ void ParseInputConfig(const std::string game_id = "") {
     int lineCount = 0;
 
     std::ifstream config_stream(config_file);
-    std::ifstream global_config_stream(global_config_file);
     std::string line = "";
+
     auto ProcessLine = [&]() -> void {
         lineCount++;
 
@@ -392,7 +503,14 @@ void ParseInputConfig(const std::string game_id = "") {
             return;
         }
 
-        // normal cases
+        // SKIP hotkey parsing from INI files - now handled by hotkeys.json
+        if (output_string.find("hotkey_") == 0) {
+            LOG_DEBUG(Input, "Hotkey '{}' is now managed by hotkeys.json, skipping INI parsing",
+                      output_string);
+            return;
+        }
+
+        // normal cases (non-hotkey bindings)
         InputBinding binding = GetBindingFromString(input_string);
         BindingConnection connection(InputID(), nullptr);
         auto button_it = string_to_cbutton_map.find(output_string);
@@ -423,13 +541,16 @@ void ParseInputConfig(const std::string game_id = "") {
         }
         LOG_DEBUG(Input, "Succesfully parsed line {}", lineCount);
     };
-    while (std::getline(global_config_stream, line)) {
-        ProcessLine();
-    }
+
+    // Then, parse game-specific config
     while (std::getline(config_stream, line)) {
         ProcessLine();
     }
     config_stream.close();
+
+    // Now load and process hotkeys from hotkeys.json
+    ProcessHotkeysFromJson();
+
     std::sort(connections.begin(), connections.end());
     for (auto& c : connections) {
         LOG_DEBUG(Input, "Binding: {} : {}", c.output->ToString(), c.binding.ToString());
