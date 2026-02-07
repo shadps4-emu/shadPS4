@@ -271,7 +271,8 @@ add_subdirectory(json)
 add_subdirectory(miniz)
 
 # cli11
-set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-add_subdirectory(CLI11)
+if (NOT TARGET CLI11::CLI11)
+    set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory(CLI11)
+endif()

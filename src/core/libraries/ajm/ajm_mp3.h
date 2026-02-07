@@ -99,7 +99,6 @@ private:
     SwrContext* m_swr_context = nullptr;
     std::optional<u32> m_header;
     u32 m_frame_samples = 0;
-    u32 m_frame_size = 0;
 };
 
 } // namespace Libraries::Ajm
