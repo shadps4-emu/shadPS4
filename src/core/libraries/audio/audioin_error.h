@@ -1,0 +1,20 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#pragma once
+
+#include "core/libraries/error_codes.h"
+
+// AudioIn library
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE = 0x80260101;
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_SIZE = 0x80260102;
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_FREQ = 0x80260103;
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_TYPE = 0x80260104;
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_POINTER = 0x80260105;
+constexpr int ORBIS_AUDIO_IN_ERROR_INVALID_PARAM = 0x80260106;
+constexpr int ORBIS_AUDIO_IN_ERROR_PORT_FULL = 0x80260107;
+constexpr int ORBIS_AUDIO_IN_ERROR_OUT_OF_MEMORY = 0x80260108;
+constexpr int ORBIS_AUDIO_IN_ERROR_NOT_OPENED = 0x80260109;
+constexpr int ORBIS_AUDIO_IN_ERROR_BUSY = 0x8026010A;
+constexpr int ORBIS_AUDIO_IN_ERROR_SYSTEM_MEMORY = 0x8026010B;
+constexpr int ORBIS_AUDIO_IN_ERROR_SYSTEM_IPC = 0x8026010C;
