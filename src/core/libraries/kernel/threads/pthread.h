@@ -24,6 +24,12 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
+constexpr int PthreadInheritSched = 4;
+
+constexpr int ORBIS_KERNEL_PRIO_FIFO_DEFAULT = 700;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_HIGHEST = 256;
+constexpr int ORBIS_KERNEL_PRIO_FIFO_LOWEST = 767;
+
 struct Pthread;
 
 enum class PthreadMutexFlags : u32 {
