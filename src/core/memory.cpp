@@ -630,7 +630,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             // Get the next relevant dmem area.
             current_phys_addr += size_in_dma;
             remaining_size -= size_in_dma;
-            dmem_area = FindDmemArea(phys_addr_to_search);
+            dmem_area = FindDmemArea(current_phys_addr);
         }
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
