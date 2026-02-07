@@ -457,7 +457,7 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
         request_id--;
     }
     // Real library would hang if this assert fails.
-    ASSERT_MSG(request_id > user_ctx_id << 0x20, "Too many requests!");
+    ASSERT_MSG(request_id <= (user_ctx_id << 0x20), "Too many requests!");
     user_context->requests[request_id] = new OrbisNpWebApiRequest{};
 
     auto& request = user_context->requests[request_id];
