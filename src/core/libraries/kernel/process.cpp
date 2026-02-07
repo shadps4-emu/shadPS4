@@ -256,23 +256,22 @@ s32 PS4_SYSV_ABI sceKernelGetModuleList2(s32* handles, u64 num_array, u64* out_c
     }
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
-    u64 count = 0;
-    auto* module = linker->GetModule(count);
-    while (module != nullptr && count < num_array) {
-        if (module->IsSystemLib()) {
-            count++;
-            continue;
+    u64 id = 0;
+    u64 index = 0;
+    auto* module = linker->GetModule(id);
+    while (module != nullptr && index < num_array) {
+        if (!module->IsSystemLib()) {
+            handles[index++] = id;
         }
-        handles[count] = count;
-        count++;
-        module = linker->GetModule(count);
+        id++;
+        module = linker->GetModule(id);
     }
 
-    if (count == num_array && module != nullptr) {
+    if (index == num_array && module != nullptr) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
-    *out_count = count;
+    *out_count = index;
     return ORBIS_OK;
 }
 
