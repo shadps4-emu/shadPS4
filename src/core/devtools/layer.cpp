@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "layer.h"
@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/emulator_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
@@ -273,14 +274,10 @@ void L::DrawAdvanced() {
 
 void L::DrawSimple() {
     const float frameRate = DebugState.Framerate;
-    if (Config::fpsColor()) {
-        if (frameRate < 10) {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
-        } else if (frameRate >= 10 && frameRate < 20) {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
-        } else {
-            PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
-        }
+    if (frameRate < 10) {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
+    } else if (frameRate >= 10 && frameRate < 20) {
+        PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange
     } else {
         PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f)); // White
     }
@@ -311,6 +308,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
+    show_simple_fps = Config::getShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 
@@ -472,6 +470,11 @@ namespace Overlay {
 
 void ToggleSimpleFps() {
     show_simple_fps = !show_simple_fps;
+    visibility_toggled = true;
+}
+
+void SetSimpleFps(bool enabled) {
+    show_simple_fps = enabled;
     visibility_toggled = true;
 }
 

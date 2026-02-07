@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 #include "common/enum.h"
+#include "common/shared_first_mutex.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
@@ -27,6 +28,8 @@ class MemoryMapViewer;
 
 namespace Core {
 
+constexpr u64 DEFAULT_MAPPING_BASE = 0x200000000;
+
 enum class MemoryProt : u32 {
     NoAccess = 0,
     CpuRead = 1,
@@ -45,18 +48,46 @@ enum class MemoryMapFlags : u32 {
     Private = 2,
     Fixed = 0x10,
     NoOverwrite = 0x80,
+    Void = 0x100,
+    Stack = 0x400,
     NoSync = 0x800,
+    Anon = 0x1000,
     NoCore = 0x20000,
     NoCoalesce = 0x400000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
 
-enum class DMAType : u32 {
+enum class PhysicalMemoryType : u32 {
     Free = 0,
     Allocated = 1,
     Mapped = 2,
     Pooled = 3,
     Committed = 4,
+    Flexible = 5,
+};
+
+struct PhysicalMemoryArea {
+    PAddr base = 0;
+    u64 size = 0;
+    s32 memory_type = 0;
+    PhysicalMemoryType dma_type = PhysicalMemoryType::Free;
+
+    PAddr GetEnd() const {
+        return base + size;
+    }
+
+    bool CanMergeWith(const PhysicalMemoryArea& next) const {
+        if (base + size != next.base) {
+            return false;
+        }
+        if (memory_type != next.memory_type) {
+            return false;
+        }
+        if (dma_type != next.dma_type) {
+            return false;
+        }
+        return true;
+    }
 };
 
 enum class VMAType : u32 {
@@ -71,63 +102,22 @@ enum class VMAType : u32 {
     File = 8,
 };
 
-struct DirectMemoryArea {
-    PAddr base = 0;
-    u64 size = 0;
-    s32 memory_type = 0;
-    DMAType dma_type = DMAType::Free;
-
-    PAddr GetEnd() const {
-        return base + size;
-    }
-
-    bool CanMergeWith(const DirectMemoryArea& next) const {
-        if (base + size != next.base) {
-            return false;
-        }
-        if (memory_type != next.memory_type) {
-            return false;
-        }
-        if (dma_type != next.dma_type) {
-            return false;
-        }
-        return true;
-    }
-};
-
-struct FlexibleMemoryArea {
-    PAddr base = 0;
-    u64 size = 0;
-    bool is_free = true;
-
-    PAddr GetEnd() const {
-        return base + size;
-    }
-
-    bool CanMergeWith(const FlexibleMemoryArea& next) const {
-        if (base + size != next.base) {
-            return false;
-        }
-        if (is_free != next.is_free) {
-            return false;
-        }
-        return true;
-    }
-};
-
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
-    PAddr phys_base = 0;
+    std::map<uintptr_t, PhysicalMemoryArea> phys_areas;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
-    bool disallow_merge = false;
     std::string name = "";
-    uintptr_t fd = 0;
-    bool is_exec = false;
+    s32 fd = 0;
+    bool disallow_merge = false;
 
     bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
+    }
+
+    bool Overlaps(VAddr addr, u64 size) const {
+        return addr <= (base + this->size) && (addr + size) >= base;
     }
 
     bool IsFree() const noexcept {
@@ -138,30 +128,35 @@ struct VirtualMemoryArea {
         return type != VMAType::Free && type != VMAType::Reserved && type != VMAType::PoolReserved;
     }
 
-    bool CanMergeWith(const VirtualMemoryArea& next) const {
+    bool CanMergeWith(VirtualMemoryArea& next) {
         if (disallow_merge || next.disallow_merge) {
             return false;
         }
         if (base + size != next.base) {
             return false;
         }
-        if ((type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::Pooled) &&
-            phys_base + size != next.phys_base) {
-            return false;
+        if (type == VMAType::Direct && next.type == VMAType::Direct) {
+            auto& last_phys = std::prev(phys_areas.end())->second;
+            auto& first_next_phys = next.phys_areas.begin()->second;
+            if (last_phys.base + last_phys.size != first_next_phys.base ||
+                last_phys.memory_type != first_next_phys.memory_type) {
+                return false;
+            }
         }
         if (prot != next.prot || type != next.type) {
             return false;
         }
+        if (name.compare(next.name) != 0) {
+            return false;
+        }
+
         return true;
     }
 };
 
 class MemoryManager {
-    using DMemMap = std::map<PAddr, DirectMemoryArea>;
-    using DMemHandle = DMemMap::iterator;
-
-    using FMemMap = std::map<PAddr, FlexibleMemoryArea>;
-    using FMemHandle = FMemMap::iterator;
+    using PhysMap = std::map<PAddr, PhysicalMemoryArea>;
+    using PhysHandle = PhysMap::iterator;
 
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
     using VMAHandle = VMAMap::iterator;
@@ -217,10 +212,11 @@ public:
         // Now make sure the full address range is contained in vma_map.
         auto vma_handle = FindVMA(virtual_addr);
         auto addr_to_check = virtual_addr;
-        s64 size_to_validate = size;
+        u64 size_to_validate = size;
         while (vma_handle != vma_map.end() && size_to_validate > 0) {
             const auto offset_in_vma = addr_to_check - vma_handle->second.base;
-            const auto size_in_vma = vma_handle->second.size - offset_in_vma;
+            const auto size_in_vma =
+                std::min<u64>(vma_handle->second.size - offset_in_vma, size_to_validate);
             size_to_validate -= size_in_vma;
             addr_to_check += size_in_vma;
             vma_handle++;
@@ -242,7 +238,7 @@ public:
 
     void CopySparseMemory(VAddr source, u8* dest, u64 size);
 
-    bool TryWriteBacking(void* address, const void* data, u32 num_bytes);
+    bool TryWriteBacking(void* address, const void* data, u64 size);
 
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
 
@@ -250,7 +246,7 @@ public:
 
     PAddr Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment, s32 memory_type);
 
-    void Free(PAddr phys_addr, u64 size);
+    s32 Free(PAddr phys_addr, u64 size, bool is_checked);
 
     s32 PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 
@@ -297,32 +293,12 @@ private:
         return std::prev(vma_map.upper_bound(target));
     }
 
-    DMemHandle FindDmemArea(PAddr target) {
+    PhysHandle FindDmemArea(PAddr target) {
         return std::prev(dmem_map.upper_bound(target));
     }
 
-    FMemHandle FindFmemArea(PAddr target) {
+    PhysHandle FindFmemArea(PAddr target) {
         return std::prev(fmem_map.upper_bound(target));
-    }
-
-    template <typename Handle>
-    Handle MergeAdjacent(auto& handle_map, Handle iter) {
-        const auto next_vma = std::next(iter);
-        if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
-            iter->second.size += next_vma->second.size;
-            handle_map.erase(next_vma);
-        }
-
-        if (iter != handle_map.begin()) {
-            auto prev_vma = std::prev(iter);
-            if (prev_vma->second.CanMergeWith(iter->second)) {
-                prev_vma->second.size += iter->second.size;
-                handle_map.erase(iter);
-                iter = prev_vma;
-            }
-        }
-
-        return iter;
     }
 
     bool HasPhysicalBacking(VirtualMemoryArea vma) {
@@ -330,19 +306,22 @@ private:
                vma.type == VMAType::Pooled;
     }
 
+    VMAHandle CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryMapFlags flags,
+                         VMAType type, std::string_view name, u64 alignment);
+
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
+
+    VMAHandle MergeAdjacent(VMAMap& map, VMAHandle iter);
+
+    PhysHandle MergeAdjacent(PhysMap& map, PhysHandle iter);
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
-    DMemHandle CarveDmemArea(PAddr addr, u64 size);
-
-    FMemHandle CarveFmemArea(PAddr addr, u64 size);
+    PhysHandle CarvePhysArea(PhysMap& map, PAddr addr, u64 size);
 
     VMAHandle Split(VMAHandle vma_handle, u64 offset_in_vma);
 
-    DMemHandle Split(DMemHandle dmem_handle, u64 offset_in_area);
-
-    FMemHandle Split(FMemHandle fmem_handle, u64 offset_in_area);
+    PhysHandle Split(PhysMap& map, PhysHandle dmem_handle, u64 offset_in_area);
 
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
@@ -350,14 +329,16 @@ private:
 
 private:
     AddressSpace impl;
-    DMemMap dmem_map;
-    FMemMap fmem_map;
+    PhysMap dmem_map;
+    PhysMap fmem_map;
     VMAMap vma_map;
-    std::mutex mutex;
+    Common::SharedFirstMutex mutex{};
+    std::mutex unmap_mutex{};
     u64 total_direct_size{};
     u64 total_flexible_size{};
     u64 flexible_usage{};
     u64 pool_budget{};
+    s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
 
     struct PrtArea {

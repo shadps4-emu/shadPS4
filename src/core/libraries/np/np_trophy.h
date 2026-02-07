@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 #include "core/libraries/rtc/rtc.h"
 
@@ -132,7 +133,8 @@ int PS4_SYSV_ABI sceNpTrophyConfigGetTrophySetInfoInGroup();
 int PS4_SYSV_ABI sceNpTrophyConfigGetTrophySetVersion();
 int PS4_SYSV_ABI sceNpTrophyConfigGetTrophyTitleDetails();
 int PS4_SYSV_ABI sceNpTrophyConfigHasGroupFeature();
-s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context, s32 user_id,
+s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
+                                          Libraries::UserService::OrbisUserServiceUserId user_id,
                                           u32 service_label, u64 options);
 s32 PS4_SYSV_ABI sceNpTrophyCreateHandle(OrbisNpTrophyHandle* handle);
 int PS4_SYSV_ABI sceNpTrophyDestroyContext(OrbisNpTrophyContext context);

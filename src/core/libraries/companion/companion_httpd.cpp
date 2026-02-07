@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -16,7 +16,7 @@ s32 PS4_SYSV_ABI sceCompanionHttpdAddHeader(const char* key, const char* value,
 }
 
 s32 PS4_SYSV_ABI
-sceCompanionHttpdGet2ndScreenStatus(Libraries::UserService::OrbisUserServiceUserId) {
+sceCompanionHttpdGet2ndScreenStatus(Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_ERROR(Lib_CompanionHttpd, "(STUBBED) called");
     return ORBIS_OK;
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -34,7 +34,7 @@ u32 GetChannelMask(u32 num_channels) {
     case 8:
         return ORBIS_AJM_CHANNELMASK_7POINT1;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unexpected number of channels: {}", num_channels);
     }
 }
 
@@ -144,9 +144,8 @@ int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceAjmInstanceCodecType() {
-    LOG_ERROR(Lib_Ajm, "(STUBBED) called");
-    return ORBIS_OK;
+AjmCodecType PS4_SYSV_ABI sceAjmInstanceCodecType(u32 instance_id) {
+    return static_cast<AjmCodecType>((instance_id >> 14) & 0x1F);
 }
 
 int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context_id, AjmCodecType codec_type,

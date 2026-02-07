@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ctime>
 #include <string>
 #include <thread>
+
+#include "core/libraries/kernel/threads/pthread.h"
 
 #include "common/error.h"
 #include "common/logging/log.h"
@@ -171,6 +174,9 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
 
 // Sets the debugger-visible name of the current thread.
 void SetCurrentThreadName(const char* name) {
+    if (Libraries::Kernel::g_curthread) {
+        Libraries::Kernel::g_curthread->name = name;
+    }
     SetThreadDescription(GetCurrentThread(), UTF8ToUTF16W(name).data());
 }
 
@@ -183,6 +189,9 @@ void SetThreadName(void* thread, const char* name) {
 // MinGW with the POSIX threading model does not support pthread_setname_np
 #if !defined(_WIN32) || defined(_MSC_VER)
 void SetCurrentThreadName(const char* name) {
+    if (Libraries::Kernel::g_curthread) {
+        Libraries::Kernel::g_curthread->name = name;
+    }
 #ifdef __APPLE__
     pthread_setname_np(name);
 #elif defined(__Bitrig__) || defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
@@ -209,6 +218,9 @@ void SetThreadName(void* thread, const char* name) {
 
 #if defined(_WIN32)
 void SetCurrentThreadName(const char*) {
+    if (Libraries::Kernel::g_curthread) {
+        Libraries::Kernel::g_curthread->name = name;
+    }
     // Do Nothing on MinGW
 }
 
@@ -235,6 +247,24 @@ void AccurateTimer::End() {
     auto now = std::chrono::high_resolution_clock::now();
     total_wait +=
         target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+}
+
+std::string GetCurrentThreadName() {
+    using namespace Libraries::Kernel;
+    if (g_curthread && !g_curthread->name.empty()) {
+        return g_curthread->name;
+    }
+#ifdef _WIN32
+    PWSTR name;
+    GetThreadDescription(GetCurrentThread(), &name);
+    return Common::UTF16ToUTF8(name);
+#else
+    char name[256];
+    if (pthread_getname_np(pthread_self(), name, sizeof(name)) != 0) {
+        return "<unknown name>";
+    }
+    return std::string{name};
+#endif
 }
 
 } // namespace Common

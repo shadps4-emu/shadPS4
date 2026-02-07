@@ -9,7 +9,7 @@
 
 #include "common/support/avdec.h"
 
-namespace Libraries::Vdec2 {
+namespace Libraries::Videodec2 {
 
 std::vector<OrbisVideodec2AvcPictureInfo> gPictureInfos;
 std::vector<OrbisVideodec2LegacyAvcPictureInfo> gLegacyPictureInfos;
@@ -278,4 +278,4 @@ AVFrame* VdecDecoder::ConvertNV12Frame(AVFrame& frame) {
     return nv12_frame;
 }
 
-} // namespace Libraries::Vdec2
+} // namespace Libraries::Videodec2

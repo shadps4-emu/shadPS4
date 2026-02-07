@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
@@ -23,8 +24,8 @@ std::string FormatLogMessage(const Entry& entry) {
     const char* class_name = GetLogClassName(entry.log_class);
     const char* level_name = GetLevelName(entry.log_level);
 
-    return fmt::format("[{}] <{}> {}:{} {}: {}", class_name, level_name, entry.filename,
-                       entry.line_num, entry.function, entry.message);
+    return fmt::format("[{}] <{}> ({}) {}:{} {}: {}", class_name, level_name, entry.thread,
+                       entry.filename, entry.line_num, entry.function, entry.message);
 }
 
 void PrintMessage(const Entry& entry) {
