@@ -32,7 +32,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
         TableNextColumn();
         Text("%s", magic_enum::enum_name(m.prot).data());
         TableNextColumn();
-        if (m.is_exec) {
+        if (True(m.prot & MemoryProt::CpuExec)) {
             Text("X");
         }
         TableNextColumn();
@@ -44,7 +44,7 @@ bool MemoryMapViewer::Iterator::DrawLine() {
         return false;
     }
     auto m = dmem.it->second;
-    if (m.dma_type == DMAType::Free) {
+    if (m.dma_type == PhysicalMemoryType::Free) {
         ++dmem.it;
         return DrawLine();
     }
@@ -56,7 +56,8 @@ bool MemoryMapViewer::Iterator::DrawLine() {
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());
     TableNextColumn();
-    Text("%d", m.dma_type == DMAType::Pooled || m.dma_type == DMAType::Committed);
+    Text("%d",
+         m.dma_type == PhysicalMemoryType::Pooled || m.dma_type == PhysicalMemoryType::Committed);
     ++dmem.it;
     return true;
 }

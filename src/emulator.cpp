@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -34,7 +34,9 @@
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/np/np_trophy.h"
@@ -74,9 +76,28 @@ Emulator::Emulator() {
 
 Emulator::~Emulator() {}
 
+s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
+    Core::Loader::Elf elf;
+    elf.Open(file);
+    if (!elf.IsElfFile()) {
+        return 0;
+    }
+    const auto elf_pheader = elf.GetProgramHeader();
+    auto i_procparam = std::find_if(elf_pheader.begin(), elf_pheader.end(), [](const auto& entry) {
+        return entry.p_type == PT_SCE_PROCPARAM;
+    });
+
+    if (i_procparam != elf_pheader.end()) {
+        Core::OrbisProcParam param{};
+        elf.LoadSegment(u64(&param), i_procparam->p_offset, i_procparam->p_filesz);
+        return param.sdk_version;
+    }
+    return 0;
+}
+
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
-    Common::SetCurrentThreadName("Main Thread");
+    Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }
@@ -162,6 +183,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
+    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
+    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
+
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
     game_info.game_serial = id;
@@ -169,7 +193,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = sdk_version;
+    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
@@ -241,7 +265,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-        LOG_INFO(Loader, "Compiled SDK version: {:#x}", sdk_version);
+        LOG_INFO(Loader, "param.sfo SDK version: {:#x}", sdk_version);
+        LOG_INFO(Loader, "eboot SDK version: {:#x}", game_info.sdk_ver);
         LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
         LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
@@ -339,8 +364,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
     // Load the module with the linker
-    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
                      Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
@@ -502,10 +525,15 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr auto ModulesToLoad = std::to_array<SysModules>(
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
+         {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
+         {"libSceJpegDec.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
+         {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
+         {"libSceAudiodec.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
          {"libSceFreeTypeOt.sprx", nullptr}});

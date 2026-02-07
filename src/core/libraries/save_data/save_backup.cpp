@@ -167,7 +167,7 @@ void StopThread() {
     g_backup_thread_semaphore.release();
 }
 
-bool NewRequest(OrbisUserServiceUserId user_id, std::string_view title_id,
+bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
                 std::string_view dir_name, OrbisSaveDataEventType origin) {
     auto save_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
 

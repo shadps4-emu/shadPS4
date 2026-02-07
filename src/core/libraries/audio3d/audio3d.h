@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -14,8 +14,6 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Audio3d {
-
-using OrbisUserServiceUserId = s32;
 
 enum class OrbisAudio3dRate : u32 {
     ORBIS_AUDIO3D_RATE_48000 = 0,
@@ -91,7 +89,8 @@ struct Audio3dState {
 };
 
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(s32 handle);
-s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId port_id, OrbisUserServiceUserId user_id,
+s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(OrbisAudio3dPortId port_id,
+                                        Libraries::UserService::OrbisUserServiceUserId user_id,
                                         s32 type, s32 index, u32 len, u32 freq,
                                         AudioOut::OrbisAudioOutParamExtendedInformation param);
 s32 PS4_SYSV_ABI sceAudio3dAudioOutOutput(s32 handle, void* ptr);
@@ -127,7 +126,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(OrbisAudio3dPortId port_id, u32* qu
                                              u32* queue_available);
 s32 PS4_SYSV_ABI sceAudio3dPortGetState();
 s32 PS4_SYSV_ABI sceAudio3dPortGetStatus();
-s32 PS4_SYSV_ABI sceAudio3dPortOpen(OrbisUserServiceUserId user_id,
+s32 PS4_SYSV_ABI sceAudio3dPortOpen(Libraries::UserService::OrbisUserServiceUserId user_id,
                                     const OrbisAudio3dOpenParameters* parameters,
                                     OrbisAudio3dPortId* port_id);
 s32 PS4_SYSV_ABI sceAudio3dPortPush(OrbisAudio3dPortId port_id, OrbisAudio3dBlocking blocking);

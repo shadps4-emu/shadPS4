@@ -22,32 +22,28 @@ public:
     virtual s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) override;
     virtual s64 preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt,
                        s64 offset) override;
-    virtual s64 lseek(s64 offset, s32 whence) override;
     virtual s32 fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
     virtual s64 getdents(void* buf, u64 nbytes, s64* basep) override;
 
 private:
-    static constexpr s32 MAX_LENGTH = 255;
-    static constexpr s32 DIRECTORY_ALIGNMENT = 0x10000;
+#pragma pack(push, 1)
     struct PfsDirectoryDirent {
         u32 d_fileno;
         u32 d_type;
         u32 d_namlen;
         u32 d_reclen;
-        char d_name[MAX_LENGTH + 1];
+        char d_name[256];
     };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
     struct NormalDirectoryDirent {
         u32 d_fileno;
         u16 d_reclen;
         u8 d_type;
         u8 d_namlen;
-        char d_name[MAX_LENGTH + 1];
+        char d_name[256];
     };
-
-    u64 directory_size = 0;
-    u64 directory_content_size = 0;
-    s64 dirents_index = 0;
-    std::vector<PfsDirectoryDirent> dirents;
+#pragma pack(pop)
 };
 } // namespace Core::Directories

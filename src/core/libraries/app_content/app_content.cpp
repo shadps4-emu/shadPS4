@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
@@ -345,7 +345,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
     if (addcont_count > 0) {
         SystemService::OrbisSystemServiceEvent event{};
         event.event_type = SystemService::OrbisSystemServiceEventType::EntitlementUpdate;
-        event.service_entitlement_update.user_id = 0;
+        event.service_entitlement_update.userId = 0;
         event.service_entitlement_update.np_service_label = 0;
         SystemService::PushSystemServiceEvent(event);
     }

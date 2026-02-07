@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <core/libraries/system/userservice.h>
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -24,7 +25,8 @@ int PS4_SYSV_ABI sceRemoteplayDisconnect();
 int PS4_SYSV_ABI sceRemoteplayGeneratePinCode();
 int PS4_SYSV_ABI sceRemoteplayGetApMode();
 int PS4_SYSV_ABI sceRemoteplayGetConnectHistory();
-int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(s32 userId, int* pStatus);
+int PS4_SYSV_ABI sceRemoteplayGetConnectionStatus(
+    Libraries::UserService::OrbisUserServiceUserId userId, int* pStatus);
 int PS4_SYSV_ABI sceRemoteplayGetConnectUserId();
 int PS4_SYSV_ABI sceRemoteplayGetMbusDeviceInfo();
 int PS4_SYSV_ABI sceRemoteplayGetOperationStatus();

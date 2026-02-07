@@ -42,7 +42,6 @@ enum class OrbisSaveDataSaveDataMemoryOption : u32 {
     UNLOCK_LIMITATIONS = 1 << 2,
 };
 
-using OrbisUserServiceUserId = s32;
 using OrbisSaveDataBlocks = u64;
 
 constexpr u32 OrbisSaveDataBlockSize = 32768; // 32 KiB
@@ -97,7 +96,7 @@ struct OrbisSaveDataFingerprint {
 };
 
 struct OrbisSaveDataBackup {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -106,7 +105,7 @@ struct OrbisSaveDataBackup {
 };
 
 struct OrbisSaveDataCheckBackupData {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -116,7 +115,7 @@ struct OrbisSaveDataCheckBackupData {
 };
 
 struct OrbisSaveDataDelete {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -153,7 +152,7 @@ struct OrbisSaveDataMemoryData {
 };
 
 struct OrbisSaveDataMemoryGet2 {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     std::array<u8, 4> _pad;
     OrbisSaveDataMemoryData* data;
     OrbisSaveDataParam* param;
@@ -163,7 +162,7 @@ struct OrbisSaveDataMemoryGet2 {
 };
 
 struct OrbisSaveDataMemorySet2 {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     std::array<u8, 4> _pad;
     const OrbisSaveDataMemoryData* data;
     const OrbisSaveDataParam* param;
@@ -175,7 +174,7 @@ struct OrbisSaveDataMemorySet2 {
 
 struct OrbisSaveDataMemorySetup2 {
     OrbisSaveDataSaveDataMemoryOption option;
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     size_t memorySize;
     size_t iconMemorySize;
     // +4.5
@@ -197,14 +196,14 @@ enum OrbisSaveDataMemorySyncOption : u32 {
 };
 
 struct OrbisSaveDataMemorySync {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     u32 slotId;
     OrbisSaveDataMemorySyncOption option;
     std::array<u8, 28> _reserved;
 };
 
 struct OrbisSaveDataMount2 {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataDirName* dirName;
     OrbisSaveDataBlocks blocks;
@@ -214,7 +213,7 @@ struct OrbisSaveDataMount2 {
 };
 
 struct OrbisSaveDataMount {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -245,7 +244,7 @@ struct OrbisSaveDataMountResult {
 };
 
 struct OrbisSaveDataRestoreBackupData {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -256,7 +255,7 @@ struct OrbisSaveDataRestoreBackupData {
 };
 
 struct OrbisSaveDataTransferringMount {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
     const OrbisSaveDataFingerprint* fingerprint;
@@ -264,7 +263,7 @@ struct OrbisSaveDataTransferringMount {
 };
 
 struct OrbisSaveDataDirNameSearchCond {
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     int : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
@@ -303,7 +302,7 @@ using OrbisSaveDataEventType = Backup::OrbisSaveDataEventType;
 struct OrbisSaveDataEvent {
     OrbisSaveDataEventType type;
     s32 errorCode;
-    OrbisUserServiceUserId userId;
+    Libraries::UserService::OrbisUserServiceUserId userId;
     std::array<u8, 4> _pad;
     OrbisSaveDataTitleId titleId;
     OrbisSaveDataDirName dirName;
@@ -1106,8 +1105,9 @@ int PS4_SYSV_ABI sceSaveDataGetSaveDataCount() {
     return ORBIS_OK;
 }
 
-Error PS4_SYSV_ABI sceSaveDataGetSaveDataMemory(const OrbisUserServiceUserId userId, void* buf,
-                                                const size_t bufSize, const int64_t offset) {
+Error PS4_SYSV_ABI
+sceSaveDataGetSaveDataMemory(const Libraries::UserService::OrbisUserServiceUserId userId, void* buf,
+                             const size_t bufSize, const int64_t offset) {
     LOG_DEBUG(Lib_SaveData, "Redirecting to sceSaveDataGetSaveDataMemory2");
     OrbisSaveDataMemoryData data{};
     data.buf = buf;
@@ -1469,8 +1469,9 @@ int PS4_SYSV_ABI sceSaveDataSetSaveDataLibraryUser() {
     return ORBIS_OK;
 }
 
-Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory(OrbisUserServiceUserId userId, void* buf,
-                                                size_t bufSize, int64_t offset) {
+Error PS4_SYSV_ABI
+sceSaveDataSetSaveDataMemory(Libraries::UserService::OrbisUserServiceUserId userId, void* buf,
+                             size_t bufSize, int64_t offset) {
     LOG_DEBUG(Lib_SaveData, "Redirecting to sceSaveDataSetSaveDataMemory2");
     OrbisSaveDataMemoryData data{};
     data.buf = buf;
@@ -1527,8 +1528,9 @@ Error PS4_SYSV_ABI sceSaveDataSetSaveDataMemory2(const OrbisSaveDataMemorySet2* 
     return Error::OK;
 }
 
-Error PS4_SYSV_ABI sceSaveDataSetupSaveDataMemory(OrbisUserServiceUserId userId, size_t memorySize,
-                                                  OrbisSaveDataParam* param) {
+Error PS4_SYSV_ABI
+sceSaveDataSetupSaveDataMemory(Libraries::UserService::OrbisUserServiceUserId userId,
+                               size_t memorySize, OrbisSaveDataParam* param) {
     LOG_DEBUG(Lib_SaveData, "called: userId = {}, memorySize = {}", userId, memorySize);
     OrbisSaveDataMemorySetup2 setupParam{};
     setupParam.userId = userId;

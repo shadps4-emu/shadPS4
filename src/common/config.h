@@ -125,7 +125,6 @@ int getSpecialPadClass();
 bool getPSNSignedIn();
 void setPSNSignedIn(bool sign, bool is_game_specific = false);
 bool patchShaders(); // no set
-bool fpsColor();     // no set
 bool getShowFpsCounter();
 void setShowFpsCounter(bool enable, bool is_game_specific = false);
 bool isNeoModeConsole();
@@ -154,8 +153,6 @@ void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
-bool getLoadAutoPatches();
-void setLoadAutoPatches(bool enable);
 
 enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 int getUsbDeviceBackend();

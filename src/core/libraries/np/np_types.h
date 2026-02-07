@@ -9,6 +9,8 @@
 // For structs and constants shared between multiple Np libraries.
 namespace Libraries::Np {
 
+using OrbisNpAccountId = u64;
+
 constexpr s32 ORBIS_NP_ONLINEID_MAX_LENGTH = 16;
 
 struct OrbisNpOnlineId {

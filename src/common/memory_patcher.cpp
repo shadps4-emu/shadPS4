@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -12,6 +12,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "memory_patcher.h"
 
@@ -51,14 +52,14 @@ std::string convertValueToHex(const std::string type, const std::string valueStr
             uint32_t i;
         } floatUnion;
         floatUnion.f = std::stof(valueStr);
-        result = toHex(floatUnion.i, sizeof(floatUnion.i));
+        result = toHex(std::byteswap(floatUnion.i), sizeof(floatUnion.i));
     } else if (type == "float64") {
         union {
             double d;
             uint64_t i;
         } doubleUnion;
         doubleUnion.d = std::stod(valueStr);
-        result = toHex(doubleUnion.i, sizeof(doubleUnion.i));
+        result = toHex(std::byteswap(doubleUnion.i), sizeof(doubleUnion.i));
     } else if (type == "utf8") {
         std::vector<unsigned char> byteArray =
             std::vector<unsigned char>(valueStr.begin(), valueStr.end());
@@ -192,7 +193,7 @@ void OnGameLoaded() {
         } else {
             ApplyPatchesFromXML(file_path);
         }
-    } else if (Config::getLoadAutoPatches()) {
+    } else if (EmulatorState::GetInstance()->IsAutoPatchesLoadEnabled()) {
         for (auto const& repo : std::filesystem::directory_iterator(patch_dir)) {
             if (!repo.is_directory()) {
                 continue;
