@@ -4,10 +4,13 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include "types.h"
 
 namespace Config {
+using SysModulesMap = std::unordered_map<std::string, bool>;
 
 enum class ConfigMode {
     Default,
@@ -151,12 +154,15 @@ void setRcasAttenuation(int value, bool is_game_specific = false);
 bool getIsConnectedToNetwork();
 void setConnectedToNetwork(bool enable, bool is_game_specific = false);
 void setUserName(const std::string& name, bool is_game_specific = false);
+void setEnabledSysModules(const SysModulesMap& modules, bool is_game_specific);
 std::filesystem::path getSysModulesPath();
 void setSysModulesPath(const std::filesystem::path& path);
 
 enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 int getUsbDeviceBackend();
 void setUsbDeviceBackend(int value, bool is_game_specific = false);
+const std::vector<std::string>& getAllSysModules();
+const SysModulesMap& getEnabledSysModules();
 
 // TODO
 std::filesystem::path GetSaveDataPath();

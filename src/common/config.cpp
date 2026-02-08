@@ -95,10 +95,10 @@ public:
         base_value = t;
         return *this;
     }
-    const T get() const {
+    const T& get() const {
         switch (config_mode) {
         case ConfigMode::Default:
-            return game_specific_value.value_or(base_value);
+            return game_specific_value.has_value() ? *game_specific_value : base_value;
         case ConfigMode::Global:
             return base_value;
         case ConfigMode::Clean:
@@ -203,6 +203,12 @@ static ConfigEntry<bool> isShaderDebug(false);
 static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
 static ConfigEntry<bool> showFpsCounter(false);
 static ConfigEntry<bool> logEnabled(true);
+static const std::vector<std::string> sysModules = {
+    "libSceNgs2.sprx",         "libSceUlt.sprx",       "libSceRtc.sprx",      "libSceJpegDec.sprx",
+    "libSceJpegEnc.sprx",      "libScePngEnc.sprx",    "libSceJson.sprx",     "libSceJson2.sprx",
+    "libSceLibcInternal.sprx", "libSceCesCs.sprx",     "libSceAudiodec.sprx", "libSceFont.sprx",
+    "libSceFontFt.sprx",       "libSceFreeTypeOt.sprx"};
+static ConfigEntry<Config::SysModulesMap> enabledSysModules;
 
 // GUI
 static std::vector<GameInstallDir> settings_install_dirs = {};
@@ -225,6 +231,14 @@ static string config_version = Common::g_scm_rev;
 // These entries aren't stored in the config
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
+
+static toml::value sysModulesToToml(const Config::SysModulesMap& modules) {
+    toml::value tbl = toml::table();
+    for (auto& [name, enabled] : modules) {
+        tbl[name] = enabled;
+    }
+    return tbl;
+}
 
 std::filesystem::path getSysModulesPath() {
     if (sys_modules_path.empty()) {
@@ -843,6 +857,18 @@ void setUsbDeviceBackend(int value, bool is_game_specific) {
     usbDeviceBackend.set(value, is_game_specific);
 }
 
+const std::vector<std::string>& getAllSysModules() {
+    return sysModules;
+}
+
+const Config::SysModulesMap& getEnabledSysModules() {
+    return enabledSysModules.get();
+}
+
+void setEnabledSysModules(const Config::SysModulesMap& modules, bool is_game_specific) {
+    enabledSysModules.set(modules, is_game_specific);
+}
+
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
@@ -961,6 +987,19 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         showFpsCounter.setFromToml(debug, "showFpsCounter", is_game_specific);
         logEnabled.setFromToml(debug, "logEnabled", is_game_specific);
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
+
+        if (is_game_specific) {
+            Config::SysModulesMap modules;
+            auto tbl = toml::find<toml::value>(debug, "enabledSysModules");
+            if (tbl.is_table()) {
+                for (auto& [key, val] : tbl.as_table()) {
+                    if (val.is_boolean()) {
+                        modules[key] = val.as_boolean();
+                    }
+                }
+            }
+            enabledSysModules.set(modules, is_game_specific);
+        }
     }
 
     if (data.contains("GUI")) {
@@ -1125,7 +1164,11 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isSeparateLogFilesEnabled.setTomlValue(data, "Debug", "isSeparateLogFilesEnabled",
                                            is_game_specific);
     logEnabled.setTomlValue(data, "Debug", "logEnabled", is_game_specific);
-
+    if (is_game_specific && enabledSysModules.game_specific_value.has_value()) {
+        data["Debug"]["enabledSysModules"] =
+            sysModulesToToml(*enabledSysModules.game_specific_value);
+        enabledSysModules.game_specific_value = std::nullopt;
+    }
     m_language.setTomlValue(data, "Settings", "consoleLanguage", is_game_specific);
 
     if (!is_game_specific) {

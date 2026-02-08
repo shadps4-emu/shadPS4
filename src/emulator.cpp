@@ -546,17 +546,20 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
          {"libSceFreeTypeOt.sprx", nullptr}});
 
-    std::vector<std::filesystem::path> found_modules;
     const auto& sys_module_path = Config::getSysModulesPath();
-    for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
-        found_modules.push_back(entry.path());
-    }
+    const auto& enabledModules = Config::getEnabledSysModules();
+
     for (const auto& [module_name, init_func] : ModulesToLoad) {
-        const auto it = std::ranges::find_if(
-            found_modules, [&](const auto& path) { return path.filename() == module_name; });
-        if (it != found_modules.end()) {
-            LOG_INFO(Loader, "Loading {}", it->string());
-            if (linker->LoadModule(*it) != -1) {
+        // Check if the module is explicitly disabled in the game-specific settings.
+        if (auto it = enabledModules.find(std::string(module_name));
+            it != enabledModules.end() && it->second == false) {
+            LOG_INFO(Loader, "Module {} disabled by config", module_name);
+            continue;
+        }
+        const auto module_path = sys_module_path / module_name;
+        if (std::filesystem::exists(module_path)) {
+            LOG_INFO(Loader, "Loading {}", module_path.string());
+            if (linker->LoadModule(module_path) != -1) {
                 continue;
             }
         }
