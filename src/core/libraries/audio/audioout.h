@@ -97,6 +97,12 @@ struct OrbisAudioOutPortState {
     u64 reserved64[2];
 };
 
+struct OrbisAudioOutSystemState {
+    float loudness;
+    u8 reserved8[4];
+    u64 reserved64[3];
+};
+
 struct AudioFormatInfo {
     bool is_float;
     u8 sample_size;
@@ -162,7 +168,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetSimulatedBusUsableStatusByBusType();
 s32 PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo();
 s32 PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo2();
 s32 PS4_SYSV_ABI sceAudioOutGetSparkVss();
-s32 PS4_SYSV_ABI sceAudioOutGetSystemState();
+s32 PS4_SYSV_ABI sceAudioOutGetSystemState(OrbisAudioOutSystemState* state);
 s32 PS4_SYSV_ABI sceAudioOutInit();
 s32 PS4_SYSV_ABI sceAudioOutInitIpmiGetSession();
 s32 PS4_SYSV_ABI sceAudioOutMasteringGetState();

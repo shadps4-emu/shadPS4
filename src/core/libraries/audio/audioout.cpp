@@ -496,11 +496,11 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     state->rerouteCounter = 0;
     state->flag = 0;
-    LOG_INFO(Lib_AudioOut,
-             "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
-             "rerouteCounter={}, flag={}",
-             handle, fmt::ptr(state), state->output, state->channel, state->volume,
-             state->rerouteCounter, state->flag);
+    LOG_DEBUG(Lib_AudioOut,
+              "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
+              "rerouteCounter={}, flag={}",
+              handle, fmt::ptr(state), state->output, state->channel, state->volume,
+              state->rerouteCounter, state->flag);
     return ORBIS_OK;
 }
 
@@ -729,7 +729,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+    LOG_INFO(Lib_AudioOut, "(STUBBED) called");
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
@@ -766,6 +766,19 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
     port->mixLevelPadSpk = mixLevel;
     // TODO: Apply mix level to backend
 
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceAudioOutGetSystemState(OrbisAudioOutSystemState* state) {
+    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "audio is not init");
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
+    if (state == nullptr) {
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
+    }
+    memset(state, 0, sizeof(*state));
+    LOG_DEBUG(Lib_AudioOut, "called");
     return ORBIS_OK;
 }
 
@@ -888,11 +901,6 @@ s32 PS4_SYSV_ABI sceAudioOutGetSimulatedHandleStatusInfo2() {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetSparkVss() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI sceAudioOutGetSystemState() {
     LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
     return ORBIS_OK;
 }
