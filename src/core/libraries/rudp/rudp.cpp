@@ -35,19 +35,19 @@ s32 PS4_SYSV_ABI sceRudpAccept() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpActivate(int contextId, Net::OrbisNetSockaddr* to,
+s32 PS4_SYSV_ABI sceRudpActivate(int context_id, Net::OrbisNetSockaddr* to,
                                  OrbisNetSocklen_t toLen) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpBind(int contextId, int soc, u16 virtualPort, u8 muxMode) {
+s32 PS4_SYSV_ABI sceRudpBind(int context_id, int soc, u16 virtualPort, u8 muxMode) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceRudpCreateContext(OrbisRudpContextEventHandler handler, void* arg,
-                                      int* contextId) {
+                                      int* context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -68,18 +68,18 @@ s32 PS4_SYSV_ABI sceRudpEnd() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpFlush(int contextId) {
+s32 PS4_SYSV_ABI sceRudpFlush(int context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetContextStatus(int contextId, OrbisRudpContextStatus* status,
+s32 PS4_SYSV_ABI sceRudpGetContextStatus(int context_id, OrbisRudpContextStatus* status,
                                          size_t statusSize) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetLocalInfo(int contextId, int* soc, Net::OrbisNetSockaddr* addr,
+s32 PS4_SYSV_ABI sceRudpGetLocalInfo(int context_id, int* soc, Net::OrbisNetSockaddr* addr,
                                      u32* addrlen, u16* virtualPort, u8* muxMode) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
@@ -90,44 +90,40 @@ s32 PS4_SYSV_ABI sceRudpGetMaxSegmentSize(u16* mss) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetNumberOfPacketsToRead(int contextId) {
+s32 PS4_SYSV_ABI sceRudpGetNumberOfPacketsToRead(int context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetOption(int contextId, Option option, void* optVal, size_t optLen) {
+s32 PS4_SYSV_ABI sceRudpGetOption(int context_id, Option option, void* optVal, size_t optLen) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int contextId, Net::OrbisNetSockaddr* addr, u32* addrlen,
+s32 PS4_SYSV_ABI sceRudpGetRemoteInfo(int context_id, Net::OrbisNetSockaddr* addr, u32* addrlen,
                                       u16* virtualPort) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetSizeReadable(int contextId) {
+s32 PS4_SYSV_ABI sceRudpGetSizeReadable(int context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int contextId) {
+s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 Rudp_GetActiveContexts() {
-    return g_state.current_contexts.load();
+u32 PS4_SYSV_ABI Func_01014df0(const u32* internalStructPointer) {
+    return *internalStructPointer;
 }
 
-void Rudp_GetMemoryStats(s32* sentQualityLevel4Packets, s32* rcvdQualityLevel4Packets, s32* allocs,
-                         s32* frees) {
-    *allocs = g_state.allocs.load();
-    *frees = g_state.frees.load();
-    *sentQualityLevel4Packets = g_state.sentQualityLevel4Packets.load();
-    *rcvdQualityLevel4Packets = g_state.rcvdQualityLevel4Packets.load();
+u32 PS4_SYSV_ABI Func_0100d870(u32 globalContextListPtr) {
+    u32 count = Func_01014df0((globalContextListPtr + 8));
+    return (count & 0xFFFFFFFF);
 }
-
 s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     std::lock_guard lock(g_RudpMutex);
 
@@ -153,7 +149,7 @@ s32 PS4_SYSV_ABI sceRudpInit(void* memPool, int memPoolSize) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpInitiate(int contextId, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen,
+s32 PS4_SYSV_ABI sceRudpInitiate(int context_id, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen,
                                  u16 virtualPort) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
@@ -180,7 +176,7 @@ s32 PS4_SYSV_ABI sceRudpPollCancel(PollEvent poll) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpPollControl(PollEvent poll, PollOp op, int contextId, PollEvent events) {
+s32 PS4_SYSV_ABI sceRudpPollControl(PollEvent poll, PollOp op, int context_id, PollEvent events) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -206,7 +202,7 @@ s32 PS4_SYSV_ABI sceRudpProcessEvents(OrbisRudpUsec timeout) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpRead(int contextId, void* data, size_t len, u8 flags,
+s32 PS4_SYSV_ABI sceRudpRead(int context_id, void* data, size_t len, u8 flags,
                              OrbisRudpReadInfo* info) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
@@ -222,17 +218,17 @@ s32 PS4_SYSV_ABI sceRudpSetMaxSegmentSize(u16 mss) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpSetOption(int contextId, Option option, void* optVal, size_t optLen) {
+s32 PS4_SYSV_ABI sceRudpSetOption(int context_id, Option option, void* optVal, size_t optLen) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpTerminate(int contextId) {
+s32 PS4_SYSV_ABI sceRudpTerminate(int context_id) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceRudpWrite(int contextId, void* data, size_t len, Message msg) {
+s32 PS4_SYSV_ABI sceRudpWrite(int context_id, void* data, size_t len, Message msg) {
     LOG_ERROR(Lib_Rudp, "(STUBBED) called");
     return ORBIS_OK;
 }
