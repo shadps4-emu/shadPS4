@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 #include <thread>
 
 #include <fmt/format.h>
@@ -208,6 +209,8 @@ public:
             }
         }
 
+        std::unique_lock entry_loc(_mutex);
+
         if (Config::groupIdenticalLogs()) {
             if (_last_entry.message == message) {
                 ++_last_entry.counter;
@@ -335,6 +338,7 @@ private:
     std::chrono::steady_clock::time_point time_origin{std::chrono::steady_clock::now()};
     std::jthread backend_thread;
     Entry _last_entry;
+    std::mutex _mutex;
 };
 } // namespace
 
