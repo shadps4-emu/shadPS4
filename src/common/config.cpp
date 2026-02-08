@@ -203,11 +203,6 @@ static ConfigEntry<bool> isShaderDebug(false);
 static ConfigEntry<bool> isSeparateLogFilesEnabled(false);
 static ConfigEntry<bool> showFpsCounter(false);
 static ConfigEntry<bool> logEnabled(true);
-static const std::vector<std::string> sysModules = {
-    "libSceNgs2.sprx",         "libSceUlt.sprx",       "libSceRtc.sprx",      "libSceJpegDec.sprx",
-    "libSceJpegEnc.sprx",      "libScePngEnc.sprx",    "libSceJson.sprx",     "libSceJson2.sprx",
-    "libSceLibcInternal.sprx", "libSceCesCs.sprx",     "libSceAudiodec.sprx", "libSceFont.sprx",
-    "libSceFontFt.sprx",       "libSceFreeTypeOt.sprx"};
 static ConfigEntry<Config::SysModulesMap> enabledSysModules;
 
 // GUI
@@ -857,17 +852,10 @@ void setUsbDeviceBackend(int value, bool is_game_specific) {
     usbDeviceBackend.set(value, is_game_specific);
 }
 
-const std::vector<std::string>& getAllSysModules() {
-    return sysModules;
-}
-
 const Config::SysModulesMap& getEnabledSysModules() {
     return enabledSysModules.get();
 }
 
-void setEnabledSysModules(const Config::SysModulesMap& modules, bool is_game_specific) {
-    enabledSysModules.set(modules, is_game_specific);
-}
 
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
