@@ -22,6 +22,8 @@
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/devtools/layer.h"
+#include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
 
@@ -550,6 +552,7 @@ void ControllerOutput::FinalizeUpdate() {
     }
     old_button_state = new_button_state;
     old_param = *new_param;
+    bool is_game_specific = EmulatorState::GetInstance()->IsGameSpecifigConfigUsed();
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
@@ -595,10 +598,14 @@ void ControllerOutput::FinalizeUpdate() {
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
         case HOTKEY_VOLUME_UP:
-            Config::setVolumeSlider(Config::getVolumeSlider() + 10, true);
+            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() + 10, 0, 500),
+                                    is_game_specific);
+            Overlay::ShowVolume();
             break;
         case HOTKEY_VOLUME_DOWN:
-            Config::setVolumeSlider(Config::getVolumeSlider() - 10, true);
+            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() - 10, 0, 500),
+                                    is_game_specific);
+            Overlay::ShowVolume();
             break;
         case HOTKEY_QUIT:
             PushSDLEvent(SDL_EVENT_QUIT_DIALOG);
