@@ -32,6 +32,9 @@ static bool show_simple_fps = false;
 static bool visibility_toggled = false;
 static bool show_quit_window = false;
 
+static bool show_volume = false;
+static float volume_start_time;
+
 static float fps_scale = 1.0f;
 static int dump_frame_count = 1;
 
@@ -454,6 +457,27 @@ void L::Draw() {
         End();
     }
 
+    if (show_volume) {
+        float current_time = ImGui::GetTime();
+
+        // Show volume for 3 seconds
+        if (current_time - volume_start_time >= 3.0) {
+            show_volume = false;
+        } else {
+            SetNextWindowPos(ImVec2(ImGui::GetMainViewport()->WorkPos.x +
+                                        ImGui::GetMainViewport()->WorkSize.x - 10,
+                                    ImGui::GetMainViewport()->WorkPos.y + 10),
+                             ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+
+            if (ImGui::Begin("Volume Window", &show_volume,
+                             ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
+                                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
+                Text("Volume: %d", Config::getVolumeSlider());
+            }
+            End();
+        }
+    }
+
     PopID();
 }
 
@@ -480,6 +504,11 @@ void SetSimpleFps(bool enabled) {
 
 void ToggleQuitWindow() {
     show_quit_window = !show_quit_window;
+}
+
+void ShowVolume() {
+    volume_start_time = ImGui::GetTime();
+    show_volume = true;
 }
 
 } // namespace Overlay
