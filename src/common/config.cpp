@@ -364,7 +364,7 @@ u32 getWindowHeight() {
 }
 
 u32 getInternalScreenWidth() {
-    return internalScreenHeight.get();
+    return internalScreenWidth.get();
 }
 
 u32 getInternalScreenHeight() {
