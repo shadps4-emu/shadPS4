@@ -208,6 +208,27 @@ public:
             }
         }
 
+        if (Config::groupIdenticalLogs()) {
+            if (_last_entry.message == message) {
+                ++_last_entry.counter;
+                return;
+            }
+
+            if (_last_entry.counter >= 2) {
+                if (_last_entry.counter >= 3) {
+                    // -1 because we log the same line two times, the second time with x"N"
+                    _last_entry.message += " x" + std::to_string(_last_entry.counter - 1);
+                }
+
+                if (Config::getLogType() == "async") {
+                    message_queue.EmplaceWait(_last_entry);
+                } else {
+                    ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                    std::fflush(stdout);
+                }
+            }
+        }
+
         using std::chrono::duration_cast;
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
@@ -219,9 +240,15 @@ public:
             .filename = filename,
             .line_num = line_num,
             .function = function,
-            .message = std::move(message),
+            .message = message,
             .thread = Common::GetCurrentThreadName(),
+            .counter = 1,
         };
+
+        if (Config::groupIdenticalLogs()) {
+            _last_entry = entry;
+        }
+
         if (Config::getLogType() == "async") {
             message_queue.EmplaceWait(entry);
         } else {
@@ -292,6 +319,7 @@ private:
     MPSCQueue<Entry> message_queue{};
     std::chrono::steady_clock::time_point time_origin{std::chrono::steady_clock::now()};
     std::jthread backend_thread;
+    Entry _last_entry;
 };
 } // namespace
 
