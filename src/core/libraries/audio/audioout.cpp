@@ -496,11 +496,11 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     state->rerouteCounter = 0;
     state->flag = 0;
-    LOG_INFO(Lib_AudioOut,
-             "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
-             "rerouteCounter={}, flag={}",
-             handle, fmt::ptr(state), state->output, state->channel, state->volume,
-             state->rerouteCounter, state->flag);
+    LOG_DEBUG(Lib_AudioOut,
+              "called, handle={:#x}, state={}, output={}, channel={}, volume={}, "
+              "rerouteCounter={}, flag={}",
+              handle, fmt::ptr(state), state->output, state->channel, state->volume,
+              state->rerouteCounter, state->flag);
     return ORBIS_OK;
 }
 
