@@ -856,7 +856,6 @@ const Config::SysModulesMap& getEnabledSysModules() {
     return enabledSysModules.get();
 }
 
-
 void load(const std::filesystem::path& path, bool is_game_specific) {
     // If the configuration file does not exist, create it and return, unless it is game specific
     std::error_code error;
