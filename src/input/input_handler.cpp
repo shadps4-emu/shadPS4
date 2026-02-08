@@ -396,22 +396,23 @@ void ParseInputConfig(const std::string game_id = "") {
 
         // normal cases
         InputBinding binding = GetBindingFromString(input_string);
-        BindingConnection connection(InputID(), nullptr);
-        auto button_it = string_to_cbutton_map.find(output_string);
-        if (button_it == string_to_cbutton_map.end()) {
-            button_it = string_to_hotkey_map.find(output_string);
-        }
-        auto axis_it = string_to_axis_map.find(output_string);
         if (binding.IsEmpty()) {
             LOG_WARNING(Input, "Invalid format at line: {}, data: \"{}\", skipping line.",
                         lineCount, line);
             return;
         }
-        if (button_it != string_to_hotkey_map.end()) {
+        BindingConnection connection(InputID(), nullptr);
+        auto button_it = string_to_cbutton_map.find(output_string);
+        auto hotkey_it = string_to_hotkey_map.find(output_string);
+        auto axis_it = string_to_axis_map.find(output_string);
+        if (button_it != string_to_cbutton_map.end()) {
             connection = BindingConnection(
                 binding, &*std::ranges::find(output_array, ControllerOutput(button_it->second)));
             connections.insert(connections.end(), connection);
-
+        } else if (hotkey_it != string_to_hotkey_map.end()) {
+            connection = BindingConnection(
+                binding, &*std::ranges::find(output_array, ControllerOutput(hotkey_it->second)));
+            connections.insert(connections.end(), connection);
         } else if (axis_it != string_to_axis_map.end()) {
             int value_to_set = binding.keys[2].type == InputType::Axis ? 0 : axis_it->second.value;
             connection = BindingConnection(
