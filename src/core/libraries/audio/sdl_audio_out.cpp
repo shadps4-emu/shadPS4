@@ -113,7 +113,6 @@ public:
         const float slider_gain = Config::getVolumeSlider() * 0.01f; // Faster than /100.0f
         const float total_gain = max_channel_gain * slider_gain;
 
-        // Only update if changed significantly (avoid unnecessary SDL calls)
         const float current = current_gain.load(std::memory_order_acquire);
         if (std::abs(total_gain - current) < VOLUME_EPSILON) {
             return;
@@ -159,7 +158,6 @@ private:
         // Initialize current gain
         current_gain.store(Config::getVolumeSlider() * 0.01f, std::memory_order_relaxed);
 
-        // Select optimal converter function
         if (!SelectConverter()) {
             FreeAlignedBuffer();
             return false;
@@ -442,7 +440,6 @@ private:
                   queue_threshold, sdl_buffer_frames);
     }
 
-    // Converter function type
     using ConverterFunc = void (*)(const void* src, void* dst, u32 frames, const float* volumes);
 
     static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float*) {
