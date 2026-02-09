@@ -212,8 +212,7 @@ private:
         buffer_size_bytes = buffer_frames * frame_size;
 
         // Allocate current buffer
-        current_buffer.resize(buffer_frames * num_channels); // float staging
-        al_buffer.resize(buffer_frames * num_channels);      // int16 upload
+        al_buffer.resize(buffer_frames * num_channels); // int16 upload
         buffer_size_bytes = buffer_frames * num_channels * sizeof(s16);
 
         // Select optimal converter function
@@ -437,18 +436,10 @@ private:
                 convert = &ConvertS16Mono;
                 break;
             case 2:
-#if defined(HAS_SSE2)
-                convert = &ConvertS16StereoSIMD;
-#else
                 convert = &ConvertS16Stereo;
-#endif
                 break;
             case 8:
-#if defined(HAS_SSE2)
-                convert = &ConvertS16_8CH_SIMD;
-#else
                 convert = &ConvertS16_8CH;
-#endif
                 break;
             default:
                 LOG_ERROR(Lib_AudioOut, "Unsupported S16 channel count: {}", num_channels);
@@ -481,85 +472,27 @@ private:
     // Converter function type
     using ConverterFunc = void (*)(const void* src, void* dst, u32 frames, const float* volumes);
 
-    // S16 converters (same as SDL backend)
     static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
-        float* d = static_cast<float*>(dst);
-
-        for (u32 i = 0; i < frames; i++) {
-            d[i] = s[i] * INV_VOLUME_0DB;
-        }
+        s16* d = static_cast<s16*>(dst);
+        std::memcpy(d, s, frames * sizeof(s16));
     }
 
     static void ConvertS16Stereo(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
-        float* d = static_cast<float*>(dst);
+        s16* d = static_cast<s16*>(dst);
 
         const u32 num_samples = frames << 1;
-        for (u32 i = 0; i < num_samples; i++) {
-            d[i] = s[i] * INV_VOLUME_0DB;
-        }
+        std::memcpy(d, s, num_samples * sizeof(s16));
     }
-
-#ifdef HAS_SSE2
-    static void ConvertS16StereoSIMD(const void* src, void* dst, u32 frames, const float*) {
-        const s16* s = static_cast<const s16*>(src);
-        float* d = static_cast<float*>(dst);
-
-        const __m128 scale = _mm_set1_ps(INV_VOLUME_0DB);
-        const u32 num_samples = frames << 1;
-        u32 i = 0;
-
-        for (; i + 8 <= num_samples; i += 8) {
-            __m128i s16_vals = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&s[i]));
-            __m128i s32_lo = _mm_cvtepi16_epi32(s16_vals);
-            __m128i s32_hi = _mm_cvtepi16_epi32(_mm_srli_si128(s16_vals, 8));
-            __m128 f_lo = _mm_mul_ps(_mm_cvtepi32_ps(s32_lo), scale);
-            __m128 f_hi = _mm_mul_ps(_mm_cvtepi32_ps(s32_hi), scale);
-            _mm_storeu_ps(&d[i], f_lo);
-            _mm_storeu_ps(&d[i + 4], f_hi);
-        }
-
-        for (; i < num_samples; i++) {
-            d[i] = s[i] * INV_VOLUME_0DB;
-        }
-    }
-#endif
 
     static void ConvertS16_8CH(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
-        float* d = static_cast<float*>(dst);
+        s16* d = static_cast<s16*>(dst);
 
         const u32 num_samples = frames << 3;
-        for (u32 i = 0; i < num_samples; i++) {
-            d[i] = s[i] * INV_VOLUME_0DB;
-        }
+        std::memcpy(d, s, num_samples * sizeof(s16));
     }
-
-#ifdef HAS_SSE2
-    static void ConvertS16_8CH_SIMD(const void* src, void* dst, u32 frames, const float*) {
-        const s16* s = static_cast<const s16*>(src);
-        float* d = static_cast<float*>(dst);
-
-        const __m128 scale = _mm_set1_ps(INV_VOLUME_0DB);
-        const u32 num_samples = frames << 3;
-        u32 i = 0;
-
-        for (; i + 8 <= num_samples; i += 8) {
-            __m128i s16_vals = _mm_loadu_si128(reinterpret_cast<const __m128i*>(&s[i]));
-            __m128i s32_lo = _mm_cvtepi16_epi32(s16_vals);
-            __m128i s32_hi = _mm_cvtepi16_epi32(_mm_srli_si128(s16_vals, 8));
-            __m128 f_lo = _mm_mul_ps(_mm_cvtepi32_ps(s32_lo), scale);
-            __m128 f_hi = _mm_mul_ps(_mm_cvtepi32_ps(s32_hi), scale);
-            _mm_storeu_ps(&d[i], f_lo);
-            _mm_storeu_ps(&d[i + 4], f_hi);
-        }
-
-        for (; i < num_samples; i++) {
-            d[i] = s[i] * INV_VOLUME_0DB;
-        }
-    }
-#endif
 
     // Float to S16 converters for OpenAL
     static void ConvertF32ToS16Mono(const void* src, void* dst, u32 frames, const float*) {
@@ -645,7 +578,6 @@ private:
 
     // Buffer management
     u32 buffer_size_bytes{0};
-    std::vector<float> current_buffer;
     std::vector<s16> al_buffer;
 
     // Converter function pointer
