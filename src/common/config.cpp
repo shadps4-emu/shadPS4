@@ -976,16 +976,18 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         current_version = toml::find_or<std::string>(debug, "ConfigVersion", current_version);
 
         if (is_game_specific) {
-            Config::SysModulesMap modules;
-            auto tbl = toml::find<toml::value>(debug, "enabledSysModules");
-            if (tbl.is_table()) {
-                for (auto& [key, val] : tbl.as_table()) {
+            auto it = debug.as_table().find("enabledSysModules");
+            if (it != debug.as_table().end() && it->second.is_table()) {
+                Config::SysModulesMap modules;
+                for (auto& [key, val] : it->second.as_table()) {
                     if (val.is_boolean()) {
                         modules[key] = val.as_boolean();
                     }
                 }
+                if (!modules.empty()) {
+                    enabledSysModules.set(modules, true);
+                }
             }
-            enabledSysModules.set(modules, is_game_specific);
         }
     }
 
