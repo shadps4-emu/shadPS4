@@ -551,16 +551,19 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
 
     for (const auto& [module_name, init_func] : ModulesToLoad) {
         // Check if the module is explicitly disabled in the game-specific settings.
+        bool allow_lle = true;
         if (auto it = enabledModules.find(std::string(module_name));
             it != enabledModules.end() && it->second == false) {
-            LOG_INFO(Loader, "Module {} disabled by config", module_name);
-            continue;
+            LOG_INFO(Loader, "Module {} disabled by config (LLE)", module_name);
+            allow_lle = false;
         }
-        const auto module_path = sys_module_path / module_name;
-        if (std::filesystem::exists(module_path)) {
-            LOG_INFO(Loader, "Loading {}", module_path.string());
-            if (linker->LoadModule(module_path) != -1) {
-                continue;
+        if (allow_lle) {
+            const auto module_path = sys_module_path / module_name;
+            if (std::filesystem::exists(module_path)) {
+                LOG_INFO(Loader, "Loading {}", module_path.string());
+                if (linker->LoadModule(module_path) != -1) {
+                    continue;
+                }
             }
         }
         if (init_func) {
