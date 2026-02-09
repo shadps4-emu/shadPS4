@@ -211,23 +211,21 @@ public:
 
         std::unique_lock entry_loc(_mutex);
 
-        if (Config::groupIdenticalLogs()) {
-            if (_last_entry.message == message) {
-                ++_last_entry.counter;
-                return;
-            }
+        if (_last_entry.message == message) {
+            ++_last_entry.counter;
+            return;
+        }
 
-            if (_last_entry.counter >= 2) {
-                _last_entry.message += " x" + std::to_string(_last_entry.counter);
-            }
+        if (_last_entry.counter >= 2) {
+            _last_entry.message += " x" + std::to_string(_last_entry.counter);
+        }
 
-            if (_last_entry.counter >= 1) {
-                if (Config::getLogType() == "async") {
-                    message_queue.EmplaceWait(_last_entry);
-                } else {
-                    ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
-                    std::fflush(stdout);
-                }
+        if (_last_entry.counter >= 1) {
+            if (Config::getLogType() == "async") {
+                message_queue.EmplaceWait(_last_entry);
+            } else {
+                ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                std::fflush(stdout);
             }
         }
 
@@ -246,15 +244,6 @@ public:
             .thread = Common::GetCurrentThreadName(),
             .counter = 1,
         };
-
-        if (!Config::groupIdenticalLogs()) {
-            if (Config::getLogType() == "async") {
-                message_queue.EmplaceWait(_last_entry);
-            } else {
-                ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
-                std::fflush(stdout);
-            }
-        }
     }
 
 private:
@@ -286,23 +275,21 @@ private:
     }
 
     void StopBackendThread() {
-        if (Config::groupIdenticalLogs()) {
-            // log last message
-            if (_last_entry.counter >= 2) {
-                _last_entry.message += " x" + std::to_string(_last_entry.counter);
-            }
-
-            if (_last_entry.counter >= 1) {
-                if (Config::getLogType() == "async") {
-                    message_queue.EmplaceWait(_last_entry);
-                } else {
-                    ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
-                    std::fflush(stdout);
-                }
-            }
-
-            this->_last_entry = {};
+        // log last message
+        if (_last_entry.counter >= 2) {
+            _last_entry.message += " x" + std::to_string(_last_entry.counter);
         }
+
+        if (_last_entry.counter >= 1) {
+            if (Config::getLogType() == "async") {
+                message_queue.EmplaceWait(_last_entry);
+            } else {
+                ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                std::fflush(stdout);
+            }
+        }
+
+        this->_last_entry = {};
 
         backend_thread.request_stop();
         if (backend_thread.joinable()) {
