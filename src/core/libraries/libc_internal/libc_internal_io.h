@@ -78,12 +78,14 @@ struct OrbisFILE {
 };
 
 s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS);
-OrbisFILE* PS4_SYSV_ABI internal__Fofind();
 void PS4_SYSV_ABI internal__Lockfilelock(OrbisFILE* file);
 void PS4_SYSV_ABI internal__Unlockfilelock(OrbisFILE* file);
+OrbisFILE* PS4_SYSV_ABI internal__Fofind();
 OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, OrbisFILE* file,
                                          s32 fd, s32 flag1, s32 flag2);
+s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag);
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode);
+s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream);
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence);
 u64 PS4_SYSV_ABI internal_fread(void* ptr, u64 size, u64 nmemb, OrbisFILE* stream);
 s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream);

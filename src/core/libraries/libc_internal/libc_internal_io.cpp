@@ -100,7 +100,7 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
     file->_WRback = &file->unk1;
 
     // Parse inputted mode string
-    char* mode_str = *mode;
+    const char* mode_str = mode;
     u16 calc_mode = 0;
     u16 access_mode = 0;
     if (mode_str[0] == 'r') {
@@ -198,6 +198,48 @@ OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
     return internal__Foprep(path, mode, file, -1, 0, 0);
 }
 
+s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream) {
+    if (stream == nullptr) {
+        std::scoped_lock lk{g_stream_mtx};
+        s32 fflush_result = 0;
+        for (OrbisFILE* file : g_files) {
+            s32 res = internal_fflush(file);
+            if (res < 0) {
+                fflush_result = -1;
+            }
+        }
+        return fflush_result;
+    }
+    if ((stream->_Mode & 0x2000) != 0) {
+        internal__Lockfilelock(stream);
+        u16 file_mode = stream->_Mode;
+        u8* file_buf_start = stream->_Buf;
+        u8* file_buf_end = stream->_Next;
+        while (file_buf_start < file_buf_end) {
+            u64 size_to_write = static_cast<u64>(file_buf_end - file_buf_start);
+            s32 write_bytes =
+                Libraries::Kernel::sceKernelWrite(stream->_Handle, file_buf_start, size_to_write);
+            if (write_bytes < 1) {
+                file_buf_start = stream->_Buf;
+                stream->_Next = file_buf_start;
+                stream->_Wend = file_buf_start;
+                stream->_WWend = file_buf_start;
+                stream->_Mode = (stream->_Mode + 1) | 2;
+                internal__Unlockfilelock(stream);
+                return -1;
+            }
+            file_buf_end = stream->_Next;
+            file_buf_start += write_bytes;
+        }
+        stream->_Next = file_buf_start;
+        stream->_Wend = file_buf_start;
+        stream->_WWend = file_buf_start;
+        stream->_Mode = file_mode & 0xdfff;
+        internal__Unlockfilelock(stream);
+    }
+    return 0;
+}
+
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence) {
     return 0;
 }
@@ -212,6 +254,7 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream) {
 
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
+    LIB_FUNCTION("MUjC4lbHrK4", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fflush);
     LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
     LIB_FUNCTION("dREVnZkAKRE", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Foprep);
     LIB_FUNCTION("sQL8D-jio7U", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fopen);
