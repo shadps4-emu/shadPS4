@@ -123,7 +123,9 @@ s32 GetAuthorizationCode(s32 req_id, const OrbisNpAuthGetAuthorizationCodeParame
 
     // Not sure what values are expected here, so zeroing these for now.
     std::memset(auth_code, 0, sizeof(OrbisNpAuthorizationCode));
-    *issuer_id = 0;
+    if (issuer_id != nullptr) {
+        *issuer_id = 0;
+    }
     return ORBIS_OK;
 }
 

@@ -234,7 +234,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
             OrbisNpMatching2RoomMemberDataInternalA me{
                 nullptr,
                 0,
-                {0xace104e, Libraries::Np::OrbisNpPlatformType::ORBIS_NP_PLATFORM_TYPE_PS4},
+                {0xace104e, Libraries::Np::OrbisNpPlatformType::PS4},
                 onlineId,
                 {0, 0, 0, 0},
                 1,

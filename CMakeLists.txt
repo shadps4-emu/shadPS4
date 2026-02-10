@@ -202,7 +202,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "13")
+set(EMULATOR_VERSION_MINOR "14")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -221,6 +221,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(Boost 1.84.0 CONFIG)
+find_package(CLI11 2.6.1 CONFIG)
 find_package(FFmpeg 5.1.2 MODULE)
 find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 15 CONFIG)
@@ -281,15 +282,16 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
 
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
-              src/core/libraries/audio/sdl_in.h
-              src/core/libraries/audio/sdl_in.cpp
+              src/core/libraries/audio/audioin_backend.h
+              src/core/libraries/audio/audioin_error.h
+              src/core/libraries/audio/sdl_audio_in.cpp
               src/core/libraries/voice/voice.cpp
               src/core/libraries/voice/voice.h
               src/core/libraries/audio/audioout.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
-              src/core/libraries/audio/sdl_audio.cpp
+              src/core/libraries/audio/sdl_audio_out.cpp
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
 )
@@ -598,6 +600,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/trophy_ui.h
             src/core/libraries/np/np_web_api.cpp
             src/core/libraries/np/np_web_api.h
+            src/core/libraries/np/np_web_api_error.h
+            src/core/libraries/np/np_web_api_internal.cpp
+            src/core/libraries/np/np_web_api_internal.h
             src/core/libraries/np/np_web_api2.cpp
             src/core/libraries/np/np_web_api2.h
             src/core/libraries/np/np_party.cpp
