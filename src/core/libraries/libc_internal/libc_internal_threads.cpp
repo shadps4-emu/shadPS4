@@ -10,8 +10,9 @@ namespace Libraries::LibcInternal {
 void getMutexName(char* buf, u64 size, const char* name) {
     if (name != nullptr) {
         std::snprintf(buf, size, "SceLibcI_%s", name);
+    } else {
+        std::snprintf(buf, size, "SceLibcI");
     }
-    std::snprintf(buf, size, "SceLibcI");
 }
 
 s32 PS4_SYSV_ABI internal__Mtxinit(Libraries::Kernel::PthreadMutexT* mtx, const char* name) {
@@ -26,7 +27,7 @@ s32 PS4_SYSV_ABI internal__Mtxinit(Libraries::Kernel::PthreadMutexT* mtx, const 
 
     result = Libraries::Kernel::posix_pthread_mutexattr_settype(
         &attr, Libraries::Kernel::PthreadMutexType::Recursive);
-    if (result != 0) {
+    if (result == 0) {
         s32 mtx_init_result = Libraries::Kernel::scePthreadMutexInit(mtx, &attr, mtx_name);
         result = Libraries::Kernel::posix_pthread_mutexattr_destroy(&attr);
         if (mtx_init_result == 0 && result == 0) {

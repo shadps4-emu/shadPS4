@@ -76,7 +76,8 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
     }
 
     // Preserve mode and index
-    Libraries::Kernel::PthreadMutexT file_mtx = file->_Mutex;
+    Libraries::Kernel::PthreadMutexT mtx = file->_Mutex;
+    Libraries::Kernel::PthreadMutexT* mtx_ptr = &file->_Mutex;
     u8 file_index = file->_Idx;
     u16 file_mode = file->_Mode & 0x80;
 
@@ -115,9 +116,9 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
         // Closes the file and returns EINVAL.
         file->_Mode = file_mode;
         if (flag == 0) {
-            internal__Mtxinit(&file_mtx, nullptr);
+            internal__Mtxinit(mtx_ptr, nullptr);
         } else {
-            file->_Mutex = file_mtx;
+            file->_Mutex = mtx;
             internal__Unlockfilelock(file);
         }
         internal_fclose(file);
@@ -156,9 +157,9 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
     if (fd < 0) {
         // Closes the file, but ensures errno is unchanged.
         if (flag == 0) {
-            internal__Mtxinit(&file_mtx, nullptr);
+            internal__Mtxinit(mtx_ptr, nullptr);
         } else {
-            file->_Mutex = file_mtx;
+            file->_Mutex = mtx;
             internal__Unlockfilelock(file);
         }
         s32 old_errno = *Kernel::__Error();
@@ -170,9 +171,9 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
     if (flag == 0) {
         char mtx_name[0x20];
         std::snprintf(mtx_name, 0x20, "FileFD:0x%08X", fd);
-        internal__Mtxinit(&file_mtx, mtx_name);
+        internal__Mtxinit(mtx_ptr, mtx_name);
     } else {
-        file->_Mutex = file_mtx;
+        file->_Mutex = mtx;
     }
     return file;
 }
