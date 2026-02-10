@@ -175,12 +175,27 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
     return file;
 }
 
-s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag) {}
+s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag) {
+    u32 large_mode = mode;
+    u16 open_mode = 0600;
+    if (!flag) {
+        open_mode = 0666;
+    }
+    // Straight from decomp, should probably get cleaned up at some point.
+    s32 creat_flag = large_mode << 5 & 0x200;
+    s32 excl_flag = large_mode << 5 & 0x800;
+    s32 misc_flags = (large_mode & 8) * 0x80 + (large_mode & 4) * 2;
+    // Real library has an array for this, where large_mode & 3 is used as an index.
+    // That array has values [0, 0, 1, 2], so this call should match the result.
+    s32 access_flag = std::max<s32>((large_mode & 3) - 1, 0);
+    s32 open_flags = creat_flag | misc_flags | excl_flag | access_flag;
+    return Libraries::Kernel::posix_open(path, open_flags, open_mode);
+}
 
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
     std::scoped_lock lk{g_stream_mtx};
-
-    return nullptr;
+    OrbisFILE* file = internal__Fofind();
+    return internal__Foprep(path, mode, file, -1, 0, 0);
 }
 
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence) {
@@ -199,6 +214,7 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
     LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
     LIB_FUNCTION("dREVnZkAKRE", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Foprep);
+    LIB_FUNCTION("sQL8D-jio7U", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fopen);
     LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal",
                  internal__Lockfilelock);
     LIB_FUNCTION("0x7rx8TKy2Y", "libSceLibcInternal", 1, "libSceLibcInternal",
