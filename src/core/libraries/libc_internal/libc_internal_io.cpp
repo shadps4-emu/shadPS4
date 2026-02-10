@@ -410,7 +410,48 @@ u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file)
     return (total_size - remaining_size) / size;
 }
 
+void PS4_SYSV_ABI internal__Fofree(OrbisFILE* file) {
+    u8* cbuf_ptr = &file->_Cbuf;
+    s8 trunc_mode = static_cast<s8>(file->_Mode);
+
+    file->_Mode = 0;
+    file->_Handle = -1;
+    file->_Buf = cbuf_ptr;
+    file->_Next = cbuf_ptr;
+    file->_Rend = cbuf_ptr;
+    file->_WRend = cbuf_ptr;
+    file->_Wend = cbuf_ptr;
+    file->_WWend = cbuf_ptr;
+    file->_Rback = cbuf_ptr;
+    file->_WRback = &file->unk1;
+    if (trunc_mode < 0) {
+        // Remove file from vector
+        g_files.erase(std::next(g_files.begin(), file->_Idx - g_initial_files));
+        internal__Mtxdst(&file->_Mutex);
+        free(file);
+    }
+}
+
 s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
+    if (file == nullptr) {
+        return -1;
+    }
+    if ((file->_Mode & 3) == 0 || file->_Handle < 0) {
+        std::scoped_lock lk{g_file_mtx};
+        internal__Fofree(file);
+        *Libraries::Kernel::__Error() = POSIX_EBADF;
+    } else {
+        s32 fflush_result = internal_fflush(file);
+        std::scoped_lock lk{g_file_mtx};
+        if ((file->_Mode & 0x40) != 0) {
+            std::free(file->_Buf);
+        }
+        file->_Buf = nullptr;
+        s32 close_result = Libraries::Kernel::posix_close(file->_Handle);
+        internal__Fofree(file);
+        // Need to figure out what exactly this means.
+        return ~-(close_result == 0) | fflush_result;
+    }
     return 0;
 }
 
@@ -423,6 +464,7 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("A+Y3xfrWLLo", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fspos);
     LIB_FUNCTION("Ss3108pBuZY", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Nnl);
     LIB_FUNCTION("9s3P+LCvWP8", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Frprep);
+    LIB_FUNCTION("jVDuvE3s5Bs", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofree);
     LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal",
                  internal__Lockfilelock);
     LIB_FUNCTION("0x7rx8TKy2Y", "libSceLibcInternal", 1, "libSceLibcInternal",
