@@ -7,6 +7,7 @@
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio3d/audio3d.h"
+#include "core/libraries/audio3d/audio3d_openal.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/companion/companion_httpd.h"
@@ -74,7 +75,6 @@
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
-#include "core/libraries/audio3d/audio3d_openal.h"
 
 namespace Libraries {
 
@@ -127,7 +127,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AvPlayer::RegisterLib(sym);
     Libraries::Videodec::RegisterLib(sym);
     Libraries::Videodec2::RegisterLib(sym);
-    //Libraries::Audio3d::RegisterLib(sym);
+    // Libraries::Audio3d::RegisterLib(sym);
     Libraries::Audio3dOpenAL::RegisterLib(sym);
     Libraries::Ime::RegisterLib(sym);
     Libraries::GameLiveStreaming::RegisterLib(sym);
