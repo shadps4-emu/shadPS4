@@ -313,7 +313,7 @@ s32 PS4_SYSV_ABI internal__Frprep(OrbisFILE* file) {
     if (file->_Rend > file->_Next) {
         return 1;
     }
-    if ((file->_Mode & 0x100) == 0) {
+    if ((file->_Mode & 0x100) != 0) {
         return 0;
     }
     u16 mode = file->_Mode;
