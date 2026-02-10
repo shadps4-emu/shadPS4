@@ -197,6 +197,7 @@ s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag) {
 
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
     std::scoped_lock lk{g_file_mtx};
+    LOG_INFO(Lib_LibcInternal, "called, path {}, mode {}", path, mode);
     OrbisFILE* file = internal__Fofind();
     return internal__Foprep(path, mode, file, -1, 0, 0);
 }
@@ -304,6 +305,8 @@ s32 PS4_SYSV_ABI internal__Fspos(OrbisFILE* file, Orbisfpos_t* file_pos, s64 off
 
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* file, s64 offset, s32 whence) {
     internal__Lockfilelock(file);
+    LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}, offset {:#x}, whence {:#x}",
+             file->_Handle, offset, whence);
     s32 result = internal__Fspos(file, nullptr, offset, whence);
     internal__Unlockfilelock(file);
     return result;
@@ -369,6 +372,8 @@ u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file)
     }
 
     internal__Lockfilelock(file);
+    LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}, size {:#x}, nmemb {:#x}", file->_Handle,
+             size, nmemb);
     s64 total_size = size * nmemb;
     s64 remaining_size = total_size;
     if ((file->_Mode & 0x4000) != 0) {
@@ -438,6 +443,8 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
     if (file == nullptr) {
         return -1;
     }
+
+    LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}", file->_Handle);
     if ((file->_Mode & 3) == 0 || file->_Handle < 0) {
         std::scoped_lock lk{g_file_mtx};
         internal__Fofree(file);
