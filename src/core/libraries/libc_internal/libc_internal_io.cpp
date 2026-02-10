@@ -11,9 +11,9 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
-#include "core/libraries/kernel/threads.h"
+#include "core/libraries/libc_internal/libc_internal_io.h"
+#include "core/libraries/libc_internal/libc_internal_threads.h"
 #include "core/libraries/libs.h"
-#include "libc_internal_io.h"
 #include "printf.h"
 
 namespace Libraries::LibcInternal {
@@ -55,17 +55,127 @@ OrbisFILE* PS4_SYSV_ABI internal__Fofind() {
     return nullptr;
 }
 
+void PS4_SYSV_ABI internal__Lockfilelock(OrbisFILE* file) {
+    if (file != nullptr && file->_Mutex != nullptr) {
+        internal__Mtxlock(&file->_Mutex);
+    }
+}
+
+void PS4_SYSV_ABI internal__Unlockfilelock(OrbisFILE* file) {
+    if (file != nullptr && file->_Mutex != nullptr) {
+        internal__Mtxunlock(&file->_Mutex);
+    }
+}
+
 OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, OrbisFILE* file,
-                                         s32 fd, s32 flag1, s32 flag2) {
+                                         s32 fd, s32 s_mode, s32 flag) {
     if (file == nullptr) {
         *Kernel::__Error() = POSIX_ENOMEM;
     }
+
+    // Preserve mode and index
+    Libraries::Kernel::PthreadMutexT file_mtx = file->_Mutex;
+    u8 file_index = file->_Idx;
+    u16 file_mode = file->_Mode & 0x80;
+
+    // Real library does a memcpy using a static global FILE object.
+    // This stored file is just zeros, with the only exception being a handle of -1.
+    memset(file, 0, sizeof(OrbisFILE));
     file->_Handle = -1;
 
-    // TODO: The rest of this.
+    // Not sure what this magic is for, but I'll replicate it.
+    u8* ptr = &file->_Cbuf;
+    // Note: this field is supposed to be a pthread mutex.
+    // Since we don't export pthread HLEs for other functions, I'll avoid handling this for now.
+    file->_Mutex = nullptr;
+    file->_Idx = file_index;
+    file->_Buf = ptr;
+    file->_Bend = &file->unk2;
+    file->_Next = ptr;
+    file->_Rend = ptr;
+    file->_WRend = ptr;
+    file->_Wend = ptr;
+    file->_WWend = ptr;
+    file->_Rback = ptr;
+    file->_WRback = &file->unk1;
 
+    // Parse inputted mode string
+    char* mode_str = *mode;
+    u16 calc_mode = 0;
+    u16 access_mode = 0;
+    if (mode_str[0] == 'r') {
+        calc_mode = 1 | file_mode;
+    } else if (mode_str[0] == 'w') {
+        calc_mode = 0x1a | file_mode;
+    } else if (mode_str[0] == 'a') {
+        calc_mode = 0x16 | file_mode;
+    } else {
+        // Closes the file and returns EINVAL.
+        file->_Mode = file_mode;
+        if (flag == 0) {
+            internal__Mtxinit(&file_mtx, nullptr);
+        } else {
+            file->_Mutex = file_mtx;
+            internal__Unlockfilelock(file);
+        }
+        internal_fclose(file);
+        *Kernel::__Error() = POSIX_EINVAL;
+        return nullptr;
+    }
+    file->_Mode = calc_mode;
+
+    do {
+        // This is all basically straight from decomp, need to cleanup at some point.
+        if (mode_str[1] == '+') {
+            file_mode = 3;
+            if ((~calc_mode & 3) == 0) {
+                break;
+            }
+        } else if (mode_str[1] != 'b') {
+            file_mode = 0x20;
+            if ((calc_mode & 0x20) != 0) {
+                break;
+            }
+        }
+        mode_str++;
+        calc_mode = file_mode | calc_mode;
+        file->_Mode = calc_mode;
+    } while (true);
+
+    if (path == nullptr && fd >= 0) {
+        // I guess this is for some internal behavior?
+        file->_Handle = fd;
+    } else {
+        fd = internal__Fopen(path, calc_mode, s_mode == 0x55);
+        file->_Handle = fd;
+    }
+
+    // Error case
+    if (fd < 0) {
+        // Closes the file, but ensures errno is unchanged.
+        if (flag == 0) {
+            internal__Mtxinit(&file_mtx, nullptr);
+        } else {
+            file->_Mutex = file_mtx;
+            internal__Unlockfilelock(file);
+        }
+        s32 old_errno = *Kernel::__Error();
+        internal_fclose(file);
+        *Kernel::__Error() = old_errno;
+        return nullptr;
+    }
+
+    if (flag == 0) {
+        char mtx_name[0x20];
+        std::snprintf(mtx_name, 0x20, "FileFD:0x%08X", fd);
+        internal__Mtxinit(&file_mtx, mtx_name);
+    } else {
+        file->_Mutex = file_mtx;
+    }
     return file;
 }
+
+s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag) {}
 
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
     std::scoped_lock lk{g_stream_mtx};
@@ -89,6 +199,10 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
     LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
     LIB_FUNCTION("dREVnZkAKRE", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Foprep);
+    LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal",
+                 internal__Lockfilelock);
+    LIB_FUNCTION("0x7rx8TKy2Y", "libSceLibcInternal", 1, "libSceLibcInternal",
+                 internal__Unlockfilelock);
 }
 
 void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {

@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include "common/types.h"
+#include "core/libraries/kernel/threads.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -48,7 +49,7 @@ struct OrbisFILE {
     u8* _Tmpnam;
     u8 _Back[6], _Cbuf;
     u8 unk2;
-    void* _Mutex;
+    Libraries::Kernel::PthreadMutexT _Mutex;
     u8* _p;
     s32 _r;
     s32 _w;
@@ -78,6 +79,8 @@ struct OrbisFILE {
 
 s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS);
 OrbisFILE* PS4_SYSV_ABI internal__Fofind();
+void PS4_SYSV_ABI internal__Lockfilelock(OrbisFILE* file);
+void PS4_SYSV_ABI internal__Unlockfilelock(OrbisFILE* file);
 OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, OrbisFILE* file,
                                          s32 fd, s32 flag1, s32 flag2);
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode);
