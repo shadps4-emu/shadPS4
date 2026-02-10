@@ -85,6 +85,7 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
                                          s32 fd, s32 flag1, s32 flag2);
 s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag);
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode);
+s32 PS4_SYSV_ABI internal__Fspos(OrbisFILE* file, Orbisfpos_t* file_pos, s64 offset, s32 whence);
 s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream);
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence);
 u64 PS4_SYSV_ABI internal_fread(void* ptr, u64 size, u64 nmemb, OrbisFILE* stream);
