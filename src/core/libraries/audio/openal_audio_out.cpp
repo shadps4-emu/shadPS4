@@ -472,6 +472,20 @@ private:
     // Converter function type
     using ConverterFunc = void (*)(const void* src, void* dst, u32 frames, const float* volumes);
 
+    static inline s16 OrbisFloatToS16(float v) {
+        if (std::abs(v) < 1.0e-20f)
+            v = 0.0f;
+
+        // Sony behavior: +1.0f -> 32767, -1.0f -> -32768
+        const float scaled = v * 32768.0f;
+
+        if (scaled >= 32767.0f)
+            return 32767;
+        if (scaled <= -32768.0f)
+            return -32768;
+
+        return static_cast<s16>(scaled + (scaled >= 0 ? 0.5f : -0.5f));
+    }
     static void ConvertS16Mono(const void* src, void* dst, u32 frames, const float*) {
         const s16* s = static_cast<const s16*>(src);
         s16* d = static_cast<s16*>(dst);
@@ -499,10 +513,8 @@ private:
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
 
-        for (u32 i = 0; i < frames; i++) {
-            const float sample = s[i] * VOLUME_0DB;
-            d[i] = static_cast<s16>(std::clamp(sample, -32768.0f, 32767.0f));
-        }
+        for (u32 i = 0; i < frames; i++)
+            d[i] = OrbisFloatToS16(s[i]);
     }
 
     static void ConvertF32ToS16Stereo(const void* src, void* dst, u32 frames, const float*) {
@@ -510,10 +522,8 @@ private:
         s16* d = static_cast<s16*>(dst);
 
         const u32 num_samples = frames << 1;
-        for (u32 i = 0; i < num_samples; i++) {
-            const float sample = s[i] * VOLUME_0DB;
-            d[i] = static_cast<s16>(std::clamp(sample, -32768.0f, 32767.0f));
-        }
+        for (u32 i = 0; i < num_samples; i++)
+            d[i] = OrbisFloatToS16(s[i]);
     }
 
     static void ConvertF32ToS16_8CH(const void* src, void* dst, u32 frames, const float*) {
@@ -521,10 +531,8 @@ private:
         s16* d = static_cast<s16*>(dst);
 
         const u32 num_samples = frames << 3;
-        for (u32 i = 0; i < num_samples; i++) {
-            const float sample = s[i] * VOLUME_0DB;
-            d[i] = static_cast<s16>(std::clamp(sample, -32768.0f, 32767.0f));
-        }
+        for (u32 i = 0; i < num_samples; i++)
+            d[i] = OrbisFloatToS16(s[i]);
     }
 
     static void ConvertF32ToS16Std8CH(const void* src, void* dst, u32 frames, const float*) {
@@ -534,22 +542,14 @@ private:
         for (u32 i = 0; i < frames; i++) {
             const u32 offset = i << 3;
 
-            d[offset + FL] =
-                static_cast<s16>(std::clamp(s[offset + FL] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + FR] =
-                static_cast<s16>(std::clamp(s[offset + FR] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + FC] =
-                static_cast<s16>(std::clamp(s[offset + FC] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + LF] =
-                static_cast<s16>(std::clamp(s[offset + LF] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + SL] =
-                static_cast<s16>(std::clamp(s[offset + STD_SL] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + SR] =
-                static_cast<s16>(std::clamp(s[offset + STD_SR] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + BL] =
-                static_cast<s16>(std::clamp(s[offset + STD_BL] * VOLUME_0DB, -32768.0f, 32767.0f));
-            d[offset + BR] =
-                static_cast<s16>(std::clamp(s[offset + STD_BR] * VOLUME_0DB, -32768.0f, 32767.0f));
+            d[offset + FL] = OrbisFloatToS16(s[offset + FL]);
+            d[offset + FR] = OrbisFloatToS16(s[offset + FR]);
+            d[offset + FC] = OrbisFloatToS16(s[offset + FC]);
+            d[offset + LF] = OrbisFloatToS16(s[offset + LF]);
+            d[offset + SL] = OrbisFloatToS16(s[offset + STD_SL]);
+            d[offset + SR] = OrbisFloatToS16(s[offset + STD_SR]);
+            d[offset + BL] = OrbisFloatToS16(s[offset + STD_BL]);
+            d[offset + BR] = OrbisFloatToS16(s[offset + STD_BR]);
         }
     }
 
