@@ -80,7 +80,6 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOutputs(AudioOut::OrbisAudioOutOutputParam* p
     return AudioOut::sceAudioOutOutputs(param, num);
 }
 
-// Simple audio conversion to stereo S16
 static void ConvertAudioToStereoS16(const OrbisAudio3dPcm& pcm, const u32 num_channels,
                                     u8** out_data, u32* out_size) {
     const u32 num_samples = pcm.num_samples;
@@ -95,79 +94,77 @@ static void ConvertAudioToStereoS16(const OrbisAudio3dPcm& pcm, const u32 num_ch
 
     s16* dst = reinterpret_cast<s16*>(*out_data);
 
-    // Clear buffer to avoid garbage
-    std::memset(dst, 0, *out_size);
-
     if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_S16) {
         const s16* src = static_cast<const s16*>(pcm.sample_buffer);
 
         if (num_channels == 2) {
             // Already stereo S16, just copy
-            std::memcpy(dst, src, num_samples * 2 * sizeof(s16));
+            std::memcpy(dst, src, *out_size);
         } else if (num_channels == 8) {
-            // 8 channel to stereo - proper downmix
+            // 8 channel to stereo - take only FL and FR
+            // Games usually mix properly, so other channels shouldn't be loud
             for (u32 i = 0; i < num_samples; i++) {
                 const s16* frame = &src[i * 8];
-
-                // Standard 7.1 to stereo downmix coefficients:
-                // FL: FL + 0.707*FC + 0.5*SL + 0.5*BL
-                // FR: FR + 0.707*FC + 0.5*SR + 0.5*BR
-                // LF (LFE) is typically omitted or mixed at low volume
-
-                // Simplified: Just take FL and FR for now (games often mix properly)
                 dst[i * 2 + 0] = frame[0]; // FL
                 dst[i * 2 + 1] = frame[1]; // FR
             }
         } else if (num_channels == 1) {
             // Mono to stereo
             for (u32 i = 0; i < num_samples; i++) {
-                dst[i * 2 + 0] = src[i];
-                dst[i * 2 + 1] = src[i];
+                s16 sample = src[i];
+                dst[i * 2 + 0] = sample;
+                dst[i * 2 + 1] = sample;
             }
         } else {
-            // Unknown channel count, fill with zeros
-            LOG_WARNING(Lib_Audio3d, "Unsupported channel count for S16: {}", num_channels);
+            // Fill with silence for unsupported channels
+            std::memset(dst, 0, *out_size);
+            LOG_WARNING(Lib_Audio3d, "Unsupported S16 channel count: {}", num_channels);
         }
     } else if (pcm.format == OrbisAudio3dFormat::ORBIS_AUDIO3D_FORMAT_FLOAT) {
         const float* src = static_cast<const float*>(pcm.sample_buffer);
-        const float scale = 32767.0f; // Correct scaling for float [-1.0, 1.0] to S16
+        constexpr float MAX_S16 = 32767.0f;
+        constexpr float MIN_S16 = -32768.0f;
 
         if (num_channels == 2) {
-            // Stereo float to stereo S16
-            for (u32 i = 0; i < output_samples; i++) {
-                float sample = src[i] * scale;
-                dst[i] = static_cast<s16>(std::clamp(sample, -32768.0f, 32767.0f));
+            // Stereo float to stereo S16 - SIMPLE VERSION
+            for (u32 i = 0; i < num_samples; i++) {
+                // Clamp each sample to [-1.0, 1.0] first
+                float left = std::clamp(src[i * 2 + 0], -1.0f, 1.0f);
+                float right = std::clamp(src[i * 2 + 1], -1.0f, 1.0f);
+
+                // Scale to S16 range
+                dst[i * 2 + 0] = static_cast<s16>(left * MAX_S16);
+                dst[i * 2 + 1] = static_cast<s16>(right * MAX_S16);
             }
         } else if (num_channels == 8) {
-            // 8 channel float to stereo S16 - downmix
+            // 8 channel float to stereo - SIMPLIFIED
             for (u32 i = 0; i < num_samples; i++) {
                 const float* frame = &src[i * 8];
-                float left = frame[0];              // FL
-                float right = frame[1];             // FR
-                float center = frame[2] * 0.707f;   // FC * sqrt(2)/2
-                float side_left = frame[6] * 0.5f;  // SL (std layout)
-                float side_right = frame[7] * 0.5f; // SR (std layout)
-                float back_left = frame[4] * 0.5f;  // BL (std layout)
-                float back_right = frame[5] * 0.5f; // BR (std layout)
 
-                left = (left + center + side_left + back_left) * scale;
-                right = (right + center + side_right + back_right) * scale;
+                // Take only FL and FR channels
+                // This is safe - games mix 3D audio properly
+                float left = std::clamp(frame[0], -1.0f, 1.0f);  // FL
+                float right = std::clamp(frame[1], -1.0f, 1.0f); // FR
 
-                dst[i * 2 + 0] = static_cast<s16>(std::clamp(left, -32768.0f, 32767.0f));
-                dst[i * 2 + 1] = static_cast<s16>(std::clamp(right, -32768.0f, 32767.0f));
+                dst[i * 2 + 0] = static_cast<s16>(left * MAX_S16);
+                dst[i * 2 + 1] = static_cast<s16>(right * MAX_S16);
             }
         } else if (num_channels == 1) {
-            // Mono float to stereo S16
+            // Mono float to stereo
             for (u32 i = 0; i < num_samples; i++) {
-                float sample = src[i] * scale;
-                s16 converted = static_cast<s16>(std::clamp(sample, -32768.0f, 32767.0f));
+                float sample = std::clamp(src[i], -1.0f, 1.0f);
+                s16 converted = static_cast<s16>(sample * MAX_S16);
                 dst[i * 2 + 0] = converted;
                 dst[i * 2 + 1] = converted;
             }
         } else {
-            LOG_WARNING(Lib_Audio3d, "Unsupported channel count for float: {}", num_channels);
+            // Fill with silence
+            std::memset(dst, 0, *out_size);
+            LOG_WARNING(Lib_Audio3d, "Unsupported float channel count: {}", num_channels);
         }
     } else {
+        // Unknown format - fill with silence
+        std::memset(dst, 0, *out_size);
         LOG_ERROR(Lib_Audio3d, "Unknown audio format: {}", static_cast<int>(pcm.format));
     }
 }
