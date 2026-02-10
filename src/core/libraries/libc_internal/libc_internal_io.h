@@ -39,18 +39,16 @@ struct OrbisFILE {
     u16 _Mode;
     u8 _Idx;
     s32 _Handle;
-
     u8 *_Buf, *_Bend, *_Next;
     u8 *_Rend, *_Wend, *_Rback;
-
     u16 *_WRback, _WBack[2];
+    u16 unk1;
     u8 *_Rsave, *_WRend, *_WWend;
-
     Orbis_Mbstatet _Wstate;
     u8* _Tmpnam;
     u8 _Back[6], _Cbuf;
+    u8 unk2;
     void* _Mutex;
-
     u8* _p;
     s32 _r;
     s32 _w;
@@ -58,31 +56,34 @@ struct OrbisFILE {
     s16 _file;
     Orbis__sbuf _bf;
     s32 _lbfsize;
-
     void* _cookie;
     s32 PS4_SYSV_ABI (*_close)(void*);
     s32 PS4_SYSV_ABI (*_read)(void*, char*, s32);
     Orbisfpos_t PS4_SYSV_ABI (*_seek)(void*, Orbisfpos_t, s32);
     s32 (*_write)(void*, const char*, s32);
-
     Orbis__sbuf _ub;
     u8* _up;
     s32 _ur;
-
     u8 _ubuf[3];
     u8 _nbuf[1];
-
     Orbis__sbuf _lb;
-
     s32 _blksize;
     Orbisfpos_t _offset;
-
     void* _fl_mutex;
     void* _fl_owner;
     s32 _fl_count;
     s32 _orientation;
     Orbis__mbstate_t _mbstate;
 };
+
+s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS);
+OrbisFILE* PS4_SYSV_ABI internal__Fofind();
+OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, OrbisFILE* file,
+                                         s32 fd, s32 flag1, s32 flag2);
+OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode);
+s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence);
+u64 PS4_SYSV_ABI internal_fread(void* ptr, u64 size, u64 nmemb, OrbisFILE* stream);
+s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream);
 
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
 void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);

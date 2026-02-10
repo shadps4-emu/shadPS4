@@ -11,19 +11,16 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/libraries/libs.h"
 #include "libc_internal_io.h"
 #include "printf.h"
 
 namespace Libraries::LibcInternal {
 
-s32 PS4_SYSV_ABI internal_snprintf(char* s, size_t n, VA_ARGS) {
+s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS) {
     VA_CTX(ctx);
     return snprintf_ctx(s, n, &ctx);
-}
-
-void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
 }
 
 std::vector<OrbisFILE*> g_files{};
@@ -88,7 +85,14 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream) {
     return 0;
 }
 
+void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
+    LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
+    LIB_FUNCTION("dREVnZkAKRE", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Foprep);
+}
+
 void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
+    // Goal is to be minimally intrusive here to allow LLE for printf/stdout writes.
     LIB_FUNCTION("xeYO4u7uyJ0", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fopen);
     LIB_FUNCTION("rQFVBXp-Cxg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fseek);
     LIB_FUNCTION("lbB+UlZqVG0", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fread);
