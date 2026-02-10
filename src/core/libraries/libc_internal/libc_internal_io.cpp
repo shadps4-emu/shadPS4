@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include <common/va_ctx.h>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -193,14 +194,14 @@ s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag) {
 }
 
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
-    std::scoped_lock lk{g_stream_mtx};
+    std::scoped_lock lk{g_file_mtx};
     OrbisFILE* file = internal__Fofind();
     return internal__Foprep(path, mode, file, -1, 0, 0);
 }
 
-s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream) {
-    if (stream == nullptr) {
-        std::scoped_lock lk{g_stream_mtx};
+s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* file) {
+    if (file == nullptr) {
+        std::scoped_lock lk{g_file_mtx};
         s32 fflush_result = 0;
         for (OrbisFILE* file : g_files) {
             s32 res = internal_fflush(file);
@@ -210,32 +211,33 @@ s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream) {
         }
         return fflush_result;
     }
-    if ((stream->_Mode & 0x2000) != 0) {
-        internal__Lockfilelock(stream);
-        u16 file_mode = stream->_Mode;
-        u8* file_buf_start = stream->_Buf;
-        u8* file_buf_end = stream->_Next;
+    if ((file->_Mode & 0x2000) != 0) {
+        internal__Lockfilelock(file);
+        u16 file_mode = file->_Mode;
+        u8* file_buf_start = file->_Buf;
+        u8* file_buf_end = file->_Next;
         while (file_buf_start < file_buf_end) {
             u64 size_to_write = static_cast<u64>(file_buf_end - file_buf_start);
             s32 write_bytes =
-                Libraries::Kernel::sceKernelWrite(stream->_Handle, file_buf_start, size_to_write);
+                Libraries::Kernel::sceKernelWrite(file->_Handle, file_buf_start, size_to_write);
             if (write_bytes < 1) {
-                file_buf_start = stream->_Buf;
-                stream->_Next = file_buf_start;
-                stream->_Wend = file_buf_start;
-                stream->_WWend = file_buf_start;
-                stream->_Mode = (stream->_Mode + 1) | 2;
-                internal__Unlockfilelock(stream);
+                file_buf_start = file->_Buf;
+                file->_Next = file_buf_start;
+                file->_Wend = file_buf_start;
+                file->_WWend = file_buf_start;
+                u8* off_mode = reinterpret_cast<u8*>(&file->_Mode) + 1;
+                *off_mode = *off_mode | 2;
+                internal__Unlockfilelock(file);
                 return -1;
             }
-            file_buf_end = stream->_Next;
+            file_buf_end = file->_Next;
             file_buf_start += write_bytes;
         }
-        stream->_Next = file_buf_start;
-        stream->_Wend = file_buf_start;
-        stream->_WWend = file_buf_start;
-        stream->_Mode = file_mode & 0xdfff;
-        internal__Unlockfilelock(stream);
+        file->_Next = file_buf_start;
+        file->_Wend = file_buf_start;
+        file->_WWend = file_buf_start;
+        file->_Mode = file_mode & 0xdfff;
+        internal__Unlockfilelock(file);
     }
     return 0;
 }
@@ -298,18 +300,117 @@ s32 PS4_SYSV_ABI internal__Fspos(OrbisFILE* file, Orbisfpos_t* file_pos, s64 off
     return 0;
 }
 
-s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence) {
-    internal__Lockfilelock(stream);
-    s32 result = internal__Fspos(stream, nullptr, offset, whence);
-    internal__Unlockfilelock(stream);
+s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* file, s64 offset, s32 whence) {
+    internal__Lockfilelock(file);
+    s32 result = internal__Fspos(file, nullptr, offset, whence);
+    internal__Unlockfilelock(file);
     return result;
 }
 
-u64 PS4_SYSV_ABI internal_fread(void* ptr, u64 size, u64 nmemb, OrbisFILE* stream) {
+s32 PS4_SYSV_ABI internal__Frprep(OrbisFILE* file) {
+    if (file->_Rend > file->_Next) {
+        return 1;
+    }
+    if ((file->_Mode & 0x100) == 0) {
+        return 0;
+    }
+    u16 mode = file->_Mode;
+    if ((mode & 0xa001) != 1) {
+        // Lot of magic here, might be valuable to figure out what this does.
+        file->_Mode = (((mode ^ 0x8000) >> 0xf) << 0xe) | mode | 0x200;
+        return -1;
+    }
+
+    u8* file_buf = file->_Buf;
+    if ((mode & 0x800) == 0 && file_buf == &file->_Cbuf) {
+        // Allocate a new file buffer, for now, we'll use host malloc to create it.
+        // When we have an HLE for malloc, that should be used instead.
+        u8* new_buffer = std::bit_cast<u8*>(std::malloc(0x10000));
+        if (new_buffer == nullptr) {
+            file->_Buf = file_buf;
+            file->_Bend = file_buf + 1;
+        } else {
+            file->_Mode = file->_Mode | 0x40;
+            file->_Buf = new_buffer;
+            file->_Bend = new_buffer + 0x10000;
+            file->_WRend = new_buffer;
+            file->_WWend = new_buffer;
+            file_buf = new_buffer;
+        }
+    }
+    file->_Next = file_buf;
+    file->_Rend = file_buf;
+    file->_Wend = file_buf;
+    // Intentional shrinking here, library treats value as 32-bit.
+    s32 read_result =
+        Libraries::Kernel::sceKernelRead(file->_Handle, file_buf, file->_Bend - file_buf);
+    if (read_result < 0) {
+        u8* off_mode = reinterpret_cast<u8*>(&file->_Mode) + 1;
+        *off_mode = *off_mode | 0x42;
+        return -1;
+    } else if (read_result != 0) {
+        file->_Mode = file->_Mode | 0x5000;
+        file->_Rend = file->_Rend + read_result;
+        return 1;
+    }
+    file->_Mode = (file->_Mode & 0xaeff) | 0x4100;
     return 0;
 }
 
-s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream) {
+u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file) {
+    if (size == 0 || nmemb == 0) {
+        return 0;
+    }
+    if (!Common::IsAligned(size * nmemb, 8)) {
+        *Libraries::Kernel::__Error() = POSIX_EINVAL;
+        return 0;
+    }
+
+    internal__Lockfilelock(file);
+    s64 total_size = size * nmemb;
+    s64 remaining_size = total_size;
+    if ((file->_Mode & 0x4000) != 0) {
+        while (remaining_size != 0) {
+            u8* rback_ptr = file->_Rback;
+            if (&file->_Cbuf <= rback_ptr) {
+                break;
+            }
+            file->_Rback = rback_ptr + 1;
+            *ptr = *rback_ptr;
+            ptr++;
+            remaining_size--;
+        }
+    }
+
+    while (remaining_size != 0) {
+        u8* file_ptr = file->_Rsave;
+        if (file_ptr == nullptr) {
+            file_ptr = file->_Rend;
+        } else {
+            file->_Rend = file_ptr;
+            file->_Rsave = nullptr;
+        }
+        u8* src = file->_Next;
+        if (file_ptr <= src) {
+            s32 res = internal__Frprep(file);
+            if (res < 1) {
+                internal__Unlockfilelock(file);
+                return (total_size - remaining_size) / size;
+            }
+            src = file->_Next;
+            file_ptr = file->_Rend;
+        }
+        u64 copy_bytes = std::min<u64>(file_ptr - src, remaining_size);
+        std::memcpy(ptr, src, copy_bytes);
+        file->_Next += copy_bytes;
+        ptr += copy_bytes;
+        remaining_size -= copy_bytes;
+    }
+    internal__Unlockfilelock(file);
+    return (total_size - remaining_size) / size;
+}
+
+s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
     return 0;
 }
 
@@ -321,6 +422,7 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sQL8D-jio7U", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fopen);
     LIB_FUNCTION("A+Y3xfrWLLo", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fspos);
     LIB_FUNCTION("Ss3108pBuZY", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Nnl);
+    LIB_FUNCTION("9s3P+LCvWP8", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Frprep);
     LIB_FUNCTION("vZkmJmvqueY", "libSceLibcInternal", 1, "libSceLibcInternal",
                  internal__Lockfilelock);
     LIB_FUNCTION("0x7rx8TKy2Y", "libSceLibcInternal", 1, "libSceLibcInternal",

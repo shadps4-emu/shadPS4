@@ -13,7 +13,7 @@ class SymbolsResolver;
 
 namespace Libraries::LibcInternal {
 
-static std::recursive_mutex g_stream_mtx{};
+static std::recursive_mutex g_file_mtx{};
 
 union Orbis__mbstate_t {
     u8 __mbstate8[128];
@@ -85,11 +85,13 @@ OrbisFILE* PS4_SYSV_ABI internal__Foprep(const char* path, const char* mode, Orb
                                          s32 fd, s32 flag1, s32 flag2);
 s32 PS4_SYSV_ABI internal__Fopen(const char* path, u16 mode, bool flag);
 OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode);
+s64 PS4_SYSV_ABI internal__Nnl(OrbisFILE* file, u8* val1, u8* val2);
 s32 PS4_SYSV_ABI internal__Fspos(OrbisFILE* file, Orbisfpos_t* file_pos, s64 offset, s32 whence);
-s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* stream);
-s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* stream, s64 offset, s32 whence);
-u64 PS4_SYSV_ABI internal_fread(void* ptr, u64 size, u64 nmemb, OrbisFILE* stream);
-s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* stream);
+s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* file);
+s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* file, s64 offset, s32 whence);
+s32 PS4_SYSV_ABI internal__Frprep(OrbisFILE* file);
+u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file);
+s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file);
 
 void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
 void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
