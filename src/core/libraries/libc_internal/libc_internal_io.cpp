@@ -366,11 +366,6 @@ u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file)
     if (size == 0 || nmemb == 0) {
         return 0;
     }
-    if (!Common::IsAligned(size * nmemb, 8)) {
-        *Libraries::Kernel::__Error() = POSIX_EINVAL;
-        return 0;
-    }
-
     internal__Lockfilelock(file);
     LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}, size {:#x}, nmemb {:#x}", file->_Handle,
              size, nmemb);
