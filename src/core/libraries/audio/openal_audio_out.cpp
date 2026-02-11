@@ -37,7 +37,7 @@ constexpr u64 MIN_SLEEP_THRESHOLD_US = 10;
 constexpr u64 TIMING_RESYNC_THRESHOLD_US = 100000; // Resync if >100ms behind
 
 // OpenAL constants
-constexpr ALsizei NUM_BUFFERS = 6;            
+constexpr ALsizei NUM_BUFFERS = 6;
 constexpr ALsizei BUFFER_QUEUE_THRESHOLD = 2; // Queue more buffers when below this
 
 // Channel positions
@@ -122,7 +122,7 @@ public:
 
         if (state != AL_PLAYING && queued > 0) {
             LOG_DEBUG(Lib_AudioOut, "Audio underrun detected (queued: {}), restarting source",
-                        queued);
+                      queued);
             alSourcePlay(source);
         }
 
@@ -432,10 +432,18 @@ private:
                 convert = &ConvertF32ToS16Mono;
                 break;
             case 2:
+#ifdef HAS_SSE2
+                convert = &ConvertF32ToS16StereoSIMD;
+#else
                 convert = &ConvertF32ToS16Stereo;
+#endif
                 break;
             case 8:
+#ifdef HAS_SSE2
+                convert = is_std ? &ConvertF32ToS16Std8CH : &ConvertF32ToS16_8CH_SIMD;
+#else
                 convert = is_std ? &ConvertF32ToS16Std8CH : &ConvertF32ToS16_8CH;
+#endif
                 break;
             default:
                 LOG_ERROR(Lib_AudioOut, "Unsupported float channel count: {}", num_channels);
@@ -527,7 +535,49 @@ private:
         for (u32 i = 0; i < frames; i++)
             d[i] = OrbisFloatToS16(s[i]);
     }
+#ifdef HAS_SSE2
+    static void ConvertF32ToS16StereoSIMD(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        s16* d = static_cast<s16*>(dst);
 
+        const __m128 scale = _mm_set1_ps(32768.0f);
+        const __m128 min_val = _mm_set1_ps(-32768.0f);
+        const __m128 max_val = _mm_set1_ps(32767.0f);
+
+        const u32 num_samples = frames << 1;
+        u32 i = 0;
+
+        // Process 8 samples at a time
+        for (; i + 8 <= num_samples; i += 8) {
+            // Load 8 floats
+            __m128 f1 = _mm_loadu_ps(&s[i]);
+            __m128 f2 = _mm_loadu_ps(&s[i + 4]);
+
+            // Scale and clamp
+            f1 = _mm_mul_ps(f1, scale);
+            f2 = _mm_mul_ps(f2, scale);
+            f1 = _mm_max_ps(f1, min_val);
+            f2 = _mm_max_ps(f2, min_val);
+            f1 = _mm_min_ps(f1, max_val);
+            f2 = _mm_min_ps(f2, max_val);
+
+            // Convert to int32
+            __m128i i1 = _mm_cvtps_epi32(f1);
+            __m128i i2 = _mm_cvtps_epi32(f2);
+
+            // Pack to int16
+            __m128i packed = _mm_packs_epi32(i1, i2);
+
+            // Store
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(&d[i]), packed);
+        }
+
+        // Handle remaining samples
+        for (; i < num_samples; i++) {
+            d[i] = OrbisFloatToS16(s[i]);
+        }
+    }
+#elif
     static void ConvertF32ToS16Stereo(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
@@ -536,7 +586,42 @@ private:
         for (u32 i = 0; i < num_samples; i++)
             d[i] = OrbisFloatToS16(s[i]);
     }
+#endif
 
+#ifdef HAS_SSE2
+    static void ConvertF32ToS16_8CH_SIMD(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        s16* d = static_cast<s16*>(dst);
+
+        const __m128 scale = _mm_set1_ps(32768.0f);
+        const __m128 min_val = _mm_set1_ps(-32768.0f);
+        const __m128 max_val = _mm_set1_ps(32767.0f);
+
+        const u32 num_samples = frames << 3;
+        u32 i = 0;
+
+        // Process 8 samples at a time (1 frame of 8CH audio)
+        for (; i + 8 <= num_samples; i += 8) {
+            __m128 f1 = _mm_loadu_ps(&s[i]);
+            __m128 f2 = _mm_loadu_ps(&s[i + 4]);
+
+            f1 = _mm_mul_ps(f1, scale);
+            f2 = _mm_mul_ps(f2, scale);
+            f1 = _mm_max_ps(_mm_min_ps(f1, max_val), min_val);
+            f2 = _mm_max_ps(_mm_min_ps(f2, max_val), min_val);
+
+            __m128i i1 = _mm_cvtps_epi32(f1);
+            __m128i i2 = _mm_cvtps_epi32(f2);
+            __m128i packed = _mm_packs_epi32(i1, i2);
+
+            _mm_storeu_si128(reinterpret_cast<__m128i*>(&d[i]), packed);
+        }
+
+        for (; i < num_samples; i++) {
+            d[i] = OrbisFloatToS16(s[i]);
+        }
+    }
+#elif
     static void ConvertF32ToS16_8CH(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
@@ -545,7 +630,7 @@ private:
         for (u32 i = 0; i < num_samples; i++)
             d[i] = OrbisFloatToS16(s[i]);
     }
-
+#endif
     static void ConvertF32ToS16Std8CH(const void* src, void* dst, u32 frames, const float*) {
         const float* s = static_cast<const float*>(src);
         s16* d = static_cast<s16*>(dst);
