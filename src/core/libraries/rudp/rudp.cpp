@@ -145,7 +145,7 @@ s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     }
 
     int result = ORBIS_RUDP_ERROR_INVALID_ARGUMENT;
-    if ((status != (OrbisRudpStatus *)0x0) && (statusSize - 1 < 0xf8)) {
+    if ((status != (OrbisRudpStatus *)0) && (statusSize - 1 < 0xf8)) {
         std::memcpy(status, &g_rudpStatusInternal, statusSize);
 
         status->currentContexts = static_cast<s32>(RudpGetContextCount(reinterpret_cast<uintptr_t>(g_RudpContext)));
