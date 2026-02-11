@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -183,6 +183,6 @@ std::filesystem::path getAddonInstallDir();
 void setDefaultValues(bool is_game_specific = false);
 
 constexpr std::string_view GetDefaultGlobalConfig();
-std::filesystem::path GetFoolproofInputConfigFile(const std::string& game_id = "");
+std::filesystem::path GetInputConfigFile(const std::string& game_id = "");
 
 }; // namespace Config

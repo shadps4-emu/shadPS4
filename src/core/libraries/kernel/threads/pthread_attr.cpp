@@ -24,9 +24,9 @@ static constexpr std::array<PthreadPrio, 3> ThrPriorities = {{
 }};
 
 PthreadAttr PthreadAttrDefault = {
-    .sched_policy = SchedPolicy::Fifo,
-    .sched_inherit = 0,
-    .prio = 0,
+    .sched_policy = SchedPolicy::Other,
+    .sched_inherit = PthreadInheritSched,
+    .prio = ORBIS_KERNEL_PRIO_FIFO_DEFAULT,
     .suspend = false,
     .flags = PthreadAttrFlags::ScopeSystem,
     .stackaddr_attr = nullptr,

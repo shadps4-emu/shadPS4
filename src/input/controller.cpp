@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
@@ -61,110 +61,51 @@ void State::OnAccel(const float accel[3]) {
     acceleration.z = accel[2];
 }
 
-GameController::GameController() {
-    m_states_num = 0;
-    m_last_state = State();
-}
+GameController::GameController() : m_states_queue(64) {}
 
 void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
-    std::scoped_lock lock{m_mutex};
-
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
-    *state = GetLastState();
+    *state = m_state;
 }
 
 int GameController::ReadStates(State* states, int states_num, bool* isConnected,
                                int* connectedCount) {
-    std::scoped_lock lock{m_mutex};
-
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
 
     int ret_num = 0;
-
     if (m_connected) {
-        if (m_states_num == 0) {
-            ret_num = 1;
-            states[0] = m_last_state;
-        } else {
-            for (uint32_t i = 0; i < m_states_num; i++) {
-                if (ret_num >= states_num) {
-                    break;
-                }
-                auto index = (m_first_state + i) % MAX_STATES;
-                if (!m_private[index].obtained) {
-                    m_private[index].obtained = true;
-
-                    states[ret_num++] = m_states[index];
-                }
+        std::lock_guard lg(m_states_queue_mutex);
+        for (int i = 0; i < states_num; i++) {
+            auto o_state = m_states_queue.Pop();
+            if (!o_state) {
+                break;
             }
+            states[ret_num++] = *o_state;
         }
     }
-
     return ret_num;
 }
 
-State GameController::GetLastState() const {
-    if (m_states_num == 0) {
-        return m_last_state;
-    }
-    const u32 last = (m_first_state + m_states_num - 1) % MAX_STATES;
-    return m_states[last];
-}
-
-void GameController::AddState(const State& state) {
-    if (m_states_num >= MAX_STATES) {
-        m_states_num = MAX_STATES - 1;
-        m_first_state = (m_first_state + 1) % MAX_STATES;
-    }
-
-    const u32 index = (m_first_state + m_states_num) % MAX_STATES;
-    m_states[index] = state;
-    m_last_state = state;
-    m_private[index].obtained = false;
-    m_states_num++;
-}
-
-void GameController::CheckButton(int id, OrbisPadButtonDataOffset button, bool is_pressed) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-    state.OnButton(button, is_pressed);
-
-    AddState(state);
+void GameController::Button(int id, OrbisPadButtonDataOffset button, bool is_pressed) {
+    m_state.OnButton(button, is_pressed);
+    PushState();
 }
 
 void GameController::Axis(int id, Input::Axis axis, int value) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-    state.OnAxis(axis, value);
-
-    AddState(state);
+    m_state.OnAxis(axis, value);
+    PushState();
 }
 
 void GameController::Gyro(int id, const float gyro[3]) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-    // Update the angular velocity (gyro data)
-    state.OnGyro(gyro);
-
-    AddState(state);
+    m_state.OnGyro(gyro);
+    PushState();
 }
+
 void GameController::Acceleration(int id, const float acceleration[3]) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-    // Update the acceleration values
-    state.OnAccel(acceleration);
-
-    AddState(state);
+    m_state.OnAccel(acceleration);
+    PushState();
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
@@ -206,7 +147,6 @@ void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
     if (!m_engine) {
         return;
     }
-    std::scoped_lock _{m_mutex};
     m_engine->SetLightBarRGB(r, g, b);
 }
 
@@ -214,39 +154,29 @@ void GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
     if (!m_engine) {
         return;
     }
-    std::scoped_lock _{m_mutex};
     m_engine->SetVibration(smallMotor, largeMotor);
 }
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
     if (touchIndex < 2) {
-        std::scoped_lock lock{m_mutex};
-        auto state = GetLastState();
-
-        state.time = Libraries::Kernel::sceKernelGetProcessTime();
-        state.OnTouchpad(touchIndex, touchDown, x, y);
-
-        AddState(state);
+        m_state.OnTouchpad(touchIndex, touchDown, x, y);
+        PushState();
     }
 }
 
 u8 GameController::GetTouchCount() {
-    std::scoped_lock lock{m_mutex};
     return m_touch_count;
 }
 
 void GameController::SetTouchCount(u8 touchCount) {
-    std::scoped_lock lock{m_mutex};
     m_touch_count = touchCount;
 }
 
 u8 GameController::GetSecondaryTouchCount() {
-    std::scoped_lock lock{m_mutex};
     return m_secondary_touch_count;
 }
 
 void GameController::SetSecondaryTouchCount(u8 touchCount) {
-    std::scoped_lock lock{m_mutex};
     m_secondary_touch_count = touchCount;
     if (touchCount == 0) {
         m_was_secondary_reset = true;
@@ -254,47 +184,38 @@ void GameController::SetSecondaryTouchCount(u8 touchCount) {
 }
 
 u8 GameController::GetPreviousTouchNum() {
-    std::scoped_lock lock{m_mutex};
     return m_previous_touchnum;
 }
 
 void GameController::SetPreviousTouchNum(u8 touchNum) {
-    std::scoped_lock lock{m_mutex};
     m_previous_touchnum = touchNum;
 }
 
 bool GameController::WasSecondaryTouchReset() {
-    std::scoped_lock lock{m_mutex};
     return m_was_secondary_reset;
 }
 
 void GameController::UnsetSecondaryTouchResetBool() {
-    std::scoped_lock lock{m_mutex};
     m_was_secondary_reset = false;
 }
 
 void GameController::SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation) {
-    std::scoped_lock lock{m_mutex};
     m_orientation = orientation;
 }
 
 Libraries::Pad::OrbisFQuaternion GameController::GetLastOrientation() {
-    std::scoped_lock lock{m_mutex};
     return m_orientation;
 }
 
 std::chrono::steady_clock::time_point GameController::GetLastUpdate() {
-    std::scoped_lock lock{m_mutex};
     return m_last_update;
 }
 
 void GameController::SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate) {
-    std::scoped_lock lock{m_mutex};
     m_last_update = lastUpdate;
 }
 
 void GameController::SetEngine(std::unique_ptr<Engine> engine) {
-    std::scoped_lock _{m_mutex};
     m_engine = std::move(engine);
     if (m_engine) {
         m_engine->Init();
@@ -305,24 +226,17 @@ Engine* GameController::GetEngine() {
     return m_engine.get();
 }
 
+void GameController::PushState() {
+    std::lock_guard lg(m_states_queue_mutex);
+    m_state.time = Libraries::Kernel::sceKernelGetProcessTime();
+    m_states_queue.Push(m_state);
+}
+
 u32 GameController::Poll() {
     if (m_connected) {
-        std::scoped_lock lock{m_mutex};
-        auto time = Libraries::Kernel::sceKernelGetProcessTime();
-        if (m_states_num == 0) {
-            auto diff = (time - m_last_state.time) / 1000;
-            if (diff >= 100) {
-                AddState(GetLastState());
-            }
-        } else {
-            auto index = (m_first_state - 1 + m_states_num) % MAX_STATES;
-            auto diff = (time - m_states[index].time) / 1000;
-            if (m_private[index].obtained && diff >= 100) {
-                AddState(GetLastState());
-            }
-        }
+        PushState();
     }
-    return 100;
+    return 33;
 }
 
 } // namespace Input

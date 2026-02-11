@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
@@ -104,8 +104,8 @@ void EmulateTouchpad(GameController* controller, u32 interval) {
     controller->SetTouchpadState(0, (mouse_buttons & SDL_BUTTON_LMASK) != 0,
                                  std::clamp(x / g_window->GetWidth(), 0.0f, 1.0f),
                                  std::clamp(y / g_window->GetHeight(), 0.0f, 1.0f));
-    controller->CheckButton(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
-                            (mouse_buttons & SDL_BUTTON_RMASK) != 0);
+    controller->Button(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
+                       (mouse_buttons & SDL_BUTTON_RMASK) != 0);
 }
 
 void ApplyMouseInputBlockers() {

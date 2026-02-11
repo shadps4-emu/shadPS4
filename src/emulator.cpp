@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -28,6 +28,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -36,6 +37,7 @@
 #include "core/libraries/font/fontft.h"
 #include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/np/np_trophy.h"
@@ -96,7 +98,7 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
-    Common::SetCurrentThreadName("Main Thread");
+    Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }
@@ -204,6 +206,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
+
+    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                (id + ".toml"))) {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
+    } else {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
+    }
 
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
@@ -527,11 +536,12 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
          {"libSceJpegDec.sprx", nullptr},
          {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
-         {"libScePngEnc.sprx", nullptr},
+         {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
+         {"libSceAudiodec.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
          {"libSceFreeTypeOt.sprx", nullptr}});
