@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SDL3/SDL_events.h"
@@ -471,7 +471,7 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    SDL_AddTimer(100, &PollController, controller);
+    SDL_AddTimer(33, &PollController, controller);
     SDL_AddTimer(33, Input::MousePolling, (void*)controller);
 }
 
@@ -540,7 +540,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // as it would break the entire touchpad handling
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
-        controller->CheckButton(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+        controller->Button(0, OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
     }
 

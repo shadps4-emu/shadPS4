@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -6,7 +6,10 @@
 #include <algorithm>
 #include <memory>
 #include <mutex>
+#include <vector>
+
 #include <SDL3/SDL_gamepad.h>
+
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
 
@@ -63,7 +66,36 @@ inline int GetAxis(int min, int max, int value) {
     return std::clamp((255 * (value - min)) / (max - min), 0, 255);
 }
 
-constexpr u32 MAX_STATES = 32;
+template <class T>
+class RingBufferQueue {
+public:
+    RingBufferQueue(size_t size) : m_storage(size) {}
+
+    void Push(T item) {
+        const size_t index = (m_begin + m_size) % m_storage.size();
+        m_storage[index] = std::move(item);
+        if (m_size < m_storage.size()) {
+            m_size += 1;
+        } else {
+            m_begin = (m_begin + 1) % m_storage.size();
+        }
+    }
+
+    std::optional<T> Pop() {
+        if (m_size == 0) {
+            return {};
+        }
+        const size_t index = m_begin;
+        m_begin = (m_begin + 1) % m_storage.size();
+        m_size -= 1;
+        return std::move(m_storage[index]);
+    }
+
+private:
+    size_t m_begin = 0;
+    size_t m_size = 0;
+    std::vector<T> m_storage;
+};
 
 class GameController {
 public:
@@ -72,9 +104,8 @@ public:
 
     void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
-    State GetLastState() const;
-    void CheckButton(int id, Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
-    void AddState(const State& state);
+
+    void Button(int id, Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void Axis(int id, Input::Axis axis, int value);
     void Gyro(int id, const float gyro[3]);
     void Acceleration(int id, const float acceleration[3]);
@@ -105,25 +136,21 @@ public:
                                      Libraries::Pad::OrbisFQuaternion& orientation);
 
 private:
-    struct StateInternal {
-        bool obtained = false;
-    };
+    void PushState();
 
-    std::mutex m_mutex;
     bool m_connected = true;
-    State m_last_state;
-    int m_connected_count = 0;
-    u32 m_states_num = 0;
-    u32 m_first_state = 0;
+    int m_connected_count = 1;
     u8 m_touch_count = 0;
     u8 m_secondary_touch_count = 0;
-    u8 m_previous_touch_count = 0;
     u8 m_previous_touchnum = 0;
     bool m_was_secondary_reset = false;
-    std::array<State, MAX_STATES> m_states;
-    std::array<StateInternal, MAX_STATES> m_private;
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    State m_state;
+
+    std::mutex m_states_queue_mutex;
+    RingBufferQueue<State> m_states_queue;
 
     std::unique_ptr<Engine> m_engine = nullptr;
 };
