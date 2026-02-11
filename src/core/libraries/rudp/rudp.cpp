@@ -116,7 +116,7 @@ s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int context_id) {
     return ORBIS_OK;
 }
 
-u32 Func_0100d870(uintptr_t globalContextListPtr) {
+u32 RudpGetContextCount(uintptr_t globalContextListPtr) {
     if (globalContextListPtr == 0) {
         return 0;
     }
@@ -125,7 +125,7 @@ u32 Func_0100d870(uintptr_t globalContextListPtr) {
     return *countPtr;
 }
 
-void Func_0101a5e0(s32* sentQualityLevel4Packets, s32* rcvdQualityLevel4Packets, s32* allocs,
+void RudpFillStatusCounters(s32* sentQualityLevel4Packets, s32* rcvdQualityLevel4Packets, s32* allocs,
                    s32* frees) {
     if (sentQualityLevel4Packets)
         *sentQualityLevel4Packets = g_state.sentQualityLevel4Packets.load();
@@ -145,11 +145,11 @@ s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     }
 
     int result = ORBIS_RUDP_ERROR_INVALID_ARGUMENT;
-    if (status != (OrbisRudpStatus*)nullptr && statusSize - 1 < 0xf8) {
+    if ((status != (OrbisRudpStatus *)0x0) && (statusSize - 1 < 0xf8)) {
         std::memcpy(status, &g_rudpStatusInternal, statusSize);
 
-        status->currentContexts = g_state.current_contexts.load();
-        Func_0101a5e0(&status->sentQualityLevel4Packets, &status->rcvdQualityLevel4Packets,
+        status->currentContexts = static_cast<s32>(RudpGetContextCount(reinterpret_cast<uintptr_t>(g_RudpContext)));
+        RudpFillStatusCounters(&status->sentQualityLevel4Packets, &status->rcvdQualityLevel4Packets,
                       &status->allocs, &status->frees);
 
         return ORBIS_OK;
