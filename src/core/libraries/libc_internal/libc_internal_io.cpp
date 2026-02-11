@@ -305,7 +305,7 @@ s32 PS4_SYSV_ABI internal__Fspos(OrbisFILE* file, Orbisfpos_t* file_pos, s64 off
 
 s32 PS4_SYSV_ABI internal_fseek(OrbisFILE* file, s64 offset, s32 whence) {
     internal__Lockfilelock(file);
-    LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}, offset {:#x}, whence {:#x}",
+    LOG_TRACE(Lib_LibcInternal, "called, file handle {:#x}, offset {:#x}, whence {:#x}",
              file->_Handle, offset, whence);
     s32 result = internal__Fspos(file, nullptr, offset, whence);
     internal__Unlockfilelock(file);
@@ -367,7 +367,7 @@ u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file)
         return 0;
     }
     internal__Lockfilelock(file);
-    LOG_INFO(Lib_LibcInternal, "called, file handle {:#x}, size {:#x}, nmemb {:#x}", file->_Handle,
+    LOG_TRACE(Lib_LibcInternal, "called, file handle {:#x}, size {:#x}, nmemb {:#x}", file->_Handle,
              size, nmemb);
     s64 total_size = size * nmemb;
     s64 remaining_size = total_size;
