@@ -73,7 +73,7 @@ public:
         Cleanup();
     }
 
-void Output(void* ptr) override {
+    void Output(void* ptr) override {
         if (!source || buffers.empty() || !convert) [[unlikely]] {
             return;
         }
@@ -87,10 +87,10 @@ void Output(void* ptr) override {
         UpdateVolumeIfChanged();
         const u64 current_time = Kernel::sceKernelGetProcessTime();
 
-        // Convert audio data
+        // Convert audio data ONCE per call
         convert(ptr, al_buffer.data(), buffer_frames, nullptr);
 
-        // Reclaim ALL processed buffers
+        // Reclaim processed buffers
         ALint processed = 0;
         alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
 
@@ -105,8 +105,7 @@ void Output(void* ptr) override {
             }
         }
 
-        // Queue ALL available buffers
-        while (!available_buffers.empty()) {
+        if (!available_buffers.empty()) {
             ALuint buffer_id = available_buffers.back();
             available_buffers.pop_back();
 
@@ -114,11 +113,18 @@ void Output(void* ptr) override {
             alSourceQueueBuffers(source, 1, &buffer_id);
         }
 
-        // Ensure playing
+        // Check for underrun and restart if needed
         ALint state = 0;
         alGetSourcei(source, AL_SOURCE_STATE, &state);
+
         if (state != AL_PLAYING) {
-            alSourcePlay(source);
+            ALint queued = 0;
+            alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+
+            if (queued > 0) {
+                LOG_WARNING(Lib_AudioOut, "Audio underrun detected, restarting source");
+                alSourcePlay(source);
+            }
         }
 
         HandleTiming(current_time);
@@ -219,9 +225,20 @@ private:
         // Apply initial volume
         alSourcef(source, AL_GAIN, current_gain.load(std::memory_order_relaxed));
 
+        std::vector<s16> silence(buffer_frames * num_channels, 0);
+        for (size_t i = 0; i < buffers.size() - 1; i++) { // Leave one buffer available
+            ALuint buffer_id = available_buffers.back();
+            available_buffers.pop_back();
+
+            alBufferData(buffer_id, format, silence.data(), buffer_size_bytes, sample_rate);
+            alSourceQueueBuffers(source, 1, &buffer_id);
+        }
+
+        // Start playback with primed buffers
+        alSourcePlay(source);
+
         LOG_INFO(Lib_AudioOut, "Initialized OpenAL backend ({} Hz, {} ch, {} format)", sample_rate,
                  num_channels, is_float ? "float" : "int16");
-
         return true;
     }
 
