@@ -15,4 +15,5 @@ namespace Libraries::LibcInternal {
 // so everything is just in the .cpp file
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
+void ForceRegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal
