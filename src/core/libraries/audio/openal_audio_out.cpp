@@ -37,7 +37,7 @@ constexpr u64 MIN_SLEEP_THRESHOLD_US = 10;
 constexpr u64 TIMING_RESYNC_THRESHOLD_US = 100000; // Resync if >100ms behind
 
 // OpenAL constants
-constexpr ALsizei NUM_BUFFERS = 4;            // Triple buffering
+constexpr ALsizei NUM_BUFFERS = 6;            
 constexpr ALsizei BUFFER_QUEUE_THRESHOLD = 2; // Queue more buffers when below this
 
 // Channel positions
@@ -105,6 +105,7 @@ public:
             }
         }
 
+        // Queue buffer
         if (!available_buffers.empty()) {
             ALuint buffer_id = available_buffers.back();
             available_buffers.pop_back();
@@ -113,21 +114,26 @@ public:
             alSourceQueueBuffers(source, 1, &buffer_id);
         }
 
-        // Check for underrun and restart if needed
+        // Check state and queue health
         ALint state = 0;
+        ALint queued = 0;
         alGetSourcei(source, AL_SOURCE_STATE, &state);
+        alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
 
-        if (state != AL_PLAYING) {
-            ALint queued = 0;
-            alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-
-            if (queued > 0) {
-                LOG_WARNING(Lib_AudioOut, "Audio underrun detected, restarting source");
-                alSourcePlay(source);
-            }
+        if (state != AL_PLAYING && queued > 0) {
+            LOG_WARNING(Lib_AudioOut, "Audio underrun detected (queued: {}), restarting source",
+                        queued);
+            alSourcePlay(source);
         }
 
-        HandleTiming(current_time);
+        // Only sleep if we have healthy buffer queue**
+        if (queued >= 2) { // Only sleep if at least 2 buffers queued
+            HandleTiming(current_time);
+        } else {
+            // Skip sleep to catch up on buffer queue
+            next_output_time = current_time + period_us;
+        }
+
         last_output_time.store(current_time, std::memory_order_release);
         output_count++;
     }
