@@ -30,7 +30,7 @@ enum class Event : int {
 enum class ContextEvent : int {
     CLOSED = 1,
     ESTABLISHED = 2,
-    ERROR = 3,
+    CONTEXT_ERROR = 3,
     WRITEABLE = 4,
     READABLE = 5,
     FLUSHED = 6
@@ -38,7 +38,7 @@ enum class ContextEvent : int {
 
 enum class PollOp : int { ADD = 1, MODIFY = 2, REMOVE = 3 };
 
-enum class PollEvent : int { READ = 0x0001, WRITE = 0x0002, FLUSH = 0x0004, ERROR = 0x0008 };
+enum class PollEvent : int { READ = 0x0001, WRITE = 0x0002, FLUSH = 0x0004, POLL_ERROR = 0x0008 };
 
 enum class Option : int {
     MAX_PAYLOAD = 1,
