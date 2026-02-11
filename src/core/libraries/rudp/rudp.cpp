@@ -116,14 +116,23 @@ s32 PS4_SYSV_ABI sceRudpGetSizeWritable(int context_id) {
     return ORBIS_OK;
 }
 
-u32 PS4_SYSV_ABI Func_01014df0(const u32* internalStructPointer) {
-    return *internalStructPointer;
+u32 Func_0100d870(uintptr_t globalContextListPtr) {
+    if (globalContextListPtr == 0) {
+        return 0;
+    }
+
+    u32* countPtr = reinterpret_cast<u32*>(globalContextListPtr + 8);
+    return *countPtr;
 }
 
-u32 PS4_SYSV_ABI Func_0100d870(u32 globalContextListPtr) {
-    u32 count = Func_01014df0((globalContextListPtr + 8));
-    return (count & 0xFFFFFFFF);
+void Func_0101a5e0(s32* sentQualityLevel4Packets, s32* rcvdQualityLevel4Packets, s32* allocs,
+                   s32* frees) {
+    if (sentQualityLevel4Packets) *sentQualityLevel4Packets = g_state.sentQualityLevel4Packets.load();
+    if (rcvdQualityLevel4Packets) *rcvdQualityLevel4Packets = g_state.rcvdQualityLevel4Packets.load();
+    if (allocs) *allocs = g_state.allocs.load();
+    if (frees)  *frees = g_state.frees.load();
 }
+
 s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     std::lock_guard lock(g_RudpMutex);
 
@@ -135,9 +144,9 @@ s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {
     if (status != (OrbisRudpStatus*)nullptr && statusSize - 1 < 0xf8) {
         std::memcpy(status, &g_rudpStatusInternal, statusSize);
 
-        status->currentContexts = Rudp_GetActiveContexts();
-        Rudp_GetMemoryStats(&status->sentQualityLevel4Packets, &status->rcvdQualityLevel4Packets,
-                            &status->allocs, &status->frees);
+        status->currentContexts = g_state.current_contexts.load();
+        Func_0101a5e0(&status->sentQualityLevel4Packets, &status->rcvdQualityLevel4Packets,
+                      &status->allocs, &status->frees);
 
         return ORBIS_OK;
     }
