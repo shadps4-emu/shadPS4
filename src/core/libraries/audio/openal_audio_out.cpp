@@ -73,16 +73,13 @@ public:
         Cleanup();
     }
 
-    void Output(void* ptr) override {
+void Output(void* ptr) override {
         if (!source || buffers.empty() || !convert) [[unlikely]] {
             return;
         }
-
         if (ptr == nullptr) [[unlikely]] {
             return;
         }
-
-        // Make context current before any OpenAL operations
         if (!device_context->MakeCurrent()) {
             return;
         }
@@ -90,53 +87,44 @@ public:
         UpdateVolumeIfChanged();
         const u64 current_time = Kernel::sceKernelGetProcessTime();
 
-        // Process audio data
+        // Convert audio data
         convert(ptr, al_buffer.data(), buffer_frames, nullptr);
-        HandleTiming(current_time);
 
-        // Manage buffer queue
-        while (!available_buffers.empty() && available_buffers.size() < NUM_BUFFERS) {
-            ALint processed = 0;
-            alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+        // Reclaim ALL processed buffers
+        ALint processed = 0;
+        alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
 
-            if (processed <= 0)
-                break;
-
+        while (processed > 0) {
             ALuint buffer_id;
-            alSourceUnqueueBuffers(source, 1, &buffer_id); // One at a time
-
-            if (alGetError() != AL_NO_ERROR) {
-                break; // Stop on error
+            alSourceUnqueueBuffers(source, 1, &buffer_id);
+            if (alGetError() == AL_NO_ERROR) {
+                available_buffers.push_back(buffer_id);
+                processed--;
+            } else {
+                break;
             }
-
-            available_buffers.push_back(buffer_id);
         }
 
-        // Check if we need to queue more buffers
-        ALint queued = 0;
-        alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-
-        if (queued < BUFFER_QUEUE_THRESHOLD && !available_buffers.empty()) {
+        // Queue ALL available buffers
+        while (!available_buffers.empty()) {
             ALuint buffer_id = available_buffers.back();
             available_buffers.pop_back();
 
             alBufferData(buffer_id, format, al_buffer.data(), buffer_size_bytes, sample_rate);
-
             alSourceQueueBuffers(source, 1, &buffer_id);
-            queued++;
         }
-        // Ensure the source is playing (OpenAL does NOT auto-start)
+
+        // Ensure playing
         ALint state = 0;
         alGetSourcei(source, AL_SOURCE_STATE, &state);
-
-        if (state != AL_PLAYING && queued > 0) {
+        if (state != AL_PLAYING) {
             alSourcePlay(source);
         }
-        // Update timing
+
+        HandleTiming(current_time);
         last_output_time.store(current_time, std::memory_order_release);
         output_count++;
     }
-
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
         // Make context current before any OpenAL operations
         if (!device_context->MakeCurrent()) {
