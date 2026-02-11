@@ -121,7 +121,7 @@ public:
         alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
 
         if (state != AL_PLAYING && queued > 0) {
-            LOG_WARNING(Lib_AudioOut, "Audio underrun detected (queued: {}), restarting source",
+            LOG_DEBUG(Lib_AudioOut, "Audio underrun detected (queued: {}), restarting source",
                         queued);
             alSourcePlay(source);
         }
