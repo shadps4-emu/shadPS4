@@ -74,7 +74,7 @@ public:
     }
 
     void Output(void* ptr) override {
-        if (!source || buffers.empty() || !convert) [[unlikely]] {
+        if (!source || !convert) [[unlikely]] {
             return;
         }
         if (ptr == nullptr) [[unlikely]] {
@@ -88,7 +88,11 @@ public:
         const u64 current_time = Kernel::sceKernelGetProcessTime();
 
         // Convert audio data ONCE per call
-        convert(ptr, al_buffer.data(), buffer_frames, nullptr);
+        if (use_native_float) {
+            convert(ptr, al_buffer_float.data(), buffer_frames, nullptr);
+        } else {
+            convert(ptr, al_buffer_s16.data(), buffer_frames, nullptr);
+        }
 
         // Reclaim processed buffers
         ALint processed = 0;
@@ -110,7 +114,13 @@ public:
             ALuint buffer_id = available_buffers.back();
             available_buffers.pop_back();
 
-            alBufferData(buffer_id, format, al_buffer.data(), buffer_size_bytes, sample_rate);
+            if (use_native_float) {
+                alBufferData(buffer_id, format, al_buffer_float.data(), buffer_size_bytes,
+                             sample_rate);
+            } else {
+                alBufferData(buffer_id, format, al_buffer_s16.data(), buffer_size_bytes,
+                             sample_rate);
+            }
             alSourceQueueBuffers(source, 1, &buffer_id);
         }
 
@@ -126,11 +136,10 @@ public:
             alSourcePlay(source);
         }
 
-        // Only sleep if we have healthy buffer queue**
-        if (queued >= 2) { // Only sleep if at least 2 buffers queued
+        // Only sleep if we have healthy buffer queue
+        if (queued >= 2) {
             HandleTiming(current_time);
         } else {
-            // Skip sleep to catch up on buffer queue
             next_output_time = current_time + period_us;
         }
 
@@ -138,7 +147,6 @@ public:
         output_count++;
     }
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
-        // Make context current before any OpenAL operations
         if (!device_context->MakeCurrent()) {
             return;
         }
@@ -158,13 +166,11 @@ public:
         const float slider_gain = Config::getVolumeSlider() * 0.01f;
         const float total_gain = max_channel_gain * slider_gain;
 
-        // Only update if changed significantly
         const float current = current_gain.load(std::memory_order_acquire);
         if (std::abs(total_gain - current) < VOLUME_EPSILON) {
             return;
         }
 
-        // Apply volume change to OpenAL source
         alSourcef(source, AL_GAIN, total_gain);
 
         ALenum error = alGetError();
@@ -185,7 +191,6 @@ public:
 
 private:
     bool Initialize(OrbisAudioOutPort type) {
-        // Get OpenAL device and context
         if (!OpenALDevice::GetInstance().IsInitialized()) {
             LOG_ERROR(Lib_AudioOut, "OpenAL device not initialized");
             return false;
@@ -193,7 +198,6 @@ private:
 
         device_context = &OpenALDevice::GetInstance();
 
-        // Make context current for initialization
         if (!device_context->MakeCurrent()) {
             LOG_ERROR(Lib_AudioOut, "Failed to make OpenAL context current");
             return false;
@@ -202,18 +206,26 @@ private:
         // Calculate timing parameters
         period_us = (1000000ULL * buffer_frames + sample_rate / 2) / sample_rate;
 
+        // Check for AL_EXT_FLOAT32 extension
+        has_float_ext = alIsExtensionPresent("AL_EXT_FLOAT32");
+        if (has_float_ext && is_float) {
+            LOG_INFO(Lib_AudioOut, "AL_EXT_FLOAT32 extension detected - using native float format");
+        }
+
         // Determine OpenAL format
         if (!DetermineOpenALFormat()) {
             LOG_ERROR(Lib_AudioOut, "Unsupported audio format for OpenAL");
             return false;
         }
 
-        // Calculate buffer size
-        buffer_size_bytes = buffer_frames * frame_size;
-
-        // Allocate current buffer
-        al_buffer.resize(buffer_frames * num_channels); // int16 upload
-        buffer_size_bytes = buffer_frames * num_channels * sizeof(s16);
+        // Allocate buffers based on format
+        if (use_native_float) {
+            al_buffer_float.resize(buffer_frames * num_channels);
+            buffer_size_bytes = buffer_frames * num_channels * sizeof(float);
+        } else {
+            al_buffer_s16.resize(buffer_frames * num_channels);
+            buffer_size_bytes = buffer_frames * num_channels * sizeof(s16);
+        }
 
         // Select optimal converter function
         if (!SelectConverter()) {
@@ -227,24 +239,32 @@ private:
 
         // Initialize current gain
         current_gain.store(Config::getVolumeSlider() * 0.01f, std::memory_order_relaxed);
-
-        // Apply initial volume
         alSourcef(source, AL_GAIN, current_gain.load(std::memory_order_relaxed));
 
-        std::vector<s16> silence(buffer_frames * num_channels, 0);
-        for (size_t i = 0; i < buffers.size() - 1; i++) { // Leave one buffer available
-            ALuint buffer_id = available_buffers.back();
-            available_buffers.pop_back();
-
-            alBufferData(buffer_id, format, silence.data(), buffer_size_bytes, sample_rate);
-            alSourceQueueBuffers(source, 1, &buffer_id);
+        // Prime buffers with silence
+        if (use_native_float) {
+            std::vector<float> silence(buffer_frames * num_channels, 0.0f);
+            for (size_t i = 0; i < buffers.size() - 1; i++) {
+                ALuint buffer_id = available_buffers.back();
+                available_buffers.pop_back();
+                alBufferData(buffer_id, format, silence.data(), buffer_size_bytes, sample_rate);
+                alSourceQueueBuffers(source, 1, &buffer_id);
+            }
+        } else {
+            std::vector<s16> silence(buffer_frames * num_channels, 0);
+            for (size_t i = 0; i < buffers.size() - 1; i++) {
+                ALuint buffer_id = available_buffers.back();
+                available_buffers.pop_back();
+                alBufferData(buffer_id, format, silence.data(), buffer_size_bytes, sample_rate);
+                alSourceQueueBuffers(source, 1, &buffer_id);
+            }
         }
 
-        // Start playback with primed buffers
         alSourcePlay(source);
 
-        LOG_INFO(Lib_AudioOut, "Initialized OpenAL backend ({} Hz, {} ch, {} format)", sample_rate,
-                 num_channels, is_float ? "float" : "int16");
+        LOG_INFO(Lib_AudioOut, "Initialized OpenAL backend ({} Hz, {} ch, {} format, {})",
+                 sample_rate, num_channels, is_float ? "float" : "int16",
+                 use_native_float ? "native" : "converted");
         return true;
     }
 
@@ -285,7 +305,6 @@ private:
         const float config_volume = Config::getVolumeSlider() * 0.01f;
         const float stored_gain = current_gain.load(std::memory_order_acquire);
 
-        // Only update if the difference is significant
         if (std::abs(config_volume - stored_gain) > VOLUME_EPSILON) {
             alSourcef(source, AL_GAIN, config_volume);
 
@@ -301,7 +320,6 @@ private:
 
     void HandleTiming(u64 current_time) {
         if (next_output_time == 0) [[unlikely]] {
-            // First output - set initial timing
             next_output_time = current_time + period_us;
             return;
         }
@@ -309,29 +327,67 @@ private:
         const s64 time_diff = static_cast<s64>(current_time - next_output_time);
 
         if (time_diff > static_cast<s64>(TIMING_RESYNC_THRESHOLD_US)) [[unlikely]] {
-            // We're far behind - resync
             next_output_time = current_time + period_us;
         } else if (time_diff < 0) {
-            // We're ahead of schedule - wait
             const u64 time_to_wait = static_cast<u64>(-time_diff);
             next_output_time += period_us;
 
             if (time_to_wait > MIN_SLEEP_THRESHOLD_US) {
-                // Sleep for most of the wait period
                 const u64 sleep_duration = time_to_wait - MIN_SLEEP_THRESHOLD_US;
                 std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
             }
         } else {
-            // Slightly behind or on time - just advance
             next_output_time += period_us;
         }
     }
 
     bool DetermineOpenALFormat() {
+        // Try to use native float formats if extension is available
+        if (is_float && has_float_ext) {
+            switch (num_channels) {
+            case 1:
+                format = AL_FORMAT_MONO_FLOAT32;
+                use_native_float = true;
+                return true;
+            case 2:
+                format = AL_FORMAT_STEREO_FLOAT32;
+                use_native_float = true;
+                return true;
+            case 4:
+                format = alGetEnumValue("AL_FORMAT_QUAD32");
+                if (format != 0 && alGetError() == AL_NO_ERROR) {
+                    use_native_float = true;
+                    return true;
+                }
+                break;
+            case 6:
+                format = alGetEnumValue("AL_FORMAT_51CHN32");
+                if (format != 0 && alGetError() == AL_NO_ERROR) {
+                    use_native_float = true;
+                    return true;
+                }
+                break;
+            case 8:
+                format = alGetEnumValue("AL_FORMAT_71CHN32");
+                if (format != 0 && alGetError() == AL_NO_ERROR) {
+                    use_native_float = true;
+                    return true;
+                }
+                break;
+            }
+
+            LOG_WARNING(
+                Lib_AudioOut,
+                "Float format for {} channels not supported, falling back to S16 conversion",
+                num_channels);
+        }
+
+        // Fall back to S16 formats (with conversion if needed)
+        use_native_float = false;
+
         if (is_float) {
-            // OpenAL doesn't natively support float formats, we need to use AL_EXT_FLOAT32
-            // extension For simplicity, we'll convert to int16 in our converter functions
-            format = AL_FORMAT_MONO16; // Default, will be overridden
+            // Will need to convert float to S16
+            format = AL_FORMAT_MONO16;
 
             switch (num_channels) {
             case 1:
@@ -359,7 +415,7 @@ private:
                 return false;
             }
         } else {
-            // 16-bit integer formats
+            // Native 16-bit integer formats
             switch (num_channels) {
             case 1:
                 format = AL_FORMAT_MONO16;
@@ -391,14 +447,12 @@ private:
     }
 
     bool CreateOpenALObjects() {
-        // Generate source
         alGenSources(1, &source);
         if (alGetError() != AL_NO_ERROR) {
             LOG_ERROR(Lib_AudioOut, "Failed to generate OpenAL source");
             return false;
         }
 
-        // Generate buffers
         buffers.resize(NUM_BUFFERS);
         alGenBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
         if (alGetError() != AL_NO_ERROR) {
@@ -408,10 +462,8 @@ private:
             return false;
         }
 
-        // All buffers are initially available
         available_buffers = buffers;
 
-        // Configure source properties
         alSourcef(source, AL_PITCH, 1.0f);
         alSourcef(source, AL_GAIN, 1.0f);
         alSource3f(source, AL_POSITION, 0.0f, 0.0f, 0.0f);
@@ -420,13 +472,28 @@ private:
         alSourcei(source, AL_SOURCE_RELATIVE, AL_TRUE);
 
         LOG_DEBUG(Lib_AudioOut, "Created OpenAL source {} with {} buffers", source, buffers.size());
-
         return true;
     }
 
     bool SelectConverter() {
-        if (is_float) {
-            // For OpenAL, we need to convert float to int16
+        if (is_float && use_native_float) {
+            // Native float - just copy/remap if needed
+            switch (num_channels) {
+            case 1:
+                convert = &ConvertF32Mono;
+                break;
+            case 2:
+                convert = &ConvertF32Stereo;
+                break;
+            case 8:
+                convert = is_std ? &ConvertF32Std8CH : &ConvertF32_8CH;
+                break;
+            default:
+                LOG_ERROR(Lib_AudioOut, "Unsupported float channel count: {}", num_channels);
+                return false;
+            }
+        } else if (is_float && !use_native_float) {
+            // Float to S16 conversion needed
             switch (num_channels) {
             case 1:
                 convert = &ConvertF32ToS16Mono;
@@ -450,6 +517,7 @@ private:
                 return false;
             }
         } else {
+            // S16 native - just copy
             switch (num_channels) {
             case 1:
                 convert = &ConvertS16Mono;
@@ -525,6 +593,42 @@ private:
 
         const u32 num_samples = frames << 3;
         std::memcpy(d, s, num_samples * sizeof(s16));
+    }
+
+    // Float passthrough converters (for AL_EXT_FLOAT32)
+    static void ConvertF32Mono(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+        std::memcpy(d, s, frames * sizeof(float));
+    }
+
+    static void ConvertF32Stereo(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+        std::memcpy(d, s, frames * 2 * sizeof(float));
+    }
+
+    static void ConvertF32_8CH(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+        std::memcpy(d, s, frames * 8 * sizeof(float));
+    }
+
+    static void ConvertF32Std8CH(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+
+        for (u32 i = 0; i < frames; i++) {
+            const u32 offset = i << 3;
+            d[offset + FL] = s[offset + FL];
+            d[offset + FR] = s[offset + FR];
+            d[offset + FC] = s[offset + FC];
+            d[offset + LF] = s[offset + LF];
+            d[offset + SL] = s[offset + STD_SL];
+            d[offset + SR] = s[offset + STD_SR];
+            d[offset + BL] = s[offset + STD_BL];
+            d[offset + BR] = s[offset + STD_BR];
+        }
     }
 
     // Float to S16 converters for OpenAL
@@ -674,7 +778,12 @@ private:
 
     // Buffer management
     u32 buffer_size_bytes{0};
-    std::vector<s16> al_buffer;
+    std::vector<s16> al_buffer_s16;     // For S16 formats
+    std::vector<float> al_buffer_float; // For float formats
+
+    // Extension support
+    bool has_float_ext{false};
+    bool use_native_float{false};
 
     // Converter function pointer
     ConverterFunc convert{nullptr};
