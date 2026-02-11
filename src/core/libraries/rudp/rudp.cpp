@@ -127,10 +127,14 @@ u32 Func_0100d870(uintptr_t globalContextListPtr) {
 
 void Func_0101a5e0(s32* sentQualityLevel4Packets, s32* rcvdQualityLevel4Packets, s32* allocs,
                    s32* frees) {
-    if (sentQualityLevel4Packets) *sentQualityLevel4Packets = g_state.sentQualityLevel4Packets.load();
-    if (rcvdQualityLevel4Packets) *rcvdQualityLevel4Packets = g_state.rcvdQualityLevel4Packets.load();
-    if (allocs) *allocs = g_state.allocs.load();
-    if (frees)  *frees = g_state.frees.load();
+    if (sentQualityLevel4Packets)
+        *sentQualityLevel4Packets = g_state.sentQualityLevel4Packets.load();
+    if (rcvdQualityLevel4Packets)
+        *rcvdQualityLevel4Packets = g_state.rcvdQualityLevel4Packets.load();
+    if (allocs)
+        *allocs = g_state.allocs.load();
+    if (frees)
+        *frees = g_state.frees.load();
 }
 
 s32 PS4_SYSV_ABI sceRudpGetStatus(OrbisRudpStatus* status, size_t statusSize) {

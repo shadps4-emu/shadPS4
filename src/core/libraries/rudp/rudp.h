@@ -176,7 +176,8 @@ typedef int (*OrbisRudpEventHandler)(Event event_id, int soc, u8 const* data, si
                                      void* arg);
 
 s32 PS4_SYSV_ABI sceRudpAccept();
-s32 PS4_SYSV_ABI sceRudpActivate(int context_id, Net::OrbisNetSockaddr* to, OrbisNetSocklen_t toLen);
+s32 PS4_SYSV_ABI sceRudpActivate(int context_id, Net::OrbisNetSockaddr* to,
+                                 OrbisNetSocklen_t toLen);
 s32 PS4_SYSV_ABI sceRudpBind(int context_id, int soc, u16 vport, u8 muxMode);
 s32 PS4_SYSV_ABI sceRudpCreateContext(OrbisRudpContextEventHandler handler, void* arg,
                                       int* context_id);
