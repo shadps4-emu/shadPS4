@@ -54,12 +54,12 @@ s32 PS4_SYSV_ABI sceNpWebApiCreateServicePushEventFilter(
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeletePushEventFilter(s32 libCtxId, s32 filterId) {
-    LOG_INFO(Lib_NpWebApi, "called, libCtxId = {:#x}, filterId = {:#x}");
+    LOG_INFO(Lib_NpWebApi, "called, libCtxId = {:#x}, filterId = {:#x}", libCtxId, filterId);
     return deletePushEventFilter(libCtxId, filterId);
 }
 
 s32 PS4_SYSV_ABI sceNpWebApiDeleteServicePushEventFilter(s32 libCtxId, s32 filterId) {
-    LOG_INFO(Lib_NpWebApi, "called, libCtxId = {:#x}, filterId = {:#x}");
+    LOG_INFO(Lib_NpWebApi, "called, libCtxId = {:#x}, filterId = {:#x}", libCtxId, filterId);
     return deleteServicePushEventFilter(libCtxId, filterId);
 }
 
