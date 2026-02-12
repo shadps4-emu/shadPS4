@@ -126,3 +126,10 @@
 	path = externals/sdl3
 	url = https://github.com/shadexternals/sdl3.git
 
+	branch = main
+[submodule "externals/cpp-httplib"]
+	path = externals/cpp-httplib
+	url = https://github.com/shadexternals/cpp-httplib.git
+[submodule "externals/openal-soft"]
+	path = externals/openal-soft
+	url = https://github.com/shadexternals/openal-soft.git

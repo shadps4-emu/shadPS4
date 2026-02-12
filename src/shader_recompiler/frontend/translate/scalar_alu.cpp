@@ -583,6 +583,14 @@ void Translator::S_MULK_I32(const GcnInst& inst) {
 // SOP1
 
 void Translator::S_MOV(const GcnInst& inst) {
+    if (inst.dst[0].field == OperandField::ScalarGPR) {
+        if (inst.src[0].field == OperandField::ExecLo) {
+            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
+            return;
+        } else if (inst.src[0].field == OperandField::ExecHi) {
+            return;
+        }
+    }
     SetDst(inst.dst[0], GetSrc(inst.src[0]));
 }
 
