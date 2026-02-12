@@ -5,8 +5,8 @@
 
 #include <string>
 #include <vector>
-#include "core/emulator_settings.h"
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
 
