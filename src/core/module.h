@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include "common/config.h"
 #include "common/types.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
@@ -162,6 +163,14 @@ public:
 
     bool IsSharedLib() const noexcept {
         return elf.IsSharedLib();
+    }
+
+    bool IsSystemLib() {
+        auto system_path = Config::getSysModulesPath();
+        if (file.string().starts_with(system_path.string().c_str())) {
+            return true;
+        }
+        return false;
     }
 
     template <typename T = VAddr>

@@ -65,7 +65,7 @@ s32 createLibraryContext(s32 libHttpCtxId, u64 poolSize, const char* name, s32 t
 
 OrbisNpWebApiContext* findAndValidateContext(s32 libCtxId, s32 flag) {
     std::scoped_lock lk{g_global_mutex};
-    if (libCtxId < 1 || libCtxId >= 0x8000) {
+    if (libCtxId < 1 || libCtxId >= 0x8000 || !g_contexts.contains(libCtxId)) {
         return nullptr;
     }
     auto& context = g_contexts[libCtxId];

@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 #include <thread>
 
 #include <fmt/format.h>
@@ -208,26 +209,41 @@ public:
             }
         }
 
+        std::unique_lock entry_loc(_mutex);
+
+        if (_last_entry.message == message) {
+            ++_last_entry.counter;
+            return;
+        }
+
+        if (_last_entry.counter >= 2) {
+            _last_entry.message += " x" + std::to_string(_last_entry.counter);
+        }
+
+        if (_last_entry.counter >= 1) {
+            if (Config::getLogType() == "async") {
+                message_queue.EmplaceWait(_last_entry);
+            } else {
+                ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                std::fflush(stdout);
+            }
+        }
+
         using std::chrono::duration_cast;
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
 
-        const Entry entry = {
+        this->_last_entry = {
             .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
             .log_class = log_class,
             .log_level = log_level,
             .filename = filename,
             .line_num = line_num,
             .function = function,
-            .message = std::move(message),
+            .message = message,
             .thread = Common::GetCurrentThreadName(),
+            .counter = 1,
         };
-        if (Config::getLogType() == "async") {
-            message_queue.EmplaceWait(entry);
-        } else {
-            ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
-            std::fflush(stdout);
-        }
     }
 
 private:
@@ -259,6 +275,22 @@ private:
     }
 
     void StopBackendThread() {
+        // log last message
+        if (_last_entry.counter >= 2) {
+            _last_entry.message += " x" + std::to_string(_last_entry.counter);
+        }
+
+        if (_last_entry.counter >= 1) {
+            if (Config::getLogType() == "async") {
+                message_queue.EmplaceWait(_last_entry);
+            } else {
+                ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                std::fflush(stdout);
+            }
+        }
+
+        this->_last_entry = {};
+
         backend_thread.request_stop();
         if (backend_thread.joinable()) {
             backend_thread.join();
@@ -292,6 +324,8 @@ private:
     MPSCQueue<Entry> message_queue{};
     std::chrono::steady_clock::time_point time_origin{std::chrono::steady_clock::now()};
     std::jthread backend_thread;
+    Entry _last_entry;
+    std::mutex _mutex;
 };
 } // namespace
 
