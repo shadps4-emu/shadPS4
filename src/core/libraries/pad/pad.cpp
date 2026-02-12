@@ -398,6 +398,9 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "called");
+    if (handle < 1) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
     int connected_count = 0;
     bool connected = false;
     std::vector<Input::State> states(64);
