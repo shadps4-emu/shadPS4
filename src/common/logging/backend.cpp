@@ -223,7 +223,7 @@ public:
         }
 
         if (_last_entry.counter >= 1) {
-            if (Config::getLogType() == "async") {
+            if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
                 message_queue.EmplaceWait(_last_entry);
             } else {
                 ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
@@ -283,7 +283,7 @@ private:
         }
 
         if (_last_entry.counter >= 1) {
-            if (Config::getLogType() == "async") {
+            if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
                 message_queue.EmplaceWait(_last_entry);
             } else {
                 ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });

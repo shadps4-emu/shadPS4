@@ -527,7 +527,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 38;
+    static constexpr u64 output_count = 40;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -577,6 +577,8 @@ public:
         ControllerOutput(HOTKEY_RENDERDOC),
         ControllerOutput(HOTKEY_ADD_VIRTUAL_USER),
         ControllerOutput(HOTKEY_REMOVE_VIRTUAL_USER),
+        ControllerOutput(HOTKEY_VOLUME_UP),
+        ControllerOutput(HOTKEY_VOLUME_DOWN),
 
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
     };

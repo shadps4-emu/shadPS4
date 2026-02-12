@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_set>
@@ -103,14 +103,24 @@ void GameController::Axis(int id, Input::Axis axis, int value) {
     PushState();
 }
 
-void GameController::Gyro(int id, const float gyro[3]) {
-    m_state.OnGyro(gyro);
+void GameController::Gyro(int id) {
+    m_state.OnGyro(gyro_buf);
     PushState();
 }
 
-void GameController::Acceleration(int id, const float acceleration[3]) {
-    m_state.OnAccel(acceleration);
+void GameController::Acceleration(int id) {
+    m_state.OnAccel(accel_buf);
     PushState();
+}
+
+void GameController::UpdateGyro(int id, const float gyro[3]) {
+    std::lock_guard lg(m_states_queue_mutex);
+    std::memcpy(gyro_buf, gyro, sizeof(gyro));
+}
+
+void GameController::UpdateAcceleration(int id, const float acceleration[3]) {
+    std::lock_guard lg(m_states_queue_mutex);
+    std::memcpy(accel_buf, acceleration, sizeof(acceleration));
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
@@ -308,14 +318,6 @@ void GameController::PushState() {
     std::lock_guard lg(m_states_queue_mutex);
     m_state.time = Libraries::Kernel::sceKernelGetProcessTime();
     m_states_queue.Push(m_state);
-}
-
-u32 GameController::Poll() {
-    std::scoped_lock lock{m_mutex};
-    if (m_connected) {
-        PushState();
-    }
-    return 33;
 }
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {

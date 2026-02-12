@@ -126,14 +126,14 @@ int main(int argc, char* argv[]) {
 
     // ---- Utility commands ----
     if (addGameFolder) {
-        Config::addGameInstallDir(*addGameFolder);
+        EmulatorSettings::GetInstance()->AddGameInstallDir(*addGameFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
 
     if (setAddonFolder) {
-        Config::setAddonInstallDir(*setAddonFolder);
+        EmulatorSettings::GetInstance()->SetAddonInstallDir(*setAddonFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Addon folder successfully saved.\n";
         return 0;
@@ -158,9 +158,9 @@ int main(int argc, char* argv[]) {
 
     if (fullscreenStr) {
         if (*fullscreenStr == "true") {
-            Config::setIsFullscreen(true);
+            EmulatorSettings::GetInstance()->SetFullScreen(true);
         } else if (*fullscreenStr == "false") {
-            Config::setIsFullscreen(false);
+            EmulatorSettings::GetInstance()->SetFullScreen(false);
         } else {
             std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
             return 1;
@@ -168,9 +168,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (showFps)
-        Config::setShowFpsCounter(true);
+        EmulatorSettings::GetInstance()->SetShowFpsCounter(true);
 
-    if (configClean)
+    if (configClean) // TODO
         Config::setConfigMode(Config::ConfigMode::Clean);
 
     if (configGlobal)
@@ -184,7 +184,7 @@ int main(int argc, char* argv[]) {
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
-        for (const auto& installDir : Config::getGameInstallDirs()) {
+        for (const auto& installDir : EmulatorSettings::GetInstance()->GetGameInstallDirs()) {
             if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;

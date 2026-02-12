@@ -24,6 +24,7 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
@@ -391,11 +392,15 @@ void ParseInputConfig(const std::string game_id = "") {
         if (button_it != string_to_cbutton_map.end()) {
             // todo add new shit here
             connection = BindingConnection(
-                binding, &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data, ControllerOutput(button_it->second)));
+                binding,
+                &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
+                                    ControllerOutput(button_it->second)));
             connections.insert(connections.end(), connection);
         } else if (hotkey_it != string_to_hotkey_map.end()) {
             connection = BindingConnection(
-                binding, &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data, ControllerOutput(hotkey_it->second)));
+                binding,
+                &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
+                                    ControllerOutput(hotkey_it->second)));
             connections.insert(connections.end(), connection);
         } else if (axis_it != string_to_axis_map.end()) {
             // todo add new shit here
@@ -612,13 +617,13 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         case HOTKEY_REMOVE_VIRTUAL_USER:
             PushSDLEvent(SDL_EVENT_REMOVE_VIRTUAL_USER);
         case HOTKEY_VOLUME_UP:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() + 10, 0, 500),
-                                    is_game_specific);
+            EmulatorSettings::GetInstance()->SetVolumeSlider(
+                std::clamp(EmulatorSettings::GetInstance()->GetVolumeSlider() + 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_VOLUME_DOWN:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() - 10, 0, 500),
-                                    is_game_specific);
+            EmulatorSettings::GetInstance()->SetVolumeSlider(
+                std::clamp(EmulatorSettings::GetInstance()->GetVolumeSlider() - 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_QUIT:
@@ -662,14 +667,12 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
             controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::L2,
-                                                    *new_param > 0x20);
+            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
             controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::R2,
-                                                    *new_param > 0x20);
+            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;

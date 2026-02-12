@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-#include "common/config.h"
+#include "core/emulator_settings.h"
 #include "common/types.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
@@ -166,7 +166,7 @@ public:
     }
 
     bool IsSystemLib() {
-        auto system_path = Config::getSysModulesPath();
+        auto system_path = EmulatorSettings::GetInstance()->GetSysModulesDir();
         if (file.string().starts_with(system_path.string().c_str())) {
             return true;
         }

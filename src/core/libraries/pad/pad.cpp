@@ -437,10 +437,6 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
-    auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
-    if (!controller_id) {
-        return ORBIS_PAD_ERROR_INVALID_HANDLE;
-    }
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
     auto& controller = *controllers[*controller_id];
     int connected_count = 0;

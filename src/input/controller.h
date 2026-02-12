@@ -35,11 +35,17 @@ struct TouchpadEntry {
 };
 
 struct State {
+    void OnButton(Libraries::Pad::OrbisPadButtonDataOffset, bool);
+    void OnAxis(Axis, int);
+    void OnTouchpad(int touchIndex, bool isDown, float x, float y);
+    void OnGyro(const float[3]);
+    void OnAccel(const float[3]);
+
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
     int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
-    Libraries::Pad::OrbisFVector3 acceleration = {0.0f, 0.0f, 0.0f};
+    Libraries::Pad::OrbisFVector3 acceleration = {0.0f, -9.81f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
     Libraries::Pad::OrbisFQuaternion orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 };
@@ -92,12 +98,13 @@ public:
 
     void Button(int id, Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
     void Axis(int id, Input::Axis axis, int value);
-    void Gyro(int id, const float gyro[3]);
-    void Acceleration(int id, const float acceleration[3]);
+    void Gyro(int id);
+    void Acceleration(int id);
+    void UpdateGyro(int id, const float gyro[3]);
+    void UpdateAcceleration(int id, const float acceleration[3]);
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
-    u32 Poll();
 
     u8 GetTouchCount();
     void SetTouchCount(u8 touchCount);
@@ -120,6 +127,7 @@ public:
 
     float gyro_poll_rate;
     float accel_poll_rate;
+    float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, -9.81f, 0.0f};
     u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
     SDL_Gamepad* m_sdl_gamepad = nullptr;
     static constexpr int max_smoothing_ticks = 2;

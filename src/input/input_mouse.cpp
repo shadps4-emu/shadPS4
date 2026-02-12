@@ -85,17 +85,17 @@ void EmulateJoystick(GameController* controller, u32 interval) {
     }
 }
 
-constexpr float constant_down_accel[3] = {0.0f, 10.0f, 0.0f};
+constexpr float constant_down_accel[3] = {0.0f, -9.81, 0.0f};
 void EmulateGyro(GameController* controller, u32 interval) {
     float d_x = 0, d_y = 0;
     SDL_GetRelativeMouseState(&d_x, &d_y);
-    controller->Acceleration(1, constant_down_accel);
+    controller->UpdateAcceleration(1, constant_down_accel);
     float gyro_from_mouse[3] = {-d_y / 100, -d_x / 100, 0.0f};
     if (mouse_gyro_roll_mode) {
         gyro_from_mouse[1] = 0.0f;
         gyro_from_mouse[2] = -d_x / 100;
     }
-    controller->Gyro(1, gyro_from_mouse);
+    controller->UpdateGyro(1, gyro_from_mouse);
 }
 
 void EmulateTouchpad(GameController* controller, u32 interval) {

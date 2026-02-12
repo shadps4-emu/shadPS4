@@ -473,7 +473,7 @@ void L::Draw() {
             if (ImGui::Begin("Volume Window", &show_volume,
                              ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-                Text("Volume: %d", Config::getVolumeSlider());
+                Text("Volume: %d", EmulatorSettings::GetInstance()->GetVolumeSlider());
             }
             End();
         }

@@ -3,7 +3,7 @@
 
 #include <cstring>
 #include <SDL3/SDL.h>
-#include <common/config.h>
+#include <core/emulator_settings.h>
 #include <common/logging/log.h>
 #include "audioin.h"
 #include "audioin_backend.h"
@@ -21,7 +21,7 @@ public:
         fmt.channels = static_cast<Uint8>(port.channels_num);
         fmt.freq = static_cast<int>(port.freq);
 
-        std::string micDevStr = Config::getMicDevice();
+        std::string micDevStr = EmulatorSettings::GetInstance()->GetMicDevice();
         uint32_t devId = 0;
         if (micDevStr == "None") {
             nullDevice = true;
