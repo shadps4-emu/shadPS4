@@ -191,8 +191,15 @@ public:
 
 private:
     bool Initialize(OrbisAudioOutPort type) {
-        if (!OpenALDevice::GetInstance().IsInitialized()) {
-            LOG_ERROR(Lib_AudioOut, "OpenAL device not initialized");
+        const std::string device_name = GetDeviceName(type);
+
+        if (!OpenALDevice::GetInstance().SelectDevice(device_name)) {
+            if (device_name == "None") {
+                LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
+                         static_cast<int>(type));
+            } else {
+                LOG_ERROR(Lib_AudioOut, "Failed to open OpenAL device '{}'", device_name);
+            }
             return false;
         }
 
@@ -266,6 +273,18 @@ private:
                  sample_rate, num_channels, is_float ? "float" : "int16",
                  use_native_float ? "native" : "converted");
         return true;
+    }
+
+    std::string GetDeviceName(OrbisAudioOutPort type) const {
+        switch (type) {
+        case OrbisAudioOutPort::Main:
+        case OrbisAudioOutPort::Bgm:
+            return Config::getMainOutputDevice();
+        case OrbisAudioOutPort::PadSpk:
+            return Config::getPadSpkOutputDevice();
+        default:
+            return Config::getMainOutputDevice();
+        }
     }
 
     void Cleanup() {
