@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -56,10 +56,12 @@
 #define HOTKEY_RELOAD_INPUTS 0xf0000005
 #define HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK 0xf0000006
 #define HOTKEY_TOGGLE_MOUSE_TO_GYRO 0xf0000007
-#define HOTKEY_RENDERDOC 0xf0000008
-#define HOTKEY_ADD_VIRTUAL_USER 0xf0000009
-#define HOTKEY_REMOVE_VIRTUAL_USER 0xf000000a
-#define HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD 0xf000000b
+#define HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD 0xf0000008
+#define HOTKEY_RENDERDOC 0xf0000009
+#define HOTKEY_VOLUME_UP 0xf000000a
+#define HOTKEY_VOLUME_DOWN 0xf000000b
+#define HOTKEY_ADD_VIRTUAL_USER 0xf000000c
+#define HOTKEY_REMOVE_VIRTUAL_USER 0xf000000d
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -144,6 +146,8 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"rpaddle_high", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1},
     {"rpaddle_low", SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2},
     {"mouse_gyro_roll_mode", MOUSE_GYRO_ROLL_MODE},
+};
+const std::map<std::string, u32> string_to_hotkey_map = {
     {"hotkey_pause", HOTKEY_PAUSE},
     {"hotkey_fullscreen", HOTKEY_FULLSCREEN},
     {"hotkey_show_fps", HOTKEY_SIMPLE_FPS},
@@ -155,6 +159,8 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"hotkey_renderdoc_capture", HOTKEY_RENDERDOC},
     {"hotkey_add_virtual_user", HOTKEY_ADD_VIRTUAL_USER},
     {"hotkey_remove_virtual_user", HOTKEY_REMOVE_VIRTUAL_USER},
+    {"hotkey_volume_up", HOTKEY_VOLUME_UP},
+    {"hotkey_volume_down", HOTKEY_VOLUME_DOWN},
 };
 
 const std::map<std::string, AxisMapping> string_to_axis_map = {

@@ -1016,6 +1016,10 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
         // There is no memory, so not mapped.
         return false;
     }
+    if (static_cast<u64>(addr) > std::numeric_limits<u64>::max() - size) {
+        // Memory range wrapped the address space, cannot be mapped.
+        return false;
+    }
     const auto range = decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
 
     Common::RecursiveSharedLock lock{mapped_ranges_mutex};

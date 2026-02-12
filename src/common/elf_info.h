@@ -75,6 +75,7 @@ class ElfInfo {
     std::filesystem::path game_folder{};
 
 public:
+    static constexpr u32 FW_10 = 0x1000000;
     static constexpr u32 FW_15 = 0x1500000;
     static constexpr u32 FW_16 = 0x1600000;
     static constexpr u32 FW_17 = 0x1700000;

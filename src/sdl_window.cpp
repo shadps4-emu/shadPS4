@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SDL3/SDL_events.h"
@@ -68,9 +68,11 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     }
 }
 
-static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+static Uint32 SDLCALL PollGyroAndAccel(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    return controller->Poll();
+    controller->Gyro(0);
+    controller->Acceleration(0);
+    return 4;
 }
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
@@ -198,23 +200,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
         OnGamepadEvent(&event);
         break;
-    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
-        int controller_id =
-            Input::GameControllers::GetGamepadIndexFromJoystickId(event.gsensor.which);
-        switch ((SDL_SensorType)event.gsensor.sensor) {
-        case SDL_SENSOR_GYRO:
-            controllers[controller_id]->Gyro(0, event.gsensor.data);
-            break;
-        case SDL_SENSOR_ACCEL:
-            controllers[controller_id]->Acceleration(0, event.gsensor.data);
-            break;
-        default:
-            break;
-        }
-        break;
-    }
     case SDL_EVENT_QUIT:
         is_open = false;
         break;
@@ -292,7 +280,7 @@ void WindowSDL::WaitEvent() {
 
 void WindowSDL::InitTimers() {
     for (int i = 0; i < 4; ++i) {
-        SDL_AddTimer(250, &PollController, controllers[i]);
+        SDL_AddTimer(4, &PollGyroAndAccel, controllers[i]);
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
@@ -363,7 +351,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
         controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gbutton.which)]
-            ->CheckButton(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+            ->Button(0, OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
     }
 
@@ -372,11 +360,11 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         switch ((SDL_SensorType)event->gsensor.sensor) {
         case SDL_SENSOR_GYRO:
             controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->Gyro(0, event->gsensor.data);
+                ->UpdateGyro(0, event->gsensor.data);
             break;
         case SDL_SENSOR_ACCEL:
             controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->Acceleration(0, event->gsensor.data);
+                ->UpdateAcceleration(0, event->gsensor.data);
             break;
         default:
             break;

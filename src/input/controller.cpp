@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_set>
@@ -17,143 +17,100 @@ static std::string SelectedGamepad = "";
 
 namespace Input {
 
-GameController::GameController() {
-    m_states_num = 0;
-    m_last_state = State();
+using Libraries::Pad::OrbisPadButtonDataOffset;
+
+void State::OnButton(OrbisPadButtonDataOffset button, bool isPressed) {
+    if (isPressed) {
+        buttonsState |= button;
+    } else {
+        buttonsState &= ~button;
+    }
 }
 
-void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
-    std::scoped_lock lock{m_mutex};
+void State::OnAxis(Axis axis, int value) {
+    const auto toggle = [&](const auto button) {
+        if (value > 0) {
+            buttonsState |= button;
+        } else {
+            buttonsState &= ~button;
+        }
+    };
+    switch (axis) {
+    case Axis::TriggerLeft:
+        toggle(OrbisPadButtonDataOffset::L2);
+        break;
+    case Axis::TriggerRight:
+        toggle(OrbisPadButtonDataOffset::R2);
+        break;
+    default:
+        break;
+    }
+    axes[static_cast<int>(axis)] = value;
+}
 
+void State::OnTouchpad(int touchIndex, bool isDown, float x, float y) {
+    touchpad[touchIndex].state = isDown;
+    touchpad[touchIndex].x = static_cast<u16>(x * 1920);
+    touchpad[touchIndex].y = static_cast<u16>(y * 941);
+}
+
+void State::OnGyro(const float gyro[3]) {
+    angularVelocity.x = gyro[0];
+    angularVelocity.y = gyro[1];
+    angularVelocity.z = gyro[2];
+}
+
+void State::OnAccel(const float accel[3]) {
+    acceleration.x = accel[0];
+    acceleration.y = accel[1];
+    acceleration.z = accel[2];
+}
+
+GameController::GameController() : m_states_queue(64) {}
+
+void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
-    *state = GetLastState();
+    *state = m_state;
 }
 
 int GameController::ReadStates(State* states, int states_num, bool* isConnected,
                                int* connectedCount) {
-    std::scoped_lock lock{m_mutex};
-
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
 
     int ret_num = 0;
-
     if (m_connected) {
-        if (m_states_num == 0) {
-            ret_num = 1;
-            states[0] = m_last_state;
-        } else {
-            for (uint32_t i = 0; i < m_states_num; i++) {
-                if (ret_num >= states_num) {
-                    break;
-                }
-                auto index = (m_first_state + i) % MAX_STATES;
-                if (!m_private[index].obtained) {
-                    m_private[index].obtained = true;
-
-                    states[ret_num++] = m_states[index];
-                }
+        std::lock_guard lg(m_states_queue_mutex);
+        for (int i = 0; i < states_num; i++) {
+            auto o_state = m_states_queue.Pop();
+            if (!o_state) {
+                break;
             }
+            states[ret_num++] = *o_state;
         }
     }
-
     return ret_num;
 }
 
-State GameController::GetLastState() const {
-    if (m_states_num == 0) {
-        return m_last_state;
-    }
-    const u32 last = (m_first_state + m_states_num - 1) % MAX_STATES;
-    auto copy = m_states[last];
-    return copy;
-}
-
-void GameController::AddState(const State& state) {
-    if (m_states_num >= MAX_STATES) {
-        m_states_num = MAX_STATES - 1;
-        m_first_state = (m_first_state + 1) % MAX_STATES;
-    }
-
-    const u32 index = (m_first_state + m_states_num) % MAX_STATES;
-    m_states[index] = state;
-    m_last_state = state;
-    m_private[index].obtained = false;
-    m_states_num++;
-}
-
-void GameController::CheckButton(int id, Libraries::Pad::OrbisPadButtonDataOffset button,
-                                 bool is_pressed) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-    if (is_pressed) {
-        state.buttonsState |= button;
-    } else {
-        state.buttonsState &= ~button;
-    }
-
-    AddState(state);
+void GameController::Button(int id, OrbisPadButtonDataOffset button, bool is_pressed) {
+    m_state.OnButton(button, is_pressed);
+    PushState();
 }
 
 void GameController::Axis(int id, Input::Axis axis, int value) {
-    using Libraries::Pad::OrbisPadButtonDataOffset;
-
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-    int axis_id = static_cast<int>(axis);
-    if (std::abs(state.axes[axis_id] - value) > 120) {
-        LOG_DEBUG(Input, "Keyboard axis change detected");
-        axis_smoothing_ticks[axis_id] = GameController::max_smoothing_ticks;
-        axis_smoothing_values[axis_id] = state.axes[axis_id];
-    }
-    state.axes[axis_id] = value;
-
-    if (axis == Input::Axis::TriggerLeft) {
-        if (value > 0) {
-            state.buttonsState |= OrbisPadButtonDataOffset::L2;
-        } else {
-            state.buttonsState &= ~OrbisPadButtonDataOffset::L2;
-        }
-    }
-
-    if (axis == Input::Axis::TriggerRight) {
-        if (value > 0) {
-            state.buttonsState |= OrbisPadButtonDataOffset::R2;
-        } else {
-            state.buttonsState &= ~OrbisPadButtonDataOffset::R2;
-        }
-    }
-
-    AddState(state);
+    m_state.OnAxis(axis, value);
+    PushState();
 }
 
 void GameController::Gyro(int id, const float gyro[3]) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-    // Update the angular velocity (gyro data)
-    state.angularVelocity.x = gyro[0]; // X-axis
-    state.angularVelocity.y = gyro[1]; // Y-axis
-    state.angularVelocity.z = gyro[2]; // Z-axis
-
-    AddState(state);
+    m_state.OnGyro(gyro);
+    PushState();
 }
+
 void GameController::Acceleration(int id, const float acceleration[3]) {
-    std::scoped_lock lock{m_mutex};
-    auto state = GetLastState();
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-    // Update the acceleration values
-    state.acceleration.x = acceleration[0]; // X-axis
-    state.acceleration.y = acceleration[1]; // Y-axis
-    state.acceleration.z = acceleration[2]; // Z-axis
-
-    AddState(state);
+    m_state.OnAccel(acceleration);
+    PushState();
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
@@ -207,15 +164,8 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
     if (touchIndex < 2) {
-        std::scoped_lock lock{m_mutex};
-        auto state = GetLastState();
-        state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-        state.touchpad[touchIndex].state = touchDown;
-        state.touchpad[touchIndex].x = static_cast<u16>(x * 1920);
-        state.touchpad[touchIndex].y = static_cast<u16>(y * 941);
-
-        AddState(state);
+        m_state.OnTouchpad(touchIndex, touchDown, x, y);
+        PushState();
     }
 }
 
@@ -304,22 +254,18 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     }
 }
 u8 GameController::GetTouchCount() {
-    std::scoped_lock lock{m_mutex};
     return m_touch_count;
 }
 
 void GameController::SetTouchCount(u8 touchCount) {
-    std::scoped_lock lock{m_mutex};
     m_touch_count = touchCount;
 }
 
 u8 GameController::GetSecondaryTouchCount() {
-    std::scoped_lock lock{m_mutex};
     return m_secondary_touch_count;
 }
 
 void GameController::SetSecondaryTouchCount(u8 touchCount) {
-    std::scoped_lock lock{m_mutex};
     m_secondary_touch_count = touchCount;
     if (touchCount == 0) {
         m_was_secondary_reset = true;
@@ -327,63 +273,49 @@ void GameController::SetSecondaryTouchCount(u8 touchCount) {
 }
 
 u8 GameController::GetPreviousTouchNum() {
-    std::scoped_lock lock{m_mutex};
     return m_previous_touchnum;
 }
 
 void GameController::SetPreviousTouchNum(u8 touchNum) {
-    std::scoped_lock lock{m_mutex};
     m_previous_touchnum = touchNum;
 }
 
 bool GameController::WasSecondaryTouchReset() {
-    std::scoped_lock lock{m_mutex};
     return m_was_secondary_reset;
 }
 
 void GameController::UnsetSecondaryTouchResetBool() {
-    std::scoped_lock lock{m_mutex};
     m_was_secondary_reset = false;
 }
 
 void GameController::SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation) {
-    std::scoped_lock lock{m_mutex};
     m_orientation = orientation;
 }
 
 Libraries::Pad::OrbisFQuaternion GameController::GetLastOrientation() {
-    std::scoped_lock lock{m_mutex};
     return m_orientation;
 }
 
 std::chrono::steady_clock::time_point GameController::GetLastUpdate() {
-    std::scoped_lock lock{m_mutex};
     return m_last_update;
 }
 
 void GameController::SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate) {
-    std::scoped_lock lock{m_mutex};
     m_last_update = lastUpdate;
+}
+
+void GameController::PushState() {
+    std::lock_guard lg(m_states_queue_mutex);
+    m_state.time = Libraries::Kernel::sceKernelGetProcessTime();
+    m_states_queue.Push(m_state);
 }
 
 u32 GameController::Poll() {
     std::scoped_lock lock{m_mutex};
     if (m_connected) {
-        auto time = Libraries::Kernel::sceKernelGetProcessTime();
-        if (m_states_num == 0) {
-            auto diff = (time - m_last_state.time) / 1000;
-            if (diff >= 100) {
-                AddState(GetLastState());
-            }
-        } else {
-            auto index = (m_first_state - 1 + m_states_num) % MAX_STATES;
-            auto diff = (time - m_states[index].time) / 1000;
-            if (m_private[index].obtained && diff >= 100) {
-                AddState(GetLastState());
-            }
-        }
+        PushState();
     }
-    return 100;
+    return 33;
 }
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
