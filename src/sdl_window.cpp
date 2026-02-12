@@ -351,7 +351,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
         controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gbutton.which)]
-            ->Button(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+            ->Button(OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
     }
 
@@ -360,11 +360,11 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         switch ((SDL_SensorType)event->gsensor.sensor) {
         case SDL_SENSOR_GYRO:
             controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->UpdateGyro(0, event->gsensor.data);
+                ->UpdateGyro(event->gsensor.data);
             break;
         case SDL_SENSOR_ACCEL:
             controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->UpdateAcceleration(0, event->gsensor.data);
+                ->UpdateAcceleration(event->gsensor.data);
             break;
         default:
             break;

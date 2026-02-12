@@ -96,12 +96,12 @@ public:
     void ReadState(State* state, bool* isConnected, int* connectedCount);
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
 
-    void Button(int id, Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
-    void Axis(int id, Input::Axis axis, int value);
+    void Button(Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
+    void Axis(Input::Axis axis, int value);
     void Gyro(int id);
     void Acceleration(int id);
-    void UpdateGyro(int id, const float gyro[3]);
-    void UpdateAcceleration(int id, const float acceleration[3]);
+    void UpdateGyro(const float gyro[3]);
+    void UpdateAcceleration(const float acceleration[3]);
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);

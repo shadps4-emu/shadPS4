@@ -571,15 +571,15 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
             controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
-            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
             controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
-            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
             controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
-            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case LEFTJOYSTICK_HALFMODE:
             leftjoystick_halfmode = new_button_state;
@@ -636,7 +636,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             SetMouseGyroRollMode(new_button_state);
             break;
         default: // is a normal key (hopefully)
-            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(SDLGamepadToOrbisButton(button), new_button_state);
             break;
         }
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID && positive_axis) {
@@ -666,18 +666,18 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
-            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
+            controllers[gamepad_index]->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
+            controllers[gamepad_index]->Button(OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
-            controllers[gamepad_index]->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
+            controllers[gamepad_index]->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
+            controllers[gamepad_index]->Button(OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;
         }
-        controllers[gamepad_index]->Axis(0, c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
+        controllers[gamepad_index]->Axis(c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
     }
 }
 

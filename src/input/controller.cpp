@@ -93,12 +93,12 @@ int GameController::ReadStates(State* states, int states_num, bool* isConnected,
     return ret_num;
 }
 
-void GameController::Button(int id, OrbisPadButtonDataOffset button, bool is_pressed) {
+void GameController::Button(OrbisPadButtonDataOffset button, bool is_pressed) {
     m_state.OnButton(button, is_pressed);
     PushState();
 }
 
-void GameController::Axis(int id, Input::Axis axis, int value) {
+void GameController::Axis(Input::Axis axis, int value) {
     m_state.OnAxis(axis, value);
     PushState();
 }
@@ -113,12 +113,12 @@ void GameController::Acceleration(int id) {
     PushState();
 }
 
-void GameController::UpdateGyro(int id, const float gyro[3]) {
+void GameController::UpdateGyro(const float gyro[3]) {
     std::lock_guard lg(m_states_queue_mutex);
     std::memcpy(gyro_buf, gyro, sizeof(gyro));
 }
 
-void GameController::UpdateAcceleration(int id, const float acceleration[3]) {
+void GameController::UpdateAcceleration(const float acceleration[3]) {
     std::lock_guard lg(m_states_queue_mutex);
     std::memcpy(accel_buf, acceleration, sizeof(acceleration));
 }
