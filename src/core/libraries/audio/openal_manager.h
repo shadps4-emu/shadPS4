@@ -77,7 +77,7 @@ public:
         }
 
         // Get device list
-        const ALCchar* devices = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
+        const ALCchar* devices = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
         if (!devices) {
             return devices_list;
         }
