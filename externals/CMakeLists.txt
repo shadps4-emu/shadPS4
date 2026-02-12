@@ -308,3 +308,8 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
 endif()
+
+# cpp-httplib
+add_library(Cpp_Httplib INTERFACE)
+target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
+
