@@ -9,8 +9,8 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
 
-#include "core/emulator_settings.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/kernel/threads.h"
@@ -110,7 +110,8 @@ public:
             max_channel_gain = std::max(max_channel_gain, channel_gain);
         }
 
-        const float slider_gain = EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f; // Faster than /100.0f
+        const float slider_gain =
+            EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f; // Faster than /100.0f
         const float total_gain = max_channel_gain * slider_gain;
 
         const float current = current_gain.load(std::memory_order_acquire);
@@ -156,7 +157,8 @@ private:
         }
 
         // Initialize current gain
-        current_gain.store(EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f, std::memory_order_relaxed);
+        current_gain.store(EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f,
+                           std::memory_order_relaxed);
 
         if (!SelectConverter()) {
             FreeAlignedBuffer();

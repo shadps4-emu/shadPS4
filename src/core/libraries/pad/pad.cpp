@@ -297,8 +297,8 @@ int PS4_SYSV_ABI scePadOutputReport() {
     return ORBIS_OK;
 }
 
-int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& controller, Input::State* states, s32 num, bool connected,
-                  u32 connected_count) {
+int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& controller,
+                  Input::State* states, s32 num, bool connected, u32 connected_count) {
     if (!connected) {
         pData[0] = {};
         pData[0].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -411,7 +411,8 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
     auto& controller = *controllers[*controller_id];
     int ret_num = controller.ReadStates(states.data(), num, &connected, &connected_count);
-    return ProcessStates(handle, pData, controller, states.data(), ret_num, connected, connected_count);
+    return ProcessStates(handle, pData, controller, states.data(), ret_num, connected,
+                         connected_count);
 }
 
 int PS4_SYSV_ABI scePadReadBlasterForTracker() {

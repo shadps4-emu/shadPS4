@@ -3,8 +3,8 @@
 
 #include <cstring>
 #include <SDL3/SDL.h>
-#include <core/emulator_settings.h>
 #include <common/logging/log.h>
+#include <core/emulator_settings.h>
 #include "audioin.h"
 #include "audioin_backend.h"
 

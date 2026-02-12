@@ -23,8 +23,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <core/emulator_settings.h>
 #include <common/key_manager.h>
+#include <core/emulator_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
