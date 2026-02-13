@@ -72,21 +72,27 @@ public:
     static std::vector<std::string> GetAvailableDevices() {
         std::vector<std::string> devices_list;
 
-        if (!IsDeviceEnumerationSupported()) {
+        // Check if enumeration extension is supported
+        if (!alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT"))
             return devices_list;
+
+        // Prefer ALC_ENUMERATE_ALL_EXT if available (OpenAL Soft)
+        const ALCchar* devices = nullptr;
+
+        if (alcIsExtensionPresent(nullptr, "ALC_ENUMERATE_ALL_EXT")) {
+            devices = alcGetString(nullptr, ALC_ALL_DEVICES_SPECIFIER);
+        } else {
+            devices = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
         }
 
-        // Get device list
-        const ALCchar* devices = alcGetString(nullptr, ALC_DEVICE_SPECIFIER);
-        if (!devices) {
+        if (!devices)
             return devices_list;
-        }
 
-        // Parse null-separated list
+        // Parse double-null terminated list
         const ALCchar* ptr = devices;
-        while (ptr && *ptr) {
+        while (*ptr != '\0') {
             devices_list.emplace_back(ptr);
-            ptr += strlen(ptr) + 1;
+            ptr += std::strlen(ptr) + 1;
         }
 
         return devices_list;
@@ -135,7 +141,14 @@ private:
         }
 
         // Get actual device name
-        const ALCchar* actual_name = alcGetString(device, ALC_DEVICE_SPECIFIER);
+        const ALCchar* actual_name = nullptr;
+
+        // Check if ENUMERATE_ALL is supported
+        if (alcIsExtensionPresent(nullptr, "ALC_ENUMERATE_ALL_EXT")) {
+            actual_name = alcGetString(device, ALC_ALL_DEVICES_SPECIFIER);
+        } else {
+            actual_name = alcGetString(device, ALC_DEVICE_SPECIFIER);
+        }
         current_device_name = actual_name ? actual_name : "Unknown";
 
         initialized = true;
