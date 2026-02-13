@@ -158,6 +158,17 @@ static string config_version = Common::g_scm_rev;
 static bool overrideControllerColor = false;
 static int controllerCustomColorRGB[3] = {0, 0, 255};
 
+std::filesystem::path getFontsPath() {
+    if (fonts_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::FontsDir);
+    }
+    return fonts_path;
+}
+
+void setFontsPath(const std::filesystem::path& path) {
+    fonts_path = path;
+}
+
 bool GetUseUnifiedInputConfig() {
     return useUnifiedInputConfig.get();
 }
@@ -231,6 +242,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
         userNames.setFromToml(general, "userNames", is_game_specific);
+        fonts_path = toml::find_fs_path_or(general, "fontsPath", fonts_path);
     }
 
     if (data.contains("Input")) {
@@ -312,8 +324,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     if (!is_game_specific) {
         // Non game-specific entries
-        data["Debug"]["ConfigVersion"] = config_version;
-        data["Keys"]["TrophyKey"] = trophyKey;
+        data["General"]["fontsPath"] = string{fmt::UTF(fonts_path.u8string()).data};
 
         // Do not save these entries in the game-specific dialog since they are not in the GUI
         data["Input"]["useUnifiedInputConfig"] = useUnifiedInputConfig.base_value;
