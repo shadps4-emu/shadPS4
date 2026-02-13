@@ -127,7 +127,7 @@ public:
 
     float gyro_poll_rate;
     float accel_poll_rate;
-    float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, -9.81f, 0.0f};
+    float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
     SDL_Gamepad* m_sdl_gamepad = nullptr;
     static constexpr int max_smoothing_ticks = 2;
