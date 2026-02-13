@@ -147,6 +147,7 @@ static ConfigEntry<string> isSideTrophy("right");
 static ConfigEntry<bool> isConnectedToNetwork(false);
 static bool enableDiscordRPC = false;
 static std::filesystem::path sys_modules_path = {};
+static std::filesystem::path fonts_path = {};
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -235,6 +236,17 @@ std::filesystem::path getSysModulesPath() {
 
 void setSysModulesPath(const std::filesystem::path& path) {
     sys_modules_path = path;
+}
+
+std::filesystem::path getFontsPath() {
+    if (fonts_path.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::FontsDir);
+    }
+    return fonts_path;
+}
+
+void setFontsPath(const std::filesystem::path& path) {
+    fonts_path = path;
 }
 
 int getVolumeSlider() {
@@ -888,6 +900,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isConnectedToNetwork.setFromToml(general, "isConnectedToNetwork", is_game_specific);
         defaultControllerID.setFromToml(general, "defaultControllerID", is_game_specific);
         sys_modules_path = toml::find_fs_path_or(general, "sysModulesPath", sys_modules_path);
+        fonts_path = toml::find_fs_path_or(general, "fontsPath", fonts_path);
     }
 
     if (data.contains("Input")) {
@@ -1161,6 +1174,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         // Non game-specific entries
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
         data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
+        data["General"]["fontsPath"] = string{fmt::UTF(fonts_path.u8string()).data};
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
