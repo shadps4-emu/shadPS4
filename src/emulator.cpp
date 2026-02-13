@@ -36,6 +36,7 @@
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
 #include "core/libraries/jpeg/jpegenc.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
@@ -367,6 +368,34 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::create_directory(mount_captures_dir);
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
+
+    // Mount system fonts
+    const auto& fonts_dir = Config::getFontsPath();
+    if (!std::filesystem::exists(fonts_dir)) {
+        std::filesystem::create_directory(fonts_dir);
+    }
+
+    // Fonts are mounted into the sandboxed system directory, construct the appropriate path.
+    const char* sandbox_root = Libraries::Kernel::sceKernelGetFsSandboxRandomWord();
+    std::string guest_font_dir = "/";
+    guest_font_dir.append(sandbox_root).append("/common/font");
+    const auto& host_font_dir = fonts_dir / "font";
+    if (!std::filesystem::exists(host_font_dir)) {
+        std::filesystem::create_directory(host_font_dir);
+    }
+    mnt->Mount(host_font_dir, guest_font_dir);
+
+    // There is a second font directory, mount that too.
+    guest_font_dir.append("2");
+    const auto& host_font2_dir = fonts_dir / "font2";
+    if (!std::filesystem::exists(host_font2_dir)) {
+        std::filesystem::create_directory(host_font2_dir);
+    }
+    mnt->Mount(host_font2_dir, guest_font_dir);
+
+    if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
+        LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
+    }
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

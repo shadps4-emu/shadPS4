@@ -397,6 +397,9 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::State* states, s32 num
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "called");
+    if (handle < 1) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
     int connected_count = 0;
     bool connected = false;
     std::vector<Input::State> states(64);
@@ -428,7 +431,7 @@ int PS4_SYSV_ABI scePadReadHistory() {
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     LOG_TRACE(Lib_Pad, "called");
-    if (handle == ORBIS_PAD_ERROR_DEVICE_NO_HANDLE) {
+    if (handle < 1) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto* controller = Common::Singleton<GameController>::Instance();
