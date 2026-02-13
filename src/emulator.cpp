@@ -370,7 +370,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
     // Mount system fonts
-    const auto& fonts_dir = Common::FS::GetUserPath(Common::FS::PathType::FontsDir);
+    const auto& fonts_dir = Config::getFontsPath();
     if (!std::filesystem::exists(fonts_dir)) {
         std::filesystem::create_directory(fonts_dir);
     }
