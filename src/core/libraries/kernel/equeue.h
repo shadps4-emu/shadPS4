@@ -84,11 +84,8 @@ struct EqueueEvent {
     std::chrono::microseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
-    void ResetTriggerState() {
-        is_triggered = false;
-    }
-
     void Clear() {
+        is_triggered = false;
         event.fflags = 0;
         event.data = 0;
     }

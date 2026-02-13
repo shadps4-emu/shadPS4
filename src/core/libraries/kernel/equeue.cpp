@@ -165,10 +165,6 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     for (auto it = m_events.begin(); it != m_events.end();) {
         if (it->IsTriggered()) {
             ev[count++] = it->event;
-
-            // Event should not trigger again
-            it->ResetTriggerState();
-
             if (it->event.flags & SceKernelEvent::Flags::Clear) {
                 it->Clear();
             }
