@@ -145,17 +145,6 @@ static auto UserPaths = [] {
         notice_file.close();
     }
 
-    const auto instructions_path = user_dir / FONTS_DIR / "Instructions.txt";
-    std::error_code ec;
-    if (!std::filesystem::exists(instructions_path, ec)) {
-        std::ofstream font_instructions(instructions_path);
-        if (font_instructions.is_open()) {
-            font_instructions << "Place system font files (.otf/.ttf) into the 'font' and 'font2' "
-                                 "folders.\n";
-            font_instructions.close();
-        }
-    }
-
     return paths;
 }();
 
