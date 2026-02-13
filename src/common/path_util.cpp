@@ -145,7 +145,7 @@ static auto UserPaths = [] {
         notice_file.close();
     }
 
-    const auto instructions_path = user_dir / SYSFONTS_DIR / "Instructions.txt";
+    const auto instructions_path = user_dir / FONTS_DIR / "Instructions.txt";
     std::error_code ec;
     if (!std::filesystem::exists(instructions_path, ec)) {
         std::ofstream font_instructions(instructions_path);

@@ -1528,94 +1528,31 @@ static bool DirectoryContainsAnyFontFiles(const std::filesystem::path& dir) {
     return false;
 }
 
-static std::optional<std::filesystem::path> FindChildDirContainingFile(
-    const std::filesystem::path& base_dir, const std::string& filename) {
-    if (filename.empty()) {
-        return std::nullopt;
-    }
-
-    std::error_code ec;
-    if (!std::filesystem::is_directory(base_dir, ec)) {
-        return std::nullopt;
-    }
-
-    std::optional<std::filesystem::path> match;
-    for (const auto& entry : std::filesystem::directory_iterator(base_dir, ec)) {
-        if (ec) {
-            return std::nullopt;
-        }
-        if (!entry.is_directory(ec) || ec) {
-            continue;
-        }
-        const auto candidate = entry.path() / filename;
-        if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
-            if (match) {
-                return std::nullopt;
-            }
-            match = entry.path();
-        }
-    }
-    return match;
-}
-
 std::filesystem::path GetSysFontBaseDir() {
-    std::filesystem::path base = Config::getSysFontPath();
+    std::filesystem::path base = Config::getFontsPath();
     std::error_code ec;
     if (base.empty()) {
-        LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath not set");
+        LOG_ERROR(Lib_Font, "SystemFonts: FontsPath not set");
         return {};
     }
     if (std::filesystem::is_directory(base, ec)) {
-        if (DirectoryContainsAnyFontFiles(base)) {
+        const auto font_dir = base / "font";
+        const auto font2_dir = base / "font2";
+        if (DirectoryContainsAnyFontFiles(base) || DirectoryContainsAnyFontFiles(font_dir) ||
+            DirectoryContainsAnyFontFiles(font2_dir)) {
             return base;
         }
-
-        {
-            const auto font_dir = base / "font";
-            const auto font2_dir = base / "font2";
-            if (DirectoryContainsAnyFontFiles(font_dir) ||
-                DirectoryContainsAnyFontFiles(font2_dir)) {
-                return base;
-            }
-        }
-
-        const std::string fallback = Config::getSystemFontFallbackName();
-        if (auto child = FindChildDirContainingFile(base, fallback)) {
-            return *child;
-        }
-
-        std::optional<std::filesystem::path> sole_font_dir;
-        for (const auto& entry : std::filesystem::directory_iterator(base, ec)) {
-            if (ec) {
-                break;
-            }
-            if (!entry.is_directory(ec) || ec) {
-                continue;
-            }
-            if (DirectoryContainsAnyFontFiles(entry.path())) {
-                if (sole_font_dir) {
-                    sole_font_dir.reset();
-                    break;
-                }
-                sole_font_dir = entry.path();
-            }
-        }
-        if (sole_font_dir) {
-            return *sole_font_dir;
-        }
-
         LOG_ERROR(
             Lib_Font,
-            "SystemFonts: SysFontPath '{}' contains no font files; set it to the directory that "
-            "contains the .otf/.ttf files (or ensure [SystemFonts].fallback is present in exactly "
-            "one child directory)",
+            "SystemFonts: FontsPath '{}' contains no font files; expected files directly in this "
+            "directory or under 'font'/'font2'",
             base.string());
         return {};
     }
     if (std::filesystem::is_regular_file(base, ec)) {
         return base.parent_path();
     }
-    LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath '{}' is not a valid directory or file",
+    LOG_ERROR(Lib_Font, "SystemFonts: FontsPath '{}' is not a valid directory or file",
               base.string());
     return {};
 }
@@ -1658,119 +1595,17 @@ static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesyste
     return direct;
 }
 
-std::string MacroToCamel(const char* macro_key) {
-    if (!macro_key) {
-        return {};
-    }
-    std::string s(macro_key);
-    const std::string prefix = "FONTSET_";
-    if (s.rfind(prefix, 0) != 0) {
-        return {};
-    }
-    std::string out = "FontSet";
-    size_t pos = prefix.size();
-    while (pos < s.size()) {
-        size_t next = s.find('_', pos);
-        const size_t len = (next == std::string::npos) ? (s.size() - pos) : (next - pos);
-        std::string token = s.substr(pos, len);
-        for (auto& c : token) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-        if (!token.empty()) {
-            token[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(token[0])));
-        }
-        out += token;
-        if (next == std::string::npos) {
-            break;
-        }
-        pos = next + 1;
-    }
-    return out;
-}
-
 std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
     if (const auto* def = FindSystemFontDefinition(font_set_type); def) {
         const auto base_dir = GetSysFontBaseDir();
         if (base_dir.empty()) {
             return {};
         }
-        if (auto override_path = Config::getSystemFontOverride(def->config_key)) {
-            if (!override_path->empty() && !override_path->is_absolute() &&
-                !override_path->has_parent_path()) {
-                return ResolveSystemFontPathCandidate(base_dir, *override_path);
-            }
-            LOG_ERROR(Lib_Font,
-                      "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                      def->config_key, override_path->string());
-        }
-        const auto camel_key = MacroToCamel(def->config_key);
-        if (!camel_key.empty()) {
-            if (auto override_path2 = Config::getSystemFontOverride(camel_key)) {
-                if (!override_path2->empty() && !override_path2->is_absolute() &&
-                    !override_path2->has_parent_path()) {
-                    return ResolveSystemFontPathCandidate(base_dir, *override_path2);
-                }
-                LOG_ERROR(Lib_Font,
-                          "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                          camel_key, override_path2->string());
-            }
-            std::string lower_camel = camel_key;
-            lower_camel[0] =
-                static_cast<char>(std::tolower(static_cast<unsigned char>(lower_camel[0])));
-            if (auto override_path3 = Config::getSystemFontOverride(lower_camel)) {
-                if (!override_path3->empty() && !override_path3->is_absolute() &&
-                    !override_path3->has_parent_path()) {
-                    return ResolveSystemFontPathCandidate(base_dir, *override_path3);
-                }
-                LOG_ERROR(Lib_Font,
-                          "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                          lower_camel, override_path3->string());
-            }
-        }
         if (def->default_file && *def->default_file) {
             return ResolveSystemFontPathCandidate(base_dir, def->default_file);
         }
     }
     LOG_ERROR(Lib_Font, "SystemFonts: unknown font set type=0x{:08X}", font_set_type);
-    return {};
-}
-
-std::filesystem::path ResolveSystemFontPathFromConfigOnly(u32 font_set_type) {
-    const auto base_dir = GetSysFontBaseDir();
-    if (base_dir.empty()) {
-        return {};
-    }
-
-    const std::string key_a = fmt::format("fontset_0x{:08X}", font_set_type);
-    const std::string key_b = fmt::format("fontSet_0x{:08X}", font_set_type);
-
-    auto try_key = [&](const std::string& key) -> std::optional<std::filesystem::path> {
-        if (auto override_path = Config::getSystemFontOverride(key)) {
-            if (!override_path->empty() && override_path->is_absolute()) {
-                return *override_path;
-            }
-            if (!override_path->empty() && !override_path->has_parent_path()) {
-                return base_dir / *override_path;
-            }
-            LOG_ERROR(
-                Lib_Font,
-                "SystemFonts: override for '{}' must be a filename only or absolute path: '{}'",
-                key, override_path->string());
-        }
-        return std::nullopt;
-    };
-
-    if (auto p = try_key(key_a)) {
-        return *p;
-    }
-    if (auto p = try_key(key_b)) {
-        return *p;
-    }
-
-    const std::string fallback = Config::getSystemFontFallbackName();
-    if (!fallback.empty()) {
-        return base_dir / fallback;
-    }
     return {};
 }
 
@@ -1872,10 +1707,7 @@ bool AttachSystemFont(FontState& st, Libraries::Font::OrbisFontHandle handle) {
         return false;
     }
 
-    std::filesystem::path primary_path = ResolveSystemFontPathFromConfigOnly(st.font_set_type);
-    if (primary_path.empty()) {
-        primary_path = ResolveSystemFontPath(st.font_set_type);
-    }
+    std::filesystem::path primary_path = ResolveSystemFontPath(st.font_set_type);
     std::vector<unsigned char> primary_bytes;
     if (primary_path.empty() || !LoadFontFile(primary_path, primary_bytes)) {
         return false;
@@ -1901,80 +1733,6 @@ bool AttachSystemFont(FontState& st, Libraries::Font::OrbisFontHandle handle) {
     st.system_font_path = primary_path;
     st.system_requested = true;
 
-    const auto base_dir = GetSysFontBaseDir();
-    if (!base_dir.empty()) {
-        auto resolve_override =
-            [&](const std::string& key) -> std::optional<std::filesystem::path> {
-            if (auto override_path = Config::getSystemFontOverride(key)) {
-                if (!override_path->empty() && override_path->is_absolute()) {
-                    return *override_path;
-                }
-                if (!override_path->empty() && !override_path->has_parent_path()) {
-                    return base_dir / *override_path;
-                }
-            }
-            return std::nullopt;
-        };
-
-        for (int i = 0; i < 8; ++i) {
-            const std::string key_a =
-                fmt::format("fontset_0x{:08X}_fallback{}", st.font_set_type, i);
-            const std::string key_b =
-                fmt::format("fontSet_0x{:08X}_fallback{}", st.font_set_type, i);
-            std::optional<std::filesystem::path> p = resolve_override(key_a);
-            if (!p) {
-                p = resolve_override(key_b);
-            }
-            if (!p || p->empty()) {
-                continue;
-            }
-
-            std::vector<unsigned char> fb_bytes;
-            if (!LoadFontFile(*p, fb_bytes)) {
-                continue;
-            }
-            FontState::SystemFallbackFace fb{};
-            fb.font_id = static_cast<u32>(i + 1);
-            fb.scale_factor = 1.0f;
-            fb.shift_value = 0;
-            fb.path = *p;
-            fb.bytes = std::make_shared<std::vector<unsigned char>>(std::move(fb_bytes));
-            fb.ft_face =
-                CreateFreeTypeFaceFromBytes(fb.bytes->data(), fb.bytes->size(), subfont_index);
-            fb.ready = (fb.ft_face != nullptr);
-            if (fb.ready) {
-                st.system_fallback_faces.push_back(std::move(fb));
-            } else {
-                DestroyFreeTypeFace(fb.ft_face);
-            }
-        }
-
-        const std::string global_fallback_name = Config::getSystemFontFallbackName();
-        if (!global_fallback_name.empty()) {
-            const auto existing_name = primary_path.filename().string();
-            if (existing_name != global_fallback_name) {
-                const std::filesystem::path fb_path = base_dir / global_fallback_name;
-                std::vector<unsigned char> fb_bytes;
-                if (LoadFontFile(fb_path, fb_bytes)) {
-                    FontState::SystemFallbackFace fb{};
-                    fb.font_id = 0xFFFFFFFFu;
-                    fb.scale_factor = 1.0f;
-                    fb.shift_value = 0;
-                    fb.path = fb_path;
-                    fb.bytes = std::make_shared<std::vector<unsigned char>>(std::move(fb_bytes));
-                    fb.ft_face = CreateFreeTypeFaceFromBytes(fb.bytes->data(), fb.bytes->size(),
-                                                             subfont_index);
-                    fb.ready = (fb.ft_face != nullptr);
-                    if (fb.ready) {
-                        st.system_fallback_faces.push_back(std::move(fb));
-                    } else {
-                        DestroyFreeTypeFace(fb.ft_face);
-                    }
-                }
-            }
-        }
-    }
-
     LOG_INFO(Lib_Font, "system font attached");
     LOG_DEBUG(Lib_Font,
               "system font attach params:\n"
@@ -1994,8 +1752,8 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
     }
     if (!st.system_requested) {
         st.system_requested = true;
-        const auto configured = Config::getSysFontPath();
-        return fmt::format("SystemFace: handle={} requested internal font but sysFontPath ('{}') "
+        const auto configured = Config::getFontsPath();
+        return fmt::format("SystemFace: handle={} requested internal font but fontsPath ('{}') "
                            "could not be loaded",
                            static_cast<const void*>(handle), configured.string());
     }

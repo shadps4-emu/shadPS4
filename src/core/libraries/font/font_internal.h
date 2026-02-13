@@ -748,9 +748,7 @@ const GlyphEntry* GetGlyphEntry(FontState& st, Libraries::Font::OrbisFontHandle 
                                 FT_Face& face_out, float& scale_out);
 const SystemFontDefinition* FindSystemFontDefinition(u32 font_set_type);
 std::filesystem::path GetSysFontBaseDir();
-std::string MacroToCamel(const char* macro_key);
 std::filesystem::path ResolveSystemFontPath(u32 font_set_type);
-std::filesystem::path ResolveSystemFontPathFromConfigOnly(u32 font_set_type);
 const struct FontSetCache* EnsureFontSetCache(u32 font_set_type);
 bool HasSfntTables(const std::vector<unsigned char>& bytes);
 bool LoadFontFile(const std::filesystem::path& path, std::vector<unsigned char>& out_bytes);

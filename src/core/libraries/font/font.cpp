@@ -31,7 +31,6 @@
 #include FT_TRUETYPE_TABLES_H
 #include "common/config.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/font/font.h"
@@ -549,10 +548,10 @@ static const SystemFontDefinition* FindSystemFontDefinition(u32 font_set_type) {
 }
 
 static std::filesystem::path GetSysFontBaseDir() {
-    std::filesystem::path base = Config::getSysFontPath();
+    std::filesystem::path base = Config::getFontsPath();
     std::error_code ec;
     if (base.empty()) {
-        LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath not set");
+        LOG_ERROR(Lib_Font, "SystemFonts: FontsPath not set");
         return {};
     }
     if (std::filesystem::is_directory(base, ec)) {
@@ -561,7 +560,7 @@ static std::filesystem::path GetSysFontBaseDir() {
     if (std::filesystem::is_regular_file(base, ec)) {
         return base.parent_path();
     }
-    LOG_ERROR(Lib_Font, "SystemFonts: SysFontPath '{}' is not a valid directory or file",
+    LOG_ERROR(Lib_Font, "SystemFonts: FontsPath '{}' is not a valid directory or file",
               base.string());
     return {};
 }
@@ -604,74 +603,11 @@ static std::filesystem::path ResolveSystemFontPathCandidate(const std::filesyste
     return direct;
 }
 
-static std::string MacroToCamel(const char* macro_key) {
-    if (!macro_key) {
-        return {};
-    }
-    std::string s(macro_key);
-    const std::string prefix = "FONTSET_";
-    if (s.rfind(prefix, 0) != 0) {
-        return {};
-    }
-    std::string out = "FontSet";
-    size_t pos = prefix.size();
-    while (pos < s.size()) {
-        size_t next = s.find('_', pos);
-        const size_t len = (next == std::string::npos) ? (s.size() - pos) : (next - pos);
-        std::string token = s.substr(pos, len);
-        for (auto& c : token) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-        if (!token.empty()) {
-            token[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(token[0])));
-        }
-        out += token;
-        if (next == std::string::npos) {
-            break;
-        }
-        pos = next + 1;
-    }
-    return out;
-}
-
 static std::filesystem::path ResolveSystemFontPath(u32 font_set_type) {
     if (const auto* def = FindSystemFontDefinition(font_set_type); def) {
         const auto base_dir = GetSysFontBaseDir();
         if (base_dir.empty()) {
             return {};
-        }
-        if (auto override_path = Config::getSystemFontOverride(def->config_key)) {
-            if (!override_path->empty() && !override_path->is_absolute() &&
-                !override_path->has_parent_path()) {
-                return ResolveSystemFontPathCandidate(base_dir, *override_path);
-            }
-            LOG_ERROR(Lib_Font,
-                      "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                      def->config_key, override_path->string());
-        }
-        const auto camel_key = MacroToCamel(def->config_key);
-        if (!camel_key.empty()) {
-            if (auto override_path2 = Config::getSystemFontOverride(camel_key)) {
-                if (!override_path2->empty() && !override_path2->is_absolute() &&
-                    !override_path2->has_parent_path()) {
-                    return ResolveSystemFontPathCandidate(base_dir, *override_path2);
-                }
-                LOG_ERROR(Lib_Font,
-                          "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                          camel_key, override_path2->string());
-            }
-            std::string lower_camel = camel_key;
-            lower_camel[0] =
-                static_cast<char>(std::tolower(static_cast<unsigned char>(lower_camel[0])));
-            if (auto override_path3 = Config::getSystemFontOverride(lower_camel)) {
-                if (!override_path3->empty() && !override_path3->is_absolute() &&
-                    !override_path3->has_parent_path()) {
-                    return ResolveSystemFontPathCandidate(base_dir, *override_path3);
-                }
-                LOG_ERROR(Lib_Font,
-                          "SystemFonts: override for '{}' must be a filename only (no path): '{}'",
-                          lower_camel, override_path3->string());
-            }
         }
         if (def->default_file && *def->default_file) {
             return ResolveSystemFontPathCandidate(base_dir, def->default_file);
@@ -4318,11 +4254,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             return release_library_and_clear_out(ORBIS_FONT_ERROR_NO_SUPPORT_FUNCTION);
         }
 
-        std::filesystem::path primary_path =
-            Internal::ResolveSystemFontPathFromConfigOnly(fontSetType);
-        if (primary_path.empty()) {
-            primary_path = Internal::ResolveSystemFontPath(fontSetType);
-        }
+        std::filesystem::path primary_path = Internal::ResolveSystemFontPath(fontSetType);
         if (primary_path.empty()) {
             LOG_ERROR(Lib_Font, "NO_SUPPORT_FONTSET");
             return release_library_and_clear_out(ORBIS_FONT_ERROR_NO_SUPPORT_FONTSET);
@@ -4331,8 +4263,8 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
 
         std::vector<unsigned char> primary_bytes;
         if (!Internal::LoadFontFile(primary_path, primary_bytes)) {
-            LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED path='{}' sysFontPath='{}'",
-                      primary_path.string(), Config::getSysFontPath().string());
+            LOG_ERROR(Lib_Font, "FONT_OPEN_FAILED path='{}' fontsPath='{}'", primary_path.string(),
+                      Config::getFontsPath().string());
             return release_library_and_clear_out(ORBIS_FONT_ERROR_FONT_OPEN_FAILED);
         }
         LOG_INFO(Lib_Font, "OpenFontSet: stage=loaded_primary_bytes");
@@ -4557,23 +4489,6 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 }
                 if (auto alias = ResolveKnownSysFontAlias(base_dir, filename)) {
                     return alias;
-                }
-                return std::nullopt;
-            };
-
-            auto resolve_override =
-                [&](const std::string& key) -> std::optional<std::filesystem::path> {
-                if (auto override_path = Config::getSystemFontOverride(key)) {
-                    if (!override_path->empty() && override_path->is_absolute()) {
-                        return *override_path;
-                    }
-                    if (!override_path->empty() && !override_path->has_parent_path()) {
-                        return base_dir / *override_path;
-                    }
-                    LOG_ERROR(Lib_Font,
-                              "SystemFonts: override for '{}' must be a filename only or absolute "
-                              "path: '{}'",
-                              key, override_path->string());
                 }
                 return std::nullopt;
             };
@@ -4868,82 +4783,6 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 if (needs_hangul && primary_name_lower.rfind("sceps4yoongd-", 0) != 0) {
                     add_named_fallback(is_bold_like ? "SCEPS4Yoongd-Bold.otf"
                                                     : "SCEPS4Yoongd-Medium.otf");
-                }
-            }
-
-            for (int i = 0; i < 8; ++i) {
-                const std::string key_a =
-                    fmt::format("fontset_0x{:08X}_fallback{}", fontSetType, i);
-                const std::string key_b =
-                    fmt::format("fontSet_0x{:08X}_fallback{}", fontSetType, i);
-                std::optional<std::filesystem::path> p = resolve_override(key_a);
-                if (!p) {
-                    p = resolve_override(key_b);
-                }
-                if (!p || p->empty()) {
-                    continue;
-                }
-
-                std::optional<std::filesystem::path> p_resolved;
-                if (p->is_absolute()) {
-                    std::error_code ec;
-                    if (std::filesystem::exists(*p, ec)) {
-                        p_resolved = *p;
-                    }
-                } else {
-                    p_resolved = resolve_sysfont_path(*p);
-                }
-                if (!p_resolved) {
-                    continue;
-                }
-
-                std::vector<unsigned char> fb_bytes;
-                if (!Internal::LoadFontFile(*p_resolved, fb_bytes)) {
-                    continue;
-                }
-
-                Internal::FontState::SystemFallbackFace fb{};
-                fb.font_id = 0xffffffffu;
-                fb.scale_factor = 1.0f;
-                fb.shift_value = 0;
-                fb.path = *p_resolved;
-                fb.bytes = std::make_shared<std::vector<unsigned char>>(std::move(fb_bytes));
-                fb.ft_face = Internal::CreateFreeTypeFaceFromBytes(
-                    fb.bytes->data(), fb.bytes->size(), sub_font_index);
-                fb.ready = (fb.ft_face != nullptr);
-                if (fb.ready) {
-                    fb.scale_factor = compute_sysfont_scale_factor(
-                        fb.ft_face, fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0);
-                    fb.shift_value = compute_sysfont_shift_value(fb.ft_face);
-                    LOG_DEBUG(
-                        Lib_Font,
-                        "SystemFonts: fallback='{}' unitsPerEm={} scaleFactor={} shiftValue={}",
-                        fb.path.filename().string(),
-                        fb.ft_face ? static_cast<int>(fb.ft_face->units_per_EM) : 0,
-                        fb.scale_factor, fb.shift_value);
-                    st.system_fallback_faces.push_back(std::move(fb));
-                } else {
-                    Internal::DestroyFreeTypeFace(fb.ft_face);
-                }
-            }
-
-            {
-                const std::string global_fallback_name = Config::getSystemFontFallbackName();
-                if (!global_fallback_name.empty()) {
-                    const auto existing_name = primary_path.filename().string();
-                    if (existing_name != global_fallback_name) {
-                        std::filesystem::path fb_path = global_fallback_name;
-                        if (!fb_path.is_absolute()) {
-                            fb_path = base_dir / global_fallback_name;
-                        }
-                        if (const auto resolved_path = resolve_sysfont_path(fb_path)) {
-                            const std::string fb_lower =
-                                lower_ascii(resolved_path->filename().string());
-                            if (!has_fallback_name_lower(fb_lower)) {
-                                add_fallback_face(*resolved_path);
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -6927,16 +6766,6 @@ s32 PS4_SYSV_ABI sceFontSupportSystemFonts(OrbisFontLib library) {
     ls.support_system = true;
     ls.owned_sysfonts_ctx = ctx;
     ls.owned_sysfonts_ctx_size = kSysCtxSize;
-
-    if (!Internal::g_mnt) {
-        Internal::g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    }
-    if (Internal::g_mnt) {
-        const auto sysfont_base = GetSysFontBaseDir();
-        if (!sysfont_base.empty() && !Internal::g_mnt->GetMount("/:dev_font:")) {
-            Internal::g_mnt->Mount(sysfont_base, "/:dev_font:", true);
-        }
-    }
 
     ReleaseLibraryLock(lib, prev_lock_word);
     return ORBIS_OK;

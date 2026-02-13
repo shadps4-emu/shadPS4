@@ -65,7 +65,7 @@ void EmulatorSettings::SetInstance(std::shared_ptr<EmulatorSettings> instance) {
 
 std::filesystem::path EmulatorSettings::GetSysFontsDir() {
     if (m_general.sys_fonts_dir.value.empty()) {
-        return Common::FS::GetUserPath(Common::FS::PathType::FontDir);
+        return Common::FS::GetUserPath(Common::FS::PathType::FontsDir);
     }
     return m_general.sys_fonts_dir.value;
 }

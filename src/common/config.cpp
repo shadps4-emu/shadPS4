@@ -878,10 +878,6 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         return;
     }
 
-    if (!is_game_specific) {
-        system_font_overrides.clear();
-    }
-
     if (data.contains("General")) {
         const toml::value& general = data.at("General");
 
