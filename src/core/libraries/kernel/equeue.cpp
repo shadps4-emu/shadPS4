@@ -32,6 +32,14 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
         event.timer_interval = std::chrono::microseconds(event.event.data - offset);
     }
 
+    // Remove add flag from event
+    event.event.flags &= ~SceKernelEvent::Flags::Add;
+
+    // Clear flag is appended to most event types internally.
+    if (event.event.filter != SceKernelEvent::Filter::User) {
+        event.event.flags |= SceKernelEvent::Flags::Clear;
+    }
+
     const auto& it = std::ranges::find(m_events, event);
     if (it != m_events.cend()) {
         *it = std::move(event);
