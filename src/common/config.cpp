@@ -5,9 +5,8 @@
 #include <map>
 #include <optional>
 #include <string>
-#include <string_view>
-#include <unordered_map>
 #include <fmt/core.h>
+#include <fmt/xchar.h> // for wstring support
 #include <toml.hpp>
 
 #include "common/assert.h"
@@ -476,7 +475,7 @@ void setShowFpsCounter(bool enable, bool is_game_specific) {
     showFpsCounter.set(enable, is_game_specific);
 }
 
-static bool isLoggingEnabled() {
+bool isLoggingEnabled() {
     return logEnabled.get();
 }
 
@@ -1022,7 +1021,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
     }
 }
 
-static void sortTomlSections(toml::ordered_value& data) {
+void sortTomlSections(toml::ordered_value& data) {
     toml::ordered_value ordered_data;
     std::vector<string> section_order = {"General", "Input", "Audio", "GPU",     "Vulkan",
                                          "Debug",   "Keys",  "GUI",   "Settings"};
@@ -1310,7 +1309,7 @@ constexpr std::string_view GetDefaultGlobalConfig() {
 )";
 }
 
-static constexpr std::string_view GetDefaultInputConfig() {
+constexpr std::string_view GetDefaultInputConfig() {
     return R"(#Feeling lost? Check out the Help section!
 
 # Keyboard bindings

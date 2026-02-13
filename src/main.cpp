@@ -23,8 +23,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <common/key_manager.h>
-#include <core/emulator_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -32,13 +30,9 @@ int main(int argc, char* argv[]) {
 #endif
 
     IPC::Instance().Init();
-    // Init emulator state
+
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
-    // Load configurations
-    std::shared_ptr<EmulatorSettings> emu_settings = std::make_shared<EmulatorSettings>();
-    EmulatorSettings::SetInstance(emu_settings);
-    emu_settings->Load();
 
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
