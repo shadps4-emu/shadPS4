@@ -141,6 +141,7 @@ static ConfigEntry<bool> isTrophyPopupDisabled(false);
 static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
+static ConfigEntry<bool> isIdenticalLogGrouped(true);
 static ConfigEntry<string> userName("shadPS4");
 static ConfigEntry<bool> isShowSplash(false);
 static ConfigEntry<string> isSideTrophy("right");
@@ -393,6 +394,10 @@ string getLogFilter() {
 
 string getLogType() {
     return logType.get();
+}
+
+bool groupIdenticalLogs() {
+    return isIdenticalLogGrouped.get();
 }
 
 string getUserName() {
@@ -694,6 +699,10 @@ void setLogType(const string& type, bool is_game_specific) {
     logType.set(type, is_game_specific);
 }
 
+void setIdenticalLogGrouped(bool enable, bool is_game_specific) {
+    isIdenticalLogGrouped.set(enable, is_game_specific);
+}
+
 void setLogFilter(const string& type, bool is_game_specific) {
     logFilter.set(type, is_game_specific);
 }
@@ -893,6 +902,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         enableDiscordRPC = toml::find_or<bool>(general, "enableDiscordRPC", enableDiscordRPC);
         logFilter.setFromToml(general, "logFilter", is_game_specific);
         logType.setFromToml(general, "logType", is_game_specific);
+        isIdenticalLogGrouped.setFromToml(general, "isIdenticalLogGrouped", is_game_specific);
         userName.setFromToml(general, "userName", is_game_specific);
         isShowSplash.setFromToml(general, "showSplash", is_game_specific);
         isSideTrophy.setFromToml(general, "sideTrophy", is_game_specific);
@@ -1081,6 +1091,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
                                             is_game_specific);
     logFilter.setTomlValue(data, "General", "logFilter", is_game_specific);
     logType.setTomlValue(data, "General", "logType", is_game_specific);
+    isIdenticalLogGrouped.setTomlValue(data, "General", "isIdenticalLogGrouped", is_game_specific);
     userName.setTomlValue(data, "General", "userName", is_game_specific);
     isShowSplash.setTomlValue(data, "General", "showSplash", is_game_specific);
     isSideTrophy.setTomlValue(data, "General", "sideTrophy", is_game_specific);
@@ -1224,6 +1235,7 @@ void setDefaultValues(bool is_game_specific) {
     trophyNotificationDuration.set(6.0, is_game_specific);
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
+    isIdenticalLogGrouped.set("isIdenticalLogGrouped", is_game_specific);
     userName.set("shadPS4", is_game_specific);
     isShowSplash.set(false, is_game_specific);
     isSideTrophy.set("right", is_game_specific);
