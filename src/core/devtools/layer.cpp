@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
@@ -110,11 +111,11 @@ void L::DrawMenuBar() {
                 EndDisabled();
 
                 if (Button("Save")) {
-                    Config::setFsrEnabled(fsr.enable);
-                    Config::setRcasEnabled(fsr.use_rcas);
-                    Config::setRcasAttenuation(static_cast<int>(fsr.rcas_attenuation * 1000));
-                    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                 "config.toml");
+                    EmulatorSettings::GetInstance()->SetFsrEnabled(fsr.enable);
+                    EmulatorSettings::GetInstance()->SetRcasEnabled(fsr.use_rcas);
+                    EmulatorSettings::GetInstance()->SetRcasAttenuation(
+                        static_cast<int>(fsr.rcas_attenuation * 1000));
+                    EmulatorSettings::GetInstance()->Save();
                     CloseCurrentPopup();
                 }
 
@@ -311,7 +312,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
-    show_simple_fps = Config::getShowFpsCounter();
+    show_simple_fps = EmulatorSettings::GetInstance()->IsShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 
@@ -472,7 +473,7 @@ void L::Draw() {
             if (ImGui::Begin("Volume Window", &show_volume,
                              ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-                Text("Volume: %d", Config::getVolumeSlider());
+                Text("Volume: %d", EmulatorSettings::GetInstance()->GetVolumeSlider());
             }
             End();
         }

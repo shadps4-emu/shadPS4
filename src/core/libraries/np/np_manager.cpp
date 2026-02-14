@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -7,6 +7,7 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
@@ -631,7 +632,8 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(np_id, 0, sizeof(OrbisNpId));
-    strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
+    strncpy(np_id->handle.data, Config::getUserName(user_id - 1).c_str(),
+            sizeof(np_id->handle.data));
     return ORBIS_OK;
 }
 
@@ -645,7 +647,7 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
-    strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
+    strncpy(online_id->data, Config::getUserName(user_id - 1).c_str(), sizeof(online_id->data));
     return ORBIS_OK;
 }
 
@@ -784,7 +786,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    g_signed_in = Config::getPSNSignedIn();
+    g_signed_in = EmulatorSettings::GetInstance()->IsPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);

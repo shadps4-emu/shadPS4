@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_web_api2.h"
@@ -207,7 +207,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2SendMultipartRequest() {
 }
 
 s32 PS4_SYSV_ABI sceNpWebApi2SendRequest() {
-    if (!Config::getPSNSignedIn()) {
+    if (!EmulatorSettings::GetInstance()->IsPSNSignedIn()) {
         LOG_INFO(Lib_NpWebApi2, "called, returning PSN signed out.");
         return ORBIS_NP_WEBAPI2_ERROR_NOT_SIGNED_IN;
     }

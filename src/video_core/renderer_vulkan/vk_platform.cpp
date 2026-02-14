@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Include the vulkan platform specific header
@@ -20,6 +20,7 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
@@ -87,7 +88,7 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
             UNREACHABLE();
         }
     } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
-        if (Config::isRdocEnabled()) {
+        if (EmulatorSettings::GetInstance()->IsRenderdocEnabled()) {
             LOG_ERROR(Render_Vulkan,
                       "RenderDoc is not compatible with Wayland, use an X11 window instead.");
         }
@@ -200,7 +201,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     }
 
-    if (Config::allowHDR()) {
+    if (EmulatorSettings::GetInstance()->IsHdrAllowed()) {
         extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
     }
 
@@ -306,9 +307,12 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     LOG_INFO(Render_Vulkan, "Enabled instance layers: {}", layers_string);
 
     // Validation settings
-    vk::Bool32 enable_core = Config::vkValidationCoreEnabled() ? vk::True : vk::False;
-    vk::Bool32 enable_sync = Config::vkValidationSyncEnabled() ? vk::True : vk::False;
-    vk::Bool32 enable_gpuav = Config::vkValidationGpuEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_core =
+        EmulatorSettings::GetInstance()->IsVkValidationCoreEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_sync =
+        EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_gpuav =
+        EmulatorSettings::GetInstance()->IsVkValidationGpuEnabled() ? vk::True : vk::False;
 
     // Crash diagnostics settings
     static const auto crash_diagnostic_path =

@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <xxhash.h>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/scope_exit.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
@@ -536,8 +536,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (Config::readbackLinearImages() && !image.info.props.is_tiled &&
-            image.info.guest_address != 0) {
+        if (EmulatorSettings::GetInstance()->IsReadbackLinearImagesEnabled() &&
+            !image.info.props.is_tiled && image.info.guest_address != 0) {
             download_images.emplace(image_id);
         }
     }
@@ -548,7 +548,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
+    if (EmulatorSettings::GetInstance()->IsReadbackLinearImagesEnabled() &&
+        !image.info.props.is_tiled) {
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;

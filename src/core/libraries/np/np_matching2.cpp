@@ -6,6 +6,7 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_manager.h"
@@ -376,7 +377,8 @@ int PS4_SYSV_ABI sceNpMatching2ContextStart(OrbisNpMatching2ContextId ctxId, u64
     }
 
     std::scoped_lock lk{g_events_mutex};
-    if (Config::getIsConnectedToNetwork() && Config::getPSNSignedIn()) {
+    if (EmulatorSettings::GetInstance()->IsConnectedToNetwork() &&
+        EmulatorSettings::GetInstance()->IsPSNSignedIn()) {
         g_ctx_events.emplace_back(ctxId, ORBIS_NP_MATCHING2_CONTEXT_EVENT_STARTED,
                                   ORBIS_NP_MATCHING2_EVENT_CAUSE_CONTEXT_ACTION, 0);
     } else {

@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -13,6 +13,7 @@
 #include "common/string_util.h"
 #include "core/debug_state.h"
 #include "core/devtools/options.h"
+#include "core/emulator_settings.h"
 #include "imgui/imgui_std.h"
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
@@ -244,8 +245,8 @@ void ShaderList::Draw() {
         return;
     }
 
-    if (!Config::collectShadersForDebug()) {
-        DrawCenteredText("Enable 'CollectShader' in config to see shaders");
+    if (!EmulatorSettings::GetInstance()->IsShaderCollect()) {
+        DrawCenteredText("Enable 'shader_dump' in config to see shaders");
         End();
         return;
     }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -127,6 +127,7 @@ static auto UserPaths = [] {
     create_path(PathType::MetaDataDir, user_dir / METADATA_DIR);
     create_path(PathType::CustomTrophy, user_dir / CUSTOM_TROPHY);
     create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
+    create_path(PathType::HomeDir, user_dir / HOME_DIR);
     create_path(PathType::CacheDir, user_dir / CACHE_DIR);
     create_path(PathType::FontsDir, user_dir / FONTS_DIR);
 

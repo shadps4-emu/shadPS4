@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -552,7 +553,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     const auto fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
 
-    if (Config::dumpShaders()) {
+    if (EmulatorSettings::GetInstance()->IsDumpShaders()) {
         using namespace Common::FS;
         const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
         if (!std::filesystem::exists(dump_dir)) {

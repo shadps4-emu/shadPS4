@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -9,6 +9,7 @@
 #include "common/elf_info.h"
 #include "common/error.h"
 #include "core/address_space.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
@@ -187,7 +188,7 @@ struct AddressSpace::Impl {
         user_size = supported_user_max - USER_MIN - 1;
 
         // Increase BackingSize to account for config options.
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
+        BackingSize += EmulatorSettings::GetInstance()->GetExtraDmemInMBytes() * 1_MB;
 
         // Allocate backing file that represents the total physical memory.
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
@@ -606,7 +607,7 @@ enum PosixPageProtection {
 
 struct AddressSpace::Impl {
     Impl() {
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
+        BackingSize += EmulatorSettings::GetInstance()->GetExtraDmemInMBytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         system_managed_size = SystemManagedSize;
         system_reserved_size = SystemReservedSize;
