@@ -59,9 +59,11 @@ void ClearStack() {
 
 template <class ReturnType, class... FuncArgs, class... CallArgs>
 ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
-    EnsureThreadInitialized();
-    // clear stack to avoid trash from EnsureThreadInitialized
-    ClearStack<12_KB>();
+    // clear stack to avoid trash from EnsureThreadInitialized (skip on fiber stacks)
+    auto* tcb = GetTcbBase();
+    if (tcb == nullptr || tcb->tcb_fiber == nullptr) {
+        ClearStack<12_KB>();
+    }
     return func(std::forward<CallArgs>(args)...);
 }
 
