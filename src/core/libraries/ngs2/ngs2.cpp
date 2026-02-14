@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cmath>
+#include <cstring>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -9,10 +12,266 @@
 #include "core/libraries/ngs2/ngs2_error.h"
 #include "core/libraries/ngs2/ngs2_geom.h"
 #include "core/libraries/ngs2/ngs2_impl.h"
+#include "core/libraries/ngs2/ngs2_internal.h"
 #include "core/libraries/ngs2/ngs2_pan.h"
 #include "core/libraries/ngs2/ngs2_report.h"
+#include "core/libraries/ngs2/ngs2_sampler.h"
 
 namespace Libraries::Ngs2 {
+
+// =============================================================================
+// Audio Decoder Interface
+// =============================================================================
+
+// Waveform type constants
+// Add new formats here as they are discovered/implemented
+enum WaveformType : u32 {
+    PCM16 = 0x12, // 16-bit PCM little-endian (confirmed working)
+    // TODO: Add more formats
+};
+
+// Check if waveform type is supported
+static bool IsWaveformTypeSupported(u32 waveform_type) {
+    switch (waveform_type) {
+    case WaveformType::PCM16:
+        return true;
+    // TODO: Add cases for new formats here
+    default:
+        return false;
+    }
+}
+
+// Get bytes per sample for a waveform type
+static u32 GetBytesPerSample(u32 waveform_type, u32 num_channels) {
+    switch (waveform_type) {
+    case WaveformType::PCM16:
+        return 2 * num_channels;
+    // TODO: Add cases for new formats here
+    // case WaveformType::FLOAT:
+    //     return 4 * num_channels;
+    default:
+        return 2 * num_channels;
+    }
+}
+
+// =============================================================================
+// PCM16 Decoder
+// =============================================================================
+
+static float DecodePCM16Sample(const void* data, u32 sample_idx, u32 channel, u32 num_channels,
+                               u32 total_samples) {
+    if (sample_idx >= total_samples) {
+        return 0.0f;
+    }
+
+    const s16* src_data = reinterpret_cast<const s16*>(data);
+    s16 sample = src_data[sample_idx * num_channels + channel];
+
+    return static_cast<float>(sample) / 32768.0f;
+}
+
+// =============================================================================
+// Add new decoder functions here
+// =============================================================================
+// Example:
+// static float DecodeFloatSample(const void* data, u32 sample_idx, u32 channel,
+//                                u32 num_channels, u32 total_samples) {
+//     const float* src_data = reinterpret_cast<const float*>(data);
+//     return src_data[sample_idx * num_channels + channel];
+// }
+
+// =============================================================================
+// Unified Sample Decoder
+// =============================================================================
+
+static float DecodeSample(const void* data, u32 sample_idx, u32 channel, u32 num_channels,
+                          u32 total_samples, u32 waveform_type) {
+    switch (waveform_type) {
+    case WaveformType::PCM16:
+        return DecodePCM16Sample(data, sample_idx, channel, num_channels, total_samples);
+    // TODO: Add cases for new formats here
+    default:
+        return 0.0f;
+    }
+}
+
+// =============================================================================
+// Voice Renderer
+// =============================================================================
+
+struct RenderContext {
+    const OrbisNgs2RenderBufferInfo* buffer_info;
+    u32 num_buffer_info;
+    u32 grain_samples;
+    u32 output_sample_rate;
+};
+
+static bool RenderVoice(VoiceInternal* voice, const RenderContext& ctx) {
+    if (!voice || !voice->isSetup) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Voice not setup or invalid");
+        return false;
+    }
+
+    // Check if voice is playing
+    if (!(voice->stateFlags & 0x01)) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Voice not playing");
+        return false;
+    }
+
+    // Check if voice is paused, stopped, or killed
+    if (voice->stateFlags & (0x200 | 0x400 | 0x800)) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Voice paused, stopped, or killed");
+        return false;
+    }
+
+    u32 waveform_type = voice->format.waveformType;
+    if (!IsWaveformTypeSupported(waveform_type)) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Unsupported waveform type: {:#x}", waveform_type);
+        return false;
+    }
+
+    // Get current slot from ring buffer
+    RingBufferSlot* current_slot = voice->getCurrentSlot();
+    if (!current_slot || !current_slot->valid || current_slot->consumed) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) No valid buffer in ring");
+        return false;
+    }
+
+    voice->currentBufferPtr = current_slot->basePtr;
+
+    u32 num_channels = voice->format.numChannels;
+    if (num_channels == 0 || num_channels > 8) {
+        LOG_DEBUG(Lib_Ngs2, "(STUBBED) Invalid number of channels: {}", num_channels);
+        return false;
+    }
+
+    // Calculate sample rate ratio for resampling
+    u32 source_sample_rate = voice->format.sampleRate;
+    if (source_sample_rate == 0) {
+        source_sample_rate = 48000;
+    }
+
+    float pitch_ratio = voice->pitchRatio;
+    if (pitch_ratio <= 0.0f) {
+        pitch_ratio = 1.0f;
+    }
+
+    float sample_rate_ratio = (static_cast<float>(source_sample_rate) * pitch_ratio) /
+                              static_cast<float>(ctx.output_sample_rate);
+
+    // Find matching output buffer and render
+    for (u32 buf_idx = 0; buf_idx < ctx.num_buffer_info; buf_idx++) {
+        const auto& buf_info = ctx.buffer_info[buf_idx];
+        if (!buf_info.buffer || buf_info.bufferSize == 0) {
+            continue;
+        }
+
+        const void* src_data = current_slot->data;
+        u32 total_samples = current_slot->numSamples;
+        if (total_samples == 0) {
+            continue;
+        }
+
+        // Determine output format
+        // Output buffer format detection - use raw values since we only know PCM16 for sure
+        float* dst_float = nullptr;
+        s16* dst_s16 = nullptr;
+        u32 dst_channels = 2;
+        bool output_is_float = false;
+
+        if (buf_info.waveformType == WaveformType::PCM16) {
+            dst_s16 = reinterpret_cast<s16*>(buf_info.buffer);
+            dst_channels = buf_info.numChannels > 0 ? buf_info.numChannels : num_channels;
+            output_is_float = false;
+        } else {
+            // Default to float output for unknown types
+            dst_float = reinterpret_cast<float*>(buf_info.buffer);
+            dst_channels = buf_info.numChannels > 0 ? buf_info.numChannels : 2;
+            output_is_float = true;
+        }
+
+        // Render samples
+        float current_pos = voice->samplePosFloat;
+        bool voice_stopped = false;
+
+        for (u32 out_sample = 0; out_sample < ctx.grain_samples && !voice_stopped; out_sample++) {
+            u32 sample_int = static_cast<u32>(current_pos);
+            float frac = current_pos - static_cast<float>(sample_int);
+
+            // Check if we've reached the end of current buffer
+            if (sample_int >= total_samples) {
+                voice->lastConsumedBuffer = current_slot->basePtr;
+                voice->totalDecodedSamples += total_samples;
+                voice->advanceReadIndex();
+
+                if (voice->getReadyBufferCount() <= VoiceInternal::STARVATION_THRESHOLD) {
+                    voice->stateFlags |= 0x80;
+                }
+
+                current_slot = voice->getCurrentSlot();
+                if (current_slot && current_slot->valid && !current_slot->consumed) {
+                    src_data = current_slot->data;
+                    total_samples = current_slot->numSamples;
+                    current_pos = 0.0f;
+                    sample_int = 0;
+                    frac = 0.0f;
+                    voice->isStreaming = true;
+                    voice->currentBufferPtr = current_slot->basePtr;
+                } else {
+                    if (voice->isStreaming) {
+                        current_pos = 0.0f;
+                        break;
+                    } else {
+                        voice->stateFlags &= ~0x01;
+                        voice->stateFlags |= 0x400;
+                        voice_stopped = true;
+                        break;
+                    }
+                }
+            }
+
+            // Decode and interpolate samples for each output channel
+            for (u32 ch = 0; ch < dst_channels; ch++) {
+                u32 src_ch = ch < num_channels ? ch : 0;
+
+                float sample0 = DecodeSample(src_data, sample_int, src_ch, num_channels,
+                                             total_samples, waveform_type);
+                float sample1 = DecodeSample(src_data, sample_int + 1, src_ch, num_channels,
+                                             total_samples, waveform_type);
+                float sample = sample0 + frac * (sample1 - sample0);
+
+                // Apply port volume
+                sample *= voice->portVolume;
+
+                // Write to output buffer
+                u32 dst_idx = out_sample * dst_channels + ch;
+                if (output_is_float) {
+                    if (dst_idx * sizeof(float) < buf_info.bufferSize) {
+                        dst_float[dst_idx] += sample;
+                        dst_float[dst_idx] = std::clamp(dst_float[dst_idx], -1.0f, 1.0f);
+                    }
+                } else {
+                    if (dst_idx * 2 < buf_info.bufferSize) {
+                        s32 mixed = dst_s16[dst_idx] + static_cast<s32>(sample * 32768.0f);
+                        dst_s16[dst_idx] = static_cast<s16>(std::clamp(mixed, -32768, 32767));
+                    }
+                }
+            }
+
+            current_pos += sample_rate_ratio;
+        }
+
+        voice->samplePosFloat = current_pos;
+        voice->currentSamplePos = static_cast<u32>(current_pos);
+        return true;
+    }
+
+    return false;
+}
+
+// =============================================================================
+// API Functions
+// =============================================================================
 
 // Ngs2
 
@@ -51,30 +310,45 @@ s32 PS4_SYSV_ABI sceNgs2RackCreate(OrbisNgs2Handle systemHandle, u32 rackId,
                                    const OrbisNgs2RackOption* option,
                                    const OrbisNgs2ContextBufferInfo* bufferInfo,
                                    OrbisNgs2Handle* outHandle) {
-    LOG_ERROR(Lib_Ngs2, "rackId = {}", rackId);
+    LOG_DEBUG(Lib_Ngs2, "rackId = {:#x}, maxVoices = {}", rackId, option ? option->maxVoices : 0);
     if (!systemHandle) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    return ORBIS_OK;
+
+    auto* system = reinterpret_cast<SystemInternal*>(systemHandle);
+    return RackCreate(system, rackId, option, bufferInfo, outHandle);
 }
 
 s32 PS4_SYSV_ABI sceNgs2RackCreateWithAllocator(OrbisNgs2Handle systemHandle, u32 rackId,
                                                 const OrbisNgs2RackOption* option,
                                                 const OrbisNgs2BufferAllocator* allocator,
                                                 OrbisNgs2Handle* outHandle) {
-    LOG_ERROR(Lib_Ngs2, "rackId = {}", rackId);
+    LOG_DEBUG(Lib_Ngs2, "rackId = {:#x}, maxVoices = {}", rackId, option ? option->maxVoices : 0);
     if (!systemHandle) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    return ORBIS_OK;
+
+    if (!outHandle) {
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    auto* system = reinterpret_cast<SystemInternal*>(systemHandle);
+
+    // Create rack with null buffer info (allocator version doesn't use pre-allocated buffer)
+    return RackCreate(system, rackId, option, nullptr, outHandle);
 }
 
 s32 PS4_SYSV_ABI sceNgs2RackDestroy(OrbisNgs2Handle rackHandle,
                                     OrbisNgs2ContextBufferInfo* outBufferInfo) {
-    LOG_ERROR(Lib_Ngs2, "called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_Ngs2, "called");
+    if (!rackHandle) {
+        return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
+    }
+
+    auto* rack = reinterpret_cast<RackInternal*>(rackHandle);
+    return RackDestroy(rack, outBufferInfo);
 }
 
 s32 PS4_SYSV_ABI sceNgs2RackGetInfo(OrbisNgs2Handle rackHandle, OrbisNgs2RackInfo* outInfo,
@@ -90,7 +364,21 @@ s32 PS4_SYSV_ABI sceNgs2RackGetUserData(OrbisNgs2Handle rackHandle, uintptr_t* o
 
 s32 PS4_SYSV_ABI sceNgs2RackGetVoiceHandle(OrbisNgs2Handle rackHandle, u32 voiceIndex,
                                            OrbisNgs2Handle* outHandle) {
-    LOG_DEBUG(Lib_Ngs2, "(STUBBED) voiceIndex = {}", voiceIndex);
+    LOG_DEBUG(Lib_Ngs2, "voiceIndex = {}", voiceIndex);
+    if (!rackHandle) {
+        return ORBIS_NGS2_ERROR_INVALID_RACK_HANDLE;
+    }
+
+    auto* rack = reinterpret_cast<RackInternal*>(rackHandle);
+    if (voiceIndex >= rack->voices.size()) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice index {} (max {})", voiceIndex, rack->voices.size());
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_INDEX;
+    }
+
+    if (outHandle) {
+        *outHandle = reinterpret_cast<OrbisNgs2Handle>(rack->voices[voiceIndex].get());
+    }
+
     return ORBIS_OK;
 }
 
@@ -101,7 +389,48 @@ s32 PS4_SYSV_ABI sceNgs2RackLock(OrbisNgs2Handle rackHandle) {
 
 s32 PS4_SYSV_ABI sceNgs2RackQueryBufferSize(u32 rackId, const OrbisNgs2RackOption* option,
                                             OrbisNgs2ContextBufferInfo* outBufferInfo) {
-    LOG_ERROR(Lib_Ngs2, "rackId = {}", rackId);
+    LOG_DEBUG(Lib_Ngs2, "rackId = {:#x}, option = {}", rackId, static_cast<const void*>(option));
+
+    if (!outBufferInfo) {
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    u32 rack_index = RackIdToIndex(rackId);
+    if (rack_index == 0xFF) {
+        LOG_ERROR(Lib_Ngs2, "Invalid rack ID: {:#x}", rackId);
+        return ORBIS_NGS2_ERROR_INVALID_RACK_ID;
+    }
+
+    // Use defaults if option is NULL - based on libSceNgs2.c analysis
+    u32 max_voices = 1;
+    u32 max_ports = 1;
+    u32 max_matrices = 1;
+
+    if (option && option->size >= sizeof(OrbisNgs2RackOption)) {
+        max_voices = option->maxVoices > 0 ? option->maxVoices : 1;
+        max_ports = option->maxPorts > 0 ? option->maxPorts : 1;
+        max_matrices = option->maxMatrices > 0 ? option->maxMatrices : 1;
+    } else {
+        // Sampler rack (0x1000) defaults to 256 voices
+        if (rackId == 0x1000) {
+            max_voices = 256;
+        }
+    }
+
+    // Calculate required buffer size
+    size_t base_size = sizeof(RackInternal);
+    size_t voice_size = sizeof(VoiceInternal) * max_voices;
+    size_t port_size = sizeof(OrbisNgs2VoicePortInfo) * max_ports * max_voices;
+    size_t matrix_size = sizeof(OrbisNgs2VoiceMatrixInfo) * max_matrices * max_voices;
+
+    size_t total_size = base_size + voice_size + port_size + matrix_size;
+    total_size = (total_size + 0xFF) & ~0xFF; // Align to 256 bytes
+
+    outBufferInfo->hostBuffer = nullptr;
+    outBufferInfo->hostBufferSize = total_size;
+    std::memset(outBufferInfo->reserved, 0, sizeof(outBufferInfo->reserved));
+
+    LOG_DEBUG(Lib_Ngs2, "Required buffer size: {} bytes", total_size);
     return ORBIS_OK;
 }
 
@@ -119,7 +448,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreate(const OrbisNgs2SystemOption* option,
                                      const OrbisNgs2ContextBufferInfo* bufferInfo,
                                      OrbisNgs2Handle* outHandle) {
     s32 result;
-    OrbisNgs2ContextBufferInfo localInfo;
+    OrbisNgs2ContextBufferInfo local_info;
     if (!bufferInfo || !outHandle) {
         if (!bufferInfo) {
             result = ORBIS_NGS2_ERROR_INVALID_BUFFER_INFO;
@@ -132,19 +461,19 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreate(const OrbisNgs2SystemOption* option,
         // TODO: Report errors?
     } else {
         // Make bufferInfo copy
-        localInfo.hostBuffer = bufferInfo->hostBuffer;
-        localInfo.hostBufferSize = bufferInfo->hostBufferSize;
+        local_info.hostBuffer = bufferInfo->hostBuffer;
+        local_info.hostBufferSize = bufferInfo->hostBufferSize;
         for (int i = 0; i < 5; i++) {
-            localInfo.reserved[i] = bufferInfo->reserved[i];
+            local_info.reserved[i] = bufferInfo->reserved[i];
         }
-        localInfo.userData = bufferInfo->userData;
+        local_info.userData = bufferInfo->userData;
 
-        result = SystemSetup(option, &localInfo, 0, outHandle);
+        result = SystemSetup(option, &local_info, 0, outHandle);
     }
 
     // TODO: API reporting?
 
-    LOG_INFO(Lib_Ngs2, "called");
+    LOG_DEBUG(Lib_Ngs2, "called");
     return result;
 }
 
@@ -153,20 +482,19 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreateWithAllocator(const OrbisNgs2SystemOption* o
                                                   OrbisNgs2Handle* outHandle) {
     s32 result;
     if (allocator && allocator->allocHandler != 0) {
-        OrbisNgs2BufferAllocHandler hostAlloc = allocator->allocHandler;
+        OrbisNgs2BufferAllocHandler host_alloc = allocator->allocHandler;
         if (outHandle) {
-            OrbisNgs2BufferFreeHandler hostFree = allocator->freeHandler;
-            OrbisNgs2ContextBufferInfo bufferInfo;
-            result = SystemSetup(option, &bufferInfo, 0, 0);
+            OrbisNgs2BufferFreeHandler host_free = allocator->freeHandler;
+            OrbisNgs2ContextBufferInfo buffer_info;
+            result = SystemSetup(option, &buffer_info, 0, 0);
             if (result >= 0) {
-                uintptr_t sysUserData = allocator->userData;
-                result = Core::ExecuteGuest(hostAlloc, &bufferInfo);
+                result = Core::ExecuteGuest(host_alloc, &buffer_info);
                 if (result >= 0) {
-                    OrbisNgs2Handle* handleCopy = outHandle;
-                    result = SystemSetup(option, &bufferInfo, hostFree, handleCopy);
+                    OrbisNgs2Handle* handle_copy = outHandle;
+                    result = SystemSetup(option, &buffer_info, host_free, handle_copy);
                     if (result < 0) {
-                        if (hostFree) {
-                            Core::ExecuteGuest(hostFree, &bufferInfo);
+                        if (host_free) {
+                            Core::ExecuteGuest(host_free, &buffer_info);
                         }
                     }
                 }
@@ -179,7 +507,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemCreateWithAllocator(const OrbisNgs2SystemOption* o
         result = ORBIS_NGS2_ERROR_INVALID_BUFFER_ALLOCATOR;
         LOG_ERROR(Lib_Ngs2, "Invalid system buffer allocator {}", (void*)allocator);
     }
-    LOG_INFO(Lib_Ngs2, "called");
+    LOG_DEBUG(Lib_Ngs2, "called");
     return result;
 }
 
@@ -189,7 +517,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemDestroy(OrbisNgs2Handle systemHandle,
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "called");
+    LOG_DEBUG(Lib_Ngs2, "called");
     return ORBIS_OK;
 }
 
@@ -237,7 +565,7 @@ s32 PS4_SYSV_ABI sceNgs2SystemQueryBufferSize(const OrbisNgs2SystemOption* optio
     s32 result;
     if (outBufferInfo) {
         result = SystemSetup(option, outBufferInfo, 0, 0);
-        LOG_INFO(Lib_Ngs2, "called");
+        LOG_DEBUG(Lib_Ngs2, "called");
     } else {
         result = ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
         LOG_ERROR(Lib_Ngs2, "Invalid system buffer info {}", (void*)outBufferInfo);
@@ -249,11 +577,56 @@ s32 PS4_SYSV_ABI sceNgs2SystemQueryBufferSize(const OrbisNgs2SystemOption* optio
 s32 PS4_SYSV_ABI sceNgs2SystemRender(OrbisNgs2Handle systemHandle,
                                      const OrbisNgs2RenderBufferInfo* aBufferInfo,
                                      u32 numBufferInfo) {
-    LOG_DEBUG(Lib_Ngs2, "(STUBBED) numBufferInfo = {}", numBufferInfo);
     if (!systemHandle) {
         LOG_ERROR(Lib_Ngs2, "systemHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_SYSTEM_HANDLE;
     }
+
+    if (!aBufferInfo || numBufferInfo == 0 || numBufferInfo > 16) {
+        LOG_ERROR(Lib_Ngs2, "Invalid buffer info: ptr={}, count={}",
+                  static_cast<const void*>(aBufferInfo), numBufferInfo);
+        return ORBIS_NGS2_ERROR_INVALID_BUFFER_ADDRESS;
+    }
+
+    auto* system = reinterpret_cast<SystemInternal*>(systemHandle);
+
+    // Clear all output buffers first
+    for (u32 i = 0; i < numBufferInfo; i++) {
+        if (aBufferInfo[i].buffer && aBufferInfo[i].bufferSize > 0) {
+            std::memset(aBufferInfo[i].buffer, 0, aBufferInfo[i].bufferSize);
+        }
+    }
+
+    // Setup render context
+    RenderContext ctx{};
+    ctx.buffer_info = aBufferInfo;
+    ctx.num_buffer_info = numBufferInfo;
+    ctx.grain_samples = system->numGrainSamples > 0 ? system->numGrainSamples : 256;
+    ctx.output_sample_rate = system->sampleRate > 0 ? system->sampleRate : 48000;
+
+    u32 voices_rendered = 0;
+
+    // Process each rack
+    for (auto* rack : system->racks) {
+        if (!rack) {
+            continue;
+        }
+
+        // Process sampler racks (0x1000)
+        if (rack->rackId == 0x1000) {
+            for (auto& voice : rack->voices) {
+                if (RenderVoice(voice.get(), ctx)) {
+                    voices_rendered++;
+                }
+            }
+        }
+        // TODO: Process submixer racks (0x2000, 0x2001)
+        // TODO: Process mastering racks (0x3000)
+        // TODO: Process effect racks (0x4001, 0x4002, 0x4003)
+    }
+
+    system->renderCount++;
+
     return ORBIS_OK;
 }
 
@@ -267,7 +640,7 @@ static s32 PS4_SYSV_ABI sceNgs2SystemResetOption(OrbisNgs2SystemOption* outOptio
     }
     *outOption = option;
 
-    LOG_INFO(Lib_Ngs2, "called");
+    LOG_DEBUG(Lib_Ngs2, "called");
     return ORBIS_OK;
 }
 
@@ -309,13 +682,201 @@ s32 PS4_SYSV_ABI sceNgs2SystemUnlock(OrbisNgs2Handle systemHandle) {
 
 s32 PS4_SYSV_ABI sceNgs2VoiceControl(OrbisNgs2Handle voiceHandle,
                                      const OrbisNgs2VoiceParamHeader* paramList) {
-    LOG_ERROR(Lib_Ngs2, "called");
+    if (!voiceHandle) {
+        LOG_ERROR(Lib_Ngs2, "voiceHandle is nullptr");
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
+    }
+
+    auto* voice = reinterpret_cast<VoiceInternal*>(voiceHandle);
+
+    const OrbisNgs2VoiceParamHeader* current = paramList;
+    while (current != nullptr) {
+
+        switch (current->id) {
+        // Sampler rack-specific params (0x1000000X)
+        case 0x10000000: { // Sampler Voice Setup
+            auto* setup = reinterpret_cast<const OrbisNgs2SamplerVoiceSetupParam*>(current);
+            voice->format = setup->format;
+            voice->flags = setup->flags;
+            voice->isSetup = true;
+            break;
+        }
+        case 0x10000001: { // Sampler Waveform Blocks
+            auto* blocks =
+                reinterpret_cast<const OrbisNgs2SamplerVoiceWaveformBlocksParam*>(current);
+
+            u32 total_data_size = 0;
+            u32 total_samples = 0;
+            u32 num_channels = voice->format.numChannels > 0 ? voice->format.numChannels : 2;
+
+            if (blocks->numBlocks > 0 && blocks->aBlock) {
+                for (u32 i = 0; i < blocks->numBlocks; i++) {
+                    total_data_size += blocks->aBlock[i].dataSize;
+                    total_samples += blocks->aBlock[i].numSamples;
+                }
+
+                voice->waveformBlocks.resize(blocks->numBlocks);
+                for (u32 i = 0; i < blocks->numBlocks; i++) {
+                    voice->waveformBlocks[i].dataOffset = blocks->aBlock[i].dataOffset;
+                    voice->waveformBlocks[i].dataSize = blocks->aBlock[i].dataSize;
+                    voice->waveformBlocks[i].numRepeats = blocks->aBlock[i].numRepeats;
+                    voice->waveformBlocks[i].numSkipSamples = blocks->aBlock[i].numSkipSamples;
+                    voice->waveformBlocks[i].numSamples = blocks->aBlock[i].numSamples;
+                    voice->waveformBlocks[i].currentRepeat = 0;
+                }
+            }
+
+            const u8* base_ptr = reinterpret_cast<const u8*>(blocks->data);
+            u32 data_offset =
+                (blocks->numBlocks > 0 && blocks->aBlock) ? blocks->aBlock[0].dataOffset : 0;
+            const void* actual_data_ptr = base_ptr + data_offset;
+
+            bool is_first_setup = (voice->ringBufferCount == 0) && !voice->isStreaming;
+
+            if (is_first_setup) {
+                voice->resetRing();
+                voice->addToRing(blocks->data, actual_data_ptr, total_data_size, total_samples);
+                voice->lastConsumedBuffer = nullptr;
+                voice->currentBufferPtr = actual_data_ptr;
+                voice->stateFlags &= ~0x80;
+                voice->currentSamplePos = 0;
+                voice->samplePosFloat = 0.0f;
+                voice->currentBlockIndex = 0;
+                voice->isStreaming = false;
+            } else {
+                bool added =
+                    voice->addToRing(blocks->data, actual_data_ptr, total_data_size, total_samples);
+
+                if (added) {
+                    voice->isStreaming = true;
+                    voice->stateFlags &= ~0x80;
+                }
+            }
+            break;
+        }
+        case 0x10000005: { // Sampler Pitch
+            auto* pitch = reinterpret_cast<const OrbisNgs2SamplerVoicePitchParam*>(current);
+            voice->pitchRatio = pitch->ratio;
+            break;
+        }
+
+        // Mastering rack-specific params (0x3000000X) - not yet implemented
+        case 0x30000000:
+        case 0x30000001:
+        case 0x30000002:
+        case 0x30000003:
+        case 0x30000004:
+        case 0x30000005:
+        case 0x30000006:
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Mastering param ID: {:#x}", current->id);
+            break;
+
+        // Generic voice params
+        case 0x06: { // Voice Event
+            auto* event = reinterpret_cast<const OrbisNgs2VoiceEventParam*>(current);
+            switch (event->eventId) {
+            case 0: // Reset
+                voice->stateFlags = (voice->stateFlags & 0xDF000000) | 0x20000101;
+                voice->totalDecodedSamples = 0;
+                voice->currentBufferPtr = nullptr;
+                voice->lastConsumedBuffer = nullptr;
+                voice->currentSamplePos = 0;
+                voice->samplePosFloat = 0.0f;
+                voice->currentBlockIndex = 0;
+                voice->isStreaming = false;
+                voice->waveformBlocks.clear();
+                voice->resetRing();
+                break;
+            case 1: // Pause
+                voice->stateFlags |= 0x200;
+                break;
+            case 2: // Stop
+                voice->stateFlags &= ~0x01;
+                voice->stateFlags |= 0x400;
+                break;
+            case 3: // Kill
+                voice->stateFlags &= ~0x01;
+                voice->stateFlags |= 0x800;
+                voice->resetRing();
+                break;
+            case 4: // Resume A
+                voice->stateFlags = (voice->stateFlags & ~0x200) | 0x1000 | 0x01;
+                break;
+            case 5: // Resume B
+                voice->stateFlags = (voice->stateFlags & ~0x200) | 0x2000 | 0x01;
+                break;
+            default:
+                LOG_WARNING(Lib_Ngs2, "Unknown voice event ID: {}", event->eventId);
+                break;
+            }
+            break;
+        }
+        case 0x01: { // Matrix Levels - not yet implemented
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Matrix levels param");
+            break;
+        }
+        case 0x02: { // Port Volume
+            auto* portVol = reinterpret_cast<const OrbisNgs2VoicePortVolumeParam*>(current);
+            voice->portVolume = portVol->level;
+            break;
+        }
+        case 0x03: { // Port Matrix - not yet implemented
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Port matrix param");
+            break;
+        }
+        case 0x04: { // Port Delay - not yet implemented
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Port delay param");
+            break;
+        }
+        case 0x05: { // Patch - not yet implemented
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Patch param");
+            break;
+        }
+        case 0x07: { // Callback - not yet implemented
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Callback param");
+            break;
+        }
+        default:
+            LOG_DEBUG(Lib_Ngs2, "(STUBBED) Unhandled voice param ID: {:#x}", current->id);
+            break;
+        }
+
+        // Move to next parameter
+        if (current->next == 0 || current->next == -1) {
+            break;
+        }
+        current = reinterpret_cast<const OrbisNgs2VoiceParamHeader*>(
+            reinterpret_cast<const u8*>(current) + current->next);
+    }
+
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetMatrixInfo(OrbisNgs2Handle voiceHandle, u32 matrixId,
                                            OrbisNgs2VoiceMatrixInfo* outInfo, size_t outInfoSize) {
-    LOG_ERROR(Lib_Ngs2, "matrixId = {}, outInfoSize = {}", matrixId, outInfoSize);
+    if (!voiceHandle) {
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
+    }
+
+    if (!outInfo || outInfoSize < sizeof(OrbisNgs2VoiceMatrixInfo)) {
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    auto* voice = reinterpret_cast<VoiceInternal*>(voiceHandle);
+
+    // Return default matrix info - identity matrix for stereo (1.0 on diagonal)
+    outInfo->numLevels = voice->format.numChannels * voice->format.numChannels;
+    if (outInfo->numLevels == 0) {
+        outInfo->numLevels = 4; // Default stereo 2x2
+    }
+
+    // Initialize to identity-like matrix
+    std::memset(outInfo->aLevel, 0, sizeof(outInfo->aLevel));
+    u32 channels = voice->format.numChannels > 0 ? voice->format.numChannels : 2;
+    for (u32 i = 0; i < channels && i < 8; i++) {
+        outInfo->aLevel[i * channels + i] = 1.0f;
+    }
+
     return ORBIS_OK;
 }
 
@@ -333,12 +894,80 @@ s32 PS4_SYSV_ABI sceNgs2VoiceGetPortInfo(OrbisNgs2Handle voiceHandle, u32 port,
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetState(OrbisNgs2Handle voiceHandle, OrbisNgs2VoiceState* outState,
                                       size_t stateSize) {
-    LOG_ERROR(Lib_Ngs2, "stateSize = {}", stateSize);
+    if (!outState) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice state address");
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    // Only accept valid state sizes: 0x4 (basic) or 0x30 (sampler)
+    if (stateSize != sizeof(OrbisNgs2VoiceState) &&
+        stateSize != sizeof(OrbisNgs2SamplerVoiceState)) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice state size: {:#x}", stateSize);
+        return ORBIS_NGS2_ERROR_INVALID_OUT_SIZE;
+    }
+
+    if (!voiceHandle) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice handle");
+        // On invalid handle, zero out the state (LLE behavior)
+        if (stateSize == sizeof(OrbisNgs2VoiceState)) {
+            outState->stateFlags = 0;
+        } else {
+            std::memset(outState, 0, sizeof(OrbisNgs2SamplerVoiceState));
+        }
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
+    }
+
+    auto* voice = reinterpret_cast<VoiceInternal*>(voiceHandle);
+
+    if (stateSize == sizeof(OrbisNgs2VoiceState)) {
+        outState->stateFlags = voice->stateFlags;
+        return ORBIS_OK;
+    }
+
+    auto* sampler_state = reinterpret_cast<OrbisNgs2SamplerVoiceState*>(outState);
+    sampler_state->voiceState.stateFlags = voice->stateFlags;
+
+    if (voice->isStreaming && voice->getReadyBufferCount() <= VoiceInternal::STARVATION_THRESHOLD) {
+        sampler_state->userData = 1;
+    } else {
+        sampler_state->userData = 0;
+    }
+    sampler_state->envelopeHeight = 1.0f;
+    sampler_state->peakHeight = 1.0f;
+    sampler_state->reserved = 0;
+
+    sampler_state->numDecodedSamples = voice->totalDecodedSamples;
+
+    u32 bytes_per_sample = 2 * (voice->format.numChannels > 0 ? voice->format.numChannels : 2);
+    sampler_state->decodedDataSize = sampler_state->numDecodedSamples * bytes_per_sample;
+
+    sampler_state->waveformData = voice->currentBufferPtr;
+
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2VoiceGetStateFlags(OrbisNgs2Handle voiceHandle, u32* outStateFlags) {
-    LOG_ERROR(Lib_Ngs2, "called");
+    if (!outStateFlags) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice state address");
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    if (!voiceHandle) {
+        LOG_ERROR(Lib_Ngs2, "Invalid voice handle");
+        *outStateFlags = 0; // LLE behavior: zero out on invalid handle
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
+    }
+
+    auto* voice = reinterpret_cast<VoiceInternal*>(voiceHandle);
+
+    u32 flags = voice->stateFlags & 0xFF;
+
+    if (voice->isStreaming && voice->getReadyBufferCount() <= VoiceInternal::STARVATION_THRESHOLD) {
+        flags |= 0x80;
+    }
+
+    *outStateFlags = flags;
+
     return ORBIS_OK;
 }
 
@@ -380,14 +1009,52 @@ s32 PS4_SYSV_ABI sceNgs2GeomApply(const OrbisNgs2GeomListenerWork* listener,
 
 s32 PS4_SYSV_ABI sceNgs2PanInit(OrbisNgs2PanWork* work, const float* aSpeakerAngle, float unitAngle,
                                 u32 numSpeakers) {
-    LOG_ERROR(Lib_Ngs2, "unitAngle = {}, numSpeakers = {}", unitAngle, numSpeakers);
+    LOG_DEBUG(Lib_Ngs2, "unitAngle = {}, numSpeakers = {}", unitAngle, numSpeakers);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNgs2PanGetVolumeMatrix(OrbisNgs2PanWork* work, const OrbisNgs2PanParam* aParam,
                                            u32 numParams, u32 matrixFormat,
                                            float* outVolumeMatrix) {
-    LOG_ERROR(Lib_Ngs2, "numParams = {}, matrixFormat = {}", numParams, matrixFormat);
+    if (!outVolumeMatrix) {
+        return ORBIS_NGS2_ERROR_INVALID_OUT_ADDRESS;
+    }
+
+    // matrixFormat: 1 = mono, 2 = stereo, etc.
+    u32 num_output_channels = matrixFormat;
+    if (num_output_channels == 0)
+        num_output_channels = 2;
+    if (num_output_channels > 8)
+        num_output_channels = 8;
+
+    // Initialize volume matrix to identity/center pan
+    // For stereo output (format 2), we create a simple center pan
+    for (u32 p = 0; p < numParams; p++) {
+        float* matrix = outVolumeMatrix + p * num_output_channels;
+
+        if (aParam && numParams > 0) {
+            // Use the pan angle to compute left/right levels
+            float angle = aParam[p].angle;
+            // Simple stereo panning: angle 0 = center, -1 = left, +1 = right
+            float left_level = 0.5f * (1.0f - angle);
+            float right_level = 0.5f * (1.0f + angle);
+
+            if (num_output_channels >= 2) {
+                matrix[0] = left_level;
+                matrix[1] = right_level;
+                for (u32 ch = 2; ch < num_output_channels; ch++) {
+                    matrix[ch] = 0.0f;
+                }
+            } else {
+                matrix[0] = 1.0f;
+            }
+        } else {
+            for (u32 ch = 0; ch < num_output_channels; ch++) {
+                matrix[ch] = 1.0f / num_output_channels;
+            }
+        }
+    }
+
     return ORBIS_OK;
 }
 
@@ -395,7 +1062,7 @@ s32 PS4_SYSV_ABI sceNgs2PanGetVolumeMatrix(OrbisNgs2PanWork* work, const OrbisNg
 
 s32 PS4_SYSV_ABI sceNgs2ReportRegisterHandler(u32 reportType, OrbisNgs2ReportHandler handler,
                                               uintptr_t userData, OrbisNgs2Handle* outHandle) {
-    LOG_INFO(Lib_Ngs2, "reportType = {}, userData = {}", reportType, userData);
+    LOG_DEBUG(Lib_Ngs2, "reportType = {}, userData = {}", reportType, userData);
     if (!handler) {
         LOG_ERROR(Lib_Ngs2, "handler is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
@@ -408,7 +1075,7 @@ s32 PS4_SYSV_ABI sceNgs2ReportUnregisterHandler(OrbisNgs2Handle reportHandle) {
         LOG_ERROR(Lib_Ngs2, "reportHandle is nullptr");
         return ORBIS_NGS2_ERROR_INVALID_REPORT_HANDLE;
     }
-    LOG_INFO(Lib_Ngs2, "called");
+    LOG_DEBUG(Lib_Ngs2, "called");
     return ORBIS_OK;
 }
 
