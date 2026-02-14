@@ -102,6 +102,123 @@ struct OrbisCameraConfig {
     OrbisCameraConfigExtention configExtention[ORBIS_CAMERA_MAX_DEVICE_NUM];
 };
 
+constexpr OrbisCameraConfigExtention camera_config_types[5][ORBIS_CAMERA_MAX_DEVICE_NUM]{
+    {
+        // type 1
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_RAW16,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+    },
+    {
+        // type 2
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+    },
+    {
+        // type 3
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_Y8,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+    },
+    {
+        // type 4
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_RAW16,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_RAW16,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+    },
+    {
+        // type 5
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_YUV422,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+        {
+            .format =
+                {
+                    .formatLevel0 = ORBIS_CAMERA_FORMAT_RAW16,
+                    .formatLevel1 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel2 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                    .formatLevel3 = ORBIS_CAMERA_SCALE_FORMAT_YUV422,
+                },
+            .framerate = ORBIS_CAMERA_FRAMERATE_60,
+        },
+    }};
+
 enum OrbisCameraAecAgcTarget {
     ORBIS_CAMERA_ATTRIBUTE_AECAGC_TARGET_DEF = 0x00,
     ORBIS_CAMERA_ATTRIBUTE_AECAGC_TARGET_2_0 = 0x20,
