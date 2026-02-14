@@ -59,6 +59,7 @@ void ClearStack() {
 
 template <class ReturnType, class... FuncArgs, class... CallArgs>
 ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
+    EnsureThreadInitialized();
     // clear stack to avoid trash from EnsureThreadInitialized
     auto* tcb = GetTcbBase();
     if (tcb == nullptr) {
