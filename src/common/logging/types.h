@@ -109,6 +109,7 @@ enum class Class : u8 {
     Lib_Videodec,            ///< The LibSceVideodec implementation.
     Lib_Voice,               ///< The LibSceVoice implementation.
     Lib_RazorCpu,            ///< The LibRazorCpu implementation.
+    Lib_Ulobjmgr,            ///< The ulobjmgr implementation.
     Lib_Mouse,               ///< The LibSceMouse implementation
     Lib_WebBrowserDialog,    ///< The LibSceWebBrowserDialog implementation
     Lib_NpParty,             ///< The LibSceNpParty implementation
