@@ -44,11 +44,6 @@ using Libraries::Font::OrbisFontRenderSurface;
 using Libraries::Font::OrbisFontStyleFrame;
 
 namespace {
-struct GetCharGlyphMetricsFailLogState {
-    u32 count = 0;
-    bool suppression_logged = false;
-};
-
 static thread_local GetCharGlyphMetricsFailLogState g_get_char_metrics_fail;
 
 static void LogGetCharGlyphMetricsFailOnce(std::string_view stage, s32 rc, FT_Error ft_err,
@@ -324,22 +319,6 @@ static std::uint64_t ResolveGposTagForCode(u32 codepoint) {
     (void)codepoint;
     return 0;
 }
-
-#pragma pack(push, 1)
-struct SysFontRangeRecord {
-    /*0x00*/ u32 start;
-    /*0x04*/ u32 end;
-    /*0x08*/ s16 shift_x;
-    /*0x0A*/ s16 shift_y;
-    /*0x0C*/ float scale_mul;
-    /*0x10*/ u32 reserved_0x10;
-    /*0x14*/ u32 reserved_0x14;
-    /*0x18*/ u32 reserved_0x18;
-};
-#pragma pack(pop)
-static_assert(sizeof(SysFontRangeRecord) == 0x1C);
-static_assert(offsetof(SysFontRangeRecord, shift_x) == 0x08);
-static_assert(offsetof(SysFontRangeRecord, scale_mul) == 0x0C);
 
 static float SysFontScaleFactor(u32 font_id) {
     (void)font_id;
@@ -651,11 +630,6 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
     float delta_max = 0.0f;
     float effect_for_baseline = 0.0f;
     float effect_for_delta = 0.0f;
-
-    struct F32x2 {
-        float lo = 0.0f;
-        float hi = 0.0f;
-    };
 
     F32x2 acc_u13_i8{};
     F32x2 acc_x_bounds{};
@@ -1516,19 +1490,11 @@ static StyleFrameScaleState ResolveStyleFrameScaleFromCachedStyle(const OrbisFon
 
 namespace {
 
-struct RenderSurfaceSystemUse {
-    Libraries::Font::OrbisFontStyleFrame* styleframe = nullptr;
-    float catchedScale = 0.0f;
-    std::uint8_t padding[88 - sizeof(Libraries::Font::OrbisFontStyleFrame*) - sizeof(float)]{};
-};
-static_assert(sizeof(RenderSurfaceSystemUse) ==
-                  sizeof(((Libraries::Font::OrbisFontRenderSurface*)nullptr)->reserved_q),
-              "RenderSurfaceSystemUse layout must match OrbisFontRenderSurface::reserved_q");
-
-inline RenderSurfaceSystemUse* GetSurfaceSystemUse(Libraries::Font::OrbisFontRenderSurface* surf) {
+static inline RenderSurfaceSystemUse* GetSurfaceSystemUse(
+    Libraries::Font::OrbisFontRenderSurface* surf) {
     return surf ? reinterpret_cast<RenderSurfaceSystemUse*>(surf->reserved_q) : nullptr;
 }
-inline const RenderSurfaceSystemUse* GetSurfaceSystemUse(
+static inline const RenderSurfaceSystemUse* GetSurfaceSystemUse(
     const Libraries::Font::OrbisFontRenderSurface* surf) {
     return surf ? reinterpret_cast<const RenderSurfaceSystemUse*>(surf->reserved_q) : nullptr;
 }
@@ -1798,9 +1764,9 @@ static s32 RenderGlyphIndexToSurface(FontObj& font_obj, u32 glyph_index,
     return ORBIS_OK;
 }
 
-StyleFrameScaleState ResolveMergedStyleFrameScale(const Libraries::Font::OrbisFontStyleFrame* base,
-                                                  const Libraries::Font::OrbisFontStyleFrame* over,
-                                                  const FontState& st) {
+static StyleFrameScaleState ResolveMergedStyleFrameScale(
+    const Libraries::Font::OrbisFontStyleFrame* base,
+    const Libraries::Font::OrbisFontStyleFrame* over, const FontState& st) {
     StyleFrameScaleState resolved = ResolveStyleFrameScale(base, st);
     if (!ValidateStyleFramePtr(over)) {
         return resolved;
@@ -2364,15 +2330,16 @@ namespace Libraries::FontFt::Internal {
 
 namespace {
 
+static std::once_flag g_driver_table_once;
+alignas(Libraries::Font::Internal::SysDriver) static Libraries::Font::Internal::SysDriver
+    g_driver_table{};
+
+static std::once_flag g_renderer_table_once;
+alignas(Libraries::FontFt::OrbisFontRendererSelection) static Libraries::FontFt::
+    OrbisFontRendererSelection g_renderer_table{};
+
 using Libraries::Font::Internal::FontLibOpaque;
 using Libraries::Font::Internal::FontObj;
-
-struct FtLibraryCtx {
-    void* alloc_ctx;
-    void** alloc_vtbl;
-    FT_Memory ft_memory;
-    FT_Library ft_lib;
-};
 
 static constexpr float kOneOver64 = 1.0f / 64.0f;
 
@@ -2465,49 +2432,6 @@ static constexpr u32 MakeTag(char a, char b, char c, char d) {
            (static_cast<u32>(static_cast<u8>(b)) << 16) |
            (static_cast<u32>(static_cast<u8>(c)) << 8) | static_cast<u32>(static_cast<u8>(d));
 }
-
-struct BeU16 {
-    u8 b[2];
-
-    constexpr u16 value() const {
-        return static_cast<u16>((static_cast<u16>(b[0]) << 8) | static_cast<u16>(b[1]));
-    }
-};
-static_assert(sizeof(BeU16) == 2, "BeU16 size");
-
-struct BeU32 {
-    u8 b[4];
-
-    constexpr u32 value() const {
-        return (static_cast<u32>(b[0]) << 24) | (static_cast<u32>(b[1]) << 16) |
-               (static_cast<u32>(b[2]) << 8) | static_cast<u32>(b[3]);
-    }
-};
-static_assert(sizeof(BeU32) == 4, "BeU32 size");
-
-struct TtcHeader {
-    BeU32 tag;
-    BeU32 version;
-    BeU32 num_fonts;
-};
-static_assert(sizeof(TtcHeader) == 0x0C, "TtcHeader size");
-
-struct SfntOffsetTable {
-    BeU32 version;
-    BeU16 num_tables;
-    BeU16 search_range;
-    BeU16 entry_selector;
-    BeU16 range_shift;
-};
-static_assert(sizeof(SfntOffsetTable) == 0x0C, "SfntOffsetTable size");
-
-struct SfntTableRecord {
-    BeU32 tag;
-    BeU32 checksum;
-    BeU32 offset;
-    BeU32 length;
-};
-static_assert(sizeof(SfntTableRecord) == 0x10, "SfntTableRecord size");
 
 static bool ResolveSfntBaseOffset(const u8* data, std::size_t size, u32 subFontIndex,
                                   u32& out_base) {
@@ -2602,13 +2526,6 @@ static bool ReadUnitsPerEm(const u8* data, std::size_t size, u32 base, u16& out_
     return out_units != 0;
 }
 
-struct FontObjSidecar {
-    const u8* font_data = nullptr;
-    u32 font_size = 0;
-    u32 sfnt_base = 0;
-    void* owned_data = nullptr;
-};
-
 static std::mutex g_font_obj_sidecars_mutex;
 static std::unordered_map<const FontObj*, FontObjSidecar> g_font_obj_sidecars;
 
@@ -2642,8 +2559,7 @@ static void* FtAlloc(FT_Memory memory, long size) {
     if (!ctx || !ctx->alloc_vtbl) {
         return nullptr;
     }
-    using AllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
-    const auto alloc_fn = reinterpret_cast<AllocFn>(ctx->alloc_vtbl[0]);
+    const auto alloc_fn = reinterpret_cast<GuestAllocFn>(ctx->alloc_vtbl[0]);
     return alloc_fn ? Core::ExecuteGuest(alloc_fn, ctx->alloc_ctx, static_cast<u32>(size))
                     : nullptr;
 }
@@ -2656,8 +2572,7 @@ static void FtFree(FT_Memory memory, void* block) {
     if (!ctx || !ctx->alloc_vtbl) {
         return;
     }
-    using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
-    const auto free_fn = reinterpret_cast<FreeFn>(ctx->alloc_vtbl[1]);
+    const auto free_fn = reinterpret_cast<GuestFreeFn>(ctx->alloc_vtbl[1]);
     if (free_fn) {
         Core::ExecuteGuest(free_fn, ctx->alloc_ctx, block);
     }
@@ -2671,8 +2586,7 @@ static void* FtRealloc(FT_Memory memory, long cur_size, long new_size, void* blo
     if (!ctx || !ctx->alloc_vtbl) {
         return nullptr;
     }
-    using ReallocFn = void*(PS4_SYSV_ABI*)(void* object, void* p, u32 size);
-    const auto realloc_fn = reinterpret_cast<ReallocFn>(ctx->alloc_vtbl[2]);
+    const auto realloc_fn = reinterpret_cast<GuestReallocFn>(ctx->alloc_vtbl[2]);
     if (realloc_fn) {
         return Core::ExecuteGuest(realloc_fn, ctx->alloc_ctx, block, static_cast<u32>(new_size));
     }
@@ -2694,6 +2608,53 @@ static void* FtRealloc(FT_Memory memory, long cur_size, long new_size, void* blo
 
 } // namespace
 
+const Libraries::FontFt::OrbisFontLibrarySelection* GetDriverTable() {
+    std::call_once(g_driver_table_once, [] {
+        auto* selection =
+            reinterpret_cast<Libraries::FontFt::OrbisFontLibrarySelection*>(&g_driver_table);
+        selection->magic = 0;
+        selection->reserved = 0;
+        selection->reserved_ptr1 = nullptr;
+
+        auto* driver = &g_driver_table;
+        driver->pixel_resolution = &Libraries::FontFt::Internal::LibraryGetPixelResolutionStub;
+        driver->init = &Libraries::FontFt::Internal::LibraryInitStub;
+        driver->term = &Libraries::FontFt::Internal::LibraryTermStub;
+        driver->support_formats = &Libraries::FontFt::Internal::LibrarySupportStub;
+        driver->open = &Libraries::FontFt::Internal::LibraryOpenFontMemoryStub;
+        driver->close = &Libraries::FontFt::Internal::LibraryCloseFontObjStub;
+        driver->scale = &Libraries::FontFt::Internal::LibraryGetFaceScaleStub;
+        driver->metric = &Libraries::FontFt::Internal::LibraryGetFaceMetricStub;
+        driver->glyph_index = &Libraries::FontFt::Internal::LibraryGetGlyphIndexStub;
+        driver->set_char_with_dpi = &Libraries::FontFt::Internal::LibrarySetCharSizeWithDpiStub;
+        driver->set_char_default_dpi =
+            &Libraries::FontFt::Internal::LibrarySetCharSizeDefaultDpiStub;
+        driver->compute_layout = &Libraries::FontFt::Internal::LibraryComputeLayoutBlockStub;
+        driver->compute_layout_alt = &Libraries::FontFt::Internal::LibraryComputeLayoutAltBlockStub;
+        driver->load_glyph_cached = &Libraries::FontFt::Internal::LibraryLoadGlyphCachedStub;
+        driver->get_glyph_metrics = &Libraries::FontFt::Internal::LibraryGetGlyphMetricsStub;
+        driver->apply_glyph_adjust = &Libraries::FontFt::Internal::LibraryApplyGlyphAdjustStub;
+        driver->configure_glyph = &Libraries::FontFt::Internal::LibraryConfigureGlyphStub;
+    });
+
+    return reinterpret_cast<const Libraries::FontFt::OrbisFontLibrarySelection*>(&g_driver_table);
+}
+
+const Libraries::FontFt::OrbisFontRendererSelection* GetRendererSelectionTable() {
+    std::call_once(g_renderer_table_once, [] {
+        g_renderer_table.magic = 0;
+        g_renderer_table.size =
+            static_cast<u32>(sizeof(Libraries::Font::Internal::RendererFtOpaque));
+        g_renderer_table.create_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererCreate);
+        g_renderer_table.destroy_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererDestroy);
+        g_renderer_table.query_fn =
+            reinterpret_cast<std::uintptr_t>(&Libraries::FontFt::Internal::FtRendererQuery);
+    });
+    return &g_renderer_table;
+}
+
 u32 PS4_SYSV_ABI LibraryGetPixelResolutionStub() {
     return 0x40;
 }
@@ -2708,10 +2669,8 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
         return ORBIS_FONT_ERROR_INVALID_MEMORY;
     }
 
-    using AllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
-    using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
-    const auto alloc_fn = reinterpret_cast<AllocFn>(mem->iface->alloc);
-    const auto free_fn = reinterpret_cast<FreeFn>(mem->iface->dealloc);
+    const auto alloc_fn = reinterpret_cast<GuestAllocFn>(mem->iface->alloc);
+    const auto free_fn = reinterpret_cast<GuestFreeFn>(mem->iface->dealloc);
     if (!alloc_fn || !free_fn) {
         return ORBIS_FONT_ERROR_INVALID_MEMORY;
     }
@@ -2800,8 +2759,7 @@ s32 PS4_SYSV_ABI LibraryTermStub(void* library) {
     auto* lib = static_cast<FontLibOpaque*>(library);
     auto* alloc_ctx = lib->alloc_ctx;
     auto* alloc_vtbl = lib->alloc_vtbl;
-    using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
-    const auto free_fn = alloc_vtbl ? reinterpret_cast<FreeFn>(alloc_vtbl[1]) : nullptr;
+    const auto free_fn = alloc_vtbl ? reinterpret_cast<GuestFreeFn>(alloc_vtbl[1]) : nullptr;
     if (!free_fn) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
@@ -2881,10 +2839,8 @@ s32 PS4_SYSV_ABI LibraryOpenFontMemoryStub(void* library, u32 mode, const void* 
     auto* lib = static_cast<FontLibOpaque*>(library);
     void* alloc_ctx = lib->alloc_ctx;
     void** alloc_vtbl = lib->alloc_vtbl;
-    using AllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
-    using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
-    const auto alloc_fn = alloc_vtbl ? reinterpret_cast<AllocFn>(alloc_vtbl[0]) : nullptr;
-    const auto free_fn = alloc_vtbl ? reinterpret_cast<FreeFn>(alloc_vtbl[1]) : nullptr;
+    const auto alloc_fn = alloc_vtbl ? reinterpret_cast<GuestAllocFn>(alloc_vtbl[0]) : nullptr;
+    const auto free_fn = alloc_vtbl ? reinterpret_cast<GuestFreeFn>(alloc_vtbl[1]) : nullptr;
     if (!alloc_fn || !free_fn) {
         return ORBIS_FONT_ERROR_INVALID_PARAMETER;
     }
@@ -3042,9 +2998,8 @@ s32 PS4_SYSV_ABI LibraryCloseFontObjStub(void* fontObj, u32 /*flags*/) {
         ctx = static_cast<FtLibraryCtx*>(face->memory->user);
     }
 
-    using FreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
     const auto free_fn =
-        (ctx && ctx->alloc_vtbl) ? reinterpret_cast<FreeFn>(ctx->alloc_vtbl[1]) : nullptr;
+        (ctx && ctx->alloc_vtbl) ? reinterpret_cast<GuestFreeFn>(ctx->alloc_vtbl[1]) : nullptr;
     void* owned_data = nullptr;
     if (const auto sidecar = TakeFontObjSidecar(obj)) {
         owned_data = sidecar->owned_data;
@@ -3261,42 +3216,6 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutBlockStub(void* fontObj, const void* style_
         half_effect_w_px += round_mul_16_16(static_cast<s64>(y_max_px), shear_16_16);
     }
 
-    struct LayoutOutIo {
-        u8 (*words)[16];
-        struct F32Field {
-            u8* base;
-            std::size_t offset;
-            F32Field& operator=(float v) {
-                std::memcpy(base + offset, &v, sizeof(v));
-                return *this;
-            }
-        };
-        struct Fields {
-            F32Field line_advance;
-            F32Field baseline;
-            F32Field x_bound_0;
-            F32Field x_bound_1;
-            F32Field max_advance_width;
-            F32Field hhea_caret_rise_adjust;
-            F32Field effect_height;
-            F32Field half_effect_width;
-            F32Field left_adjust;
-        };
-        Fields fields() const {
-            return {
-                .line_advance = {words[0], 0x00},
-                .baseline = {words[0], 0x04},
-                .x_bound_0 = {words[0], 0x08},
-                .x_bound_1 = {words[0], 0x0C},
-                .max_advance_width = {words[1], 0x00},
-                .hhea_caret_rise_adjust = {words[1], 0x04},
-                .effect_height = {words[1], 0x08},
-                .half_effect_width = {words[1], 0x0C},
-                .left_adjust = {words[2], 0x00},
-            };
-        }
-    };
-
     auto out = LayoutOutIo{out_words}.fields();
     out.effect_height = out_effect_h;
     out.left_adjust = static_cast<float>(left_adjust_px) * kOneOver64;
@@ -3445,40 +3364,6 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutAltBlockStub(void* fontObj, const void* sty
     const s32 lane1 = -x_abs_max;
     const s32 lane2 = round_fixed_mul(y_ascender, x_scale);
     const s32 lane3 = round_fixed_mul(y_descender, x_scale);
-
-    struct LayoutAltOutIo {
-        u8 (*words)[16];
-        struct F32Field {
-            u8* base;
-            std::size_t offset;
-            F32Field& operator=(float v) {
-                std::memcpy(base + offset, &v, sizeof(v));
-                return *this;
-            }
-        };
-        struct Fields {
-            F32Field metrics_0x00;
-            F32Field metrics_0x04;
-            F32Field metrics_0x08;
-            F32Field metrics_0x0C;
-            F32Field adv_height;
-            F32Field effect_width;
-            F32Field slant_b;
-            F32Field slant_a;
-        };
-        Fields fields() const {
-            return {
-                .metrics_0x00 = {words[0], 0x00},
-                .metrics_0x04 = {words[0], 0x04},
-                .metrics_0x08 = {words[0], 0x08},
-                .metrics_0x0C = {words[0], 0x0C},
-                .adv_height = {words[1], 0x00},
-                .effect_width = {words[1], 0x04},
-                .slant_b = {words[1], 0x08},
-                .slant_a = {words[1], 0x0C},
-            };
-        }
-    };
 
     auto out = LayoutAltOutIo{out_words}.fields();
     out.metrics_0x00 = static_cast<float>(lane0) * kOneOver64;

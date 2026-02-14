@@ -11,6 +11,7 @@
 #include FT_TRUETYPE_TABLES_H
 
 #include "core/libraries/font/fontft_internal.h"
+#include "core/libraries/kernel/kernel.h"
 
 namespace Libraries::Font::Internal {
 
@@ -43,6 +44,15 @@ std::uint8_t g_fontset_registry_stub{};
 std::uint8_t g_sysfonts_ctx_stub{};
 std::uint8_t g_external_fonts_ctx_stub{};
 u32 g_device_cache_stub{};
+
+std::string FormatNamedParams(std::initializer_list<NamedParam> params) {
+    fmt::memory_buffer buffer;
+    fmt::format_to(std::back_inserter(buffer), "params:\n");
+    for (const auto& p : params) {
+        fmt::format_to(std::back_inserter(buffer), "{}: {}\n", p.name, p.value);
+    }
+    return fmt::to_string(buffer);
+}
 
 bool HasSfntTables(const std::vector<unsigned char>& bytes);
 FontState* TryGetState(Libraries::Font::OrbisFontHandle h);
@@ -104,7 +114,7 @@ void DestroyFreeTypeFace(FT_Face& face) {
 
 namespace {
 
-static std::optional<std::filesystem::path> ResolveKnownSysFontAlias(
+static std::optional<std::filesystem::path> ResolveKnownSysFontAliasImpl(
     const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename) {
     const auto resolve_existing =
         [&](std::string_view filename) -> std::optional<std::filesystem::path> {
@@ -216,6 +226,11 @@ static std::shared_ptr<std::vector<unsigned char>> GetCachedFontBytes(
 }
 
 } // namespace
+
+std::optional<std::filesystem::path> ResolveKnownSysFontAlias(
+    const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename) {
+    return ResolveKnownSysFontAliasImpl(sysfonts_dir, ps4_filename);
+}
 
 FontState::~FontState() {
     DestroyFreeTypeFace(ext_ft_face);
@@ -362,18 +377,7 @@ bool BuildTrueOutline(GeneratedGlyph& gg) {
             }
             if (const std::uint8_t* range_rec =
                     FindSysFontRangeRecord(mapped_font_id, resolved_code)) {
-                struct SysFontRangeRecordLocal {
-                    /*0x00*/ u32 start;
-                    /*0x04*/ u32 end;
-                    /*0x08*/ s16 shift_x;
-                    /*0x0A*/ s16 shift_y;
-                    /*0x0C*/ float scale_mul;
-                    /*0x10*/ u32 reserved_0x10;
-                    /*0x14*/ u32 reserved_0x14;
-                    /*0x18*/ u32 reserved_0x18;
-                };
-                static_assert(sizeof(SysFontRangeRecordLocal) == 0x1C);
-                SysFontRangeRecordLocal rec{};
+                SysFontRangeRecord rec{};
                 std::memcpy(&rec, range_rec, sizeof(rec));
                 shift_x_units = static_cast<s32>(rec.shift_x);
                 shift_y_units += static_cast<s32>(rec.shift_y);
@@ -518,13 +522,101 @@ LibraryState& GetLibState(Libraries::Font::OrbisFontLib lib) {
     return g_library_state[lib];
 }
 
-void RemoveLibState(Libraries::Font::OrbisFontLib lib) {
-    std::scoped_lock lock(g_state_mutex);
-    if (auto it = g_library_state.find(lib); it != g_library_state.end()) {
-        if (it->second.owned_device_cache) {
-            delete[] static_cast<std::uint8_t*>(it->second.owned_device_cache);
+bool AcquireLibraryLock(FontLibOpaque* lib, u32& out_prev_lock_word) {
+    if (!lib) {
+        return false;
+    }
+
+    for (;;) {
+        const u32 lock_word = lib->lock_word;
+        if (lib->magic != 0x0F01) {
+            return false;
         }
+        if (static_cast<s32>(lock_word) < 0) {
+            Libraries::Kernel::sceKernelUsleep(0x1e);
+            continue;
+        }
+
+        std::atomic_ref<u32> ref(lib->lock_word);
+        u32 expected = lock_word;
+        if (ref.compare_exchange_weak(expected, lock_word | 0x80000000u,
+                                      std::memory_order_acq_rel)) {
+            out_prev_lock_word = lock_word;
+            return true;
+        }
+        Libraries::Kernel::sceKernelUsleep(0x1e);
+    }
+}
+
+void ReleaseLibraryLock(FontLibOpaque* lib, u32 prev_lock_word) {
+    if (!lib) {
+        return;
+    }
+    lib->lock_word = prev_lock_word & 0x7fffffff;
+}
+
+void RemoveLibState(Libraries::Font::OrbisFontLib lib) {
+    LibraryState state{};
+    {
+        std::scoped_lock lock(g_state_mutex);
+        auto it = g_library_state.find(lib);
+        if (it == g_library_state.end()) {
+            return;
+        }
+        state = std::move(it->second);
         g_library_state.erase(it);
+    }
+
+    const auto free_fn = state.free_fn;
+    const auto alloc_ctx = state.alloc_ctx;
+    auto free_owned = [&](void* p) {
+        if (!p) {
+            return;
+        }
+        if (free_fn) {
+            const auto free_fn_guest =
+                reinterpret_cast<void(PS4_SYSV_ABI*)(void* object, void* p)>(free_fn);
+            Core::ExecuteGuest(free_fn_guest, alloc_ctx, p);
+            return;
+        }
+        std::free(p);
+    };
+
+    free_owned(state.owned_device_cache);
+    free_owned(state.owned_external_fonts_ctx);
+    free_owned(state.owned_sysfonts_ctx);
+    free_owned(state.owned_mspace);
+}
+
+void LogFontOpenError(s32 rc) {
+    switch (rc) {
+    case ORBIS_FONT_ERROR_INVALID_LIBRARY:
+        LOG_ERROR(Lib_Font, "INVALID_LIBRARY");
+        break;
+    case ORBIS_FONT_ERROR_INVALID_PARAMETER:
+        LOG_ERROR(Lib_Font, "INVALID_PARAMETER");
+        break;
+    case ORBIS_FONT_ERROR_ALLOCATION_FAILED:
+        LOG_ERROR(Lib_Font, "ALLOCATION_FAILED");
+        break;
+    case ORBIS_FONT_ERROR_FS_OPEN_FAILED:
+        LOG_ERROR(Lib_Font, "FS_OPEN_FAILED");
+        break;
+    case ORBIS_FONT_ERROR_NO_SUPPORT_FUNCTION:
+        LOG_ERROR(Lib_Font, "NO_SUPPORT_FUNCTION");
+        break;
+    case ORBIS_FONT_ERROR_NO_SUPPORT_FORMAT:
+        LOG_ERROR(Lib_Font, "NO_SUPPORT_FORMAT");
+        break;
+    case ORBIS_FONT_ERROR_NO_SUPPORT_FONTSET:
+        LOG_ERROR(Lib_Font, "NO_SUPPORT_FONTSET");
+        break;
+    case ORBIS_FONT_ERROR_FONT_OPEN_MAX:
+        LOG_ERROR(Lib_Font, "FONT_OPEN_MAX");
+        break;
+    default:
+        LOG_ERROR(Lib_Font, "FAILED");
+        break;
     }
 }
 
@@ -1758,5 +1850,69 @@ std::string ReportSystemFaceRequest(FontState& st, Libraries::Font::OrbisFontHan
                            static_cast<const void*>(handle), configured.string());
     }
     return {};
+}
+
+void LogCachedStyleOnce(Libraries::Font::OrbisFontHandle handle,
+                        const Libraries::Font::FontHandleOpaqueNative& font) {
+    static std::mutex s_mutex;
+    static std::unordered_set<Libraries::Font::OrbisFontHandle> s_logged;
+    std::scoped_lock lock(s_mutex);
+    if (s_logged.find(handle) != s_logged.end()) {
+        return;
+    }
+    s_logged.insert(handle);
+
+    LOG_DEBUG(Lib_Font,
+              "BindRenderer: cached_style snapshot: hDpi={} vDpi={} scaleUnit={} baseScale={} "
+              "scalePixelW={} scalePixelH={} effectWeightX={} effectWeightY={} slantRatio={}",
+              font.cached_style.hDpi, font.cached_style.vDpi, font.cached_style.scaleUnit,
+              font.cached_style.baseScale, font.cached_style.scalePixelW,
+              font.cached_style.scalePixelH, font.cached_style.effectWeightX,
+              font.cached_style.effectWeightY, font.cached_style.slantRatio);
+}
+
+void LogRenderResultSample(Libraries::Font::OrbisFontHandle handle, u32 code,
+                           const Libraries::Font::OrbisFontGlyphMetrics& metrics,
+                           const Libraries::Font::OrbisFontRenderOutput& result) {
+    static std::mutex s_mutex;
+    static std::unordered_map<Libraries::Font::OrbisFontHandle, int> s_counts;
+    std::scoped_lock lock(s_mutex);
+    int& count = s_counts[handle];
+    if (count >= 5) {
+        return;
+    }
+    ++count;
+    LOG_DEBUG(Lib_Font,
+              "RenderSample: handle={} code=U+{:04X} update=[{},{} {}x{}] img=[bx={} by={} adv={} "
+              "stride={} w={} h={}] metrics=[w={} h={} hbx={} hby={} hadv={}]",
+              static_cast<const void*>(handle), code, result.UpdateRect.x, result.UpdateRect.y,
+              result.UpdateRect.w, result.UpdateRect.h, result.ImageMetrics.bearingX,
+              result.ImageMetrics.bearingY, result.ImageMetrics.advance, result.ImageMetrics.stride,
+              result.ImageMetrics.width, result.ImageMetrics.height, metrics.width, metrics.height,
+              metrics.Horizontal.bearingX, metrics.Horizontal.bearingY, metrics.Horizontal.advance);
+}
+
+u8 CachedStyleCacheFlags(const Libraries::Font::OrbisFontStyleFrame& cached_style) {
+    return static_cast<u8>(cached_style.cache_flags_and_direction & 0xFFu);
+}
+
+void CachedStyleSetCacheFlags(Libraries::Font::OrbisFontStyleFrame& cached_style, u8 flags) {
+    cached_style.cache_flags_and_direction =
+        (cached_style.cache_flags_and_direction & 0xFFFFFF00u) | static_cast<u32>(flags);
+}
+
+void CachedStyleSetDirectionWord(Libraries::Font::OrbisFontStyleFrame& cached_style, u16 word) {
+    cached_style.cache_flags_and_direction =
+        (cached_style.cache_flags_and_direction & 0x0000FFFFu) | (static_cast<u32>(word) << 16);
+}
+
+float CachedStyleGetScalar(const Libraries::Font::OrbisFontStyleFrame& cached_style) {
+    float value = 0.0f;
+    std::memcpy(&value, &cached_style.cached_scalar_bits, sizeof(value));
+    return value;
+}
+
+void CachedStyleSetScalar(Libraries::Font::OrbisFontStyleFrame& cached_style, float value) {
+    std::memcpy(&cached_style.cached_scalar_bits, &value, sizeof(value));
 }
 } // namespace Libraries::Font::Internal

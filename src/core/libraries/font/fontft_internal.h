@@ -9,7 +9,12 @@
 #include <cstdint>
 #include <cstring>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_SYSTEM_H
+
 #include "core/libraries/font/font.h"
+#include "core/libraries/font/fontft.h"
 
 namespace Libraries::Font {
 
@@ -448,6 +453,40 @@ static_assert(offsetof(VerticalLayoutAltBlocks, metrics) == 0x00,
 static_assert(offsetof(VerticalLayoutAltBlocks, extras) == 0x10,
               "VerticalLayoutAltBlocks extras offset");
 
+struct GetCharGlyphMetricsFailLogState {
+    u32 count = 0;
+    bool suppression_logged = false;
+};
+
+struct SysFontRangeRecord {
+    /*0x00*/ u32 start;
+    /*0x04*/ u32 end;
+    /*0x08*/ s16 shift_x;
+    /*0x0A*/ s16 shift_y;
+    /*0x0C*/ float scale_mul;
+    /*0x10*/ u32 reserved_0x10;
+    /*0x14*/ u32 reserved_0x14;
+    /*0x18*/ u32 reserved_0x18;
+};
+static_assert(sizeof(SysFontRangeRecord) == 0x1C, "SysFontRangeRecord size");
+static_assert(offsetof(SysFontRangeRecord, shift_x) == 0x08, "SysFontRangeRecord shift_x offset");
+static_assert(offsetof(SysFontRangeRecord, scale_mul) == 0x0C,
+              "SysFontRangeRecord scale_mul offset");
+
+struct F32x2 {
+    float lo = 0.0f;
+    float hi = 0.0f;
+};
+
+struct RenderSurfaceSystemUse {
+    Libraries::Font::OrbisFontStyleFrame* styleframe = nullptr;
+    float catchedScale = 0.0f;
+    std::uint8_t padding[88 - sizeof(Libraries::Font::OrbisFontStyleFrame*) - sizeof(float)]{};
+};
+static_assert(sizeof(RenderSurfaceSystemUse) ==
+                  sizeof(((Libraries::Font::OrbisFontRenderSurface*)nullptr)->reserved_q),
+              "RenderSurfaceSystemUse layout must match OrbisFontRenderSurface::reserved_q");
+
 s32 ComputeHorizontalLayoutBlocks(Libraries::Font::OrbisFontHandle fontHandle,
                                   const void* style_state_block, u8 (*out_words)[16]);
 s32 ComputeVerticalLayoutBlocks(Libraries::Font::OrbisFontHandle fontHandle,
@@ -516,12 +555,6 @@ std::uint8_t* AcquireFontCtxEntry(std::uint8_t* ctx, u32 idx, u32 mode_low, void
 
 void ReleaseFontObjectsForHandle(Libraries::Font::OrbisFontHandle fontHandle, int entryCount);
 
-s32 ComputeHorizontalLayoutBlocks(Libraries::Font::OrbisFontHandle fontHandle,
-                                  const void* style_state_block, u8 (*out_words)[16]);
-
-s32 ComputeVerticalLayoutBlocks(Libraries::Font::OrbisFontHandle fontHandle,
-                                const void* style_state_block, u8 (*out_words)[16]);
-
 s32 GetCharGlyphMetrics(Libraries::Font::OrbisFontHandle fontHandle, u32 code,
                         Libraries::Font::OrbisFontGlyphMetrics* metrics, bool use_cached_style);
 
@@ -563,6 +596,148 @@ s32 StyleStateGetWeightScale(const void* style_state_block, float* weightXScale,
 } // namespace Libraries::Font::Internal
 
 namespace Libraries::FontFt::Internal {
+
+using GuestAllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
+using GuestFreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
+using GuestReallocFn = void*(PS4_SYSV_ABI*)(void* object, void* p, u32 size);
+
+struct FtLibraryCtx {
+    void* alloc_ctx = nullptr;
+    void** alloc_vtbl = nullptr;
+    FT_Memory ft_memory = nullptr;
+    FT_Library ft_lib = nullptr;
+};
+
+struct BeU16 {
+    u8 b[2];
+
+    constexpr u16 value() const {
+        return static_cast<u16>((static_cast<u16>(b[0]) << 8) | static_cast<u16>(b[1]));
+    }
+};
+static_assert(sizeof(BeU16) == 2, "BeU16 size");
+
+struct BeU32 {
+    u8 b[4];
+
+    constexpr u32 value() const {
+        return (static_cast<u32>(b[0]) << 24) | (static_cast<u32>(b[1]) << 16) |
+               (static_cast<u32>(b[2]) << 8) | static_cast<u32>(b[3]);
+    }
+};
+static_assert(sizeof(BeU32) == 4, "BeU32 size");
+
+struct TtcHeader {
+    BeU32 tag;
+    BeU32 version;
+    BeU32 num_fonts;
+};
+static_assert(sizeof(TtcHeader) == 0x0C, "TtcHeader size");
+
+struct SfntOffsetTable {
+    BeU32 version;
+    BeU16 num_tables;
+    BeU16 search_range;
+    BeU16 entry_selector;
+    BeU16 range_shift;
+};
+static_assert(sizeof(SfntOffsetTable) == 0x0C, "SfntOffsetTable size");
+
+struct SfntTableRecord {
+    BeU32 tag;
+    BeU32 checksum;
+    BeU32 offset;
+    BeU32 length;
+};
+static_assert(sizeof(SfntTableRecord) == 0x10, "SfntTableRecord size");
+
+struct FontObjSidecar {
+    const u8* font_data = nullptr;
+    u32 font_size = 0;
+    u32 sfnt_base = 0;
+    void* owned_data = nullptr;
+};
+
+struct LayoutOutIo {
+    u8 (*words)[16] = nullptr;
+
+    struct F32Field {
+        u8* base = nullptr;
+        std::size_t offset = 0;
+
+        F32Field& operator=(float v) {
+            std::memcpy(base + offset, &v, sizeof(v));
+            return *this;
+        }
+    };
+
+    struct Fields {
+        F32Field line_advance;
+        F32Field baseline;
+        F32Field x_bound_0;
+        F32Field x_bound_1;
+        F32Field max_advance_width;
+        F32Field hhea_caret_rise_adjust;
+        F32Field effect_height;
+        F32Field half_effect_width;
+        F32Field left_adjust;
+    };
+
+    Fields fields() const {
+        return {
+            .line_advance = {words[0], 0x00},
+            .baseline = {words[0], 0x04},
+            .x_bound_0 = {words[0], 0x08},
+            .x_bound_1 = {words[0], 0x0C},
+            .max_advance_width = {words[1], 0x00},
+            .hhea_caret_rise_adjust = {words[1], 0x04},
+            .effect_height = {words[1], 0x08},
+            .half_effect_width = {words[1], 0x0C},
+            .left_adjust = {words[2], 0x00},
+        };
+    }
+};
+
+struct LayoutAltOutIo {
+    u8 (*words)[16] = nullptr;
+
+    struct F32Field {
+        u8* base = nullptr;
+        std::size_t offset = 0;
+
+        F32Field& operator=(float v) {
+            std::memcpy(base + offset, &v, sizeof(v));
+            return *this;
+        }
+    };
+
+    struct Fields {
+        F32Field metrics_0x00;
+        F32Field metrics_0x04;
+        F32Field metrics_0x08;
+        F32Field metrics_0x0C;
+        F32Field adv_height;
+        F32Field effect_width;
+        F32Field slant_b;
+        F32Field slant_a;
+    };
+
+    Fields fields() const {
+        return {
+            .metrics_0x00 = {words[0], 0x00},
+            .metrics_0x04 = {words[0], 0x04},
+            .metrics_0x08 = {words[0], 0x08},
+            .metrics_0x0C = {words[0], 0x0C},
+            .adv_height = {words[1], 0x00},
+            .effect_width = {words[1], 0x04},
+            .slant_b = {words[1], 0x08},
+            .slant_a = {words[1], 0x0C},
+        };
+    }
+};
+
+const Libraries::FontFt::OrbisFontLibrarySelection* GetDriverTable();
+const Libraries::FontFt::OrbisFontRendererSelection* GetRendererSelectionTable();
 
 u32 PS4_SYSV_ABI LibraryGetPixelResolutionStub();
 s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library);

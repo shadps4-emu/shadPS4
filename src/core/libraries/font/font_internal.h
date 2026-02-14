@@ -14,6 +14,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <initializer_list>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -43,6 +44,10 @@
 #include "core/libraries/libs.h"
 #include "font_error.h"
 
+namespace Libraries::Font {
+struct FontHandleOpaqueNative;
+}
+
 namespace Libraries::Font::Internal {
 
 struct FontLibOpaque;
@@ -68,6 +73,18 @@ std::string DescribeValue(const T& value) {
         return fmt::format("{}", value);
     }
 }
+
+struct NamedParam {
+    std::string_view name;
+    std::string value;
+};
+
+template <typename T>
+NamedParam Param(std::string_view name, const T& value) {
+    return NamedParam{name, DescribeValue(value)};
+}
+
+std::string FormatNamedParams(std::initializer_list<NamedParam> params);
 
 struct ParamRecord {
     std::string name;
@@ -263,6 +280,27 @@ struct FontState {
     ~FontState();
 };
 
+using FontAllocFn = void*(PS4_SYSV_ABI*)(void* object, u32 size);
+using FontFreeFn = void(PS4_SYSV_ABI*)(void* object, void* p);
+
+struct FtExternalFaceObj {
+    u32 refcount;
+    u32 reserved04;
+    u32 reserved08;
+    u32 sub_font_index;
+    u64 reserved10;
+    FtExternalFaceObj* next;
+    u64 reserved20;
+    u64 reserved28;
+    FT_Face face;
+    const u8* font_data;
+    u32 font_size;
+    u32 sfnt_base;
+};
+static_assert(offsetof(FtExternalFaceObj, sub_font_index) == 0x0C);
+static_assert(offsetof(FtExternalFaceObj, next) == 0x18);
+static_assert(offsetof(FtExternalFaceObj, face) == 0x30);
+
 struct LibraryState {
     bool support_system = false;
     bool support_external = false;
@@ -271,6 +309,15 @@ struct LibraryState {
     const Libraries::Font::OrbisFontMem* backing_memory = nullptr;
     Libraries::Font::OrbisFontLibCreateParams create_params = nullptr;
     u64 edition = 0;
+    void* alloc_ctx = nullptr;
+    FontAllocFn alloc_fn = nullptr;
+    FontFreeFn free_fn = nullptr;
+    void* owned_mspace = nullptr;
+    u32 owned_mspace_size = 0;
+    void* owned_sysfonts_ctx = nullptr;
+    u32 owned_sysfonts_ctx_size = 0;
+    void* owned_external_fonts_ctx = nullptr;
+    u32 owned_external_fonts_ctx_size = 0;
     FontLibOpaque* native = nullptr;
     void* owned_device_cache = nullptr;
     u32 owned_device_cache_size = 0;
@@ -601,6 +648,71 @@ static_assert(offsetof(FontLibOpaque, external_fonts_ctx) == 0xA8,
 static_assert(offsetof(FontLibOpaque, device_cache_buf) == 0xB0,
               "FontLibOpaque device_cache_buf offset");
 
+#pragma pack(push, 1)
+struct FontLibReserved1Main {
+    /*0x00*/ u32 reserved_0x00;
+    /*0x04*/ u32 mem_kind;
+    /*0x08*/ u32 region_size;
+    /*0x0C*/ void* region_base;
+};
+#pragma pack(pop)
+static_assert(sizeof(FontLibReserved1Main) == sizeof(((FontLibOpaque*)nullptr)->reserved1),
+              "FontLibReserved1Main size");
+static_assert(offsetof(FontLibReserved1Main, mem_kind) == 0x04,
+              "FontLibReserved1Main mem_kind offset");
+static_assert(offsetof(FontLibReserved1Main, region_size) == 0x08,
+              "FontLibReserved1Main region_size offset");
+static_assert(offsetof(FontLibReserved1Main, region_base) == 0x0C,
+              "FontLibReserved1Main region_base offset");
+
+struct FontLibReserved2Iface {
+    /*0x00*/ u8 reserved_00[0x20];
+    /*0x20*/ std::uintptr_t alloc_fn;
+    /*0x28*/ std::uintptr_t dealloc_fn;
+    /*0x30*/ std::uintptr_t realloc_fn;
+    /*0x38*/ std::uintptr_t calloc_fn;
+    /*0x40*/ u8 reserved_40[0x10];
+};
+static_assert(sizeof(FontLibReserved2Iface) == sizeof(((FontLibOpaque*)nullptr)->reserved2),
+              "FontLibReserved2Iface size");
+static_assert(offsetof(FontLibReserved2Iface, alloc_fn) == 0x20,
+              "FontLibReserved2Iface alloc_fn offset");
+static_assert(offsetof(FontLibReserved2Iface, dealloc_fn) == 0x28,
+              "FontLibReserved2Iface dealloc_fn offset");
+static_assert(offsetof(FontLibReserved2Iface, realloc_fn) == 0x30,
+              "FontLibReserved2Iface realloc_fn offset");
+static_assert(offsetof(FontLibReserved2Iface, calloc_fn) == 0x38,
+              "FontLibReserved2Iface calloc_fn offset");
+
+struct FontLibTail {
+    /*0x00*/ u8 reserved_00[0x04];
+    /*0x04*/ u32 workspace_size;
+    /*0x08*/ void* workspace;
+    /*0x10*/ u8 reserved_10[0x10];
+    /*0x20*/ void* list_head_ptr;
+    /*0x28*/ Libraries::Font::OrbisFontHandle list_head;
+    /*0x30*/ u8 reserved_30[0x18];
+};
+static_assert(offsetof(FontLibTail, workspace_size) == 0x04, "FontLibTail workspace_size offset");
+static_assert(offsetof(FontLibTail, workspace) == 0x08, "FontLibTail workspace offset");
+static_assert(offsetof(FontLibTail, list_head_ptr) == 0x20, "FontLibTail list_head_ptr offset");
+static_assert(offsetof(FontLibTail, list_head) == 0x28, "FontLibTail list_head offset");
+static_assert(sizeof(FontLibTail) == 0x48, "FontLibTail size");
+
+#pragma pack(push, 1)
+struct FontLibReserved1SysfontTail {
+    /*0x00*/ u32 reserved_0x00;
+    /*0x04*/ void* sysfont_desc_ptr;
+    /*0x0C*/ u64 sysfont_flags;
+};
+#pragma pack(pop)
+static_assert(sizeof(FontLibReserved1SysfontTail) == sizeof(((FontLibOpaque*)nullptr)->reserved1),
+              "FontLibReserved1SysfontTail size");
+static_assert(offsetof(FontLibReserved1SysfontTail, sysfont_desc_ptr) == 0x04,
+              "FontLibReserved1SysfontTail sysfont_desc_ptr offset");
+static_assert(offsetof(FontLibReserved1SysfontTail, sysfont_flags) == 0x0C,
+              "FontLibReserved1SysfontTail sysfont_flags offset");
+
 struct RendererOpaque {
     /*0x00*/ u16 magic;
     /*0x02*/ u16 reserved02;
@@ -705,9 +817,14 @@ FontState* TryGetState(Libraries::Font::OrbisFontHandle h);
 void RemoveState(Libraries::Font::OrbisFontHandle h);
 LibraryState& GetLibState(Libraries::Font::OrbisFontLib lib);
 void RemoveLibState(Libraries::Font::OrbisFontLib lib);
+bool AcquireLibraryLock(FontLibOpaque* lib, u32& out_prev_lock_word);
+void ReleaseLibraryLock(FontLibOpaque* lib, u32 prev_lock_word);
 FT_Face CreateFreeTypeFaceFromBytes(const unsigned char* data, std::size_t size, u32 subfont_index);
 void DestroyFreeTypeFace(FT_Face& face);
+void LogFontOpenError(s32 rc);
 void LogExternalFormatSupport(u32 formats_mask);
+std::optional<std::filesystem::path> ResolveKnownSysFontAlias(
+    const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename);
 void LogFontOpenParams(const Libraries::Font::OrbisFontOpenParams* params);
 std::filesystem::path ResolveGuestPath(const char* guest_path);
 bool LoadGuestFileBytes(const std::filesystem::path& host_path,
@@ -761,5 +878,15 @@ GeneratedGlyph* TryGetGeneratedGlyph(Libraries::Font::OrbisFontGlyph glyph);
 void PopulateGlyphMetricVariants(GeneratedGlyph& gg);
 void BuildBoundingOutline(GeneratedGlyph& gg);
 bool BuildTrueOutline(GeneratedGlyph& gg);
+void LogCachedStyleOnce(Libraries::Font::OrbisFontHandle handle,
+                        const Libraries::Font::FontHandleOpaqueNative& font);
+void LogRenderResultSample(Libraries::Font::OrbisFontHandle handle, u32 code,
+                           const Libraries::Font::OrbisFontGlyphMetrics& metrics,
+                           const Libraries::Font::OrbisFontRenderOutput& result);
+u8 CachedStyleCacheFlags(const Libraries::Font::OrbisFontStyleFrame& cached_style);
+void CachedStyleSetCacheFlags(Libraries::Font::OrbisFontStyleFrame& cached_style, u8 flags);
+void CachedStyleSetDirectionWord(Libraries::Font::OrbisFontStyleFrame& cached_style, u16 word);
+float CachedStyleGetScalar(const Libraries::Font::OrbisFontStyleFrame& cached_style);
+void CachedStyleSetScalar(Libraries::Font::OrbisFontStyleFrame& cached_style, float value);
 
 } // namespace Libraries::Font::Internal
