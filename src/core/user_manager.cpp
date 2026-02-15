@@ -24,7 +24,7 @@ bool UserManager::AddUser(const User& user) {
         std::filesystem::create_directory(user_dir, ec);
         std::filesystem::create_directory(user_dir / "savedata", ec);
         std::filesystem::create_directory(user_dir / "trophy", ec);
-        std::filesystem::create_directory(user_dir / "trophy/data", ec);
+        std::filesystem::create_directory(user_dir / "inputs", ec);
     }
 
     return true;
