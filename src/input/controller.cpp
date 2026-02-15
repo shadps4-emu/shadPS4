@@ -115,12 +115,12 @@ void GameController::Acceleration(int id) {
 
 void GameController::UpdateGyro(const float gyro[3]) {
     std::lock_guard lg(m_states_queue_mutex);
-    std::memcpy(gyro_buf, gyro, sizeof(gyro));
+    std::memcpy(gyro_buf, gyro, sizeof(gyro_buf));
 }
 
 void GameController::UpdateAcceleration(const float acceleration[3]) {
     std::lock_guard lg(m_states_queue_mutex);
-    std::memcpy(accel_buf, acceleration, sizeof(acceleration));
+    std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
