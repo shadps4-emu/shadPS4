@@ -240,7 +240,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
     LOG_INFO(Config, "General LogType: {}", EmulatorSettings::GetInstance()->GetLogType());
-      LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
+    LOG_INFO(Config, "General isIdenticalLogGrouped: {}",
+             EmulatorSettings::GetInstance()->IsIdenticalLogGrouped());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings::GetInstance()->IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}",
@@ -390,7 +391,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
     // Mount system fonts
-    const auto& fonts_dir = Config::getFontsPath();
+    const auto& fonts_dir = EmulatorSettings::GetInstance()->GetFontsDir();
     if (!std::filesystem::exists(fonts_dir)) {
         std::filesystem::create_directory(fonts_dir);
     }

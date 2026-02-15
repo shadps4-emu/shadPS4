@@ -215,7 +215,7 @@ public:
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
 
-        if (Config::groupIdenticalLogs()) {
+        if (EmulatorSettings::GetInstance()->IsIdenticalLogGrouped()) {
             std::unique_lock entry_loc(_mutex);
 
             if (_last_entry.message == message) {
@@ -228,7 +228,7 @@ public:
             }
 
             if (_last_entry.counter >= 1) {
-                if (Config::getLogType() == "async") {
+                if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
                     message_queue.EmplaceWait(_last_entry);
                 } else {
                     ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
@@ -260,7 +260,7 @@ public:
                 .counter = 1,
             };
 
-            if (Config::getLogType() == "async") {
+            if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
                 message_queue.EmplaceWait(entry);
             } else {
                 ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
@@ -298,14 +298,14 @@ private:
     }
 
     void StopBackendThread() {
-        if (Config::groupIdenticalLogs()) {
+        if (EmulatorSettings::GetInstance()->IsIdenticalLogGrouped()) {
             // log last message
             if (_last_entry.counter >= 2) {
                 _last_entry.message += " x" + std::to_string(_last_entry.counter);
             }
 
             if (_last_entry.counter >= 1) {
-                if (Config::getLogType() == "async") {
+                if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
                     message_queue.EmplaceWait(_last_entry);
                 } else {
                     ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
