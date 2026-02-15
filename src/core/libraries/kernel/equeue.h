@@ -84,11 +84,8 @@ struct EqueueEvent {
     std::chrono::microseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
-    void ResetTriggerState() {
-        is_triggered = false;
-    }
-
     void Clear() {
+        is_triggered = false;
         event.fflags = 0;
         event.data = 0;
     }
@@ -101,14 +98,13 @@ struct EqueueEvent {
 
     void TriggerUser(void* data) {
         is_triggered = true;
-        event.fflags++;
         event.udata = data;
     }
 
     void TriggerDisplay(void* data) {
         is_triggered = true;
         if (data != nullptr) {
-            auto event_data = static_cast<OrbisVideoOutEventData>(event.data);
+            auto event_data = std::bit_cast<OrbisVideoOutEventData>(event.data);
             auto event_hint_raw = reinterpret_cast<u64>(data);
             auto event_hint = static_cast<OrbisVideoOutEventHint>(event_hint_raw);
             if (event_hint.event_id == event.ident && event.ident != 0xfe) {

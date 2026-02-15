@@ -240,6 +240,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
     LOG_INFO(Config, "General LogType: {}", EmulatorSettings::GetInstance()->GetLogType());
+      LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings::GetInstance()->IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings::GetInstance()->IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}",
