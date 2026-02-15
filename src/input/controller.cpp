@@ -114,12 +114,12 @@ void GameController::Acceleration(int id) {
 }
 
 void GameController::UpdateGyro(const float gyro[3]) {
-    std::lock_guard lg(m_states_queue_mutex);
+    std::scoped_lock l(m_states_queue_mutex);
     std::memcpy(gyro_buf, gyro, sizeof(gyro_buf));
 }
 
 void GameController::UpdateAcceleration(const float acceleration[3]) {
-    std::lock_guard lg(m_states_queue_mutex);
+    std::scoped_lock l(m_states_queue_mutex);
     std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
 }
 
@@ -128,6 +128,12 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
                                           float deltaTime,
                                           Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                           Libraries::Pad::OrbisFQuaternion& orientation) {
+    // avoid wildly off values coming from elapsed time between two samples
+    // being too high, such as on the first time the controller is polled
+    if (deltaTime > 1.0f) {
+        orientation = lastOrientation;
+        return;
+    }
     Libraries::Pad::OrbisFQuaternion q = lastOrientation;
     Libraries::Pad::OrbisFQuaternion ω = {angularVelocity.x, angularVelocity.y, angularVelocity.z,
                                           0.0f};
