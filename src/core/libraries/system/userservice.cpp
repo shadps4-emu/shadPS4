@@ -580,25 +580,44 @@ int PS4_SYSV_ABI sceUserServiceGetLoginFlag() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdList* userIdList) {
-    // LOG_DEBUG(Lib_UserService, "called");
     if (userIdList == nullptr) {
-        LOG_ERROR(Lib_UserService, "user_id is null");
+        LOG_ERROR(Lib_UserService, "userIdList is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    // TODO only first user, do the others as well
-    auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
-    int li = 0;
-    for (int ci = 0; ci < 4; ci++) {
-        if (controllers[ci]->user_id != -1) {
-            userIdList->user_id[li++] = controllers[ci]->user_id;
-        }
+
+    // Initialize all slots to invalid (-1)
+    for (int i = 0; i < ORBIS_USER_SERVICE_MAX_LOGIN_USERS; i++) {
+        userIdList->user_id[i] = ORBIS_USER_SERVICE_USER_ID_INVALID;
     }
-    for (; li < 4; li++) {
-        userIdList->user_id[li] = -1;
+
+    auto& user_manager = EmulatorSettings::GetInstance()->GetUserManager();
+
+    std::vector<User> all_users = user_manager.GetValidUsers();
+
+    // Filter users with valid port assignments (1-4)
+    std::vector<User> valid_users;
+    std::copy_if(
+        all_users.begin(), all_users.end(), std::back_inserter(valid_users),
+        [](const User& user) { return user.controller_port >= 1 && user.controller_port <= 4; });
+
+    // Sort filtered users by port assignment (1-4)
+    std::sort(valid_users.begin(), valid_users.end(),
+              [](const User& a, const User& b) { return a.controller_port < b.controller_port; });
+
+    // Fill slots consecutively based on sorted valid users
+    int num_users =
+        std::min(static_cast<int>(valid_users.size()), ORBIS_USER_SERVICE_MAX_LOGIN_USERS);
+
+    for (int i = 0; i < num_users; i++) {
+        userIdList->user_id[i] = valid_users[i].user_id;
+        LOG_DEBUG(Lib_UserService, "Slot {}: User ID {} (port {})", i, valid_users[i].user_id,
+                  valid_users[i].controller_port);
     }
+
+    LOG_DEBUG(Lib_UserService, "Returning {} logged-in users with valid port assignments",
+              num_users);
     return ORBIS_OK;
 }
-
 int PS4_SYSV_ABI sceUserServiceGetMicLevel() {
     LOG_ERROR(Lib_UserService, "(STUBBED) called");
     return ORBIS_OK;
