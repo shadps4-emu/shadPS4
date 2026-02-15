@@ -104,6 +104,10 @@ bool UserManager::SetDefaultUser(u32 user_id) {
     return true;
 }
 
+u32 UserManager::GetDefaultUser() {
+    return m_users.default_user_id;
+}
+
 void UserManager::SetControllerPort(u32 user_id, int port) {
     for (auto& u : m_users.user) {
         if (u.user_id != user_id && u.controller_port == port)

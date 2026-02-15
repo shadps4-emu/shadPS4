@@ -30,6 +30,7 @@ public:
     const std::vector<User>& GetAllUsers() const;
     std::vector<User> CreateDefaultUser();
     bool SetDefaultUser(u32 user_id);
+    u32 GetDefaultUser();
     void SetControllerPort(u32 user_id, int port);
     std::vector<User> GetValidUsers() const;
 

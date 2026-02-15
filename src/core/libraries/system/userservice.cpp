@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
@@ -509,8 +510,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    // select first user (TODO add more)
-    *user_id = 1;
+    *user_id = EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser();
     return ORBIS_OK;
 }
 
@@ -1066,7 +1066,10 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserCol
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = (OrbisUserServiceUserColor)(user_id - 1);
+    *color = (OrbisUserServiceUserColor)EmulatorSettings::GetInstance()
+                 ->GetUserManager()
+                 .GetUserByID(user_id)
+                 ->user_color;
     return ORBIS_OK;
 }
 
@@ -1091,7 +1094,8 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    std::string name = Config::getUserName(user_id - 1);
+    std::string name =
+        EmulatorSettings::GetInstance()->GetUserManager().GetUserByID(user_id)->user_name;
     if (size < name.length()) {
         LOG_ERROR(Lib_UserService, "buffer is too short");
         return ORBIS_USER_SERVICE_ERROR_BUFFER_TOO_SHORT;
