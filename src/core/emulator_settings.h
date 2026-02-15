@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "core/user_manager.h"
 
@@ -43,24 +44,37 @@ struct OverrideItem {
 // Helper factory: create an OverrideItem binding a pointer-to-member
 template <typename Struct, typename T>
 inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) {
-    return OverrideItem{key, [member, key](void* base, const nlohmann::json& entry,
-                                           std::vector<std::string>& changed) {
-                            if (!entry.is_object())
-                                return;
+    return OverrideItem{
+        key,
+        [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
+            LOG_DEBUG(EmuSettings, "[make_override] Processing key: {}", key);
+            LOG_DEBUG(EmuSettings, "[make_override] Entry JSON: {}", entry.dump());
 
-                            Struct* obj = reinterpret_cast<Struct*>(base);
-                            Setting<T>& dst = obj->*member;
+            Struct* obj = reinterpret_cast<Struct*>(base);
+            Setting<T>& dst = obj->*member;
 
-                            Setting<T> tmp = entry.get<Setting<T>>();
+            try {
+                // Parse the value from JSON
+                T newValue = entry.get<T>();
 
-                            if (dst.value != tmp.value) {
-                                changed.push_back(std::string(key) + " ( " +
-                                                  nlohmann::json(dst.value).dump() + " → " +
-                                                  nlohmann::json(tmp.value).dump() + " )");
-                            }
+                LOG_DEBUG(EmuSettings, "[make_override] Parsed value: {}", newValue);
+                LOG_DEBUG(EmuSettings, "[make_override] Current value: {}", dst.value);
 
-                            dst.value = tmp.value;
-                        }};
+                if (dst.value != newValue) {
+                    std::ostringstream oss;
+                    oss << key << " ( " << dst.value << " → " << newValue << " )";
+                    changed.push_back(oss.str());
+                    LOG_DEBUG(EmuSettings, "[make_override] Recorded change: {}", oss.str());
+                }
+
+                dst.value = newValue;
+                LOG_DEBUG(EmuSettings, "[make_override] Successfully updated {}", key);
+            } catch (const std::exception& e) {
+                LOG_ERROR(EmuSettings, "[make_override] ERROR parsing {}: {}", key, e.what());
+                LOG_ERROR(EmuSettings, "[make_override] Entry was: {}", entry.dump());
+                LOG_ERROR(EmuSettings, "[make_override] Type name: {}", entry.type_name());
+            }
+        }};
 }
 
 // -------------------------------
@@ -80,6 +94,7 @@ struct GeneralSettings {
     Setting<std::filesystem::path> addon_install_dir;
     Setting<std::filesystem::path> home_dir;
     Setting<std::filesystem::path> sys_modules_dir;
+    Setting<std::filesystem::path> font_dir;
 
     Setting<int> volume_slider{100};
     Setting<bool> neo_mode{false};
@@ -92,6 +107,7 @@ struct GeneralSettings {
     Setting<std::string> log_filter{""};
     Setting<std::string> log_type{"sync"};
     Setting<bool> show_splash{false};
+    Setting<bool> identical_log_grouped{true};
     Setting<bool> connected_to_network{false};
     Setting<bool> discord_rpc_enabled{false};
     Setting<bool> show_fps_counter{false};
@@ -112,6 +128,8 @@ struct GeneralSettings {
                                            &GeneralSettings::trophy_notification_duration),
             make_override<GeneralSettings>("log_filter", &GeneralSettings::log_filter),
             make_override<GeneralSettings>("log_type", &GeneralSettings::log_type),
+            make_override<GeneralSettings>("identical_log_grouped",
+                                           &GeneralSettings::identical_log_grouped),
             make_override<GeneralSettings>("show_splash", &GeneralSettings::show_splash),
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
@@ -120,11 +138,12 @@ struct GeneralSettings {
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
-                                   sys_modules_dir, volume_slider, neo_mode, dev_kit_mode,
+                                   sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
                                    extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
                                    trophy_notification_duration, log_filter, log_type, show_splash,
-                                   trophy_notification_side, connected_to_network,
-                                   discord_rpc_enabled, show_fps_counter, console_language)
+                                   identical_log_grouped, trophy_notification_side,
+                                   connected_to_network, discord_rpc_enabled, show_fps_counter,
+                                   console_language)
 
 // -------------------------------
 // Debug settings
@@ -245,6 +264,7 @@ struct GPUSettings {
                                        &GPUSettings::readback_linear_images_enabled),
             make_override<GPUSettings>("direct_memory_access_enabled",
                                        &GPUSettings::direct_memory_access_enabled),
+            make_override<GPUSettings>("vblank_frequency", &GPUSettings::vblank_frequency),
         };
     }
 };
@@ -332,6 +352,8 @@ public:
     void SetHomeDir(const std::filesystem::path& dir);
     std::filesystem::path GetSysModulesDir();
     void SetSysModulesDir(const std::filesystem::path& dir);
+    std::filesystem::path GetFontsDir();
+    void SetFontsDir(const std::filesystem::path& dir);
 
     // user helpers
     UserManager& GetUserManager() {
@@ -364,6 +386,26 @@ private:
     static void PrintChangedSummary(const std::vector<std::string>& changed);
 
 public:
+    // Add these getters to access overrideable fields
+    std::vector<OverrideItem> GetGeneralOverrideableFields() const {
+        return m_general.GetOverrideableFields();
+    }
+    std::vector<OverrideItem> GetDebugOverrideableFields() const {
+        return m_debug.GetOverrideableFields();
+    }
+    std::vector<OverrideItem> GetInputOverrideableFields() const {
+        return m_input.GetOverrideableFields();
+    }
+    std::vector<OverrideItem> GetAudioOverrideableFields() const {
+        return m_audio.GetOverrideableFields();
+    }
+    std::vector<OverrideItem> GetGPUOverrideableFields() const {
+        return m_gpu.GetOverrideableFields();
+    }
+    std::vector<OverrideItem> GetVulkanOverrideableFields() const {
+        return m_vulkan.GetOverrideableFields();
+    }
+    std::vector<std::string> GetAllOverrideableKeys() const;
 #define SETTING_FORWARD(group, Name, field)                                                        \
     auto Get##Name() const {                                                                       \
         return group.field.value;                                                                  \
@@ -393,6 +435,7 @@ public:
     SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
+    SETTING_FORWARD_BOOL(m_general, IdenticalLogGrouped, identical_log_grouped)
     SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
     SETTING_FORWARD(m_general, LogFilter, log_filter)
     SETTING_FORWARD(m_general, LogType, log_type)
@@ -455,6 +498,7 @@ public:
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
     SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
+    SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_Input_Config)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
