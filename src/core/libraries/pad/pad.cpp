@@ -322,22 +322,20 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
         pData[i].angularVelocity.z = states[i].angularVelocity.z;
         pData[i].orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
-        if (handle == 1) {
-            const auto gyro_poll_rate = controller.accel_poll_rate;
-            if (gyro_poll_rate != 0.0f) {
-                auto now = std::chrono::steady_clock::now();
-                float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(
-                                      now - controller.GetLastUpdate())
-                                      .count() /
-                                  1000000.0f;
-                controller.SetLastUpdate(now);
-                Libraries::Pad::OrbisFQuaternion lastOrientation = controller.GetLastOrientation();
-                Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
-                GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
-                                                     deltaTime, lastOrientation, outputOrientation);
-                pData[i].orientation = outputOrientation;
-                controller.SetLastOrientation(outputOrientation);
-            }
+        const auto gyro_poll_rate = controller.accel_poll_rate;
+        if (gyro_poll_rate != 0.0f) {
+            auto now = std::chrono::steady_clock::now();
+            float deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(
+                                  now - controller.GetLastUpdate())
+                                  .count() /
+                              1000000.0f;
+            controller.SetLastUpdate(now);
+            Libraries::Pad::OrbisFQuaternion lastOrientation = controller.GetLastOrientation();
+            Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
+            GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
+                                                 deltaTime, lastOrientation, outputOrientation);
+            pData[i].orientation = outputOrientation;
+            controller.SetLastOrientation(outputOrientation);
         }
         pData[i].touchData.touchNum =
             (states[i].touchpad[0].state ? 1 : 0) + (states[i].touchpad[1].state ? 1 : 0);
