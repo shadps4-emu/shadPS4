@@ -521,14 +521,14 @@ void Image::CopyImage(Image& src_image) {
 
                     copy_region.dstSubresource.baseArrayLayer = 0;
                     copy_region.dstSubresource.layerCount = 1;
-                    copy_region.extent = {mip_w, mip_h, 1};
+                    copy_region.extent = vk::Extent3D(mip_w, mip_h, 1);
                 } else {
                     copy_region.srcSubresource.baseArrayLayer = 0;
                     copy_region.srcSubresource.layerCount = 1;
 
                     copy_region.dstSubresource.baseArrayLayer = slice;
                     copy_region.dstSubresource.layerCount = 1;
-                    copy_region.extent = {mip_w, mip_h, 1};
+                    copy_region.extent = vk::Extent3D(mip_w, mip_h, 1);
                 }
 
                 image_copies.push_back(copy_region);
