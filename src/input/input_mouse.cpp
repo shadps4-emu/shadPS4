@@ -77,11 +77,11 @@ void EmulateJoystick(GameController* controller, u32 interval) {
     float a_x = cos(angle) * output_speed, a_y = sin(angle) * output_speed;
 
     if (d_x != 0 || d_y != 0) {
-        controller->Axis(axis_x, GetAxis(-0x80, 0x7f, a_x));
-        controller->Axis(axis_y, GetAxis(-0x80, 0x7f, a_y));
+        controller->Axis(axis_x, GetAxis(-0x80, 0x7f, a_x), false);
+        controller->Axis(axis_y, GetAxis(-0x80, 0x7f, a_y), false);
     } else {
-        controller->Axis(axis_x, GetAxis(-0x80, 0x7f, 0));
-        controller->Axis(axis_y, GetAxis(-0x80, 0x7f, 0));
+        controller->Axis(axis_x, GetAxis(-0x80, 0x7f, 0), false);
+        controller->Axis(axis_y, GetAxis(-0x80, 0x7f, 0), false);
     }
 }
 

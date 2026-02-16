@@ -28,7 +28,15 @@ void State::OnButton(OrbisPadButtonDataOffset button, bool isPressed) {
     }
 }
 
-void State::OnAxis(Axis axis, int value) {
+void State::OnAxis(Axis axis, int value, bool smooth) {
+    auto const i = std::to_underlying(axis);
+    // forcibly finish the previous smoothing task by jumping to the end
+    axes[i] = axis_smoothing_end_values[i];
+
+    axis_smoothing_start_times[i] = time;
+    axis_smoothing_start_values[i] = axes[i];
+    axis_smoothing_end_values[i] = value;
+    axis_smoothing_flags[i] = smooth;
     const auto toggle = [&](const auto button) {
         if (value > 0) {
             buttonsState |= button;
@@ -46,7 +54,6 @@ void State::OnAxis(Axis axis, int value) {
     default:
         break;
     }
-    axes[static_cast<int>(axis)] = value;
 }
 
 void State::OnTouchpad(int touchIndex, bool isDown, float x, float y) {
@@ -65,6 +72,22 @@ void State::OnAccel(const float accel[3]) {
     acceleration.x = accel[0];
     acceleration.y = accel[1];
     acceleration.z = accel[2];
+}
+
+void State::UpdateAxisSmoothing() {
+    for (int i = 0; i < std::to_underlying(Axis::AxisMax); i++) {
+        // if it's not to be smoothed or close enough, just jump to the end
+        if (!axis_smoothing_flags[i] || std::abs(axes[i] - axis_smoothing_end_values[i]) < 16) {
+            if (axes[i] != axis_smoothing_end_values[i]) {
+                axes[i] = axis_smoothing_end_values[i];
+            }
+            continue;
+        }
+        auto now = Libraries::Kernel::sceKernelGetProcessTime();
+        f32 t = std::clamp((now - axis_smoothing_start_times[i]) / f32{axis_smoothing_time},
+                           0.f, 1.f);
+        axes[i] = s32(axis_smoothing_start_values[i] * (1 - t) + axis_smoothing_end_values[i] * t);
+    }
 }
 
 GameController::GameController() : m_states_queue(64) {}
@@ -99,8 +122,8 @@ void GameController::Button(OrbisPadButtonDataOffset button, bool is_pressed) {
     PushState();
 }
 
-void GameController::Axis(Input::Axis axis, int value) {
-    m_state.OnAxis(axis, value);
+void GameController::Axis(Input::Axis axis, int value, bool smooth) {
+    m_state.OnAxis(axis, value, smooth);
     PushState();
 }
 
@@ -122,6 +145,10 @@ void GameController::UpdateGyro(const float gyro[3]) {
 void GameController::UpdateAcceleration(const float acceleration[3]) {
     std::scoped_lock l(m_states_queue_mutex);
     std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
+}
+
+void GameController::UpdateAxisSmoothing() {
+    m_state.UpdateAxisSmoothing();
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,

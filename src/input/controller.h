@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <utility>
 #include <vector>
 
 #include <SDL3/SDL_gamepad.h>
@@ -11,6 +12,7 @@
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/system/userservice.h"
 
 struct SDL_Gamepad;
 
@@ -35,15 +37,27 @@ struct TouchpadEntry {
 };
 
 struct State {
+private:
+    template <typename T>
+    using AxisArray = std::array<T, std::to_underlying(Axis::AxisMax)>;
+    static constexpr AxisArray<s32> axis_defaults{128, 128, 128, 128, 0, 0};
+    static constexpr u64 axis_smoothing_time{33000};
+    AxisArray<bool> axis_smoothing_flags{true};
+    AxisArray<u64> axis_smoothing_start_times{0};
+    AxisArray<int> axis_smoothing_start_values{axis_defaults};
+    AxisArray<int> axis_smoothing_end_values{axis_defaults};
+    
+    public:
     void OnButton(Libraries::Pad::OrbisPadButtonDataOffset, bool);
-    void OnAxis(Axis, int);
+    void OnAxis(Axis, int, bool smooth = true);
     void OnTouchpad(int touchIndex, bool isDown, float x, float y);
     void OnGyro(const float[3]);
     void OnAccel(const float[3]);
+    void UpdateAxisSmoothing();
 
     Libraries::Pad::OrbisPadButtonDataOffset buttonsState{};
     u64 time = 0;
-    int axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
+    AxisArray<s32> axes{axis_defaults};
     TouchpadEntry touchpad[2] = {{false, 0, 0}, {false, 0, 0}};
     Libraries::Pad::OrbisFVector3 acceleration = {0.0f, -9.81f, 0.0f};
     Libraries::Pad::OrbisFVector3 angularVelocity = {0.0f, 0.0f, 0.0f};
@@ -97,11 +111,12 @@ public:
     int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
 
     void Button(Libraries::Pad::OrbisPadButtonDataOffset button, bool isPressed);
-    void Axis(Input::Axis axis, int value);
+    void Axis(Input::Axis axis, int value, bool smooth = true);
     void Gyro(int id);
     void Acceleration(int id);
     void UpdateGyro(const float gyro[3]);
     void UpdateAcceleration(const float acceleration[3]);
+    void UpdateAxisSmoothing();
     void SetLightBarRGB(u8 r, u8 g, u8 b);
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
@@ -128,11 +143,8 @@ public:
     float gyro_poll_rate;
     float accel_poll_rate;
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
-    u32 user_id = -1; // ORBIS_USER_SERVICE_USER_ID_INVALID
+    u32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     SDL_Gamepad* m_sdl_gamepad = nullptr;
-    static constexpr int max_smoothing_ticks = 2;
-    int axis_smoothing_ticks[static_cast<int>(Input::Axis::AxisMax)]{0};
-    int axis_smoothing_values[static_cast<int>(Input::Axis::AxisMax)]{0};
 
 private:
     void PushState();
