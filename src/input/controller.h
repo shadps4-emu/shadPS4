@@ -46,8 +46,8 @@ private:
     AxisArray<u64> axis_smoothing_start_times{0};
     AxisArray<int> axis_smoothing_start_values{axis_defaults};
     AxisArray<int> axis_smoothing_end_values{axis_defaults};
-    
-    public:
+
+public:
     void OnButton(Libraries::Pad::OrbisPadButtonDataOffset, bool);
     void OnAxis(Axis, int, bool smooth = true);
     void OnTouchpad(int touchIndex, bool isDown, float x, float y);

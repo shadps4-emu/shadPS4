@@ -84,8 +84,8 @@ void State::UpdateAxisSmoothing() {
             continue;
         }
         auto now = Libraries::Kernel::sceKernelGetProcessTime();
-        f32 t = std::clamp((now - axis_smoothing_start_times[i]) / f32{axis_smoothing_time},
-                           0.f, 1.f);
+        f32 t =
+            std::clamp((now - axis_smoothing_start_times[i]) / f32{axis_smoothing_time}, 0.f, 1.f);
         axes[i] = s32(axis_smoothing_start_values[i] * (1 - t) + axis_smoothing_end_values[i] * t);
     }
 }
