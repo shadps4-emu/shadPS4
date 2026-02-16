@@ -30,6 +30,9 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
         const auto offset =
             event.event.filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
         event.timer_interval = std::chrono::microseconds(event.event.data - offset);
+
+        // Timer interval is hidden from event data.
+        event.event.data = 0;
     }
 
     // Remove add flag from event
@@ -157,6 +160,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
                     event.TriggerDisplay(trigger_data);
                 } else if (filter == SceKernelEvent::Filter::User) {
                     event.TriggerUser(trigger_data);
+                } else if (filter == SceKernelEvent::Filter::Timer) {
+                    event.TriggerTimer();
                 } else {
                     event.Trigger(trigger_data);
                 }

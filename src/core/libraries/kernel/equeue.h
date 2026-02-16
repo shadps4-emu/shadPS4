@@ -119,6 +119,11 @@ struct EqueueEvent {
         }
     }
 
+    void TriggerTimer() {
+        is_triggered = true;
+        event.data++;
+    }
+
     bool IsTriggered() const {
         return is_triggered;
     }
