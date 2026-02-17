@@ -62,7 +62,8 @@ public:
         : frame_size(port.format_info.FrameSize()), guest_buffer_size(port.BufferSize()),
           buffer_frames(port.buffer_frames), sample_rate(port.sample_rate),
           num_channels(port.format_info.num_channels), is_float(port.format_info.is_float),
-          is_std(port.format_info.is_std), channel_layout(port.format_info.channel_layout) {
+          is_std(port.format_info.is_std), channel_layout(port.format_info.channel_layout),
+          device_registered(false), device_name(GetDeviceName(port.type)) {
 
         if (!Initialize(port.type)) {
             LOG_ERROR(Lib_AudioOut, "Failed to initialize OpenAL audio backend");
@@ -70,6 +71,10 @@ public:
     }
 
     ~OpenALPortBackend() override {
+        // Unregister port before cleanup
+        if (device_registered) {
+            OpenALDevice::GetInstance().UnregisterPort(device_name);
+        }
         Cleanup();
     }
 
@@ -80,7 +85,7 @@ public:
         if (ptr == nullptr) [[unlikely]] {
             return;
         }
-        if (!device_context->MakeCurrent()) {
+        if (!device_context->MakeCurrent(device_name)) {
             return;
         }
 
@@ -147,7 +152,7 @@ public:
         output_count++;
     }
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
-        if (!device_context->MakeCurrent()) {
+        if (!device_context->MakeCurrent(device_name)) {
             return;
         }
 
@@ -191,17 +196,30 @@ public:
 
 private:
     bool Initialize(OrbisAudioOutPort type) {
-        if (!OpenALDevice::GetInstance().IsInitialized()) {
-            LOG_ERROR(Lib_AudioOut, "OpenAL device not initialized");
+        // Register this port with the device manager
+        if (!OpenALDevice::GetInstance().RegisterPort(device_name)) {
+            if (device_name == "None") {
+                LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
+                         static_cast<int>(type));
+            } else {
+                LOG_ERROR(Lib_AudioOut, "Failed to register OpenAL device '{}'", device_name);
+            }
             return false;
         }
 
+        device_registered = true;
         device_context = &OpenALDevice::GetInstance();
 
-        if (!device_context->MakeCurrent()) {
-            LOG_ERROR(Lib_AudioOut, "Failed to make OpenAL context current");
+        // Make this device's context current
+        if (!device_context->MakeCurrent(device_name)) {
+            LOG_ERROR(Lib_AudioOut, "Failed to make OpenAL context current for device '{}'",
+                      device_name);
             return false;
         }
+
+        // Log device info
+        LOG_INFO(Lib_AudioOut, "Using OpenAL device for port type {}: '{}'", static_cast<int>(type),
+                 device_name);
 
         // Calculate timing parameters
         period_us = (1000000ULL * buffer_frames + sample_rate / 2) / sample_rate;
@@ -262,14 +280,15 @@ private:
 
         alSourcePlay(source);
 
-        LOG_INFO(Lib_AudioOut, "Initialized OpenAL backend ({} Hz, {} ch, {} format, {})",
+        LOG_INFO(Lib_AudioOut,
+                 "Initialized OpenAL backend ({} Hz, {} ch, {} format, {}) for device '{}'",
                  sample_rate, num_channels, is_float ? "float" : "int16",
-                 use_native_float ? "native" : "converted");
+                 use_native_float ? "native" : "converted", device_name);
         return true;
     }
 
     void Cleanup() {
-        if (!device_context->MakeCurrent()) {
+        if (!device_context || !device_context->MakeCurrent(device_name)) {
             return;
         }
 
@@ -290,6 +309,18 @@ private:
         if (!buffers.empty()) {
             alDeleteBuffers(static_cast<ALsizei>(buffers.size()), buffers.data());
             buffers.clear();
+        }
+    }
+
+    std::string GetDeviceName(OrbisAudioOutPort type) const {
+        switch (type) {
+        case OrbisAudioOutPort::Main:
+        case OrbisAudioOutPort::Bgm:
+            return Config::getMainOutputDevice();
+        case OrbisAudioOutPort::PadSpk:
+            return Config::getPadSpkOutputDevice();
+        default:
+            return Config::getMainOutputDevice();
         }
     }
 
@@ -790,6 +821,9 @@ private:
 
     // Volume management
     alignas(64) std::atomic<float> current_gain{1.0f};
+
+    std::string device_name;
+    bool device_registered;
 };
 
 std::unique_ptr<PortBackend> OpenALAudioOut::Open(PortOut& port) {
