@@ -59,18 +59,26 @@ void SleepqAdd(void* wchan, Pthread* td) {
 }
 
 bool SleepqRemove(SleepQueue* sq, Pthread* td) {
-    std::erase(sq->sq_blocked, td);
-    if (sq->sq_blocked.empty()) {
+    if (sq == nullptr) [[unlikely]] {
+        return false;
+    }
+
+    const auto removed = std::erase(sq->sq_blocked, td);
+    const bool has_waiters = !sq->sq_blocked.empty();
+    if (removed == 0) [[unlikely]] {
+        return has_waiters;
+    }
+
+    td->wchan = nullptr;
+    if (!has_waiters) {
         td->sleepqueue = sq;
         sq->unlink();
-        td->wchan = nullptr;
         return false;
-    } else {
-        td->sleepqueue = std::addressof(sq->sq_freeq.front());
-        sq->sq_freeq.pop_front();
-        td->wchan = nullptr;
-        return true;
     }
+
+    td->sleepqueue = std::addressof(sq->sq_freeq.front());
+    sq->sq_freeq.pop_front();
+    return true;
 }
 
 void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
