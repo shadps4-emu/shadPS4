@@ -87,7 +87,7 @@ std::vector<User> UserManager::CreateDefaultUser() {
         std::filesystem::create_directory(user_dir);
         std::filesystem::create_directory(user_dir / "savedata");
         std::filesystem::create_directory(user_dir / "trophy");
-        std::filesystem::create_directory(user_dir / "trophy/data");
+        std::filesystem::create_directory(user_dir / "inputs");
     }
 
     return {default_user};
