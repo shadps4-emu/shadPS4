@@ -5,7 +5,7 @@
 
 #include "common/types.h"
 
-namespace Libraries::Vdec2 {
+namespace Libraries::Videodec2 {
 
 struct OrbisVideodec2AvcPictureInfo {
     u64 thisSize;
@@ -127,4 +127,4 @@ struct OrbisVideodec2LegacyAvcPictureInfo {
 };
 static_assert(sizeof(OrbisVideodec2LegacyAvcPictureInfo) == 0x68);
 
-} // namespace Libraries::Vdec2
+} // namespace Libraries::Videodec2

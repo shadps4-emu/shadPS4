@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -105,7 +105,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
     main_thread.Run([this, module, &args](std::stop_token) {
-        Common::SetCurrentThreadName("GAME_MainThread");
+        Common::SetCurrentThreadName("Game:Main");
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
         }
@@ -180,8 +180,8 @@ s32 Linker::LoadAndStartModule(const std::filesystem::path& path, u64 args, cons
     }
 
     // Retrieve and verify proc param according to libkernel.
-    u64* param = module->GetProcParam<u64*>();
-    ASSERT_MSG(!param || param[0] >= 0x18, "Invalid module param size: {}", param[0]);
+    auto* param = module->GetProcParam<OrbisProcParam*>();
+    ASSERT_MSG(!param || param->size >= 0x18, "Invalid module param size: {}", param->size);
     s32 ret = module->Start(args, argp, param);
     if (pRes) {
         *pRes = ret;

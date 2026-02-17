@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -28,13 +28,17 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/jpeg/jpegenc.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
+#include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/np/np_trophy.h"
@@ -169,9 +173,28 @@ void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     return;
 }
 
+s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
+    Core::Loader::Elf elf;
+    elf.Open(file);
+    if (!elf.IsElfFile()) {
+        return 0;
+    }
+    const auto elf_pheader = elf.GetProgramHeader();
+    auto i_procparam = std::find_if(elf_pheader.begin(), elf_pheader.end(), [](const auto& entry) {
+        return entry.p_type == PT_SCE_PROCPARAM;
+    });
+
+    if (i_procparam != elf_pheader.end()) {
+        Core::OrbisProcParam param{};
+        elf.LoadSegment(u64(&param), i_procparam->p_offset, i_procparam->p_filesz);
+        return param.sdk_version;
+    }
+    return 0;
+}
+
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
-    Common::SetCurrentThreadName("Main Thread");
+    Common::SetCurrentThreadName("shadPS4:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }
@@ -295,23 +318,57 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::remove_all(mount_temp_dir);
     }
     std::filesystem::create_directory(mount_temp_dir);
+    // Mount system fonts
+    const auto& host_sandbox_common_dir = Config::getFontsPath();
+    if (!std::filesystem::exists(host_sandbox_common_dir)) {
+        std::filesystem::create_directory(host_sandbox_common_dir);
+    }
+    const auto& host_font_dir = host_sandbox_common_dir / "font";
+    if (!std::filesystem::exists(host_font_dir)) {
+        std::filesystem::create_directory(host_font_dir);
+    }
+    const auto& host_font2_dir = host_sandbox_common_dir / "font2";
+    if (!std::filesystem::exists(host_font2_dir)) {
+        std::filesystem::create_directory(host_font2_dir);
+    }
+    if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
+        LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
+    }
+
+    // Fonts are mounted into the sandboxed system directory,
+    // construct the appropriate path.
+    std::filesystem::path sandbox_root = Libraries::Kernel::sceKernelGetFsSandboxRandomWord();
+    std::filesystem::path sandbox_root_common = sandbox_root / "common";
 
     qfs->Operation.MKDir("/data", 0777);
     qfs->Operation.MKDir("/download0", 0777); // not sure about perms here
     qfs->Operation.MKDir("/temp", 0777);
     qfs->Operation.MKDir("/temp0", 0777);
+    qfs->Operation.MKDir(sandbox_root); // the one with weird names
+    qfs->Operation.MKDir(sandbox_root_common);
     qfs::partition_ptr partition_data = qfs::Partition::Create(mount_data_dir, 0777, 32768);
     qfs::partition_ptr partition_download = qfs::Partition::Create(mount_download_dir, 0777, 65536);
     qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 16384);
+    qfs::partition_ptr partition_sandbox_common =
+        qfs::Partition::Create(qfs::Directory::Create(), host_sandbox_common_dir, 0777, 16384);
     qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp0", partition_temp,
                qfs::MountOptions::MOUNT_RW | qfs::MountOptions::MOUNT_BIND);
+    qfs->Mount(sandbox_root_common, partition_sandbox_common);
     qfs->SyncHost("/data");
     qfs->SyncHost("/download0");
     qfs->SyncHost("/temp");
     qfs->SyncHost("/temp0");
+    qfs->SyncHost(sandbox_root_common);
+
+    const auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
+    std::filesystem::path eboot_path{};
+    qfs->GetHostPath(eboot_path, guest_eboot_path);
+
+    // auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
+    // const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
 
     auto& game_info = Common::ElfInfo::Instance();
     game_info.initialized = true;
@@ -320,7 +377,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     game_info.app_ver = app_version;
     game_info.firmware_ver = fw_version & 0xFFF00000;
     game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = sdk_version;
+    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
     game_info.psf_attributes = psf_attributes;
 
     const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
@@ -332,6 +389,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
+
+    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                (id + ".toml"))) {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
+    } else {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
+    }
 
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
@@ -357,6 +421,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
@@ -392,7 +457,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (param_sfo_exists) {
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
-        LOG_INFO(Loader, "Compiled SDK version: {:#x}", sdk_version);
+        LOG_INFO(Loader, "param.sfo SDK version: {:#x}", sdk_version);
+        LOG_INFO(Loader, "eboot SDK version: {:#x}", game_info.sdk_ver);
         LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
         LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
@@ -457,10 +523,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
-    // Load the module with the linker
-    auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    std::filesystem::path eboot_path{};
-    qfs->GetHostPath(eboot_path, guest_eboot_path);
     if (linker->LoadModule(eboot_path) == -1) {
         LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}",
                      Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
@@ -622,10 +684,15 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
     constexpr auto ModulesToLoad = std::to_array<SysModules>(
         {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
          {"libSceUlt.sprx", nullptr},
+         {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
+         {"libSceJpegDec.sprx", nullptr},
+         {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
+         {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
          {"libSceJson.sprx", nullptr},
          {"libSceJson2.sprx", nullptr},
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
+         {"libSceAudiodec.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
          {"libSceFreeTypeOt.sprx", nullptr}});
