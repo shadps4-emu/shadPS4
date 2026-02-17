@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 set(BUILD_SHARED_LIBS OFF)
@@ -204,6 +204,7 @@ add_subdirectory(tracy)
 
 # pugixml
 if (NOT TARGET pugixml::pugixml)
+    option(PUGIXML_NO_EXCEPTIONS "" ON)
     add_subdirectory(pugixml)
 endif()
 
@@ -258,9 +259,61 @@ if (WIN32)
 add_subdirectory(ext-wepoll)
 endif()
 
+add_subdirectory(aacdec)
+
 #nlohmann json 
+if (NOT TARGET nlohmann_json::nlohmann_json)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
+endif()
 
 # miniz
+if (NOT TARGET miniz::miniz)
 add_subdirectory(miniz)
+add_library(miniz::miniz ALIAS miniz)
+endif()
+
+# cli11
+if (NOT TARGET CLI11::CLI11)
+    set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory(CLI11)
+endif()
+
+
+#openal
+if (NOT TARGET OpenAL::OpenAL)
+set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
+set(LIBTYPE "STATIC" CACHE STRING "" FORCE)
+# Disable everything we don't need
+set(ALSOFT_UTILS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ALSOFT_TESTS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_INSTALL OFF CACHE BOOL "" FORCE)
+set(ALSOFT_CONFIG OFF CACHE BOOL "" FORCE)
+
+# Backends (platform-specific)
+if (WIN32)
+    set(ALSOFT_BACKEND_WASAPI ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_DSOUND OFF CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_WINMM OFF CACHE BOOL "" FORCE)
+elseif (APPLE)
+    set(ALSOFT_BACKEND_COREAUDIO ON CACHE BOOL "" FORCE)
+else()
+    set(ALSOFT_BACKEND_ALSA ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_PULSEAUDIO ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_PIPEWIRE OFF CACHE BOOL "" FORCE)
+endif()
+# Headless-safe
+set(ALSOFT_BACKEND_NULL ON CACHE BOOL "" FORCE)
+
+# Static build
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
+endif()
+
+# cpp-httplib
+add_library(Cpp_Httplib INTERFACE)
+target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
+

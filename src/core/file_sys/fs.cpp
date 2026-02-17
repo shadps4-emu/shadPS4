@@ -41,6 +41,9 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         pos = corrected_path.find("//", pos + 1);
     }
 
+    if (path.length() > 255)
+        return "";
+
     const MntPair* mount = GetMount(corrected_path);
     if (!mount) {
         return "";
@@ -212,6 +215,9 @@ File* HandleTable::GetSocket(int d) {
         return nullptr;
     }
     auto file = m_files.at(d);
+    if (!file) {
+        return nullptr;
+    }
     if (file->type != Core::FileSys::FileType::Socket) {
         return nullptr;
     }

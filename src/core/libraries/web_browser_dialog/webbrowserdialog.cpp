@@ -5,8 +5,11 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
+#include "magic_enum/magic_enum.hpp"
 
 namespace Libraries::WebBrowserDialog {
+
+static auto g_status = Libraries::CommonDialog::Status::NONE;
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogClose() {
     LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
@@ -23,14 +26,19 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
+    if (CommonDialog::g_isInitialized) {
+        LOG_INFO(Lib_WebBrowserDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_SYSTEM_INITIALIZED;
+    }
+    LOG_DEBUG(Lib_WebBrowserDialog, "initialized");
+    CommonDialog::g_isInitialized = true;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate() {
@@ -63,14 +71,22 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogSetZoom() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        LOG_ERROR(Lib_WebBrowserDialog,
+                  "CloseWebBrowser Dialog unimplemented"); // sceWebBrowserDialogClose();
+    }
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    }
+    g_status = Libraries::CommonDialog::Status::NONE;
+    CommonDialog::g_isUsed = false;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
 s32 PS4_SYSV_ABI Func_F2BE042771625F8C() {

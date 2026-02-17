@@ -261,7 +261,6 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(PthreadMutexT* mutex) {
 int PS4_SYSV_ABI posix_pthread_mutex_timedlock(PthreadMutexT* mutex,
                                                const OrbisKernelTimespec* abstime) {
     CHECK_AND_INIT_MUTEX
-    UNREACHABLE();
     return (*mutex)->Lock(abstime);
 }
 
@@ -378,7 +377,8 @@ int PS4_SYSV_ABI posix_pthread_mutexattr_getkind_np(PthreadMutexAttrT attr) {
 }
 
 int PS4_SYSV_ABI posix_pthread_mutexattr_settype(PthreadMutexAttrT* attr, PthreadMutexType type) {
-    if (attr == nullptr || *attr == nullptr || type >= PthreadMutexType::Max) {
+    if (attr == nullptr || *attr == nullptr || type < PthreadMutexType::ErrorCheck ||
+        type >= PthreadMutexType::Max) {
         return POSIX_EINVAL;
     }
     (*attr)->m_type = type;

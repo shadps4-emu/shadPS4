@@ -21,7 +21,7 @@ namespace Libraries::Ajm {
 
 struct AjmJob {
     struct Input {
-        std::optional<AjmDecAt9InitializeParameters> init_params;
+        std::optional<AjmSidebandInitParameters> init_params;
         std::optional<AjmSidebandResampleParameters> resample_parameters;
         std::optional<AjmSidebandStatisticsEngineParameters> statistics_engine_parameters;
         std::optional<AjmSidebandFormat> format;
@@ -52,6 +52,7 @@ struct AjmBatch {
     u32 id{};
     std::atomic_bool waiting{};
     std::atomic_bool canceled{};
+    std::atomic_bool processed{};
     std::binary_semaphore finished{0};
     boost::container::small_vector<AjmJob, 16> jobs;
 

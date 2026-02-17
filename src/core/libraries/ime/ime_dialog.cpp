@@ -115,9 +115,199 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
     return Error::OK;
 }
 
-int PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended() {
-    LOG_ERROR(Lib_ImeDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Error PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended(const OrbisImeDialogParam* param,
+                                                    const OrbisImeParamExtended* extended,
+                                                    u32* width, u32* height) {
+    if (!param || !width || !height) {
+        return Error::INVALID_ADDRESS;
+    }
+
+    // Check parameter bounds
+    if (static_cast<uint32_t>(param->type) > 4) {
+        return Error::INVALID_ARG;
+    }
+
+    if (extended) {
+        // Check panel priority for full panel mode (Accent = 3)
+        if (extended->priority == OrbisImePanelPriority::Accent) {
+            // Full panel mode - return maximum size
+            if ((param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) !=
+                OrbisImeOption::DEFAULT) {
+                *width = 2560; // For 4K/5K displays
+                *height = 1440;
+            } else {
+                *width = 1920;
+                *height = 1080;
+            }
+            LOG_DEBUG(Lib_ImeDialog, "Full panel mode: width={}, height={}", *width, *height);
+            return Error::OK;
+        }
+    }
+
+    // First get the base panel size from the basic function
+    Error result = sceImeDialogGetPanelSize(param, width, height);
+    if (result != Error::OK) {
+        return result;
+    }
+
+    // Adjust based on IME type
+    switch (param->type) {
+    case OrbisImeType::Default:
+    case OrbisImeType::BasicLatin:
+    case OrbisImeType::Url:
+    case OrbisImeType::Mail:
+        // Standard IME types
+        if ((param->option & OrbisImeOption::PASSWORD) != OrbisImeOption::DEFAULT) {
+            *height = *height + 20;
+        }
+        if ((param->option & OrbisImeOption::MULTILINE) != OrbisImeOption::DEFAULT) {
+            *height = *height * 3 / 2;
+        }
+        break;
+
+    case OrbisImeType::Number:
+        *width = *width * 3 / 4;
+        *height = *height * 2 / 3;
+        break;
+
+    default:
+        // Unknown type, use default size
+        break;
+    }
+
+    // Apply extended options if provided
+    if (extended) {
+        // Handle extended option flags
+        if ((extended->option & OrbisImeExtOption::PRIORITY_FULL_WIDTH) !=
+            OrbisImeExtOption::DEFAULT) {
+            // Full width priority
+            bool use_2k = (param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) !=
+                          OrbisImeOption::DEFAULT;
+            *width = use_2k ? 1200 : 800;
+            LOG_DEBUG(Lib_ImeDialog, "Full width priority: width={}", *width);
+        }
+
+        if ((extended->option & OrbisImeExtOption::PRIORITY_FIXED_PANEL) !=
+            OrbisImeExtOption::DEFAULT) {
+            // Fixed panel size
+            *width = 600;
+            *height = 400;
+            LOG_DEBUG(Lib_ImeDialog, "Fixed panel: width={}, height={}", *width, *height);
+        }
+
+        switch (extended->priority) {
+        case OrbisImePanelPriority::Alphabet:
+            *width = 600;
+            *height = 400;
+            break;
+
+        case OrbisImePanelPriority::Symbol:
+            *width = 500;
+            *height = 300;
+            break;
+
+        case OrbisImePanelPriority::Accent:
+            // Already handled
+            break;
+
+        case OrbisImePanelPriority::Default:
+        default:
+            // Use calculated sizes
+            break;
+        }
+
+        if ((extended->option & OrbisImeExtOption::INIT_EXT_KEYBOARD_MODE) !=
+            OrbisImeExtOption::DEFAULT) {
+            if (extended->ext_keyboard_mode != 0) {
+                // Check for high-res mode flags
+                if ((extended->ext_keyboard_mode &
+                     static_cast<uint32_t>(
+                         OrbisImeInitExtKeyboardMode::INPUT_METHOD_STATE_FULL_WIDTH)) != 0) {
+                    *width = *width * 5 / 4;
+                }
+
+                // Check for format characters enabled
+                if ((extended->ext_keyboard_mode &
+                     static_cast<uint32_t>(
+                         OrbisImeInitExtKeyboardMode::ENABLE_FORMAT_CHARACTERS)) != 0) {
+                    *height = *height + 30;
+                }
+            }
+        }
+
+        // Check for accessibility mode
+        if ((extended->option & OrbisImeExtOption::ENABLE_ACCESSIBILITY) !=
+            OrbisImeExtOption::DEFAULT) {
+            *width = *width * 5 / 4; // 25% larger for accessibility
+            *height = *height * 5 / 4;
+            LOG_DEBUG(Lib_ImeDialog, "Accessibility mode: width={}, height={}", *width, *height);
+        }
+
+        // Check for forced accessibility panel
+        if ((extended->option & OrbisImeExtOption::ACCESSIBILITY_PANEL_FORCED) !=
+            OrbisImeExtOption::DEFAULT) {
+            *width = 800;
+            *height = 600;
+            LOG_DEBUG(Lib_ImeDialog, "Forced accessibility panel: width={}, height={}", *width,
+                      *height);
+        }
+    }
+
+    if ((param->option & static_cast<OrbisImeOption>(0x8)) != OrbisImeOption::DEFAULT) { //?
+        *width *= 2;
+        *height *= 2;
+        LOG_DEBUG(Lib_ImeDialog, "Size mode: width={}, height={}", *width, *height);
+    }
+
+    // Adjust for supported languages if specified
+    if (param->supported_languages != static_cast<OrbisImeLanguage>(0)) {
+        // Check if CJK languages are supported (need larger panel)
+        OrbisImeLanguage cjk_mask = OrbisImeLanguage::JAPANESE | OrbisImeLanguage::KOREAN |
+                                    OrbisImeLanguage::SIMPLIFIED_CHINESE |
+                                    OrbisImeLanguage::TRADITIONAL_CHINESE;
+
+        if ((param->supported_languages & cjk_mask) != static_cast<OrbisImeLanguage>(0)) {
+            *width = *width * 5 / 4;   // 25% wider for CJK input
+            *height = *height * 6 / 5; // 20% taller
+            LOG_DEBUG(Lib_ImeDialog, "CJK language support: width={}, height={}", *width, *height);
+        }
+
+        // Check if Arabic is supported (right-to-left layout)
+        if ((param->supported_languages & OrbisImeLanguage::ARABIC) !=
+            static_cast<OrbisImeLanguage>(0)) {
+            *width = *width * 11 / 10; // 10% wider for Arabic
+            LOG_DEBUG(Lib_ImeDialog, "Arabic language support: width={}", *width);
+        }
+    }
+
+    // Ensure minimum sizes
+    const uint32_t min_width = 200;
+    const uint32_t min_height = 100;
+    if (*width < min_width)
+        *width = min_width;
+    if (*height < min_height)
+        *height = min_height;
+
+    // Ensure maximum sizes (don't exceed screen bounds)
+    bool use_2k_coords =
+        (param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) != OrbisImeOption::DEFAULT;
+    const uint32_t max_width = use_2k_coords ? 2560 : 1920;
+    const uint32_t max_height = use_2k_coords ? 1440 : 1080;
+    if (*width > max_width)
+        *width = max_width;
+    if (*height > max_height)
+        *height = max_height;
+
+    // Check for fixed position option
+    if ((param->option & OrbisImeOption::FIXED_POSITION) != OrbisImeOption::DEFAULT) {
+        if (*width > 800)
+            *width = 800;
+        if (*height > 600)
+            *height = 600;
+    }
+
+    LOG_DEBUG(Lib_ImeDialog, "Final panel size: width={}, height={}", *width, *height);
+    return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {

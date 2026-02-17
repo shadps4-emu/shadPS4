@@ -8,7 +8,7 @@ namespace Libraries::Ajm {
 
 void AjmInstanceStatistics::ExecuteJob(AjmJob& job) {
     if (job.output.p_engine) {
-        job.output.p_engine->usage_batch = 0.01;
+        job.output.p_engine->usage_batch = 0.05;
         const auto ic = job.input.statistics_engine_parameters->interval_count;
         for (u32 idx = 0; idx < ic; ++idx) {
             job.output.p_engine->usage_interval[idx] = 0.01;
@@ -25,9 +25,11 @@ void AjmInstanceStatistics::ExecuteJob(AjmJob& job) {
         job.output.p_memory->batch_size = 0x4200;
         job.output.p_memory->input_size = 0x2000;
         job.output.p_memory->output_size = 0x2000;
-        job.output.p_memory->small_size = 0x200;
+        job.output.p_memory->small_size = 0x400;
     }
 }
+
+void AjmInstanceStatistics::Reset() {}
 
 AjmInstanceStatistics& AjmInstanceStatistics::Getinstance() {
     static AjmInstanceStatistics instance;

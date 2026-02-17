@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
 #include <filesystem>
+#include <mutex>
 #include <thread>
 
 #include <fmt/format.h>
@@ -97,6 +99,7 @@ private:
     std::size_t bytes_written = 0;
 };
 
+#ifdef _WIN32
 /**
  * Backend that writes to Visual Studio's output window
  */
@@ -107,15 +110,14 @@ public:
     ~DebuggerBackend() = default;
 
     void Write(const Entry& entry) {
-#ifdef _WIN32
         ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry).append(1, '\n')).c_str());
-#endif
     }
 
     void Flush() {}
 
     void EnableForStacktrace() {}
 };
+#endif
 
 bool initialization_in_progress_suppress_logging = true;
 
@@ -211,20 +213,57 @@ public:
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
 
-        const Entry entry = {
-            .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
-            .log_class = log_class,
-            .log_level = log_level,
-            .filename = filename,
-            .line_num = line_num,
-            .function = function,
-            .message = std::move(message),
-        };
-        if (Config::getLogType() == "async") {
-            message_queue.EmplaceWait(entry);
+        if (Config::groupIdenticalLogs()) {
+            std::unique_lock entry_loc(_mutex);
+
+            if (_last_entry.message == message) {
+                ++_last_entry.counter;
+                return;
+            }
+
+            if (_last_entry.counter >= 2) {
+                _last_entry.message += " x" + std::to_string(_last_entry.counter);
+            }
+
+            if (_last_entry.counter >= 1) {
+                if (Config::getLogType() == "async") {
+                    message_queue.EmplaceWait(_last_entry);
+                } else {
+                    ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                    std::fflush(stdout);
+                }
+            }
+
+            this->_last_entry = {
+                .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
+                .log_class = log_class,
+                .log_level = log_level,
+                .filename = filename,
+                .line_num = line_num,
+                .function = function,
+                .message = message,
+                .thread = Common::GetCurrentThreadName(),
+                .counter = 1,
+            };
         } else {
-            ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
-            std::fflush(stdout);
+            const Entry entry = {
+                .timestamp = duration_cast<microseconds>(steady_clock::now() - time_origin),
+                .log_class = log_class,
+                .log_level = log_level,
+                .filename = filename,
+                .line_num = line_num,
+                .function = function,
+                .message = message,
+                .thread = Common::GetCurrentThreadName(),
+                .counter = 1,
+            };
+
+            if (Config::getLogType() == "async") {
+                message_queue.EmplaceWait(entry);
+            } else {
+                ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
+                std::fflush(stdout);
+            }
         }
     }
 
@@ -257,6 +296,24 @@ private:
     }
 
     void StopBackendThread() {
+        if (Config::groupIdenticalLogs()) {
+            // log last message
+            if (_last_entry.counter >= 2) {
+                _last_entry.message += " x" + std::to_string(_last_entry.counter);
+            }
+
+            if (_last_entry.counter >= 1) {
+                if (Config::getLogType() == "async") {
+                    message_queue.EmplaceWait(_last_entry);
+                } else {
+                    ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
+                    std::fflush(stdout);
+                }
+            }
+
+            this->_last_entry = {};
+        }
+
         backend_thread.request_stop();
         if (backend_thread.joinable()) {
             backend_thread.join();
@@ -266,7 +323,9 @@ private:
     }
 
     void ForEachBackend(auto lambda) {
-        // lambda(debugger_backend);
+#ifdef _WIN32
+        lambda(debugger_backend);
+#endif
         lambda(color_console_backend);
         lambda(file_backend);
     }
@@ -279,13 +338,17 @@ private:
     static inline bool should_append{false};
 
     Filter filter;
+#ifdef _WIN32
     DebuggerBackend debugger_backend{};
+#endif
     ColorConsoleBackend color_console_backend{};
     FileBackend file_backend;
 
     MPSCQueue<Entry> message_queue{};
     std::chrono::steady_clock::time_point time_origin{std::chrono::steady_clock::now()};
     std::jthread backend_thread;
+    Entry _last_entry;
+    std::mutex _mutex;
 };
 } // namespace
 

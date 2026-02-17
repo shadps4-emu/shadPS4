@@ -32,6 +32,14 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
         event.timer_interval = std::chrono::microseconds(event.event.data - offset);
     }
 
+    // Remove add flag from event
+    event.event.flags &= ~SceKernelEvent::Flags::Add;
+
+    // Clear flag is appended to most event types internally.
+    if (event.event.filter != SceKernelEvent::Filter::User) {
+        event.event.flags |= SceKernelEvent::Flags::Clear;
+    }
+
     const auto& it = std::ranges::find(m_events, event);
     if (it != m_events.cend()) {
         *it = std::move(event);
@@ -165,10 +173,6 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     for (auto it = m_events.begin(); it != m_events.end();) {
         if (it->IsTriggered()) {
             ev[count++] = it->event;
-
-            // Event should not trigger again
-            it->ResetTriggerState();
-
             if (it->event.flags & SceKernelEvent::Flags::Clear) {
                 it->Clear();
             }

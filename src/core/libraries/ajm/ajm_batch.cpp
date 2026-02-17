@@ -165,7 +165,7 @@ AjmJob AjmStatisticsJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buf
     ASSERT(job_flags.has_value());
     job.flags = job_flags.value();
 
-    AjmStatisticsJobFlags flags(job.flags);
+    AjmStatisticsJobFlags flags{.raw = job.flags.raw};
     if (input_control_buffer.has_value()) {
         AjmBatchBuffer input_batch(input_control_buffer.value());
         if (True(flags.statistics_flags & AjmStatisticsFlags::Engine)) {
@@ -280,9 +280,7 @@ AjmJob AjmJobFromBatchBuffer(u32 instance_id, AjmBatchBuffer batch_buffer) {
             job.input.resample_parameters = input_batch.Consume<AjmSidebandResampleParameters>();
         }
         if (True(control_flags & AjmJobControlFlags::Initialize)) {
-            job.input.init_params = AjmDecAt9InitializeParameters{};
-            std::memcpy(&job.input.init_params.value(), input_batch.GetCurrent(),
-                        input_batch.BytesRemaining());
+            job.input.init_params = input_batch.Consume<AjmSidebandInitParameters>();
         }
     }
 
