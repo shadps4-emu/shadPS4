@@ -381,8 +381,8 @@ s32 QFS::OperationImpl::FSync(const s32 fd) {
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s32 hio_status = 0;
+    s32 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -401,7 +401,7 @@ s32 QFS::OperationImpl::FSync(const s32 fd) {
     return vio_status;
 };
 
-s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
+s32 QFS::OperationImpl::Truncate(const fs::path& path, s64 length) {
     Resolved res;
     int status = qfs.Resolve(path, res);
 
@@ -413,12 +413,12 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
         return -POSIX_EROFS;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (part->IsHostMounted()) {
         fs::path host_path_target;
-        if (int hostpath_status = part->GetHostPath(host_path_target, res.local_path);
+        if (s64 hostpath_status = part->GetHostPath(host_path_target, res.local_path);
             0 != hostpath_status)
             return hostpath_status;
         if (hio_status = qfs.hio_driver.Truncate(host_path_target, length); hio_status < 0)
@@ -436,7 +436,7 @@ s32 QFS::OperationImpl::Truncate(const fs::path& path, u64 length) {
     return vio_status;
 }
 
-s32 QFS::OperationImpl::FTruncate(const s32 fd, u64 length) {
+s32 QFS::OperationImpl::FTruncate(const s32 fd, s64 length) {
     if (fd < 0)
         return -POSIX_EBADF;
 
@@ -479,8 +479,8 @@ s64 QFS::OperationImpl::LSeek(const s32 fd, s64 offset, s32 whence) {
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -526,7 +526,7 @@ s64 QFS::OperationImpl::Read(const s32 fd, void* buf, u64 count) {
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
+    s64 hio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -555,7 +555,7 @@ s64 QFS::OperationImpl::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
+    s64 hio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -585,8 +585,8 @@ s64 QFS::OperationImpl::ReadV(const s32 fd, const Libraries::Kernel::OrbisKernel
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -620,8 +620,8 @@ s64 QFS::OperationImpl::PReadV(const s32 fd, const Libraries::Kernel::OrbisKerne
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -654,7 +654,7 @@ s64 QFS::OperationImpl::Write(const s32 fd, const void* buf, u64 count) {
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
+    s64 hio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -683,8 +683,8 @@ s64 QFS::OperationImpl::PWrite(const s32 fd, const void* buf, u64 count, s64 off
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -714,8 +714,8 @@ s64 QFS::OperationImpl::WriteV(const s32 fd, const Libraries::Kernel::OrbisKerne
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;
@@ -749,8 +749,8 @@ s64 QFS::OperationImpl::PWriteV(const s32 fd, const Libraries::Kernel::OrbisKern
         return -POSIX_EBADF;
 
     bool host_used = false;
-    int hio_status = 0;
-    int vio_status = 0;
+    s64 hio_status = 0;
+    s64 vio_status = 0;
 
     if (handle->IsHostBound()) {
         int host_fd = handle->host_fd;

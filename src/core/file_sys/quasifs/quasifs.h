@@ -69,8 +69,8 @@ private:
 
         s32 Flush(const s32 fd) override;
         s32 FSync(const s32 fd) override;
-        s32 Truncate(const fs::path& path, u64 size) override;
-        s32 FTruncate(const s32 fd, u64 size) override;
+        s32 Truncate(const fs::path& path, s64 size) override;
+        s32 FTruncate(const s32 fd, s64 size) override;
         s64 LSeek(const s32 fd, s64 offset, s32 whence) override;
         s64 Tell(const s32 fd) override;
 
