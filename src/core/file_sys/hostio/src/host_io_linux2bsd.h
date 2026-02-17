@@ -276,10 +276,8 @@ s32 unix2bsd(s32 id) {
         return POSIX_ESTOP;
     case EINVALID2MB:
         return POSIX_EINVALID2MB;
-#endif          // !__APPLE_CC__
-    case ELAST: // same as EINVALID2MB on macOS
-        return POSIX_ELAST;
-#ifndef __APPLE_CC__
+    // case ELAST: // same as EINVALID2MB on macOS
+    //     return POSIX_ELAST;
     case EADHOC:
         return POSIX_EADHOC;
     case EINACTIVEDISABLED:

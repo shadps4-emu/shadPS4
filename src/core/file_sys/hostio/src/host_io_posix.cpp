@@ -9,7 +9,11 @@
 #include <sys/fcntl.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
+#ifdef __linux__
 #include <sys/unistd.h>
+#elif defined(__APPLE_CC__)
+#include <unistd.h>
+#endif
 
 #include "core/file_sys/hostio/host_io_posix.h"
 #include "core/file_sys/quasifs/quasi_types.h"
@@ -36,7 +40,7 @@ s32 HostIO_POSIX::Creat(const fs::path& path, u16 mode) {
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s32 HostIO_POSIX::Close(const s32 fd) {
+s32 HostIO_POSIX::Close(s32 fd) {
     errno = 0;
     s32 status = close(fd);
     return 0 == status ? status : -unix2bsd(errno);
@@ -66,52 +70,52 @@ s32 HostIO_POSIX::Remove(const fs::path& path) {
     return 0 == status ? status : -unix2bsd(errno);
 }
 
-s32 HostIO_POSIX::Flush(const s32 fd) {
+s32 HostIO_POSIX::Flush(s32 fd) {
     errno = 0;
     return 0;
 }
 
-s32 HostIO_POSIX::FSync(const s32 fd) {
+s32 HostIO_POSIX::FSync(s32 fd) {
     errno = 0;
     s32 status = fsync(fd);
     return 0 == status ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::LSeek(const s32 fd, s64 offset, s32 whence) {
+s64 HostIO_POSIX::LSeek(s32 fd, s64 offset, s32 whence) {
     errno = 0;
     s32 status = lseek(fd, offset, ToPOSIXSeekOrigin(whence));
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::Tell(const s32 fd) {
+s64 HostIO_POSIX::Tell(s32 fd) {
     return LSeek(fd, 0, SeekOrigin::CURRENT);
 }
 
-s32 HostIO_POSIX::Truncate(const fs::path& path, u64 size) {
+s32 HostIO_POSIX::Truncate(const fs::path& path, s64 size) {
     errno = 0;
     s32 status = truncate(path.c_str(), size);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s32 HostIO_POSIX::FTruncate(const s32 fd, u64 size) {
+s32 HostIO_POSIX::FTruncate(s32 fd, s64 size) {
     errno = 0;
     s32 status = ftruncate(fd, size);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::Read(const s32 fd, void* buf, u64 count) {
+s64 HostIO_POSIX::Read(s32 fd, void* buf, u64 count) {
     errno = 0;
-    s32 status = read(fd, buf, count);
+    s64 status = read(fd, buf, count);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::PRead(const s32 fd, void* buf, u64 count, s64 offset) {
+s64 HostIO_POSIX::PRead(s32 fd, void* buf, u64 count, s64 offset) {
     errno = 0;
-    s32 status = pread(fd, buf, count, offset);
+    s64 status = pread(fd, buf, count, offset);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_POSIX::ReadV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];
@@ -124,7 +128,7 @@ s64 HostIO_POSIX::ReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     return ret;
 }
 
-s64 HostIO_POSIX::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_POSIX::PReadV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];
@@ -137,19 +141,19 @@ s64 HostIO_POSIX::PReadV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, 
     return ret;
 }
 
-s64 HostIO_POSIX::Write(const s32 fd, const void* buf, u64 count) {
+s64 HostIO_POSIX::Write(s32 fd, const void* buf, u64 count) {
     errno = 0;
-    s32 status = write(fd, buf, count);
+    s64 status = write(fd, buf, count);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::PWrite(const s32 fd, const void* buf, u64 count, s64 offset) {
+s64 HostIO_POSIX::PWrite(s32 fd, const void* buf, u64 count, s64 offset) {
     errno = 0;
-    s32 status = pwrite(fd, buf, count, offset);
+    s64 status = pwrite(fd, buf, count, offset);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
-s64 HostIO_POSIX::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
+s64 HostIO_POSIX::WriteV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];
@@ -162,7 +166,7 @@ s64 HostIO_POSIX::WriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt) 
     return ret;
 }
 
-s64 HostIO_POSIX::PWriteV(const s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
+s64 HostIO_POSIX::PWriteV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 offset) {
     errno = 0;
 
     iovec* iov_native = new iovec[iovcnt];
@@ -203,14 +207,17 @@ s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
+#ifdef __linux__
     statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
-    statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
     statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
-    statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
     statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
-    statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
     statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
-    statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
+#elif defined(__APPLE_CC__)
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;         //
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;         //
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;         //
+    statbuf->st_birthtim.tv_sec = st.st_birthtimespec.tv_sec; // just assuming these are the same
+#endif
 
     statbuf->st_size = st.st_size;
     // statbuf->st_blocks = st.st_blocks;
@@ -223,7 +230,7 @@ s32 HostIO_POSIX::Stat(const fs::path& path, OrbisKernelStat* statbuf) {
     return 0;
 }
 
-s32 HostIO_POSIX::FStat(const s32 fd, OrbisKernelStat* statbuf) {
+s32 HostIO_POSIX::FStat(s32 fd, OrbisKernelStat* statbuf) {
     errno = 0;
 
     struct stat st;
@@ -239,14 +246,21 @@ s32 HostIO_POSIX::FStat(const s32 fd, OrbisKernelStat* statbuf) {
     statbuf->st_uid = 0; // st.st_uid; // always 0
     statbuf->st_gid = 0; // st.st_gid; // always 0
     // statbuf->st_rdev = st.st_rdev;
+#ifdef __linux__
     statbuf->st_atim.tv_sec = st.st_atim.tv_sec;     //
-    statbuf->st_atim.tv_nsec = 0;                    // st.st_atim.tv_nsec;
     statbuf->st_mtim.tv_sec = st.st_mtim.tv_sec;     //
-    statbuf->st_mtim.tv_nsec = 0;                    // st.st_mtim.tv_nsec;
     statbuf->st_ctim.tv_sec = st.st_ctim.tv_sec;     //
-    statbuf->st_ctim.tv_nsec = 0;                    // st.st_ctim.tv_nsec;
     statbuf->st_birthtim.tv_sec = st.st_ctim.tv_sec; // just assuming these are the same
-    statbuf->st_birthtim.tv_nsec = 0;                // st.st_ctim.tv_nsec;
+#elif defined(__APPLE_CC__)
+    statbuf->st_atim.tv_sec = st.st_atimespec.tv_sec;         //
+    statbuf->st_mtim.tv_sec = st.st_mtimespec.tv_sec;         //
+    statbuf->st_ctim.tv_sec = st.st_ctimespec.tv_sec;         //
+    statbuf->st_birthtim.tv_sec = st.st_birthtimespec.tv_sec; // just assuming these are the same
+#endif
+    statbuf->st_atim.tv_nsec = 0;     // st.st_atim.tv_nsec;
+    statbuf->st_mtim.tv_nsec = 0;     // st.st_mtim.tv_nsec;
+    statbuf->st_ctim.tv_nsec = 0;     // st.st_ctim.tv_nsec;
+    statbuf->st_birthtim.tv_nsec = 0; // st.st_ctim.tv_nsec;
 
     statbuf->st_size = st.st_size;
     // statbuf->st_blocks = st.st_blocks;
@@ -265,7 +279,7 @@ s32 HostIO_POSIX::Chmod(const fs::path& path, u16 mode) {
     return 0 == status ? status : -unix2bsd(errno);
 }
 
-s32 HostIO_POSIX::FChmod(const s32 fd, u16 mode) {
+s32 HostIO_POSIX::FChmod(s32 fd, u16 mode) {
     errno = 0;
     s32 status = fchmod(fd, mode);
     return 0 == status ? status : -unix2bsd(errno);
