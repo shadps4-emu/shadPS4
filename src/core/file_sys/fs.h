@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 #include <tsl/robin_map.h>
@@ -48,14 +49,25 @@ public:
     void IterateDirectory(std::string_view guest_directory,
                           const IterateDirectoryCallback& callback);
 
-    const MntPair* GetMount(const std::string& guest_path) {
+    const MntPair* GetMountFromHostPath(const std::string& host_path) {
+        std::scoped_lock lock{m_mutex};
+        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
+            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+        });
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
+    }
+
+    const std::optional<MntPair> GetMount(const std::string& guest_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
             // When doing starts-with check, add a trailing slash to make sure we don't match
             // against only part of the mount path.
             return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
         });
-        return it == m_mnt_pairs.end() ? nullptr : &*it;
+        if (it == m_mnt_pairs.end()) {
+            return std::nullopt;
+        }
+        return *it;
     }
 
 private:
