@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <random>
+
 #include "common/logging/log.h"
 #include "common/types.h"
 #include "core/file_sys/quasifs/quasifs_inode_device.h"
@@ -16,6 +18,9 @@
 namespace Core::Devices {
 
 class SRandomDevice final : public QuasiFS::Device {
+private:
+    std::mt19937 gen;
+    std::uniform_int_distribution<unsigned> dist;
 
 public:
     SRandomDevice();

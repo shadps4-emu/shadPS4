@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
     # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 26.0 CACHE STRING "")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -746,13 +746,9 @@ if(WIN32)
     list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_win32.cpp
                         src/core/file_sys/hostio/host_io_win32.h
     )
-elseif(UNIX AND NOT APPLE)
+elseif(UNIX OR APPLE)
     list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_posix.cpp
                         src/core/file_sys/hostio/host_io_posix.h
-    )
-elseif(APPLE)
-    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_macos.cpp
-                        src/core/file_sys/hostio/host_io_macos.h
     )
 endif()
 

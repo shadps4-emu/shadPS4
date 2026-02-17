@@ -36,13 +36,13 @@ public:
         st.st_uid = 0;
         st.st_gid = 0;
 
-        st.st_birthtim.tv_sec = time(0);
+        st.st_birthtim.tv_sec = time(nullptr);
         st.st_birthtim.tv_nsec = 0;
-        st.st_ctim.tv_sec = time(0);
+        st.st_ctim.tv_sec = time(nullptr);
         st.st_ctim.tv_nsec = 0;
-        st.st_mtim.tv_sec = time(0);
+        st.st_mtim.tv_sec = time(nullptr);
         st.st_mtim.tv_nsec = 0;
-        st.st_atim.tv_sec = time(0);
+        st.st_atim.tv_sec = time(nullptr);
         st.st_atim.tv_nsec = 0;
     }
 

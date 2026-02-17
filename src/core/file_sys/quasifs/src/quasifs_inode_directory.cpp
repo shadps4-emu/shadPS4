@@ -17,7 +17,7 @@ QuasiDirectory::QuasiDirectory() {
 
 s64 QuasiDirectory::read(void* buf, u64 count) {
     RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     // data is contiguous. read goes like any regular file would: start at offset, read n bytes
     // output is always aligned up to 512 bytes with 0s
@@ -54,7 +54,7 @@ s32 QuasiDirectory::ftruncate(s64 length) {
 
 s64 QuasiDirectory::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     if (basep)
         *basep = this->descriptor_offset;
@@ -100,7 +100,7 @@ s64 QuasiDirectory::getdents(void* buf, u64 count, s64* basep) {
 }
 
 inode_ptr QuasiDirectory::lookup(const std::string& name) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
     auto it = entries.find(name);
     if (it == entries.end())
         return nullptr;
@@ -115,7 +115,7 @@ int QuasiDirectory::link(const std::string& name, inode_ptr child) {
     entries[name] = child;
     if (!child->is_link())
         child->st.st_nlink++;
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
     dirents_changed = true;
     return 0;
 }
@@ -147,7 +147,7 @@ int QuasiDirectory::unlink(const std::string& name) {
     target->st.st_nlink--;
     entries.erase(it);
     dirents_changed = true;
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
     return 0;
 }
 

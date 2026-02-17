@@ -103,7 +103,7 @@ public:
     virtual int Connect(const OrbisNetSockaddr* addr, u32 namelen) { SOCKET_STUB(); }
     virtual int GetSocketAddress(OrbisNetSockaddr* name, u32* namelen) { SOCKET_STUB(); }
     virtual int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) { SOCKET_STUB(); }
-    virtual int fstat(Libraries::Kernel::OrbisKernelStat* stat) { SOCKET_STUB(); }
+    int fstat(Libraries::Kernel::OrbisKernelStat* stat) override { SOCKET_STUB(); }
     virtual std::optional<net_socket> Native() { SOCKET_STUB(); }
     // clang-format on
 };

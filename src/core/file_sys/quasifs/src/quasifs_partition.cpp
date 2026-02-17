@@ -223,7 +223,7 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
     return 0;
 }
 
-int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
+int Partition::touch(const dir_ptr& parent, const std::string& name, inode_ptr child) {
     if (nullptr == parent)
         return -POSIX_EINVAL;
 
@@ -233,7 +233,7 @@ int Partition::touch(dir_ptr parent, const std::string& name, inode_ptr child) {
     return ret;
 }
 
-int Partition::mkdir(dir_ptr parent, const std::string& name) {
+int Partition::mkdir(const dir_ptr& parent, const std::string& name) {
     if (nullptr == parent)
         return -POSIX_ENOENT;
 
@@ -251,7 +251,7 @@ int Partition::mkdir(dir_ptr parent, const std::string& name) {
     return ret;
 }
 
-int Partition::rmdir(dir_ptr parent, const std::string& name) {
+int Partition::rmdir(const dir_ptr& parent, const std::string& name) {
     if (nullptr == parent)
         return -POSIX_ENOENT;
     if (name.empty())
@@ -271,7 +271,8 @@ int Partition::rmdir(dir_ptr parent, const std::string& name) {
     return rmInode(target);
 }
 
-int Partition::link(inode_ptr source, dir_ptr destination_parent, const std::string& name) {
+int Partition::link(const inode_ptr& source, const dir_ptr& destination_parent,
+                    const std::string& name) {
     if (nullptr == source || nullptr == destination_parent)
         return -POSIX_ENOENT;
     if (name.empty())
@@ -284,7 +285,7 @@ int Partition::link(inode_ptr source, dir_ptr destination_parent, const std::str
     return destination_parent->link(name, source);
 }
 
-int Partition::unlink(dir_ptr parent, const std::string& name) {
+int Partition::unlink(const dir_ptr& parent, const std::string& name) {
     if (nullptr == parent)
         return -POSIX_ENOENT;
     if (name.empty())
@@ -304,7 +305,7 @@ int Partition::unlink(dir_ptr parent, const std::string& name) {
     return rmInode(target);
 }
 
-int Partition::chmod(inode_ptr target, u16 mode) {
+int Partition::chmod(const inode_ptr& target, u16 mode) {
     if (nullptr == target)
         return -POSIX_EINVAL;
 
@@ -319,7 +320,7 @@ int Partition::rmInode(fileno_t fileno) {
     return rmInode(target);
 }
 
-int Partition::rmInode(inode_ptr node) {
+int Partition::rmInode(const inode_ptr& node) {
     if (nullptr == node)
         return -POSIX_EINVAL;
 
@@ -333,7 +334,7 @@ int Partition::rmInode(inode_ptr node) {
     return 0;
 }
 
-bool Partition::IndexInode(inode_ptr node) {
+bool Partition::IndexInode(const inode_ptr& node) {
     if (nullptr == node)
         return false;
 
@@ -360,7 +361,7 @@ bool Partition::IndexInode(inode_ptr node) {
     return true;
 }
 
-void Partition::mkrelative(dir_ptr parent, dir_ptr child) {
+void Partition::mkrelative(const dir_ptr& parent, const dir_ptr& child) {
     child->link(".", child);
     child->link("..", parent);
 }

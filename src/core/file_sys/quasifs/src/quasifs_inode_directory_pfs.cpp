@@ -26,7 +26,7 @@ DirectoryPFS::~DirectoryPFS() = default;
 
 s64 DirectoryPFS::read(void* buf, u64 count) {
     this->RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     s64 bytes_available = this->dirent_cache_bin.size() - descriptor_offset;
     if (bytes_available <= 0)
@@ -49,7 +49,7 @@ s64 DirectoryPFS::read(void* buf, u64 count) {
 
 s64 DirectoryPFS::getdents(void* buf, u64 count, s64* basep) {
     RebuildDirents();
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     if (basep)
         *basep = this->descriptor_offset;
@@ -140,7 +140,7 @@ void DirectoryPFS::RebuildDirents(void) {
 
 // PFS is case-insensitive
 inode_ptr DirectoryPFS::lookup(const std::string& name) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
     std::string name_normalized = name;
     transform(name_normalized.begin(), name_normalized.end(), name_normalized.begin(), ::toupper);
 

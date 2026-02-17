@@ -13,10 +13,10 @@ class Symlink final : public Inode {
     const fs::path target;
 
 public:
-    Symlink(fs::path target);
+    Symlink(const fs::path& target);
     ~Symlink() = default;
 
-    static symlink_ptr Create(fs::path target) {
+    static symlink_ptr Create(const fs::path& target) {
         return std::make_shared<Symlink>(target);
     }
 

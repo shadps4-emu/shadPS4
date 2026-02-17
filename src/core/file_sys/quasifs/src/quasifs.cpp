@@ -44,7 +44,7 @@ int QFS::SyncHost(void) {
     return 0;
 }
 
-int QFS::SyncHost(fs::path path) {
+int QFS::SyncHost(const fs::path& path) {
     Resolved res;
     int status = Resolve(path, res);
 
@@ -60,7 +60,7 @@ int QFS::SyncHost(fs::path path) {
 }
 
 // mount fs at path (target must exist and be directory)
-int QFS::Mount(const fs::path& path, partition_ptr fs, unsigned int options) {
+int QFS::Mount(const fs::path& path, const partition_ptr& fs, unsigned int options) {
     Resolved res;
     int status = Resolve(path, res);
 
@@ -138,7 +138,7 @@ int QFS::Unmount(const fs::path& path) {
     return 0;
 }
 
-int QFS::ForceInsert(const fs::path& path, const std::string& name, inode_ptr node) {
+int QFS::ForceInsert(const fs::path& path, const std::string& name, const inode_ptr& node) {
     // it's just one of those days
     Resolved res;
     int resolve_status = this->Resolve(path, res);
@@ -256,21 +256,21 @@ int QFS::GetHostPath(fs::path& output, const fs::path& path) {
     return res.mountpoint->GetHostPath(output, res.local_path);
 }
 
-bool QFS::IsOpen(const s32 fd) noexcept {
+bool QFS::IsOpen(s32 fd) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return false;
     return fh->IsOpen();
 }
 
-int QFS::SetSize(const s32 fd, uint64_t size) noexcept {
+int QFS::SetSize(s32 fd, s64 size) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return -POSIX_EBADF;
     return this->Operation.FTruncate(fd, size);
 }
 
-s64 QFS::GetSize(const s32 fd) noexcept {
+s64 QFS::GetSize(s32 fd) noexcept {
     fd_handle_ptr fh = this->GetHandle(fd);
     if (nullptr == fh)
         return -POSIX_EBADF;
@@ -289,7 +289,7 @@ s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
 // Privates (don't touch)
 //
 
-void QFS::SyncHostImpl(partition_ptr part) {
+void QFS::SyncHostImpl(const partition_ptr& part) {
     fs::path host_path{};
     if (0 != part->GetHostPath(host_path)) {
         std::cout << "Cannot safely resolve host directory for blkdev: 0x" << std::hex
@@ -378,7 +378,7 @@ fd_handle_ptr QFS::GetHandle(s32 fd) {
     return this->open_fd.at(fd);
 }
 
-mount_t* QFS::GetPartitionInfo(const partition_ptr part) {
+mount_t* QFS::GetPartitionInfo(const partition_ptr& part) {
     auto target_part_info = this->block_devices.find(part);
     // already mounted
     if (this->block_devices.end() == target_part_info)
@@ -394,7 +394,7 @@ partition_ptr QFS::GetPartitionByPath(const fs::path& path) {
     return nullptr;
 }
 
-partition_ptr QFS::GetPartitionByParent(const dir_ptr dir) {
+partition_ptr QFS::GetPartitionByParent(const dir_ptr& dir) {
     for (auto& [part, info] : this->block_devices) {
         if (info.parentdir == dir)
             return part;
@@ -402,8 +402,8 @@ partition_ptr QFS::GetPartitionByParent(const dir_ptr dir) {
     return nullptr;
 }
 
-int QFS::IsPartitionRO(partition_ptr part) {
-    mount_t* part_info = GetPartitionInfo(part);
+int QFS::IsPartitionRO(const partition_ptr& part) {
+    const mount_t* part_info = GetPartitionInfo(part);
     if (nullptr == part_info)
         return -POSIX_ENODEV;
     return 0 == (part_info->options & MountOptions::MOUNT_RW);

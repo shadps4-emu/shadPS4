@@ -6,7 +6,7 @@
 
 namespace QuasiFS {
 
-Symlink::Symlink(fs::path target) : target(target) {
+Symlink::Symlink(const fs::path& target) : target(target) {
     // fileno and blkdev assigned by partition
     this->st.st_size = target.string().size();
     this->st.st_mode |= QUASI_S_IFLNK;
@@ -14,7 +14,7 @@ Symlink::Symlink(fs::path target) : target(target) {
 }
 
 fs::path Symlink::follow(void) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
     return target;
 }
 } // namespace QuasiFS

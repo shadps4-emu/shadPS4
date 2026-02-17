@@ -68,7 +68,7 @@ struct File {
     s64 pos{0};              // cursor offset
 
     static fd_handle_ptr Create() {
-        return std::shared_ptr<File>(new File());
+        return std::make_shared<File>();
     }
 
     bool IsOpen(void) {

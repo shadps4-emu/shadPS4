@@ -10,7 +10,7 @@
 namespace QuasiFS {
 
 s64 VirtualFile::read(void* buf, u64 count) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     s64 read_amt = this->data.size() - descriptor_offset - count;
     // if >= 0 - we're good to go
@@ -26,7 +26,7 @@ s64 VirtualFile::read(void* buf, u64 count) {
 }
 
 s64 VirtualFile::write(const void* buf, u64 count) {
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
 
     auto& size = this->st.st_size;
     auto end_pos = descriptor_offset + count;
@@ -52,7 +52,7 @@ s32 VirtualFile::ftruncate(s64 length) {
         return -POSIX_EINVAL;
     this->data.resize(length, 0);
     this->st.st_size = length;
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
     return 0;
 }
 

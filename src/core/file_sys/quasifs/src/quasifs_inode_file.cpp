@@ -10,7 +10,7 @@
 namespace QuasiFS {
 
 s64 QuasiFile::read(void* buf, u64 count) {
-    st.st_atim.tv_sec = time(0);
+    st.st_atim.tv_sec = time(nullptr);
 
     s64& size = this->st.st_size;
     s64 tbr = (descriptor_offset + count) > size ? size - descriptor_offset : count;
@@ -19,7 +19,7 @@ s64 QuasiFile::read(void* buf, u64 count) {
 }
 
 s64 QuasiFile::write(const void* buf, u64 count) {
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
 
     s64& size = this->st.st_size;
     s64 end_pos = descriptor_offset + count;
@@ -36,7 +36,7 @@ s32 QuasiFile::fsync() {
 s32 QuasiFile::ftruncate(s64 length) {
     if (length < 0)
         return -POSIX_EINVAL;
-    st.st_mtim.tv_sec = time(0);
+    st.st_mtim.tv_sec = time(nullptr);
     this->st.st_size = length;
     return 0;
 }
