@@ -45,7 +45,7 @@ namespace Libraries::Kernel {
 static QuasiFS::QFS* g_qfs = Common::Singleton<QuasiFS::QFS>::Instance();
 
 s32 PS4_SYSV_ABI posix_open_impl(const char* raw_path, s32 flags, u16 mode) {
-    int result = g_qfs->Operation.Open(raw_path, flags, mode);
+    s32 result = g_qfs->Operation.Open(raw_path, flags, mode);
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o} result = {}", raw_path, flags, mode,
              result);
     if (result < 0) {
@@ -69,7 +69,7 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 }
 
 s32 PS4_SYSV_ABI posix_close_impl(s32 fd) {
-    int result = g_qfs->Operation.Close(fd);
+    s32 result = g_qfs->Operation.Close(fd);
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
         *__Error() = -result;
@@ -102,7 +102,7 @@ s64 PS4_SYSV_ABI posix_read_impl(s32 fd, void* buf, u64 count) {
     const auto remaining = g_qfs->GetSize(fd) - g_qfs->Operation.Tell(fd);
     memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(count, remaining));
 
-    int result = g_qfs->Operation.Read(fd, buf, count);
+    s64 result = g_qfs->Operation.Read(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -164,7 +164,7 @@ s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 
 // pread
 s64 PS4_SYSV_ABI posix_pread(s32 fd, void* buf, u64 count, s64 offset) {
-    int result = g_qfs->Operation.PRead(fd, buf, count, offset);
+    s64 result = g_qfs->Operation.PRead(fd, buf, count, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -191,7 +191,7 @@ s64 PS4_SYSV_ABI posix_readv_impl(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
                                  std::min<u64>(iov[iov_idx].iov_len, remaining));
     }
 
-    int result = g_qfs->Operation.ReadV(fd, iov, iovcnt);
+    s64 result = g_qfs->Operation.ReadV(fd, iov, iovcnt);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -214,7 +214,7 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 
 // write
 s64 PS4_SYSV_ABI posix_write_impl(s32 fd, const void* buf, u64 count) {
-    int result = g_qfs->Operation.Write(fd, buf, count);
+    s64 result = g_qfs->Operation.Write(fd, buf, count);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -237,7 +237,7 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 count) {
 
 // pwritev
 s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    int result = g_qfs->Operation.PWriteV(fd, iov, iovcnt, offset);
+    s64 result = g_qfs->Operation.PWriteV(fd, iov, iovcnt, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -256,7 +256,7 @@ s64 PS4_SYSV_ABI sceKernelPwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcn
 
 // pwrite
 s64 PS4_SYSV_ABI posix_pwrite(s32 fd, void* buf, u64 count, s64 offset) {
-    int result = g_qfs->Operation.PWrite(fd, buf, count, offset);
+    s64 result = g_qfs->Operation.PWrite(fd, buf, count, offset);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -275,7 +275,7 @@ s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 count, s64 offset) {
 
 // writev
 s64 PS4_SYSV_ABI posix_writev_impl(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    int result = g_qfs->Operation.WriteV(fd, iov, iovcnt);
+    s64 result = g_qfs->Operation.WriteV(fd, iov, iovcnt);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -301,7 +301,7 @@ s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 //
 
 s32 PS4_SYSV_ABI posix_unlink(const char* path) {
-    int result = g_qfs->Operation.Unlink(path);
+    s32 result = g_qfs->Operation.Unlink(path);
     LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
@@ -320,7 +320,7 @@ s32 PS4_SYSV_ABI sceKernelUnlink(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
-    int result = g_qfs->Operation.FSync(fd);
+    s32 result = g_qfs->Operation.FSync(fd);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -339,7 +339,7 @@ s32 PS4_SYSV_ABI sceKernelFsync(s32 fd) {
 }
 
 s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
-    int result = g_qfs->Operation.Truncate(path, length);
+    s32 result = g_qfs->Operation.Truncate(path, length);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -357,7 +357,7 @@ s32 PS4_SYSV_ABI sceKernelTruncate(const char* path, s64 length) {
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
-    int result = g_qfs->Operation.FTruncate(fd, length);
+    s32 result = g_qfs->Operation.FTruncate(fd, length);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -392,7 +392,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         return -1;
     }
 
-    int result = g_qfs->Operation.LSeek(fd, offset, origin);
+    s64 result = g_qfs->Operation.LSeek(fd, offset, origin);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -410,7 +410,7 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
-    int result = g_qfs->Operation.MKDir(path, mode);
+    s32 result = g_qfs->Operation.MKDir(path, mode);
     LOG_INFO(Kernel_Fs, "path = {} mode = {:#o} result = {}", path, mode, result);
     if (result < 0) {
         *__Error() = -result;
@@ -436,7 +436,7 @@ s32 PS4_SYSV_ABI sceKernelMkdir(const char* path, u16 mode) {
 }
 
 s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
-    int result = g_qfs->Operation.RMDir(path);
+    s32 result = g_qfs->Operation.RMDir(path);
     LOG_INFO(Kernel_Fs, "{} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
@@ -455,7 +455,7 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
-    int result = g_qfs->Operation.Stat(path, sb);
+    s32 result = g_qfs->Operation.Stat(path, sb);
     LOG_INFO(Kernel_Fs, "path = {} result = {}", path, result);
     if (result < 0) {
         *__Error() = -result;
@@ -485,7 +485,7 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI posix_fstat(s32 fd, OrbisKernelStat* sb) {
-    int result = g_qfs->Operation.FStat(fd, sb);
+    s32 result = g_qfs->Operation.FStat(fd, sb);
     LOG_INFO(Kernel_Fs, "fd = {} result = {}", fd, result);
     if (result < 0) {
         *__Error() = -result;
@@ -542,8 +542,8 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
     return result;
 }
 
-static s64 posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
-    int result = g_qfs->Operation.GetDents(fd, buf, count, basep);
+s64 PS4_SYSV_ABI posix_getdirentries_impl(s32 fd, char* buf, u64 count, s64* basep) {
+    s64 result = g_qfs->Operation.GetDents(fd, buf, count, basep);
     LOG_INFO(Kernel_Fs, "fd = {} count = {} result = {}", fd, count, result);
     if (result < 0) {
         *__Error() = -result;
@@ -574,7 +574,7 @@ s64 PS4_SYSV_ABI sceKernelGetdents(s32 fd, char* buf, u64 count) {
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
-    int result = g_qfs->Operation.Move(from, to, false);
+    s32 result = g_qfs->Operation.Move(from, to, false);
     if (result < 0) {
         *__Error() = -result;
         return -1;
@@ -686,34 +686,28 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
             continue;
         }
 
-        auto* file = h->GetFile(i);
-        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
-                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
-            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+        //   auto* file = h->GetFile(i);
+        auto file_handle = g_qfs->GetHandle(i);
+        if (nullptr == file_handle) {
+            LOG_ERROR(Kernel_Fs, "fd {} is not opened", i);
             *__Error() = POSIX_EBADF;
             return -1;
         }
 
-        s32 native_fd = -1;
-        switch (file->type) {
-        case Core::FileSys::FileType::Regular:
-            native_fd = static_cast<s32>(file->f.GetFileMapping());
-            break;
-        case Core::FileSys::FileType::Socket: {
-            auto sock = file->socket->Native();
-            native_fd = sock ? static_cast<s32>(*sock) : -1;
-            break;
-        }
-        case Core::FileSys::FileType::Device:
-            native_fd = -1;
-            break;
-        default:
-            UNREACHABLE();
-            break;
+        // QFS defines open as an inode linked to descriptor
+        if (!file_handle->IsOpen()) {
+            LOG_ERROR(Kernel_Fs, "fd {} is null", i);
+            *__Error() = POSIX_EBADF;
+            return -1;
         }
 
-        if (file->type == Core::FileSys::FileType::Regular ||
-            file->type == Core::FileSys::FileType::Device) {
+        auto file_node = file_handle->node;
+        s32 file_native_fd = file_node->is_block() ? file_handle->host_fd : -1;
+
+        if (!(file_node->is_file() || file_node->is_socket() || file_node->is_block()))
+            UNREACHABLE();
+
+        if (file_node->is_file() || file_node->is_block()) {
             // Disk files always ready
             // For devices, stdin (fd 0) is never read-ready.
             if (want_read && i != 0) {
@@ -723,24 +717,24 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set_posix* readfds, fd_set_posix* wri
                 FD_SET_POSIX(i, &write_ready);
             }
             // exceptfds not supported on regular files
-        } else if (file->type == Core::FileSys::FileType::Socket) {
+        } else if (file_node->is_socket()) {
             if (want_read) {
-                FD_SET(native_fd, &read_host);
+                FD_SET(file_native_fd, &read_host);
             }
             if (want_write) {
-                FD_SET(native_fd, &write_host);
+                FD_SET(file_native_fd, &write_host);
             }
             if (want_except) {
-                FD_SET(native_fd, &except_host);
+                FD_SET(file_native_fd, &except_host);
             }
-            socket_max_fd = std::max(socket_max_fd, native_fd);
+            socket_max_fd = std::max(socket_max_fd, file_native_fd);
         }
 
-        if (native_fd == -1) {
+        if (file_native_fd == -1) {
             continue;
         }
 
-        host_to_guest[native_fd] = i;
+        host_to_guest[file_native_fd] = i;
     }
 
     LOG_DEBUG(Kernel_Fs,
@@ -929,7 +923,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
     QuasiFS::Resolved res;
-    int result = g_qfs->Resolve(path, res);
+    s32 result = g_qfs->Resolve(path, res);
     if (result < 0) {
         *__Error() = -result;
         return ErrnoToSceKernelError(*__Error());

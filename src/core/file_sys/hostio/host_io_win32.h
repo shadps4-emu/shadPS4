@@ -86,8 +86,8 @@ public:
     s64 LSeek(s32 fd, s64 offset, s32 whence) override;
     s64 Tell(s32 fd) override;
 
-    s32 Truncate(const fs::path& path, u64 size) override;
-    s32 FTruncate(s32 fd, u64 size) override;
+    s32 Truncate(const fs::path& path, s64 size) override;
+    s32 FTruncate(s32 fd, s64 size) override;
 
     s64 Read(s32 fd, void* buf, u64 count) override;
     s64 PRead(s32 fd, void* buf, u64 count, s64 offset) override;

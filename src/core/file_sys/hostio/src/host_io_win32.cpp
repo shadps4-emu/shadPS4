@@ -86,7 +86,7 @@ s32 HostIO_Win32::FSync(s32 fd) {
 
 s64 HostIO_Win32::LSeek(s32 fd, s64 offset, s32 whence) {
     errno = 0;
-    s32 status = _lseeki64(fd, offset, ToWIN32SeekOrigin(whence));
+    s64 status = _lseeki64(fd, offset, ToWIN32SeekOrigin(whence));
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
@@ -112,7 +112,7 @@ int HostIO_Win32::FTruncate(s32 fd, s64 size) {
 
 s64 HostIO_Win32::Read(s32 fd, void* buf, u64 count) {
     errno = 0;
-    s32 status = _read(fd, buf, count);
+    s64 status = _read(fd, buf, count);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
@@ -123,7 +123,7 @@ s64 HostIO_Win32::PRead(s32 fd, void* buf, u64 count, s64 offset) {
         return -unix2bsd(errno);
     LSeek(fd, offset, SeekOrigin::ORIGIN);
 
-    s32 status = _read(fd, buf, count);
+    s64 status = _read(fd, buf, count);
 
     LSeek(fd, bak, SeekOrigin::ORIGIN);
     return status >= 0 ? status : -unix2bsd(errno);
@@ -138,7 +138,7 @@ s64 HostIO_Win32::PReadV(s32 fd, const OrbisKernelIovec* iov, u32 iovcnt, s64 of
 
 s64 HostIO_Win32::Write(s32 fd, const void* buf, u64 count) {
     errno = 0;
-    s32 status = _write(fd, buf, count);
+    s64 status = _write(fd, buf, count);
     return status >= 0 ? status : -unix2bsd(errno);
 }
 
@@ -149,7 +149,7 @@ s64 HostIO_Win32::PWrite(s32 fd, const void* buf, u64 count, s64 offset) {
         return -unix2bsd(errno);
     LSeek(fd, offset, SeekOrigin::ORIGIN);
 
-    s32 status = _write(fd, buf, count);
+    s64 status = _write(fd, buf, count);
 
     LSeek(fd, bak, SeekOrigin::ORIGIN);
     return status >= 0 ? status : -unix2bsd(errno);
