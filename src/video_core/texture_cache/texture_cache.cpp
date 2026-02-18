@@ -360,6 +360,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
         if (IsFullyContained(old_info, new_info)) {
             int mip = CalculateMipLevel(old_info, new_info, new_info.guest_address);
             int slice = CalculateSlice(old_info, new_info, new_info.guest_address, mip);
+            LOG_INFO(Render_Vulkan, "Subresource view: mip={}, slice={}, addr={:#x}", mip, slice,
+                     new_info.guest_address);
             return {cache_image_id, mip, slice};
         }
 
@@ -379,12 +381,14 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
             RegisterImage(new_id);
 
-            // Copy only if this is true expansion
-            if (safe_to_delete) {
-                auto& new_img = slot_images[new_id];
-                auto& old_img = slot_images[cache_image_id];
-                new_img.CopyImage(old_img);
-            }
+            // Always copy content for expansion
+            auto& new_img = slot_images[new_id];
+            auto& old_img = slot_images[cache_image_id];
+
+            // Upload any pending data
+            RefreshImage(old_img);
+
+            new_img.CopyImage(old_img);
 
             FreeImage(cache_image_id);
             return {new_id, -1, -1};
