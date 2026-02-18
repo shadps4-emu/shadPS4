@@ -295,6 +295,42 @@ static bool IsFullyContained(const ImageInfo& big, const ImageInfo& small) {
            small.size.depth <= big.size.depth && small.resources.levels <= big.resources.levels &&
            small.resources.layers <= big.resources.layers && small.guest_size <= big.guest_size;
 }
+
+static int CalculateMipLevel(const ImageInfo& big_image, const ImageInfo& small_image,
+                             VAddr small_address) {
+    const u64 offset = small_address - big_image.guest_address;
+
+    u64 mip_offset = 0;
+    for (u32 mip = 0; mip < big_image.resources.levels; ++mip) {
+        mip_offset += big_image.mips_layout[mip].size;
+        if (offset < mip_offset) {
+            return static_cast<int>(mip);
+        }
+    }
+
+    return 0;
+}
+
+static int CalculateSlice(const ImageInfo& big_image, const ImageInfo& small_image,
+                          VAddr small_address, int mip_level) {
+    if (big_image.resources.layers <= 1) {
+        return 0;
+    }
+
+    const u64 offset = small_address - big_image.guest_address;
+
+    // Calculate offset to start of this mip
+    u64 mip_start = 0;
+    for (int m = 0; m < mip_level; ++m) {
+        mip_start += big_image.mips_layout[m].size;
+    }
+
+    const u64 slice_offset = offset - mip_start;
+    const u32 slice_size = big_image.mips_layout[mip_level].size / big_image.resources.layers;
+
+    return slice_size > 0 ? static_cast<int>(slice_offset / slice_size) : 0;
+}
+
 std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& image_info,
                                                            BindingType binding,
                                                            ImageId cache_image_id,
@@ -322,7 +358,9 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // New fully inside old to safe view reuse
         if (IsFullyContained(old_info, new_info)) {
-            return {cache_image_id, -1, -1};
+            int mip = CalculateMipLevel(old_info, new_info, new_info.guest_address);
+            int slice = CalculateSlice(old_info, new_info, new_info.guest_address, mip);
+            return {cache_image_id, mip, slice};
         }
 
         // Old fully inside new to expansion case
@@ -363,7 +401,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   image_info.guest_address, image_info.guest_size,
                   vk::to_string(image_info.pixel_format), int(image_info.type),
                   image_info.num_samples, int(image_info.tile_mode));
-        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");//TODO remove it
+        UNREACHABLE_MSG(
+            "Encountered unresolvable image overlap with equal memory address."); // TODO remove it
         if (safe_to_delete) {
             FreeImage(cache_image_id);
         }
