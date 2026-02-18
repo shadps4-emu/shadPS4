@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include "common/logging/log.h"
 #include "common/spin_lock.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
+#include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
@@ -66,6 +68,11 @@ bool SleepqRemove(SleepQueue* sq, Pthread* td) {
     const auto removed = std::erase(sq->sq_blocked, td);
     const bool has_waiters = !sq->sq_blocked.empty();
     if (removed == 0) [[unlikely]] {
+        LOG_WARNING(Lib_Kernel,
+                    "SleepqRemove: thread '{}' not found in queue for wchan={:#x}, "
+                    "blocked_non_empty={}",
+                    td != nullptr ? td->name : "<null>",
+                    static_cast<u64>(reinterpret_cast<uintptr_t>(sq->sq_wchan)), has_waiters);
         return has_waiters;
     }
 

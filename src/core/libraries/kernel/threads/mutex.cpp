@@ -288,6 +288,10 @@ int PthreadMutex::Unlock() {
         m_lock.unlock();
 
         if (curthread->will_sleep == 0 && deferred) {
+            LOG_DEBUG(
+                Lib_Kernel,
+                "PthreadMutex::Unlock releasing deferred waiters owner='{}' count={} mutex='{}'",
+                curthread->name, curthread->nwaiter_defer, name);
             curthread->WakeAll();
         }
     }
