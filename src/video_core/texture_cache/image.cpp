@@ -465,7 +465,7 @@ void Image::CopyImage(Image& src_image) {
 
     // Check format compatibility
     if (src_info.pixel_format != info.pixel_format) {
-        LOG_WARNING(Render_Vulkan,
+        LOG_DEBUG(Render_Vulkan,
                     "Copy between different formats: src={}, dst={}. Color may be incorrect.",
                     vk::to_string(src_info.pixel_format), vk::to_string(info.pixel_format));
     }

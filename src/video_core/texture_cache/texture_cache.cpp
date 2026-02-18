@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <xxhash.h>
@@ -285,6 +285,16 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     return cache_image_id;
 }
 
+static bool FullyLayoutCompatible(const ImageInfo& a, const ImageInfo& b) {
+    return a.type == b.type && a.tile_mode == b.tile_mode && a.num_samples == b.num_samples &&
+           a.BlockDim() == b.BlockDim() && a.num_bits == b.num_bits &&
+           IsVulkanFormatCompatible(a.pixel_format, b.pixel_format);
+}
+static bool IsFullyContained(const ImageInfo& big, const ImageInfo& small) {
+    return small.size.width <= big.size.width && small.size.height <= big.size.height &&
+           small.size.depth <= big.size.depth && small.resources.levels <= big.resources.levels &&
+           small.resources.layers <= big.resources.layers && small.guest_size <= big.guest_size;
+}
 std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& image_info,
                                                            BindingType binding,
                                                            ImageId cache_image_id,
@@ -295,57 +305,54 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     // Equal address
     if (image_info.guest_address == cache_image.info.guest_address) {
-        const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
-        const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
-        if (image_info.BlockDim() != cache_image.info.BlockDim() ||
-            lhs_block_size != rhs_block_size) {
-            // Very likely this kind of overlap is caused by allocation from a pool.
+        const auto& old_info = cache_image.info;
+        const auto& new_info = image_info;
+        // Layout mismatch = pool reuse then destroy then recreate
+        if (!FullyLayoutCompatible(old_info, new_info)) {
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
-            return {merged_image_id, -1, -1};
+            return {ImageId{}, -1, -1};
+        }
+        // Exact match then reuse
+        if (old_info.guest_size == new_info.guest_size && IsFullyContained(old_info, new_info) &&
+            IsFullyContained(new_info, old_info)) {
+            return {cache_image_id, -1, -1};
         }
 
-        if (const auto depth_image_id = ResolveDepthOverlap(image_info, binding, cache_image_id)) {
-            return {depth_image_id, -1, -1};
+        //New fully inside old to safe view reuse
+        if (IsFullyContained(old_info, new_info)) {
+            return {cache_image_id, -1, -1};
         }
 
-        // Compressed view of uncompressed image with same block size.
-        if (image_info.props.is_block && !cache_image.info.props.is_block) {
-            return {ExpandImage(image_info, cache_image_id), -1, -1};
-        }
+        //Old fully inside new to expansion case
+        if (IsFullyContained(new_info, old_info)) {
 
-        if (image_info.guest_size == cache_image.info.guest_size &&
-            (image_info.type == AmdGpu::ImageType::Color3D ||
-             cache_image.info.type == AmdGpu::ImageType::Color3D)) {
-            return {ExpandImage(image_info, cache_image_id), -1, -1};
-        }
+            // Prefer ExpandImage if it supports true resource growth
+            if (new_info.resources.levels > old_info.resources.levels ||
+                new_info.resources.layers > old_info.resources.layers) {
 
-        // Size and resources are less than or equal, use image view.
-        if (image_info.pixel_format != cache_image.info.pixel_format ||
-            image_info.guest_size <= cache_image.info.guest_size) {
-            auto result_id = merged_image_id ? merged_image_id : cache_image_id;
-            const auto& result_image = slot_images[result_id];
-            const bool is_compatible =
-                IsVulkanFormatCompatible(result_image.info.pixel_format, image_info.pixel_format);
-            return {is_compatible ? result_id : ImageId{}, -1, -1};
-        }
-
-        // Size and resources are greater, expand the image.
-        if (image_info.type == cache_image.info.type &&
-            image_info.resources > cache_image.info.resources) {
-            return {ExpandImage(image_info, cache_image_id), -1, -1};
-        }
-
-        // Size is greater but resources are not, because the tiling mode is different.
-        // Likely the address is reused for a image with a different tiling mode.
-        if (image_info.tile_mode != cache_image.info.tile_mode) {
-            if (safe_to_delete) {
-                FreeImage(cache_image_id);
+                return {ExpandImage(new_info, cache_image_id), -1, -1};
             }
-            return {merged_image_id, -1, -1};
+
+            // Otherwise recreate safely 
+            ImageId new_id =
+                slot_images.insert(instance, scheduler, blit_helper, slot_image_views, new_info);
+
+            RegisterImage(new_id);
+
+            // Copy only if this is true expansion
+            if (safe_to_delete) {
+                auto& new_img = slot_images[new_id];
+                auto& old_img = slot_images[cache_image_id];
+                new_img.CopyImage(old_img);
+            }
+
+            FreeImage(cache_image_id);
+            return {new_id, -1, -1};
         }
 
+        // Any other weird case wtf it is...
         LOG_ERROR(Render_Vulkan,
                   "Image overlap failure:\n"
                   "Old: addr={:#x} size={:#x} fmt={} type={} samples={} tile={}\n"
@@ -358,7 +365,11 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   vk::to_string(image_info.pixel_format), int(image_info.type),
                   image_info.num_samples, int(image_info.tile_mode));
 
-        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
+        if (safe_to_delete) {
+            FreeImage(cache_image_id);
+        }
+
+        return {ImageId{}, -1, -1};
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
