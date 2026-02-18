@@ -572,6 +572,34 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
 
 set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 
+# ========== WINDOWS-SPECIFIC FIX FOR FIBER ASSEMBLY ==========
+# Windows-specific fix for fiber_context.s assembly
+# Keep original behavior of generating .obj in build directory
+if(WIN32)
+    # 使用构建目录，保持原始习惯
+    set(FIBER_OBJ_DIR "${CMAKE_CURRENT_BINARY_DIR}/shadps4.dir/${CMAKE_CFG_INTDIR}")
+    set(FIBER_OBJ_FILE "${FIBER_OBJ_DIR}/fiber_context.obj")
+    
+    # 确保目录存在
+    file(MAKE_DIRECTORY ${FIBER_OBJ_DIR})
+    
+    # 添加自定义命令 - 当 .s 变化时重新汇编
+    add_custom_command(
+        OUTPUT ${FIBER_OBJ_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/core/libraries/fiber/fiber_context.s
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${FIBER_OBJ_DIR}
+        COMMAND ${CMAKE_C_COMPILER} -c "${CMAKE_CURRENT_SOURCE_DIR}/src/core/libraries/fiber/fiber_context.s" -Fo${FIBER_OBJ_FILE}
+        COMMENT "Assembling fiber_context.s in build directory"
+        VERBATIM
+    )
+    
+    # 标记为生成的文件
+    set_source_files_properties(${FIBER_OBJ_FILE} PROPERTIES GENERATED TRUE)
+    
+    message(STATUS "Windows: Assembling fiber_context.s to ${FIBER_OBJ_FILE}")
+endif()
+# ========== END WINDOWS-SPECIFIC FIX ==========
+
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
              src/core/libraries/videodec/videodec2.cpp
@@ -1112,6 +1140,7 @@ add_executable(shadps4
     src/emulator.h
     src/sdl_window.h
     src/sdl_window.cpp
+    $<$<BOOL:${WIN32}>:${FIBER_OBJ_FILE}>
 )
 
 create_target_directory_groups(shadps4)
