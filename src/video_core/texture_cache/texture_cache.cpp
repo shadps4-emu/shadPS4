@@ -346,6 +346,18 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {merged_image_id, -1, -1};
         }
 
+        LOG_ERROR(Render_Vulkan,
+                  "Image overlap failure:\n"
+                  "Old: addr={:#x} size={:#x} fmt={} type={} samples={} tile={}\n"
+                  "New: addr={:#x} size={:#x} fmt={} type={} samples={} tile={}",
+                  cache_image.info.guest_address, cache_image.info.guest_size,
+                  vk::to_string(cache_image.info.pixel_format), int(cache_image.info.type),
+                  cache_image.info.num_samples, int(cache_image.info.tile_mode),
+
+                  image_info.guest_address, image_info.guest_size,
+                  vk::to_string(image_info.pixel_format), int(image_info.type),
+                  image_info.num_samples, int(image_info.tile_mode));
+
         UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
     }
 
