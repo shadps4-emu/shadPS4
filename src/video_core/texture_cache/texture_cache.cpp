@@ -320,12 +320,12 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {cache_image_id, -1, -1};
         }
 
-        //New fully inside old to safe view reuse
+        // New fully inside old to safe view reuse
         if (IsFullyContained(old_info, new_info)) {
             return {cache_image_id, -1, -1};
         }
 
-        //Old fully inside new to expansion case
+        // Old fully inside new to expansion case
         if (IsFullyContained(new_info, old_info)) {
 
             // Prefer ExpandImage if it supports true resource growth
@@ -335,7 +335,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 return {ExpandImage(new_info, cache_image_id), -1, -1};
             }
 
-            // Otherwise recreate safely 
+            // Otherwise recreate safely
             ImageId new_id =
                 slot_images.insert(instance, scheduler, blit_helper, slot_image_views, new_info);
 
@@ -351,7 +351,6 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             FreeImage(cache_image_id);
             return {new_id, -1, -1};
         }
-
         // Any other weird case wtf it is...
         LOG_ERROR(Render_Vulkan,
                   "Image overlap failure:\n"
@@ -364,7 +363,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   image_info.guest_address, image_info.guest_size,
                   vk::to_string(image_info.pixel_format), int(image_info.type),
                   image_info.num_samples, int(image_info.tile_mode));
-
+        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");//TODO remove it
         if (safe_to_delete) {
             FreeImage(cache_image_id);
         }
