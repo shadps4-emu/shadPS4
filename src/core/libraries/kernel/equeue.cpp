@@ -126,12 +126,6 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUs
         return GetTriggeredEvents(ev, num);
     }
     const auto micros = timo ? *timo : 0u;
-
-    if (HasSmallTimer()) {
-        // If a small timer is set, just wait for it to expire.
-        return WaitForSmallTimer(ev, num, micros);
-    }
-
     int count = 0;
 
     const auto predicate = [&] {
@@ -149,15 +143,6 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUs
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
 
-    if (HasSmallTimer()) {
-        if (count > 0) {
-            const auto time_waited = std::chrono::duration_cast<std::chrono::microseconds>(
-                                         std::chrono::steady_clock::now() - m_events[0].time_added)
-                                         .count();
-            count = WaitForSmallTimer(ev, num, std::max(0l, long(micros - time_waited)));
-        }
-    }
-
     return count;
 }
 
@@ -171,7 +156,7 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
                     event.TriggerDisplay(trigger_data);
                 } else if (filter == SceKernelEvent::Filter::User) {
                     event.TriggerUser(trigger_data);
-                } else if (filter == SceKernelEvent::Filter::Timer) {
+                } else if (filter == SceKernelEvent::Filter::Timer || filter == SceKernelEvent::HrTimer) {
                     event.TriggerTimer();
                 } else {
                     event.Trigger(trigger_data);
@@ -207,49 +192,6 @@ int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
     }
 
     return count;
-}
-
-bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
-    SmallTimer st;
-    st.event = ev.event;
-    st.added = std::chrono::steady_clock::now();
-    st.interval = std::chrono::microseconds{ev.event.data};
-    {
-        std::scoped_lock lock{m_mutex};
-        m_small_timers[st.event.ident] = std::move(st);
-    }
-    return true;
-}
-
-int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
-    ASSERT(num >= 1);
-
-    auto curr_clock = std::chrono::steady_clock::now();
-    const auto wait_end_us = (micros == 0) ? std::chrono::steady_clock::time_point::max()
-                                           : curr_clock + std::chrono::microseconds{micros};
-    int count = 0;
-    do {
-        curr_clock = std::chrono::steady_clock::now();
-        {
-            std::scoped_lock lock{m_mutex};
-            for (auto it = m_small_timers.begin(); it != m_small_timers.end() && count < num;) {
-                const SmallTimer& st = it->second;
-
-                if (curr_clock - st.added >= st.interval) {
-                    ev[count++] = st.event;
-                    it = m_small_timers.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-
-            if (count > 0)
-                return count;
-        }
-        std::this_thread::yield();
-    } while (curr_clock < wait_end_us);
-
-    return 0;
 }
 
 bool EqueueInternal::EventExists(u64 id, s16 filter) {
@@ -323,11 +265,9 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
 }
 
 static void HrTimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
-    static EqueueEvent event;
-    event.event = kevent;
-    event.event.data = HrTimerSpinlockThresholdUs;
-    eq->AddSmallTimer(event);
-    eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
+    if (eq->EventExists(kevent.ident, kevent.filter)) {
+        eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
+    }
 }
 
 s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* ts, void* udata) {
@@ -349,18 +289,6 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     event.event.data = total_us;
     event.event.udata = udata;
 
-    // HR timers cannot be implemented within the existing event queue architecture due to the
-    // slowness of the notification mechanism. For instance, a 100us timer will lose its precision
-    // as the trigger time drifts by +50-700%, depending on the host PC and workload. To address
-    // this issue, we use a spinlock for small waits (which can be adjusted using
-    // `HrTimerSpinlockThresholdUs`) and fall back to boost asio timers if the time to tick is
-    // large. Even for large delays, we truncate a small portion to complete the wait
-    // using the spinlock, prioritizing precision.
-
-    if (total_us < HrTimerSpinlockThresholdUs) {
-        return eq->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
-    }
-
     if (!eq->AddEvent(event) ||
         !eq->ScheduleEvent(id, SceKernelEvent::Filter::HrTimer, HrTimerCallback)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
@@ -373,12 +301,8 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (eq->HasSmallTimer()) {
-        return eq->RemoveSmallTimer(id) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOENT;
-    } else {
-        return eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer) ? ORBIS_OK
-                                                                    : ORBIS_KERNEL_ERROR_ENOENT;
-    }
+    return eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer) ? ORBIS_OK
+                                                                : ORBIS_KERNEL_ERROR_ENOENT;
 }
 
 static void TimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {

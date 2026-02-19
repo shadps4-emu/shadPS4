@@ -157,22 +157,6 @@ public:
     int WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUseconds* timo);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
     int GetTriggeredEvents(SceKernelEvent* ev, int num);
-
-    bool AddSmallTimer(EqueueEvent& event);
-    bool HasSmallTimer() {
-        std::scoped_lock lock{m_mutex};
-        return !m_small_timers.empty();
-    }
-    bool RemoveSmallTimer(u64 id) {
-        if (HasSmallTimer()) {
-            std::scoped_lock lock{m_mutex};
-            return m_small_timers.erase(id) > 0;
-        }
-        return false;
-    }
-
-    int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
-
     bool EventExists(u64 id, s16 filter);
 
 private:
