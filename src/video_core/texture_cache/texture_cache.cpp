@@ -353,6 +353,36 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             }
             return {merged_image_id, -1, -1};
         }
+
+        // If all properties match but new image is ~1.42x larger, it's likely mipmaps with padding
+        if (image_info.guest_size > cache_image.info.guest_size &&
+            image_info.pixel_format == cache_image.info.pixel_format &&
+            image_info.type == cache_image.info.type &&
+            image_info.tile_mode == cache_image.info.tile_mode &&
+            image_info.pitch == cache_image.info.pitch) {
+
+            u64 base_size = static_cast<u64>(image_info.size.width) *
+                            static_cast<u64>(image_info.size.height) *
+                            static_cast<u64>(image_info.size.depth) * (image_info.num_bits / 8);
+
+            double ratio = static_cast<double>(image_info.guest_size) / base_size;
+
+            // The 1.42x ratio we're seeing (between 1.40 and 1.45)
+            if (ratio > 1.40 && ratio < 1.45) {
+                u32 max_mips =
+                    static_cast<u32>(std::log2(std::max(
+                        {image_info.size.width, image_info.size.height, image_info.size.depth}))) +
+                    1;
+
+                LOG_WARNING(Render_Vulkan,
+                            "Detected mipmapped texture at {:#x} (ratio: {:.2f}x, mips: {})",
+                            image_info.guest_address, ratio, max_mips);
+
+                ImageInfo corrected_info = image_info;
+                corrected_info.resources.levels = max_mips;
+                return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+            }
+        }
         // Enhanced debug logging for unreachable case
         // Calculate expected size based on format and dimensions
         u64 expected_size =
