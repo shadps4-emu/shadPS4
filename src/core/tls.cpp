@@ -200,7 +200,6 @@ thread_local std::once_flag init_tls_flag;
 
 void EnsureThreadInitialized() {
     std::call_once(init_tls_flag, [] { SetTcbBase(Libraries::Kernel::g_curthread->tcb); });
-    Core::ClearStack<12_KB>();
 }
 
 } // namespace Core
