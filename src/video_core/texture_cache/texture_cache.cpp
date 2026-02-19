@@ -383,6 +383,56 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 return {ExpandImage(corrected_info, cache_image_id), -1, -1};
             }
         }
+        // We have Already  mipmaps, now getting a request with fewer mips but larger size This
+        // indicates array layers or different mip range
+        if (image_info.guest_size > cache_image.info.guest_size &&
+            image_info.resources.levels < cache_image.info.resources.levels) {
+
+            u64 base_size = static_cast<u64>(image_info.size.width) *
+                            static_cast<u64>(image_info.size.height) * (image_info.num_bits / 8);
+
+            double ratio_to_base = static_cast<double>(image_info.guest_size) / base_size;
+            double size_ratio = static_cast<double>(image_info.guest_size) /
+                                static_cast<double>(cache_image.info.guest_size);
+
+            LOG_WARNING(Render_Vulkan,
+                        "Image at {:#x} evolving:\n"
+                        "  Previously: {} mips, {} bytes\n"
+                        "  Now: {} mips, {} bytes\n"
+                        "  Size ratio (new/old): {:.2f}x\n"
+                        "  Ratio to base: {:.2f}x",
+                        image_info.guest_address, cache_image.info.resources.levels,
+                        cache_image.info.guest_size, image_info.resources.levels,
+                        image_info.guest_size, size_ratio, ratio_to_base);
+
+            // Check for array layers
+            double layers_double = std::round(ratio_to_base);
+            if (std::abs(ratio_to_base - layers_double) < 0.1) {
+                u32 probable_layers = static_cast<u32>(layers_double);
+                LOG_INFO(Render_Vulkan, "  -> Detected array with {} layers", probable_layers);
+
+                ImageInfo corrected_info = image_info;
+                corrected_info.resources.layers = probable_layers;
+                // Keep the reported mip levels
+                return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+            }
+
+            // Check for specific mip range (like levels 0-1 only)
+            if (image_info.resources.levels == 2 && size_ratio > 1.2 && size_ratio < 1.3) {
+                LOG_INFO(Render_Vulkan, "Detected mip levels 0-1 only (with padding)");
+                if (safe_to_delete) {
+                    FreeImage(cache_image_id);
+                }
+                return {ExpandImage(image_info, merged_image_id), -1, -1};
+            }
+
+            // Default: free old and create new
+            LOG_WARNING(Render_Vulkan, "Creating new image with current parameters");
+            if (safe_to_delete) {
+                FreeImage(cache_image_id);
+            }
+            return {ExpandImage(image_info, merged_image_id), -1, -1};
+        }
         // Enhanced debug logging for unreachable case
         // Calculate expected size based on format and dimensions
         u64 expected_size =
