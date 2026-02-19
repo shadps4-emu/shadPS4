@@ -550,6 +550,11 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                              "full mip: {:.2f}x)",
                              ratio_to_full_mip);
 
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.levels = cache_image.info.resources.levels;
+                    ImageId new_image_id = ExpandImage(corrected_info, merged_image_id);
+
+                    // Then handle the old image
                     if (safe_to_delete) {
                         LOG_INFO(Render_Vulkan,
                                  "Old image not recently used (last accessed {} ticks ago), safe "
@@ -562,11 +567,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                                     "new image",
                                     scheduler.CurrentTick() - cache_image.tick_accessed_last);
                     }
-
-                    // Create new image with same mip count as cached
-                    ImageInfo corrected_info = image_info;
-                    corrected_info.resources.levels = cache_image.info.resources.levels;
-                    return {ExpandImage(corrected_info, merged_image_id), -1, -1};
+                    return {new_image_id, -1, -1};
                 }
             }
         }
