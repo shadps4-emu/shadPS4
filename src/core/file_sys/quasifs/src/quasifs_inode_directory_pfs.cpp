@@ -37,13 +37,14 @@ s64 DirectoryPFS::read(void* buf, u64 count) {
 
     s64 to_fill = (std::min<s64>(this->st.st_size, static_cast<s64>(count))) - bytes_available -
                   descriptor_offset;
+    descriptor_offset += bytes_available;
     if (to_fill < 0) {
         LOG_ERROR(Kernel_Fs, "Dirent may have leaked {} bytes", -to_fill);
-        return -to_fill + bytes_available;
+        return bytes_available;
     }
     memset(static_cast<u8*>(buf) + bytes_available, 0, to_fill);
 
-    descriptor_offset += to_fill + bytes_available;
+    descriptor_offset += to_fill;
     return to_fill + bytes_available;
 }
 
