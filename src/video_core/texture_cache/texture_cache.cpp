@@ -417,21 +417,61 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 return {ExpandImage(corrected_info, cache_image_id), -1, -1};
             }
 
-            // Check for specific mip range (like levels 0-1 only)
-            if (image_info.resources.levels == 2 && size_ratio > 1.2 && size_ratio < 1.3) {
-                LOG_INFO(Render_Vulkan, "Detected mip levels 0-1 only (with padding)");
-                if (safe_to_delete) {
-                    FreeImage(cache_image_id);
-                }
-                return {ExpandImage(image_info, merged_image_id), -1, -1};
-            }
+            // If new image has fewer mip levels than cached image
+            if (image_info.resources.levels < cache_image.info.resources.levels) {
+                // Calculate what the size should be for the requested mip range
+                u64 expected_mip_range_size = 0;
+                u32 num_requested_mips = image_info.resources.levels;
 
-            // Default: free old and create new
-            LOG_WARNING(Render_Vulkan, "Creating new image with current parameters");
-            if (safe_to_delete) {
-                FreeImage(cache_image_id);
+                // Calculate size of first N mip levels
+                for (u32 mip = 0; mip < num_requested_mips; mip++) {
+                    u32 mip_width = std::max(image_info.size.width >> mip, 1u);
+                    u32 mip_height = std::max(image_info.size.height >> mip, 1u);
+                    u32 mip_depth = std::max(image_info.size.depth >> mip, 1u);
+                    expected_mip_range_size += static_cast<u64>(mip_width) * mip_height *
+                                               mip_depth * (image_info.num_bits / 8);
+                }
+
+                // Add some tolerance for padding/alignment (20%)
+                u64 min_acceptable = expected_mip_range_size;
+                u64 max_acceptable = expected_mip_range_size * 12 / 10; // 20% tolerance a lot probably?
+
+                LOG_INFO(Render_Vulkan,
+                         "Mip range check:\n"
+                         "  Requested mips: {} (out of {})\n"
+                         "  Expected size for range: {} bytes\n"
+                         "  Actual new image size: {} bytes\n"
+                         "  Within tolerance: {}",
+                         num_requested_mips, cache_image.info.resources.levels,
+                         expected_mip_range_size, image_info.guest_size,
+                         (image_info.guest_size >= min_acceptable &&
+                          image_info.guest_size <= max_acceptable));
+
+                // If the new image size roughly matches the first N mips, it's likely a subrange
+                if (image_info.guest_size >= min_acceptable &&
+                    image_info.guest_size <= max_acceptable) {
+
+                    LOG_INFO(Render_Vulkan,
+                             "Detected mip subrange: first {} levels (size matches expected range)",
+                             num_requested_mips);
+
+                    if (safe_to_delete) {
+                        LOG_INFO(Render_Vulkan,
+                                 "Old image not recently used (last accessed {} ticks ago), safe "
+                                 "to delete",
+                                 scheduler.CurrentTick() - cache_image.tick_accessed_last);
+                        FreeImage(cache_image_id);
+                    } else {
+                        LOG_WARNING(Render_Vulkan,
+                                    "Old image still in use (last accessed {} ticks ago), but need "
+                                    "new image - forcing creation",
+                                    scheduler.CurrentTick() - cache_image.tick_accessed_last);
+                    }
+
+                    // Create new image with just the requested mip levels
+                    return {ExpandImage(image_info, merged_image_id), -1, -1};
+                }
             }
-            return {ExpandImage(image_info, merged_image_id), -1, -1};
         }
         // Enhanced debug logging for unreachable case
         // Calculate expected size based on format and dimensions
