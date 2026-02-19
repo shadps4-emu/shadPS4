@@ -116,9 +116,12 @@
 [submodule "externals/miniz"]
 	path = externals/miniz
 	url = https://github.com/richgel999/miniz
+# [submodule "externals/aacdec/fdk-aac"]
+	# path = externals/aacdec/fdk-aac
+	# url = https://android.googlesource.com/platform/external/aac
 [submodule "externals/aacdec/fdk-aac"]
 	path = externals/aacdec/fdk-aac
-	url = https://android.googlesource.com/platform/external/aac
+	url = https://github.com/mstorsjo/fdk-aac.git
 [submodule "externals/CLI11"]
 	path = externals/CLI11
 	url = https://github.com/shadexternals/CLI11.git
