@@ -22,13 +22,15 @@ static constexpr auto HrTimerSpinlockThresholdUs = 1200u;
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
+    u64 ident = event.event.ident;
+    s16 filter = event.event.filter;
+
     event.time_added = std::chrono::steady_clock::now();
-    if (event.event.filter == SceKernelEvent::Filter::Timer ||
-        event.event.filter == SceKernelEvent::Filter::HrTimer) {
+    if (filter == SceKernelEvent::Filter::Timer || filter == SceKernelEvent::Filter::HrTimer) {
         // HrTimer events are offset by the threshold of time at the end that we spinlock for
         // greater accuracy.
         const auto offset =
-            event.event.filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
+            filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
         event.timer_interval = std::chrono::microseconds(event.event.data - offset);
 
         // Timer interval is hidden from event data.
@@ -39,13 +41,22 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
     event.event.flags &= ~SceKernelEvent::Flags::Add;
 
     // Clear flag is appended to most event types internally.
-    if (event.event.filter != SceKernelEvent::Filter::User) {
+    if (filter != SceKernelEvent::Filter::User) {
         event.event.flags |= SceKernelEvent::Flags::Clear;
     }
 
-    const auto& it = std::ranges::find(m_events, event);
-    if (it != m_events.cend()) {
-        *it = std::move(event);
+    // Equeues don't allow multiple of the same event.
+    const auto& remove_it = std::ranges::find_if(m_events, [ident, filter](auto& ev) {
+        return ev.event.ident == ident && ev.event.filter == filter;
+    });
+    if (remove_it != m_events.cend()) {
+        m_events.erase(remove_it);
+    }
+
+    // Add the new event to the equeue
+    const auto& add_it = std::ranges::find(m_events, event);
+    if (add_it != m_events.cend()) {
+        *add_it = std::move(event);
     } else {
         m_events.emplace_back(std::move(event));
     }
@@ -346,10 +357,6 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     // large. Even for large delays, we truncate a small portion to complete the wait
     // using the spinlock, prioritizing precision.
 
-    if (eq->EventExists(event.event.ident, event.event.filter)) {
-        eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer);
-    }
-
     if (total_us < HrTimerSpinlockThresholdUs) {
         return eq->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
@@ -398,13 +405,6 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
     event.event.fflags = 0;
     event.event.data = usec;
     event.event.udata = udata;
-
-    if (eq->EventExists(event.event.ident, event.event.filter)) {
-        eq->RemoveEvent(id, SceKernelEvent::Filter::Timer);
-        LOG_DEBUG(Kernel_Event,
-                  "Timer event already exists, removing it: queue name={}, queue id={}",
-                  eq->GetName(), event.event.ident);
-    }
 
     LOG_DEBUG(Kernel_Event, "Added timing event: queue name={}, queue id={}, usec={}, pointer={:x}",
               eq->GetName(), event.event.ident, usec, reinterpret_cast<uintptr_t>(udata));
