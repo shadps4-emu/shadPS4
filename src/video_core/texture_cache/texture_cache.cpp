@@ -542,6 +542,32 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                     corrected_info.resources.levels = max_possible_mips;
                     return {ExpandImage(corrected_info, cache_image_id), -1, -1};
                 }
+                // Check if the new image is exactly 1.33x the full mip chain size
+                // This indicates a different tiling/alignment for the same content
+                if (std::abs(ratio_to_full_mip - 1.33) < 0.05) {
+                    LOG_INFO(Render_Vulkan,
+                             "  -> Detected same mip chain with different tiling/layout (ratio to "
+                             "full mip: {:.2f}x)",
+                             ratio_to_full_mip);
+
+                    if (safe_to_delete) {
+                        LOG_INFO(Render_Vulkan,
+                                 "Old image not recently used (last accessed {} ticks ago), safe "
+                                 "to delete",
+                                 scheduler.CurrentTick() - cache_image.tick_accessed_last);
+                        FreeImage(cache_image_id);
+                    } else {
+                        LOG_WARNING(Render_Vulkan,
+                                    "Old image still in use (last accessed {} ticks ago), but need "
+                                    "new image",
+                                    scheduler.CurrentTick() - cache_image.tick_accessed_last);
+                    }
+
+                    // Create new image with same mip count as cached
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.levels = cache_image.info.resources.levels;
+                    return {ExpandImage(corrected_info, merged_image_id), -1, -1};
+                }
             }
         }
         // Enhanced debug logging for unreachable case
