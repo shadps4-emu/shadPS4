@@ -434,7 +434,8 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
                 // Add some tolerance for padding/alignment (20%)
                 u64 min_acceptable = expected_mip_range_size;
-                u64 max_acceptable = expected_mip_range_size * 12 / 10; // 20% tolerance a lot probably?
+                u64 max_acceptable =
+                    expected_mip_range_size * 12 / 10; // 20% tolerance a lot probably?
 
                 LOG_INFO(Render_Vulkan,
                          "Mip range check:\n"
@@ -470,6 +471,76 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
                     // Create new image with just the requested mip levels
                     return {ExpandImage(image_info, merged_image_id), -1, -1};
+                }
+                // If mip range check failed, try array with mipmap detection
+                // Calculate full mip chain size
+                u64 full_mip_size = 0;
+                u32 max_possible_mips = cache_image.info.resources.levels;
+                for (u32 mip = 0; mip < max_possible_mips; mip++) {
+                    u32 mip_width = std::max(image_info.size.width >> mip, 1u);
+                    u32 mip_height = std::max(image_info.size.height >> mip, 1u);
+                    u32 mip_depth = std::max(image_info.size.depth >> mip, 1u);
+                    full_mip_size += static_cast<u64>(mip_width) * mip_height * mip_depth *
+                                     (image_info.num_bits / 8);
+                }
+
+                double ratio_to_full_mip =
+                    static_cast<double>(image_info.guest_size) / full_mip_size;
+
+                LOG_INFO(Render_Vulkan,
+                         "Array/mipmap detection:\n"
+                         "  Full mip chain size: {} bytes\n"
+                         "  Ratio to full mip: {:.2f}x\n"
+                         "  Ratio to base: {:.2f}x",
+                         full_mip_size, ratio_to_full_mip, ratio_to_base);
+
+                // Check for 2 layers with base only (ratio ~2.0)
+                if (std::abs(ratio_to_base - 2.0) < 0.2) {
+                    LOG_INFO(Render_Vulkan, "Detected 2-layer array (base only)");
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.layers = 2;
+                    corrected_info.resources.levels = 1;
+                    return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+                }
+
+                // Check for 2 layers with full mipmaps (ratio ~2.66)
+                if (std::abs(ratio_to_base - 2.66) < 0.2) {
+                    LOG_INFO(Render_Vulkan, "Detected 2-layer array with full mipmaps");
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.layers = 2;
+                    corrected_info.resources.levels = max_possible_mips;
+                    return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+                }
+
+                // Check if it's a multiple of full mip size (array with full mipmaps)
+                double layers_from_full = std::round(ratio_to_full_mip);
+                if (std::abs(ratio_to_full_mip - layers_from_full) < 0.2 &&
+                    layers_from_full >= 2.0) {
+                    u32 probable_layers = static_cast<u32>(layers_from_full);
+                    LOG_INFO(Render_Vulkan, "Detected {} layers with full mipmaps",
+                             probable_layers);
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.layers = probable_layers;
+                    corrected_info.resources.levels = max_possible_mips;
+                    return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+                }
+
+                // Check for cube map (6 layers) with base only
+                if (std::abs(ratio_to_base - 6.0) < 0.5) {
+                    LOG_INFO(Render_Vulkan, "Detected cube map (6 layers, base only)");
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.layers = 6;
+                    corrected_info.resources.levels = 1;
+                    return {ExpandImage(corrected_info, cache_image_id), -1, -1};
+                }
+
+                // Check for cube map with full mipmaps (6 * 1.33 = 8.0)
+                if (std::abs(ratio_to_base - 8.0) < 0.5) {
+                    LOG_INFO(Render_Vulkan, "Detected cube map with full mipmaps");
+                    ImageInfo corrected_info = image_info;
+                    corrected_info.resources.layers = 6;
+                    corrected_info.resources.levels = max_possible_mips;
+                    return {ExpandImage(corrected_info, cache_image_id), -1, -1};
                 }
             }
         }
