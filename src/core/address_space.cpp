@@ -373,6 +373,7 @@ struct AddressSpace::Impl {
     }
 
     void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
+        std::scoped_lock lk{mutex};
         // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
 
@@ -441,6 +442,7 @@ struct AddressSpace::Impl {
     }
 
     void Unmap(VAddr virtual_addr, u64 size) {
+        std::scoped_lock lk{mutex};
         // Loop through all regions in the requested range
         u64 remaining_size = size;
         VAddr current_addr = virtual_addr;
@@ -481,6 +483,7 @@ struct AddressSpace::Impl {
     }
 
     void Protect(VAddr virtual_addr, u64 size, bool read, bool write, bool execute) {
+        std::scoped_lock lk{mutex};
         DWORD new_flags{};
 
         if (write && !read) {
@@ -530,8 +533,9 @@ struct AddressSpace::Impl {
             DWORD old_flags{};
             if (!VirtualProtectEx(process, LPVOID(range_addr), range_size, new_flags, &old_flags)) {
                 UNREACHABLE_MSG(
-                    "Failed to change virtual memory protection for address {:#x}, size {:#x}",
-                    range_addr, range_size);
+                    "Failed to change virtual memory protection for address {:#x}, size "
+                    "{:#x}, error {}",
+                    virtual_addr, size, Common::GetLastErrorMsg());
             }
         }
     }
@@ -544,6 +548,7 @@ struct AddressSpace::Impl {
         return reserved_regions;
     }
 
+    std::mutex mutex;
     HANDLE process{};
     HANDLE backing_handle{};
     u8* backing_base{};

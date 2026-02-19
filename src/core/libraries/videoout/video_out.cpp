@@ -217,7 +217,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::SceKernelEvent* ev, s64* 
     }
 
     auto event_data = ev->data >> 0x10;
-    if (ev->ident != static_cast<s32>(OrbisVideoOutInternalEventId::Flip) || ev->data == 0) {
+    if (ev->ident != static_cast<s32>(OrbisVideoOutInternalEventId::Flip) || ev->data >= 0) {
         *data = event_data;
     } else {
         *data = event_data | 0xffff000000000000;
@@ -338,7 +338,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_a
     return 16;
 }
 
-s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** unk) {
+s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, void** unk) {
     auto* port = driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
@@ -348,7 +348,7 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, u32 arg, void** u
         Platform::InterruptId::GfxFlip, [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxFlip, "An unexpected IRQ occured");
             ASSERT_MSG(port->buffer_labels[buf_id] == 1, "Out of order flip IRQ");
-            const auto result = driver->SubmitFlip(port, buf_id, arg, true);
+            const auto result = driver->SubmitFlip(port, buf_id, flip_arg, true);
             ASSERT_MSG(result, "EOP flip submission failed");
         });
 

@@ -462,50 +462,132 @@ static std::pair<u32, u32> SanitizeCopyLayers(const ImageInfo& src_info, const I
 void Image::CopyImage(Image& src_image) {
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
-    ASSERT(src_info.resources.layers == info.resources.layers || num_mips == 1);
+
+    // Check format compatibility
+    if (src_info.pixel_format != info.pixel_format) {
+        LOG_WARNING(Render_Vulkan,
+                    "Copy between different formats: src={}, dst={}. Color may be incorrect.",
+                    vk::to_string(src_info.pixel_format), vk::to_string(info.pixel_format));
+    }
 
     const u32 width = src_info.size.width;
     const u32 height = src_info.size.height;
-    const u32 depth =
+    const u32 base_depth =
         info.type == AmdGpu::ImageType::Color3D ? info.size.depth : src_info.size.depth;
+
+    auto [test_src_layers, test_dst_layers] = SanitizeCopyLayers(src_info, info, base_depth);
+
+    ASSERT(test_src_layers == test_dst_layers || num_mips == 1 ||
+           (ConvertImageType(src_info.type) != ConvertImageType(info.type) &&
+            (test_src_layers == 1 || test_dst_layers == 1)));
 
     SetBackingSamples(info.num_samples, false);
     src_image.SetBackingSamples(src_info.num_samples);
 
     boost::container::small_vector<vk::ImageCopy, 8> image_copies;
+
+    const bool src_is_2d = ConvertImageType(src_info.type) == vk::ImageType::e2D;
+    const bool src_is_3d = ConvertImageType(src_info.type) == vk::ImageType::e3D;
+    const bool dst_is_2d = ConvertImageType(info.type) == vk::ImageType::e2D;
+    const bool dst_is_3d = ConvertImageType(info.type) == vk::ImageType::e3D;
+
+    const bool is_2d_to_3d = src_is_2d && dst_is_3d;
+    const bool is_3d_to_2d = src_is_3d && dst_is_2d;
+    const bool is_same_type = !is_2d_to_3d && !is_3d_to_2d;
+
+    // Use full aspect mask for color images
+    vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor;
+
+    // If images have depth/stencil, we might need to handle separately
+    if (src_image.aspect_mask & vk::ImageAspectFlagBits::eDepth) {
+        aspect = vk::ImageAspectFlagBits::eDepth;
+    } else if (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) {
+        aspect = vk::ImageAspectFlagBits::eStencil;
+    }
+
     for (u32 mip = 0; mip < num_mips; ++mip) {
         const auto mip_w = std::max(width >> mip, 1u);
         const auto mip_h = std::max(height >> mip, 1u);
-        const auto mip_d = std::max(depth >> mip, 1u);
-        const auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
+        const auto mip_d = std::max(base_depth >> mip, 1u);
 
-        image_copies.emplace_back(vk::ImageCopy{
-            .srcSubresource{
-                .aspectMask = src_image.aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = mip,
-                .baseArrayLayer = 0,
-                .layerCount = src_layers,
-            },
-            .dstSubresource{
-                .aspectMask = aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
-                .mipLevel = mip,
-                .baseArrayLayer = 0,
-                .layerCount = dst_layers,
-            },
-            .extent = {mip_w, mip_h, mip_d},
-        });
+        auto [src_layers, dst_layers] = SanitizeCopyLayers(src_info, info, mip_d);
+
+        if (is_same_type) {
+            u32 copy_layers = std::min(src_layers, dst_layers);
+
+            if (src_is_3d)
+                src_layers = 1;
+            if (dst_is_3d)
+                dst_layers = 1;
+
+            vk::ImageCopy copy_region = {
+                .srcSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = copy_layers,
+                },
+                .dstSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = copy_layers,
+                },
+                .extent = vk::Extent3D(mip_w, mip_h, mip_d),
+            };
+            image_copies.push_back(copy_region);
+        } else if (is_2d_to_3d) {
+            vk::ImageCopy copy_region = {
+                .srcSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = src_layers,
+                },
+                .dstSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+                .extent = vk::Extent3D(mip_w, mip_h, src_layers),
+            };
+            image_copies.push_back(copy_region);
+        } else if (is_3d_to_2d) {
+            vk::ImageCopy copy_region = {
+                .srcSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+                .dstSubresource{
+                    .aspectMask = aspect,
+                    .mipLevel = mip,
+                    .baseArrayLayer = 0,
+                    .layerCount = dst_layers,
+                },
+                .extent = vk::Extent3D(mip_w, mip_h, dst_layers),
+            };
+            image_copies.push_back(copy_region);
+        }
     }
 
     scheduler->EndRendering();
+
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
-    cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
-                     backing->state.layout, image_copies);
 
-    Transit(vk::ImageLayout::eGeneral,
-            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
+    if (!image_copies.empty()) {
+        cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
+                         backing->state.layout, image_copies);
+    }
+
+    // Simplified final layout - always use ShaderReadOnlyOptimal
+    // This is safe for most cases and avoids the usage check
+    Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {});
 }
 
 void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset) {

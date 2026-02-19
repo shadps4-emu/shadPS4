@@ -557,15 +557,15 @@ void ControllerOutput::FinalizeUpdate() {
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
             controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
-            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER:
             controller->SetTouchpadState(0, new_button_state, 0.50f, 0.5f);
-            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT:
             controller->SetTouchpadState(0, new_button_state, 0.75f, 0.5f);
-            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         case LEFTJOYSTICK_HALFMODE:
             leftjoystick_halfmode = new_button_state;
@@ -617,7 +617,7 @@ void ControllerOutput::FinalizeUpdate() {
             SetMouseGyroRollMode(new_button_state);
             break;
         default: // is a normal key (hopefully)
-            controller->CheckButton(0, SDLGamepadToOrbisButton(button), new_button_state);
+            controller->Button(0, SDLGamepadToOrbisButton(button), new_button_state);
             break;
         }
     } else if (axis != SDL_GAMEPAD_AXIS_INVALID && positive_axis) {
@@ -648,12 +648,12 @@ void ControllerOutput::FinalizeUpdate() {
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controller->CheckButton(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
+            controller->Button(0, OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
             controller->Axis(0, c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controller->CheckButton(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
+            controller->Button(0, OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;

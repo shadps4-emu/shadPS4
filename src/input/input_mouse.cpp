@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
@@ -85,7 +85,7 @@ void EmulateJoystick(GameController* controller, u32 interval) {
     }
 }
 
-constexpr float constant_down_accel[3] = {0.0f, 10.0f, 0.0f};
+constexpr float constant_down_accel[3] = {0.0f, 9.81f, 0.0f};
 void EmulateGyro(GameController* controller, u32 interval) {
     float d_x = 0, d_y = 0;
     SDL_GetRelativeMouseState(&d_x, &d_y);
@@ -104,8 +104,8 @@ void EmulateTouchpad(GameController* controller, u32 interval) {
     controller->SetTouchpadState(0, (mouse_buttons & SDL_BUTTON_LMASK) != 0,
                                  std::clamp(x / g_window->GetWidth(), 0.0f, 1.0f),
                                  std::clamp(y / g_window->GetHeight(), 0.0f, 1.0f));
-    controller->CheckButton(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
-                            (mouse_buttons & SDL_BUTTON_RMASK) != 0);
+    controller->Button(0, Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
+                       (mouse_buttons & SDL_BUTTON_RMASK) != 0);
 }
 
 void ApplyMouseInputBlockers() {

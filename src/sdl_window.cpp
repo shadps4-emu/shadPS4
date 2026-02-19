@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "SDL3/SDL_events.h"
@@ -269,9 +269,14 @@ namespace Frontend {
 
 using namespace Libraries::Pad;
 
-static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+std::mutex motion_control_mutex;
+float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
+static Uint32 SDLCALL PollGyroAndAccel(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    return controller->Poll();
+    std::scoped_lock l{motion_control_mutex};
+    controller->Gyro(0, gyro_buf);
+    controller->Acceleration(0, accel_buf);
+    return 4;
 }
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
@@ -407,12 +412,16 @@ void WindowSDL::WaitEvent() {
     // AND IT DOESN'T EVEN USE PROPER ENUMS
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
         switch ((SDL_SensorType)event.gsensor.sensor) {
-        case SDL_SENSOR_GYRO:
-            controller->Gyro(0, event.gsensor.data);
+        case SDL_SENSOR_GYRO: {
+            std::scoped_lock l{motion_control_mutex};
+            memcpy(gyro_buf, event.gsensor.data, sizeof(gyro_buf));
             break;
-        case SDL_SENSOR_ACCEL:
-            controller->Acceleration(0, event.gsensor.data);
+        }
+        case SDL_SENSOR_ACCEL: {
+            std::scoped_lock l{motion_control_mutex};
+            memcpy(accel_buf, event.gsensor.data, sizeof(accel_buf));
             break;
+        }
         default:
             break;
         }
@@ -471,7 +480,7 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    SDL_AddTimer(100, &PollController, controller);
+    SDL_AddTimer(4, &PollGyroAndAccel, controller);
     SDL_AddTimer(33, Input::MousePolling, (void*)controller);
 }
 
@@ -540,7 +549,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // as it would break the entire touchpad handling
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
-        controller->CheckButton(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+        controller->Button(0, OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
     }
 

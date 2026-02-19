@@ -3,6 +3,8 @@
 
 #include "dimensions.h"
 
+#include "core/tls.h"
+
 #include <mutex>
 #include <thread>
 
@@ -622,6 +624,8 @@ libusb_transfer_status DimensionsBackend::HandleAsyncTransfer(libusb_transfer* t
 s32 DimensionsBackend::SubmitTransfer(libusb_transfer* transfer) {
     if (transfer->endpoint == 0x01) {
         std::thread write_thread([this, transfer] {
+            Core::EnsureThreadInitialized();
+
             HandleAsyncTransfer(transfer);
 
             const u8 flags = transfer->flags;

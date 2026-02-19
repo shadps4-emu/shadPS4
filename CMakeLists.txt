@@ -227,7 +227,10 @@ find_package(fmt 10.2.0 CONFIG)
 find_package(glslang 15 CONFIG)
 find_package(half 1.12.0 MODULE)
 find_package(magic_enum 0.9.7 CONFIG)
+find_package(miniz 3.1 CONFIG)
+find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
+find_package(OpenAL CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3_mixer 2.8.1 CONFIG)
 if (SDL3_mixer_FOUND)
@@ -496,6 +499,8 @@ set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
                  src/core/libraries/libc_internal/libc_internal_str.h
                  src/core/libraries/libc_internal/libc_internal_math.cpp
                  src/core/libraries/libc_internal/libc_internal_math.h
+                 src/core/libraries/libc_internal/libc_internal_threads.cpp
+                 src/core/libraries/libc_internal/libc_internal_threads.h
                  src/core/libraries/libc_internal/printf.h
 )
 
@@ -613,6 +618,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_sns_facebook_dialog.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
+            src/core/libraries/np/object_manager.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -1112,7 +1118,7 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz fdk-aac CLI11::CLI11)
+target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")

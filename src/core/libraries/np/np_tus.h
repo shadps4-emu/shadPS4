@@ -4,6 +4,7 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/rtc/rtc.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -11,148 +12,76 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpTus {
 
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariable();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotData();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAsync();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariable();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusGetData();
-s32 PS4_SYSV_ABI sceNpTusGetDataAsync();
-s32 PS4_SYSV_ABI sceNpTusGetDataVUser();
-s32 PS4_SYSV_ABI sceNpTusGetDataVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatus();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariable();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatus();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatus();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariable();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusSetData();
-s32 PS4_SYSV_ABI sceNpTusSetDataAsync();
-s32 PS4_SYSV_ABI sceNpTusSetDataVUser();
-s32 PS4_SYSV_ABI sceNpTusSetDataVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariable();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAsync();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA();
-s32 PS4_SYSV_ABI sceNpTssGetData();
-s32 PS4_SYSV_ABI sceNpTssGetDataAsync();
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorage();
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync();
-s32 PS4_SYSV_ABI sceNpTssGetStorage();
-s32 PS4_SYSV_ABI sceNpTssGetStorageAsync();
-s32 PS4_SYSV_ABI sceNpTusAbortRequest();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableA();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUser();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners();
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA();
-s32 PS4_SYSV_ABI sceNpTusCreateRequest();
-s32 PS4_SYSV_ABI sceNpTusCreateTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataA();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataAAsync();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUser();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotDataVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableA();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx();
-s32 PS4_SYSV_ABI sceNpTusDeleteRequest();
-s32 PS4_SYSV_ABI sceNpTusGetDataA();
-s32 PS4_SYSV_ABI sceNpTusGetDataAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetDataAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetDataAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusGetDataForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusA();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsDataStatusForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableA();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusA();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableA();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusA();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableA();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusPollAsync();
-s32 PS4_SYSV_ABI sceNpTusSetDataA();
-s32 PS4_SYSV_ABI sceNpTusSetDataAAsync();
-s32 PS4_SYSV_ABI sceNpTusSetDataAVUser();
-s32 PS4_SYSV_ABI sceNpTusSetDataAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableA();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUser();
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusSetThreadParam();
-s32 PS4_SYSV_ABI sceNpTusSetTimeout();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableA();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAAsync();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUser();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableAVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSave();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveAsync();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUser();
-s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync();
-s32 PS4_SYSV_ABI sceNpTusWaitAsync();
+using OrbisNpTssSlotId = s32;
+using OrbisNpTusSlotId = s32;
+
+struct OrbisNpTusVariable {
+    OrbisNpId npId;
+    int set;
+    Libraries::Rtc::OrbisRtcTick lastChanged;
+    u8 pad1[4];
+    OrbisNpId lastChangedAuthor;
+    s64 variable;
+    s64 oldVariable;
+    OrbisNpAccountId owner;
+    OrbisNpAccountId lastChangedAuthorId;
+};
+
+struct OrbisNpTusDataInfo {
+    u64 size;
+    u8 data[384];
+};
+
+struct OrbisNpTusDataStatus {
+    OrbisNpId npId;
+    int set;
+    Libraries::Rtc::OrbisRtcTick lastChanged;
+    OrbisNpId lastChangedAuthor;
+    u8 pad2[4];
+    void* data;
+    u64 dataSize;
+    OrbisNpTusDataInfo info;
+};
+
+static_assert(sizeof(OrbisNpTusDataStatus) == 0x1F0);
+
+struct OrbisNpTusDataStatusA {
+    OrbisNpOnlineId onlineId;
+    u8 pad[16];
+    int set;
+    Libraries::Rtc::OrbisRtcTick lastChanged;
+    OrbisNpOnlineId lastChangedAuthor;
+    u8 pad2[20];
+    void* data;
+    u64 dataSize;
+    OrbisNpTusDataInfo info;
+    OrbisNpAccountId owner;
+    OrbisNpAccountId lastChangedAuthorId;
+    u8 pad3[16];
+};
+
+static_assert(sizeof(OrbisNpTusDataStatusA) == 0x210);
+
+enum class OrbisNpTssStatus : int {
+    Ok = 0,
+    Partial = 1,
+    NotModified = 2,
+};
+
+struct OrbisNpTssDataStatus {
+    Libraries::Rtc::OrbisRtcTick modified;
+    OrbisNpTssStatus status;
+    u64 contentLength;
+};
+
+struct OrbisNpTssGetDataOptParam {
+    u64 size;
+    u64* offset;
+    u64* last;
+    void* param;
+};
+
+s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpTus
