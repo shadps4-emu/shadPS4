@@ -248,6 +248,7 @@ public:
     Id output_point_size{};
     Id output_layer{};
     Id output_viewport_index{};
+    Id output_stencil_ref{};
     Id primitive_id{};
     Id vertex_index{};
     Id instance_id{};

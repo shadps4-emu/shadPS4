@@ -254,6 +254,15 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return op_store(ctx.frag_depth);
     case IR::Attribute::SampleMask:
         return op_store(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value));
+    case IR::Attribute::StencilRef: {
+        if (!ctx.profile.supports_shader_stencil_export || !Sirit::ValidId(ctx.output_stencil_ref)) {
+            LOG_WARNING(Render,
+                        "StencilRef attribute write requested but VK_EXT_shader_stencil_export "
+                        "is unavailable; write ignored");
+            return;
+        }
+        return op_store(ctx.output_stencil_ref);
+    }
     default:
         UNREACHABLE_MSG("Write attribute {}", attr);
     }

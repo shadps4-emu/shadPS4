@@ -302,6 +302,11 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
             ctx.AddExtension("SPV_KHR_fragment_shader_barycentric");
             ctx.AddCapability(spv::Capability::FragmentBarycentricKHR);
         }
+        if (info.stores.GetAny(IR::Attribute::StencilRef) &&
+            profile.supports_shader_stencil_export) {
+            ctx.AddExtension("SPV_EXT_shader_stencil_export");
+            ctx.AddCapability(spv::Capability::StencilExportEXT);
+        }
         if (info.loads.Get(IR::Attribute::SampleIndex) ||
             runtime_info.fs_info.addr_flags.linear_sample_ena ||
             runtime_info.fs_info.addr_flags.persp_sample_ena) {
