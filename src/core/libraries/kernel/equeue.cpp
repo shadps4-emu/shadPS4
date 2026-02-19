@@ -27,13 +27,8 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 
     event.time_added = std::chrono::steady_clock::now();
     if (filter == SceKernelEvent::Filter::Timer || filter == SceKernelEvent::Filter::HrTimer) {
-        // HrTimer events are offset by the threshold of time at the end that we spinlock for
-        // greater accuracy.
-        const auto offset =
-            filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
-        event.timer_interval = std::chrono::microseconds(event.event.data - offset);
-
-        // Timer interval is hidden from event data.
+        // Store requested timer interval, then remove it from the actual event data.
+        event.timer_interval = std::chrono::microseconds(event.event.data);
         event.event.data = 0;
     }
 
