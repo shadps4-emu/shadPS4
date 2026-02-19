@@ -156,7 +156,8 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
                     event.TriggerDisplay(trigger_data);
                 } else if (filter == SceKernelEvent::Filter::User) {
                     event.TriggerUser(trigger_data);
-                } else if (filter == SceKernelEvent::Filter::Timer || filter == SceKernelEvent::HrTimer) {
+                } else if (filter == SceKernelEvent::Filter::Timer ||
+                           filter == SceKernelEvent::HrTimer) {
                     event.TriggerTimer();
                 } else {
                     event.Trigger(trigger_data);
