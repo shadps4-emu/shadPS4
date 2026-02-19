@@ -45,6 +45,18 @@ Tcb* GetTcbBase();
 /// Makes sure TLS is initialized for the thread before entering guest.
 void EnsureThreadInitialized();
 
+template <size_t size>
+#ifdef __clang__
+__attribute__((optnone))
+#else
+__attribute__((optimize("O0")))
+#endif
+void ClearStack() {
+    volatile void* buf = alloca(size);
+    memset(const_cast<void*>(buf), 0, size);
+    buf = nullptr;
+}
+
 template <class F, F f>
 struct HostCallWrapperImpl;
 
