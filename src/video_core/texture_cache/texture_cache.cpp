@@ -353,7 +353,45 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             }
             return {merged_image_id, -1, -1};
         }
+        // If the image has same format and type but larger size, it's likely a new image allocated
+        // at the same address. Aggressively expand it to avoid view compatibility issues.
+        if (image_info.pixel_format == cache_image.info.pixel_format &&
+            image_info.type == cache_image.info.type &&
+            image_info.tile_mode == cache_image.info.tile_mode &&
+            image_info.pitch == cache_image.info.pitch &&
+            image_info.BlockDim() == cache_image.info.BlockDim() &&
+            image_info.num_bits == cache_image.info.num_bits &&
+            image_info.guest_size > cache_image.info.guest_size) {
 
+            u64 expected_size = (static_cast<u64>(image_info.size.width) *
+                                 static_cast<u64>(image_info.size.height) *
+                                 static_cast<u64>(image_info.size.depth) *
+                                 static_cast<u64>(image_info.num_bits) / 8);
+
+            LOG_WARNING(Render_Vulkan,
+                        "AGGRESSIVE FALLBACK: Image at {:#x} has same properties but larger size\n"
+                        "  Old: {:#x} ({:.2f}x expected)\n"
+                        "  New: {:#x} ({:.2f}x expected)\n"
+                        "  Ratio new/old: {:.2f}x\n"
+                        "  Creating new image with size {:#x}",
+                        image_info.guest_address, cache_image.info.guest_size,
+                        static_cast<double>(cache_image.info.guest_size) / expected_size,
+                        image_info.guest_size,
+                        static_cast<double>(image_info.guest_size) / expected_size,
+                        static_cast<double>(image_info.guest_size) / cache_image.info.guest_size,
+                        image_info.guest_size);
+
+            // Create new image
+            ImageId new_image_id = ExpandImage(image_info, cache_image_id);
+
+            if (new_image_id.index == -1 || new_image_id.index == 0xffffffff) {
+                LOG_CRITICAL(Render_Vulkan, "Failed to create new image!");
+                return {merged_image_id, -1, -1};
+            }
+
+            // Don't free old image - let cache manage it
+            return {new_image_id, -1, -1};
+        }
         // Enhanced debug logging for unreachable case
         // Calculate expected size based on format and dimensions
         u64 expected_size =

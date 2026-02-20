@@ -467,7 +467,6 @@ void Image::CopyImage(Image& src_image) {
     auto src_format = src_info.pixel_format;
     auto dst_format = info.pixel_format;
 
-    // Use the proper bitmask test instead of comparing with 0
     bool src_has_stencil = (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) ==
                            vk::ImageAspectFlagBits::eStencil;
     bool dst_has_stencil =
@@ -479,7 +478,7 @@ void Image::CopyImage(Image& src_image) {
                   "Cannot copy between depth-stencil and depth-only images. "
                   "src_has_stencil={}, dst_has_stencil={}. Skipping copy.",
                   src_has_stencil, dst_has_stencil);
-        return; 
+        return;
     }
 
     // If both have stencil, we need to copy both aspects or handle separately
@@ -489,7 +488,7 @@ void Image::CopyImage(Image& src_image) {
                     "Stencil data will be lost.");
     }
 
-    // Check format compatibility (existing code)
+    // Check format compatibility
     if (src_info.pixel_format != info.pixel_format) {
         LOG_DEBUG(Render_Vulkan,
                   "Copy between different formats: src={}, dst={}. Color may be incorrect.",
