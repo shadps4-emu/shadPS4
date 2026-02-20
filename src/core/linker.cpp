@@ -104,6 +104,15 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
+    // Simulate sceKernelInternalMemory mapping, a mapping usually performed during libkernel init.
+    static constexpr VAddr KernelAllocBase = 0x880000000ULL;
+    static constexpr s64 InternalMemorySize = 0x1000000;
+    void* addr_out{reinterpret_cast<void*>(KernelAllocBase)};
+
+    const s32 ret = Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
+        &addr_out, InternalMemorySize, 3, 0, "SceKernelInternalMemory");
+    ASSERT_MSG(ret == 0, "Unable to perform sceKernelInternalMemory mapping");
+
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
         if (auto& ipc = IPC::Instance()) {
