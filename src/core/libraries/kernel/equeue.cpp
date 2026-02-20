@@ -8,8 +8,8 @@
 #include "common/logging/log.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/orbis_error.h"
-#include "core/libraries/libs.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
 
@@ -24,7 +24,8 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 
     // Calculate timer interval
     event.time_added = std::chrono::steady_clock::now();
-    if (event.event.filter == SceKernelEvent::Filter::Timer || event.event.filter == SceKernelEvent::Filter::HrTimer) {
+    if (event.event.filter == SceKernelEvent::Filter::Timer ||
+        event.event.filter == SceKernelEvent::Filter::HrTimer) {
         // Set timer interval
         event.timer_interval = std::chrono::nanoseconds(event.event.data);
     }
@@ -329,7 +330,8 @@ static void HrTimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
     eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
 }
 
-s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKernelTimespec* ts, void* udata) {
+s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKernelTimespec* ts,
+                                          void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
