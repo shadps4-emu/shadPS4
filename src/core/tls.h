@@ -45,29 +45,6 @@ Tcb* GetTcbBase();
 /// Makes sure TLS is initialized for the thread before entering guest.
 void EnsureThreadInitialized();
 
-template <size_t size>
-#ifdef __clang__
-__attribute__((optnone))
-#else
-__attribute__((optimize("O0")))
-#endif
-void ClearStack() {
-    volatile void* buf = alloca(size);
-    memset(const_cast<void*>(buf), 0, size);
-    buf = nullptr;
-}
-
-template <class ReturnType, class... FuncArgs, class... CallArgs>
-ReturnType ExecuteGuest(PS4_SYSV_ABI ReturnType (*func)(FuncArgs...), CallArgs&&... args) {
-    EnsureThreadInitialized();
-    // clear stack to avoid trash from EnsureThreadInitialized
-    auto* tcb = GetTcbBase();
-    if (tcb != nullptr && tcb->tcb_fiber == nullptr) {
-        ClearStack<12_KB>();
-    }
-    return func(std::forward<CallArgs>(args)...);
-}
-
 template <class F, F f>
 struct HostCallWrapperImpl;
 
