@@ -268,9 +268,6 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (ts->tv_sec > 100 || ts->tv_nsec < 100'000) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
     const auto total_us = ts->tv_sec * 1000'000 + ts->tv_nsec / 1000;
 
     EqueueEvent event{};
