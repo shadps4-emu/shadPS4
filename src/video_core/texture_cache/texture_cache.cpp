@@ -293,74 +293,104 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     const bool safe_to_delete =
         scheduler.CurrentTick() - cache_image.tick_accessed_last > NumFramesBeforeRemoval;
 
+    // 检查缓存的图像是否有效
+    if (cache_image.info.pitch == 0) {
+        LOG_WARNING(Render_Vulkan, 
+                   "Cached image at {:#x} has pitch=0, cannot resolve overlap. Creating new image.",
+                   cache_image.info.guest_address);
+        if (safe_to_delete) {
+            FreeImage(cache_image_id);
+        }
+        return {ImageId{}, -1, -1};
+    }
+
     // Equal address
     if (image_info.guest_address == cache_image.info.guest_address) {
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
 
+        // 检查 pitch 是否匹配
         if (image_info.pitch != cache_image.info.pitch) {
+            LOG_WARNING(Render_Vulkan, 
+                       "Pitch mismatch for same address: old={}, new={}. Creating separate image.",
+                       cache_image.info.pitch, image_info.pitch);
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
-            return {merged_image_id, -1, -1};
+            return {ImageId{}, -1, -1}; // 返回空 ID 表示需要创建新图像
         }
 
+        // 检查块大小是否匹配
         if (image_info.BlockDim() != cache_image.info.BlockDim() ||
             lhs_block_size != rhs_block_size) {
-            // Very likely this kind of overlap is caused by allocation from a pool.
+            LOG_WARNING(Render_Vulkan,
+                       "Block size mismatch for same address. Creating separate image.");
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
-            return {merged_image_id, -1, -1};
+            return {ImageId{}, -1, -1};
         }
 
+        // 尝试解析深度重叠
         if (const auto depth_image_id = ResolveDepthOverlap(image_info, binding, cache_image_id)) {
             return {depth_image_id, -1, -1};
         }
 
-        // Compressed view of uncompressed image with same block size.
+        // 压缩视图的非压缩图像，但块大小相同
         if (image_info.props.is_block && !cache_image.info.props.is_block) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
+        // 3D 图像的特殊处理
         if (image_info.guest_size == cache_image.info.guest_size &&
             (image_info.type == AmdGpu::ImageType::Color3D ||
              cache_image.info.type == AmdGpu::ImageType::Color3D)) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
-        // Size and resources are less than or equal, use image view.
+        // 大小和资源小于等于，使用图像视图
         if (image_info.pixel_format != cache_image.info.pixel_format ||
             image_info.guest_size <= cache_image.info.guest_size) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
                 IsVulkanFormatCompatible(result_image.info.pixel_format, image_info.pixel_format);
-            return {is_compatible ? result_id : ImageId{}, -1, -1};
+            
+            if (!is_compatible) {
+                LOG_WARNING(Render_Vulkan,
+                           "Format incompatible for same address. Creating separate image.");
+                if (safe_to_delete) {
+                    FreeImage(cache_image_id);
+                }
+                return {ImageId{}, -1, -1};
+            }
+            return {result_id, -1, -1};
         }
 
-        // Size and resources are greater, expand the image.
+        // 大小和资源更大，扩展图像
         if (image_info.type == cache_image.info.type &&
             image_info.resources > cache_image.info.resources) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
-        // Size is greater but resources are not, because the tiling mode is different.
-        // Likely the address is reused for a image with a different tiling mode.
+        // 大小更大但资源不是，因为平铺模式不同
         if (image_info.tile_mode != cache_image.info.tile_mode) {
+            LOG_WARNING(Render_Vulkan,
+                       "Tile mode mismatch for same address. Creating separate image.");
             if (safe_to_delete) {
                 FreeImage(cache_image_id);
             }
-            return {merged_image_id, -1, -1};
+            return {ImageId{}, -1, -1};
         }
 
-        // Enhanced debug logging for unreachable case
-        // Calculate expected size based on format and dimensions
-        u64 expected_size =
-            (static_cast<u64>(image_info.size.width) * static_cast<u64>(image_info.size.height) *
-             static_cast<u64>(image_info.size.depth) * static_cast<u64>(image_info.num_bits) / 8);
-        LOG_ERROR(Render_Vulkan,
-                  "Unresolvable image overlap with equal memory address:\n"
+        // 如果执行到这里，说明所有检查都通过了但依然无法解决
+        // 记录详细日志但不要崩溃，创建新图像
+        LOG_WARNING(Render_Vulkan,
+                    "Unresolvable image overlap with equal memory address. "
+                    "Creating separate image copy.");
+        
+        // 详细的调试日志
+        LOG_ERROR(Render_Vulkan, "Unresolvable image overlap with equal memory address:\n"
                   "=== OLD IMAGE (cached) ===\n"
                   "  Address:        {:#x}\n"
                   "  Size:           {:#x} bytes\n"
@@ -406,11 +436,6 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   "  Same pitch:            {}\n"
                   "  Old resources <= new:  {} (old: {}, new: {})\n"
                   "  Old size <= new size:  {}\n"
-                  "  Expected size (calc):  {} bytes\n"
-                  "  Size ratio (new/expected): {:.2f}x\n"
-                  "  Size ratio (new/old):  {:.2f}x\n"
-                  "  Old vs expected diff:  {} bytes ({:+.2f}%)\n"
-                  "  New vs expected diff:  {} bytes ({:+.2f}%)\n"
                   "  Merged image ID:       {}\n"
                   "  Binding type:          {}\n"
                   "  Current tick:          {}\n"
@@ -443,23 +468,15 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   (image_info.pitch == cache_image.info.pitch),
                   (cache_image.info.resources <= image_info.resources),
                   cache_image.info.resources.levels, image_info.resources.levels,
-                  (cache_image.info.guest_size <= image_info.guest_size), expected_size,
-
-                  // Size ratios
-                  static_cast<double>(image_info.guest_size) / expected_size,
-                  static_cast<double>(image_info.guest_size) / cache_image.info.guest_size,
-
-                  // Difference between actual and expected sizes with percentages
-                  static_cast<s64>(cache_image.info.guest_size) - static_cast<s64>(expected_size),
-                  (static_cast<double>(cache_image.info.guest_size) / expected_size - 1.0) * 100.0,
-
-                  static_cast<s64>(image_info.guest_size) - static_cast<s64>(expected_size),
-                  (static_cast<double>(image_info.guest_size) / expected_size - 1.0) * 100.0,
+                  (cache_image.info.guest_size <= image_info.guest_size),
 
                   merged_image_id.index, static_cast<int>(binding), scheduler.CurrentTick(),
                   scheduler.CurrentTick() - cache_image.tick_accessed_last);
-
-        UNREACHABLE_MSG("Encountered unresolvable image overlap with equal memory address.");
+        
+        if (safe_to_delete) {
+            FreeImage(cache_image_id);
+        }
+        return {ImageId{}, -1, -1};
     }
 
     // Right overlap, the image requested is a possible subresource of the image from cache.
@@ -506,11 +523,23 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
+    auto& src_image = slot_images[image_id];
+    
+    // 检查源图像是否有效
+    if (src_image.info.pitch == 0) {
+        LOG_WARNING(Render_Vulkan, 
+                   "Cannot expand image with pitch=0 at {:#x}. Creating new image without copy.",
+                   src_image.info.guest_address);
+        const auto new_image_id =
+            slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
+        RegisterImage(new_image_id);
+        return new_image_id;
+    }
+    
     const auto new_image_id =
         slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     RegisterImage(new_image_id);
 
-    auto& src_image = slot_images[image_id];
     auto& new_image = slot_images[new_image_id];
 
     RefreshImage(new_image);
@@ -540,6 +569,21 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
                          [&](ImageId image_id, Image& image) { image_ids.push_back(image_id); });
 
     ImageId image_id{};
+    bool need_new_image = false;
+    bool found_valid_source = false;
+    ImageId valid_source_id{};
+
+    // 首先检查是否有有效的源图像可以复制
+    for (const auto& cache_id : image_ids) {
+        auto& cache_image = slot_images[cache_id];
+        if (cache_image.info.guest_address == info.guest_address) {
+            if (cache_image.info.pitch > 0 && cache_image.info.guest_size > 0) {
+                valid_source_id = cache_id;
+                found_valid_source = true;
+                break;
+            }
+        }
+    }
 
     // Check for a perfect match first
     for (const auto& cache_id : image_ids) {
@@ -560,44 +604,85 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (exact_fmt && info.pixel_format != cache_image.info.pixel_format) {
             continue;
         }
+        // 确保缓存的图像是有效的
+        if (cache_image.info.pitch == 0) {
+            LOG_WARNING(Render_Vulkan, "Cached image has pitch=0, cannot use");
+            continue;
+        }
         image_id = cache_id;
+        break;
     }
 
     // Try to resolve overlaps (if any)
     int view_mip{-1};
     int view_slice{-1};
-    if (!image_id) {
+    if (!image_id && !need_new_image) {
         for (const auto& cache_id : image_ids) {
+            auto& cache_image = slot_images[cache_id];
+            // 跳过无效的缓存图像
+            if (cache_image.info.pitch == 0) {
+                continue;
+            }
+            
             view_mip = -1;
             view_slice = -1;
 
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
             auto [overlap_image_id, overlap_view_mip, overlap_view_slice] =
                 ResolveOverlap(merged_info, desc.type, cache_id, image_id);
+            
             if (overlap_image_id) {
                 image_id = overlap_image_id;
                 view_mip = overlap_view_mip;
                 view_slice = overlap_view_slice;
+            } else if (!overlap_image_id) {
+                // ResolveOverlap 返回空 ID 表示需要创建新图像
+                need_new_image = true;
+                // 继续检查其他缓存图像，因为可能有更好的匹配
             }
         }
     }
 
-    if (image_id) {
+    if (image_id && !need_new_image) {
         Image& image_resolved = slot_images[image_id];
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
+            need_new_image = true;
             image_id = {};
         } else if (image_resolved.info.resources < info.resources) {
             // The image was clearly picked up wrong.
-            FreeImage(image_id);
+            need_new_image = true;
             image_id = {};
-            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
+            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed, creating new image");
         }
     }
-    // Create and register a new image
-    if (!image_id) {
+    
+    // Create and register a new image if needed
+    if (!image_id || need_new_image) {
         image_id = slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
         RegisterImage(image_id);
+        
+        // 如果是因为重叠需要创建新图像，并且有有效的源图像，尝试复制
+        if (need_new_image && found_valid_source) {
+            // auto& src_image = slot_images[valid_source_id];
+            // auto& new_image = slot_images[image_id];
+            
+            // LOG_INFO(Render_Vulkan, 
+                    // "Copying from valid source image (pitch={}) to new image (pitch={}) for address {:#x}",
+                    // src_image.info.pitch, info.pitch, info.guest_address);
+            
+            // if (instance.IsMaintenance8Supported()) {
+                // new_image.CopyImage(src_image);
+            // } else {
+                // const auto& copy_buffer = 
+                    // buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+                // new_image.CopyImageWithBuffer(src_image, copy_buffer.Handle(), 0);
+            // }
+            // new_image.flags &= ~ImageFlagBits::Dirty;
+        } else if (need_new_image) {
+            LOG_WARNING(Render_Vulkan, 
+                       "Creating new image without copying from source (no valid source found)");
+        }
     }
 
     Image& image = slot_images[image_id];

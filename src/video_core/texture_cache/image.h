@@ -185,6 +185,9 @@ public:
         u32 needs_rebind : 1;
         u32 force_general : 1;
     } binding{};
+
+    // --- 新增：标记是否已为此图像生成过 mip 链（用于避免重复生成）---
+    bool generated_mip_chain = false;
 };
 
 } // namespace VideoCore

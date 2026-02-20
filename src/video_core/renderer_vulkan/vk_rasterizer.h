@@ -114,6 +114,10 @@ private:
     bool IsComputeImageCopy(const Pipeline* pipeline);
     bool IsComputeImageClear(const Pipeline* pipeline);
 
+    // --- 新增：为特定计算着色器生成 mip 链 ---
+    void GenerateMipChainForWrittenImages(const Shader::Info& cs_info);
+    void GenerateMipChainForImage(VideoCore::Image& image);
+
 private:
     friend class VideoCore::BufferCache;
 

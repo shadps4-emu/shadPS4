@@ -328,6 +328,13 @@ void Rasterizer::DispatchDirect() {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 
+    // --- 新增：为特定计算着色器生成 mip 链（仅当不支持 LOD 写入时）---
+    const auto& cs_info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (!pipeline_cache.GetProfile().supports_image_load_store_lod &&
+        cs_info.pgm_hash == 0x8503bcb7) {
+        GenerateMipChainForWrittenImages(cs_info);
+    }
+
     ResetBindings();
 }
 
@@ -1320,6 +1327,132 @@ void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 
         .color = std::array<f32, 4>(
             {(f32)((color >> 16) & 0xff) / 255.0f, (f32)((color >> 8) & 0xff) / 255.0f,
              (f32)(color & 0xff) / 255.0f, (f32)((color >> 24) & 0xff) / 255.0f})});
+}
+
+// --- 新增：为特定计算着色器生成 mip 链 ---
+void Rasterizer::GenerateMipChainForWrittenImages(const Shader::Info& cs_info) {
+    for (const auto& img_desc : cs_info.images) {
+        if (!img_desc.is_written) continue;
+
+        auto tsharp = img_desc.GetSharp(cs_info);
+        if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) continue;
+
+        VideoCore::TextureCache::ImageDesc desc(tsharp, img_desc);
+        auto image_id = texture_cache.FindImage(desc);
+        if (!image_id) {
+            LOG_WARNING(Render_Vulkan, "Failed to find image for mip chain generation");
+            continue;
+        }
+
+        auto& image = texture_cache.GetImage(image_id);
+        if (image.info.resources.levels <= 1) continue;
+        if (image.generated_mip_chain) continue;
+
+        LOG_INFO(Render_Vulkan, 
+                "Generating mip chain for image {:#x} ({} levels)", 
+                image.info.guest_address, image.info.resources.levels);
+
+        GenerateMipChainForImage(image);
+        image.generated_mip_chain = true;
+    }
+}
+
+void Rasterizer::GenerateMipChainForImage(VideoCore::Image& image) {
+    auto cmdbuf = scheduler.CommandBuffer();
+    const auto& resources = image.info.resources;
+    const vk::ImageAspectFlags aspect = image.info.props.is_depth
+                                            ? vk::ImageAspectFlagBits::eDepth
+                                            : vk::ImageAspectFlagBits::eColor;
+    const vk::Filter filter = (aspect & vk::ImageAspectFlagBits::eDepth)
+                                  ? vk::Filter::eNearest
+                                  : vk::Filter::eLinear;
+
+    // 屏障1：从计算着色器写入 -> 传输源/目标布局
+    vk::ImageMemoryBarrier2 pre_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        .srcAccessMask = vk::AccessFlagBits2::eShaderWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .dstAccessMask = vk::AccessFlagBits2::eTransferRead | vk::AccessFlagBits2::eTransferWrite,
+        .oldLayout = image.backing->state.layout,
+        .newLayout = vk::ImageLayout::eTransferSrcOptimal,
+        .image = image.GetImage(),
+        .subresourceRange = {
+            .aspectMask = aspect,
+            .baseMipLevel = 0,
+            .levelCount = resources.levels,
+            .baseArrayLayer = 0,
+            .layerCount = resources.layers,
+        },
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &pre_barrier,
+    });
+
+    // 生成 mip 链：从 level 0 到 level-1
+    for (u32 level = 0; level < resources.levels - 1; ++level) {
+        std::array src_offsets = {
+            vk::Offset3D{0, 0, 0},
+            vk::Offset3D{
+                static_cast<int32_t>(std::max(1u, image.info.size.width >> level)),
+                static_cast<int32_t>(std::max(1u, image.info.size.height >> level)),
+                1
+            }
+        };
+        std::array dst_offsets = {
+            vk::Offset3D{0, 0, 0},
+            vk::Offset3D{
+                static_cast<int32_t>(std::max(1u, image.info.size.width >> (level + 1))),
+                static_cast<int32_t>(std::max(1u, image.info.size.height >> (level + 1))),
+                1
+            }
+        };
+
+        vk::ImageBlit blitRegion{
+            .srcSubresource = {
+                .aspectMask = aspect,
+                .mipLevel = level,
+                .baseArrayLayer = 0,
+                .layerCount = resources.layers,
+            },
+            .srcOffsets = src_offsets,
+            .dstSubresource = {
+                .aspectMask = aspect,
+                .mipLevel = level + 1,
+                .baseArrayLayer = 0,
+                .layerCount = resources.layers,
+            },
+            .dstOffsets = dst_offsets,
+        };
+        cmdbuf.blitImage(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                         image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                         blitRegion, filter);
+    }
+
+    // 屏障2：从传输写 -> 后续着色器读（转换为只读布局）
+    vk::ImageMemoryBarrier2 post_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eTransfer,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader | vk::PipelineStageFlagBits2::eComputeShader,
+        .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+        .oldLayout = vk::ImageLayout::eTransferSrcOptimal,
+        .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        .image = image.GetImage(),
+        .subresourceRange = {
+            .aspectMask = aspect,
+            .baseMipLevel = 0,
+            .levelCount = resources.levels,
+            .baseArrayLayer = 0,
+            .layerCount = resources.layers,
+        },
+    };
+    cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers = &post_barrier,
+    });
+
+    // 更新图像缓存的布局状态
+    image.backing->state.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
 }
 
 } // namespace Vulkan
