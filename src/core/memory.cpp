@@ -1426,7 +1426,10 @@ u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 s
     }
 
     u64 mapped_bytes = 0;
-    auto it = std::prev(vma_map.upper_bound(range_start));
+    auto it = vma_map.upper_bound(range_start);
+    if (it != vma_map.begin()) {
+        it = std::prev(it);
+    }
     while (it != vma_map.end() && it->second.base < range_end) {
         const auto& vma = it->second;
         const VAddr vma_end = vma.base + vma.size;
