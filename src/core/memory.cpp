@@ -1394,7 +1394,8 @@ bool MemoryManager::IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const {
     const bool has_physical_tracking =
         vma.type == VMAType::Direct || vma.type == VMAType::Flexible || vma.type == VMAType::Pooled;
     if (has_physical_tracking) {
-        // Direct/flexible/pooled mappings should expose at least one physical sub-area when committed.
+        // Direct/flexible/pooled mappings should expose at least one physical sub-area when
+        // committed.
         return !vma.phys_areas.empty();
     }
 
