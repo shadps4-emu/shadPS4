@@ -15,10 +15,7 @@ namespace Libraries::Kernel {
 extern boost::asio::io_context io_context;
 extern void KernelSignalRequest();
 
-static constexpr auto HrTimerSpinlockThresholdUs = 1200u;
-
 // Events are uniquely identified by id and filter.
-
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
