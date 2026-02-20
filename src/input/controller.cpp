@@ -61,9 +61,10 @@ void State::OnAccel(const float accel[3]) {
     acceleration.z = accel[2];
 }
 
-GameController::GameController() : m_states_queue(64) {}
+GameController::GameController() : m_states_queue(32) {}
 
 void GameController::ReadState(State* state, bool* isConnected, int* connectedCount) {
+    std::lock_guard lg(m_states_queue_mutex);
     *isConnected = m_connected;
     *connectedCount = m_connected_count;
     *state = m_state;
@@ -75,14 +76,24 @@ int GameController::ReadStates(State* states, int states_num, bool* isConnected,
     *connectedCount = m_connected_count;
 
     int ret_num = 0;
-    if (m_connected) {
+    if (m_connected && states_num > 0) {
         std::lock_guard lg(m_states_queue_mutex);
+        const auto queue_size = m_states_queue.Size();
+        const auto requested_states = static_cast<size_t>(states_num);
+        if (queue_size > requested_states) {
+            m_states_queue.DropOldest(queue_size - requested_states);
+        }
+
         for (int i = 0; i < states_num; i++) {
             auto o_state = m_states_queue.Pop();
             if (!o_state) {
                 break;
             }
             states[ret_num++] = *o_state;
+        }
+
+        if (ret_num == 0) {
+            states[ret_num++] = m_state;
         }
     }
     return ret_num;

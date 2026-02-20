@@ -71,6 +71,10 @@ class RingBufferQueue {
 public:
     RingBufferQueue(size_t size) : m_storage(size) {}
 
+    size_t Size() const {
+        return m_size;
+    }
+
     void Push(T item) {
         const size_t index = (m_begin + m_size) % m_storage.size();
         m_storage[index] = std::move(item);
@@ -79,6 +83,19 @@ public:
         } else {
             m_begin = (m_begin + 1) % m_storage.size();
         }
+    }
+
+    void DropOldest(size_t count) {
+        if (count == 0 || m_size == 0) {
+            return;
+        }
+        if (count >= m_size) {
+            m_begin = 0;
+            m_size = 0;
+            return;
+        }
+        m_begin = (m_begin + count) % m_storage.size();
+        m_size -= count;
     }
 
     std::optional<T> Pop() {

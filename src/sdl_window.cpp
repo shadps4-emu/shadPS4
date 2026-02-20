@@ -271,6 +271,11 @@ using namespace Libraries::Pad;
 
 std::mutex motion_control_mutex;
 float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
+static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+    return controller->Poll();
+}
+
 static Uint32 SDLCALL PollGyroAndAccel(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
     std::scoped_lock l{motion_control_mutex};
@@ -480,7 +485,10 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    SDL_AddTimer(4, &PollGyroAndAccel, controller);
+    SDL_AddTimer(33, &PollController, controller);
+    if (Config::getIsMotionControlsEnabled()) {
+        SDL_AddTimer(4, &PollGyroAndAccel, controller);
+    }
     SDL_AddTimer(33, Input::MousePolling, (void*)controller);
 }
 
