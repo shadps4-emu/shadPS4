@@ -81,7 +81,7 @@ struct EqueueEvent {
     SceKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
-    std::chrono::microseconds timer_interval;
+    std::chrono::nanoseconds timer_interval;
     std::unique_ptr<boost::asio::steady_timer> timer;
 
     void Clear() {
@@ -92,13 +92,17 @@ struct EqueueEvent {
 
     void Trigger(void* data) {
         is_triggered = true;
-        event.fflags++;
         event.data = reinterpret_cast<uintptr_t>(data);
     }
 
     void TriggerUser(void* data) {
         is_triggered = true;
         event.udata = data;
+    }
+
+    void TriggerTimer() {
+        is_triggered = true;
+        event.data++;
     }
 
     void TriggerDisplay(void* data) {
@@ -135,7 +139,7 @@ class EqueueInternal {
     struct SmallTimer {
         SceKernelEvent event;
         std::chrono::steady_clock::time_point added;
-        std::chrono::microseconds interval;
+        std::chrono::nanoseconds interval;
     };
 
 public:
