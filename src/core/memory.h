@@ -111,6 +111,7 @@ struct VirtualMemoryArea {
     std::string name = "";
     s32 fd = 0;
     bool disallow_merge = false;
+    bool is_system_module = false;
 
     bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
@@ -147,6 +148,9 @@ struct VirtualMemoryArea {
             return false;
         }
         if (name.compare(next.name) != 0) {
+            return false;
+        }
+        if (is_system_module != next.is_system_module) {
             return false;
         }
 
@@ -263,7 +267,8 @@ public:
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
-                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
+                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0,
+                  bool is_system_module = false);
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
@@ -329,7 +334,7 @@ private:
     }
 
     VMAHandle CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryMapFlags flags,
-                         VMAType type, std::string_view name, u64 alignment);
+                         VMAType type, std::string_view name, u64 alignment, bool is_system_module);
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 

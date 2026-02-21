@@ -413,6 +413,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     new_vma.prot = prot;
     new_vma.name = "anon";
     new_vma.type = Core::VMAType::Pooled;
+    new_vma.is_system_module = false;
     new_vma.phys_areas.clear();
 
     // Find suitable physical addresses
@@ -464,7 +465,8 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
 
 MemoryManager::VMAHandle MemoryManager::CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot,
                                                    MemoryMapFlags flags, VMAType type,
-                                                   std::string_view name, u64 alignment) {
+                                                   std::string_view name, u64 alignment,
+                                                   bool is_system_module) {
     // Locate the VMA representing the requested region
     auto vma = FindVMA(virtual_addr)->second;
     if (True(flags & MemoryMapFlags::Fixed)) {
@@ -499,13 +501,15 @@ MemoryManager::VMAHandle MemoryManager::CreateArea(VAddr virtual_addr, u64 size,
     new_vma.prot = prot;
     new_vma.name = name;
     new_vma.type = type;
+    new_vma.is_system_module = is_system_module;
     new_vma.phys_areas.clear();
     return new_vma_handle;
 }
 
 s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                              MemoryMapFlags flags, VMAType type, std::string_view name,
-                             bool validate_dmem, PAddr phys_addr, u64 alignment) {
+                             bool validate_dmem, PAddr phys_addr, u64 alignment,
+                             bool is_system_module) {
     // Certain games perform flexible mappings on loop to determine
     // the available flexible memory size. Questionable but we need to handle this.
     if (type == VMAType::Flexible && flexible_usage + size > total_flexible_size) {
@@ -579,7 +583,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     const u64 flexible_before = GetFlexibleMappedBytesInRangeLocked(virtual_addr, size);
 
     // Create VMA representing this mapping.
-    auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, type, name, alignment);
+    auto new_vma_handle =
+        CreateArea(virtual_addr, size, prot, flags, type, name, alignment, is_system_module);
     auto& new_vma = new_vma_handle->second;
     auto mapped_addr = new_vma.base;
     bool is_exec = True(prot & MemoryProt::CpuExec);
@@ -757,7 +762,8 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     const u64 flexible_before = GetFlexibleMappedBytesInRangeLocked(virtual_addr, size);
 
     // Update VMA map and map to address space.
-    auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, VMAType::File, "anon", 0);
+    auto new_vma_handle =
+        CreateArea(virtual_addr, size, prot, flags, VMAType::File, "anon", 0, false);
 
     auto& new_vma = new_vma_handle->second;
     new_vma.fd = fd;
@@ -841,6 +847,7 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
         vma.prot = MemoryProt::NoAccess;
         vma.disallow_merge = false;
         vma.name = "anon";
+        vma.is_system_module = false;
         vma.phys_areas.clear();
         MergeAdjacent(vma_map, new_it);
 
@@ -942,6 +949,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     vma.phys_areas.clear();
     vma.disallow_merge = false;
     vma.name = "";
+    vma.is_system_module = false;
     MergeAdjacent(vma_map, new_it);
 
     if (vma_type != VMAType::Reserved && vma_type != VMAType::PoolReserved) {
@@ -1400,7 +1408,11 @@ bool MemoryManager::IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const {
     }
 
     // Non-phys-tracked mappings (code/stack/file) are committed through address-space map calls.
-    return vma.type == VMAType::Code || vma.type == VMAType::Stack || vma.type == VMAType::File;
+    if (vma.type == VMAType::Code) {
+        // System modules should not consume the game's flexible memory.
+        return !vma.is_system_module;
+    }
+    return vma.type == VMAType::Stack || vma.type == VMAType::File;
 }
 
 u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 size) const {
