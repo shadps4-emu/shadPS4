@@ -8,6 +8,7 @@
 #include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
+#include <spdlog/cfg/env.h>
 
 #include <core/emulator_state.h>
 #include "common/config.h"
@@ -28,6 +29,9 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    spdlog::cfg::load_env_levels();
+    spdlog::set_pattern("[%n] <%l> [thread %t] (%t) %@ %! %v");
 
     IPC::Instance().Init();
 
