@@ -27,9 +27,11 @@
 #include <pthread.h>
 #endif
 #include <sched.h>
+#include <time.h>
 #endif
 #ifndef _WIN32
 #include <unistd.h>
+#include <cerrno>
 #endif
 
 #ifdef __FreeBSD__
@@ -231,22 +233,120 @@ void SetThreadName(void* thread, const char* name) {
 
 #endif
 
+#ifndef _WIN32
+static u64 MonotonicNowNs() {
+#ifdef __APPLE__
+    static mach_timebase_info_data_t timebase = [] {
+        mach_timebase_info_data_t tb{};
+        mach_timebase_info(&tb);
+        return tb;
+    }();
+
+    const u64 ticks = mach_absolute_time();
+    const __uint128_t ns = (static_cast<__uint128_t>(ticks) * timebase.numer) / timebase.denom;
+    return static_cast<u64>(ns);
+#else
+    timespec ts{};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return static_cast<u64>(ts.tv_sec) * 1'000'000'000ull + static_cast<u64>(ts.tv_nsec);
+#endif
+}
+
+static bool SleepUntilMonotonicNs(const u64 deadline_ns, const bool interruptible) {
+#ifdef __APPLE__
+    static mach_timebase_info_data_t timebase = [] {
+        mach_timebase_info_data_t tb{};
+        mach_timebase_info(&tb);
+        return tb;
+    }();
+
+    // Convert ns -> mach absolute ticks: ticks = ns * denom / numer
+    const __uint128_t ticks128 =
+        (static_cast<__uint128_t>(deadline_ns) * timebase.denom) / timebase.numer;
+    const u64 abs_ticks = static_cast<u64>(ticks128);
+
+    while (true) {
+        if (mach_absolute_time() >= abs_ticks) {
+            return true;
+        }
+        const kern_return_t kr = mach_wait_until(abs_ticks);
+        if (kr == KERN_SUCCESS) {
+            return true;
+        }
+        if (kr == KERN_ABORTED && !interruptible) {
+            continue;
+        }
+        return false;
+    }
+#else
+    timespec abs_ts{
+        .tv_sec = static_cast<time_t>(deadline_ns / 1'000'000'000ull),
+        .tv_nsec = static_cast<long>(deadline_ns % 1'000'000'000ull),
+    };
+
+    while (true) {
+        const int ret = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &abs_ts, nullptr);
+        if (ret == 0) {
+            return true;
+        }
+        if (ret == EINTR && !interruptible) {
+            continue;
+        }
+        return false;
+    }
+#endif
+}
+#endif
+
 AccurateTimer::AccurateTimer(std::chrono::nanoseconds target_interval)
     : target_interval(target_interval) {}
 
 void AccurateTimer::Start() {
+#ifdef _WIN32
+    // Keep the existing Windows behavior for now.
     const auto begin_sleep = std::chrono::high_resolution_clock::now();
     if (total_wait.count() > 0) {
         AccurateSleep(total_wait, nullptr, false);
     }
-    start_time = std::chrono::high_resolution_clock::now();
+    const auto start_time = std::chrono::high_resolution_clock::now();
     total_wait -= std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - begin_sleep);
+    start_time_ns = 0;
+    next_deadline_ns = 0;
+#else
+    // Absolute deadline pacing on a monotonic clock (drift-free).
+    if (next_deadline_ns != 0) {
+        SleepUntilMonotonicNs(next_deadline_ns, false);
+    }
+
+    start_time_ns = MonotonicNowNs();
+
+    // First frame: establish the schedule.
+    if (next_deadline_ns == 0) {
+        next_deadline_ns = start_time_ns + static_cast<u64>(target_interval.count());
+    } else {
+        // Advance by exactly one interval each frame to avoid drift.
+        next_deadline_ns += static_cast<u64>(target_interval.count());
+
+        // If we're *way* behind (pause, breakpoint, hitch), resync to avoid spinning.
+        const u64 now_ns = start_time_ns;
+        const u64 max_lag_ns = static_cast<u64>(target_interval.count()) * 4ull;
+        if (now_ns > next_deadline_ns + max_lag_ns) {
+            next_deadline_ns = now_ns + static_cast<u64>(target_interval.count());
+        }
+    }
+#endif
 }
 
 void AccurateTimer::End() {
+#ifdef _WIN32
     auto now = std::chrono::high_resolution_clock::now();
     total_wait +=
         target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+#else
+    const u64 now_ns = MonotonicNowNs();
+    const s64 remaining_ns = static_cast<s64>(next_deadline_ns) - static_cast<s64>(now_ns);
+    total_wait += std::chrono::nanoseconds(remaining_ns);
+#endif
 }
 
 std::string GetCurrentThreadName() {

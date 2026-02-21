@@ -33,7 +33,8 @@ class AccurateTimer {
     std::chrono::nanoseconds target_interval{};
     std::chrono::nanoseconds total_wait{};
 
-    std::chrono::high_resolution_clock::time_point start_time;
+    u64 start_time_ns{};
+    u64 next_deadline_ns{};
 
 public:
     explicit AccurateTimer(std::chrono::nanoseconds target_interval);
