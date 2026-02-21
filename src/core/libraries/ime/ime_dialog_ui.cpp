@@ -131,7 +131,8 @@ bool ImeDialogState::CallTextFilter() {
         return false;
     }
 
-    int ret = text_filter(out_text, &out_text_length, src_text, src_text_length);
+    int ret =
+        Core::ExecuteGuest(text_filter, out_text, &out_text_length, src_text, src_text_length);
 
     if (ret != 0) {
         return false;
@@ -152,7 +153,7 @@ bool ImeDialogState::CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16*
         return true;
     }
 
-    int ret = keyboard_filter(src_keycode, out_keycode, out_status, nullptr);
+    int ret = Core::ExecuteGuest(keyboard_filter, src_keycode, out_keycode, out_status, nullptr);
     return ret == 0;
 }
 
