@@ -317,3 +317,7 @@ endif()
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
 
+# spdlog
+set(SPDLOG_NO_EXCEPTIONS ON)
+add_subdirectory(spdlog EXCLUDE_FROM_ALL SYSTEM)
+
