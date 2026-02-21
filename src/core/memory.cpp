@@ -77,6 +77,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 
     {
         std::scoped_lock lk{mutex};
+        InvalidateFlexibleMappedRangeCacheLocked();
         RecalculateFlexibleMappedUsageLocked();
     }
 
@@ -490,6 +491,7 @@ MemoryManager::VMAHandle MemoryManager::CreateArea(VAddr virtual_addr, u64 size,
     // Create a memory area representing this mapping.
     const auto new_vma_handle = CarveVMA(virtual_addr, size);
     auto& new_vma = new_vma_handle->second;
+    InvalidateFlexibleMappedRangeCacheLocked();
     const bool is_exec = True(prot & MemoryProt::CpuExec);
     if (True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
@@ -668,7 +670,12 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         MergeAdjacent(vma_map, new_vma_handle);
     }
 
-    const u64 flexible_after = GetFlexibleMappedBytesInRangeLocked(mapped_addr, size);
+    u64 flexible_after = 0;
+    if (type == VMAType::Flexible && !new_vma.phys_areas.empty()) {
+        flexible_after = GetFlexibleRangeOverlapBytesLocked(mapped_addr, size);
+    } else if (type == VMAType::Code && !is_system_module) {
+        flexible_after = GetFlexibleRangeOverlapBytesLocked(mapped_addr, size);
+    }
     AdjustFlexibleMappedUsageLocked(flexible_before, flexible_after);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
@@ -772,8 +779,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
 
     impl.MapFile(mapped_addr, size, phys_addr, std::bit_cast<u32>(prot), handle);
 
-    const u64 flexible_after = GetFlexibleMappedBytesInRangeLocked(mapped_addr, size);
-    AdjustFlexibleMappedUsageLocked(flexible_before, flexible_after);
+    AdjustFlexibleMappedUsageLocked(flexible_before, 0);
 
     *out_addr = std::bit_cast<void*>(mapped_addr);
     return ORBIS_OK;
@@ -885,8 +891,7 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
     const u64 flexible_before = GetFlexibleMappedBytesInRangeLocked(virtual_addr, size);
     const s32 result = UnmapMemoryImpl(virtual_addr, size);
     if (result == ORBIS_OK) {
-        const u64 flexible_after = GetFlexibleMappedBytesInRangeLocked(virtual_addr, size);
-        AdjustFlexibleMappedUsageLocked(flexible_before, flexible_after);
+        AdjustFlexibleMappedUsageLocked(flexible_before, 0);
     }
     return result;
 }
@@ -944,6 +949,7 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
     // Mark region as free and attempt to coalesce it with neighbours.
     const auto new_it = CarveVMA(virtual_addr, size_in_vma);
     auto& vma = new_it->second;
+    InvalidateFlexibleMappedRangeCacheLocked();
     vma.type = VMAType::Free;
     vma.prot = MemoryProt::NoAccess;
     vma.phys_areas.clear();
@@ -1410,6 +1416,27 @@ bool MemoryManager::IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const {
     return false;
 }
 
+u64 MemoryManager::GetFlexibleRangeOverlapBytesLocked(VAddr virtual_addr, u64 size) const {
+    if (!IsFlexibleRegionConfigured() || size == 0) {
+        return 0;
+    }
+
+    const VAddr aligned_start = Common::AlignDown(virtual_addr, 16_KB);
+    const u64 page_offset = virtual_addr - aligned_start;
+    if (size > std::numeric_limits<u64>::max() - page_offset) {
+        return 0;
+    }
+    const u64 aligned_size = Common::AlignUp(size + page_offset, 16_KB);
+    if (aligned_size == 0) {
+        return 0;
+    }
+
+    const VAddr aligned_end = aligned_start + aligned_size;
+    const VAddr range_start = std::max(aligned_start, flexible_virtual_base);
+    const VAddr range_end = std::min(aligned_end, flexible_virtual_end);
+    return range_start < range_end ? range_end - range_start : 0;
+}
+
 u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 size) const {
     if (!IsFlexibleRegionConfigured() || size == 0) {
         return 0;
@@ -1430,6 +1457,12 @@ u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 s
     const VAddr range_end = std::min(aligned_end, flexible_virtual_end);
     if (range_start >= range_end) {
         return 0;
+    }
+
+    if (flexible_mapped_range_cache.valid && flexible_mapped_range_cache.revision == vma_revision &&
+        flexible_mapped_range_cache.range_start == range_start &&
+        flexible_mapped_range_cache.range_end == range_end) {
+        return flexible_mapped_range_cache.mapped_bytes;
     }
 
     u64 mapped_bytes = 0;
@@ -1456,7 +1489,18 @@ u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 s
 
         ++it;
     }
+
+    flexible_mapped_range_cache.range_start = range_start;
+    flexible_mapped_range_cache.range_end = range_end;
+    flexible_mapped_range_cache.mapped_bytes = mapped_bytes;
+    flexible_mapped_range_cache.revision = vma_revision;
+    flexible_mapped_range_cache.valid = true;
     return mapped_bytes;
+}
+
+void MemoryManager::InvalidateFlexibleMappedRangeCacheLocked() {
+    ++vma_revision;
+    flexible_mapped_range_cache.valid = false;
 }
 
 void MemoryManager::AdjustFlexibleMappedUsageLocked(u64 mapped_before, u64 mapped_after) {

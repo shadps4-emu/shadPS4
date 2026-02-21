@@ -358,7 +358,11 @@ private:
 
     bool IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const;
 
+    u64 GetFlexibleRangeOverlapBytesLocked(VAddr virtual_addr, u64 size) const;
+
     u64 GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 size) const;
+
+    void InvalidateFlexibleMappedRangeCacheLocked();
 
     void AdjustFlexibleMappedUsageLocked(u64 mapped_before, u64 mapped_after);
 
@@ -377,6 +381,15 @@ private:
     VAddr flexible_virtual_base{};
     VAddr flexible_virtual_end{};
     u64 flexible_mapped_usage{};
+    struct FlexibleMappedRangeCache {
+        VAddr range_start{};
+        VAddr range_end{};
+        u64 mapped_bytes{};
+        u64 revision{};
+        bool valid{};
+    };
+    mutable FlexibleMappedRangeCache flexible_mapped_range_cache{};
+    u64 vma_revision{};
     u64 pool_budget{};
     s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
