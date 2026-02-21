@@ -1399,20 +1399,15 @@ bool MemoryManager::IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const {
         return false;
     }
 
-    const bool has_physical_tracking =
-        vma.type == VMAType::Direct || vma.type == VMAType::Flexible || vma.type == VMAType::Pooled;
-    if (has_physical_tracking) {
-        // Direct/flexible/pooled mappings should expose at least one physical sub-area when
-        // committed.
+    if (vma.type == VMAType::Flexible) {
         return !vma.phys_areas.empty();
     }
 
-    // Non-phys-tracked mappings (code/stack/file) are committed through address-space map calls.
     if (vma.type == VMAType::Code) {
         // System modules should not consume the game's flexible memory.
         return !vma.is_system_module;
     }
-    return vma.type == VMAType::Stack || vma.type == VMAType::File;
+    return false;
 }
 
 u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 size) const {
@@ -1444,13 +1439,18 @@ u64 MemoryManager::GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 s
     }
     while (it != vma_map.end() && it->second.base < range_end) {
         const auto& vma = it->second;
+        const bool counted_type = IsFlexibleCountedVmaType(vma.type);
+        if (!counted_type) {
+            ++it;
+            continue;
+        }
+
         const VAddr vma_end = vma.base + vma.size;
         const VAddr overlap_start = std::max(range_start, vma.base);
         const VAddr overlap_end = std::min(range_end, vma_end);
-        const bool counted_type = IsFlexibleCountedVmaType(vma.type);
         const bool committed = IsFlexibleCommittedVma(vma);
 
-        if (overlap_start < overlap_end && counted_type && committed) {
+        if (overlap_start < overlap_end && committed) {
             mapped_bytes += overlap_end - overlap_start;
         }
 
