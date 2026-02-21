@@ -97,8 +97,7 @@ Module::~Module() = default;
 s32 Module::Start(u64 args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
     const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
-    Core::EnsureThreadInitialized();
-    return reinterpret_cast<EntryFunc>(addr)(args, argp, param);
+    return ExecuteGuest(reinterpret_cast<EntryFunc>(addr), args, argp, param);
 }
 
 void Module::LoadModuleToMemory(u32& max_tls_index) {
