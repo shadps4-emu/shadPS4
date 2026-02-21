@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
 namespace Libraries::Kernel {
@@ -15,22 +16,38 @@ namespace Libraries::Kernel {
 extern boost::asio::io_context io_context;
 extern void KernelSignalRequest();
 
-static constexpr auto HrTimerSpinlockThresholdUs = 1200u;
+static constexpr auto HrTimerSpinlockThresholdNs = 1200000u;
 
 // Events are uniquely identified by id and filter.
-
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
     std::scoped_lock lock{m_mutex};
 
+    // Calculate timer interval
     event.time_added = std::chrono::steady_clock::now();
     if (event.event.filter == SceKernelEvent::Filter::Timer ||
         event.event.filter == SceKernelEvent::Filter::HrTimer) {
-        // HrTimer events are offset by the threshold of time at the end that we spinlock for
-        // greater accuracy.
-        const auto offset =
-            event.event.filter == SceKernelEvent::Filter::HrTimer ? HrTimerSpinlockThresholdUs : 0u;
-        event.timer_interval = std::chrono::microseconds(event.event.data - offset);
+        // Set timer interval
+        event.timer_interval = std::chrono::nanoseconds(event.event.data);
     }
+
+    // First, check if there's already an event with the same id and filter.
+    u64 id = event.event.ident;
+    SceKernelEvent::Filter filter = event.event.filter;
+    const auto& find_it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
+        return ev.event.ident == id && ev.event.filter == filter;
+    });
+    // If there is a duplicate event, we need to update that instead.
+    if (find_it != m_events.cend()) {
+        // Specifically, update user data and timer_interval.
+        // Trigger status and event data should remain intact.
+        auto& old_event = *find_it;
+        old_event.timer_interval = event.timer_interval;
+        old_event.event.udata = event.event.udata;
+        return true;
+    }
+
+    // Clear input data from event.
+    event.event.data = 0;
 
     // Remove add flag from event
     event.event.flags &= ~SceKernelEvent::Flags::Add;
@@ -157,6 +174,9 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
                     event.TriggerDisplay(trigger_data);
                 } else if (filter == SceKernelEvent::Filter::User) {
                     event.TriggerUser(trigger_data);
+                } else if (filter == SceKernelEvent::Filter::Timer ||
+                           filter == SceKernelEvent::Filter::HrTimer) {
+                    event.TriggerTimer();
                 } else {
                     event.Trigger(trigger_data);
                 }
@@ -197,7 +217,7 @@ bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
     SmallTimer st;
     st.event = ev.event;
     st.added = std::chrono::steady_clock::now();
-    st.interval = std::chrono::microseconds{ev.event.data};
+    st.interval = std::chrono::nanoseconds{ev.event.data};
     {
         std::scoped_lock lock{m_mutex};
         m_small_timers[st.event.ident] = std::move(st);
@@ -307,30 +327,23 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
 }
 
 static void HrTimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
-    static EqueueEvent event;
-    event.event = kevent;
-    event.event.data = HrTimerSpinlockThresholdUs;
-    eq->AddSmallTimer(event);
     eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
 }
 
-s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* ts, void* udata) {
+s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKernelTimespec* ts,
+                                          void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (ts->tv_sec > 100 || ts->tv_nsec < 100'000) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-    ASSERT(ts->tv_nsec > 1000); // assume 1us resolution
-    const auto total_us = ts->tv_sec * 1000'000 + ts->tv_nsec / 1000;
+    const auto total_ns = ts->tv_sec * 1000000000 + ts->tv_nsec;
 
     EqueueEvent event{};
     event.event.ident = id;
     event.event.filter = SceKernelEvent::Filter::HrTimer;
     event.event.flags = SceKernelEvent::Flags::Add | SceKernelEvent::Flags::OneShot;
     event.event.fflags = 0;
-    event.event.data = total_us;
+    event.event.data = total_ns;
     event.event.udata = udata;
 
     // HR timers cannot be implemented within the existing event queue architecture due to the
@@ -340,12 +353,7 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, timespec* 
     // `HrTimerSpinlockThresholdUs`) and fall back to boost asio timers if the time to tick is
     // large. Even for large delays, we truncate a small portion to complete the wait
     // using the spinlock, prioritizing precision.
-
-    if (eq->EventExists(event.event.ident, event.event.filter)) {
-        eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer);
-    }
-
-    if (total_us < HrTimerSpinlockThresholdUs) {
+    if (total_ns < HrTimerSpinlockThresholdNs) {
         return eq->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
@@ -391,15 +399,8 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
     event.event.filter = SceKernelEvent::Filter::Timer;
     event.event.flags = SceKernelEvent::Flags::Add;
     event.event.fflags = 0;
-    event.event.data = usec;
+    event.event.data = usec * 1000;
     event.event.udata = udata;
-
-    if (eq->EventExists(event.event.ident, event.event.filter)) {
-        eq->RemoveEvent(id, SceKernelEvent::Filter::Timer);
-        LOG_DEBUG(Kernel_Event,
-                  "Timer event already exists, removing it: queue name={}, queue id={}",
-                  eq->GetName(), event.event.ident);
-    }
 
     LOG_DEBUG(Kernel_Event, "Added timing event: queue name={}, queue id={}, usec={}, pointer={:x}",
               eq->GetName(), event.event.ident, usec, reinterpret_cast<uintptr_t>(udata));
