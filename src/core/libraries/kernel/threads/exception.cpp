@@ -248,6 +248,9 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelException
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int const native_signum = OrbisToNativeSignal(signum);
+#ifdef __APPLE__
+    ASSERT_MSG(native_signum != SIGVTALRM, "SIGVTALRM is HLE-reserved on macOS!");
+#endif
     ASSERT_MSG(!Handlers[native_signum], "Invalid parameters");
     Handlers[native_signum] = handler;
 #ifndef _WIN64
