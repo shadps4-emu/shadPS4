@@ -188,6 +188,8 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_rsp = regs.__rsp;
         ctx.uc_mcontext.mc_fs = regs.__fs;
         ctx.uc_mcontext.mc_gs = regs.__gs;
+        ctx.uc_mcontext.mc_gs = regs.__rip;
+        ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #else
         const auto& regs = raw_context->uc_mcontext.gregs;
         ctx.uc_mcontext.mc_r8 = regs[REG_R8];
@@ -208,6 +210,8 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_rsp = regs[REG_RSP];
         ctx.uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
         ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
+        ctx.uc_mcontext.mc_rip = (regs[REG_RIP]);
+        ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #endif
         handler(NativeToOrbisSignal(native_signum), &ctx);
     }
@@ -247,6 +251,7 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelException
     if (signum > POSIX_SIGUSR2) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
+    LOG_INFO(Lib_Kernel, "Installing signal handler for {}", signum);
     int const native_signum = OrbisToNativeSignal(signum);
 #ifdef __APPLE__
     ASSERT_MSG(native_signum != SIGVTALRM, "SIGVTALRM is HLE-reserved on macOS!");
