@@ -47,9 +47,6 @@ constexpr s32 POSIX_SIGUSR2 = 31;
 constexpr s32 POSIX_SIGTHR = 32;
 constexpr s32 POSIX_SIGLIBRT = 33;
 
-s32 NativeToOrbisSignal(s32 s);
-s32 OrbisToNativeSignal(s32 s);
-
 struct Mcontext {
     u64 mc_onstack;
     u64 mc_rdi;

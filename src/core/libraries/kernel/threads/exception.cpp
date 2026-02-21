@@ -16,7 +16,20 @@
 
 namespace Libraries::Kernel {
 
-s32 NativeToOrbisSignal(s32 s) {
+#ifdef _WIN32
+
+// Windows doesn't have native versions of these, and we don't need to use them either.
+static s32 NativeToOrbisSignal(s32 s) {
+    return s;
+}
+
+static s32 OrbisToNativeSignal(s32 s) {
+    return s;
+}
+
+#else
+
+static s32 NativeToOrbisSignal(s32 s) {
     switch (s) {
     case SIGHUP:
         return POSIX_SIGHUP;
@@ -81,7 +94,7 @@ s32 NativeToOrbisSignal(s32 s) {
     }
 }
 
-s32 OrbisToNativeSignal(s32 s) {
+static s32 OrbisToNativeSignal(s32 s) {
     switch (s) {
     case POSIX_SIGHUP:
         return SIGHUP;
@@ -145,6 +158,8 @@ s32 OrbisToNativeSignal(s32 s) {
         UNREACHABLE_MSG("Unknown signal {}", s);
     }
 }
+
+#endif
 
 static std::array<SceKernelExceptionHandler, 32> Handlers{};
 
