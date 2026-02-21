@@ -30,8 +30,8 @@
 #include <time.h>
 #endif
 #ifndef _WIN32
-#include <unistd.h>
 #include <cerrno>
+#include <unistd.h>
 #endif
 
 #ifdef __FreeBSD__
@@ -308,8 +308,9 @@ void AccurateTimer::Start() {
     if (total_wait.count() > 0) {
         AccurateSleep(total_wait, nullptr, false);
     }
-    const auto start_time = std::chrono::high_resolution_clock::now();
-    total_wait -= std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - begin_sleep);
+    start_time_win = std::chrono::high_resolution_clock::now();
+    total_wait -=
+        std::chrono::duration_cast<std::chrono::nanoseconds>(start_time_win - begin_sleep);
     start_time_ns = 0;
     next_deadline_ns = 0;
 #else
@@ -340,8 +341,8 @@ void AccurateTimer::Start() {
 void AccurateTimer::End() {
 #ifdef _WIN32
     auto now = std::chrono::high_resolution_clock::now();
-    total_wait +=
-        target_interval - std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time);
+    total_wait += target_interval -
+                  std::chrono::duration_cast<std::chrono::nanoseconds>(now - start_time_win);
 #else
     const u64 now_ns = MonotonicNowNs();
     const s64 remaining_ns = static_cast<s64>(next_deadline_ns) - static_cast<s64>(now_ns);

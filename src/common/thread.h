@@ -36,6 +36,10 @@ class AccurateTimer {
     u64 start_time_ns{};
     u64 next_deadline_ns{};
 
+#ifdef _WIN32
+    std::chrono::high_resolution_clock::time_point start_time_win{};
+#endif
+
 public:
     explicit AccurateTimer(std::chrono::nanoseconds target_interval);
 
