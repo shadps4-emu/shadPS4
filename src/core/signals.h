@@ -4,8 +4,11 @@
 #pragma once
 
 #include <set>
+#include <signal.h>
 #include "common/singleton.h"
 #include "common/types.h"
+
+#define SIGSLEEP (SIGRTMIN + 0)
 
 namespace Core {
 
