@@ -6,6 +6,7 @@
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/signals.h"
 
 #ifdef _WIN64
 #include "common/ntapi.h"
@@ -19,7 +20,7 @@ static std::array<SceKernelExceptionHandler, 32> Handlers{};
 
 #ifndef _WIN64
 void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
-    const auto handler = Handlers[POSIX_SIGUSR1];
+    const auto handler = Handlers[signum];
     if (handler) {
         auto ctx = Ucontext{};
 #ifdef __APPLE__
@@ -63,14 +64,15 @@ void SigactionHandler(int signum, siginfo_t* inf, ucontext_t* raw_context) {
         ctx.uc_mcontext.mc_fs = (regs[REG_CSGSFS] >> 32) & 0xFFFF;
         ctx.uc_mcontext.mc_gs = (regs[REG_CSGSFS] >> 16) & 0xFFFF;
 #endif
-        handler(POSIX_SIGUSR1, &ctx);
+        handler(signum, &ctx);
     }
 }
 #else
 void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
     const char* thrName = (char*)arg1;
+    int signum = reinterpret_cast<uintptr_t>(arg2);
     LOG_INFO(Lib_Kernel, "Exception raised successfully on thread '{}'", thrName);
-    const auto handler = Handlers[POSIX_SIGUSR1];
+    const auto handler = Handlers[signum];
     if (handler) {
         auto ctx = Ucontext{};
         ctx.uc_mcontext.mc_r8 = context->R8;
@@ -97,43 +99,43 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
 #endif
 
 int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelExceptionHandler handler) {
-    if (signum != POSIX_SIGUSR1) {
+    if (signum == SIGSLEEP) {
         LOG_ERROR(Lib_Kernel, "Installing non-supported exception handler for signal {}", signum);
         return 0;
     }
-    ASSERT_MSG(!Handlers[POSIX_SIGUSR1], "Invalid parameters");
-    Handlers[POSIX_SIGUSR1] = handler;
+    ASSERT_MSG(!Handlers[signum], "Invalid parameters");
+    Handlers[signum] = handler;
 #ifndef _WIN64
     struct sigaction act = {};
     act.sa_flags = SA_SIGINFO | SA_RESTART;
     act.sa_sigaction = reinterpret_cast<decltype(act.sa_sigaction)>(SigactionHandler);
-    sigaction(SIGUSR2, &act, nullptr);
+    sigaction(signum, &act, nullptr);
 #endif
     return 0;
 }
 
 int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
-    if (signum != POSIX_SIGUSR1) {
-        LOG_ERROR(Lib_Kernel, "Installing non-supported exception handler for signal {}", signum);
+    if (signum == SIGSLEEP) {
+        LOG_ERROR(Lib_Kernel, "Removing non-supported exception handler for signal {}", signum);
         return 0;
     }
-    ASSERT_MSG(Handlers[POSIX_SIGUSR1], "Invalid parameters");
-    Handlers[POSIX_SIGUSR1] = nullptr;
+    ASSERT_MSG(Handlers[signum], "Invalid parameters");
+    Handlers[signum] = nullptr;
 #ifndef _WIN64
     struct sigaction act = {};
     act.sa_flags = SA_SIGINFO | SA_RESTART;
     act.sa_sigaction = nullptr;
-    sigaction(SIGUSR2, &act, nullptr);
+    sigaction(signum, &act, nullptr);
 #endif
     return 0;
 }
 
 int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     LOG_WARNING(Lib_Kernel, "Raising exception on thread '{}'", thread->name);
-    ASSERT_MSG(signum == POSIX_SIGUSR1, "Attempting to raise non user defined signal!");
+    ASSERT_MSG(signum == SIGSLEEP, "Attempting to raise unsupported signal!");
 #ifndef _WIN64
     const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
-    const auto ret = pthread_kill(pthr, SIGUSR2);
+    const auto ret = pthread_kill(pthr, signum);
     if (ret != 0) {
         LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
                   strerror(ret));
@@ -143,7 +145,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
     u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
-                                 ExceptionHandler, (void*)thread->name.c_str(), nullptr, nullptr);
+                                 ExceptionHandler, (void*)thread->name.c_str(), reinterpret_cast<uintptr_t>(signum), nullptr);
     ASSERT(res == 0);
 #endif
     return 0;
