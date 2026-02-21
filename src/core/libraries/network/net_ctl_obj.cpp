@@ -52,7 +52,7 @@ void NetCtlInternal::CheckCallback() {
                            : ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED;
     for (const auto [func, arg] : callbacks) {
         if (func != nullptr) {
-            Core::ExecuteGuest(func, event, arg);
+            func(event, arg);
         }
     }
 }
@@ -64,7 +64,7 @@ void NetCtlInternal::CheckNpToolkitCallback() {
                            : ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED;
     for (const auto [func, arg] : nptool_callbacks) {
         if (func != nullptr) {
-            Core::ExecuteGuest(func, event, arg);
+            func(event, arg);
         }
     }
 }
