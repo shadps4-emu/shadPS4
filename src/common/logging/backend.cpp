@@ -70,7 +70,7 @@ public:
     ~FileBackend() = default;
 
     void Write(const Entry& entry) {
-        if (!enabled) {
+        if (!enabled && entry.log_level != Level::Critical) {
             return;
         }
 

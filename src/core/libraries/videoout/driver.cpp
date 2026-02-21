@@ -315,18 +315,23 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         {
             // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
             std::scoped_lock lock{main_port.vo_mutex};
+
+            // Trigger flip events for the port
+            for (auto& event : main_port.vblank_events) {
+                if (event != nullptr) {
+                    event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                                        Kernel::SceKernelEvent::Filter::VideoOut,
+                                        reinterpret_cast<void*>(
+                                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
+                                            (vblank_status.count << 16)));
+                }
+            }
+
+            // Update vblank status
             vblank_status.count++;
             vblank_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
             main_port.vblank_cv.notify_all();
-        }
-
-        // Trigger flip events for the port.
-        for (auto& event : main_port.vblank_events) {
-            if (event != nullptr) {
-                event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
-                                    Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
-            }
         }
 
         timer.End();
