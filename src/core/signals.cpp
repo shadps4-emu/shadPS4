@@ -66,7 +66,7 @@ static std::string DisassembleInstruction(void* code_address) {
     return buffer;
 }
 
-static void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
+void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     const auto* signals = Signals::Instance();
 
     auto* code_address = Common::GetRip(raw_context);

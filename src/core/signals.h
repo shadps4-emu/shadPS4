@@ -8,12 +8,19 @@
 #include "common/singleton.h"
 #include "common/types.h"
 
-#define SIGSLEEP (SIGRTMIN + 0)
-
+#ifdef _WIN32
+#define SIGSLEEP -1
+#else
+#define SIGSLEEP (SIGRTMAX)
+#endif
 namespace Core {
 
 using AccessViolationHandler = bool (*)(void* context, void* fault_address);
 using IllegalInstructionHandler = bool (*)(void* context);
+
+#ifndef _WIN32
+void SignalHandler(int sig, siginfo_t* info, void* raw_context);
+#endif
 
 /// Receives OS signals and dispatches to the appropriate handlers.
 class SignalDispatch {
