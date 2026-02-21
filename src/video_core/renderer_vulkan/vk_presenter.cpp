@@ -437,6 +437,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
 
     // Recreate the swapchain if the window was resized.
     if (window.GetWidth() != swapchain.GetWidth() || window.GetHeight() != swapchain.GetHeight()) {
+        printf("recreating swapchain\n");
         swapchain.Recreate(window.GetWidth(), window.GetHeight());
     }
 
@@ -476,62 +477,46 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         TracyVkNamedZoneC(profiler_ctx, renderer_gpu_zone, cmdbuf, "Host frame",
                           MarkersPalette::GpuMarkerColor, profiler_ctx != nullptr);
 
-        const vk::Extent2D extent = swapchain.GetExtent();
-        const std::array pre_barriers{
-            vk::ImageMemoryBarrier{
-                .srcAccessMask = vk::AccessFlagBits::eNone,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        const vk::ImageSubresourceRange color_range{
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        };
+
+        const std::array<vk::ImageMemoryBarrier2, 2> pre_barriers2{
+            vk::ImageMemoryBarrier2{
+                .srcStageMask = vk::PipelineStageFlagBits2::eTopOfPipe,
+                .srcAccessMask = vk::AccessFlagBits2::eNone,
+                .dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                .dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
                 .oldLayout = vk::ImageLayout::eUndefined,
                 .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = swapchain_image,
-                .subresourceRange{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                },
+                .subresourceRange = color_range,
             },
-            vk::ImageMemoryBarrier{
-                .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead,
-                .oldLayout = vk::ImageLayout::eGeneral,
+            vk::ImageMemoryBarrier2{
+                .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+                .dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader,
+                .dstAccessMask = vk::AccessFlagBits2::eShaderRead,
+                .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
                 .newLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = frame->image,
-                .subresourceRange{
-                    .aspectMask = vk::ImageAspectFlagBits::eColor,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                },
+                .subresourceRange = color_range,
             },
         };
 
-        const vk::ImageMemoryBarrier post_barrier{
-            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eMemoryRead,
-            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
-            .newLayout = vk::ImageLayout::ePresentSrcKHR,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = swapchain_image,
-            .subresourceRange{
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
-            },
-        };
-
-        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::PipelineStageFlagBits::eColorAttachmentOutput,
-                               vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .imageMemoryBarrierCount = static_cast<u32>(pre_barriers2.size()),
+            .pImageMemoryBarriers = pre_barriers2.data(),
+        });
 
         { // Draw the game
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0.0f});
@@ -587,9 +572,24 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         }
         ImGui::Core::Render(cmdbuf, swapchain_image_view, swapchain.GetExtent());
 
-        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
-                               vk::PipelineStageFlagBits::eAllCommands,
-                               vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+        const vk::ImageMemoryBarrier2 post_barrier2{
+            .srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+            .srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eBottomOfPipe,
+            .dstAccessMask = vk::AccessFlagBits2::eNone,
+            .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+            .newLayout = vk::ImageLayout::ePresentSrcKHR,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = swapchain_image,
+            .subresourceRange = color_range,
+        };
+
+        cmdbuf.pipelineBarrier2(vk::DependencyInfo{
+            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers = &post_barrier2,
+        });
 
         if (profiler_ctx) {
             TracyVkCollect(profiler_ctx, cmdbuf);
