@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
+#include <thread>
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/logging/log.h"
@@ -104,21 +106,44 @@ void Swapchain::SetHDR(bool hdr) {
 
 bool Swapchain::AcquireNextImage() {
     vk::Device device = instance.GetDevice();
-    vk::Result result =
-        device.acquireNextImageKHR(swapchain, std::numeric_limits<u64>::max(),
-                                   image_acquired[frame_index], VK_NULL_HANDLE, &image_index);
+
+    // Try non-blocking acquire (timeout = 0).
+    // If it times out, wait in small slices and yield (keeps the thread responsive on macOS).
+    // Treat out-of-date/suboptimal/surface-lost as recreation signals.
+    constexpr u64 kNoWait = 0;
+    constexpr u64 kSliceNs = 1'000'000; // 1ms
+    constexpr u32 kMaxSlices = 50;      // up to ~50ms total before we just keep trying
+
+    vk::Result result = device.acquireNextImageKHR(
+        swapchain, kNoWait, image_acquired[frame_index], VK_NULL_HANDLE, &image_index);
+
+    for (u32 i = 0; result == vk::Result::eTimeout && i < kMaxSlices; ++i) {
+        std::this_thread::yield();
+        result = device.acquireNextImageKHR(
+            swapchain, kSliceNs, image_acquired[frame_index], VK_NULL_HANDLE, &image_index);
+    }
 
     switch (result) {
     case vk::Result::eSuccess:
+        needs_recreation = false;
         break;
+
     case vk::Result::eSuboptimalKHR:
     case vk::Result::eErrorSurfaceLostKHR:
     case vk::Result::eErrorOutOfDateKHR:
+        needs_recreation = true;
+        break;
+
+    case vk::Result::eTimeout:
+        // we did not acquire an image but this is not a swapchain failure
+        return false;
+
     case vk::Result::eErrorUnknown:
         needs_recreation = true;
         break;
+
     default:
-        LOG_CRITICAL(Render_Vulkan, "Swapchain acquire returned unknown result {}",
+        LOG_CRITICAL(Render_Vulkan, "Swapchain acquire returned unexpected result {}",
                      vk::to_string(result));
         UNREACHABLE();
         break;
