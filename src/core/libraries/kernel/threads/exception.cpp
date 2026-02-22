@@ -161,7 +161,7 @@ static s32 OrbisToNativeSignal(s32 s) {
 
 #endif
 
-static std::array<SceKernelExceptionHandler, 32> Handlers{};
+std::array<SceKernelExceptionHandler, 32> Handlers{};
 
 #ifndef _WIN64
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context) {
@@ -259,13 +259,16 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelException
     ASSERT_MSG(!Handlers[native_signum], "Invalid parameters");
     Handlers[native_signum] = handler;
 #ifndef _WIN64
+    if (native_signum == SIGSEGV || native_signum == SIGBUS || native_signum == SIGILL) {
+        return ORBIS_OK; // These are handled in Core::SignalHandler
+    }
     struct sigaction act = {};
     act.sa_flags = SA_SIGINFO | SA_RESTART;
     act.sa_sigaction = reinterpret_cast<decltype(act.sa_sigaction)>(SigactionHandler);
     sigemptyset(&act.sa_mask);
     sigaction(native_signum, &act, nullptr);
 #endif
-    return 0;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
@@ -292,7 +295,7 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
         sigaction(native_signum, &act, nullptr);
     }
 #endif
-    return 0;
+    return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
@@ -317,7 +320,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
                                  (void*)native_signum, nullptr);
     ASSERT(res == 0);
 #endif
-    return 0;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
@@ -325,7 +328,7 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     UNREACHABLE_MSG("error {:#x}", error);
-    return 0;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
@@ -333,7 +336,7 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     UNREACHABLE_MSG("error {:#x}", error);
-    return 0;
+    return ORBIS_OK;
 }
 
 void RegisterException(Core::Loader::SymbolsResolver* sym) {

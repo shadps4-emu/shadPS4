@@ -5,6 +5,7 @@
 #include "common/assert.h"
 #include "common/decoder.h"
 #include "common/signal_context.h"
+#include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
 
 #ifdef _WIN32
@@ -16,6 +17,13 @@
 #include <Zydis/Formatter.h>
 #endif
 #endif
+
+namespace Libraries::Kernel {
+
+void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context);
+extern std::array<SceKernelExceptionHandler, 32> Handlers;
+
+} // namespace Libraries::Kernel
 
 namespace Core {
 
@@ -76,6 +84,13 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
+            // If the guest has installed a custom signal handler, and the access violation didn't
+            // come from HLE memory tracking, pass the signal on
+            if (Libraries::Kernel::Handlers[sig]) {
+                Libraries::Kernel::SigactionHandler(sig, info,
+                                                    reinterpret_cast<ucontext_t*>(raw_context));
+                return;
+            }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
                             fmt::ptr(code_address), is_write ? "Write to" : "Read from",
                             fmt::ptr(info->si_addr));
@@ -84,6 +99,11 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     }
     case SIGILL:
         if (!signals->DispatchIllegalInstruction(raw_context)) {
+            if (Libraries::Kernel::Handlers[sig]) {
+                Libraries::Kernel::SigactionHandler(sig, info,
+                                                    reinterpret_cast<ucontext_t*>(raw_context));
+                return;
+            }
             UNREACHABLE_MSG("Unhandled illegal instruction at code address {}: {}",
                             fmt::ptr(code_address), DisassembleInstruction(code_address));
         }
