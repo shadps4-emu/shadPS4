@@ -152,15 +152,6 @@ int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUs
         m_cond.wait_for(lock, std::chrono::microseconds(micros), predicate);
     }
 
-    if (HasSmallTimer()) {
-        if (count > 0) {
-            const auto time_waited = std::chrono::duration_cast<std::chrono::microseconds>(
-                                         std::chrono::steady_clock::now() - m_events[0].time_added)
-                                         .count();
-            count = WaitForSmallTimer(ev, num, std::max(0l, long(micros - time_waited)));
-        }
-    }
-
     return count;
 }
 
