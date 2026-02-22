@@ -44,7 +44,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
         LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
-                  fmt::UTF(trophyIconPath.u8string()));
+                  trophyIconPath.string());
     }
 
     std::string pathString = "src/images/";
