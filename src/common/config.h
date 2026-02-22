@@ -109,6 +109,8 @@ std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
 bool groupIdenticalLogs();
 void setGroupIdenticalLogs(bool enable, bool is_game_specific = false);
+bool isLogAppend();
+void setLogAppend(bool enable, bool is_game_specific = false);
 std::string getLogFilter();
 void setLogFilter(const std::string& type, bool is_game_specific = false);
 double getTrophyNotificationDuration();

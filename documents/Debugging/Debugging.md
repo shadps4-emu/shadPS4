@@ -75,6 +75,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Critical Render.Vulkan:Info`
   - `isIdenticalLogGrouped`: Group same logs in one line with a counter (`true`/`false`)
     - By default, the emulator will not rewrite the same line, and instead add a counter.
+  - `logAppend`: Append log to the existing file (`true`/`false`)
+      - By default, the emulator will overwrite the log file.
 
    - `Fullscreen`: Display the game in a full screen borderless window.
      
