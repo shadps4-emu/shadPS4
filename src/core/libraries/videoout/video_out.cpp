@@ -46,7 +46,8 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handl
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    if (eq == nullptr) {
+    auto equeue = Kernel::GetEqueue(eq);
+    if (equeue == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
 
@@ -58,9 +59,9 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handl
     event.event.fflags = 0;
     event.event.data = 0;
     event.data = port;
-    eq->AddEvent(event);
+    equeue->AddEvent(event);
 
-    port->flip_events.push_back(eq);
+    port->flip_events.push_back(equeue);
     return ORBIS_OK;
 }
 
@@ -70,11 +71,12 @@ s32 PS4_SYSV_ABI sceVideoOutDeleteFlipEvent(Kernel::OrbisKernelEqueue eq, s32 ha
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    if (eq == nullptr) {
+    auto equeue = Kernel::GetEqueue(eq);
+    if (equeue == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
-    eq->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
-    port->flip_events.erase(find(port->flip_events.begin(), port->flip_events.end(), eq));
+    equeue->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
+    port->flip_events.erase(find(port->flip_events.begin(), port->flip_events.end(), equeue));
     return ORBIS_OK;
 }
 
@@ -86,7 +88,8 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 han
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    if (eq == nullptr) {
+    auto equeue = Kernel::GetEqueue(eq);
+    if (equeue == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
 
@@ -98,9 +101,9 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 han
     event.event.fflags = 0;
     event.event.data = 0;
     event.data = port;
-    eq->AddEvent(event);
+    equeue->AddEvent(event);
 
-    port->vblank_events.push_back(eq);
+    port->vblank_events.push_back(equeue);
     return ORBIS_OK;
 }
 
@@ -110,11 +113,12 @@ s32 PS4_SYSV_ABI sceVideoOutDeleteVblankEvent(Kernel::OrbisKernelEqueue eq, s32 
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    if (eq == nullptr) {
+    auto equeue = Kernel::GetEqueue(eq);
+    if (equeue == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_EVENT_QUEUE;
     }
-    eq->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
-    port->vblank_events.erase(find(port->vblank_events.begin(), port->vblank_events.end(), eq));
+    equeue->RemoveEvent(handle, Kernel::OrbisKernelEvent::Filter::VideoOut);
+    port->vblank_events.erase(find(port->vblank_events.begin(), port->vblank_events.end(), equeue));
     return ORBIS_OK;
 }
 

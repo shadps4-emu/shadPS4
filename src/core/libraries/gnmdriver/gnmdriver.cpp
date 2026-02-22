@@ -126,7 +126,8 @@ static inline bool IsValidEventType(Platform::InterruptId id) {
 s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (!eq) {
+    auto equeue = GetEqueue(eq);
+    if (!equeue) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -137,7 +138,8 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
-    eq->AddEvent(kernel_event);
+
+    equeue->AddEvent(kernel_event);
 
     Platform::IrqC::Instance()->Register(
         static_cast<Platform::InterruptId>(id),
@@ -149,10 +151,10 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
                 return;
 
             // Event data is expected to be an event type as per sceGnmGetEqEventType.
-            eq->TriggerEvent(static_cast<GnmEventType>(id), OrbisKernelEvent::Filter::GraphicsCore,
+            equeue->TriggerEvent(static_cast<GnmEventType>(id), OrbisKernelEvent::Filter::GraphicsCore,
                              reinterpret_cast<void*>(id));
         },
-        eq);
+        equeue);
     return ORBIS_OK;
 }
 
@@ -270,13 +272,14 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
 s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (!eq) {
+    auto equeue = GetEqueue(eq);
+    if (!equeue) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    eq->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
+    equeue->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
 
-    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), eq);
+    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), equeue);
     return ORBIS_OK;
 }
 

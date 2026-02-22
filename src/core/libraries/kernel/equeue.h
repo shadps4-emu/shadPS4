@@ -23,7 +23,7 @@ class EqueueInternal;
 struct EqueueEvent;
 
 using OrbisKernelUseconds = u32;
-using OrbisKernelEqueue = EqueueInternal*;
+using OrbisKernelEqueue = s32;
 
 struct OrbisKernelEvent {
     enum Filter : s16 {
@@ -143,7 +143,7 @@ class EqueueInternal {
     };
 
 public:
-    explicit EqueueInternal(std::string_view name) : m_name(name) {}
+    explicit EqueueInternal(OrbisKernelEqueue handle, std::string_view name) : m_handle(handle), m_name(name) {}
 
     std::string_view GetName() const {
         return m_name;
@@ -175,6 +175,7 @@ public:
     bool EventExists(u64 id, s16 filter);
 
 private:
+    OrbisKernelEqueue m_handle;
     std::string m_name;
     std::mutex m_mutex;
     std::vector<EqueueEvent> m_events;
@@ -182,6 +183,7 @@ private:
     std::unordered_map<u64, SmallTimer> m_small_timers;
 };
 
+EqueueInternal* GetEqueue(OrbisKernelEqueue eq);
 u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev);
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);

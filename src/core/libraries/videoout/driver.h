@@ -25,8 +25,8 @@ struct VideoOutPort {
     std::array<BufferAttributeGroup, MaxDisplayBufferGroups> groups;
     FlipStatus flip_status;
     SceVideoOutVblankStatus vblank_status;
-    std::vector<Kernel::OrbisKernelEqueue> flip_events;
-    std::vector<Kernel::OrbisKernelEqueue> vblank_events;
+    std::vector<Kernel::EqueueInternal*> flip_events;
+    std::vector<Kernel::EqueueInternal*> vblank_events;
     std::mutex vo_mutex;
     std::mutex port_mutex;
     std::condition_variable vo_cv;
