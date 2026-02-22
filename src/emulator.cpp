@@ -408,7 +408,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Load all prx from game's sce_module folder
     mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
         if (is_file) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
+            LOG_INFO(Loader, "Loading {}", path.string());
             linker->LoadModule(path);
         }
     });

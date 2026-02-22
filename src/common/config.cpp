@@ -11,7 +11,6 @@
 
 #include "common/assert.h"
 #include "common/config.h"
-#include "common/logging/formatter.h"
 #include "common/path_util.h"
 #include "common/scm_rev.h"
 
@@ -880,7 +879,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         std::ifstream ifs;
         ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         ifs.open(path, std::ios_base::binary);
-        data = toml::parse(ifs, string{fmt::UTF(path.filename().u8string()).data});
+        data = toml::parse(ifs, path.filename().string());
     } catch (std::exception& ex) {
         fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
         return;
@@ -1072,7 +1071,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
             data = toml::parse<toml::ordered_type_config>(
-                ifs, string{fmt::UTF(path.filename().u8string()).data});
+                ifs, path.filename().string());
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -1081,7 +1080,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         if (error) {
             fmt::print("Filesystem error: {}\n", error.message());
         }
-        fmt::print("Saving new configuration file {}\n", fmt::UTF(path.u8string()));
+        fmt::print("Saving new configuration file {}\n", path.string());
     }
 
     // Entries saved by the game-specific settings GUI
@@ -1165,7 +1164,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         std::vector<DirEntry> sorted_dirs;
         for (const auto& dirInfo : settings_install_dirs) {
             sorted_dirs.push_back(
-                {string{fmt::UTF(dirInfo.path.u8string()).data}, dirInfo.enabled});
+                {dirInfo.path.string(), dirInfo.enabled});
         }
 
         // Sort directories alphabetically
@@ -1184,13 +1183,13 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         // Non game-specific entries
         data["General"]["enableDiscordRPC"] = enableDiscordRPC;
-        data["General"]["sysModulesPath"] = string{fmt::UTF(sys_modules_path.u8string()).data};
-        data["General"]["fontsPath"] = string{fmt::UTF(fonts_path.u8string()).data};
+        data["General"]["sysModulesPath"] = sys_modules_path.string();
+        data["General"]["fontsPath"] = fonts_path.u8string();
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
-        data["GUI"]["saveDataPath"] = string{fmt::UTF(save_data_path.u8string()).data};
+        data["GUI"]["saveDataPath"] = save_data_path.u8string();
         data["GUI"]["addonInstallDir"] =
-            string{fmt::UTF(settings_addon_install_dir.u8string()).data};
+            settings_addon_install_dir.u8string();
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 

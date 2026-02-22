@@ -10,7 +10,6 @@
 #include <vector>
 #include <tsl/robin_map.h>
 #include "common/io_file.h"
-#include "common/logging/formatter.h"
 #include "core/file_sys/devices/base_device.h"
 #include "core/file_sys/directories/base_directory.h"
 
@@ -54,7 +53,7 @@ public:
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+            return host_path.starts_with(mount.host_path.string());
         });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
