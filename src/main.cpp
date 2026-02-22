@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
         MemoryPatcher::patch_file = *patchFile;
 
     if (ignoreGamePatch)
-        Core::FileSys::MntPoints::ignore_game_patches = true;
+        Core::Emulator::ignore_game_patches = true;
 
     if (fullscreenStr) {
         if (*fullscreenStr == "true") {

@@ -9,10 +9,6 @@
 #include "common/io_file.h"
 #include "core/file_format/psf.h"
 
-namespace Core::FileSys {
-class MntPoints;
-}
-
 namespace Libraries::SaveData {
 
 // Used constexpr to easily use as string

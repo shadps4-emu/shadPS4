@@ -1,0 +1,411 @@
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+// INAA License @marecl 2026
+
+#include <iostream>
+
+#include "common/assert.h"
+#include "common/logging/log.h"
+
+#include "core/file_sys/quasifs/quasi_types.h"
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_inode_file.h"
+#include "core/file_sys/quasifs/quasifs_inode_file_virtual.h"
+#include "core/file_sys/quasifs/quasifs_inode_symlink.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/libraries/kernel/posix_error.h"
+
+#include "externals/tracy/public/tracy/Tracy.hpp"
+
+namespace QuasiFS {
+
+QFS::QFS(const fs::path& host_path) {
+    this->rootfs = Partition::Create(Directory::Create(), host_path);
+    this->root = rootfs->GetRoot();
+    this->open_fd.reserve(50);
+
+    mount_t mount_options = {
+        .mounted_at{"/"},
+        .parentdir = this->root,
+        .options = MountOptions::MOUNT_RW,
+    };
+
+    this->block_devices[this->rootfs] = mount_options;
+}
+
+int QFS::SyncHost(void) {
+    for (auto& [part, info] : this->block_devices) {
+        if (part->IsHostMounted())
+            SyncHostImpl(part);
+    }
+
+    return 0;
+}
+
+int QFS::SyncHost(const fs::path& path) {
+    Resolved res;
+    int status = Resolve(path, res);
+
+    if (0 != status)
+        return -POSIX_ENOENT;
+
+    if (nullptr == res.mountpoint)
+        return -POSIX_ENODEV;
+
+    SyncHostImpl(res.mountpoint);
+
+    return 0;
+}
+
+// mount fs at path (target must exist and be directory)
+int QFS::Mount(const fs::path& path, const partition_ptr& fs, unsigned int options) {
+    Resolved res;
+    int status = Resolve(path, res);
+
+    if (0 != status)
+        return status;
+
+    if (!res.node->is_dir())
+        return -POSIX_ENOTDIR;
+
+    mount_t* existing_fs_options = GetPartitionInfo(fs);
+
+    if (options & MountOptions::MOUNT_REMOUNT) {
+        if (nullptr == existing_fs_options) {
+            LOG_ERROR(Kernel_Fs, "Can't remount {}: Not mounted", path.string());
+            return -POSIX_EINVAL;
+        }
+
+        auto curopt = &existing_fs_options->options;
+        *curopt = options & (~MountOptions::MOUNT_REMOUNT);
+        return 0;
+    }
+
+    dir_ptr dir = std::static_pointer_cast<Directory>(res.node);
+    if (nullptr != existing_fs_options || dir->mounted_root) {
+        // fs_options exists or there's something (else?) mounted there already
+        LOG_ERROR(Kernel_Fs, "Can't mount {}: Already mounted", path.string());
+        return -POSIX_EEXIST;
+    }
+
+    if (options & MountOptions::MOUNT_BIND)
+        LOG_ERROR(Kernel_Fs, "Mount --bind not implemented");
+
+    dir_ptr fs_root = fs->GetRoot();
+    mount_t fs_options = {
+        .mounted_at = path,
+        .parentdir = dir,
+        .options = options,
+    };
+
+    dir->mounted_root = fs_root;
+    this->block_devices[fs] = fs_options;
+
+    return 0;
+}
+
+// mount fs at path (target must exist and be directory)
+int QFS::Unmount(const fs::path& path) {
+    Resolved res;
+    int status = Resolve(path, res);
+
+    if (0 != status)
+        return status;
+
+    partition_ptr part = res.mountpoint;
+    mount_t* part_opts = GetPartitionInfo(part);
+
+    if (nullptr == part_opts)
+        return -POSIX_EINVAL;
+
+    dir_ptr options_parentdir = part_opts->parentdir;
+    dir_ptr res_parentdir = res.parent;
+    dir_ptr res_rootdir = std::static_pointer_cast<Directory>(res.node);
+
+    if (options_parentdir != res_parentdir)
+        LOG_ERROR(Kernel_Fs,
+                  "Resolved mountpoint has different parent in metadata and in resolution result");
+
+    if (nullptr == res_rootdir)
+        // mounted but rootdir disappeared O.o
+        return -POSIX_EINVAL;
+
+    options_parentdir->mounted_root = nullptr;
+    this->block_devices.erase(part);
+
+    return 0;
+}
+
+int QFS::ForceInsert(const fs::path& path, const std::string& name, const inode_ptr& node) {
+    // it's just one of those days
+    Resolved res;
+    int resolve_status = this->Resolve(path, res);
+    if (0 != resolve_status)
+        return resolve_status;
+    if (!res.node->is_dir())
+        return -POSIX_ENOTDIR;
+    return res.mountpoint->touch(std::static_pointer_cast<Directory>(res.node), name, node);
+}
+
+// DO NOT, AND I SWEAR  D O  N O T touch this function
+// Debugging it is a royal PITA
+int QFS::Resolve(const fs::path& path, Resolved& res) {
+    ZoneScopedN("resolve");
+
+    if (path.empty() || !path.string().starts_with("/"))
+        return -POSIX_EINVAL;
+    // if (path.is_relative())
+    //     return -POSIX_EINVAL;
+
+    // on return:
+    // node - last element of the path (if exists)
+    // parent - parent element of the path (if parent dir is 1 level above last element)
+    // mountpoint - target partition
+    // leaf - name of the last element in the path (if exists)
+
+    // guard against circular binds
+    uint8_t safety_counter = 40;
+    //
+    int status{-1};
+
+    fs::path iter_path = path;
+
+    res.mountpoint = this->rootfs;
+    res.local_path = iter_path;
+    res.parent = this->root;
+    res.node = this->root;
+
+    do {
+        status = res.mountpoint->Resolve(iter_path, res);
+
+        if (0 != status)
+            return status;
+
+        if (res.node->is_link()) {
+            // symlinks consume path from the front, since they point to an absolute location
+            // let's say /link is linked to /dirA/dirB, and we need to resolve /link/dirC
+            // path resolution will enter /link, and extract it as /dirA/dirB.
+            // from that same path, /dirC will be preserved and appened to symlink's target,
+            // which will yield /dirA/dirB/dirC
+            fs::path leftover = iter_path;
+            // main path is overwritten with absolute path from symlink
+            iter_path = std::static_pointer_cast<Symlink>(res.node)->follow();
+            // and if it's really in the way - restore leftover items
+
+            //   Log("Found a symlink to [{}] // merging with // {}", iter_path.string(),
+            //   leftover.string());
+
+            if (!leftover.empty())
+                iter_path /= leftover;
+            // reset everything to point to rootfs, where absolute path can be resolved again
+            res.mountpoint = this->rootfs;
+            res.parent = this->root;
+            res.node = this->root;
+            res.leaf = "/";
+            continue;
+        }
+
+        if (res.node->is_dir()) {
+            dir_ptr mntparent = res.parent;
+            dir_ptr mntroot = std::static_pointer_cast<Directory>(res.node);
+
+            if (nullptr != mntparent->mounted_root) {
+                if (mntroot != mntparent->mounted_root)
+                    LOG_ERROR(Kernel_Fs, "Resolved conflicting mount root and node");
+
+                // just like symlinks, only trailing path is saved
+                // directory, in which partition is mounted, belongs to upstream filesystem,
+                // so everything before (including) that directory is consumed
+
+                partition_ptr mounted_partition = GetPartitionByParent(mntparent);
+
+                if (nullptr == mounted_partition) {
+                    res.mountpoint = nullptr;
+                    return -POSIX_ENOENT;
+                }
+
+                res.mountpoint = mounted_partition;
+                res.parent = mntparent;
+                res.node = mntroot;
+                res.local_path = "/";
+                res.leaf = "/";
+
+                if (iter_path != "/")
+                    continue;
+            }
+        }
+
+        break;
+
+    } while (--safety_counter > 0);
+
+    if (0 == safety_counter)
+        return -POSIX_ELOOP;
+
+    return 0;
+}
+
+int QFS::GetHostPath(fs::path& output, const fs::path& path) {
+    Resolved res;
+    int status = Resolve(path, res);
+    if (status != 0)
+        return status;
+
+    return res.mountpoint->GetHostPath(output, res.local_path);
+}
+
+bool QFS::IsOpen(s32 fd) noexcept {
+    fd_handle_ptr fh = this->GetHandle(fd);
+    if (nullptr == fh)
+        return false;
+    return fh->IsOpen();
+}
+
+int QFS::SetSize(s32 fd, s64 size) noexcept {
+    fd_handle_ptr fh = this->GetHandle(fd);
+    if (nullptr == fh)
+        return -POSIX_EBADF;
+    return this->Operation.FTruncate(fd, size);
+}
+
+s64 QFS::GetSize(s32 fd) noexcept {
+    fd_handle_ptr fh = this->GetHandle(fd);
+    if (nullptr == fh)
+        return -POSIX_EBADF;
+    if (nullptr == fh->node)
+        return -POSIX_EBADF;
+
+    return fh->node->st.st_size;
+};
+
+s64 QFS::GetDirectorySize(const fs::path& path) noexcept {
+    UNIMPLEMENTED();
+    return -POSIX_ENOSYS;
+};
+
+//
+// Privates (don't touch)
+//
+
+void QFS::SyncHostImpl(const partition_ptr& part) {
+    fs::path host_path{};
+    if (0 != part->GetHostPath(host_path)) {
+        std::cout << "Cannot safely resolve host directory for blkdev: 0x" << std::hex
+                  << part->GetBlkId();
+        return; // false
+    }
+
+    // cut out host-root, remainder is Partition path
+    auto host_path_components = std::distance(host_path.begin(), host_path.end()) - 1;
+    auto slice_path = [host_path_components](const fs::path& p) {
+        fs::path out;
+        auto it = p.begin();
+        std::advance(it, host_path_components);
+        for (; it != p.end(); ++it)
+            out /= *it;
+        return out;
+    };
+
+    try {
+        for (auto entry = fs::recursive_directory_iterator(host_path);
+             entry != fs::recursive_directory_iterator(); entry++) {
+            fs::path entry_path = entry->path();
+            fs::path pp = "/" / slice_path(entry->path());
+            fs::path parent_path = pp.parent_path();
+            std::string leaf = pp.filename().string();
+
+            Resolved res;
+            part->Resolve(parent_path, res);
+
+            if (nullptr == res.node) {
+                std::cout << "Cannot resolve quasi-target for sync: " << parent_path.string()
+                          << std::endl;
+                continue;
+            }
+
+            dir_ptr parent_dir =
+                res.node->is_dir() ? std::static_pointer_cast<Directory>(res.node) : nullptr;
+
+            if (entry->is_directory()) {
+                part->mkdir(parent_dir, leaf);
+            } else if (entry->is_regular_file()) {
+                part->touch<RegularFile>(parent_dir, leaf);
+            } else {
+                std::cout << "Unsupported host file type: " << entry_path.string() << std::endl;
+                continue;
+            }
+
+            inode_ptr new_inode = parent_dir->lookup(leaf);
+            if (nullptr == new_inode) {
+                // idk, seems appropriate
+                UNREACHABLE_MSG("Newly created node not found in {} / {}", pp.string(), leaf);
+            }
+
+            // this should populate **everything** immediately
+            // this is a note to self TODO:
+            if (0 != this->hio_driver.Stat(entry_path, &new_inode->st)) {
+                std::cout << "Cannot stat file: " << entry_path.string() << std::endl;
+                continue;
+            }
+
+            new_inode->st.st_blocks =
+                Common::AlignUp(static_cast<u64>(new_inode->st.st_size), new_inode->st.st_blksize) /
+                512;
+        }
+    } catch (const std::exception& e) {
+        std::cout << "An error occurred when syncing [" << host_path.string() << "]: " << e.what()
+                  << std::endl;
+    }
+
+    return; // true
+}
+
+int QFS::GetFreeHandleNo() {
+    auto open_fd_size = open_fd.size();
+    for (size_t idx = 0; idx < open_fd_size; idx++) {
+        if (nullptr == this->open_fd[idx])
+            return idx;
+    }
+    open_fd.push_back(nullptr);
+    return open_fd_size;
+}
+
+fd_handle_ptr QFS::GetHandle(s32 fd) {
+    if (fd < 0 || fd >= this->open_fd.size())
+        return nullptr;
+    return this->open_fd.at(fd);
+}
+
+mount_t* QFS::GetPartitionInfo(const partition_ptr& part) {
+    auto target_part_info = this->block_devices.find(part);
+    // already mounted
+    if (this->block_devices.end() == target_part_info)
+        return nullptr;
+    return &(target_part_info->second);
+}
+
+partition_ptr QFS::GetPartitionByPath(const fs::path& path) {
+    for (auto& [part, info] : this->block_devices) {
+        if (info.mounted_at == path)
+            return part;
+    }
+    return nullptr;
+}
+
+partition_ptr QFS::GetPartitionByParent(const dir_ptr& dir) {
+    for (auto& [part, info] : this->block_devices) {
+        if (info.parentdir == dir)
+            return part;
+    }
+    return nullptr;
+}
+
+int QFS::IsPartitionRO(const partition_ptr& part) {
+    const mount_t* part_info = GetPartitionInfo(part);
+    if (nullptr == part_info)
+        return -POSIX_ENODEV;
+    return 0 == (part_info->options & MountOptions::MOUNT_RW);
+}
+}; // namespace QuasiFS

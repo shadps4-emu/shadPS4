@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
     # Starting with 15.4, Rosetta 2 has support for all the necessary instruction sets.
-    set(CMAKE_OSX_DEPLOYMENT_TARGET 15.4 CACHE STRING "")
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 26.0 CACHE STRING "")
 endif()
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -688,6 +688,70 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
+set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
+            src/core/file_sys/quasifs/quasifs.h
+            src/core/file_sys/quasifs/src/quasifs_vdriver.cpp
+            src/core/file_sys/quasifs/src/quasifs_inode_device.cpp
+            src/core/file_sys/quasifs/quasifs_inode_device.h
+            src/core/file_sys/quasifs/src/quasifs_inode_directory.cpp
+            src/core/file_sys/quasifs/quasifs_inode_directory.h
+            src/core/file_sys/quasifs/src/quasifs_inode_directory_pfs.cpp
+            src/core/file_sys/quasifs/quasifs_inode_directory_pfs.h
+            src/core/file_sys/quasifs/src/quasifs_inode_file.cpp
+            src/core/file_sys/quasifs/quasifs_inode_file.h
+            src/core/file_sys/quasifs/src/quasifs_inode_socket.cpp
+            src/core/file_sys/quasifs/quasifs_inode_socket.h
+            src/core/file_sys/quasifs/src/quasifs_inode_file_virtual.cpp
+            src/core/file_sys/quasifs/quasifs_inode_file_virtual.h
+            src/core/file_sys/quasifs/src/quasifs_inode_symlink.cpp
+            src/core/file_sys/quasifs/quasifs_inode_symlink.h
+            src/core/file_sys/quasifs/src/quasifs_partition.cpp
+            src/core/file_sys/quasifs/quasifs_partition.h
+
+            src/core/file_sys/devices/console_device.cpp
+            src/core/file_sys/devices/console_device.h
+            src/core/file_sys/devices/deci_tty6_device.cpp
+            src/core/file_sys/devices/deci_tty6_device.h
+            src/core/file_sys/devices/ioccom.h
+            src/core/file_sys/devices/logger.cpp
+            src/core/file_sys/devices/logger.h
+            src/core/file_sys/devices/nop_device.h
+            src/core/file_sys/devices/null_device.cpp
+            src/core/file_sys/devices/null_device.h
+            src/core/file_sys/devices/random_device.cpp
+            src/core/file_sys/devices/random_device.h
+            src/core/file_sys/devices/srandom_device.cpp
+            src/core/file_sys/devices/srandom_device.h
+            src/core/file_sys/devices/rng_device.cpp
+            src/core/file_sys/devices/rng_device.h
+            src/core/file_sys/devices/zero_device.cpp
+            src/core/file_sys/devices/zero_device.h
+
+
+            src/core/file_sys/sockets/quasifs_inode_socket_p2p.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_p2p.h
+            src/core/file_sys/sockets/quasifs_inode_socket_unix.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_unix.h
+            src/core/file_sys/sockets/quasifs_inode_socket_posix.cpp
+            src/core/file_sys/sockets/quasifs_inode_socket_posix.h
+)
+
+set(HOSTIO  src/core/file_sys/hostio/src/host_io_base.cpp
+            src/core/file_sys/hostio/src/host_io_base.h
+            src/core/file_sys/hostio/src/host_io_virtual.cpp
+            src/core/file_sys/hostio/host_io_virtual.h
+)
+
+if(WIN32)
+    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_win32.cpp
+                        src/core/file_sys/hostio/host_io_win32.h
+    )
+elseif(UNIX OR APPLE)
+    list(APPEND HOSTIO  src/core/file_sys/hostio/src/host_io_posix.cpp
+                        src/core/file_sys/hostio/host_io_posix.h
+    )
+endif()
+
 set(COMMON src/common/logging/backend.cpp
            src/common/logging/backend.h
            src/common/logging/filter.cpp
@@ -778,30 +842,6 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/aerolib.h
          src/core/address_space.cpp
          src/core/address_space.h
-         src/core/file_sys/devices/base_device.cpp
-         src/core/file_sys/devices/base_device.h
-         src/core/file_sys/devices/ioccom.h
-         src/core/file_sys/devices/logger.cpp
-         src/core/file_sys/devices/logger.h
-         src/core/file_sys/devices/nop_device.h
-         src/core/file_sys/devices/console_device.cpp
-         src/core/file_sys/devices/console_device.h
-         src/core/file_sys/devices/deci_tty6_device.cpp
-         src/core/file_sys/devices/deci_tty6_device.h
-         src/core/file_sys/devices/random_device.cpp
-         src/core/file_sys/devices/random_device.h
-         src/core/file_sys/devices/rng_device.cpp
-         src/core/file_sys/devices/rng_device.h
-         src/core/file_sys/devices/urandom_device.cpp
-         src/core/file_sys/devices/urandom_device.h
-         src/core/file_sys/devices/srandom_device.cpp
-         src/core/file_sys/devices/srandom_device.h
-         src/core/file_sys/directories/base_directory.cpp
-         src/core/file_sys/directories/base_directory.h
-         src/core/file_sys/directories/normal_directory.cpp
-         src/core/file_sys/directories/normal_directory.h
-         src/core/file_sys/directories/pfs_directory.cpp
-         src/core/file_sys/directories/pfs_directory.h
          src/core/file_format/pfs.h
          src/core/file_format/psf.cpp
          src/core/file_format/psf.h
@@ -1107,6 +1147,8 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${QUASIFS}
+    ${HOSTIO}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h

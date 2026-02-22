@@ -9,7 +9,7 @@
 #include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_format/psf.h"
-#include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/save_data/save_instance.h"
 #include "imgui/imgui_std.h"
 #include "savedatadialog_ui.h"
@@ -26,9 +26,6 @@ constexpr auto SAVE_ICON_PADDING = ImVec2{8.0f, 2.0f};
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 constexpr auto FOOTER_HEIGHT = BUTTON_SIZE.y + 15.0f;
 static constexpr float PROGRESS_BAR_WIDTH{0.8f};
-
-static ::Core::FileSys::MntPoints* g_mnt =
-    Common::Singleton<::Core::FileSys::MntPoints>::Instance();
 
 static std::string SpaceSizeToString(size_t size) {
     std::string size_str;
@@ -60,6 +57,8 @@ void SaveDialogResult::CopyTo(OrbisSaveDataDialogResult& result) const {
 }
 
 SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
+    QuasiFS::QFS* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
     this->mode = param.mode;
     this->type = param.dispType;
     this->user_data = param.userData;
@@ -138,7 +137,8 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             auto buf = (u8*)new_item->iconBuf;
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
-            const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
+            std::filesystem::path src_icon{};
+            int status = qfs->GetHostPath(src_icon, "/app0/sce_sys/save_data.png");
             if (std::filesystem::exists(src_icon)) {
                 icon = RefCountedTexture::DecodePngFile(src_icon);
             }

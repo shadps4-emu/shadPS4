@@ -9,17 +9,18 @@
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
-#include "core/file_sys/fs.h"
 #include "save_backup.h"
 #include "save_instance.h"
+
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
 
 constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
 constexpr auto OrbisSaveDataBlocksMax = 32768;  // 1 GiB
 constexpr std::string_view sce_sys = "sce_sys"; // system folder inside save
 
-static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-
 namespace fs = std::filesystem;
+namespace qfs = QuasiFS;
 
 // clang-format off
 static const std::unordered_map<int, std::string> default_title = {
@@ -45,6 +46,8 @@ static const std::unordered_map<int, std::string> default_title = {
 // clang-format on
 
 namespace Libraries::SaveData {
+
+static qfs::QFS* g_qfs = Common::Singleton<qfs::QFS>::Instance();
 
 fs::path SaveInstance::MakeTitleSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          std::string_view game_serial) {
@@ -105,13 +108,15 @@ SaveInstance::SaveInstance(int slot_num, Libraries::UserService::OrbisUserServic
     mount_point = "/savedata" + std::to_string(slot_num);
 
     this->exists = fs::exists(param_sfo_path);
-    this->mounted = g_mnt->GetMount(mount_point) != std::nullopt;
+    // TODO: this
+    // this->mounted = g_mnt->GetMountFromHostPath(mount_point) != std::nullopt;
 }
 
 SaveInstance::~SaveInstance() {
     if (mounted) {
         Umount();
     }
+    g_qfs->Operation.RMDir(mount_point);
 }
 SaveInstance::SaveInstance(SaveInstance&& other) noexcept {
     if (this == &other)
@@ -150,7 +155,8 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     if (!exists) {
         CreateFiles();
         if (copy_icon) {
-            const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
+            fs::path src_icon{};
+            int result = g_qfs->GetHostPath(src_icon, "/app0/sce_sys/save_data.png");
             if (fs::exists(src_icon)) {
                 auto output_icon = GetIconPath();
                 if (fs::exists(output_icon)) {
@@ -186,7 +192,13 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
 
     max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
 
-    g_mnt->Mount(save_path, mount_point, read_only);
+    g_qfs->Operation.MKDir(mount_point);
+    // Didn't verify FS type
+    auto part = qfs::Partition::Create(qfs::Directory::Create(), save_path);
+    g_qfs->Mount(mount_point, part,
+                 read_only ? qfs::MountOptions::MOUNT_NOOPT : qfs::MountOptions::MOUNT_RW);
+    g_qfs->SyncHost(mount_point);
+
     mounted = true;
     this->read_only = read_only;
 }
@@ -205,7 +217,8 @@ void SaveInstance::Umount() {
     param_sfo = PSF();
 
     fs::remove(corrupt_file_path);
-    g_mnt->Unmount(save_path, mount_point);
+    g_qfs->Unmount(mount_point);
+    g_qfs->Operation.RMDir(mount_point);
 }
 
 void SaveInstance::CreateFiles() {

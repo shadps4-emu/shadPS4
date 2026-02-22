@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include "core/libraries/error_codes.h"
 
-// Posix error codes
+// BSD error codes
 constexpr int POSIX_EPERM = 1;
 constexpr int POSIX_ENOENT = 2;
 constexpr int POSIX_ESRCH = 3;

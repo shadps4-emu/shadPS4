@@ -1,0 +1,20 @@
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+// INAA License @marecl 2026
+
+#include "core/file_sys/quasifs/quasifs_inode_socket.h"
+
+namespace QuasiFS {
+
+Socket::Socket(int domain, int type, int protocol) {
+    // fileno and blkdev assigned by partition
+    this->st.st_size = 0;
+    this->st.st_blksize = 0;
+    this->st.st_blocks = 0;
+
+    this->st.st_mode |= QUASI_S_IFSOCK;
+}
+
+Socket::~Socket() = default;
+
+} // namespace QuasiFS

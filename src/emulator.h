@@ -30,6 +30,7 @@ public:
              std::optional<std::filesystem::path> game_folder = {});
     void UpdatePlayTime(const std::string& serial);
 
+    static bool ignore_game_patches;
     /**
      * This will kill the current process and launch a new process with the same configuration
      * (using CLI args) but replacing the eboot image and guest arguments
@@ -41,6 +42,7 @@ public:
 
 private:
     void LoadSystemModules(const std::string& game_serial);
+    void LoadFilesystem(const std::filesystem::path& game_folder);
 
     Core::MemoryManager* memory;
     Input::GameController* controller;

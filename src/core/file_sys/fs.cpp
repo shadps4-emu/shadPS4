@@ -5,42 +5,31 @@
 #include "common/config.h"
 #include "common/string_util.h"
 #include "core/file_sys/devices/logger.h"
-#include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/fs.h"
 
 namespace Core::FileSys {
 
-bool MntPoints::ignore_game_patches = false;
-
-std::string RemoveTrailingSlashes(const std::string& path) {
-    // Remove trailing slashes to make comparisons simpler.
-    std::string path_sanitized = path;
-    while (path_sanitized.ends_with("/")) {
-        path_sanitized.pop_back();
-    }
-    return path_sanitized;
-}
-
 void MntPoints::Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                       bool read_only) {
     std::scoped_lock lock{m_mutex};
-    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
+    const auto guest_folder_sanitized = guest_folder;
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only);
 }
 
-void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder) {
-    std::scoped_lock lock{m_mutex};
-    const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
-        return pair.mount == guest_folder_sanitized;
-    });
-    m_mnt_pairs.erase(it, m_mnt_pairs.end());
-}
+// void MntPoints::Unmount(const std::filesystem::path& host_folder, const std::string&
+// guest_folder) {
+//     std::scoped_lock lock{m_mutex};
+//     const auto guest_folder_sanitized = guest_folder;
+//     auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
+//         return pair.mount == guest_folder_sanitized;
+//     });
+//     m_mnt_pairs.erase(it, m_mnt_pairs.end());
+// }
 
-void MntPoints::UnmountAll() {
-    std::scoped_lock lock{m_mutex};
-    m_mnt_pairs.clear();
-}
+// void MntPoints::UnmountAll() {
+//     std::scoped_lock lock{m_mutex};
+//     m_mnt_pairs.clear();
+// }
 
 std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
                                              bool force_base_path) {
@@ -65,7 +54,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
 
     // Nothing to do if getting the mount itself.
-    const auto corrected_path_sanitized = RemoveTrailingSlashes(corrected_path);
+    const auto corrected_path_sanitized = corrected_path;
     if (corrected_path_sanitized == mount->mount) {
         return mount->host_path;
     }
@@ -81,10 +70,10 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
     patch_path /= rel_path;
 
-    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
-        return patch_path;
-    }
+    // if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
+    //     !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
+    //     return patch_path;
+    // }
 
     if (!NeedsCaseInsensitiveSearch) {
         return host_path;
@@ -142,11 +131,11 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path && !ignore_game_patches) {
-        if (const auto path = search(patch_path)) {
-            return *path;
-        }
-    }
+    // if (!force_base_path && !ignore_game_patches) {
+    //     if (const auto path = search(patch_path)) {
+    //         return *path;
+    //     }
+    // }
     if (const auto path = search(host_path)) {
         return *path;
     }
@@ -212,12 +201,6 @@ int HandleTable::CreateHandle() {
     return m_files.size() - 1;
 }
 
-void HandleTable::DeleteHandle(int d) {
-    std::scoped_lock lock{m_mutex};
-    delete m_files.at(d);
-    m_files[d] = nullptr;
-}
-
 File* HandleTable::GetFile(int d) {
     std::scoped_lock lock{m_mutex};
     if (d < 0 || d >= m_files.size()) {
@@ -272,32 +255,6 @@ File* HandleTable::GetFile(const std::filesystem::path& host_name) {
         }
     }
     return nullptr;
-}
-
-void HandleTable::CreateStdHandles() {
-    auto setup = [this](const char* path, auto* device) {
-        int fd = CreateHandle();
-        auto* file = GetFile(fd);
-        file->is_opened = true;
-        file->type = FileType::Device;
-        file->m_guest_name = path;
-        file->device =
-            std::shared_ptr<Devices::BaseDevice>{reinterpret_cast<Devices::BaseDevice*>(device)};
-    };
-    // order matters
-    setup("/dev/stdin", new Devices::Logger("stdin", false));   // stdin
-    setup("/dev/stdout", new Devices::Logger("stdout", false)); // stdout
-    setup("/dev/stderr", new Devices::Logger("stderr", true));  // stderr
-}
-
-int HandleTable::GetFileDescriptor(File* file) {
-    std::scoped_lock lock{m_mutex};
-    auto it = std::find(m_files.begin(), m_files.end(), file);
-
-    if (it != m_files.end()) {
-        return std::distance(m_files.begin(), it);
-    }
-    return 0;
 }
 
 } // namespace Core::FileSys

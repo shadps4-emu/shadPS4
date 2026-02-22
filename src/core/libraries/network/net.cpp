@@ -803,7 +803,8 @@ int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
     LOG_DEBUG(Lib_Net, "called, epollid = {} ({})", epollid, file->epoll->name);
 
     file->epoll->Destroy();
-    FDTable::Instance()->DeleteHandle(epollid);
+    // TODO: this
+    // FDTable::Instance()->DeleteHandle(epollid);
 
     return ORBIS_OK;
 }

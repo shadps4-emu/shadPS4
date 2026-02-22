@@ -7,6 +7,7 @@
 #include "common/debug.h"
 #include "common/elf_info.h"
 #include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
@@ -668,14 +669,19 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     uintptr_t handle = 0;
     std::scoped_lock lk{unmap_mutex};
     // Get the file to map
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto file = h->GetFile(fd);
-    if (file == nullptr) {
+    auto* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+    auto file = qfs->GetHandle(fd);
+
+    if (nullptr == file) {
         LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (file->type != Core::FileSys::FileType::Regular) {
+    if (nullptr == file->node) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (!file->node->is_file()) {
         LOG_WARNING(Kernel_Vmm, "Unsupported file type for mmap, fd {}", fd);
         return ORBIS_KERNEL_ERROR_EBADF;
     }
@@ -685,13 +691,16 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         prot |= MemoryProt::CpuRead;
     }
 
-    handle = file->f.GetFileMapping();
+    handle = file->host_fd;
 
-    if (False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Write) ||
-        False(file->f.GetAccessMode() & Common::FS::FileAccessMode::Append)) {
-        // If the file does not have write access, ensure prot does not contain write
-        // permissions. On real hardware, these mappings succeed, but the memory cannot be
-        // written to.
+    if (handle < 0) {
+        LOG_CRITICAL(Kernel_Vmm, "Descriptor does not have host-bound file associated for mmap");
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    if (0 == (file->write | file->append)) {
+        // If the file does not have write access, ensure prot does not contain write permissions.
+        // On real hardware, these mappings succeed, but the memory cannot be written to.
         prot &= ~MemoryProt::CpuWrite;
     }
 

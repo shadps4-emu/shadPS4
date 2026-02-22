@@ -9,12 +9,19 @@
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/file_format/psf.h"
-#include "core/file_sys/fs.h"
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
 
+#include "core/file_sys/quasifs/quasifs.h"
+#include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
+#include "core/file_sys/quasifs/quasifs_partition.h"
+
+namespace qfs = QuasiFS;
+
 namespace Libraries::AppContent {
+
+static qfs::QFS* g_qfs = Common::Singleton<qfs::QFS>::Instance();
 
 struct AddContInfo {
     char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
@@ -58,7 +65,6 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
     LOG_INFO(Lib_AppContent, "called");
 
     const auto& addon_path = Config::getAddonInstallDir() / title_id;
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     // Determine which loaded additional content this entitlement label is for.
     s32 i = 0;
@@ -104,7 +110,16 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
         if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
             // We've located the correct folder.
-            mnt->Mount(entry.path(), mount_point->data);
+
+            g_qfs->Operation.MKDir(mount_point->data, 0555 /* I think it's like /app0*/);
+            // Didn't verify FS type
+            qfs::partition_ptr partition_dlc =
+                qfs::Partition::Create(qfs::DirectoryPFS::Create(), entry.path(), 0555);
+            g_qfs->Mount(mount_point->data, partition_dlc, qfs::MountOptions::MOUNT_RW);
+            g_qfs->SyncHost(mount_point->data);
+            g_qfs->Mount(mount_point->data, partition_dlc,
+                         qfs::MountOptions::MOUNT_REMOUNT | qfs::MountOptions::MOUNT_NOOPT);
+
             return ORBIS_OK;
         }
     }

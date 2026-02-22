@@ -16,7 +16,8 @@
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "common/thread.h"
-#include "core/file_sys/fs.h"
+#include "core/file_sys/quasifs/quasi_sys_fcntl.h"
+#include "core/file_sys/quasifs/quasifs.h"
 #include "core/libraries/system/msgdialog_ui.h"
 #include "save_instance.h"
 
@@ -30,8 +31,6 @@ constexpr std::string_view IconName = "icon0.png";
 constexpr std::string_view CorruptFileName = "corrupted";
 
 namespace Libraries::SaveData::SaveMemory {
-
-static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
 struct SlotData {
     OrbisUserServiceUserId user_id{};
@@ -135,11 +134,14 @@ size_t SetupSaveMemory(Libraries::UserService::OrbisUserServiceUserId user_id, u
 }
 
 void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
+    QuasiFS::QFS* qfs = Common::Singleton<QuasiFS::QFS>::Instance();
+
     std::lock_guard lck{g_slot_mtx};
     const auto& data = g_attached_slots[slot_id];
     const auto icon_path = data.folder_path / sce_sys / "icon0.png";
     if (buf == nullptr) {
-        const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
+        fs::path src_icon{};
+        int status = qfs->GetHostPath(src_icon, "/app0/sce_sys/save_data.png");
         if (fs::exists(icon_path)) {
             fs::remove(icon_path);
         }
@@ -148,9 +150,9 @@ void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
             fs::copy_file(src_icon, icon_path);
         }
     } else {
-        IOFile file(icon_path, Common::FS::FileAccessMode::Create);
-        file.WriteRaw<u8>(buf, buf_size);
-        file.Close();
+        int fd = qfs->Operation.Creat(icon_path);
+        qfs->Operation.Write(fd, buf, buf_size);
+        qfs->Operation.Close(fd);
     }
 }
 
