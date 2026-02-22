@@ -345,6 +345,9 @@ bool SupportedEqueueFilter(OrbisKernelEvent::Filter filter) {
 s32 PS4_SYSV_ABI posix_kevent(s32 handle, OrbisKernelEvent* changelist, u64 nchanges,
                               OrbisKernelEvent* eventlist, u64 nevents,
                               OrbisKernelTimespec* timeout) {
+    LOG_INFO(Kernel_Event, "called, eq = {}, nchanges = {}, nevents = {}", handle, nchanges,
+             nevents);
+
     // Get the equeue
     if (!kqueues.contains(handle)) {
         *__Error() = POSIX_EBADF;
