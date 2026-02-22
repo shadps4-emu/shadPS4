@@ -67,7 +67,6 @@ int main(int argc, char* argv[]) {
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
-    bool logAppend = false;
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -90,7 +89,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);

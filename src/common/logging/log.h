@@ -14,6 +14,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/details/fmt_helper.h>
 
+#include "common/config.h"
 #include "common/path_util.h"
 #include "common/thread.h"
 
@@ -268,7 +269,7 @@ static void Setup(int argc, char* argv[]) {
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", true); //logAppend
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         spdlog::initialize_logger(std::make_shared<spdlog::logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for id + ".log" */}));
@@ -278,7 +279,7 @@ static void Setup(int argc, char* argv[]) {
 }
 
 static void Redirect(const std::string& id) {
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / (id + ".log"), true); //logAppend
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / (id + ".log"), !Config::isLogAppend());
     file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
