@@ -151,8 +151,9 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
                 return;
 
             // Event data is expected to be an event type as per sceGnmGetEqEventType.
-            equeue->TriggerEvent(static_cast<GnmEventType>(id), OrbisKernelEvent::Filter::GraphicsCore,
-                             reinterpret_cast<void*>(id));
+            equeue->TriggerEvent(static_cast<GnmEventType>(id),
+                                 OrbisKernelEvent::Filter::GraphicsCore,
+                                 reinterpret_cast<void*>(id));
         },
         equeue);
     return ORBIS_OK;

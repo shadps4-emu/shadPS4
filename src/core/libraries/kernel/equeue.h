@@ -143,7 +143,8 @@ class EqueueInternal {
     };
 
 public:
-    explicit EqueueInternal(OrbisKernelEqueue handle, std::string_view name) : m_handle(handle), m_name(name) {}
+    explicit EqueueInternal(OrbisKernelEqueue handle, std::string_view name)
+        : m_handle(handle), m_name(name) {}
 
     std::string_view GetName() const {
         return m_name;
