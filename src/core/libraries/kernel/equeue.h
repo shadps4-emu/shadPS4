@@ -23,7 +23,7 @@ class EqueueInternal;
 struct EqueueEvent;
 
 using OrbisKernelUseconds = u32;
-using OrbisKernelEqueue = s32;
+using OrbisKernelEqueue = s64;
 
 struct OrbisKernelEvent {
     enum Filter : s16 {
