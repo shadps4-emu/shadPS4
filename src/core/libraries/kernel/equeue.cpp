@@ -31,60 +31,87 @@ EqueueInternal* GetEqueue(OrbisKernelEqueue eq) {
     return kqueues[eq];
 }
 
+static void HrTimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
+    if (kqueues.contains(eq)) {
+        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::HrTimer, kevent.udata);
+    }
+}
+
+static void TimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
+    if (kqueues.contains(eq) && kqueues[eq]->EventExists(kevent.ident, kevent.filter)) {
+        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::Timer, kevent.udata);
+        if (!(kevent.flags & OrbisKernelEvent::Flags::OneShot)) {
+            // Reschedule the event for its next period.
+            kqueues[eq]->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
+        }
+    }
+}
+
 // Events are uniquely identified by id and filter.
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
-    std::scoped_lock lock{m_mutex};
+    {
+        std::scoped_lock lock{m_mutex};
 
-    // Calculate timer interval
-    event.time_added = std::chrono::steady_clock::now();
-    if (event.event.filter == OrbisKernelEvent::Filter::Timer) {
-        // Set timer interval, this is stored in milliseconds for timers.
-        event.timer_interval = std::chrono::milliseconds(event.event.data);
-    } else if (event.event.filter == OrbisKernelEvent::Filter::HrTimer) {
-        // Retrieve inputted time, this is stored in the bintime format.
-        OrbisKernelBintime* time = reinterpret_cast<OrbisKernelBintime*>(event.event.data);
+        // Calculate timer interval
+        event.time_added = std::chrono::steady_clock::now();
+        if (event.event.filter == OrbisKernelEvent::Filter::Timer) {
+            // Set timer interval, this is stored in milliseconds for timers.
+            event.timer_interval = std::chrono::milliseconds(event.event.data);
+        } else if (event.event.filter == OrbisKernelEvent::Filter::HrTimer) {
+            // Retrieve inputted time, this is stored in the bintime format.
+            OrbisKernelBintime* time = reinterpret_cast<OrbisKernelBintime*>(event.event.data);
 
-        // Convert the bintime format to a timespec.
-        OrbisKernelTimespec ts;
-        ts.tv_sec = time->sec;
-        ts.tv_nsec = (1000000000 * (time->frac >> 32)) >> 32;
+            // Convert the bintime format to a timespec.
+            OrbisKernelTimespec ts;
+            ts.tv_sec = time->sec;
+            ts.tv_nsec = (1000000000 * (time->frac >> 32)) >> 32;
 
-        // Then use the timespec to set the timer interval.
-        event.timer_interval = std::chrono::nanoseconds(ts.tv_nsec + ts.tv_sec * 1000000000);
+            // Then use the timespec to set the timer interval.
+            event.timer_interval = std::chrono::nanoseconds(ts.tv_nsec + ts.tv_sec * 1000000000);
+        }
+
+        // First, check if there's already an event with the same id and filter.
+        u64 id = event.event.ident;
+        OrbisKernelEvent::Filter filter = event.event.filter;
+        const auto& find_it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
+            return ev.event.ident == id && ev.event.filter == filter;
+        });
+        // If there is a duplicate event, we need to update that instead.
+        if (find_it != m_events.cend()) {
+            // Specifically, update user data and timer_interval.
+            // Trigger status and event data should remain intact.
+            auto& old_event = *find_it;
+            old_event.timer_interval = event.timer_interval;
+            old_event.event.udata = event.event.udata;
+            return true;
+        }
+
+        // Clear input data from event.
+        event.event.data = 0;
+
+        // Remove add flag from event
+        event.event.flags &= ~OrbisKernelEvent::Flags::Add;
+
+        // Clear flag is appended to most event types internally.
+        if (event.event.filter != OrbisKernelEvent::Filter::User) {
+            event.event.flags |= OrbisKernelEvent::Flags::Clear;
+        }
+
+        const auto& it = std::ranges::find(m_events, event);
+        if (it != m_events.cend()) {
+            *it = std::move(event);
+        } else {
+            m_events.emplace_back(std::move(event));
+        }
     }
 
-    // First, check if there's already an event with the same id and filter.
-    u64 id = event.event.ident;
-    OrbisKernelEvent::Filter filter = event.event.filter;
-    const auto& find_it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
-        return ev.event.ident == id && ev.event.filter == filter;
-    });
-    // If there is a duplicate event, we need to update that instead.
-    if (find_it != m_events.cend()) {
-        // Specifically, update user data and timer_interval.
-        // Trigger status and event data should remain intact.
-        auto& old_event = *find_it;
-        old_event.timer_interval = event.timer_interval;
-        old_event.event.udata = event.event.udata;
-        return true;
-    }
-
-    // Clear input data from event.
-    event.event.data = 0;
-
-    // Remove add flag from event
-    event.event.flags &= ~OrbisKernelEvent::Flags::Add;
-
-    // Clear flag is appended to most event types internally.
-    if (event.event.filter != OrbisKernelEvent::Filter::User) {
-        event.event.flags |= OrbisKernelEvent::Flags::Clear;
-    }
-
-    const auto& it = std::ranges::find(m_events, event);
-    if (it != m_events.cend()) {
-        *it = std::move(event);
-    } else {
-        m_events.emplace_back(std::move(event));
+    // Schedule callbacks for timer events
+    if (event.event.filter == OrbisKernelEvent::Timer) {
+        return this->ScheduleEvent(event.event.ident, OrbisKernelEvent::Filter::Timer,
+                                   TimerCallback);
+    } else if (event.event.filter == OrbisKernelEvent::HrTimer) {
+        return this->ScheduleEvent(event.event.ident, OrbisKernelEvent::Filter::HrTimer,
+                                   HrTimerCallback);
     }
 
     return true;
@@ -376,12 +403,6 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev,
     return ORBIS_OK;
 }
 
-static void HrTimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
-    if (kqueues.contains(eq)) {
-        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::HrTimer, kevent.udata);
-    }
-}
-
 s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelTimespec* ts,
                                           void* udata) {
     if (!kqueues.contains(eq)) {
@@ -412,8 +433,7 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKer
         return equeue->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
-    if (!equeue->AddEvent(event) ||
-        !equeue->ScheduleEvent(id, OrbisKernelEvent::Filter::HrTimer, HrTimerCallback)) {
+    if (!equeue->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
     return ORBIS_OK;
@@ -434,16 +454,6 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(OrbisKernelEqueue eq, int id) {
     }
 }
 
-static void TimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
-    if (kqueues.contains(eq) && kqueues[eq]->EventExists(kevent.ident, kevent.filter)) {
-        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::Timer, kevent.udata);
-        if (!(kevent.flags & OrbisKernelEvent::Flags::OneShot)) {
-            // Reschedule the event for its next period.
-            kqueues[eq]->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
-        }
-    }
-}
-
 int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelUseconds usec,
                                         void* udata) {
     if (!kqueues.contains(eq)) {
@@ -459,8 +469,7 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKerne
     event.event.udata = udata;
 
     auto& equeue = kqueues[eq];
-    if (!equeue->AddEvent(event) ||
-        !equeue->ScheduleEvent(id, OrbisKernelEvent::Filter::Timer, TimerCallback)) {
+    if (!equeue->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
     return ORBIS_OK;
