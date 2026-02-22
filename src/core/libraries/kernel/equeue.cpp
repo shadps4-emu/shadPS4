@@ -267,6 +267,25 @@ bool EqueueInternal::EventExists(u64 id, s16 filter) {
     return it != m_events.cend();
 }
 
+s32 PS4_SYSV_ABI posix_kqueue() {
+    // Reserve a file handle for the kqueue
+    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    s32 kqueue_handle = handles->CreateHandle();
+
+    // Plenty of equeue logic uses names to identify queues.
+    // Create a unique name for the queue we create.
+    char name[32];
+    memset(name, 0, sizeof(name));
+    snprintf(name, sizeof(name), "kqueue%i", kqueue_handle);
+    
+    // Create the queue
+    kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
+    LOG_INFO(Kernel_Event, "kqueue created with name {}");
+
+    // Return handle.
+    return kqueue_handle;
+}
+
 int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) {
     if (eq == nullptr) {
         LOG_ERROR(Kernel_Event, "Event queue is null!");
@@ -507,6 +526,7 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
 }
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
+    LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);
     LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", sceKernelDeleteEqueue);
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", sceKernelWaitEqueue);
