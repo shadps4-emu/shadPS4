@@ -12,7 +12,6 @@
 
 #include "common/config.h"
 #include "common/debug.h"
-#include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/ipc/ipc.h"
@@ -217,11 +216,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
-        Common::Log::Initialize(id + ".log");
-    } else {
-        Common::Log::Initialize();
+        Common::Log::Redirect(id + ".log");
     }
-    Common::Log::Start();
+
     if (!std::filesystem::exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
@@ -492,7 +489,8 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
     Libraries::SaveData::Backup::StopThread();
-    Common::Log::Denitializer();
+
+    Common::Log::StopRedirection();
 
     auto& ipc = IPC::Instance();
 

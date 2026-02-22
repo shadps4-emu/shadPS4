@@ -13,6 +13,7 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h" // for imGui::GetCurrentWindow()
+#include "common/types.h"
 
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML

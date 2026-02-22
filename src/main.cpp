@@ -8,12 +8,11 @@
 #include <vector>
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
-#include <spdlog/cfg/env.h>
 
 #include <core/emulator_state.h>
 #include "common/config.h"
+#include "common/logging/log.h"
 #include "common/key_manager.h"
-#include "common/logging/backend.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
@@ -30,8 +29,7 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    spdlog::cfg::load_env_levels();
-    spdlog::set_pattern("[%n] <%l> [thread %t] (%t) %@ %! %v");
+    Common::Log::Setup(argc, argv);
 
     IPC::Instance().Init();
 
@@ -174,9 +172,6 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         Config::setConfigMode(Config::ConfigMode::Global);
 
-    if (logAppend)
-        Common::Log::SetAppend();
-
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
@@ -202,6 +197,8 @@ int main(int argc, char* argv[]) {
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(ebootPath, gameArgs, overrideRoot);
+
+    spdlog::drop_all();
 
     return 0;
 }
