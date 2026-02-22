@@ -333,6 +333,82 @@ s32 PS4_SYSV_ABI posix_kqueue() {
     return kqueue_handle;
 }
 
+// Helper method to detect supported filters.
+// We don't want to allow adding events we don't handle properly.
+bool SupportedEqueueFilter(OrbisKernelEvent::Filter filter) {
+    return filter == OrbisKernelEvent::Filter::GraphicsCore ||
+           filter == OrbisKernelEvent::Filter::HrTimer ||
+           filter == OrbisKernelEvent::Filter::Timer || filter == OrbisKernelEvent::Filter::User ||
+           filter == OrbisKernelEvent::Filter::VideoOut;
+}
+
+s32 PS4_SYSV_ABI posix_kevent(s32 handle, OrbisKernelEvent* changelist, u64 nchanges,
+                              OrbisKernelEvent* eventlist, u64 nevents,
+                              OrbisKernelTimespec* timeout) {
+    // Get the equeue
+    if (!kqueues.contains(handle)) {
+        *__Error() = POSIX_EBADF;
+        return ORBIS_FAIL;
+    }
+    auto equeue = kqueues[handle];
+
+    // First step is to apply all changes in changelist.
+    for (u64 i = 0; i < nchanges; i++) {
+        auto event = changelist[i];
+        if (!SupportedEqueueFilter(event.filter)) {
+            LOG_ERROR(Kernel_Event, "Unsupported event filter {}",
+                      magic_enum::enum_name(event.filter));
+            continue;
+        }
+
+        // Check the event flags to determine the appropriate action
+        if (event.flags & OrbisKernelEvent::Flags::Add) {
+            // The caller is requesting to add an event.
+            EqueueEvent internal_event{};
+            internal_event.event = event;
+            if (!equeue->AddEvent(internal_event)) {
+                // Failed to add event, return error.
+                *__Error() = POSIX_ENOMEM;
+                return ORBIS_FAIL;
+            }
+        }
+
+        if (event.flags & OrbisKernelEvent::Flags::Delete) {
+            // The caller is requesting to remove an event.
+            if (!equeue->RemoveEvent(event.ident, event.filter)) {
+                // Failed to remove event, return error.
+                *__Error() = POSIX_ENOENT;
+                return ORBIS_FAIL;
+            }
+        }
+
+        if (event.filter == OrbisKernelEvent::Filter::User && event.fflags == 0x1000000) {
+            // For user events, this fflags value indicates we need to trigger the event.
+            if (!equeue->TriggerEvent(event.ident, OrbisKernelEvent::Filter::User, event.udata)) {
+                *__Error() = POSIX_ENOENT;
+                return ORBIS_FAIL;
+            }
+        } else if (event.fflags != 0) {
+            // The title is using filter-specific flags. Right now, these are unhandled.
+            LOG_ERROR(Kernel_Event, "Unhandled fflags {:#x} for event filter {}", event.fflags,
+                      magic_enum::enum_name(event.filter));
+            continue;
+        }
+    }
+
+    // Now we need to wait on the event list.
+    s32 count = 0;
+    if (nevents > 0) {
+        if (timeout != nullptr) {
+            OrbisKernelUseconds micros = (timeout->tv_sec * 1000000) + (timeout->tv_nsec / 1000);
+            count = equeue->WaitForEvents(eventlist, nevents, &micros);
+        } else {
+            count = equeue->WaitForEvents(eventlist, nevents, nullptr);
+        }
+    }
+    return count;
+}
+
 int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) {
     if (eq == nullptr) {
         LOG_ERROR(Kernel_Event, "Event queue is null!");
@@ -558,6 +634,7 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
+    LIB_FUNCTION("RW-GEfpnsqg", "libScePosix", 1, "libkernel", posix_kevent);
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);
     LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", sceKernelDeleteEqueue);
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", sceKernelWaitEqueue);
