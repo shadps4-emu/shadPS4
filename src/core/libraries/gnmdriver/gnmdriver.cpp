@@ -123,7 +123,7 @@ static inline bool IsValidEventType(Platform::InterruptId id) {
            static_cast<u32>(id) == static_cast<u32>(Platform::InterruptId::GfxEop);
 }
 
-s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
     if (!eq) {
@@ -132,8 +132,8 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
 
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
-    kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
-    kernel_event.event.flags = SceKernelEvent::Flags::Add;
+    kernel_event.event.filter = OrbisKernelEvent::Filter::GraphicsCore;
+    kernel_event.event.flags = OrbisKernelEvent::Flags::Add;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
@@ -149,7 +149,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
                 return;
 
             // Event data is expected to be an event type as per sceGnmGetEqEventType.
-            eq->TriggerEvent(static_cast<GnmEventType>(id), SceKernelEvent::Filter::GraphicsCore,
+            eq->TriggerEvent(static_cast<GnmEventType>(id), OrbisKernelEvent::Filter::GraphicsCore,
                              reinterpret_cast<void*>(id));
         },
         eq);
@@ -267,14 +267,14 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
     if (!eq) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    eq->RemoveEvent(id, SceKernelEvent::Filter::GraphicsCore);
+    eq->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
 
     Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), eq);
     return ORBIS_OK;
@@ -895,7 +895,7 @@ int PS4_SYSV_ABI sceGnmGetDebugTimestamp() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev) {
+int PS4_SYSV_ABI sceGnmGetEqEventType(const OrbisKernelEvent* ev) {
     LOG_TRACE(Lib_GnmDriver, "called");
     return sceKernelGetEventData(ev);
 }

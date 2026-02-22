@@ -22,10 +22,10 @@ namespace Libraries::Kernel {
 class EqueueInternal;
 struct EqueueEvent;
 
-using SceKernelUseconds = u32;
-using SceKernelEqueue = EqueueInternal*;
+using OrbisKernelUseconds = u32;
+using OrbisKernelEqueue = EqueueInternal*;
 
-struct SceKernelEvent {
+struct OrbisKernelEvent {
     enum Filter : s16 {
         None = 0,
         Read = -1,
@@ -78,7 +78,7 @@ struct OrbisVideoOutEventData {
 };
 
 struct EqueueEvent {
-    SceKernelEvent event;
+    OrbisKernelEvent event;
     void* data = nullptr;
     std::chrono::steady_clock::time_point time_added;
     std::chrono::nanoseconds timer_interval;
@@ -137,7 +137,7 @@ private:
 
 class EqueueInternal {
     struct SmallTimer {
-        SceKernelEvent event;
+        OrbisKernelEvent event;
         std::chrono::steady_clock::time_point added;
         std::chrono::nanoseconds interval;
     };
@@ -151,11 +151,11 @@ public:
 
     bool AddEvent(EqueueEvent& event);
     bool ScheduleEvent(u64 id, s16 filter,
-                       void (*callback)(SceKernelEqueue, const SceKernelEvent&));
+                       void (*callback)(OrbisKernelEqueue, const OrbisKernelEvent&));
     bool RemoveEvent(u64 id, s16 filter);
-    int WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUseconds* timo);
+    int WaitForEvents(OrbisKernelEvent* ev, int num, const OrbisKernelUseconds* timo);
     bool TriggerEvent(u64 ident, s16 filter, void* trigger_data);
-    int GetTriggeredEvents(SceKernelEvent* ev, int num);
+    int GetTriggeredEvents(OrbisKernelEvent* ev, int num);
 
     bool AddSmallTimer(EqueueEvent& event);
     bool HasSmallTimer() {
@@ -170,7 +170,7 @@ public:
         return false;
     }
 
-    int WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros);
+    int WaitForSmallTimer(OrbisKernelEvent* ev, int num, u32 micros);
 
     bool EventExists(u64 id, s16 filter);
 
@@ -182,7 +182,7 @@ private:
     std::unordered_map<u64, SmallTimer> m_small_timers;
 };
 
-u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev);
+u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev);
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);
 

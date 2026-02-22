@@ -24,15 +24,15 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 
     // Calculate timer interval
     event.time_added = std::chrono::steady_clock::now();
-    if (event.event.filter == SceKernelEvent::Filter::Timer ||
-        event.event.filter == SceKernelEvent::Filter::HrTimer) {
+    if (event.event.filter == OrbisKernelEvent::Filter::Timer ||
+        event.event.filter == OrbisKernelEvent::Filter::HrTimer) {
         // Set timer interval
         event.timer_interval = std::chrono::nanoseconds(event.event.data);
     }
 
     // First, check if there's already an event with the same id and filter.
     u64 id = event.event.ident;
-    SceKernelEvent::Filter filter = event.event.filter;
+    OrbisKernelEvent::Filter filter = event.event.filter;
     const auto& find_it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
         return ev.event.ident == id && ev.event.filter == filter;
     });
@@ -50,11 +50,11 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
     event.event.data = 0;
 
     // Remove add flag from event
-    event.event.flags &= ~SceKernelEvent::Flags::Add;
+    event.event.flags &= ~OrbisKernelEvent::Flags::Add;
 
     // Clear flag is appended to most event types internally.
-    if (event.event.filter != SceKernelEvent::Filter::User) {
-        event.event.flags |= SceKernelEvent::Flags::Clear;
+    if (event.event.filter != OrbisKernelEvent::Filter::User) {
+        event.event.flags |= OrbisKernelEvent::Flags::Clear;
     }
 
     const auto& it = std::ranges::find(m_events, event);
@@ -68,7 +68,7 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 }
 
 bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
-                                   void (*callback)(SceKernelEqueue, const SceKernelEvent&)) {
+                                   void (*callback)(OrbisKernelEqueue, const OrbisKernelEvent&)) {
     std::scoped_lock lock{m_mutex};
 
     const auto& it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
@@ -79,8 +79,8 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
     }
 
     const auto& event = *it;
-    ASSERT(event.event.filter == SceKernelEvent::Filter::Timer ||
-           event.event.filter == SceKernelEvent::Filter::HrTimer);
+    ASSERT(event.event.filter == OrbisKernelEvent::Filter::Timer ||
+           event.event.filter == OrbisKernelEvent::Filter::HrTimer);
 
     if (!it->timer) {
         it->timer = std::make_unique<boost::asio::steady_timer>(io_context, event.timer_interval);
@@ -122,7 +122,7 @@ bool EqueueInternal::RemoveEvent(u64 id, s16 filter) {
     return has_found;
 }
 
-int EqueueInternal::WaitForEvents(SceKernelEvent* ev, int num, const SceKernelUseconds* timo) {
+int EqueueInternal::WaitForEvents(OrbisKernelEvent* ev, int num, const OrbisKernelUseconds* timo) {
     if (timo != nullptr && *timo == 0) {
         // Effectively acts as a poll; only events that have already
         // arrived at the time of this function call can be received
@@ -161,12 +161,12 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
         std::scoped_lock lock{m_mutex};
         for (auto& event : m_events) {
             if (event.event.ident == ident && event.event.filter == filter) {
-                if (filter == SceKernelEvent::Filter::VideoOut) {
+                if (filter == OrbisKernelEvent::Filter::VideoOut) {
                     event.TriggerDisplay(trigger_data);
-                } else if (filter == SceKernelEvent::Filter::User) {
+                } else if (filter == OrbisKernelEvent::Filter::User) {
                     event.TriggerUser(trigger_data);
-                } else if (filter == SceKernelEvent::Filter::Timer ||
-                           filter == SceKernelEvent::Filter::HrTimer) {
+                } else if (filter == OrbisKernelEvent::Filter::Timer ||
+                           filter == OrbisKernelEvent::Filter::HrTimer) {
                     event.TriggerTimer();
                 } else {
                     event.Trigger(trigger_data);
@@ -179,15 +179,15 @@ bool EqueueInternal::TriggerEvent(u64 ident, s16 filter, void* trigger_data) {
     return has_found;
 }
 
-int EqueueInternal::GetTriggeredEvents(SceKernelEvent* ev, int num) {
+int EqueueInternal::GetTriggeredEvents(OrbisKernelEvent* ev, int num) {
     int count = 0;
     for (auto it = m_events.begin(); it != m_events.end();) {
         if (it->IsTriggered()) {
             ev[count++] = it->event;
-            if (it->event.flags & SceKernelEvent::Flags::Clear) {
+            if (it->event.flags & OrbisKernelEvent::Flags::Clear) {
                 it->Clear();
             }
-            if (it->event.flags & SceKernelEvent::Flags::OneShot) {
+            if (it->event.flags & OrbisKernelEvent::Flags::OneShot) {
                 it = m_events.erase(it);
             } else {
                 ++it;
@@ -216,7 +216,7 @@ bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
     return true;
 }
 
-int EqueueInternal::WaitForSmallTimer(SceKernelEvent* ev, int num, u32 micros) {
+int EqueueInternal::WaitForSmallTimer(OrbisKernelEvent* ev, int num, u32 micros) {
     ASSERT(num >= 1);
 
     auto curr_clock = std::chrono::steady_clock::now();
@@ -257,7 +257,7 @@ bool EqueueInternal::EventExists(u64 id, s16 filter) {
     return it != m_events.cend();
 }
 
-int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
+int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) {
     if (eq == nullptr) {
         LOG_ERROR(Kernel_Event, "Event queue is null!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -280,7 +280,7 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(SceKernelEqueue* eq, const char* name) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq) {
+int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
@@ -289,8 +289,8 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(SceKernelEqueue eq) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int num, int* out,
-                                     SceKernelUseconds* timo) {
+int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev, int num, int* out,
+                                     OrbisKernelUseconds* timo) {
     HLE_TRACE;
     TRACE_HINT(eq->GetName());
     LOG_TRACE(Kernel_Event, "equeue = {} num = {}", eq->GetName(), num);
@@ -317,11 +317,11 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(SceKernelEqueue eq, SceKernelEvent* ev, int
     return ORBIS_OK;
 }
 
-static void HrTimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
-    eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::HrTimer, kevent.udata);
+static void HrTimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
+    eq->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::HrTimer, kevent.udata);
 }
 
-s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKernelTimespec* ts,
+s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelTimespec* ts,
                                           void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -331,8 +331,8 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKerne
 
     EqueueEvent event{};
     event.event.ident = id;
-    event.event.filter = SceKernelEvent::Filter::HrTimer;
-    event.event.flags = SceKernelEvent::Flags::Add | SceKernelEvent::Flags::OneShot;
+    event.event.filter = OrbisKernelEvent::Filter::HrTimer;
+    event.event.flags = OrbisKernelEvent::Flags::Add | OrbisKernelEvent::Flags::OneShot;
     event.event.fflags = 0;
     event.event.data = total_ns;
     event.event.udata = udata;
@@ -349,13 +349,13 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(SceKernelEqueue eq, int id, OrbisKerne
     }
 
     if (!eq->AddEvent(event) ||
-        !eq->ScheduleEvent(id, SceKernelEvent::Filter::HrTimer, HrTimerCallback)) {
+        !eq->ScheduleEvent(id, OrbisKernelEvent::Filter::HrTimer, HrTimerCallback)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
+int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(OrbisKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
@@ -363,23 +363,23 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(SceKernelEqueue eq, int id) {
     if (eq->HasSmallTimer()) {
         return eq->RemoveSmallTimer(id) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOENT;
     } else {
-        return eq->RemoveEvent(id, SceKernelEvent::Filter::HrTimer) ? ORBIS_OK
-                                                                    : ORBIS_KERNEL_ERROR_ENOENT;
+        return eq->RemoveEvent(id, OrbisKernelEvent::Filter::HrTimer) ? ORBIS_OK
+                                                                      : ORBIS_KERNEL_ERROR_ENOENT;
     }
 }
 
-static void TimerCallback(SceKernelEqueue eq, const SceKernelEvent& kevent) {
+static void TimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
     if (eq->EventExists(kevent.ident, kevent.filter)) {
-        eq->TriggerEvent(kevent.ident, SceKernelEvent::Filter::Timer, kevent.udata);
+        eq->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::Timer, kevent.udata);
 
-        if (!(kevent.flags & SceKernelEvent::Flags::OneShot)) {
+        if (!(kevent.flags & OrbisKernelEvent::Flags::OneShot)) {
             // Reschedule the event for its next period.
             eq->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
         }
     }
 }
 
-int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUseconds usec,
+int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelUseconds usec,
                                         void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
@@ -387,8 +387,8 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
 
     EqueueEvent event{};
     event.event.ident = static_cast<u64>(id);
-    event.event.filter = SceKernelEvent::Filter::Timer;
-    event.event.flags = SceKernelEvent::Flags::Add;
+    event.event.filter = OrbisKernelEvent::Filter::Timer;
+    event.event.flags = OrbisKernelEvent::Flags::Add;
     event.event.fflags = 0;
     event.event.data = usec * 1000;
     event.event.udata = udata;
@@ -397,89 +397,89 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(SceKernelEqueue eq, int id, SceKernelUse
               eq->GetName(), event.event.ident, usec, reinterpret_cast<uintptr_t>(udata));
 
     if (!eq->AddEvent(event) ||
-        !eq->ScheduleEvent(id, SceKernelEvent::Filter::Timer, TimerCallback)) {
+        !eq->ScheduleEvent(id, OrbisKernelEvent::Filter::Timer, TimerCallback)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelDeleteTimerEvent(SceKernelEqueue eq, int id) {
+int PS4_SYSV_ABI sceKernelDeleteTimerEvent(OrbisKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    return eq->RemoveEvent(id, SceKernelEvent::Filter::Timer) ? ORBIS_OK
-                                                              : ORBIS_KERNEL_ERROR_ENOENT;
+    return eq->RemoveEvent(id, OrbisKernelEvent::Filter::Timer) ? ORBIS_OK
+                                                                : ORBIS_KERNEL_ERROR_ENOENT;
 }
 
-int PS4_SYSV_ABI sceKernelAddUserEvent(SceKernelEqueue eq, int id) {
-    if (eq == nullptr) {
-        return ORBIS_KERNEL_ERROR_EBADF;
-    }
-
-    EqueueEvent event{};
-    event.event.ident = id;
-    event.event.filter = SceKernelEvent::Filter::User;
-    event.event.udata = 0;
-    event.event.flags = SceKernelEvent::Flags::Add;
-    event.event.fflags = 0;
-    event.event.data = 0;
-
-    return eq->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
-}
-
-int PS4_SYSV_ABI sceKernelAddUserEventEdge(SceKernelEqueue eq, int id) {
+int PS4_SYSV_ABI sceKernelAddUserEvent(OrbisKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     EqueueEvent event{};
     event.event.ident = id;
-    event.event.filter = SceKernelEvent::Filter::User;
+    event.event.filter = OrbisKernelEvent::Filter::User;
     event.event.udata = 0;
-    event.event.flags = SceKernelEvent::Flags::Add | SceKernelEvent::Flags::Clear;
+    event.event.flags = OrbisKernelEvent::Flags::Add;
     event.event.fflags = 0;
     event.event.data = 0;
 
     return eq->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
 }
 
-void* PS4_SYSV_ABI sceKernelGetEventUserData(const SceKernelEvent* ev) {
+int PS4_SYSV_ABI sceKernelAddUserEventEdge(OrbisKernelEqueue eq, int id) {
+    if (eq == nullptr) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+
+    EqueueEvent event{};
+    event.event.ident = id;
+    event.event.filter = OrbisKernelEvent::Filter::User;
+    event.event.udata = 0;
+    event.event.flags = OrbisKernelEvent::Flags::Add | OrbisKernelEvent::Flags::Clear;
+    event.event.fflags = 0;
+    event.event.data = 0;
+
+    return eq->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+}
+
+void* PS4_SYSV_ABI sceKernelGetEventUserData(const OrbisKernelEvent* ev) {
     ASSERT(ev);
     return ev->udata;
 }
 
-u64 PS4_SYSV_ABI sceKernelGetEventId(const SceKernelEvent* ev) {
+u64 PS4_SYSV_ABI sceKernelGetEventId(const OrbisKernelEvent* ev) {
     return ev->ident;
 }
 
-int PS4_SYSV_ABI sceKernelTriggerUserEvent(SceKernelEqueue eq, int id, void* udata) {
+int PS4_SYSV_ABI sceKernelTriggerUserEvent(OrbisKernelEqueue eq, int id, void* udata) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (!eq->TriggerEvent(id, SceKernelEvent::Filter::User, udata)) {
+    if (!eq->TriggerEvent(id, OrbisKernelEvent::Filter::User, udata)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelDeleteUserEvent(SceKernelEqueue eq, int id) {
+int PS4_SYSV_ABI sceKernelDeleteUserEvent(OrbisKernelEqueue eq, int id) {
     if (eq == nullptr) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (!eq->RemoveEvent(id, SceKernelEvent::Filter::User)) {
+    if (!eq->RemoveEvent(id, OrbisKernelEvent::Filter::User)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelGetEventFilter(const SceKernelEvent* ev) {
+int PS4_SYSV_ABI sceKernelGetEventFilter(const OrbisKernelEvent* ev) {
     return ev->filter;
 }
 
-u64 PS4_SYSV_ABI sceKernelGetEventData(const SceKernelEvent* ev) {
+u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
     return ev->data;
 }
 
