@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/debug.h"
@@ -9,7 +10,9 @@
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/equeue.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
@@ -34,10 +37,20 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
 
     // Calculate timer interval
     event.time_added = std::chrono::steady_clock::now();
-    if (event.event.filter == OrbisKernelEvent::Filter::Timer ||
-        event.event.filter == OrbisKernelEvent::Filter::HrTimer) {
-        // Set timer interval
-        event.timer_interval = std::chrono::nanoseconds(event.event.data);
+    if (event.event.filter == OrbisKernelEvent::Filter::Timer) {
+        // Set timer interval, this is stored in milliseconds for timers.
+        event.timer_interval = std::chrono::milliseconds(event.event.data);
+    } else if (event.event.filter == OrbisKernelEvent::Filter::HrTimer) {
+        // Retrieve inputted time, this is stored in the bintime format.
+        OrbisKernelBintime* time = reinterpret_cast<OrbisKernelBintime*>(event.event.data);
+
+        // Convert the bintime format to a timespec.
+        OrbisKernelTimespec ts;
+        ts.tv_sec = time->sec;
+        ts.tv_nsec = (1000000000 * (time->frac >> 32)) >> 32;
+
+        // Then use the timespec to set the timer interval.
+        event.timer_interval = std::chrono::nanoseconds(ts.tv_nsec + ts.tv_sec * 1000000000);
     }
 
     // First, check if there's already an event with the same id and filter.
@@ -215,10 +228,17 @@ int EqueueInternal::GetTriggeredEvents(OrbisKernelEvent* ev, int num) {
 }
 
 bool EqueueInternal::AddSmallTimer(EqueueEvent& ev) {
+    // Retrieve inputted time, this is stored in the bintime format
+    OrbisKernelBintime* time = reinterpret_cast<OrbisKernelBintime*>(ev.event.data);
+    OrbisKernelTimespec ts;
+    ts.tv_sec = time->sec;
+    ts.tv_nsec = ((1000000000 * (time->frac >> 32)) >> 32);
+
+    // Create the small timer
     SmallTimer st;
     st.event = ev.event;
     st.added = std::chrono::steady_clock::now();
-    st.interval = std::chrono::nanoseconds{ev.event.data};
+    st.interval = std::chrono::nanoseconds(ts.tv_nsec + ts.tv_sec * 1000000000);
     {
         std::scoped_lock lock{m_mutex};
         m_small_timers[st.event.ident] = std::move(st);
@@ -277,10 +297,10 @@ s32 PS4_SYSV_ABI posix_kqueue() {
     char name[32];
     memset(name, 0, sizeof(name));
     snprintf(name, sizeof(name), "kqueue%i", kqueue_handle);
-    
+
     // Create the queue
     kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
-    LOG_INFO(Kernel_Event, "kqueue created with name {}");
+    LOG_INFO(Kernel_Event, "kqueue created with name {}", name);
 
     // Return handle.
     return kqueue_handle;
@@ -298,7 +318,7 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) 
     }
 
     // Maximum is 32 including null terminator
-    static constexpr size_t MaxEventQueueNameSize = 32;
+    static constexpr u64 MaxEventQueueNameSize = 32;
     if (std::strlen(name) > MaxEventQueueNameSize) {
         LOG_ERROR(Kernel_Event, "Event queue name exceeds 32 bytes!");
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
@@ -375,7 +395,9 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKer
     event.event.filter = OrbisKernelEvent::Filter::HrTimer;
     event.event.flags = OrbisKernelEvent::Flags::Add | OrbisKernelEvent::Flags::OneShot;
     event.event.fflags = 0;
-    event.event.data = total_ns;
+    // Data is stored as the address of a OrbisKernelBintime struct.
+    OrbisKernelBintime time{ts->tv_sec, ts->tv_nsec * 0x44b82fa09};
+    event.event.data = reinterpret_cast<u64>(&time);
     event.event.udata = udata;
 
     // HR timers cannot be implemented within the existing event queue architecture due to the
@@ -433,7 +455,7 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKerne
     event.event.filter = OrbisKernelEvent::Filter::Timer;
     event.event.flags = OrbisKernelEvent::Flags::Add;
     event.event.fflags = 0;
-    event.event.data = usec * 1000;
+    event.event.data = usec / 1000;
     event.event.udata = udata;
 
     auto& equeue = kqueues[eq];

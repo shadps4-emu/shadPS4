@@ -22,6 +22,11 @@ namespace Libraries::Kernel {
 class EqueueInternal;
 struct EqueueEvent;
 
+struct OrbisKernelBintime {
+    s64 sec;
+    s64 frac;
+};
+
 using OrbisKernelUseconds = u32;
 using OrbisKernelEqueue = s64;
 
