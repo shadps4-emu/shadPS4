@@ -18,12 +18,12 @@
 #endif
 #endif
 
+#ifndef _WIN32
 namespace Libraries::Kernel {
-
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context);
 extern std::array<SceKernelExceptionHandler, 32> Handlers;
-
 } // namespace Libraries::Kernel
+#endif
 
 namespace Core {
 
