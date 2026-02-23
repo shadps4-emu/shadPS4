@@ -204,7 +204,9 @@ static void RunThread(void* arg) {
     curthread->native_thr.Initialize();
 
     // Clear the stack before running the guest thread
-    ClearStack();
+    if (False(g_curthread->attr.flags & PthreadAttrFlags::StackUser)) {
+        ClearStack();
+    }
 
     /* Run the current thread's start routine with argument: */
     void* ret = curthread->start_routine(curthread->arg);
