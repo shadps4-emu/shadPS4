@@ -73,6 +73,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - Examples:
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Critical Render.Vulkan:Info`
+  - `isIdenticalLogGrouped`: Group same logs in one line with a counter (`true`/`false`)
+    - By default, the emulator will not rewrite the same line, and instead add a counter.
 
    - `Fullscreen`: Display the game in a full screen borderless window.
      

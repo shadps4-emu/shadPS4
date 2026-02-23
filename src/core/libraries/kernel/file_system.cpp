@@ -792,7 +792,8 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return file->socket->fstat(sb);
     }
     case Core::FileSys::FileType::Epoll:
-    case Core::FileSys::FileType::Resolver: {
+    case Core::FileSys::FileType::Resolver:
+    case Core::FileSys::FileType::Equeue: {
         LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}", magic_enum::enum_name(file->type.load()));
         break;
     }
