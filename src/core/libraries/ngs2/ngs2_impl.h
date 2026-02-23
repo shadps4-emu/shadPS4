@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <atomic>
+#include <vector>
+#include "common/types.h"
 #include "core/libraries/kernel/threads/pthread.h"
 
 namespace Libraries::Ngs2 {
@@ -92,6 +95,10 @@ struct StackBuffer {
     char padding[7];
 };
 
+// Forward declarations for types used before definition
+struct RackInternal;
+struct VoiceInternal;
+
 struct SystemInternal {
     // setup init
     char name[ORBIS_NGS2_SYSTEM_NAME_LENGTH]; // 0
@@ -154,6 +161,9 @@ struct SystemInternal {
     u32 rackCount;              // 336
     float lastRenderRatio;      // 340
     float cpuLoad;              // 344
+
+    // Rack management
+    std::vector<RackInternal*> racks;
 };
 
 struct HandleInternal {
@@ -164,16 +174,26 @@ struct HandleInternal {
     u32 handleID;               // 28
 };
 
-s32 StackBufferClose(StackBuffer* stackBuffer, size_t* outTotalSize);
-s32 StackBufferOpen(StackBuffer* stackBuffer, void* buffer, size_t bufferSize, void** outBuffer,
+s32 StackBufferClose(StackBuffer* stack_buffer, size_t* out_total_size);
+s32 StackBufferOpen(StackBuffer* stack_buffer, void* buffer, size_t buffer_size, void** out_buffer,
                     u8 flags);
-s32 SystemSetupCore(StackBuffer* stackBuffer, const OrbisNgs2SystemOption* option,
-                    SystemInternal* outSystem);
+s32 SystemSetupCore(StackBuffer* stack_buffer, const OrbisNgs2SystemOption* option,
+                    SystemInternal* out_system);
 
-s32 HandleReportInvalid(OrbisNgs2Handle handle, u32 handleType);
+s32 HandleReportInvalid(OrbisNgs2Handle handle, u32 handle_type);
 void* MemoryClear(void* buffer, size_t size);
-s32 SystemCleanup(OrbisNgs2Handle systemHandle, OrbisNgs2ContextBufferInfo* outInfo);
-s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* hostBufferInfo,
-                OrbisNgs2BufferFreeHandler hostFree, OrbisNgs2Handle* outHandle);
+s32 SystemCleanup(OrbisNgs2Handle system_handle, OrbisNgs2ContextBufferInfo* out_info);
+s32 SystemSetup(const OrbisNgs2SystemOption* option, OrbisNgs2ContextBufferInfo* host_buffer_info,
+                OrbisNgs2BufferFreeHandler host_free, OrbisNgs2Handle* out_handle);
+
+// Forward declarations for internal types
+struct RackInternal;
+struct SystemInternal;
+struct OrbisNgs2RackOption;
+
+u32 RackIdToIndex(u32 rack_id);
+s32 RackCreate(SystemInternal* system, u32 rack_id, const OrbisNgs2RackOption* option,
+               const OrbisNgs2ContextBufferInfo* buffer_info, OrbisNgs2Handle* out_handle);
+s32 RackDestroy(RackInternal* rack, OrbisNgs2ContextBufferInfo* out_buffer_info);
 
 } // namespace Libraries::Ngs2
