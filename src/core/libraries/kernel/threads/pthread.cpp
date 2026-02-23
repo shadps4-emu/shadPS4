@@ -194,21 +194,6 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
     return 0;
 }
 
-#ifdef __clang__
-__attribute__((optnone))
-#else
-__attribute__((optimize("O0")))
-#endif
-void ClearStack(const PthreadAttr& attr) {
-    void* sp;
-    asm("mov %%rsp, %0" : "=rm"(sp));
-    // leave a safety net of 64 bytes for memset
-    const u64 size = ((u64)sp - (u64)attr.stackaddr_attr) - 64;
-    volatile void* buf = alloca(size);
-    memset(const_cast<void*>(buf), 0, size);
-    buf = nullptr;
-}
-
 static void RunThread(void* arg) {
     auto* curthread = static_cast<Pthread*>(arg);
     g_curthread = curthread;
@@ -219,7 +204,7 @@ static void RunThread(void* arg) {
     curthread->native_thr.Initialize();
 
     // Clear the stack before running the guest thread
-    ClearStack(curthread->attr);
+    ClearStack();
 
     /* Run the current thread's start routine with argument: */
     void* ret = curthread->start_routine(curthread->arg);
