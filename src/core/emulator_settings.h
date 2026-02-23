@@ -15,12 +15,47 @@
 #include "common/types.h"
 #include "core/user_manager.h"
 
-// -------------------------------
-// Generic Setting wrapper
-// -------------------------------
+enum class ConfigMode {
+    Default,
+    Global,
+    Clean,
+};
+
 template <typename T>
 struct Setting {
+    T default_value{};
     T value{};
+    std::optional<T> game_specific_value{};
+
+    Setting() = default;
+    // Single-argument ctor: initialises both default_value and value so
+    // that CleanMode can always recover the intended factory default.
+    /*implicit*/ Setting(T init) : default_value(std::move(init)), value(default_value) {}
+
+    /// Return the active value under the given mode.
+    T get(ConfigMode mode = ConfigMode::Default) const {
+        switch (mode) {
+        case ConfigMode::Default:
+            return game_specific_value.value_or(value);
+        case ConfigMode::Global:
+            return value;
+        case ConfigMode::Clean:
+            return default_value;
+        }
+        return value;
+    }
+
+    /// Write v to the base layer.
+    /// Game-specific overrides are applied exclusively via Load(serial)
+    void set(const T& v) {
+        value = v;
+    }
+
+    /// Discard the game-specific override; subsequent get(Default) will
+    /// fall back to the base value.
+    void reset_game_specific() {
+        game_specific_value = std::nullopt;
+    }
 };
 
 template <typename T>
@@ -33,16 +68,19 @@ void from_json(const nlohmann::json& j, Setting<T>& s) {
     s.value = j.get<T>();
 }
 
-// -------------------------------
-// Helper to describe a per-field override action
-// -------------------------------
 struct OverrideItem {
     const char* key;
-    // apply(basePtrToStruct, jsonEntry, changedFields)
-    std::function<void(void*, const nlohmann::json&, std::vector<std::string>&)> apply;
+    std::function<void(void* group_ptr, const nlohmann::json& entry,
+                       std::vector<std::string>& changed)>
+        apply;
+    /// Return the value that should be written to the per-game config file.
+    /// Falls back to base value if no game-specific override is set.
+    std::function<nlohmann::json(const void* group_ptr)> get_for_save;
+
+    /// Clear game_specific_value for this field.
+    std::function<void(void* group_ptr)> reset_game_specific;
 };
 
-// Helper factory: create an OverrideItem binding a pointer-to-member
 template <typename Struct, typename T>
 inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) {
     return OverrideItem{
@@ -50,31 +88,41 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
             LOG_DEBUG(EmuSettings, "[make_override] Processing key: {}", key);
             LOG_DEBUG(EmuSettings, "[make_override] Entry JSON: {}", entry.dump());
-
             Struct* obj = reinterpret_cast<Struct*>(base);
             Setting<T>& dst = obj->*member;
-
             try {
-                // Parse the value from JSON
                 T newValue = entry.get<T>();
-
                 LOG_DEBUG(EmuSettings, "[make_override] Parsed value: {}", newValue);
                 LOG_DEBUG(EmuSettings, "[make_override] Current value: {}", dst.value);
-
                 if (dst.value != newValue) {
                     std::ostringstream oss;
                     oss << key << " ( " << dst.value << " → " << newValue << " )";
                     changed.push_back(oss.str());
                     LOG_DEBUG(EmuSettings, "[make_override] Recorded change: {}", oss.str());
                 }
-
-                dst.value = newValue;
+                dst.game_specific_value = newValue;
                 LOG_DEBUG(EmuSettings, "[make_override] Successfully updated {}", key);
             } catch (const std::exception& e) {
                 LOG_ERROR(EmuSettings, "[make_override] ERROR parsing {}: {}", key, e.what());
                 LOG_ERROR(EmuSettings, "[make_override] Entry was: {}", entry.dump());
                 LOG_ERROR(EmuSettings, "[make_override] Type name: {}", entry.type_name());
             }
+        },
+
+        // --- get_for_save -------------------------------------------
+        // Returns game_specific_value when present, otherwise base value.
+        // This means a freshly-opened game-specific dialog still shows
+        // useful (current-global) values rather than empty entries.
+        [member](const void* base) -> nlohmann::json {
+            const Struct* obj = reinterpret_cast<const Struct*>(base);
+            const Setting<T>& src = obj->*member;
+            return nlohmann::json(src.game_specific_value.value_or(src.value));
+        },
+
+        // --- reset_game_specific ------------------------------------
+        [member](void* base) {
+            Struct* obj = reinterpret_cast<Struct*>(base);
+            (obj->*member).reset_game_specific();
         }};
 }
 
@@ -339,6 +387,23 @@ public:
     bool Load(const std::string& serial = "");
     void SetDefaultValues();
 
+    // Config mode
+    ConfigMode GetConfigMode() const {
+        return m_configMode;
+    }
+    void SetConfigMode(ConfigMode mode) {
+        m_configMode = mode;
+    }
+
+    //
+    // Game-specific override management
+    /// Clears all per-game overrides.  Call this when a game exits so
+    /// the emulator reverts to global settings.
+    void ClearGameSpecificOverrides();
+
+    /// Reset a single field's game-specific override by its JSON ke
+    void ResetGameSpecificValue(const std::string& key);
+
     // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
     std::vector<std::filesystem::path> GetGameInstallDirs() const;
@@ -369,11 +434,12 @@ private:
     GPUSettings m_gpu{};
     VulkanSettings m_vulkan{};
     UserManager m_userManager;
+    ConfigMode m_configMode{ConfigMode::Default};
 
     static std::shared_ptr<EmulatorSettings> s_instance;
     static std::mutex s_mutex;
 
-    // Generic helper that applies override descriptors for a specific group
+    /// Apply overrideable fields from groupJson into group.game_specific_value.
     template <typename Group>
     void ApplyGroupOverrides(Group& group, const nlohmann::json& groupJson,
                              std::vector<std::string>& changed) {
@@ -382,6 +448,20 @@ private:
                 continue;
             item.apply(&group, groupJson.at(item.key), changed);
         }
+    }
+
+    // Write all overrideable fields from group into out (for game-specific save).
+    template <typename Group>
+    static void SaveGroupGameSpecific(const Group& group, nlohmann::json& out) {
+        for (auto& item : group.GetOverrideableFields())
+            out[item.key] = item.get_for_save(&group);
+    }
+
+    // Discard every game-specific override in group.
+    template <typename Group>
+    static void ClearGroupOverrides(Group& group) {
+        for (auto& item : group.GetOverrideableFields())
+            item.reset_game_specific(&group);
     }
 
     static void PrintChangedSummary(const std::vector<std::string>& changed);
@@ -407,23 +487,24 @@ public:
         return m_vulkan.GetOverrideableFields();
     }
     std::vector<std::string> GetAllOverrideableKeys() const;
+
 #define SETTING_FORWARD(group, Name, field)                                                        \
     auto Get##Name() const {                                                                       \
-        return group.field.value;                                                                  \
+        return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(const decltype(group.field.value)& v) {                                         \
-        group.field.value = v;                                                                     \
+    void Set##Name(const decltype((group).field.value)& v) {                                       \
+        (group).field.value = v;                                                                   \
     }
 #define SETTING_FORWARD_BOOL(group, Name, field)                                                   \
-    auto Is##Name() const {                                                                        \
-        return group.field.value;                                                                  \
+    bool Is##Name() const {                                                                        \
+        return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(const decltype(group.field.value)& v) {                                         \
-        group.field.value = v;                                                                     \
+    void Set##Name(bool v) {                                                                       \
+        (group).field.value = v;                                                                   \
     }
 #define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
-    auto Is##Name() const {                                                                        \
-        return group.field.value;                                                                  \
+    bool Is##Name() const {                                                                        \
+        return (group).field.get(m_configMode);                                                    \
     }
 
     // General settings
@@ -516,4 +597,5 @@ public:
 
 #undef SETTING_FORWARD
 #undef SETTING_FORWARD_BOOL
+#undef SETTING_FORWARD_BOOL_READONLY
 };
