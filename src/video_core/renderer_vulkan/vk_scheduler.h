@@ -358,6 +358,14 @@ public:
     /// Waits for the given tick to trigger on the GPU.
     void Wait(u64 tick);
 
+    /// Registers a semaphore wait for cross-queue synchronization (async compute).
+    void Wait(vk::Semaphore semaphore, u64 value);
+
+    /// Returns the timeline semaphore handle for cross-queue sync.
+    vk::Semaphore GetTimelineSemaphore() const {
+        return master_semaphore.Handle();
+    }
+
     /// Attempts to execute operations whose tick the GPU has caught up with.
     void PopPendingOperations();
 
@@ -445,6 +453,10 @@ private:
     RenderState render_state;
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};
+
+    // For cross-queue sync (async compute)
+    std::vector<vk::Semaphore> wait_semaphores;
+    std::vector<u64> wait_values;
 };
 
 } // namespace Vulkan

@@ -22,6 +22,19 @@ Pipeline::~Pipeline() = default;
 void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
                              const Shader::PushData& push_data) const {
     const auto cmdbuf = scheduler.CommandBuffer();
+    BindResources(cmdbuf, set_writes, buffer_barriers, push_data);
+}
+
+void Pipeline::BindResources(vk::CommandBuffer cmdbuf, DescriptorWrites& set_writes,
+                             const BufferBarriers& buffer_barriers,
+                             const Shader::PushData& push_data) const {
+    BindResources(cmdbuf, set_writes, buffer_barriers, push_data, desc_heap);
+}
+
+void Pipeline::BindResources(vk::CommandBuffer cmdbuf, DescriptorWrites& set_writes,
+                             const BufferBarriers& buffer_barriers,
+                             const Shader::PushData& push_data,
+                             DescriptorHeap& heap) const {
     const auto bind_point =
         IsCompute() ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
 
@@ -31,7 +44,6 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers&
             .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
             .pBufferMemoryBarriers = buffer_barriers.data(),
         };
-        scheduler.EndRendering();
         cmdbuf.pipelineBarrier2(dependencies);
     }
 
@@ -48,7 +60,7 @@ void Pipeline::BindResources(DescriptorWrites& set_writes, const BufferBarriers&
         return;
     }
 
-    const auto desc_set = desc_heap.Commit(*desc_layout);
+    const auto desc_set = heap.Commit(*desc_layout);
     for (auto& set_write : set_writes) {
         set_write.dstSet = desc_set;
     }

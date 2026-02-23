@@ -42,20 +42,51 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
+
+    // Initialize async compute scheduler if dedicated compute queue is available
+    if (instance.HasDedicatedComputeQueue()) {
+        compute_scheduler = std::make_unique<ComputeScheduler>(instance);
+
+        // Create compute-specific descriptor heap with compute scheduler's semaphore
+        static constexpr std::array ComputeDescriptorHeapSizes = {
+            vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 512},
+            vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 8192},
+            vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
+            vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 1024},
+            vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
+        };
+        compute_desc_heap = std::make_unique<DescriptorHeap>(
+            instance, compute_scheduler->GetMasterSemaphore(),
+            ComputeDescriptorHeapSizes, 1024);
+    }
 }
 
 Rasterizer::~Rasterizer() = default;
 
 void Rasterizer::CpSync() {
     scheduler.EndRendering();
+
+    // ASYNC COMPUTE SYNC:
+    // Ensure pending compute work is submitted and graphics queue waits for it.
+    if (compute_scheduler && compute_scheduler->IsDedicated()) {
+        compute_scheduler->Flush();
+
+        const auto compute_sem = compute_scheduler->GetMasterSemaphore()->Handle();
+        const auto compute_tick = compute_scheduler->CurrentTick();
+
+        scheduler.Wait(compute_sem, compute_tick);
+    }
+
     auto cmdbuf = scheduler.CommandBuffer();
 
     const vk::MemoryBarrier ib_barrier{
-        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
-        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead,
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite | vk::AccessFlagBits::eMemoryWrite |
+                         vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eIndirectCommandRead |
+                         vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eMemoryRead,
     };
-    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
-                           vk::PipelineStageFlagBits::eDrawIndirect,
+    cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands,
+                           vk::PipelineStageFlagBits::eAllCommands,
                            vk::DependencyFlagBits::eByRegion, ib_barrier, {}, {});
 }
 
@@ -304,8 +335,6 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
-    scheduler.PopPendingOperations();
-
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
@@ -321,20 +350,39 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
-    scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    // Use async compute queue if available
+    if (compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
+        // Process pending operations on both schedulers
+        scheduler.PopPendingOperations();
+        compute_scheduler->PopPendingOperations();
 
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+        // WAR Hazard: Ensure graphics has finished before compute reads
+        compute_scheduler->WaitForGraphics(scheduler);
+
+        // Get compute command buffer and bind resources using compute descriptor heap
+        const auto cmdbuf = compute_scheduler->CommandBuffer();
+        pipeline->BindResources(cmdbuf, set_writes, buffer_barriers, push_data, *compute_desc_heap);
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+        cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+
+        // RAW Hazard: Ensure compute finishes before graphics reads results
+        compute_scheduler->SignalGraphics(scheduler);
+    } else {
+        // Fallback to graphics queue
+        scheduler.PopPendingOperations();
+        scheduler.EndRendering();
+        pipeline->BindResources(set_writes, buffer_barriers, push_data);
+
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+        cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+    }
 
     ResetBindings();
 }
 
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
-
-    scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
@@ -348,12 +396,36 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
 
-    scheduler.EndRendering();
-    pipeline->BindResources(set_writes, buffer_barriers, push_data);
+    // Use async compute queue if available
+    if (compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
+        // Process pending operations on both schedulers
+        scheduler.PopPendingOperations();
+        compute_scheduler->PopPendingOperations();
 
-    const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
-    cmdbuf.dispatchIndirect(buffer->Handle(), base);
+        // End any active rendering on graphics queue
+        scheduler.EndRendering();
+
+        // Get compute command buffer and bind resources using compute descriptor heap
+        const auto cmdbuf = compute_scheduler->CommandBuffer();
+        pipeline->BindResources(cmdbuf, set_writes, buffer_barriers, push_data, *compute_desc_heap);
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+        cmdbuf.dispatchIndirect(buffer->Handle(), base);
+
+        // Flush compute immediately and make graphics wait for it
+        compute_scheduler->Flush();
+        const auto compute_sem = compute_scheduler->GetMasterSemaphore()->Handle();
+        const auto compute_tick = compute_scheduler->CurrentTick();
+        scheduler.Wait(compute_sem, compute_tick);
+    } else {
+        // Fallback to graphics queue
+        scheduler.PopPendingOperations();
+        scheduler.EndRendering();
+        pipeline->BindResources(set_writes, buffer_barriers, push_data);
+
+        const auto cmdbuf = scheduler.CommandBuffer();
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+        cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    }
 
     ResetBindings();
 }

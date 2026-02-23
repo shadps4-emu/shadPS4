@@ -175,6 +175,7 @@ static ConfigEntry<bool> shouldCopyGPUBuffers(false);
 static ConfigEntry<bool> readbacksEnabled(false);
 static ConfigEntry<bool> readbackLinearImagesEnabled(false);
 static ConfigEntry<bool> directMemoryAccessEnabled(false);
+static ConfigEntry<bool> asyncComputeEnabled(true);
 static ConfigEntry<bool> shouldDumpShaders(false);
 static ConfigEntry<bool> shouldPatchShaders(false);
 static ConfigEntry<u32> vblankFrequency(60);
@@ -452,6 +453,10 @@ bool directMemoryAccess() {
     return directMemoryAccessEnabled.get();
 }
 
+bool asyncCompute() {
+    return asyncComputeEnabled.get();
+}
+
 bool dumpShaders() {
     return shouldDumpShaders.get();
 }
@@ -601,6 +606,10 @@ void setReadbackLinearImages(bool enable, bool is_game_specific) {
 
 void setDirectMemoryAccess(bool enable, bool is_game_specific) {
     directMemoryAccessEnabled.set(enable, is_game_specific);
+}
+
+void setAsyncCompute(bool enable, bool is_game_specific) {
+    asyncComputeEnabled.set(enable, is_game_specific);
 }
 
 void setDumpShaders(bool enable, bool is_game_specific) {

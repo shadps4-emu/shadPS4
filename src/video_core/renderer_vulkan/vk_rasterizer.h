@@ -7,6 +7,7 @@
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
+#include "video_core/renderer_vulkan/vk_compute_scheduler.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/texture_cache/texture_cache.h"
 
@@ -32,6 +33,14 @@ public:
 
     [[nodiscard]] Scheduler& GetScheduler() noexcept {
         return scheduler;
+    }
+
+    [[nodiscard]] ComputeScheduler& GetComputeScheduler() noexcept {
+        return *compute_scheduler;
+    }
+
+    [[nodiscard]] bool HasAsyncCompute() const noexcept {
+        return compute_scheduler && compute_scheduler->IsDedicated();
     }
 
     [[nodiscard]] VideoCore::BufferCache& GetBufferCache() noexcept {
@@ -119,6 +128,8 @@ private:
 
     const Instance& instance;
     Scheduler& scheduler;
+    std::unique_ptr<ComputeScheduler> compute_scheduler;
+    std::unique_ptr<DescriptorHeap> compute_desc_heap;
     VideoCore::PageManager page_manager;
     VideoCore::BufferCache buffer_cache;
     VideoCore::TextureCache texture_cache;
