@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/config.h"
@@ -275,6 +275,10 @@ s32 PS4_SYSV_ABI sceKernelGetModuleList2(s32* handles, u64 num_array, u64* out_c
     return ORBIS_OK;
 }
 
+u32 PS4_SYSV_ABI posix_getuid() {
+    return 1;
+}
+
 s32 PS4_SYSV_ABI exit(s32 status) {
     UNREACHABLE_MSG("Exiting with status code {}", status);
     return 0;
@@ -299,6 +303,7 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("HZO7xOos4xc", "libkernel", 1, "libkernel", sceKernelGetModuleInfoInternal);
     LIB_FUNCTION("IuxnUuXk6Bg", "libkernel", 1, "libkernel", sceKernelGetModuleList);
     LIB_FUNCTION("ZzzC3ZGVAkc", "libkernel", 1, "libkernel", sceKernelGetModuleList2);
+    LIB_FUNCTION("kg4x8Prhfxw", "libkernel", 1, "libkernel", posix_getuid);
     LIB_FUNCTION("6Z83sYWFlA8", "libkernel", 1, "libkernel", exit);
 }
 
