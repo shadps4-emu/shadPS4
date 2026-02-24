@@ -476,9 +476,9 @@ void Image::CopyImage(Image& src_image) {
     if (src_has_stencil != dst_has_stencil) {
         LOG_ERROR(Render_Vulkan,
                   "Cannot copy between depth-stencil and depth-only images. "
-                  "src_has_stencil={}, dst_has_stencil={}. Skipping copy.",
+                  "src_has_stencil={}, dst_has_stencil={}",
                   src_has_stencil, dst_has_stencil);
-        return;
+        // return;
     }
 
     // If both have stencil, we need to copy both aspects or handle separately
@@ -526,6 +526,8 @@ void Image::CopyImage(Image& src_image) {
     // For depth/stencil images, only copy the depth aspect (skip stencil)
     if (src_image.aspect_mask & vk::ImageAspectFlagBits::eDepth) {
         aspect = vk::ImageAspectFlagBits::eDepth;
+    } else if (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) {
+        aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
     for (u32 mip = 0; mip < num_mips; ++mip) {
@@ -604,8 +606,8 @@ void Image::CopyImage(Image& src_image) {
     auto cmdbuf = scheduler->CommandBuffer();
 
     if (!image_copies.empty()) {
-        cmdbuf.copyImage(src_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, GetImage(),
-                         vk::ImageLayout::eTransferDstOptimal, image_copies);
+        cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
+                         backing->state.layout, image_copies);
     }
 
     src_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
