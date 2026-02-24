@@ -136,7 +136,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
             }
         }
         params.entry_addr = module->GetEntryAddress();
-        Core::EnsureThreadInitialized();
+        Libraries::Kernel::ClearStack();
         RunMainEntry(&params);
     });
 }

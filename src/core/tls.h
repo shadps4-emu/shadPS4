@@ -43,7 +43,7 @@ void SetTcbBase(void* image_address);
 Tcb* GetTcbBase();
 
 /// Makes sure TLS is initialized for the thread before entering guest.
-void EnsureThreadInitialized();
+void InitializeTLS();
 
 template <class F, F f>
 struct HostCallWrapperImpl;
