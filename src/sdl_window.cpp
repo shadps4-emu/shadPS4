@@ -271,6 +271,7 @@ void WindowSDL::WaitEvent() {
                 break;
             }
         }
+        break;
     case SDL_EVENT_RDOC_CAPTURE:
         VideoCore::TriggerCapture();
         break;

@@ -91,9 +91,9 @@ public:
     bool operator!=(const InputID& o) const {
         return type != o.type || sdl_id != o.sdl_id || gamepad_id != o.gamepad_id;
     }
-    bool operator<=(const InputID& o) const {
-        return type <= o.type && sdl_id <= o.sdl_id;
-        return std::tie(gamepad_id, type, sdl_id) <= std::tie(o.gamepad_id, o.type, o.sdl_id);
+    auto operator<=>(const InputID& o) const {
+        return std::tie(gamepad_id, type, sdl_id, gamepad_id) <=>
+               std::tie(o.gamepad_id, o.type, o.sdl_id, o.gamepad_id);
     }
     bool IsValid() const {
         return *this != InputID();

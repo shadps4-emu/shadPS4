@@ -1113,8 +1113,13 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    std::string name =
-        EmulatorSettings::GetInstance()->GetUserManager().GetUserByID(user_id)->user_name;
+    std::string name = "shadPS4";
+    auto const* u = EmulatorSettings::GetInstance()->GetUserManager().GetUserByID(user_id);
+    if (u != nullptr) {
+        name = u->user_name;
+    } else {
+        LOG_ERROR(Lib_UserService, "No user found");
+    }
     if (size < name.length()) {
         LOG_ERROR(Lib_UserService, "buffer is too short");
         return ORBIS_USER_SERVICE_ERROR_BUFFER_TOO_SHORT;

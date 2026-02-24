@@ -296,6 +296,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
             AddUserServiceEvent({OrbisUserServiceEventType::Login, 1});
         }
     }
+    SDL_free(new_joysticks);
 }
 u8 GameController::GetTouchCount() {
     return m_touch_count;

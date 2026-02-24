@@ -395,13 +395,11 @@ void ParseInputConfig(const std::string game_id = "") {
                 binding,
                 &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
                                     ControllerOutput(button_it->second)));
-            connections.insert(connections.end(), connection);
         } else if (hotkey_it != string_to_hotkey_map.end()) {
             connection = BindingConnection(
                 binding,
                 &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
                                     ControllerOutput(hotkey_it->second)));
-            connections.insert(connections.end(), connection);
         } else if (axis_it != string_to_axis_map.end()) {
             // todo add new shit here
             int value_to_set = binding.keys[2].type == InputType::Axis ? 0 : axis_it->second.value;
@@ -616,6 +614,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case HOTKEY_REMOVE_VIRTUAL_USER:
             PushSDLEvent(SDL_EVENT_REMOVE_VIRTUAL_USER);
+            break;
         case HOTKEY_VOLUME_UP:
             EmulatorSettings::GetInstance()->SetVolumeSlider(
                 std::clamp(EmulatorSettings::GetInstance()->GetVolumeSlider() + 10, 0, 500));
@@ -694,8 +693,7 @@ bool UpdatePressedKeys(InputEvent event) {
         // and from there, it only changes the parameter
         auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
                                    [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                       return std::tie(e.first.input.type, e.first.input.sdl_id) <
-                                              std::tie(i.type, i.sdl_id);
+                                       return e.first.input < i;
                                    });
         if (it == pressed_keys.end() || it->first.input != input) {
             pressed_keys.insert(it, {event, false});
