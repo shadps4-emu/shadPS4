@@ -478,14 +478,7 @@ void Image::CopyImage(Image& src_image) {
                   "Cannot copy between depth-stencil and depth-only images. "
                   "src_has_stencil={}, dst_has_stencil={}",
                   src_has_stencil, dst_has_stencil);
-        // return;
-    }
-
-    // If both have stencil, we need to copy both aspects or handle separately
-    if (src_has_stencil && dst_has_stencil) {
-        LOG_WARNING(Render_Vulkan,
-                    "Both images have stencil - currently only copying depth aspect. "
-                    "Stencil data will be lost.");
+        return;
     }
 
     // Check format compatibility
