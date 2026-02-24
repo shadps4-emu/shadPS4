@@ -317,7 +317,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
 
     u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)native_signum, nullptr);
+                                 (void*)(s64)native_signum, nullptr);
     ASSERT(res == 0);
 #endif
     return ORBIS_OK;
