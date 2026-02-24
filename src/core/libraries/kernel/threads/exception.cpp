@@ -188,7 +188,7 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_rsp = regs.__rsp;
         ctx.uc_mcontext.mc_fs = regs.__fs;
         ctx.uc_mcontext.mc_gs = regs.__gs;
-        ctx.uc_mcontext.mc_gs = regs.__rip;
+        ctx.uc_mcontext.mc_rip = regs.__rip;
         ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #else
         const auto& regs = raw_context->uc_mcontext.gregs;
@@ -317,7 +317,7 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
 
     u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)native_signum, nullptr);
+                                 (void*)(s64)native_signum, nullptr);
     ASSERT(res == 0);
 #endif
     return ORBIS_OK;

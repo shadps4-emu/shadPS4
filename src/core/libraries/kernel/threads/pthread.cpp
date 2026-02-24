@@ -199,10 +199,17 @@ static void RunThread(void* arg) {
     g_curthread = curthread;
     Common::SetCurrentThreadName(curthread->name.c_str());
     DebugState.AddCurrentThreadToGuestList();
+    Core::InitializeTLS();
+
+    curthread->native_thr.Initialize();
+
+    // Clear the stack before running the guest thread
+    if (False(g_curthread->attr.flags & PthreadAttrFlags::StackUser)) {
+        ClearStack();
+    }
 
     /* Run the current thread's start routine with argument: */
-    curthread->native_thr.Initialize();
-    void* ret = Core::ExecuteGuest(curthread->start_routine, curthread->arg);
+    void* ret = curthread->start_routine(curthread->arg);
 
     /* Remove thread from tracking */
     DebugState.RemoveCurrentThreadFromGuestList();
