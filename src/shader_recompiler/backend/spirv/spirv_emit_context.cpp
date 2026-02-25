@@ -961,23 +961,33 @@ void EmitContext::DefineImagesAndSamplers() {
         const auto nfmt = sharp.GetNumberFmt();
         const bool is_integer = AmdGpu::IsInteger(nfmt);
         const bool is_storage = image_desc.is_written;
+        const bool is_mip_storage_fallback = image_desc.is_mip_storage_fallback;
         const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
-        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, image_type)};
+
+        const u32 num_bindings = image_desc.NumBindings(info);
+        Id pointee_type = image_type;
+        if (is_mip_storage_fallback) {
+            pointee_type = TypeArray(pointee_type, ConstU32(num_bindings));
+        }
+
+        const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, pointee_type)};
         const Id id{AddGlobalVariable(pointer_type, spv::StorageClass::UniformConstant)};
-        Decorate(id, spv::Decoration::Binding, binding.unified++);
+        Decorate(id, spv::Decoration::Binding, binding.unified);
+        binding.unified += num_bindings;
         Decorate(id, spv::Decoration::DescriptorSet, 0U);
+        // TODO better naming for resources (flattened sharp_idx is not informative)
         Name(id, fmt::format("{}_{}{}", stage, "img", image_desc.sharp_idx));
         images.push_back({
             .data_types = &data_types,
             .id = id,
             .sampled_type = is_storage ? sampled_type : TypeSampledImage(image_type),
-            .pointer_type = pointer_type,
             .image_type = image_type,
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .is_mip_storage_fallback = is_mip_storage_fallback,
         });
         interfaces.push_back(id);
     }
