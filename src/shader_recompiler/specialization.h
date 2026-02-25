@@ -54,6 +54,8 @@ struct ImageSpecialization {
     AmdGpu::NumberConversion num_conversion{};
     // FIXME any pipeline cache changes needed?
     u32 num_bindings = 0;
+    // Could pass as userdata instead?
+    u32 base_level_for_mip_fallback = 0;
 
     bool operator==(const ImageSpecialization&) const = default;
 };
@@ -147,6 +149,8 @@ struct StageSpecialization {
                          }
                          spec.num_conversion = sharp.GetNumberConversion();
                          spec.num_bindings = desc.NumBindings(*info);
+                         spec.base_level_for_mip_fallback =
+                             desc.is_mip_storage_fallback ? sharp.base_level : 0;
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
