@@ -161,7 +161,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
     }
 
     if (img.dirty) {
-        CreateImages(img);
+        CreateImages(img, hdr);
     }
 
     if (Config::getVkHostMarkersEnabled()) {
@@ -404,12 +404,12 @@ void FsrPass::ResizeAndInvalidate(u32 width, u32 height) {
     }
 }
 
-void FsrPass::CreateImages(Img& img) const {
+void FsrPass::CreateImages(Img& img, bool hdr) const {
     img.dirty = false;
 
     vk::ImageCreateInfo image_create_info{
         .imageType = vk::ImageType::e2D,
-        .format = vk::Format::eR16G16B16A16Sfloat,
+        .format = hdr ? vk::Format::eR16G16B16A16Sfloat : vk::Format::eR8G8B8A8Unorm,
         .extent{
             .width = cur_size.width,
             .height = cur_size.height,
@@ -434,7 +434,7 @@ void FsrPass::CreateImages(Img& img) const {
     vk::ImageViewCreateInfo image_view_create_info{
         .image = img.intermediary_image,
         .viewType = vk::ImageViewType::e2D,
-        .format = vk::Format::eR16G16B16A16Sfloat,
+        .format = hdr ? vk::Format::eR16G16B16A16Sfloat : vk::Format::eR8G8B8A8Unorm,
         .subresourceRange{
             .aspectMask = vk::ImageAspectFlagBits::eColor,
             .levelCount = 1,
