@@ -7,6 +7,17 @@
 
 namespace Libraries::Kernel {
 
+void PS4_SYSV_ABI ClearStack() {
+    void* const stackaddr_attr = Libraries::Kernel::g_curthread->attr.stackaddr_attr;
+    void* volatile sp;
+    asm("mov %%rsp, %0" : "=rm"(sp));
+    // leave a safety net of 64 bytes for memset
+    const size_t size = ((uintptr_t)sp - (uintptr_t)stackaddr_attr) - 64;
+    void* volatile buf = alloca(size);
+    memset(buf, 0, size);
+    sp = nullptr;
+}
+
 void RegisterThreads(Core::Loader::SymbolsResolver* sym) {
     RegisterMutex(sym);
     RegisterCond(sym);
