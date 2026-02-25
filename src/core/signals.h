@@ -1,16 +1,28 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <set>
+#include <signal.h>
 #include "common/singleton.h"
 #include "common/types.h"
 
+#ifdef _WIN32
+#define SIGSLEEP -1
+#elif defined(__APPLE__)
+#define SIGSLEEP SIGVTALRM
+#else
+#define SIGSLEEP SIGRTMAX
+#endif
 namespace Core {
 
 using AccessViolationHandler = bool (*)(void* context, void* fault_address);
 using IllegalInstructionHandler = bool (*)(void* context);
+
+#ifndef _WIN32
+void SignalHandler(int sig, siginfo_t* info, void* raw_context);
+#endif
 
 /// Receives OS signals and dispatches to the appropriate handlers.
 class SignalDispatch {

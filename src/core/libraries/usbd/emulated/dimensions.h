@@ -103,6 +103,8 @@ protected:
     std::queue<std::array<u8, 32>> m_queries;
 
 private:
+    static void* PS4_SYSV_ABI WriteThread(void* arg);
+
     std::shared_ptr<DimensionsToypad> m_dimensions_toypad = std::make_shared<DimensionsToypad>();
 
     std::array<u8, 9> m_endpoint_out_extra = {0x09, 0x21, 0x11, 0x01, 0x00, 0x01, 0x22, 0x1d, 0x00};
