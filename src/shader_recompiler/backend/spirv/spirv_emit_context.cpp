@@ -988,6 +988,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .is_integer = is_integer,
             .is_storage = is_storage,
             .is_mip_storage_fallback = is_mip_storage_fallback,
+            .base_level_for_mip_fallback = sharp.base_level,
         });
         interfaces.push_back(id);
     }

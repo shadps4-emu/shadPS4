@@ -239,7 +239,11 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
             ASSERT(texture.is_mip_storage_fallback);
             const Id single_image_ptr_type =
                 ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
-            image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
+            // We bind images for [base_level, last_level] and ignore those before base_level
+            const Id active_mip_idx =
+                ctx.OpISub(ctx.U32[1], lod, ctx.ConstU32(texture.base_level_for_mip_fallback));
+            image_ptr =
+                ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{active_mip_idx});
 #endif
         }
         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
@@ -262,9 +266,10 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
         ASSERT(texture.is_mip_storage_fallback);
         const Id single_image_ptr_type =
             ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
-        // TODO is lod operand relative (to base_level) or absolute?
-        // Do we need to do 'lod - sharp.base_level' ?
-        image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
+        // We bind images for [base_level, last_level] and ignore those before base_level
+        const Id active_mip_idx =
+            ctx.OpISub(ctx.U32[1], lod, ctx.ConstU32(texture.base_level_for_mip_fallback));
+        image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{active_mip_idx});
     }
     const Id image = ctx.OpLoad(texture.image_type, image_ptr);
     const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
