@@ -1,9 +1,8 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
 #include <vector>
-#include <SDL3/SDL_audio.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -328,7 +327,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttribute(const OrbisAudio3dPortId port_id,
     // RESET_STATE clears all attributes and queued PCM; it takes no value.
     if (attribute_id == OrbisAudio3dAttributeId::ORBIS_AUDIO3D_ATTRIBUTE_RESET_STATE) {
         for (auto& data : obj.pcm_queue) {
-            SDL_free(data.sample_buffer);
+            std::free(data.sample_buffer);
         }
         obj.pcm_queue.clear();
         obj.persistent_attributes.clear();
@@ -474,7 +473,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
     const u32 out_samples = granularity * AUDIO3D_OUTPUT_NUM_CHANNELS;
 
     // ---- FLOAT MIX BUFFER ----
-    float* mix_float = static_cast<float*>(SDL_calloc(out_samples, sizeof(float)));
+    float* mix_float = static_cast<float*>(std::calloc(out_samples, sizeof(float)));
 
     if (!mix_float)
         return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
@@ -487,7 +486,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         if (gain == 0.0f) {
             AudioData data = queue.front();
             queue.pop_front();
-            SDL_free(data.sample_buffer);
+            std::free(data.sample_buffer);
             return;
         }
 
@@ -556,10 +555,10 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         mix_in(obj.pcm_queue, gain);
     }
 
-    s16* mix_s16 = static_cast<s16*>(SDL_malloc(out_samples * sizeof(s16)));
+    s16* mix_s16 = static_cast<s16*>(std::malloc(out_samples * sizeof(s16)));
 
     if (!mix_s16) {
-        SDL_free(mix_float);
+        std::free(mix_float);
         return ORBIS_AUDIO3D_ERROR_OUT_OF_MEMORY;
     }
 
@@ -568,7 +567,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         mix_s16[i] = static_cast<s16>(v * 32767.0f);
     }
 
-    SDL_free(mix_float);
+    std::free(mix_float);
 
     port.mixed_queue.push_back(AudioData{.sample_buffer = reinterpret_cast<u8*>(mix_s16),
                                          .num_samples = granularity,
@@ -681,7 +680,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
         AudioData frame = port.mixed_queue.front();
         port.mixed_queue.pop_front();
         const s32 ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
-        SDL_free(frame.sample_buffer);
+        std::free(frame.sample_buffer);
         if (ret < 0) {
             return ret;
         }
@@ -831,7 +830,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
 
         const s32 ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
 
-        SDL_free(frame.sample_buffer);
+        std::free(frame.sample_buffer);
 
         if (ret < 0)
             return ret;
