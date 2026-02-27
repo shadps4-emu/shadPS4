@@ -113,40 +113,46 @@ void NormalDirectory::RebuildDirents() {
     dirent_cache_bin.clear();
     dirent_cache_bin.reserve(512);
 
+    std::vector<std::pair<std::filesystem::path, bool>> file_list{};
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
-    mnt->IterateDirectory(
-        guest_directory, [this, &next_ceiling, &dirent_offset, &last_reclen_offset](
-                             const std::filesystem::path& ent_path, const bool ent_is_file) {
-            NormalDirectoryDirent tmp{};
-            std::string leaf(ent_path.filename().string());
+    mnt->IterateDirectory(guest_directory, [&file_list](const std::filesystem::path& ent_path,
+                                                        const bool ent_is_file) {
+        file_list.emplace_back(ent_path, ent_is_file);
+    });
 
-            // prepare dirent
-            tmp.d_fileno = BaseDirectory::next_fileno();
-            tmp.d_namlen = leaf.size();
-            strncpy(tmp.d_name, leaf.data(), tmp.d_namlen + 1);
-            tmp.d_type = (ent_is_file ? 0100000 : 0040000) >> 12;
-            tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
+    std::ranges::sort(file_list.begin(), file_list.end());
 
-            // next element may break 512 byte alignment
-            if (tmp.d_reclen + dirent_offset > next_ceiling) {
-                // align previous dirent's size to the current ceiling
-                *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) +
-                                        last_reclen_offset) += next_ceiling - dirent_offset;
-                // set writing pointer to the aligned start position (current ceiling)
-                dirent_offset = next_ceiling;
-                // move the ceiling up and zero-out the buffer
-                next_ceiling += 512;
-                dirent_cache_bin.resize(next_ceiling);
-                std::fill(dirent_cache_bin.begin() + dirent_offset,
-                          dirent_cache_bin.begin() + next_ceiling, 0);
-            }
+    for (const auto& [file_path, is_file] : file_list) {
+        NormalDirectoryDirent tmp{};
+        std::string leaf(file_path.filename().string());
 
-            // current dirent's reclen position
-            last_reclen_offset = dirent_offset + 4;
-            memcpy(dirent_cache_bin.data() + dirent_offset, &tmp, tmp.d_reclen);
-            dirent_offset += tmp.d_reclen;
-        });
+        // prepare dirent
+        tmp.d_fileno = BaseDirectory::next_fileno();
+        tmp.d_namlen = leaf.size();
+        strncpy(tmp.d_name, leaf.data(), tmp.d_namlen + 1);
+        tmp.d_type = (is_file ? 0100000 : 0040000) >> 12;
+        tmp.d_reclen = Common::AlignUp(dirent_meta_size + tmp.d_namlen + 1, 4);
+
+        // next element may break 512 byte alignment
+        if (tmp.d_reclen + dirent_offset > next_ceiling) {
+            // align previous dirent's size to the current ceiling
+            *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) +
+                                    last_reclen_offset) += next_ceiling - dirent_offset;
+            // set writing pointer to the aligned start position (current ceiling)
+            dirent_offset = next_ceiling;
+            // move the ceiling up and zero-out the buffer
+            next_ceiling += 512;
+            dirent_cache_bin.resize(next_ceiling);
+            std::fill(dirent_cache_bin.begin() + dirent_offset,
+                      dirent_cache_bin.begin() + next_ceiling, 0);
+        }
+
+        // current dirent's reclen position
+        last_reclen_offset = dirent_offset + 4;
+        memcpy(dirent_cache_bin.data() + dirent_offset, &tmp, tmp.d_reclen);
+        dirent_offset += tmp.d_reclen;
+    }
 
     // last reclen, as before
     *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) + last_reclen_offset) +=
