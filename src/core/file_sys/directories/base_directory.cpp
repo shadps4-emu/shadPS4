@@ -35,7 +35,7 @@ s64 BaseDirectory::preadv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 io
 
 s64 BaseDirectory::lseek(s64 offset, s32 whence) {
 
-    s64 file_offset_new = ((0 == whence) * offset) + ((1 == whence) * (file_offset + offset)) +
+    s64 file_offset_new = ((0 ==  whence) * offset) + ((1 == whence) * (file_offset + offset)) +
                           ((2 == whence) * (directory_size + offset));
     if (file_offset_new < 0)
         return ORBIS_KERNEL_ERROR_EINVAL;

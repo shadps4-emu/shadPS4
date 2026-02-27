@@ -26,7 +26,7 @@ protected:
         return ++fileno_pool;
     }
 
-    s64 file_offset = 0;
+    u64 file_offset = 0;
     u64 directory_size = 0;
     std::vector<u8> dirent_cache_bin{};
 
