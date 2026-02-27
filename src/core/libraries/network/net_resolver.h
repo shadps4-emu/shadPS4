@@ -19,6 +19,7 @@ public:
     void Resolve();
 
     int resolution_error = ORBIS_OK;
+
 private:
     struct AsyncResolution {
         const char* hostname;
