@@ -404,8 +404,11 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
     if (returncode >= 0) {
         return returncode;
     }
-    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
-              (u32)*Libraries::Kernel::__Error());
+    // Don't log EWOULDBLOCK, this is normal to see from non-blocking communication.
+    u32 error = *Libraries::Kernel::__Error();
+    if (error != ORBIS_NET_EWOULDBLOCK) {
+        LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name, error);
+    }
     return -1;
 }
 
