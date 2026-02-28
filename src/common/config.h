@@ -23,6 +23,12 @@ struct GameInstallDir {
 
 enum HideCursorState : int { Never, Idle, Always };
 
+enum GpuReadbacksMode : int {
+    Disabled,
+    Low,
+    High,
+};
+
 void load(const std::filesystem::path& path, bool is_game_specific = false);
 void save(const std::filesystem::path& path, bool is_game_specific = false);
 void resetGameSpecificValue(std::string entry);
@@ -63,8 +69,8 @@ bool nullGpu();
 void setNullGpu(bool enable, bool is_game_specific = false);
 bool copyGPUCmdBuffers();
 void setCopyGPUCmdBuffers(bool enable, bool is_game_specific = false);
-bool readbacks();
-void setReadbacks(bool enable, bool is_game_specific = false);
+int getReadbacksMode();
+void setReadbacksMode(int mode, bool is_game_specific = false);
 bool readbackLinearImages();
 void setReadbackLinearImages(bool enable, bool is_game_specific = false);
 bool directMemoryAccess();
