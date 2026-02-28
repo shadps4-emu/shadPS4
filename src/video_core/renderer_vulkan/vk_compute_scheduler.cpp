@@ -89,9 +89,12 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
         return;
     }
 
-    // RAW Hazard Prevention:
-    // Graphics must wait for Compute to finish before reading results.
-    // We flush all pending compute work to the GPU.
+    // 1. Submit any pending graphics work FIRST.
+    // This satisfies the 'WaitForGraphics' dependency that Compute work might have.
+    graphics_scheduler.Flush();
+
+    // 2. Now submit the Compute work.
+    // Its wait on the graphics queue is now guaranteed to be satisfied.
     Flush();
 
     const auto compute_sem = master_semaphore.Handle();
@@ -99,11 +102,9 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
     const auto signal_value = master_semaphore.CurrentTick() - 1;
 
     if (signal_value > 0) {
+        // 3. Make the NEW graphics command buffer (the one for the next Draw)
+        // wait for this compute submission to complete.
         graphics_scheduler.Wait(compute_sem, signal_value);
-        
-        // CRITICAL: Force a flush on the graphics scheduler NOW.
-        // This ensures the NEXT command buffer will wait for compute.
-        graphics_scheduler.Flush();
     }
 }
 
