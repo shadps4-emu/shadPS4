@@ -4,6 +4,7 @@
 #pragma once
 
 #include <boost/container/small_vector.hpp>
+#include "common/enum.h"
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
 #include "common/types.h"
@@ -11,6 +12,7 @@
 #include "video_core/buffer_cache/fault_manager.h"
 #include "video_core/buffer_cache/range_set.h"
 #include "video_core/multi_level_page_table.h"
+#include "video_core/texture_cache/image.h"
 
 namespace AmdGpu {
 struct Liverpool;
@@ -33,6 +35,15 @@ static constexpr BufferId NULL_BUFFER_ID{0};
 class TextureCache;
 class MemoryTracker;
 class PageManager;
+
+enum class ObtainBufferFlags {
+    None = 0,
+    IsWritten = 1 << 0,
+    IsTexelBuffer = 1 << 1,
+    IgnoreStreamBuffer = 1 << 2,
+    InvalidateTextureCache = 1 << 3,
+};
+DECLARE_ENUM_FLAG_OPERATORS(ObtainBufferFlags)
 
 class BufferCache {
 public:
@@ -106,10 +117,13 @@ public:
     }
 
     /// Invalidates any buffer in the logical page range.
-    void InvalidateMemory(VAddr device_addr, u64 size);
+    void InvalidateMemory(VAddr device_addr, u64 size, bool download);
 
     /// Flushes any GPU modified buffer in the logical page range back to CPU memory.
     void ReadMemory(VAddr device_addr, u64 size, bool is_write = false);
+
+    /// Flushes GPU modified ranges of the uncovered part of the edge pages of an image.
+    void ReadEdgeImagePages(const Image& image);
 
     /// Binds host vertex buffers for the current draw.
     void BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline);
@@ -124,9 +138,9 @@ public:
     void CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, bool src_gds);
 
     /// Obtains a buffer for the specified region.
-    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(VAddr gpu_addr, u32 size, bool is_written,
-                                                       bool is_texel_buffer = false,
-                                                       BufferId buffer_id = {});
+    [[nodiscard]] std::pair<Buffer*, u32> ObtainBuffer(
+        VAddr gpu_addr, u32 size, ObtainBufferFlags flags = ObtainBufferFlags::None,
+        BufferId buffer_id = {});
 
     /// Attempts to obtain a buffer without modifying the cache contents.
     [[nodiscard]] std::pair<Buffer*, u32> ObtainBufferForImage(VAddr gpu_addr, u32 size);
@@ -139,6 +153,9 @@ public:
 
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
+
+    /// Mark region as modified from the GPU
+    void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
     /// Return buffer id for the specified region
     BufferId FindBuffer(VAddr device_addr, u32 size);
