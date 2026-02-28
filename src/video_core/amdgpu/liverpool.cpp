@@ -513,12 +513,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     if (host_markers_enabled) {
                         rasterizer->ScopeMarkerBegin(
                             fmt::format("gfx:{}:DrawIndirectMulti", cmd_address));
-                        rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                        rasterizer->DrawIndirect(false, indirect_args_addr, offset,
                                                  draw_indirect->stride,
                                                  draw_indirect->count, 0);
                         rasterizer->ScopeMarkerEnd();
                     } else {
-                        rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                        rasterizer->DrawIndirect(false, indirect_args_addr, offset,
                                                  draw_indirect->stride,
                                                  draw_indirect->count, 0);
                     }
