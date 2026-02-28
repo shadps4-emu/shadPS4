@@ -89,12 +89,8 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
         return;
     }
 
-    // 1. Submit any pending graphics work FIRST.
-    // This satisfies the 'WaitForGraphics' dependency that Compute work might have.
-    graphics_scheduler.Flush();
-
-    // 2. Now submit the Compute work.
-    // Its wait on the graphics queue is now guaranteed to be satisfied.
+    // Submit any pending compute work to the GPU.
+    // This is safe because graphics work hasn't been submitted yet for this DRAW.
     Flush();
 
     const auto compute_sem = master_semaphore.Handle();
@@ -102,8 +98,8 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
     const auto signal_value = master_semaphore.CurrentTick() - 1;
 
     if (signal_value > 0) {
-        // 3. Make the NEW graphics command buffer (the one for the next Draw)
-        // wait for this compute submission to complete.
+        // Register the wait. The graphics scheduler will apply this 
+        // in its NEXT SubmitExecution call.
         graphics_scheduler.Wait(compute_sem, signal_value);
     }
 }
@@ -139,8 +135,8 @@ void ComputeScheduler::SubmitExecution() {
         vk::MemoryBarrier2 memory_barrier = {
             .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
             .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite | vk::AccessFlagBits2::eShaderWrite,
-            .dstStageMask = vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader,
-            .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eUniformRead,
+            .dstStageMask = vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader | vk::PipelineStageFlagBits2::eAllCommands,
+            .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eUniformRead | vk::AccessFlagBits2::eIndexRead | vk::AccessFlagBits2::eVertexAttributeRead | vk::AccessFlagBits2::eIndirectCommandRead,
         };
 
         vk::DependencyInfo dependency_info = {
