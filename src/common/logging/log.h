@@ -267,6 +267,8 @@ static void Setup(int argc, char* argv[]) {
     spdlog::cfg::load_env_levels();
     spdlog::cfg::load_argv_levels(argc, argv);
 
+    std::at_quick_exit(spdlog::drop_all);
+
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
