@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/preprocessor/stringize.hpp>
@@ -9,6 +9,7 @@
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/memory.h"
@@ -1180,7 +1181,7 @@ Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::sp
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
-    if (Config::copyGPUCmdBuffers()) {
+    if (EmulatorSettings::GetInstance()->IsCopyGpuBuffers()) {
         std::tie(dcb, ccb) = CopyCmdBuffers(dcb, ccb);
     }
 

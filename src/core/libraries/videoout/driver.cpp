@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -6,6 +6,7 @@
 #include "common/debug.h"
 #include "common/thread.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
@@ -268,7 +269,8 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
 }
 
 void VideoOutDriver::PresentThread(std::stop_token token) {
-    const std::chrono::nanoseconds vblank_period(1000000000 / Config::vblankFreq());
+    const std::chrono::nanoseconds vblank_period(
+        1000000000 / EmulatorSettings::GetInstance()->GetVblankFrequency());
 
     Common::SetCurrentThreadName("shadPS4:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);

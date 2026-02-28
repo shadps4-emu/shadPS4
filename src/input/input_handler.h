@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
@@ -35,9 +36,11 @@
 #define SDL_EVENT_MOUSE_TO_JOYSTICK SDL_EVENT_USER + 6
 #define SDL_EVENT_MOUSE_TO_GYRO SDL_EVENT_USER + 7
 #define SDL_EVENT_MOUSE_TO_TOUCHPAD SDL_EVENT_USER + 8
-#define SDL_EVENT_RDOC_CAPTURE SDL_EVENT_USER + 9
-#define SDL_EVENT_QUIT_DIALOG SDL_EVENT_USER + 10
-#define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 11
+#define SDL_EVENT_QUIT_DIALOG SDL_EVENT_USER + 9
+#define SDL_EVENT_MOUSE_WHEEL_OFF SDL_EVENT_USER + 10
+#define SDL_EVENT_ADD_VIRTUAL_USER SDL_EVENT_USER + 11
+#define SDL_EVENT_REMOVE_VIRTUAL_USER SDL_EVENT_USER + 12
+#define SDL_EVENT_RDOC_CAPTURE SDL_EVENT_USER + 13
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
@@ -57,6 +60,8 @@
 #define HOTKEY_RENDERDOC 0xf0000009
 #define HOTKEY_VOLUME_UP 0xf000000a
 #define HOTKEY_VOLUME_DOWN 0xf000000b
+#define HOTKEY_ADD_VIRTUAL_USER 0xf000000c
+#define HOTKEY_REMOVE_VIRTUAL_USER 0xf000000d
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -77,21 +82,24 @@ class InputID {
 public:
     InputType type;
     u32 sdl_id;
-    InputID(InputType d = InputType::Count, u32 i = SDL_UNMAPPED) : type(d), sdl_id(i) {}
+    u8 gamepad_id;
+    InputID(InputType d = InputType::Count, u32 i = (u32)-1, u8 g = 1)
+        : type(d), sdl_id(i), gamepad_id(g) {}
     bool operator==(const InputID& o) const {
-        return type == o.type && sdl_id == o.sdl_id;
+        return type == o.type && sdl_id == o.sdl_id && gamepad_id == o.gamepad_id;
     }
     bool operator!=(const InputID& o) const {
-        return type != o.type || sdl_id != o.sdl_id;
+        return type != o.type || sdl_id != o.sdl_id || gamepad_id != o.gamepad_id;
     }
-    bool operator<=(const InputID& o) const {
-        return type <= o.type && sdl_id <= o.sdl_id;
+    auto operator<=>(const InputID& o) const {
+        return std::tie(gamepad_id, type, sdl_id, gamepad_id) <=>
+               std::tie(o.gamepad_id, o.type, o.sdl_id, o.gamepad_id);
     }
     bool IsValid() const {
         return *this != InputID();
     }
     std::string ToString() {
-        return fmt::format("({}: {:x})", input_type_names[static_cast<u8>(type)], sdl_id);
+        return fmt::format("({}. {}: {:x})", gamepad_id, input_type_names[(u8)type], sdl_id);
     }
 };
 
@@ -149,6 +157,8 @@ const std::map<std::string, u32> string_to_hotkey_map = {
     {"hotkey_toggle_mouse_to_gyro", HOTKEY_TOGGLE_MOUSE_TO_GYRO},
     {"hotkey_toggle_mouse_to_touchpad", HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD},
     {"hotkey_renderdoc_capture", HOTKEY_RENDERDOC},
+    {"hotkey_add_virtual_user", HOTKEY_ADD_VIRTUAL_USER},
+    {"hotkey_remove_virtual_user", HOTKEY_REMOVE_VIRTUAL_USER},
     {"hotkey_volume_up", HOTKEY_VOLUME_UP},
     {"hotkey_volume_down", HOTKEY_VOLUME_DOWN},
 };
@@ -401,7 +411,7 @@ public:
     inline bool IsEmpty() {
         return !(keys[0].IsValid() || keys[1].IsValid() || keys[2].IsValid());
     }
-    std::string ToString() { // todo add device type
+    std::string ToString() {
         switch (KeyCount()) {
         case 1:
             return fmt::format("({})", keys[0].ToString());
@@ -420,14 +430,15 @@ public:
 };
 
 class ControllerOutput {
-    static GameController* controller;
+    static GameControllers controllers;
 
 public:
-    static void SetControllerOutputController(GameController* c);
+    static void GetGetGamepadIndexFromSDLJoystickID(const SDL_JoystickID id) {}
     static void LinkJoystickAxes();
 
     u32 button;
     u32 axis;
+    u8 gamepad_id;
     // these are only used as s8,
     // but I added some padding to avoid overflow if it's activated by multiple inputs
     // axis_plus and axis_minus pairs share a common new_param, the other outputs have their own
@@ -441,6 +452,7 @@ public:
         new_param = new s16(0);
         old_param = 0;
         positive_axis = p;
+        gamepad_id = 0;
     }
     ControllerOutput(const ControllerOutput& o) : button(o.button), axis(o.axis) {
         new_param = new s16(*o.new_param);
@@ -466,7 +478,7 @@ public:
 
     void ResetUpdate();
     void AddUpdate(InputEvent event);
-    void FinalizeUpdate();
+    void FinalizeUpdate(u8 gamepad_index);
 };
 class BindingConnection {
 public:
@@ -481,6 +493,13 @@ public:
         output = out;
         toggle = t;
     }
+    BindingConnection& operator=(const BindingConnection& o) {
+        binding = o.binding;
+        output = o.output;
+        axis_param = o.axis_param;
+        toggle = o.toggle;
+        return *this;
+    }
     bool operator<(const BindingConnection& other) const {
         // a button is a higher priority than an axis, as buttons can influence axes
         // (e.g. joystick_halfmode)
@@ -494,7 +513,80 @@ public:
         }
         return false;
     }
+    bool HasGamepadInput() {
+        for (auto& key : binding.keys) {
+            if (key.type == InputType::Controller || key.type == InputType::Axis) {
+                return true;
+            }
+        }
+        return false;
+    }
+    BindingConnection CopyWithChangedGamepadId(u8 gamepad);
     InputEvent ProcessBinding();
+};
+
+class ControllerAllOutputs {
+public:
+    static constexpr u64 output_count = 40;
+    std::array<ControllerOutput, output_count> data = {
+        // Important: these have to be the first, or else they will update in the wrong order
+        ControllerOutput(LEFTJOYSTICK_HALFMODE),
+        ControllerOutput(RIGHTJOYSTICK_HALFMODE),
+        ControllerOutput(KEY_TOGGLE),
+        ControllerOutput(MOUSE_GYRO_ROLL_MODE),
+
+        // Button mappings
+        ControllerOutput(SDL_GAMEPAD_BUTTON_NORTH),           // Triangle
+        ControllerOutput(SDL_GAMEPAD_BUTTON_EAST),            // Circle
+        ControllerOutput(SDL_GAMEPAD_BUTTON_SOUTH),           // Cross
+        ControllerOutput(SDL_GAMEPAD_BUTTON_WEST),            // Square
+        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER),   // L1
+        ControllerOutput(SDL_GAMEPAD_BUTTON_LEFT_STICK),      // L3
+        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER),  // R1
+        ControllerOutput(SDL_GAMEPAD_BUTTON_RIGHT_STICK),     // R3
+        ControllerOutput(SDL_GAMEPAD_BUTTON_START),           // Options
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT),   // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_CENTER), // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_TOUCHPAD_RIGHT),  // TouchPad
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_UP),         // Up
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
+        ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
+
+        // Axis mappings
+        // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
+        // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY, false),
+        // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX, false),
+        // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY, false),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTY),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTX),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
+
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
+
+        ControllerOutput(HOTKEY_FULLSCREEN),
+        ControllerOutput(HOTKEY_PAUSE),
+        ControllerOutput(HOTKEY_SIMPLE_FPS),
+        ControllerOutput(HOTKEY_QUIT),
+        ControllerOutput(HOTKEY_RELOAD_INPUTS),
+        ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK),
+        ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
+        ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD),
+        ControllerOutput(HOTKEY_RENDERDOC),
+        ControllerOutput(HOTKEY_ADD_VIRTUAL_USER),
+        ControllerOutput(HOTKEY_REMOVE_VIRTUAL_USER),
+        ControllerOutput(HOTKEY_VOLUME_UP),
+        ControllerOutput(HOTKEY_VOLUME_DOWN),
+
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_INVALID),
+    };
+    ControllerAllOutputs(u8 g) {
+        for (int i = 0; i < output_count; i++) {
+            data[i].gamepad_id = g;
+        }
+    }
 };
 
 // Updates the list of pressed keys with the given input.

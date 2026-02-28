@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
@@ -17,19 +18,19 @@ s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
 }
 
 s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
-    return Config::isNeoModeConsole() &&
+    return EmulatorSettings::GetInstance()->IsNeo() &&
            Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
 }
 
 s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
-    return Config::isNeoModeConsole();
+    return EmulatorSettings::GetInstance()->IsNeo();
 }
 
 s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
     // These hardcoded values are based on hardware observations.
     // Different models of PS4/PS4 Pro likely return slightly different values.
     LOG_DEBUG(Lib_Kernel, "called");
-    if (Config::isNeoModeConsole()) {
+    if (EmulatorSettings::GetInstance()->IsNeo()) {
         return 0x740f30;
     }
     return 0x710f10;

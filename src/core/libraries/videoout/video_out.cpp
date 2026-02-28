@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
 #include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/videoout/driver.h"
@@ -455,8 +456,9 @@ s32 PS4_SYSV_ABI sceVideoOutSetWindowModeMargins(s32 handle, s32 top, s32 bottom
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    driver = std::make_unique<VideoOutDriver>(Config::getInternalScreenWidth(),
-                                              Config::getInternalScreenHeight());
+    driver = std::make_unique<VideoOutDriver>(
+        EmulatorSettings::GetInstance()->GetInternalScreenWidth(),
+        EmulatorSettings::GetInstance()->GetInternalScreenHeight());
 
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutGetFlipStatus);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutSubmitFlip);

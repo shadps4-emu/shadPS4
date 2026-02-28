@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
 #include "common/config.h"
+#include "core/emulator_settings.h"
 #include "video_core/renderdoc.h"
 
 #include <renderdoc_app.h>
@@ -31,7 +32,7 @@ void LoadRenderDoc() {
 
     // Check if we are running by RDoc GUI
     HMODULE mod = GetModuleHandleA("renderdoc.dll");
-    if (!mod && Config::isRdocEnabled()) {
+    if (!mod && EmulatorSettings::GetInstance()->IsRenderdocEnabled()) {
         // If enabled in config, try to load RDoc runtime in offline mode
         HKEY h_reg_key;
         LONG result = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
@@ -67,7 +68,7 @@ void LoadRenderDoc() {
 #endif
     // Check if we are running by RDoc GUI
     void* mod = dlopen(RENDERDOC_LIB, RTLD_NOW | RTLD_NOLOAD);
-    if (!mod && Config::isRdocEnabled()) {
+    if (!mod && EmulatorSettings::GetInstance()->IsRenderdocEnabled()) {
         // If enabled in config, try to load RDoc runtime in offline mode
         if ((mod = dlopen(RENDERDOC_LIB, RTLD_NOW))) {
             const auto RENDERDOC_GetAPI =

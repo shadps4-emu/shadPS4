@@ -6,6 +6,7 @@
 #include "common/config.h"
 #include "common/debug.h"
 #include "common/elf_info.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -37,11 +38,11 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
-    if (Config::isDevKitConsole()) {
+    if (EmulatorSettings::GetInstance()->IsDevKit()) {
         total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
-    s32 extra_dmem = Config::getExtraDmemInMbytes();
-    if (Config::getExtraDmemInMbytes() != 0) {
+    s32 extra_dmem = EmulatorSettings::GetInstance()->GetExtraDmemInMBytes();
+    if (extra_dmem != 0) {
         LOG_WARNING(Kernel_Vmm,
                     "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",
                     extra_dmem, total_size, total_size + extra_dmem * 1_MB);

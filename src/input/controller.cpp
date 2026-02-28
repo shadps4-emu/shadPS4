@@ -1,11 +1,17 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <sstream>
+#include <unordered_set>
 #include <SDL3/SDL.h>
+#include <common/singleton.h>
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "controller.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/system/userservice.h"
 #include "input/controller.h"
 
 static std::string SelectedGamepad = "";
@@ -22,7 +28,15 @@ void State::OnButton(OrbisPadButtonDataOffset button, bool isPressed) {
     }
 }
 
-void State::OnAxis(Axis axis, int value) {
+void State::OnAxis(Axis axis, int value, bool smooth) {
+    auto const i = std::to_underlying(axis);
+    // forcibly finish the previous smoothing task by jumping to the end
+    axes[i] = axis_smoothing_end_values[i];
+
+    axis_smoothing_start_times[i] = time;
+    axis_smoothing_start_values[i] = axes[i];
+    axis_smoothing_end_values[i] = value;
+    axis_smoothing_flags[i] = smooth;
     const auto toggle = [&](const auto button) {
         if (value > 0) {
             buttonsState |= button;
@@ -40,7 +54,6 @@ void State::OnAxis(Axis axis, int value) {
     default:
         break;
     }
-    axes[static_cast<int>(axis)] = value;
 }
 
 void State::OnTouchpad(int touchIndex, bool isDown, float x, float y) {
@@ -59,6 +72,22 @@ void State::OnAccel(const float accel[3]) {
     acceleration.x = accel[0];
     acceleration.y = accel[1];
     acceleration.z = accel[2];
+}
+
+void State::UpdateAxisSmoothing() {
+    for (int i = 0; i < std::to_underlying(Axis::AxisMax); i++) {
+        // if it's not to be smoothed or close enough, just jump to the end
+        if (!axis_smoothing_flags[i] || std::abs(axes[i] - axis_smoothing_end_values[i]) < 16) {
+            if (axes[i] != axis_smoothing_end_values[i]) {
+                axes[i] = axis_smoothing_end_values[i];
+            }
+            continue;
+        }
+        auto now = Libraries::Kernel::sceKernelGetProcessTime();
+        f32 t =
+            std::clamp((now - axis_smoothing_start_times[i]) / f32{axis_smoothing_time}, 0.f, 1.f);
+        axes[i] = s32(axis_smoothing_start_values[i] * (1 - t) + axis_smoothing_end_values[i] * t);
+    }
 }
 
 GameController::GameController() : m_states_queue(64) {}
@@ -88,24 +117,38 @@ int GameController::ReadStates(State* states, int states_num, bool* isConnected,
     return ret_num;
 }
 
-void GameController::Button(int id, OrbisPadButtonDataOffset button, bool is_pressed) {
+void GameController::Button(OrbisPadButtonDataOffset button, bool is_pressed) {
     m_state.OnButton(button, is_pressed);
     PushState();
 }
 
-void GameController::Axis(int id, Input::Axis axis, int value) {
-    m_state.OnAxis(axis, value);
+void GameController::Axis(Input::Axis axis, int value, bool smooth) {
+    m_state.OnAxis(axis, value, smooth);
     PushState();
 }
 
-void GameController::Gyro(int id, const float gyro[3]) {
-    m_state.OnGyro(gyro);
+void GameController::Gyro(int id) {
+    m_state.OnGyro(gyro_buf);
     PushState();
 }
 
-void GameController::Acceleration(int id, const float acceleration[3]) {
-    m_state.OnAccel(acceleration);
+void GameController::Acceleration(int id) {
+    m_state.OnAccel(accel_buf);
     PushState();
+}
+
+void GameController::UpdateGyro(const float gyro[3]) {
+    std::scoped_lock l(m_states_queue_mutex);
+    std::memcpy(gyro_buf, gyro, sizeof(gyro_buf));
+}
+
+void GameController::UpdateAcceleration(const float acceleration[3]) {
+    std::scoped_lock l(m_states_queue_mutex);
+    std::memcpy(accel_buf, acceleration, sizeof(accel_buf));
+}
+
+void GameController::UpdateAxisSmoothing() {
+    m_state.UpdateAxisSmoothing();
 }
 
 void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
@@ -113,6 +156,12 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
                                           float deltaTime,
                                           Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                           Libraries::Pad::OrbisFQuaternion& orientation) {
+    // avoid wildly off values coming from elapsed time between two samples
+    // being too high, such as on the first time the controller is polled
+    if (deltaTime > 1.0f) {
+        orientation = lastOrientation;
+        return;
+    }
     Libraries::Pad::OrbisFQuaternion q = lastOrientation;
     Libraries::Pad::OrbisFQuaternion ω = {angularVelocity.x, angularVelocity.y, angularVelocity.z,
                                           0.0f};
@@ -144,17 +193,17 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
 }
 
 void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
-    if (!m_engine) {
-        return;
+    if (m_sdl_gamepad != nullptr) {
+        SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
     }
-    m_engine->SetLightBarRGB(r, g, b);
 }
 
-void GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
-    if (!m_engine) {
-        return;
+bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
+    if (m_sdl_gamepad != nullptr) {
+        return SDL_RumbleGamepad(m_sdl_gamepad, (smallMotor / 255.0f) * 0xFFFF,
+                                 (largeMotor / 255.0f) * 0xFFFF, -1);
     }
-    m_engine->SetVibration(smallMotor, largeMotor);
+    return true;
 }
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
@@ -164,6 +213,91 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
     }
 }
 
+bool is_first_check = true;
+
+void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
+    using namespace Libraries::UserService;
+    int controller_count;
+    SDL_JoystickID* new_joysticks = SDL_GetGamepads(&controller_count);
+
+    std::unordered_set<SDL_JoystickID> assigned_ids;
+    std::array<bool, 4> slot_taken{false, false, false, false};
+
+    for (int i = 0; i < 4; i++) {
+        SDL_Gamepad* pad = controllers[i]->m_sdl_gamepad;
+        if (pad) {
+            SDL_JoystickID id = SDL_GetGamepadID(pad);
+            bool still_connected = false;
+            for (int j = 0; j < controller_count; j++) {
+                if (new_joysticks[j] == id) {
+                    still_connected = true;
+                    assigned_ids.insert(id);
+                    slot_taken[i] = true;
+                    break;
+                }
+            }
+            if (!still_connected) {
+                AddUserServiceEvent({OrbisUserServiceEventType::Logout, i + 1});
+                SDL_CloseGamepad(pad);
+                controllers[i]->m_sdl_gamepad = nullptr;
+                controllers[i]->user_id = -1;
+                slot_taken[i] = false;
+            } else {
+                controllers[i]->player_index = i;
+            }
+        }
+    }
+
+    for (int j = 0; j < controller_count; j++) {
+        SDL_JoystickID id = new_joysticks[j];
+        if (assigned_ids.contains(id))
+            continue;
+
+        SDL_Gamepad* pad = SDL_OpenGamepad(id);
+        if (!pad)
+            continue;
+
+        for (int i = 0; i < 4; i++) {
+            if (!slot_taken[i]) {
+                auto* c = controllers[i];
+                c->m_sdl_gamepad = pad;
+                LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
+                         SDL_GetGamepadID(pad));
+                c->user_id = i + 1;
+                slot_taken[i] = true;
+                c->player_index = i;
+                AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
+                if (EmulatorSettings::GetInstance()->IsMotionControlsEnabled()) {
+                    if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                        c->gyro_poll_rate =
+                            SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                        LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
+                    } else {
+                        LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                                  c->user_id);
+                    }
+                    if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                        c->accel_poll_rate =
+                            SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                        LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
+                    } else {
+                        LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                                  c->user_id);
+                    }
+                }
+                break;
+            }
+        }
+    }
+    if (is_first_check) [[unlikely]] {
+        is_first_check = false;
+        if (controller_count == 0) {
+            controllers[0]->user_id = 1;
+            AddUserServiceEvent({OrbisUserServiceEventType::Login, 1});
+        }
+    }
+    SDL_free(new_joysticks);
+}
 u8 GameController::GetTouchCount() {
     return m_touch_count;
 }
@@ -215,28 +349,16 @@ void GameController::SetLastUpdate(std::chrono::steady_clock::time_point lastUpd
     m_last_update = lastUpdate;
 }
 
-void GameController::SetEngine(std::unique_ptr<Engine> engine) {
-    m_engine = std::move(engine);
-    if (m_engine) {
-        m_engine->Init();
-    }
-}
-
-Engine* GameController::GetEngine() {
-    return m_engine.get();
-}
-
 void GameController::PushState() {
     std::lock_guard lg(m_states_queue_mutex);
     m_state.time = Libraries::Kernel::sceKernelGetProcessTime();
     m_states_queue.Push(m_state);
 }
 
-u32 GameController::Poll() {
-    if (m_connected) {
-        PushState();
-    }
-    return 33;
+u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
+    s32 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
+    LOG_TRACE(Input, "Gamepad index: {}", index);
+    return index;
 }
 
 } // namespace Input
@@ -245,16 +367,22 @@ namespace GamepadSelect {
 
 int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
     char GUIDbuf[33];
-    if (Config::getDefaultControllerID() != "") {
+    if (EmulatorSettings::GetInstance()->GetDefaultControllerId() != "") {
         for (int i = 0; i < gamepadCount; i++) {
             SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
             std::string currentGUID = std::string(GUIDbuf);
-            if (currentGUID == Config::getDefaultControllerID()) {
+            if (currentGUID == EmulatorSettings::GetInstance()->GetDefaultControllerId()) {
                 return i;
             }
         }
     }
     return -1;
+}
+
+std::optional<u8> GetControllerIndexFromUserID(s32 user_id) {
+    if (user_id < 1 || user_id > 4)
+        return std::nullopt;
+    return static_cast<u8>(user_id - 1);
 }
 
 int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID) {

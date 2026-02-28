@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/elf_info.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
@@ -606,7 +606,7 @@ s32 sendRequest(s64 requestId, s32 partIndex, const void* pData, u64 dataSize, s
     unlockContext(context);
 
     // Stubbing sceNpManagerIntGetSigninState call with a config check.
-    if (!Config::getPSNSignedIn()) {
+    if (!EmulatorSettings::GetInstance()->IsPSNSignedIn()) {
         releaseRequest(request);
         releaseUserContext(user_context);
         releaseContext(context);
@@ -1025,7 +1025,7 @@ s32 createServicePushEventFilterInternal(
     auto& handle = context->handles[handleId];
     handle->userCount++;
 
-    if (pNpServiceName != nullptr && !Config::getPSNSignedIn()) {
+    if (pNpServiceName != nullptr && !EmulatorSettings::GetInstance()->IsPSNSignedIn()) {
         // Seems sceNpManagerIntGetUserList fails?
         LOG_DEBUG(Lib_NpWebApi, "Cannot create service push event while PSN is disabled");
         handle->userCount--;
@@ -1202,7 +1202,7 @@ s32 createExtendedPushEventFilterInternal(
     auto& handle = context->handles[handleId];
     handle->userCount++;
 
-    if (pNpServiceName != nullptr && !Config::getPSNSignedIn()) {
+    if (pNpServiceName != nullptr && !EmulatorSettings::GetInstance()->IsPSNSignedIn()) {
         // Seems sceNpManagerIntGetUserList fails?
         LOG_DEBUG(Lib_NpWebApi, "Cannot create extended push event while PSN is disabled");
         handle->userCount--;

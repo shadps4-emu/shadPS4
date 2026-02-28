@@ -23,6 +23,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <common/key_manager.h>
+#include <core/emulator_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -30,9 +32,13 @@ int main(int argc, char* argv[]) {
 #endif
 
     IPC::Instance().Init();
-
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
+    // Init emulator state
+    std::shared_ptr<EmulatorState> m_emu_state = std::make_shared<EmulatorState>();
+    EmulatorState::SetInstance(m_emu_state);
+    // Load configurations
+    std::shared_ptr<EmulatorSettings> emu_settings = std::make_shared<EmulatorSettings>();
+    EmulatorSettings::SetInstance(emu_settings);
+    emu_settings->Load();
 
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
@@ -120,14 +126,14 @@ int main(int argc, char* argv[]) {
 
     // ---- Utility commands ----
     if (addGameFolder) {
-        Config::addGameInstallDir(*addGameFolder);
+        EmulatorSettings::GetInstance()->AddGameInstallDir(*addGameFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
 
     if (setAddonFolder) {
-        Config::setAddonInstallDir(*setAddonFolder);
+        EmulatorSettings::GetInstance()->SetAddonInstallDir(*setAddonFolder);
         Config::save(user_dir / "config.toml");
         std::cout << "Addon folder successfully saved.\n";
         return 0;
@@ -152,9 +158,9 @@ int main(int argc, char* argv[]) {
 
     if (fullscreenStr) {
         if (*fullscreenStr == "true") {
-            Config::setIsFullscreen(true);
+            EmulatorSettings::GetInstance()->SetFullScreen(true);
         } else if (*fullscreenStr == "false") {
-            Config::setIsFullscreen(false);
+            EmulatorSettings::GetInstance()->SetFullScreen(false);
         } else {
             std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
             return 1;
@@ -162,9 +168,9 @@ int main(int argc, char* argv[]) {
     }
 
     if (showFps)
-        Config::setShowFpsCounter(true);
+        EmulatorSettings::GetInstance()->SetShowFpsCounter(true);
 
-    if (configClean)
+    if (configClean) // TODO
         Config::setConfigMode(Config::ConfigMode::Clean);
 
     if (configGlobal)
@@ -178,7 +184,7 @@ int main(int argc, char* argv[]) {
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
-        for (const auto& installDir : Config::getGameInstallDirs()) {
+        for (const auto& installDir : EmulatorSettings::GetInstance()->GetGameInstallDirs()) {
             if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;
