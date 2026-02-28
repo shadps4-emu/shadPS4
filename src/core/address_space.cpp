@@ -613,7 +613,11 @@ struct AddressSpace::Impl {
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
-        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED; // compiler knows its constexpr
+#if !defined(__FreeBSD__)
+        map_flags |= MAP_NORESERVE;
+#endif
+
 #if defined(__APPLE__) && defined(ARCH_X86_64)
         // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
         // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. Because this creates gaps
@@ -628,7 +632,7 @@ struct AddressSpace::Impl {
             mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
-#if defined(ARCH_X86_64)
+#if defined(ARCH_X86_64) && !defined(__FreeBSD__)
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, map_flags, -1, 0));
@@ -636,8 +640,10 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
 #else
+        // FreeBSD can't stand MAP_FIXED or it may overwrite mmap() itself!
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
+        map_flags &= ~MAP_FIXED;
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(nullptr, virtual_size, protection_flags, map_flags, -1, 0));
         system_managed_base = virtual_base;
@@ -675,6 +681,12 @@ struct AddressSpace::Impl {
             throw std::bad_alloc{};
         }
         shm_unlink(shm_path.c_str());
+#elif defined(__FreeBSD__)
+        backing_fd = memfd_create("BackingDmem", 0);
+        if (backing_fd < 0) {
+            LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
+            throw std::bad_alloc{};
+        }
 #else
         madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
 

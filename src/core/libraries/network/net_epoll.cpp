@@ -10,12 +10,14 @@ namespace Libraries::Net {
 u32 ConvertEpollEventsIn(u32 orbis_events) {
     u32 ret = 0;
 
+#ifndef __FreeBSD__
     if ((orbis_events & ORBIS_NET_EPOLLIN) != 0) {
         ret |= EPOLLIN;
     }
     if ((orbis_events & ORBIS_NET_EPOLLOUT) != 0) {
         ret |= EPOLLOUT;
     }
+#endif
 
     return ret;
 }
@@ -23,6 +25,7 @@ u32 ConvertEpollEventsIn(u32 orbis_events) {
 u32 ConvertEpollEventsOut(u32 epoll_events) {
     u32 ret = 0;
 
+#ifndef __FreeBSD__
     if ((epoll_events & EPOLLIN) != 0) {
         ret |= ORBIS_NET_EPOLLIN;
     }
@@ -35,6 +38,7 @@ u32 ConvertEpollEventsOut(u32 epoll_events) {
     if ((epoll_events & EPOLLHUP) != 0) {
         ret |= ORBIS_NET_EPOLLHUP;
     }
+#endif
 
     return ret;
 }

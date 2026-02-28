@@ -14,7 +14,8 @@
 #include <wepoll.h>
 #endif
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+// ADD libepoll-shim if using freebsd!
 #include <sys/epoll.h>
 #include <unistd.h>
 #endif

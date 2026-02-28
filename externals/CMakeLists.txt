@@ -210,8 +210,15 @@ endif()
 
 # libusb
 if (NOT TARGET libusb::usb)
-    add_subdirectory(ext-libusb)
-    add_library(libusb::usb ALIAS usb-1.0)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+        # YOU MUST USE NATIVE LIBUSB
+        # using anything else will crash instantly, also freebsd will NOT like it
+        # no you cant vendor this libusb, its builtin on freebsd
+        find_package(libusb)
+    else()
+        add_subdirectory(ext-libusb)
+        add_library(libusb::usb ALIAS usb-1.0)
+    endif()
 endif()
 
 # Discord RPC
@@ -233,24 +240,25 @@ endif()
 set(HWINFO_STATIC ON)
 add_subdirectory(hwinfo)
 
-# Apple-only dependencies
-if (APPLE)
+if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     # date
     if (NOT TARGET date::date-tz)
         option(BUILD_TZ_LIB "" ON)
         option(USE_SYSTEM_TZ_DB "" ON)
         add_subdirectory(date)
     endif()
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
+    endif()
+endif()
 
+# Apple-only dependencies
+if (APPLE)
     # MoltenVK
     if (NOT TARGET MoltenVK)
         set(MVK_EXCLUDE_SPIRV_TOOLS ON)
         set(MVK_USE_METAL_PRIVATE_API ON)
         add_subdirectory(MoltenVK)
-    endif()
-
-    if (NOT TARGET epoll-shim)
-        add_subdirectory(epoll-shim)
     endif()
 endif()
 
