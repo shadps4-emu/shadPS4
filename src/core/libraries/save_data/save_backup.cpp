@@ -106,13 +106,11 @@ static void BackupThreadBody() {
         }
         g_backup_status = WorkerStatus::Running;
 
-        LOG_INFO(Lib_SaveData, "Backing up the following directory: {}",
-                 req.save_path.string());
+        LOG_INFO(Lib_SaveData, "Backing up the following directory: {}", req.save_path.string());
         try {
             backup(req.save_path);
         } catch (const std::filesystem::filesystem_error& err) {
-            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", req.save_path.string(),
-                      err.what());
+            LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", req.save_path.string(), err.what());
         }
         LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
                   req.save_path.u8string());
