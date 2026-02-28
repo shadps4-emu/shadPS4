@@ -278,8 +278,8 @@ static void Setup(int argc, char* argv[]) {
     spdlog::set_formatter(std::make_unique<thread_name_formatter>());
 }
 
-static void Redirect(const std::string& id) {
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / (id + ".log"), !Config::isLogAppend());
+static void Redirect(const std::string& name) {
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
     file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
