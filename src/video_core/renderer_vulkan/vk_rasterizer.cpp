@@ -278,6 +278,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     scheduler.PopPendingOperations();
 
+    // Sync with async compute before drawing - compute results may be needed
+    if (compute_scheduler && compute_scheduler->IsDedicated()) {
+        compute_scheduler->SignalGraphics(scheduler);
+    }
+
     if (!FilterDraw()) {
         return;
     }

@@ -129,24 +129,26 @@ void ComputeScheduler::SubmitExecution() {
         return;
     }
 
+    // Apply global memory barrier to ensure compute results are visible to graphics
+    if (has_pending_work) {
+        vk::MemoryBarrier2 memory_barrier = {
+            .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+            .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite | vk::AccessFlagBits2::eShaderWrite,
+            .dstStageMask = vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader,
+            .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eUniformRead,
+        };
+
+        vk::DependencyInfo dependency_info = {
+            .memoryBarrierCount = 1,
+            .pMemoryBarriers = &memory_barrier,
+        };
+        current_cmdbuf.pipelineBarrier2(dependency_info);
+    }
+
     Check(current_cmdbuf.end());
 
     const u64 signal_value = master_semaphore.NextTick();
     const vk::Semaphore timeline = master_semaphore.Handle();
-
-    // Global memory barrier to ensure compute writes are visible to subsequent reads
-    // Since we don't have fine-grained resource tracking yet, this is the safest way.
-    vk::MemoryBarrier2 memory_barrier = {
-        .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
-        .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite | vk::AccessFlagBits2::eShaderWrite,
-        .dstStageMask = vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader,
-        .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eUniformRead,
-    };
-
-    vk::DependencyInfo dependency_info = {
-        .memoryBarrierCount = 1,
-        .pMemoryBarriers = &memory_barrier,
-    };
 
     // Build wait semaphore infos using synchronization2
     std::vector<vk::SemaphoreSubmitInfo> wait_infos;
