@@ -384,9 +384,8 @@ void Rasterizer::DispatchDirect() {
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
         cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 
-        // Flush compute immediately but don't sync with graphics yet
-        // Graphics will wait for compute before Draw
-        compute_scheduler->Flush();
+        // Mark that compute work is pending, but don't flush yet to allow batching.
+        compute_scheduler->MarkPendingWork();
     } else {
         // Fallback to graphics queue
         scheduler.PopPendingOperations();

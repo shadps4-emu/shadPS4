@@ -53,53 +53,62 @@ void ComputeScheduler::WaitForGraphics(Scheduler& graphics_scheduler) {
     // End any active rendering
     graphics_scheduler.EndRendering();
 
-    // Flush graphics to ensure all pending work is submitted
-    // We must flush BEFORE checking the tick, since pending commands
-    // in the command buffer don't change the tick until submitted.
-    graphics_scheduler.Flush();
-
-    // After flush, CurrentTick is N+1, the signaled tick is N
+    // The tick we want to wait for is the CURRENT graphics tick minus one (the last submitted)
+    // Graphics scheduler's CurrentTick() is always the one it's BUILDING, not the one it just submitted.
     const auto graphics_tick = graphics_scheduler.CurrentTick() - 1;
 
-    // If we've already synced with this tick, skip adding another wait
-    if (graphics_tick <= last_graphics_sync_tick) {
+    // If we've already synced with this tick or a later one, skip adding another wait
+    if (graphics_tick <= last_graphics_sync_tick || graphics_tick == 0) {
         return;
     }
 
     const auto graphics_sem = graphics_scheduler.GetTimelineSemaphore();
 
     std::lock_guard<std::mutex> lk{submit_mutex};
-    wait_semaphores.push_back(graphics_sem);
-    wait_values.push_back(graphics_tick);
+    
+    // Check if we already have a wait for this semaphore in the current batch
+    bool already_waiting = false;
+    for (size_t i = 0; i < wait_semaphores.size(); ++i) {
+        if (wait_semaphores[i] == graphics_sem) {
+            wait_values[i] = std::max(wait_values[i], graphics_tick);
+            already_waiting = true;
+            break;
+        }
+    }
+
+    if (!already_waiting) {
+        wait_semaphores.push_back(graphics_sem);
+        wait_values.push_back(graphics_tick);
+    }
+    
     last_graphics_sync_tick = graphics_tick;
 }
 
 void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
-    if (!is_dedicated) {
-        return;
-    }
-
-    // If the command buffer is empty (no dispatches since last flush), skip
-    if (!has_pending_work) {
+    if (!is_dedicated || !has_pending_work) {
         return;
     }
 
     // RAW Hazard Prevention:
     // Graphics must wait for Compute to finish before reading results.
+    // We flush all pending compute work to the GPU.
     Flush();
-    has_pending_work = false;
 
     const auto compute_sem = master_semaphore.Handle();
+    // The tick we just submitted in Flush() is CurrentTick() - 1
     const auto signal_value = master_semaphore.CurrentTick() - 1;
 
-    graphics_scheduler.Wait(compute_sem, signal_value);
+    if (signal_value > 0) {
+        graphics_scheduler.Wait(compute_sem, signal_value);
+    }
 }
 
 void ComputeScheduler::OnComputeDispatch(Scheduler& graphics_scheduler) {
-    // This is called before every dispatch.
-    // We can use it to potentially flush if the command buffer is getting too large,
-    // or to ensure some baseline sync if needed.
-    // For now, we don't force flushes here to allow batching.
+    // Mark that we have work that needs to be synced later
+    has_pending_work = true;
+    
+    // Baseline sync: ensure compute is waiting for current graphics state if not already doing so
+    WaitForGraphics(graphics_scheduler);
 }
 
 void ComputeScheduler::AllocateWorkerCommandBuffers() {
@@ -109,22 +118,40 @@ void ComputeScheduler::AllocateWorkerCommandBuffers() {
 
     current_cmdbuf = command_pool.Commit();
     Check(current_cmdbuf.begin(begin_info));
+    has_pending_work = false;
 }
 
 void ComputeScheduler::SubmitExecution() {
     std::lock_guard<std::mutex> lk{submit_mutex};
+
+    if (!has_pending_work && wait_semaphores.empty()) {
+        // No work to submit and no waits to process
+        return;
+    }
 
     Check(current_cmdbuf.end());
 
     const u64 signal_value = master_semaphore.NextTick();
     const vk::Semaphore timeline = master_semaphore.Handle();
 
+    // Global memory barrier to ensure compute writes are visible to subsequent reads
+    // Since we don't have fine-grained resource tracking yet, this is the safest way.
+    vk::MemoryBarrier2 memory_barrier = {
+        .srcStageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        .srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite | vk::AccessFlagBits2::eShaderWrite,
+        .dstStageMask = vk::PipelineStageFlagBits2::eAllGraphics | vk::PipelineStageFlagBits2::eComputeShader,
+        .dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eUniformRead,
+    };
+
+    vk::DependencyInfo dependency_info = {
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers = &memory_barrier,
+    };
+
     // Build wait semaphore infos using synchronization2
     std::vector<vk::SemaphoreSubmitInfo> wait_infos;
     wait_infos.reserve(wait_semaphores.size());
     for (size_t i = 0; i < wait_semaphores.size(); ++i) {
-        ASSERT_MSG(wait_values[i] > 0,
-                   "Invalid wait value {} at index {} in compute submit", wait_values[i], i);
         wait_infos.push_back({
             .semaphore = wait_semaphores[i],
             .value = wait_values[i],
@@ -161,9 +188,6 @@ void ComputeScheduler::SubmitExecution() {
     // Clear waits after submission
     wait_semaphores.clear();
     wait_values.clear();
-
-    // Reset graphics sync tracking so the next compute batch can sync with new graphics work
-    last_graphics_sync_tick = 0;
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
