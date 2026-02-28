@@ -1152,13 +1152,14 @@ bool PS4_SYSV_ABI sceGnmIsUserPaEnabled() {
 }
 
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask(s64, s32 logical_cu_mask) {
+    LOG_INFO(Lib_GnmDriver, "called, logical_cu_mask: {}", logical_cu_mask);
+    return logical_cu_mask;
 }
 
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical() {
