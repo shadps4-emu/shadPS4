@@ -11,8 +11,8 @@
 
 #include <core/emulator_state.h>
 #include "common/config.h"
-#include "common/logging/log.h"
 #include "common/key_manager.h"
+#include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"

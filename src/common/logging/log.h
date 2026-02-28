@@ -5,23 +5,23 @@
 
 #include <algorithm>
 #include <array>
+#include <spdlog/async.h>
+#include <spdlog/async_logger.h>
 #include <spdlog/cfg/argv.h>
 #include <spdlog/cfg/env.h>
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/null_sink.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/details/fmt_helper.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/thread.h"
-#include "spdlog/async.h"
-#include "spdlog/async_logger.h"
 
 namespace Common::Log {
 
+// clang-format off
 /// Llisting all log classes, if you add here, dont forget ALL_LOG_CLASSES
 constexpr auto Log                              = "Log";
 constexpr auto Common                           = "Common";
@@ -123,9 +123,10 @@ constexpr auto ImGui                            = "ImGui";
 constexpr auto Input                            = "Input";
 constexpr auto Tty                              = "Tty";
 constexpr auto KeyManager                       = "KeyManager";
-constexpr auto Loader                            = "Loader";
+constexpr auto Loader                           = "Loader";
+// clang-format on
 
-constexpr std::array ALL_LOG_CLASSES {
+constexpr std::array ALL_LOG_CLASSES{
     Log,
     Common,
     Common_Filesystem,
@@ -232,14 +233,15 @@ constexpr std::array ALL_LOG_CLASSES {
 struct thread_name_formatter : spdlog::formatter {
     ~thread_name_formatter() override = default;
 
-    void format(const spdlog::details::log_msg &msg, spdlog::memory_buf_t &dest) override {
+    void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
         dest.push_back('[');
         spdlog::details::fmt_helper::append_string_view(msg.logger_name, dest);
         dest.push_back(']');
         dest.push_back(' ');
         msg.color_range_start = dest.size();
         dest.push_back('<');
-        spdlog::details::fmt_helper::append_string_view(spdlog::level::to_string_view(msg.level), dest);
+        spdlog::details::fmt_helper::append_string_view(spdlog::level::to_string_view(msg.level),
+                                                        dest);
         dest.push_back('>');
         msg.color_range_end = dest.size();
         dest.push_back(' ');
@@ -247,7 +249,8 @@ struct thread_name_formatter : spdlog::formatter {
         spdlog::details::fmt_helper::append_string_view(GetCurrentThreadName(), dest);
         dest.push_back(')');
         dest.push_back(' ');
-        spdlog::details::fmt_helper::append_string_view( basename(msg.source.filename), dest);
+        spdlog::details::fmt_helper::append_string_view(
+            std::filesystem::path(msg.source.filename).filename().string(), dest);
         dest.push_back(':');
         spdlog::details::fmt_helper::append_int(msg.source.line, dest);
         dest.push_back(' ');
@@ -258,7 +261,9 @@ struct thread_name_formatter : spdlog::formatter {
         spdlog::details::fmt_helper::append_string_view(spdlog::details::os::default_eol, dest);
     }
 
-    std::unique_ptr<formatter> clone() const override { return std::make_unique<thread_name_formatter>(); }
+    std::unique_ptr<formatter> clone() const override {
+        return std::make_unique<thread_name_formatter>();
+    }
 };
 
 static constexpr auto POSITON_CONSOLE_LOG = 0;
@@ -274,21 +279,33 @@ static void Setup(int argc, char* argv[]) {
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         spdlog::initialize_logger(
-            Config::getLogType() == "sync" ?
-                std::make_shared<spdlog::logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */}) :
-                std::make_shared<spdlog::async_logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */}, spdlog::thread_pool())
-        );
+            Config::getLogType() == "sync"
+                ? std::make_shared<spdlog::logger>(
+                      name,
+                      std::initializer_list<spdlog::sink_ptr>{
+                          console_sink, file_sink,
+                          std::make_shared<
+                              spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */})
+                : std::make_shared<spdlog::async_logger>(
+                      name,
+                      std::initializer_list<spdlog::sink_ptr>{
+                          console_sink, file_sink,
+                          std::make_shared<
+                              spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */},
+                      spdlog::thread_pool()));
     }
 
     spdlog::set_formatter(std::make_unique<thread_name_formatter>());
 }
 
 static void Redirect(const std::string& name) {
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+        GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
     file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
@@ -310,23 +327,23 @@ static void StopRedirection() {
 } // namespace Common::Log
 
 // Define the fmt lib macros
-#define LOG_GENERIC(log_class, log_level, ...) \
+#define LOG_GENERIC(log_class, log_level, ...)                                                     \
     SPDLOG_LOGGER_CALL(spdlog::get(log_class), log_level, __VA_ARGS__)
 
 #ifdef _DEBUG
-#define LOG_TRACE(log_class, ...) \
+#define LOG_TRACE(log_class, ...)                                                                  \
     SPDLOG_LOGGER_TRACE(spdlog::get(Common::Log::log_class), __VA_ARGS__)
 #else
 #define LOG_TRACE(log_class, fmt, ...) (void(0))
 #endif
 
-#define LOG_DEBUG(log_class, ...) \
+#define LOG_DEBUG(log_class, ...)                                                                  \
     SPDLOG_LOGGER_DEBUG(spdlog::get(Common::Log::log_class), __VA_ARGS__)
-#define LOG_INFO(log_class, ...) \
+#define LOG_INFO(log_class, ...)                                                                   \
     SPDLOG_LOGGER_INFO(spdlog::get(Common::Log::log_class), __VA_ARGS__)
-#define LOG_WARNING(log_class, ...) \
+#define LOG_WARNING(log_class, ...)                                                                \
     SPDLOG_LOGGER_WARN(spdlog::get(Common::Log::log_class), __VA_ARGS__)
-#define LOG_ERROR(log_class, ...) \
+#define LOG_ERROR(log_class, ...)                                                                  \
     SPDLOG_LOGGER_ERROR(spdlog::get(Common::Log::log_class), __VA_ARGS__)
-#define LOG_CRITICAL(log_class, ...) \
+#define LOG_CRITICAL(log_class, ...)                                                               \
     SPDLOG_LOGGER_CRITICAL(spdlog::get(Common::Log::log_class), __VA_ARGS__)
