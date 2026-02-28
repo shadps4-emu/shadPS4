@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(ebootPath, gameArgs, overrideRoot);
 
-    spdlog::drop_all();
+    spdlog::shutdown();
 
     return 0;
 }
