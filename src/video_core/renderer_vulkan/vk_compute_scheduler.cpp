@@ -100,6 +100,10 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
 
     if (signal_value > 0) {
         graphics_scheduler.Wait(compute_sem, signal_value);
+        
+        // CRITICAL: Force a flush on the graphics scheduler NOW.
+        // This ensures the NEXT command buffer will wait for compute.
+        graphics_scheduler.Flush();
     }
 }
 
