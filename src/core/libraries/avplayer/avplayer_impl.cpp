@@ -12,28 +12,28 @@ void* PS4_SYSV_ABI AvPlayer::Allocate(void* handle, u32 alignment, u32 size) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto allocate = self->m_init_data_original.memory_replacement.allocate;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return Core::ExecuteGuest(allocate, ptr, alignment, size);
+    return allocate(ptr, alignment, size);
 }
 
 void PS4_SYSV_ABI AvPlayer::Deallocate(void* handle, void* memory) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto deallocate = self->m_init_data_original.memory_replacement.deallocate;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return Core::ExecuteGuest(deallocate, ptr, memory);
+    return deallocate(ptr, memory);
 }
 
 void* PS4_SYSV_ABI AvPlayer::AllocateTexture(void* handle, u32 alignment, u32 size) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto allocate = self->m_init_data_original.memory_replacement.allocate_texture;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return Core::ExecuteGuest(allocate, ptr, alignment, size);
+    return allocate(ptr, alignment, size);
 }
 
 void PS4_SYSV_ABI AvPlayer::DeallocateTexture(void* handle, void* memory) {
     const auto* const self = reinterpret_cast<AvPlayer*>(handle);
     const auto deallocate = self->m_init_data_original.memory_replacement.deallocate_texture;
     const auto ptr = self->m_init_data_original.memory_replacement.object_ptr;
-    return Core::ExecuteGuest(deallocate, ptr, memory);
+    return deallocate(ptr, memory);
 }
 
 int PS4_SYSV_ABI AvPlayer::OpenFile(void* handle, const char* filename) {
@@ -42,7 +42,7 @@ int PS4_SYSV_ABI AvPlayer::OpenFile(void* handle, const char* filename) {
 
     const auto open = self->m_init_data_original.file_replacement.open;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return Core::ExecuteGuest(open, ptr, filename);
+    return open(ptr, filename);
 }
 
 int PS4_SYSV_ABI AvPlayer::CloseFile(void* handle) {
@@ -51,7 +51,7 @@ int PS4_SYSV_ABI AvPlayer::CloseFile(void* handle) {
 
     const auto close = self->m_init_data_original.file_replacement.close;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return Core::ExecuteGuest(close, ptr);
+    return close(ptr);
 }
 
 int PS4_SYSV_ABI AvPlayer::ReadOffsetFile(void* handle, u8* buffer, u64 position, u32 length) {
@@ -60,7 +60,7 @@ int PS4_SYSV_ABI AvPlayer::ReadOffsetFile(void* handle, u8* buffer, u64 position
 
     const auto read_offset = self->m_init_data_original.file_replacement.read_offset;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return Core::ExecuteGuest(read_offset, ptr, buffer, position, length);
+    return read_offset(ptr, buffer, position, length);
 }
 
 u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
@@ -69,7 +69,7 @@ u64 PS4_SYSV_ABI AvPlayer::SizeFile(void* handle) {
 
     const auto size = self->m_init_data_original.file_replacement.size;
     const auto ptr = self->m_init_data_original.file_replacement.object_ptr;
-    return Core::ExecuteGuest(size, ptr);
+    return size(ptr);
 }
 
 AvPlayerInitData AvPlayer::StubInitData(const AvPlayerInitData& data) {
