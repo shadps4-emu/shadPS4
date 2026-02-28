@@ -324,7 +324,7 @@ int PS4_SYSV_ABI scePadSetForceIntercepted();
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam);
 int PS4_SYSV_ABI scePadSetLightBarBaseBrightness();
 int PS4_SYSV_ABI scePadSetLightBarBlinking();
-int PS4_SYSV_ABI scePadSetLightBarForTracker();
+int PS4_SYSV_ABI scePadSetLightBarForTracker(s32 handle, const OrbisPadLightBarParam* pParam);
 int PS4_SYSV_ABI scePadSetLoginUserNumber();
 int PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool bEnable);
 int PS4_SYSV_ABI scePadSetProcessFocus();
