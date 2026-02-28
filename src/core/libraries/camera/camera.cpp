@@ -20,6 +20,7 @@ namespace Libraries::Camera {
 static bool g_library_opened = false;
 static s32 g_firmware_version = 0;
 static s32 g_handles = 0;
+static constexpr s32 c_width = 1280, c_height = 800;
 
 SDL_Camera* sdl_camera = nullptr;
 OrbisCameraConfigExtention output_config0, output_config1;
@@ -334,6 +335,71 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
     return ORBIS_OK;
 }
 
+static std::vector<u16> raw16_buffer;
+static std::vector<u8> raw8_buffer;
+
+static void ConvertRGBA8888ToRAW16(const uint8_t* src, uint16_t* dst, int width, int height) {
+    for (int y = 0; y < height; ++y) {
+        const uint8_t* row = src + y * width * 4;
+        uint16_t* outRow = dst + y * width;
+
+        for (int x = 0; x < width; ++x) {
+            const uint8_t* px = row + x * 4;
+
+            u16 b = u16(px[1]) << 4;
+            u16 g = u16(px[2]) << 4;
+            u16 r = u16(px[3]) << 4;
+
+            // BGGR Bayer layout
+            // B G
+            // G R
+            bool evenRow = (y & 1) == 0;
+            bool evenCol = (x & 1) == 0;
+
+            if (evenRow && evenCol) {
+                outRow[x] = b;
+            } else if (evenRow && !evenCol) {
+                outRow[x] = g;
+            } else if (!evenRow && evenCol) {
+                outRow[x] = g;
+            } else {
+                outRow[x] = r;
+            }
+        }
+    }
+}
+
+static void ConvertRGBA8888ToRAW8(const uint8_t* src, uint8_t* dst, int width, int height) {
+    for (int y = 0; y < height; ++y) {
+        const uint8_t* row = src + y * width * 4;
+        uint8_t* outRow = dst + y * width;
+
+        for (int x = 0; x < width; ++x) {
+            const uint8_t* px = row + x * 4;
+
+            u8 b = px[1];
+            u8 g = px[2];
+            u8 r = px[3];
+
+            // BGGR Bayer layout
+            // B G
+            // G R
+            bool evenRow = (y & 1) == 0;
+            bool evenCol = (x & 1) == 0;
+
+            if (evenRow && evenCol) {
+                outRow[x] = b;
+            } else if (evenRow && !evenCol) {
+                outRow[x] = g;
+            } else if (!evenRow && evenCol) {
+                outRow[x] = g;
+            } else {
+                outRow[x] = r;
+            }
+        }
+    }
+}
+
 s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_data) {
     LOG_DEBUG(Lib_Camera, "called");
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
@@ -355,8 +421,37 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     if (!frame) {
         return ORBIS_CAMERA_ERROR_BUSY;
     }
-    frame_data->pFramePointerList[0][0] = frame->pixels;
-    frame_data->pFramePointerList[1][0] = frame->pixels;
+
+    switch (output_config0.format.formatLevel0) {
+    case ORBIS_CAMERA_FORMAT_YUV422:
+        frame_data->pFramePointerList[0][0] = frame->pixels;
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW16:
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw16_buffer.data();
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW8:
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw8_buffer.data();
+        break;
+    default:
+        UNREACHABLE();
+    }
+    switch (output_config1.format.formatLevel0) {
+    case ORBIS_CAMERA_FORMAT_YUV422:
+        frame_data->pFramePointerList[1][0] = frame->pixels;
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW16:
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw16_buffer.data();
+        break;
+    case ORBIS_CAMERA_FORMAT_RAW8:
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw8_buffer.data();
+        break;
+    default:
+        UNREACHABLE();
+    }
     return ORBIS_OK;
 }
 
@@ -930,18 +1025,18 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         LOG_INFO(Lib_Camera, "No camera devices connected");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    int width = 1280, height = 800;
+    raw8_buffer.resize(c_width * c_height);
+    raw16_buffer.resize(c_width * c_height);
     SDL_CameraSpec cam_spec{};
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
         cam_spec.format = SDL_PIXELFORMAT_YUY2;
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        cam_spec.format = SDL_PIXELFORMAT_BGRX8888; // incorrect, but close enough for the image to
-                                                    // remain recognizable
+        cam_spec.format = SDL_PIXELFORMAT_RGBA8888; // to be swizzled
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        cam_spec.format = SDL_PIXELFORMAT_BGRA64; // same as above
+        cam_spec.format = SDL_PIXELFORMAT_RGBA8888; // to be swizzled
         break;
 
     default:
@@ -949,8 +1044,8 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
                   std::to_underlying(output_config0.format.formatLevel0));
         break;
     }
-    cam_spec.height = height;
-    cam_spec.width = width;
+    cam_spec.height = c_height;
+    cam_spec.width = c_width;
     cam_spec.framerate_numerator = 60;
     cam_spec.framerate_denominator = 1;
     sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
