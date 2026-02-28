@@ -1080,8 +1080,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
             ifs.open(path, std::ios_base::binary);
-            data = toml::parse<toml::ordered_type_config>(
-                ifs, path.filename().string());
+            data = toml::parse<toml::ordered_type_config>(ifs, path.filename().string());
         } catch (const std::exception& ex) {
             fmt::print("Exception trying to parse config file. Exception: {}\n", ex.what());
             return;
@@ -1174,8 +1173,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
         std::vector<DirEntry> sorted_dirs;
         for (const auto& dirInfo : settings_install_dirs) {
-            sorted_dirs.push_back(
-                {dirInfo.path.string(), dirInfo.enabled});
+            sorted_dirs.push_back({dirInfo.path.string(), dirInfo.enabled});
         }
 
         // Sort directories alphabetically
@@ -1199,8 +1197,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
         data["GUI"]["installDirs"] = install_dirs;
         data["GUI"]["installDirsEnabled"] = install_dirs_enabled;
         data["GUI"]["saveDataPath"] = save_data_path.u8string();
-        data["GUI"]["addonInstallDir"] =
-            settings_addon_install_dir.u8string();
+        data["GUI"]["addonInstallDir"] = settings_addon_install_dir.u8string();
         data["Debug"]["ConfigVersion"] = config_version;
         data["Keys"]["TrophyKey"] = trophyKey;
 
