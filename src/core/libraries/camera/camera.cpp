@@ -955,7 +955,9 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     cam_spec.framerate_denominator = 1;
     sdl_camera = SDL_OpenCamera(devices[Config::GetCameraId()], &cam_spec);
     LOG_INFO(Lib_Camera, "SDL backend in use: {}", SDL_GetCurrentCameraDriver());
-    LOG_INFO(Lib_Camera, "SDL camera name: {}", SDL_GetCameraName(devices[Config::GetCameraId()]));
+    char const* camera_name = SDL_GetCameraName(devices[Config::GetCameraId()]);
+    if (camera_name)
+        LOG_INFO(Lib_Camera, "SDL camera name: {}", camera_name);
     SDL_CameraSpec spec;
     SDL_GetCameraFormat(sdl_camera, &spec);
     LOG_INFO(Lib_Camera, "SDL camera format: {:#x}", std::to_underlying(spec.format));
