@@ -708,6 +708,9 @@ struct NpStateCallback {
 NpStateCallback NpStateCb;
 
 s32 PS4_SYSV_ABI sceNpCheckCallback() {
+    if (!g_signed_in) {
+        return ORBIS_NP_ERROR_NOT_INITIALIZED;
+    }
     LOG_DEBUG(Lib_NpManager, "(STUBBED) called");
 
     std::scoped_lock lk{g_np_callbacks_mutex};
