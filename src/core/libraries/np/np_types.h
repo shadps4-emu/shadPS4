@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -46,18 +46,20 @@ struct OrbisNpIdToken {
 };
 
 using OrbisNpServiceLabel = u32;
+constexpr s32 ORBIS_NP_INVALID_SERVICE_LABEL = 0xFFFFFFFF;
 
-enum class OrbisNpPlatformType : s32 {
-    ORBIS_NP_PLATFORM_TYPE_NONE = 0,
-    ORBIS_NP_PLATFORM_TYPE_PS3 = 1,
-    ORBIS_NP_PLATFORM_TYPE_VITA = 2,
-    ORBIS_NP_PLATFORM_TYPE_PS4 = 3,
+using OrbisNpAccountId = u64;
+enum OrbisNpPlatformType : s32 {
+    None = 0,
+    PS3 = 1,
+    Vita = 2,
+    PS4 = 3,
 };
 
 struct OrbisNpPeerAddressA {
     OrbisNpAccountId accountId;
-    OrbisNpPlatformType platformType;
-    u8 padding[4];
+    OrbisNpPlatformType platform;
+    char padding[4];
 };
 
 }; // namespace Libraries::Np

@@ -430,8 +430,8 @@ int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int
     return index + 1;
 }
 
-int PS4_SYSV_ABI sceHttpReadData() {
-    LOG_ERROR(Lib_Http, "(STUBBED) called");
+int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size) {
+    LOG_ERROR(Lib_Http, "(STUBBED) called reqId = {} size = {}", reqId, size);
     return ORBIS_OK;
 }
 
@@ -935,18 +935,24 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
                 pathLength++;
             }
 
-            // Ensure the path starts with '/'
-            if (pathLength > 0 && pathStart[0] != '/') {
+            if (pathLength > 0) {
                 // Prepend '/' to the path
                 requiredSize += pathLength + 2; // Include '/' and null terminator
 
                 if (pool && prepare < requiredSize) {
-                    LOG_ERROR(Lib_Http, "out of memory");
+                    LOG_ERROR(Lib_Http, "out of memory, provided size: {}, required size: {}",
+                              prepare, requiredSize);
                     return ORBIS_HTTP_ERROR_OUT_OF_MEMORY;
                 }
 
                 if (out && pool) {
                     out->path = (char*)pool + (requiredSize - pathLength - 2);
+                    out->username = (char*)pool + (requiredSize - pathLength - 3);
+                    out->password = (char*)pool + (requiredSize - pathLength - 3);
+                    out->hostname = (char*)pool + (requiredSize - pathLength - 3);
+                    out->query = (char*)pool + (requiredSize - pathLength - 3);
+                    out->fragment = (char*)pool + (requiredSize - pathLength - 3);
+                    out->username[0] = '\0';
                     out->path[0] = '/'; // Add leading '/'
                     memcpy(out->path + 1, pathStart, pathLength);
                     out->path[pathLength + 1] = '\0';
@@ -969,6 +975,19 @@ int PS4_SYSV_ABI sceHttpUriParse(OrbisHttpUriElement* out, const char* srcUri, v
 
             // Move past the path
             offset += pathLength;
+        } else {
+            // Parse the path (everything after the slashes)
+            char* pathStart = (char*)srcUri + offset;
+            u64 pathLength = 0;
+            while (pathStart[pathLength] && pathStart[pathLength] != '?' &&
+                   pathStart[pathLength] != '#') {
+                pathLength++;
+            }
+
+            if (pathLength > 0) {
+                requiredSize += pathLength + 3; // Add '/' and null terminator, and the dummy
+                                                // null character for the other fields
+            }
         }
     }
 

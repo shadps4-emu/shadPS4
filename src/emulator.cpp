@@ -28,6 +28,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
@@ -35,6 +36,7 @@
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
 #include "core/libraries/jpeg/jpegenc.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libc_internal/libc_internal.h"
 #include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
@@ -206,6 +208,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
 
+    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
+                                (id + ".toml"))) {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
+    } else {
+        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
+    }
+
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
         Common::Log::Initialize(id + ".log");
@@ -230,6 +239,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
     LOG_INFO(Config, "General LogType: {}", Config::getLogType());
+    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
@@ -331,11 +341,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     g_window = window.get();
 
-    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir) / id;
-    if (!std::filesystem::exists(mount_data_dir)) {
-        std::filesystem::create_directory(mount_data_dir);
-    }
-    mnt->Mount(mount_data_dir, "/data"); // should just exist, manually create with game serial
+    const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
+    mnt->Mount(mount_data_dir, "/data");
 
     // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
@@ -359,6 +366,34 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::create_directory(mount_captures_dir);
     }
     VideoCore::SetOutputDir(mount_captures_dir, id);
+
+    // Mount system fonts
+    const auto& fonts_dir = Config::getFontsPath();
+    if (!std::filesystem::exists(fonts_dir)) {
+        std::filesystem::create_directory(fonts_dir);
+    }
+
+    // Fonts are mounted into the sandboxed system directory, construct the appropriate path.
+    const char* sandbox_root = Libraries::Kernel::sceKernelGetFsSandboxRandomWord();
+    std::string guest_font_dir = "/";
+    guest_font_dir.append(sandbox_root).append("/common/font");
+    const auto& host_font_dir = fonts_dir / "font";
+    if (!std::filesystem::exists(host_font_dir)) {
+        std::filesystem::create_directory(host_font_dir);
+    }
+    mnt->Mount(host_font_dir, guest_font_dir);
+
+    // There is a second font directory, mount that too.
+    guest_font_dir.append("2");
+    const auto& host_font2_dir = fonts_dir / "font2";
+    if (!std::filesystem::exists(host_font2_dir)) {
+        std::filesystem::create_directory(host_font2_dir);
+    }
+    mnt->Mount(host_font2_dir, guest_font_dir);
+
+    if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
+        LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
+    }
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

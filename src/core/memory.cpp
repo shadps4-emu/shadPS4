@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -73,7 +73,7 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
 }
 
 u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
-    static constexpr u64 MinSizeToClamp = 3_GB;
+    static constexpr u64 MinSizeToClamp = 1_GB;
     // Dont bother with clamping if the size is small so we dont pay a map lookup on every buffer.
     if (size < MinSizeToClamp) {
         return size;
@@ -349,7 +349,8 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
 }
 
 s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
-    std::scoped_lock lk{mutex, unmap_mutex};
+    std::scoped_lock lk{unmap_mutex};
+    std::unique_lock lk2{mutex};
     ASSERT_MSG(IsValidMapping(virtual_addr, size), "Attempted to access invalid address {:#x}",
                virtual_addr);
 
@@ -434,6 +435,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
     // Merge this VMA with similar nearby areas
     MergeAdjacent(vma_map, new_vma_handle);
 
+    lk2.unlock();
     if (IsValidGpuMapping(mapped_addr, size)) {
         rasterizer->MapMemory(mapped_addr, size);
     }
@@ -554,7 +556,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
     }
 
     // Acquire writer lock.
-    std::scoped_lock lk2{mutex};
+    std::unique_lock lk2{mutex};
 
     // Create VMA representing this mapping.
     auto new_vma_handle = CreateArea(virtual_addr, size, prot, flags, type, name, alignment);
@@ -593,7 +595,10 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
 
+            // Merge this handle with adjacent areas
             handle = MergeAdjacent(fmem_map, new_fmem_handle);
+
+            // Get the next flexible area.
             current_addr += size_to_map;
             remaining_size -= size_to_map;
             flexible_usage += size_to_map;
@@ -602,13 +607,13 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     } else if (type == VMAType::Direct) {
         // Map the physical memory for this direct memory mapping.
-        auto phys_addr_to_search = phys_addr;
+        auto current_phys_addr = phys_addr;
         u64 remaining_size = size;
         auto dmem_area = FindDmemArea(phys_addr);
         while (dmem_area != dmem_map.end() && remaining_size > 0) {
             // Carve a new dmem area in place of this one with the appropriate type.
             // Ensure the carved area only covers the current dmem area.
-            const auto start_phys_addr = std::max<PAddr>(phys_addr, dmem_area->second.base);
+            const auto start_phys_addr = std::max<PAddr>(current_phys_addr, dmem_area->second.base);
             const auto offset_in_dma = start_phys_addr - dmem_area->second.base;
             const auto size_in_dma =
                 std::min<u64>(dmem_area->second.size - offset_in_dma, remaining_size);
@@ -617,17 +622,17 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             new_dmem_area.dma_type = PhysicalMemoryType::Mapped;
 
             // Add the dmem area to this vma, merge it with any similar tracked areas.
-            new_vma.phys_areas[phys_addr_to_search - phys_addr] = dmem_handle->second;
-            MergeAdjacent(new_vma.phys_areas,
-                          new_vma.phys_areas.find(phys_addr_to_search - phys_addr));
+            const u64 offset_in_vma = current_phys_addr - phys_addr;
+            new_vma.phys_areas[offset_in_vma] = dmem_handle->second;
+            MergeAdjacent(new_vma.phys_areas, new_vma.phys_areas.find(offset_in_vma));
 
             // Merge the new dmem_area with dmem_map
             MergeAdjacent(dmem_map, dmem_handle);
 
             // Get the next relevant dmem area.
-            phys_addr_to_search = phys_addr + size_in_dma;
+            current_phys_addr += size_in_dma;
             remaining_size -= size_in_dma;
-            dmem_area = FindDmemArea(phys_addr_to_search);
+            dmem_area = FindDmemArea(current_phys_addr);
         }
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
     }
@@ -646,6 +651,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
+
+        lk2.unlock();
 
         // If this is not a reservation, then map to GPU and address space
         if (IsValidGpuMapping(mapped_addr, size)) {

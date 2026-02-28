@@ -123,21 +123,23 @@ static inline bool IsValidEventType(Platform::InterruptId id) {
            static_cast<u32>(id) == static_cast<u32>(Platform::InterruptId::GfxEop);
 }
 
-s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (!eq) {
+    auto equeue = GetEqueue(eq);
+    if (!equeue) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
     EqueueEvent kernel_event{};
     kernel_event.event.ident = id;
-    kernel_event.event.filter = SceKernelEvent::Filter::GraphicsCore;
-    kernel_event.event.flags = SceKernelEvent::Flags::Add;
+    kernel_event.event.filter = OrbisKernelEvent::Filter::GraphicsCore;
+    kernel_event.event.flags = OrbisKernelEvent::Flags::Add;
     kernel_event.event.fflags = 0;
     kernel_event.event.data = id;
     kernel_event.event.udata = udata;
-    eq->AddEvent(kernel_event);
+
+    equeue->AddEvent(kernel_event);
 
     Platform::IrqC::Instance()->Register(
         static_cast<Platform::InterruptId>(id),
@@ -149,10 +151,11 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata) {
                 return;
 
             // Event data is expected to be an event type as per sceGnmGetEqEventType.
-            eq->TriggerEvent(static_cast<GnmEventType>(id), SceKernelEvent::Filter::GraphicsCore,
-                             reinterpret_cast<void*>(id));
+            equeue->TriggerEvent(static_cast<GnmEventType>(id),
+                                 OrbisKernelEvent::Filter::GraphicsCore,
+                                 reinterpret_cast<void*>(id));
         },
-        eq);
+        equeue);
     return ORBIS_OK;
 }
 
@@ -267,16 +270,17 @@ int PS4_SYSV_ABI sceGnmDebugHardwareStatus() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id) {
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id) {
     LOG_TRACE(Lib_GnmDriver, "called");
 
-    if (!eq) {
+    auto equeue = GetEqueue(eq);
+    if (!equeue) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    eq->RemoveEvent(id, SceKernelEvent::Filter::GraphicsCore);
+    equeue->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
 
-    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), eq);
+    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), equeue);
     return ORBIS_OK;
 }
 
@@ -895,7 +899,7 @@ int PS4_SYSV_ABI sceGnmGetDebugTimestamp() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev) {
+int PS4_SYSV_ABI sceGnmGetEqEventType(const OrbisKernelEvent* ev) {
     LOG_TRACE(Lib_GnmDriver, "called");
     return sceKernelGetEventData(ev);
 }
@@ -2052,7 +2056,7 @@ int PS4_SYSV_ABI sceGnmSqttWaitForEvent() {
 }
 
 static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf_idx, u32 flip_mode,
-                                   u32 flip_arg, void* unk) {
+                                   s64 flip_arg, void* unk) {
     // check for `prepareFlip` packet
     cmdbuf += size - 64;
     ASSERT_MSG(cmdbuf[0] == 0xc03e1000, "Can't find `prepareFlip` packet");
@@ -2138,7 +2142,7 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
 s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs[],
                                                    u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
                                                    u32* ccb_sizes_in_bytes, u32 vo_handle,
-                                                   u32 buf_idx, u32 flip_mode, u32 flip_arg) {
+                                                   u32 buf_idx, u32 flip_mode, s64 flip_arg) {
     return sceGnmSubmitAndFlipCommandBuffersForWorkload(
         count, count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs, ccb_sizes_in_bytes,
         vo_handle, buf_idx, flip_mode, flip_arg);
@@ -2146,7 +2150,7 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
 
 s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
     u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
-    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, u32 flip_arg) {
+    u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg) {
     LOG_DEBUG(Lib_GnmDriver, "called [buf = {}]", buf_idx);
 
     auto* cmdbuf = dcb_gpu_addrs[count - 1];
