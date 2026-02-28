@@ -35,8 +35,11 @@ void Resolver::Resolve() {
     if (async_resolution) {
         auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
         auto ret = netinfo->ResolveHostname(async_resolution->hostname, async_resolution->addr);
-        // Resolver errors are stored as ORBIS_NET_ERROR values.
-        resolution_error = -ret | ORBIS_NET_ERROR_BASE;
+        resolution_error = ret;
+        if (ret != ORBIS_OK) {
+            // Resolver errors are stored as ORBIS_NET_ERROR values.
+            resolution_error = -ret | ORBIS_NET_ERROR_BASE;
+        }
     } else {
         LOG_ERROR(Lib_Net, "async resolution has not been set-up");
     }

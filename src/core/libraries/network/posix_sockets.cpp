@@ -430,6 +430,15 @@ int PosixSocket::Connect(const OrbisNetSockaddr* addr, u32 namelen) {
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
     int result = ::connect(sock, &addr2, sizeof(sockaddr_in));
+#ifdef _WIN32
+    // Winsock returns EWOULDBLOCK where real hardware returns EINPROGRESS
+    // Step in here on errors to address this.
+    if (result == -1) {
+        if (WSAGetLastError() == WSAEWOULDBLOCK) {
+            WSASetLastError(WSAEINPROGRESS);
+        }
+    }
+#endif
     LOG_DEBUG(Lib_Net, "raw connect result = {}, errno = {}", result,
               result == -1 ? Common::GetLastErrorMsg() : "none");
     return ConvertReturnErrorCode(result);
