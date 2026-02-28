@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/assert.h"
 #include "common/config.h"
 #include "common/debug.h"
 #include "core/memory.h"
@@ -72,8 +73,10 @@ void Rasterizer::CpSync() {
         compute_scheduler->Flush();
 
         const auto compute_sem = compute_scheduler->GetMasterSemaphore()->Handle();
-        const auto compute_tick = compute_scheduler->CurrentTick();
+        // After Flush, CurrentTick is N+1, but Flush signaled N, so wait for N
+        const auto compute_tick = compute_scheduler->CurrentTick() - 1;
 
+        ASSERT_MSG(compute_tick > 0, "Invalid compute tick {} in CpSync", compute_tick);
         scheduler.Wait(compute_sem, compute_tick);
     }
 
@@ -221,6 +224,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     scheduler.PopPendingOperations();
 
+    // Sync with async compute before drawing - compute results may be needed
+    if (compute_scheduler && compute_scheduler->IsDedicated()) {
+        compute_scheduler->SignalGraphics(scheduler);
+    }
+
     if (!FilterDraw()) {
         return;
     }
@@ -269,6 +277,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     RENDERER_TRACE;
 
     scheduler.PopPendingOperations();
+
+    // Sync with async compute before drawing - compute results may be needed
+    if (compute_scheduler && compute_scheduler->IsDedicated()) {
+        compute_scheduler->SignalGraphics(scheduler);
+    }
 
     if (!FilterDraw()) {
         return;
@@ -350,13 +363,19 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
+    // Temporary flag to test async compute - set to false to disable
+    constexpr bool enable_async_compute = true;
+
     // Use async compute queue if available
-    if (compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
+    if (enable_async_compute && compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
         // Process pending operations on both schedulers
         scheduler.PopPendingOperations();
         compute_scheduler->PopPendingOperations();
 
-        // WAR Hazard: Ensure graphics has finished before compute reads
+        // End any active rendering before compute uses shared resources
+        scheduler.EndRendering();
+
+        // WAR Hazard: Ensure graphics has finished writing before compute reads
         compute_scheduler->WaitForGraphics(scheduler);
 
         // Get compute command buffer and bind resources using compute descriptor heap
@@ -365,8 +384,9 @@ void Rasterizer::DispatchDirect() {
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
         cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
 
-        // RAW Hazard: Ensure compute finishes before graphics reads results
-        compute_scheduler->SignalGraphics(scheduler);
+        // Flush compute immediately but don't sync with graphics yet
+        // Graphics will wait for compute before Draw
+        compute_scheduler->Flush();
     } else {
         // Fallback to graphics queue
         scheduler.PopPendingOperations();
@@ -396,14 +416,20 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto [buffer, base] = buffer_cache.ObtainBuffer(address + offset, size, false);
 
+    // Temporary flag to test async compute - set to false to disable
+    constexpr bool enable_async_compute = true;
+
     // Use async compute queue if available
-    if (compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
+    if (enable_async_compute && compute_scheduler && compute_scheduler->IsDedicated() && compute_desc_heap) {
         // Process pending operations on both schedulers
         scheduler.PopPendingOperations();
         compute_scheduler->PopPendingOperations();
 
-        // End any active rendering on graphics queue
+        // End any active rendering before compute uses shared resources
         scheduler.EndRendering();
+
+        // WAR Hazard: Ensure graphics has finished writing before compute reads
+        compute_scheduler->WaitForGraphics(scheduler);
 
         // Get compute command buffer and bind resources using compute descriptor heap
         const auto cmdbuf = compute_scheduler->CommandBuffer();
@@ -411,11 +437,9 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
         cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
         cmdbuf.dispatchIndirect(buffer->Handle(), base);
 
-        // Flush compute immediately and make graphics wait for it
-        compute_scheduler->Flush();
-        const auto compute_sem = compute_scheduler->GetMasterSemaphore()->Handle();
-        const auto compute_tick = compute_scheduler->CurrentTick();
-        scheduler.Wait(compute_sem, compute_tick);
+        // Flush compute immediately (no batching) and sync with graphics
+        compute_scheduler->MarkPendingWork();
+        compute_scheduler->SignalGraphics(scheduler);
     } else {
         // Fallback to graphics queue
         scheduler.PopPendingOperations();
@@ -439,6 +463,14 @@ u64 Rasterizer::Flush() {
 
 void Rasterizer::Finish() {
     scheduler.Finish();
+}
+
+void Rasterizer::SyncComputeForPresent() {
+    // Ensure all pending compute work is synced with graphics before presentation
+    if (compute_scheduler && compute_scheduler->IsDedicated()) {
+        // SignalGraphics will flush compute and make graphics wait for it
+        compute_scheduler->SignalGraphics(scheduler);
+    }
 }
 
 void Rasterizer::OnSubmit() {

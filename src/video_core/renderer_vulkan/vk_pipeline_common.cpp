@@ -39,12 +39,18 @@ void Pipeline::BindResources(vk::CommandBuffer cmdbuf, DescriptorWrites& set_wri
         IsCompute() ? vk::PipelineBindPoint::eCompute : vk::PipelineBindPoint::eGraphics;
 
     if (!buffer_barriers.empty()) {
-        const auto dependencies = vk::DependencyInfo{
-            .dependencyFlags = vk::DependencyFlagBits::eByRegion,
-            .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-        };
-        cmdbuf.pipelineBarrier2(dependencies);
+        // For async compute (different heap = different queue), skip buffer barriers entirely.
+        // Timeline semaphores include memory dependencies per Vulkan spec, so cross-queue
+        // synchronization is fully handled by WaitForGraphics/SignalGraphics.
+        const bool is_async_compute = IsCompute() && &heap != &desc_heap;
+        if (!is_async_compute) {
+            const auto dependencies = vk::DependencyInfo{
+                .dependencyFlags = vk::DependencyFlagBits::eByRegion,
+                .bufferMemoryBarrierCount = u32(buffer_barriers.size()),
+                .pBufferMemoryBarriers = buffer_barriers.data(),
+            };
+            cmdbuf.pipelineBarrier2(dependencies);
+        }
     }
 
     const auto stage_flags = IsCompute() ? vk::ShaderStageFlagBits::eCompute : AllGraphicsStageBits;

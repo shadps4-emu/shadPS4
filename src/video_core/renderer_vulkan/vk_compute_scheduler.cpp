@@ -50,16 +50,28 @@ void ComputeScheduler::WaitForGraphics(Scheduler& graphics_scheduler) {
         return;
     }
 
-    // WAR Hazard Prevention:
-    // We must wait for Graphics to finish using resources before Compute touches them.
+    // End any active rendering
+    graphics_scheduler.EndRendering();
+
+    // Flush graphics to ensure all pending work is submitted
+    // We must flush BEFORE checking the tick, since pending commands
+    // in the command buffer don't change the tick until submitted.
     graphics_scheduler.Flush();
 
+    // After flush, CurrentTick is N+1, the signaled tick is N
+    const auto graphics_tick = graphics_scheduler.CurrentTick() - 1;
+
+    // If we've already synced with this tick, skip adding another wait
+    if (graphics_tick <= last_graphics_sync_tick) {
+        return;
+    }
+
     const auto graphics_sem = graphics_scheduler.GetTimelineSemaphore();
-    const auto graphics_tick = graphics_scheduler.CurrentTick();
 
     std::lock_guard<std::mutex> lk{submit_mutex};
     wait_semaphores.push_back(graphics_sem);
     wait_values.push_back(graphics_tick);
+    last_graphics_sync_tick = graphics_tick;
 }
 
 void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
@@ -67,15 +79,27 @@ void ComputeScheduler::SignalGraphics(Scheduler& graphics_scheduler) {
         return;
     }
 
+    // If the command buffer is empty (no dispatches since last flush), skip
+    if (!has_pending_work) {
+        return;
+    }
+
     // RAW Hazard Prevention:
     // Graphics must wait for Compute to finish before reading results.
     Flush();
+    has_pending_work = false;
 
     const auto compute_sem = master_semaphore.Handle();
-    const auto signal_value = master_semaphore.CurrentTick();
+    const auto signal_value = master_semaphore.CurrentTick() - 1;
 
-    // Register the wait on the Graphics Scheduler.
     graphics_scheduler.Wait(compute_sem, signal_value);
+}
+
+void ComputeScheduler::OnComputeDispatch(Scheduler& graphics_scheduler) {
+    // This is called before every dispatch.
+    // We can use it to potentially flush if the command buffer is getting too large,
+    // or to ensure some baseline sync if needed.
+    // For now, we don't force flushes here to allow batching.
 }
 
 void ComputeScheduler::AllocateWorkerCommandBuffers() {
@@ -89,46 +113,57 @@ void ComputeScheduler::AllocateWorkerCommandBuffers() {
 
 void ComputeScheduler::SubmitExecution() {
     std::lock_guard<std::mutex> lk{submit_mutex};
-    const u64 signal_value = master_semaphore.NextTick();
 
     Check(current_cmdbuf.end());
 
+    const u64 signal_value = master_semaphore.NextTick();
     const vk::Semaphore timeline = master_semaphore.Handle();
 
-    std::vector<u64> tmp_wait_values = wait_values;
-    std::vector<vk::Semaphore> tmp_wait_semaphores = wait_semaphores;
-
-    // Timeline signal info
-    const vk::TimelineSemaphoreSubmitInfo timeline_si = {
-        .waitSemaphoreValueCount = static_cast<u32>(tmp_wait_values.size()),
-        .pWaitSemaphoreValues = tmp_wait_values.data(),
-        .signalSemaphoreValueCount = 1,
-        .pSignalSemaphoreValues = &signal_value,
-    };
-
-    // For compute, we usually wait at the start of the pipe
-    std::vector<vk::PipelineStageFlags> wait_stages(tmp_wait_semaphores.size(),
-                                                    vk::PipelineStageFlagBits::eComputeShader);
-
-    const vk::SubmitInfo submit_info = {
-        .pNext = &timeline_si,
-        .waitSemaphoreCount = static_cast<u32>(tmp_wait_semaphores.size()),
-        .pWaitSemaphores = tmp_wait_semaphores.data(),
-        .pWaitDstStageMask = wait_stages.data(),
-        .commandBufferCount = 1U,
-        .pCommandBuffers = &current_cmdbuf,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &timeline,
-    };
-
-    auto submit_result = compute_queue.submit(submit_info, nullptr);
-    if (submit_result == vk::Result::eErrorDeviceLost) {
-        LOG_CRITICAL(Render_Vulkan, "Device lost during compute submit!");
+    // Build wait semaphore infos using synchronization2
+    std::vector<vk::SemaphoreSubmitInfo> wait_infos;
+    wait_infos.reserve(wait_semaphores.size());
+    for (size_t i = 0; i < wait_semaphores.size(); ++i) {
+        ASSERT_MSG(wait_values[i] > 0,
+                   "Invalid wait value {} at index {} in compute submit", wait_values[i], i);
+        wait_infos.push_back({
+            .semaphore = wait_semaphores[i],
+            .value = wait_values[i],
+            .stageMask = vk::PipelineStageFlagBits2::eComputeShader,
+        });
     }
+
+    // Signal semaphore info
+    const vk::SemaphoreSubmitInfo signal_info = {
+        .semaphore = timeline,
+        .value = signal_value,
+        .stageMask = vk::PipelineStageFlagBits2::eComputeShader,
+    };
+
+    // Command buffer info
+    const vk::CommandBufferSubmitInfo cmdbuf_info = {
+        .commandBuffer = current_cmdbuf,
+    };
+
+    // Use vkQueueSubmit2 (synchronization2)
+    const vk::SubmitInfo2 submit_info = {
+        .waitSemaphoreInfoCount = static_cast<u32>(wait_infos.size()),
+        .pWaitSemaphoreInfos = wait_infos.data(),
+        .commandBufferInfoCount = 1U,
+        .pCommandBufferInfos = &cmdbuf_info,
+        .signalSemaphoreInfoCount = 1U,
+        .pSignalSemaphoreInfos = &signal_info,
+    };
+
+    auto submit_result = compute_queue.submit2(submit_info, nullptr);
+    ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost,
+               "Device lost during compute submit! signal_value={}", signal_value);
 
     // Clear waits after submission
     wait_semaphores.clear();
     wait_values.clear();
+
+    // Reset graphics sync tracking so the next compute batch can sync with new graphics work
+    last_graphics_sync_tick = 0;
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();

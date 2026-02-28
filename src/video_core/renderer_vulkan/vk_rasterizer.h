@@ -78,6 +78,9 @@ public:
     void Finish();
     void OnSubmit();
 
+    /// Ensures all pending compute work is synced with graphics before presentation
+    void SyncComputeForPresent();
+
     PipelineCache& GetPipelineCache() {
         return pipeline_cache;
     }

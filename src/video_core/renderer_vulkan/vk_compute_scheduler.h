@@ -69,7 +69,15 @@ public:
     /// Signals the graphics queue that compute has finished.
     void SignalGraphics(Scheduler& graphics_scheduler);
 
+    /// Called during dispatch to track resource dependencies and ensure synchronization.
+    void OnComputeDispatch(Scheduler& graphics_scheduler);
+
     /// Returns true if this scheduler uses a dedicated compute queue
+    /// Mark that there is pending compute work
+    void MarkPendingWork() {
+        has_pending_work = true;
+    }
+
     bool IsDedicated() const {
         return is_dedicated;
     }
@@ -92,7 +100,11 @@ private:
     std::queue<PendingOp> pending_ops;
 
     bool is_dedicated{false};
+    bool has_pending_work{false};  // Track if there are dispatches since last flush
     std::mutex submit_mutex;
+
+    // Track the last graphics tick we've synced with to avoid redundant waits
+    u64 last_graphics_sync_tick{0};
 
     // Semaphores to wait on for the next submission
     std::vector<vk::Semaphore> wait_semaphores;
