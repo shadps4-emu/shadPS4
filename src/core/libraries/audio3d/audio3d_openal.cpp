@@ -300,8 +300,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectReserve(const OrbisAudio3dPortId port_id,
 s32 PS4_SYSV_ABI sceAudio3dObjectSetAttribute(const OrbisAudio3dPortId port_id,
                                               const OrbisAudio3dObjectId object_id,
                                               const OrbisAudio3dAttributeId attribute_id,
-                                              const void* attribute,
-                                              const u64 attribute_size) {
+                                              const void* attribute, const u64 attribute_size) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, object_id = {}, attribute_id = {:#x}, size = {}",
               port_id, object_id, static_cast<u32>(attribute_id), attribute_size);
 

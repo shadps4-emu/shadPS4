@@ -5,8 +5,8 @@
 
 #include <mutex>
 #include <optional>
-#include <queue>
 #include <vector>
+#include <queue>
 
 #include "common/types.h"
 #include "core/libraries/audio/audioout.h"
