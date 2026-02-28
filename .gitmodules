@@ -119,6 +119,10 @@
 [submodule "externals/aacdec/fdk-aac"]
 	path = externals/aacdec/fdk-aac
 	url = https://android.googlesource.com/platform/external/aac
+[submodule "externals/freetype"]
+	path = externals/freetype
+	url = https://github.com/freetype/freetype.git
+	shallow = true
 [submodule "externals/CLI11"]
 	path = externals/CLI11
 	url = https://github.com/shadexternals/CLI11.git

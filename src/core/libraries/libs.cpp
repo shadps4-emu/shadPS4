@@ -12,6 +12,8 @@
 #include "core/libraries/companion/companion_httpd.h"
 #include "core/libraries/companion/companion_util.h"
 #include "core/libraries/disc_map/disc_map.h"
+#include "core/libraries/font/font.h"
+#include "core/libraries/font/fontft.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/hmd/hmd.h"
@@ -149,6 +151,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::Voice::RegisterLib(sym);
     Libraries::Rudp::RegisterLib(sym);
     Libraries::VrTracker::RegisterLib(sym);
+    Libraries::Font::RegisterlibSceFont(sym);
+    Libraries::FontFt::RegisterlibSceFontFt(sym);
 
     // Loading libSceSsl is locked behind a title workaround that currently applies to nothing.
     // Libraries::Ssl::RegisterLib(sym);
