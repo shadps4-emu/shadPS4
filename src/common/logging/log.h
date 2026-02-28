@@ -265,6 +265,7 @@ static constexpr auto POSITON_GAME_LOG = 2;
 
 static void Setup(int argc, char* argv[]) {
     spdlog::cfg::load_env_levels();
+    spdlog::cfg::helpers::load_levels(Config::getLogFilter());
     spdlog::cfg::load_argv_levels(argc, argv);
 
     std::at_quick_exit(spdlog::drop_all);
