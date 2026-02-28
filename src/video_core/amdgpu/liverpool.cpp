@@ -501,6 +501,30 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 }
                 break;
             }
+            case PM4ItOpcode::DrawIndirectMulti: {
+                const auto* draw_indirect =
+                    reinterpret_cast<const PM4CmdDrawIndirectMulti*>(header);
+                const auto offset = draw_indirect->data_offset;
+                if (DebugState.DumpingCurrentReg()) {
+                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                }
+                if (rasterizer) {
+                    const auto cmd_address = reinterpret_cast<const void*>(header);
+                    if (host_markers_enabled) {
+                        rasterizer->ScopeMarkerBegin(
+                            fmt::format("gfx:{}:DrawIndirectMulti", cmd_address));
+                        rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                                 draw_indirect->stride,
+                                                 draw_indirect->count, 0);
+                        rasterizer->ScopeMarkerEnd();
+                    } else {
+                        rasterizer->DrawIndirect(true, indirect_args_addr, offset,
+                                                 draw_indirect->stride,
+                                                 draw_indirect->count, 0);
+                    }
+                }
+                break;
+            }
             case PM4ItOpcode::DrawIndexIndirect: {
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirect*>(header);
