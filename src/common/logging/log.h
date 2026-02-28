@@ -17,6 +17,8 @@
 #include "common/config.h"
 #include "common/path_util.h"
 #include "common/thread.h"
+#include "spdlog/async.h"
+#include "spdlog/async_logger.h"
 
 namespace Common::Log {
 
@@ -275,7 +277,11 @@ static void Setup(int argc, char* argv[]) {
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        spdlog::initialize_logger(std::make_shared<spdlog::logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for id + ".log" */}));
+        spdlog::initialize_logger(
+            Config::getLogType() == "sync" ?
+                std::make_shared<spdlog::logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */}) :
+                std::make_shared<spdlog::async_logger>(name, std::initializer_list<spdlog::sink_ptr>{console_sink, file_sink, std::make_shared<spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */}, spdlog::thread_pool())
+        );
     }
 
     spdlog::set_formatter(std::make_unique<thread_name_formatter>());
