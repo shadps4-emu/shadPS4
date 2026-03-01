@@ -330,7 +330,7 @@ static bool match(std::string_view str, std::string_view pattern) {
     auto pat_it = pattern.begin();
     while (str_it != str.end() && pat_it != pattern.end()) {
         if (*pat_it == '%') { // 0 or more wildcard
-            for (auto str_wild_it = str_it; str_wild_it <= str.end(); ++str_wild_it) {
+            for (auto str_wild_it = str_it; str_wild_it < str.end(); ++str_wild_it) {
                 if (match({str_wild_it, str.end()}, {pat_it + 1, pattern.end()})) {
                     return true;
                 }

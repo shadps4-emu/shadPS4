@@ -465,9 +465,9 @@ void Image::CopyImage(Image& src_image) {
 
     // Check format compatibility
     if (src_info.pixel_format != info.pixel_format) {
-        LOG_WARNING(Render_Vulkan,
-                    "Copy between different formats: src={}, dst={}. Color may be incorrect.",
-                    vk::to_string(src_info.pixel_format), vk::to_string(info.pixel_format));
+        LOG_DEBUG(Render_Vulkan,
+                  "Copy between different formats: src={}, dst={}. Color may be incorrect.",
+                  vk::to_string(src_info.pixel_format), vk::to_string(info.pixel_format));
     }
 
     const u32 width = src_info.size.width;
@@ -495,14 +495,12 @@ void Image::CopyImage(Image& src_image) {
     const bool is_3d_to_2d = src_is_3d && dst_is_2d;
     const bool is_same_type = !is_2d_to_3d && !is_3d_to_2d;
 
-    // Use full aspect mask for color images
+    // Determine aspect mask - exclude stencil
     vk::ImageAspectFlags aspect = vk::ImageAspectFlagBits::eColor;
 
-    // If images have depth/stencil, we might need to handle separately
+    // For depth/stencil images, only copy the depth aspect (skip stencil)
     if (src_image.aspect_mask & vk::ImageAspectFlagBits::eDepth) {
         aspect = vk::ImageAspectFlagBits::eDepth;
-    } else if (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) {
-        aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
     for (u32 mip = 0; mip < num_mips; ++mip) {
@@ -575,18 +573,22 @@ void Image::CopyImage(Image& src_image) {
 
     scheduler->EndRendering();
 
+    // Remove the pipeline stage flags - they don't belong here
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
+
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
 
     if (!image_copies.empty()) {
-        cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
-                         backing->state.layout, image_copies);
+        cmdbuf.copyImage(src_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, GetImage(),
+                         vk::ImageLayout::eTransferDstOptimal, image_copies);
     }
 
-    // Simplified final layout - always use ShaderReadOnlyOptimal
-    // This is safe for most cases and avoids the usage check
+    // Remove pipeline stage flags here too
+    src_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+                      {});
+
     Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {});
 }
 

@@ -14,7 +14,7 @@ namespace Libraries::GnmDriver {
 
 using namespace Kernel;
 
-s32 PS4_SYSV_ABI sceGnmAddEqEvent(SceKernelEqueue eq, u64 id, void* udata);
+s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata);
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed();
 int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload);
 s32 PS4_SYSV_ABI sceGnmComputeWaitOnAddress(u32* cmdbuf, u32 size, uintptr_t addr, u32 mask,
@@ -31,7 +31,7 @@ int PS4_SYSV_ABI sceGnmDebuggerSetAddressWatch();
 int PS4_SYSV_ABI sceGnmDebuggerWriteGds();
 int PS4_SYSV_ABI sceGnmDebuggerWriteSqIndirectRegister();
 int PS4_SYSV_ABI sceGnmDebugHardwareStatus();
-s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(SceKernelEqueue eq, u64 id);
+s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id);
 int PS4_SYSV_ABI sceGnmDestroyWorkloadStream();
 void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw);
 void PS4_SYSV_ABI sceGnmDingDongForWorkload(u32 gnm_vqid, u32 next_offs_dw, u64 workload_id);
@@ -60,7 +60,9 @@ s32 PS4_SYSV_ABI sceGnmDrawIndexOffset(u32* cmdbuf, u32 size, u32 index_offset, 
 s32 PS4_SYSV_ABI sceGnmDrawIndirect(u32* cmdbuf, u32 size, u32 data_offset, u32 shader_stage,
                                     u32 vertex_sgpr_offset, u32 instance_sgpr_offset, u32 flags);
 int PS4_SYSV_ABI sceGnmDrawIndirectCountMulti();
-int PS4_SYSV_ABI sceGnmDrawIndirectMulti();
+s32 PS4_SYSV_ABI sceGnmDrawIndirectMulti(u32* cmdbuf, u32 size, u32 data_offset, u32 max_count,
+                                         u32 shader_stage, u32 vertex_sgpr_offset,
+                                         u32 instance_sgpr_offset, u32 flags);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState175(u32* cmdbuf, u32 size);
 u32 PS4_SYSV_ABI sceGnmDrawInitDefaultHardwareState200(u32* cmdbuf, u32 size);
@@ -87,7 +89,7 @@ int PS4_SYSV_ABI sceGnmGetCoredumpMode();
 int PS4_SYSV_ABI sceGnmGetCoredumpProtectionFaultTimestamp();
 int PS4_SYSV_ABI sceGnmGetDbgGcHandle();
 int PS4_SYSV_ABI sceGnmGetDebugTimestamp();
-int PS4_SYSV_ABI sceGnmGetEqEventType(const SceKernelEvent* ev);
+int PS4_SYSV_ABI sceGnmGetEqEventType(const OrbisKernelEvent* ev);
 int PS4_SYSV_ABI sceGnmGetEqTimeStamp();
 int PS4_SYSV_ABI sceGnmGetGpuBlockStatus();
 u32 PS4_SYSV_ABI sceGnmGetGpuCoreClockFrequency();
