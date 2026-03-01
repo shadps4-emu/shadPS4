@@ -335,16 +335,16 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
     return ORBIS_OK;
 }
 
-static std::vector<u16> raw16_buffer;
-static std::vector<u8> raw8_buffer;
+static std::vector<u16> raw16_buffer1, raw16_buffer2;
+static std::vector<u8> raw8_buffer1, raw8_buffer2;
 
-static void ConvertRGBA8888ToRAW16(const uint8_t* src, uint16_t* dst, int width, int height) {
+static void ConvertRGBA8888ToRAW16(const u8* src, u16* dst, int width, int height) {
     for (int y = 0; y < height; ++y) {
-        const uint8_t* row = src + y * width * 4;
-        uint16_t* outRow = dst + y * width;
+        const u8* row = src + y * width * 4;
+        u16* outRow = dst + y * width;
 
         for (int x = 0; x < width; ++x) {
-            const uint8_t* px = row + x * 4;
+            const u8* px = row + x * 4;
 
             u16 b = u16(px[1]) << 4;
             u16 g = u16(px[2]) << 4;
@@ -369,13 +369,13 @@ static void ConvertRGBA8888ToRAW16(const uint8_t* src, uint16_t* dst, int width,
     }
 }
 
-static void ConvertRGBA8888ToRAW8(const uint8_t* src, uint8_t* dst, int width, int height) {
+static void ConvertRGBA8888ToRAW8(const u8* src, u8* dst, int width, int height) {
     for (int y = 0; y < height; ++y) {
-        const uint8_t* row = src + y * width * 4;
-        uint8_t* outRow = dst + y * width;
+        const u8* row = src + y * width * 4;
+        u8* outRow = dst + y * width;
 
         for (int x = 0; x < width; ++x) {
-            const uint8_t* px = row + x * 4;
+            const u8* px = row + x * 4;
 
             u8 b = px[1];
             u8 g = px[2];
@@ -427,12 +427,12 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[0][0] = frame->pixels;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw16_buffer.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer1.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw16_buffer1.data();
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw8_buffer.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer1.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = raw8_buffer1.data();
         break;
     default:
         UNREACHABLE();
@@ -442,16 +442,18 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[1][0] = frame->pixels;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw16_buffer.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer2.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw16_buffer2.data();
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw8_buffer.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer2.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = raw8_buffer2.data();
         break;
     default:
         UNREACHABLE();
     }
+    frame_data->meta.format[0][0] = output_config0.format.formatLevel0;
+    frame_data->meta.format[1][0] = output_config1.format.formatLevel0;
     return ORBIS_OK;
 }
 
@@ -1025,8 +1027,10 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         LOG_INFO(Lib_Camera, "No camera devices connected");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    raw8_buffer.resize(c_width * c_height);
-    raw16_buffer.resize(c_width * c_height);
+    raw8_buffer1.resize(c_width * c_height);
+    raw16_buffer1.resize(c_width * c_height);
+    raw8_buffer2.resize(c_width * c_height);
+    raw16_buffer2.resize(c_width * c_height);
     SDL_CameraSpec cam_spec{};
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
