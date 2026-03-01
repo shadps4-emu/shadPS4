@@ -58,13 +58,12 @@ You can configure the emulator by editing the `config.toml` file found in the `u
 <details>
    <summary>Some configuration entries worth changing</summary>
 
-- `[General]`
-  
-  - `logType`: Configures logging synchronization (`sync`/`async`)
+- `[Log]`
+  - `type`: Configures logging synchronization (`sync`/`async`)
     - By default, the emulator logs messages asynchronously for better performance. Some log messages may end up being received out-of-order.
     - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
     - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `sync` and send that log as well.
-  - `logFilter`: Sets the logging category for various logging classes.
+  - `filter`: Sets the logging category for various logging classes.
     - Format: `<class>=<level>,...`
     - Multiple classes can be set by separating them with a comma. (example: `Render=warning,Debug=critical,Lib.Pad=error`)
     - Sub-classes can be specified in the same format as seen in the console/log (such as `Core.Linker`).  
@@ -73,17 +72,19 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad=critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `off,Render.Vulkan=info` (if you want critical at least `critical,Render.Vulkan=info`)
     - this option is evaluated after the environment variable `SPDLOG_LEVEL` but before the command line argument (their syntax are `SPDLOG_LEVEL="..."`, `"SPDLOG_LEVEL=..."` respectively)
-  - `isIdenticalLogGrouped`: Group same logs in one line with a counter (`true`/`false`)
-    - By default, the emulator will not rewrite the same line, and instead add a counter.
-  - `logAppend`: Append log to the existing file (`true`/`false`)
+  - `skip`: Group same logs in one line with a counter (`true`/`false`)
+    - By default, the emulator will skip same line for 5 seconds.
+  - `append`: Append log to the existing file (`true`/`false`)
       - By default, the emulator will overwrite the log file.
+  - `separate`: Write log to `log/{GAME ID}.log` instead of `log/shad_log.txt` (`true`/`false`)
+      - By default, the emulator use `log/shad_log.txt`.
 
-   - `Fullscreen`: Display the game in a full screen borderless window.
      
 - `[GPU]`
   - `dumpShaders`: Dump shaders that are loaded by the emulator. Dump path: `../user/shader/dumps`
   - `nullGpu`: Disables rendering.
   - `screenWidth` and `screenHeight`: Configures the game window width and height.
+  - `Fullscreen`: Display the game in a full screen borderless window.
     
 - `[Vulkan]`
    - `validation`-related settings: Use when debugging Vulkan.
