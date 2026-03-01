@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+#include <array>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -104,10 +105,20 @@ Buffer::Buffer(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                VAddr cpu_addr_, vk::BufferUsageFlags flags, u64 size_bytes_)
     : cpu_addr{cpu_addr_}, size_bytes{size_bytes_}, instance{&instance_}, scheduler{&scheduler_},
       usage{usage_}, buffer{instance->GetDevice(), instance->GetAllocator()} {
-    // Create buffer object.
+    // Check if we need concurrent sharing for async compute
+    const bool has_async = instance->HasDedicatedComputeQueue();
+    std::array<u32, 2> queue_families = {
+        instance->GetGraphicsQueueFamilyIndex(),
+        instance->GetComputeQueueFamilyIndex(),
+    };
+
+    // Create buffer object with concurrent sharing if async compute is available
     const vk::BufferCreateInfo buffer_ci = {
         .size = size_bytes,
         .usage = flags,
+        .sharingMode = has_async ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+        .queueFamilyIndexCount = has_async ? static_cast<u32>(queue_families.size()) : 0,
+        .pQueueFamilyIndices = has_async ? queue_families.data() : nullptr,
     };
     VmaAllocationInfo alloc_info{};
     buffer.Create(buffer_ci, usage, &alloc_info);

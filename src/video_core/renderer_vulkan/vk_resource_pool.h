@@ -52,6 +52,8 @@ protected:
 class CommandPool final : public ResourcePool {
 public:
     explicit CommandPool(const Instance& instance, MasterSemaphore* master_semaphore);
+    explicit CommandPool(const Instance& instance, MasterSemaphore* master_semaphore,
+                         u32 queue_family_index);
     ~CommandPool() override;
 
     void Allocate(std::size_t begin, std::size_t end) override;
@@ -60,6 +62,7 @@ public:
 
 private:
     const Instance& instance;
+    u32 queue_family{0};
     vk::UniqueCommandPool cmd_pool;
     std::vector<vk::CommandBuffer> cmd_buffers;
 };

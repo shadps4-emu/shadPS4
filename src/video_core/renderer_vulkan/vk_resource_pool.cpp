@@ -61,11 +61,12 @@ std::size_t ResourcePool::ManageOverflow() {
 constexpr std::size_t COMMAND_BUFFER_POOL_SIZE = 4;
 
 CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semaphore)
-    : ResourcePool{master_semaphore, COMMAND_BUFFER_POOL_SIZE}, instance{instance} {
+    : ResourcePool{master_semaphore, COMMAND_BUFFER_POOL_SIZE}, instance{instance},
+      queue_family{instance.GetGraphicsQueueFamilyIndex()} {
     const vk::CommandPoolCreateInfo pool_create_info = {
         .flags = vk::CommandPoolCreateFlagBits::eTransient |
                  vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-        .queueFamilyIndex = instance.GetGraphicsQueueFamilyIndex(),
+        .queueFamilyIndex = queue_family,
     };
     const vk::Device device = instance.GetDevice();
     auto [pool_result, pool] = device.createCommandPoolUnique(pool_create_info);
@@ -73,6 +74,23 @@ CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semap
                vk::to_string(pool_result));
     cmd_pool = std::move(pool);
     SetObjectName(device, *cmd_pool, "CommandPool");
+}
+
+CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semaphore,
+                         u32 queue_family_index)
+    : ResourcePool{master_semaphore, COMMAND_BUFFER_POOL_SIZE}, instance{instance},
+      queue_family{queue_family_index} {
+    const vk::CommandPoolCreateInfo pool_create_info = {
+        .flags = vk::CommandPoolCreateFlagBits::eTransient |
+                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = queue_family,
+    };
+    const vk::Device device = instance.GetDevice();
+    auto [pool_result, pool] = device.createCommandPoolUnique(pool_create_info);
+    ASSERT_MSG(pool_result == vk::Result::eSuccess, "Failed to create command pool: {}",
+               vk::to_string(pool_result));
+    cmd_pool = std::move(pool);
+    SetObjectName(device, *cmd_pool, "ComputeCommandPool");
 }
 
 CommandPool::~CommandPool() = default;
