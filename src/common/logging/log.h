@@ -283,6 +283,8 @@ static void Setup(int argc, char* argv[]) {
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
     spdlog::cfg::load_argv_levels(argc, argv);
 
+    spdlog::init_thread_pool(8192, 1);
+
     std::at_quick_exit(spdlog::shutdown);
 
     g_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
