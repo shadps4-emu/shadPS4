@@ -233,11 +233,18 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
         if (ctx.profile.supports_image_load_store_lod) {
             operands.Add(spv::ImageOperandsMask::Lod, lod);
         } else if (Sirit::ValidId(lod)) {
+#if 1
+            // It's  confusing what interactions will cause this code path so leave it as
+            // unreachable until a case is found.
+            // Normally IMAGE_LOAD_MIP should translate -> OpImageFetch
+            UNREACHABLE_MSG("Unsupported ImageRead with Lod");
+#else
             LOG_WARNING(Render, "Fallback for ImageRead with LOD");
-            ASSERT(texture.is_mip_storage_fallback);
+            ASSERT(texture.mip_fallback_mode == MipStorageFallbackMode::DynamicIndex);
             const Id single_image_ptr_type =
                 ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
             image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
+#endif
         }
         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
         texel = ctx.OpImageRead(color_type, image, coords, operands.mask, operands.operands);
@@ -256,7 +263,7 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
         operands.Add(spv::ImageOperandsMask::Lod, lod);
     } else if (Sirit::ValidId(lod)) {
         LOG_WARNING(Render, "Fallback for ImageWrite with LOD");
-        ASSERT(texture.is_mip_storage_fallback);
+        ASSERT(texture.mip_fallback_mode == MipStorageFallbackMode::DynamicIndex);
         const Id single_image_ptr_type =
             ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
         image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});

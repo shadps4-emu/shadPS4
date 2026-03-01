@@ -682,14 +682,18 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             continue;
         }
 
-        const bool needs_mips_storage_fallback = image_desc.is_mip_storage_fallback;
+        const Shader::MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
         const u32 num_bindings = image_desc.NumBindings(stage);
 
         for (auto i = 0; i < num_bindings; i++) {
             auto& [image_id, desc] = image_bindings.emplace_back(
                 std::piecewise_construct, std::tuple{}, std::tuple{tsharp, image_desc});
 
-            if (needs_mips_storage_fallback) {
+            if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
+                ASSERT(num_bindings == 1);
+                desc.view_info.range.base.level += image_desc.constant_mip_index;
+                desc.view_info.range.extent.levels = 1;
+            } else if (mip_fallback_mode == Shader::MipStorageFallbackMode::DynamicIndex) {
                 desc.view_info.range.base.level += i;
                 desc.view_info.range.extent.levels = 1;
             }

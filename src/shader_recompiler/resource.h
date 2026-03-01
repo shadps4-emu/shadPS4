@@ -71,6 +71,8 @@ struct BufferResource {
 };
 using BufferResourceList = boost::container::static_vector<BufferResource, NUM_BUFFERS>;
 
+enum class MipStorageFallbackMode : u32 { None, DynamicIndex, ConstantIndex };
+
 struct ImageResource {
     u32 sharp_idx;
     bool is_depth{};
@@ -78,7 +80,8 @@ struct ImageResource {
     bool is_array{};
     bool is_written{};
     bool is_r128{};
-    bool is_mip_storage_fallback{};
+    MipStorageFallbackMode mip_fallback_mode{};
+    u32 constant_mip_index{};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         AmdGpu::Image image{};
@@ -105,7 +108,9 @@ struct ImageResource {
 
     u32 NumBindings(const auto& info) const {
         const AmdGpu::Image tsharp = GetSharp(info);
-        return is_mip_storage_fallback ? (tsharp.last_level - tsharp.base_level + 1) : 1;
+        return (mip_fallback_mode == MipStorageFallbackMode::DynamicIndex)
+                   ? (tsharp.last_level - tsharp.base_level + 1)
+                   : 1;
     }
 };
 using ImageResourceList = boost::container::static_vector<ImageResource, NUM_IMAGES>;

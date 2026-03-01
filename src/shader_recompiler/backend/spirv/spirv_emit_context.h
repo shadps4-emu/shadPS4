@@ -297,7 +297,7 @@ public:
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
-        bool is_mip_storage_fallback = false;
+        MipStorageFallbackMode mip_fallback_mode{};
     };
 
     enum class PointerType : u32 {

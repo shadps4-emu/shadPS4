@@ -961,14 +961,14 @@ void EmitContext::DefineImagesAndSamplers() {
         const auto nfmt = sharp.GetNumberFmt();
         const bool is_integer = AmdGpu::IsInteger(nfmt);
         const bool is_storage = image_desc.is_written;
-        const bool is_mip_storage_fallback = image_desc.is_mip_storage_fallback;
+        const MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
         const VectorIds& data_types = GetAttributeType(*this, nfmt);
         const Id sampled_type = data_types[1];
         const Id image_type{ImageType(*this, image_desc, sampled_type)};
 
         const u32 num_bindings = image_desc.NumBindings(info);
         Id pointee_type = image_type;
-        if (is_mip_storage_fallback) {
+        if (mip_fallback_mode == MipStorageFallbackMode::DynamicIndex) {
             pointee_type = TypeArray(pointee_type, ConstU32(num_bindings));
         }
 
@@ -987,7 +987,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
-            .is_mip_storage_fallback = is_mip_storage_fallback,
+            .mip_fallback_mode = mip_fallback_mode,
         });
         interfaces.push_back(id);
     }
