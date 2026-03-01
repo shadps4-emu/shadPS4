@@ -233,18 +233,11 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
         if (ctx.profile.supports_image_load_store_lod) {
             operands.Add(spv::ImageOperandsMask::Lod, lod);
         } else if (Sirit::ValidId(lod)) {
-            UNREACHABLE_MSG("Image read with LOD TODO");
-#if 0
-            LOG_ERROR(Render, "Fallback for ImageRead with LOD"); // TODO warn
+            LOG_WARNING(Render, "Fallback for ImageRead with LOD");
             ASSERT(texture.is_mip_storage_fallback);
             const Id single_image_ptr_type =
                 ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
-            // We bind images for [base_level, last_level] and ignore those before base_level
-            const Id active_mip_idx =
-                ctx.OpISub(ctx.U32[1], lod, ctx.ConstU32(texture.base_level_for_mip_fallback));
-            image_ptr =
-                ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{active_mip_idx});
-#endif
+            image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
         }
         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
         texel = ctx.OpImageRead(color_type, image, coords, operands.mask, operands.operands);
@@ -262,14 +255,11 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     if (ctx.profile.supports_image_load_store_lod) {
         operands.Add(spv::ImageOperandsMask::Lod, lod);
     } else if (Sirit::ValidId(lod)) {
-        LOG_WARNING(Render, "Fallback for ImageWrite with LOD"); // TODO warn
+        LOG_WARNING(Render, "Fallback for ImageWrite with LOD");
         ASSERT(texture.is_mip_storage_fallback);
         const Id single_image_ptr_type =
             ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
-        // We bind images for [base_level, last_level] and ignore those before base_level
-        const Id active_mip_idx =
-            ctx.OpISub(ctx.U32[1], lod, ctx.ConstU32(texture.base_level_for_mip_fallback));
-        image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{active_mip_idx});
+        image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
     }
     const Id image = ctx.OpLoad(texture.image_type, image_ptr);
     const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
