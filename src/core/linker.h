@@ -124,9 +124,17 @@ public:
         }
     }
 
+    void LoadLibcInternal() {
+        for (auto& module : m_modules) {
+            if (module->name.contains("libSceLibcInternal")) {
+                module->Start(0, nullptr, nullptr);
+            }
+        }
+    }
+
     void LoadSharedLibraries() {
         for (auto& module : m_modules) {
-            if (module->IsSharedLib()) {
+            if (module->IsSharedLib() && !module->name.contains("libSceLibcInternal")) {
                 module->Start(0, nullptr, nullptr);
             }
         }

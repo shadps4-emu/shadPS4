@@ -172,12 +172,14 @@ void Linker::Execute(const std::vector<std::string>& args) {
             ipc.WaitForStart();
         }
 
-        LoadSharedLibraries();
+        LoadLibcInternal();
 
         if (malloc_init != nullptr) {
             // Call _malloc_init
             malloc_init();
         }
+
+        LoadSharedLibraries();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
         // Some games fail without accurately emulating this behavior.
