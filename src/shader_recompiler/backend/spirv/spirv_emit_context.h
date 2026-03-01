@@ -293,11 +293,12 @@ public:
         const VectorIds* data_types;
         Id id;
         Id sampled_type;
-        Id pointer_type;
         Id image_type;
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
+        bool is_mip_storage_fallback = false;
+        u32 base_level_for_mip_fallback = 0;
     };
 
     enum class PointerType : u32 {

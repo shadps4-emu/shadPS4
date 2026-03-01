@@ -78,6 +78,7 @@ struct ImageResource {
     bool is_array{};
     bool is_written{};
     bool is_r128{};
+    bool is_mip_storage_fallback{};
 
     constexpr AmdGpu::Image GetSharp(const auto& info) const noexcept {
         AmdGpu::Image image{};
@@ -100,6 +101,11 @@ struct ImageResource {
             }
         }
         return image;
+    }
+
+    u32 NumBindings(const auto& info) const {
+        const AmdGpu::Image tsharp = GetSharp(info);
+        return is_mip_storage_fallback ? (tsharp.last_level - tsharp.base_level + 1) : 1;
     }
 };
 using ImageResourceList = boost::container::static_vector<ImageResource, NUM_IMAGES>;

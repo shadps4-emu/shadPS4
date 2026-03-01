@@ -52,6 +52,10 @@ struct ImageSpecialization {
     bool is_srgb = false;
     AmdGpu::CompMapping dst_select{};
     AmdGpu::NumberConversion num_conversion{};
+    // FIXME any pipeline cache changes needed?
+    u32 num_bindings = 0;
+    // Could pass as userdata instead?
+    u32 base_level_for_mip_fallback = 0;
 
     bool operator==(const ImageSpecialization&) const = default;
 };
@@ -133,7 +137,7 @@ struct StageSpecialization {
                          }
                      });
         ForEachSharp(binding, images, info->images,
-                     [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
+                     [&](auto& spec, const auto& desc, AmdGpu::Image sharp) {
                          spec.type = sharp.GetViewType(desc.is_array);
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.is_written;
@@ -144,6 +148,9 @@ struct StageSpecialization {
                              spec.is_srgb = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Srgb;
                          }
                          spec.num_conversion = sharp.GetNumberConversion();
+                         spec.num_bindings = desc.NumBindings(*info);
+                         spec.base_level_for_mip_fallback =
+                             desc.is_mip_storage_fallback ? sharp.base_level : 0;
                      });
         ForEachSharp(binding, fmasks, info->fmasks,
                      [](auto& spec, const auto& desc, AmdGpu::Image sharp) {
