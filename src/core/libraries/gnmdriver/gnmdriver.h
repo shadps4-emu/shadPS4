@@ -121,7 +121,7 @@ s32 PS4_SYSV_ABI sceGnmInsertWaitFlipDone(u32* cmdbuf, u32 size, s32 vo_handle, 
 int PS4_SYSV_ABI sceGnmIsCoredumpValid();
 bool PS4_SYSV_ABI sceGnmIsUserPaEnabled();
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex();
-int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask();
+s32 PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask(s64, s32 logical_cu_mask);
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical();
 int PS4_SYSV_ABI sceGnmMapComputeQueue(u32 pipe_id, u32 queue_id, VAddr ring_base_addr,
                                        u32 ring_size_dw, u32* read_ptr_addr);

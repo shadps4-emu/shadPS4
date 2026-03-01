@@ -159,6 +159,7 @@ static ConfigEntry<bool> isMotionControlsEnabled(true);
 static ConfigEntry<bool> useUnifiedInputConfig(true);
 static ConfigEntry<string> defaultControllerID("");
 static ConfigEntry<bool> backgroundControllerInput(false);
+static ConfigEntry<int> cameraId(-1);
 
 // Audio
 static ConfigEntry<string> micDevice("Default Device");
@@ -362,6 +363,13 @@ std::string getMainOutputDevice() {
 
 std::string getPadSpkOutputDevice() {
     return padSpkOutputDevice.get();
+}
+
+void SetCameraId(s32 id, bool is_game_specific) {
+    cameraId.set(id);
+}
+s32 GetCameraId() {
+    return cameraId.get();
 }
 
 double getTrophyNotificationDuration() {
@@ -924,6 +932,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         useUnifiedInputConfig.setFromToml(input, "useUnifiedInputConfig", is_game_specific);
         backgroundControllerInput.setFromToml(input, "backgroundControllerInput", is_game_specific);
         usbDeviceBackend.setFromToml(input, "usbDeviceBackend", is_game_specific);
+        cameraId.setFromToml(input, "cameraId", is_game_specific);
     }
 
     if (data.contains("Audio")) {
@@ -1110,6 +1119,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     backgroundControllerInput.setTomlValue(data, "Input", "backgroundControllerInput",
                                            is_game_specific);
     usbDeviceBackend.setTomlValue(data, "Input", "usbDeviceBackend", is_game_specific);
+    cameraId.setTomlValue(data, "Input", "cameraId", is_game_specific);
 
     micDevice.setTomlValue(data, "Audio", "micDevice", is_game_specific);
     mainOutputDevice.setTomlValue(data, "Audio", "mainOutputDevice", is_game_specific);
@@ -1239,6 +1249,7 @@ void setDefaultValues(bool is_game_specific) {
     userName.set("shadPS4", is_game_specific);
     isShowSplash.set(false, is_game_specific);
     isSideTrophy.set("right", is_game_specific);
+    cameraId.set(-1, is_game_specific);
 
     // GS - Input
     cursorState.set(HideCursorState::Idle, is_game_specific);

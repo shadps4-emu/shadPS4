@@ -168,8 +168,19 @@ int PS4_SYSV_ABI scePadGetIdleCount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetInfo() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+int PS4_SYSV_ABI scePadGetInfo(u32* data) {
+    LOG_WARNING(Lib_Pad, "(DUMMY) called");
+    if (!data) {
+        return ORBIS_PAD_ERROR_INVALID_ARG;
+    }
+    data[0] = 0x1;        // index but starting from one?
+    data[1] = 0x0;        // index?
+    data[2] = 1;          // pad handle
+    data[3] = 0x0101;     // ???
+    data[4] = 0x0;        // ?
+    data[5] = 0x0;        // ?
+    data[6] = 0x00ff0000; // colour(?)
+    data[7] = 0x0;        // ?
     return ORBIS_OK;
 }
 
@@ -555,8 +566,10 @@ int PS4_SYSV_ABI scePadSetLightBarBlinking() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadSetLightBarForTracker() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
+int PS4_SYSV_ABI scePadSetLightBarForTracker(s32 handle, const OrbisPadLightBarParam* pParam) {
+    LOG_INFO(Lib_Pad, "called, r: {} g: {} b: {}", pParam->r, pParam->g, pParam->b);
+    auto* controller = Common::Singleton<GameController>::Instance();
+    controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
     return ORBIS_OK;
 }
 
