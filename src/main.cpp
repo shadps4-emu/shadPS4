@@ -12,7 +12,7 @@
 #include <core/emulator_state.h>
 #include "common/config.h"
 #include "common/key_manager.h"
-#include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
@@ -28,6 +28,8 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    Common::Log::Setup(argc, argv);
 
     IPC::Instance().Init();
 
@@ -65,7 +67,6 @@ int main(int argc, char* argv[]) {
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
-    bool logAppend = false;
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -88,7 +89,6 @@ int main(int argc, char* argv[]) {
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
@@ -170,9 +170,6 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         Config::setConfigMode(Config::ConfigMode::Global);
 
-    if (logAppend)
-        Common::Log::SetAppend();
-
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
@@ -198,6 +195,8 @@ int main(int argc, char* argv[]) {
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(ebootPath, gameArgs, overrideRoot);
+
+    spdlog::shutdown();
 
     return 0;
 }

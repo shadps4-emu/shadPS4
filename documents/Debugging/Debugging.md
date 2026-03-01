@@ -65,16 +65,18 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
     - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `sync` and send that log as well.
   - `logFilter`: Sets the logging category for various logging classes.
-    - Format: `<class>:<level> ...`
-    - Multiple classes can be set by separating them with a space. (example: `Render:Warning Debug:Critical Lib.Pad:Error`)
+    - Format: `<class>=<level>,...`
+    - Multiple classes can be set by separating them with a comma. (example: `Render=warning,Debug=critical,Lib.Pad=error`)
     - Sub-classes can be specified in the same format as seen in the console/log (such as `Core.Linker`).  
-    - All classes and sub-classes can be set by specifying a `*` symbol. (example: `Kernel.*:Critical`)
-    - Valid log levels: `Trace, Debug, Info, Warning, Error, Critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
+    - Valid log levels: `trace, debug, info, warning, error, critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
     - Examples:
-      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
-      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Critical Render.Vulkan:Info`
+      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad=critical` to only log critical-level messages.
+      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `off,Render.Vulkan=info` (if you want critical at least `critical,Render.Vulkan=info`)
+    - this option is evaluated after the environment variable `SPDLOG_LEVEL` but before the command line argument (their syntax are `SPDLOG_LEVEL="..."`, `"SPDLOG_LEVEL=..."` respectively)
   - `isIdenticalLogGrouped`: Group same logs in one line with a counter (`true`/`false`)
     - By default, the emulator will not rewrite the same line, and instead add a counter.
+  - `logAppend`: Append log to the existing file (`true`/`false`)
+      - By default, the emulator will overwrite the log file.
 
    - `Fullscreen`: Display the game in a full screen borderless window.
      
