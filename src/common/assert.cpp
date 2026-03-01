@@ -5,8 +5,6 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 
-#include <spdlog/spdlog.h>
-
 #if defined(ARCH_X86_64)
 #define Crash() __asm__ __volatile__("int $3")
 #elif defined(ARCH_ARM64)
@@ -16,12 +14,12 @@
 #endif
 
 void assert_fail_impl() {
-    spdlog::drop_all();
+    Common::Log::Shutdown();
     Crash();
 }
 
 [[noreturn]] void unreachable_impl() {
-    spdlog::drop_all();
+    Common::Log::Shutdown();
     Crash();
     throw std::runtime_error("Unreachable code");
 }

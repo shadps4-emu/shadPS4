@@ -22,7 +22,6 @@
 #include "common/thread.h"
 
 namespace Common::Log {
-
 struct thread_name_formatter : spdlog::formatter {
     ~thread_name_formatter() override = default;
 
@@ -69,6 +68,13 @@ extern std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> g_console_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_shad_file_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_game_file_sink;
 
+static void Shutdown() {
+    g_game_file_sink.reset();
+    g_shad_file_sink.reset();
+    g_console_sink.reset();
+    spdlog::shutdown();
+}
+
 static void Setup(int argc, char* argv[]) {
     spdlog::cfg::load_env_levels();
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
@@ -76,7 +82,7 @@ static void Setup(int argc, char* argv[]) {
 
     spdlog::init_thread_pool(8192, 1);
 
-    std::at_quick_exit(spdlog::shutdown);
+    std::at_quick_exit(Shutdown);
 
     g_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
