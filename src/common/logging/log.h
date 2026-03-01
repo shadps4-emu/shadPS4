@@ -5,12 +5,14 @@
 
 #include <algorithm>
 #include <array>
+#include <vector>
 #include <spdlog/async.h>
 #include <spdlog/async_logger.h>
 #include <spdlog/cfg/argv.h>
 #include <spdlog/cfg/env.h>
 #include <spdlog/details/fmt_helper.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/dup_filter_sink.h>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -270,6 +272,8 @@ static constexpr auto POSITON_CONSOLE_LOG = 0;
 static constexpr auto POSITON_SHAD_LOG = 1;
 static constexpr auto POSITON_GAME_LOG = 2;
 
+static constexpr auto POSITON_DUPLICATE_SINK = 0;
+
 static void Setup(int argc, char* argv[]) {
     spdlog::cfg::load_env_levels();
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
@@ -283,22 +287,42 @@ static void Setup(int argc, char* argv[]) {
         (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
         !Config::isLogAppend());
 
+    std::shared_ptr<spdlog::sinks::dup_filter_sink_mt> dup_filter;
+
+    if (Config::groupIdenticalLogs()) {
+        dup_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
+            /*TODO config*/ std::chrono::seconds(5));
+        dup_filter->set_sinks(
+            {console_sink, file_sink,
+             std::make_shared<
+                 spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */});
+    }
+
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        spdlog::initialize_logger(
-            Config::getLogType() == "sync"
-                ? std::make_shared<spdlog::logger>(
-                      name,
-                      std::initializer_list<spdlog::sink_ptr>{
-                          console_sink, file_sink,
-                          std::make_shared<
-                              spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */})
-                : std::make_shared<spdlog::async_logger>(
-                      name,
-                      std::initializer_list<spdlog::sink_ptr>{
-                          console_sink, file_sink,
-                          std::make_shared<
-                              spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */},
-                      spdlog::thread_pool()));
+        if (Config::groupIdenticalLogs()) {
+            spdlog::initialize_logger(Config::getLogType() == "sync"
+                                          ? std::make_shared<spdlog::logger>(name, dup_filter)
+                                          : std::make_shared<spdlog::async_logger>(
+                                                name, dup_filter, spdlog::thread_pool()));
+        } else {
+            spdlog::initialize_logger(
+                Config::getLogType() == "sync"
+                    ? std::make_shared<spdlog::logger>(
+                          name,
+                          std::initializer_list<spdlog::sink_ptr>{
+                              console_sink, file_sink,
+                              std::make_shared<
+                                  spdlog::sinks::
+                                      null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */})
+                    : std::make_shared<spdlog::async_logger>(
+                          name,
+                          std::initializer_list<spdlog::sink_ptr>{
+                              console_sink, file_sink,
+                              std::make_shared<
+                                  spdlog::sinks::
+                                      null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */},
+                          spdlog::thread_pool()));
+        }
     }
 
     spdlog::set_formatter(std::make_unique<thread_name_formatter>());
@@ -310,18 +334,32 @@ static void Redirect(const std::string& name) {
     file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        if (spdlog::get(name)->sinks().size() == 3) {
-            spdlog::get(name)->sinks()[POSITON_GAME_LOG] = file_sink;
-            spdlog::get(name)->sinks()[POSITON_SHAD_LOG]->set_level(spdlog::level::off);
+        auto l = spdlog::get(name);
+        auto& sinks = Config::groupIdenticalLogs()
+                          ? std::dynamic_pointer_cast<spdlog::sinks::dup_filter_sink_mt>(
+                                l->sinks()[POSITON_DUPLICATE_SINK])
+                                ->sinks()
+                          : l->sinks();
+
+        if (sinks.size() == 3) {
+            sinks[POSITON_GAME_LOG] = file_sink;
+            sinks[POSITON_SHAD_LOG]->set_level(spdlog::level::off);
         }
     }
 }
 
 static void StopRedirection() {
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        if (spdlog::get(name)->sinks().size() == 3) {
-            spdlog::get(name)->sinks()[POSITON_GAME_LOG]->set_level(spdlog::level::off);
-            spdlog::get(name)->sinks()[POSITON_SHAD_LOG]->set_level(spdlog::level::trace);
+        auto l = spdlog::get(name);
+        auto& sinks = Config::groupIdenticalLogs()
+                          ? std::dynamic_pointer_cast<spdlog::sinks::dup_filter_sink_mt>(
+                                l->sinks()[POSITON_DUPLICATE_SINK])
+                                ->sinks()
+                          : l->sinks();
+
+        if (sinks.size() == 3) {
+            sinks[POSITON_GAME_LOG]->set_level(spdlog::level::off);
+            sinks[POSITON_SHAD_LOG]->set_level(spdlog::level::trace);
         }
     }
 }
@@ -335,7 +373,7 @@ static void StopRedirection() {
 #define LOG_TRACE(log_class, ...)                                                                  \
     SPDLOG_LOGGER_TRACE(spdlog::get(Common::Log::log_class), __VA_ARGS__)
 #else
-#define LOG_TRACE(log_class, fmt, ...) (void(0))
+#define LOG_TRACE(log_class, ...) (void(0))
 #endif
 
 #define LOG_DEBUG(log_class, ...)                                                                  \
