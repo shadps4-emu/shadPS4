@@ -691,7 +691,8 @@ set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/widget/text_editor.h
 )
 
-set(COMMON src/common/logging/log.h
+set(COMMON src/common/logging/log.cpp
+           src/common/logging/log.h
            src/common/aes.h
            src/common/alignment.h
            src/common/arch.h
