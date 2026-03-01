@@ -172,7 +172,7 @@ static ConfigEntry<u32> internalScreenWidth(1280);
 static ConfigEntry<u32> internalScreenHeight(720);
 static ConfigEntry<bool> isNullGpu(false);
 static ConfigEntry<bool> shouldCopyGPUBuffers(false);
-static ConfigEntry<bool> readbacksEnabled(false);
+static ConfigEntry<int> readbacksMode(GpuReadbacksMode::Disabled);
 static ConfigEntry<bool> readbackLinearImagesEnabled(false);
 static ConfigEntry<bool> directMemoryAccessEnabled(false);
 static ConfigEntry<bool> shouldDumpShaders(false);
@@ -444,8 +444,8 @@ bool copyGPUCmdBuffers() {
     return shouldCopyGPUBuffers.get();
 }
 
-bool readbacks() {
-    return readbacksEnabled.get();
+int getReadbacksMode() {
+    return readbacksMode.get();
 }
 
 bool readbackLinearImages() {
@@ -595,8 +595,8 @@ void setCopyGPUCmdBuffers(bool enable, bool is_game_specific) {
     shouldCopyGPUBuffers.set(enable, is_game_specific);
 }
 
-void setReadbacks(bool enable, bool is_game_specific) {
-    readbacksEnabled.set(enable, is_game_specific);
+void setReadbacksMode(int mode, bool is_game_specific) {
+    readbacksMode.set(mode, is_game_specific);
 }
 
 void setReadbackLinearImages(bool enable, bool is_game_specific) {
@@ -952,7 +952,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         internalScreenHeight.setFromToml(gpu, "internalScreenHeight", is_game_specific);
         isNullGpu.setFromToml(gpu, "nullGpu", is_game_specific);
         shouldCopyGPUBuffers.setFromToml(gpu, "copyGPUBuffers", is_game_specific);
-        readbacksEnabled.setFromToml(gpu, "readbacks", is_game_specific);
+        readbacksMode.setFromToml(gpu, "readbacksMode", is_game_specific);
         readbackLinearImagesEnabled.setFromToml(gpu, "readbackLinearImages", is_game_specific);
         directMemoryAccessEnabled.setFromToml(gpu, "directMemoryAccess", is_game_specific);
         shouldDumpShaders.setFromToml(gpu, "dumpShaders", is_game_specific);
@@ -1128,7 +1128,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     windowHeight.setTomlValue(data, "GPU", "screenHeight", is_game_specific);
     isNullGpu.setTomlValue(data, "GPU", "nullGpu", is_game_specific);
     shouldCopyGPUBuffers.setTomlValue(data, "GPU", "copyGPUBuffers", is_game_specific);
-    readbacksEnabled.setTomlValue(data, "GPU", "readbacks", is_game_specific);
+    readbacksMode.setTomlValue(data, "GPU", "readbacksMode", is_game_specific);
     readbackLinearImagesEnabled.setTomlValue(data, "GPU", "readbackLinearImages", is_game_specific);
     shouldDumpShaders.setTomlValue(data, "GPU", "dumpShaders", is_game_specific);
     vblankFrequency.setTomlValue(data, "GPU", "vblankFrequency", is_game_specific);
@@ -1225,7 +1225,7 @@ void setDefaultValues(bool is_game_specific) {
     // Entries with game-specific settings that are in the game-specific setings GUI but not in
     // the global settings GUI
     if (is_game_specific) {
-        readbacksEnabled.set(false, is_game_specific);
+        readbacksMode.set(GpuReadbacksMode::Disabled, is_game_specific);
         readbackLinearImagesEnabled.set(false, is_game_specific);
         isNeo.set(false, is_game_specific);
         isDevKit.set(false, is_game_specific);

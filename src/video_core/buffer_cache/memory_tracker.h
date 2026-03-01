@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <deque>
+#include <mutex>
 #include <type_traits>
 #include <vector>
+
 #include "common/debug.h"
 #include "common/types.h"
 #include "video_core/buffer_cache/region_manager.h"
@@ -71,7 +73,7 @@ public:
                     // modified. If we need to flush the flush function is going to perform CPU
                     // state change.
                     std::scoped_lock lk{manager->lock};
-                    if (Config::readbacks() &&
+                    if (Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled &&
                         manager->template IsRegionModified<Type::GPU>(offset, size)) {
                         return true;
                     }
