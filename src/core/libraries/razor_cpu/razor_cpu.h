@@ -13,5 +13,8 @@ class SymbolsResolver;
 }
 
 namespace Libraries::RazorCpu {
+void PS4_SYSV_ABI sceRazorCpuDisableFiberUserMarkers();
+s32 PS4_SYSV_ABI sceRazorCpuFiberLogNameChange();
+s32 PS4_SYSV_ABI sceRazorCpuFiberSwitch();
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::RazorCpu

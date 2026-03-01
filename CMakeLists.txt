@@ -571,6 +571,9 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
 )
 
 set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if(APPLE)
+  set_source_files_properties(src/core/libraries/fiber/fiber.cpp PROPERTIES COMPILE_OPTIONS -fno-lto)
+endif()
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h

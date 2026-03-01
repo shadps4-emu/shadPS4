@@ -352,6 +352,8 @@ using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
 
+PthreadT PS4_SYSV_ABI posix_pthread_self();
+
 void RegisterMutex(Core::Loader::SymbolsResolver* sym);
 void RegisterCond(Core::Loader::SymbolsResolver* sym);
 void RegisterRwlock(Core::Loader::SymbolsResolver* sym);
