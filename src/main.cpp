@@ -29,15 +29,15 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(user_dir / "config.toml");
+
     Common::Log::Setup(argc, argv);
 
     IPC::Instance().Init();
 
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
-
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
 
     // ---- Trophy key migration ----
     auto key_manager = KeyManager::GetInstance();
