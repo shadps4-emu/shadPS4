@@ -235,12 +235,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
+    LOG_INFO(Config, "Log type: {}", Config::getLogType());
+    LOG_INFO(Config, "Log skip: {}", Config::groupIdenticalLogs());
+    LOG_INFO(Config, "Log filter: {}", Config::getLogFilter());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU readbacksMode: {}", Config::getReadbacksMode());
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
