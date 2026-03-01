@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <chrono>
 #include <cstring>
 #include "common/assert.h"
 #include "core/libraries/kernel/kernel.h"
@@ -116,32 +118,85 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     curthread->mutex_obj = mp;
     SleepqAdd(this, curthread);
 
+    const bool is_reltime = abstime == THR_RELTIME;
+    const auto reltime_deadline =
+        is_reltime ? std::chrono::steady_clock::now() + std::chrono::microseconds(usec)
+                   : std::chrono::steady_clock::time_point{};
+
     int error = 0;
+    u32 wait_loops = 0;
     for (;;) {
+        ++wait_loops;
         curthread->ClearWake();
         SleepqUnlock(this);
 
         //_thr_cancel_enter2(curthread, 0);
-        error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
+        if (!is_reltime) {
+            error = curthread->Sleep(abstime, usec) ? 0 : POSIX_ETIMEDOUT;
+        } else {
+            const auto now = std::chrono::steady_clock::now();
+            if (now >= reltime_deadline) {
+                error = POSIX_ETIMEDOUT;
+            } else {
+                const auto remaining_us =
+                    std::chrono::duration_cast<std::chrono::microseconds>(reltime_deadline - now);
+                error = curthread->Sleep(abstime, static_cast<u64>(remaining_us.count()))
+                            ? 0
+                            : POSIX_ETIMEDOUT;
+            }
+        }
         //_thr_cancel_leave(curthread, 0);
 
         SleepqLock(this);
         if (curthread->wchan == nullptr) {
+            if (error == POSIX_ETIMEDOUT) {
+                LOG_WARNING(Lib_Kernel,
+                            "PthreadCond::Wait timeout-race on cond '{}' thread '{}' loop={} "
+                            "(timed out but dequeued before recheck)",
+                            name, curthread->name, wait_loops);
+            }
             error = 0;
             break;
         } else if (curthread->ShouldCancel()) {
-            SleepQueue* sq = SleepqLookup(this);
-            has_user_waiters = SleepqRemove(sq, curthread);
+            if (SleepQueue* sq = SleepqLookup(this); sq != nullptr) {
+                has_user_waiters = SleepqRemove(sq, curthread);
+            } else {
+                has_user_waiters = false;
+                LOG_WARNING(Lib_Kernel,
+                            "PthreadCond::Wait cancel path missing sleep queue for cond '{}' "
+                            "thread '{}'",
+                            name, curthread->name);
+            }
             SleepqUnlock(this);
             curthread->mutex_obj = nullptr;
             mp->CvLock(recurse);
             return 0;
         } else if (error == POSIX_ETIMEDOUT) {
-            SleepQueue* sq = SleepqLookup(this);
-            has_user_waiters = SleepqRemove(sq, curthread);
+            if (SleepQueue* sq = SleepqLookup(this); sq != nullptr) {
+                has_user_waiters = SleepqRemove(sq, curthread);
+            } else {
+                has_user_waiters = false;
+                LOG_WARNING(Lib_Kernel,
+                            "PthreadCond::Wait timeout path missing sleep queue for cond '{}' "
+                            "thread '{}'",
+                            name, curthread->name);
+            }
             break;
         }
-        UNREACHABLE();
+        bool in_queue = false;
+        size_t queue_size = 0;
+        if (SleepQueue* sq = SleepqLookup(this); sq != nullptr) {
+            in_queue = std::find(sq->sq_blocked.begin(), sq->sq_blocked.end(), curthread) !=
+                       sq->sq_blocked.end();
+            queue_size = std::distance(sq->sq_blocked.begin(), sq->sq_blocked.end());
+        }
+        LOG_WARNING(
+            Lib_Kernel,
+            "PthreadCond::Wait stray wake on cond '{}' thread '{}' loop={} wchan={:#x} error={} "
+            "in_queue={} queue_size={} has_user_waiters={}",
+            name, curthread->name, wait_loops,
+            static_cast<u64>(reinterpret_cast<uintptr_t>(curthread->wchan)), error, in_queue,
+            queue_size, has_user_waiters);
     }
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
@@ -187,24 +242,59 @@ int PthreadCond::Signal(Pthread* thread) {
         return 0;
     }
 
-    Pthread* td = thread ? thread : sq->sq_blocked.front();
+    if (sq->sq_blocked.empty()) [[unlikely]] {
+        has_user_waiters = false;
+        SleepqUnlock(this);
+        return 0;
+    }
+
+    Pthread* td{};
+    if (thread != nullptr) {
+        const auto it = std::find(sq->sq_blocked.begin(), sq->sq_blocked.end(), thread);
+        if (it == sq->sq_blocked.end()) {
+            LOG_WARNING(Lib_Kernel,
+                        "PthreadCond::Signal target thread '{}' is not waiting on cond '{}'",
+                        thread->name, name);
+            SleepqUnlock(this);
+            return 0;
+        }
+        td = *it;
+    } else {
+        td = sq->sq_blocked.front();
+    }
 
     PthreadMutex* mp = td->mutex_obj;
+    const void* wait_wchan = td->wchan;
     has_user_waiters = SleepqRemove(sq, td);
 
-    BinarySemaphore* waddr = nullptr;
-    if (mp->m_owner == curthread) {
+    if (mp == nullptr) [[unlikely]] {
+        LOG_WARNING(Lib_Kernel, "PthreadCond::Signal found null mutex for thread '{}' on cond '{}'",
+                    td->name, name);
+    }
+
+    BinarySemaphore* waddr = &td->wake_sema;
+    if (mp != nullptr && curthread != nullptr && mp->m_owner == curthread) {
         if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
+            LOG_WARNING(Lib_Kernel,
+                        "PthreadCond::Signal deferred waiter queue full for thread '{}' (count={})",
+                        curthread->name, curthread->nwaiter_defer);
             curthread->WakeAll();
         }
         curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
         mp->m_flags |= PthreadMutexFlags::Deferred;
-    } else {
-        waddr = &td->wake_sema;
+        LOG_DEBUG(
+            Lib_Kernel,
+            "PthreadCond::Signal deferred wake cond '{}' owner '{}' target '{}' wait_wchan={:#x}",
+            name, curthread->name, td->name,
+            static_cast<u64>(reinterpret_cast<uintptr_t>(wait_wchan)));
+        waddr = nullptr;
     }
 
     SleepqUnlock(this);
     if (waddr != nullptr) {
+        LOG_DEBUG(Lib_Kernel,
+                  "PthreadCond::Signal direct wake cond '{}' target '{}' wait_wchan={:#x}", name,
+                  td->name, static_cast<u64>(reinterpret_cast<uintptr_t>(wait_wchan)));
         waddr->release();
     }
     return 0;
@@ -212,13 +302,16 @@ int PthreadCond::Signal(Pthread* thread) {
 
 struct BroadcastArg {
     Pthread* curthread;
+    const char* cond_name;
     BinarySemaphore* waddrs[Pthread::MaxDeferWaiters];
+    const char* waiter_names[Pthread::MaxDeferWaiters];
     int count;
 };
 
 int PthreadCond::Broadcast() {
     BroadcastArg ba;
     ba.curthread = g_curthread;
+    ba.cond_name = name.c_str();
     ba.count = 0;
 
     const auto drop_cb = [](Pthread* td, void* arg) {
@@ -226,20 +319,41 @@ int PthreadCond::Broadcast() {
         Pthread* curthread = ba2->curthread;
         PthreadMutex* mp = td->mutex_obj;
 
-        if (mp->m_owner == curthread) {
+        if (mp != nullptr && curthread != nullptr && mp->m_owner == curthread) {
             if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
+                LOG_WARNING(
+                    Lib_Kernel,
+                    "PthreadCond::Broadcast deferred waiter queue full for thread '{}' (count={})",
+                    curthread->name, curthread->nwaiter_defer);
                 curthread->WakeAll();
             }
             curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
             mp->m_flags |= PthreadMutexFlags::Deferred;
+            LOG_DEBUG(Lib_Kernel,
+                      "PthreadCond::Broadcast deferred wake cond '{}' owner '{}' target '{}' "
+                      "wait_wchan={:#x}",
+                      ba2->cond_name, curthread->name, td->name,
+                      static_cast<u64>(reinterpret_cast<uintptr_t>(td->wchan)));
         } else {
+            if (mp == nullptr) [[unlikely]] {
+                LOG_WARNING(Lib_Kernel,
+                            "PthreadCond::Broadcast found null mutex for thread '{}' on cond '{}'",
+                            td->name, ba2->cond_name);
+            }
             if (ba2->count >= Pthread::MaxDeferWaiters) {
+                LOG_WARNING(Lib_Kernel,
+                            "PthreadCond::Broadcast direct wake queue full on cond '{}' (count={})",
+                            ba2->cond_name, ba2->count);
                 for (int i = 0; i < ba2->count; i++) {
+                    LOG_DEBUG(Lib_Kernel,
+                              "PthreadCond::Broadcast direct wake cond '{}' target '{}'",
+                              ba2->cond_name, ba2->waiter_names[i]);
                     ba2->waddrs[i]->release();
                 }
                 ba2->count = 0;
             }
             ba2->waddrs[ba2->count++] = &td->wake_sema;
+            ba2->waiter_names[ba2->count - 1] = td->name.c_str();
         }
     };
 
@@ -255,6 +369,8 @@ int PthreadCond::Broadcast() {
     SleepqUnlock(this);
 
     for (int i = 0; i < ba.count; i++) {
+        LOG_DEBUG(Lib_Kernel, "PthreadCond::Broadcast direct wake cond '{}' target '{}'",
+                  ba.cond_name, ba.waiter_names[i]);
         ba.waddrs[i]->release();
     }
     return 0;
