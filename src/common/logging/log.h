@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -274,6 +274,10 @@ static constexpr auto POSITON_GAME_LOG = 2;
 
 static constexpr auto POSITON_DUPLICATE_SINK = 0;
 
+extern std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> g_console_sink;
+extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_shad_file_sink;
+extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_game_file_sink;
+
 static void Setup(int argc, char* argv[]) {
     spdlog::cfg::load_env_levels();
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
@@ -281,9 +285,9 @@ static void Setup(int argc, char* argv[]) {
 
     std::at_quick_exit(spdlog::shutdown);
 
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    g_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+    g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
         !Config::isLogAppend());
 
@@ -293,7 +297,7 @@ static void Setup(int argc, char* argv[]) {
         dup_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
             /*TODO config*/ std::chrono::seconds(5));
         dup_filter->set_sinks(
-            {console_sink, file_sink,
+            {g_console_sink, g_shad_file_sink,
              std::make_shared<
                  spdlog::sinks::null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */});
     }
@@ -310,14 +314,14 @@ static void Setup(int argc, char* argv[]) {
                     ? std::make_shared<spdlog::logger>(
                           name,
                           std::initializer_list<spdlog::sink_ptr>{
-                              console_sink, file_sink,
+                              g_console_sink, g_shad_file_sink,
                               std::make_shared<
                                   spdlog::sinks::
                                       null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */})
                     : std::make_shared<spdlog::async_logger>(
                           name,
                           std::initializer_list<spdlog::sink_ptr>{
-                              console_sink, file_sink,
+                              g_console_sink, g_shad_file_sink,
                               std::make_shared<
                                   spdlog::sinks::
                                       null_sink_mt>() /*for POSITON_GAME_LOG id + ".log" */},
@@ -329,9 +333,9 @@ static void Setup(int argc, char* argv[]) {
 }
 
 static void Redirect(const std::string& name) {
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
+    g_game_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
-    file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
+    g_game_file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         auto l = spdlog::get(name);
@@ -342,26 +346,16 @@ static void Redirect(const std::string& name) {
                           : l->sinks();
 
         if (sinks.size() == 3) {
-            sinks[POSITON_GAME_LOG] = file_sink;
-            sinks[POSITON_SHAD_LOG]->set_level(spdlog::level::off);
+            sinks[POSITON_GAME_LOG] = g_game_file_sink;
         }
     }
+
+    g_shad_file_sink->set_level(spdlog::level::off);
 }
 
 static void StopRedirection() {
-    for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        auto l = spdlog::get(name);
-        auto& sinks = Config::groupIdenticalLogs()
-                          ? std::dynamic_pointer_cast<spdlog::sinks::dup_filter_sink_mt>(
-                                l->sinks()[POSITON_DUPLICATE_SINK])
-                                ->sinks()
-                          : l->sinks();
-
-        if (sinks.size() == 3) {
-            sinks[POSITON_GAME_LOG]->set_level(spdlog::level::off);
-            sinks[POSITON_SHAD_LOG]->set_level(spdlog::level::trace);
-        }
-    }
+    g_game_file_sink->set_level(spdlog::level::off);
+    g_shad_file_sink->set_level(spdlog::level::trace);
 }
 } // namespace Common::Log
 
