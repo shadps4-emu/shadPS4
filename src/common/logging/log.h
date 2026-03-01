@@ -280,7 +280,8 @@ static void Setup(int argc, char* argv[]) {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt", !Config::isLogAppend());
+        (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
+        !Config::isLogAppend());
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         spdlog::initialize_logger(
