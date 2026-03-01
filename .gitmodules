@@ -125,7 +125,6 @@
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadexternals/sdl3.git
-
 	branch = main
 [submodule "externals/cpp-httplib"]
 	path = externals/cpp-httplib
