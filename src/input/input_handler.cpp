@@ -338,7 +338,7 @@ std::optional<int> parseInt(const std::string& s) {
 
 void ParseInputConfig(const std::string game_id = "") {
     std::string game_id_or_default =
-        EmulatorSettings::GetInstance()->IsUseUnifiedInputConfig() ? "default" : game_id;
+        EmulatorSettings.IsUseUnifiedInputConfig() ? "default" : game_id;
     const auto config_file = GetInputConfigFile(game_id_or_default);
     const auto global_config_file = GetInputConfigFile("global");
 
@@ -767,13 +767,13 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             PushSDLEvent(SDL_EVENT_REMOVE_VIRTUAL_USER);
             break;
         case HOTKEY_VOLUME_UP:
-            EmulatorSettings::GetInstance()->SetVolumeSlider(
-                std::clamp(EmulatorSettings::GetInstance()->GetVolumeSlider() + 10, 0, 500));
+            EmulatorSettings.SetVolumeSlider(
+                std::clamp(EmulatorSettings.GetVolumeSlider() + 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_VOLUME_DOWN:
-            EmulatorSettings::GetInstance()->SetVolumeSlider(
-                std::clamp(EmulatorSettings::GetInstance()->GetVolumeSlider() - 10, 0, 500));
+            EmulatorSettings.SetVolumeSlider(
+                std::clamp(EmulatorSettings.GetVolumeSlider() - 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_QUIT:

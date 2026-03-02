@@ -29,7 +29,7 @@ void FrameGraph::DrawFrameGraph() {
         return;
     }
 
-    float target_dt = 1.0f / (float)EmulatorSettings::GetInstance()->GetVblankFrequency();
+    float target_dt = 1.0f / (float)EmulatorSettings.GetVblankFrequency();
     float cur_pos_x = pos.x + full_width;
     pos.y += FRAME_GRAPH_PADDING_Y;
     const float final_pos_y = pos.y + FRAME_GRAPH_HEIGHT;

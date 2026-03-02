@@ -15,6 +15,8 @@
 #include "common/types.h"
 #include "core/user_manager.h"
 
+#define EmulatorSettings (*EmulatorSettingsImpl::GetInstance())
+
 enum HideCursorState : int {
     Never,
     Idle,
@@ -393,13 +395,13 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user)
 // -------------------------------
 // Main manager
 // -------------------------------
-class EmulatorSettings {
+class EmulatorSettingsImpl {
 public:
-    EmulatorSettings();
-    ~EmulatorSettings();
+    EmulatorSettingsImpl();
+    ~EmulatorSettingsImpl();
 
-    static std::shared_ptr<EmulatorSettings> GetInstance();
-    static void SetInstance(std::shared_ptr<EmulatorSettings> instance);
+    static std::shared_ptr<EmulatorSettingsImpl> GetInstance();
+    static void SetInstance(std::shared_ptr<EmulatorSettingsImpl> instance);
 
     bool Save(const std::string& serial = "");
     bool Load(const std::string& serial = "");
@@ -454,7 +456,7 @@ private:
     UserManager m_userManager;
     ConfigMode m_configMode{ConfigMode::Default};
 
-    static std::shared_ptr<EmulatorSettings> s_instance;
+    static std::shared_ptr<EmulatorSettingsImpl> s_instance;
     static std::mutex s_mutex;
 
     /// Apply overrideable fields from groupJson into group.game_specific_value.

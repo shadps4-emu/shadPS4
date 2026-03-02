@@ -269,7 +269,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 slot_taken[i] = true;
                 c->player_index = i;
                 AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
-                if (EmulatorSettings::GetInstance()->IsMotionControlsEnabled()) {
+                if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
                             SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
@@ -369,11 +369,11 @@ namespace GamepadSelect {
 
 int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
     char GUIDbuf[33];
-    if (EmulatorSettings::GetInstance()->GetDefaultControllerId() != "") {
+    if (EmulatorSettings.GetDefaultControllerId() != "") {
         for (int i = 0; i < gamepadCount; i++) {
             SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
             std::string currentGUID = std::string(GUIDbuf);
-            if (currentGUID == EmulatorSettings::GetInstance()->GetDefaultControllerId()) {
+            if (currentGUID == EmulatorSettings.GetDefaultControllerId()) {
                 return i;
             }
         }

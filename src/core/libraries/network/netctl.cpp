@@ -162,7 +162,7 @@ int PS4_SYSV_ABI sceNetCtlGetIfStat() {
 
 int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     LOG_DEBUG(Lib_NetCtl, "code = {}", code);
-    if (!EmulatorSettings::GetInstance()->IsConnectedToNetwork()) {
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
         return ORBIS_NET_CTL_ERROR_NOT_CONNECTED;
     }
 
@@ -180,7 +180,7 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         info->mtu = 1500; // default value
         break;
     case ORBIS_NET_CTL_INFO_LINK:
-        info->link = EmulatorSettings::GetInstance()->IsConnectedToNetwork()
+        info->link = EmulatorSettings.IsConnectedToNetwork()
                          ? ORBIS_NET_CTL_LINK_CONNECTED
                          : ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
@@ -319,7 +319,7 @@ int PS4_SYSV_ABI sceNetCtlGetScanInfoForSsidScanIpcInt() {
 }
 
 int PS4_SYSV_ABI sceNetCtlGetState(int* state) {
-    const auto connected = EmulatorSettings::GetInstance()->IsConnectedToNetwork();
+    const auto connected = EmulatorSettings.IsConnectedToNetwork();
     LOG_DEBUG(Lib_NetCtl, "connected = {}", connected);
     const auto current_state =
         connected ? ORBIS_NET_CTL_STATE_IPOBTAINED : ORBIS_NET_CTL_STATE_DISCONNECTED;

@@ -31,9 +31,9 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
                    const std::string_view& rarity)
     : trophy_name(trophyName), trophy_type(rarity) {
 
-    side = EmulatorSettings::GetInstance()->GetTrophyNotificationSide();
+    side = EmulatorSettings.GetTrophyNotificationSide();
 
-    trophy_timer = EmulatorSettings::GetInstance()->GetTrophyNotificationDuration();
+    trophy_timer = EmulatorSettings.GetTrophyNotificationDuration();
 
     if (std::filesystem::exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
@@ -94,7 +94,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     }
 
     MIX_SetMasterGain(
-        mixer, static_cast<float>(EmulatorSettings::GetInstance()->GetVolumeSlider() / 100.f));
+        mixer, static_cast<float>(EmulatorSettings.GetVolumeSlider() / 100.f));
     auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
     auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
 
@@ -280,7 +280,7 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
                       const std::string_view& rarity) {
     std::lock_guard<std::mutex> lock(queueMtx);
 
-    if (EmulatorSettings::GetInstance()->IsTrophyPopupDisabled()) {
+    if (EmulatorSettings.IsTrophyPopupDisabled()) {
         return;
     } else if (current_trophy_ui.has_value()) {
         current_trophy_ui.reset();

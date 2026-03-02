@@ -176,7 +176,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         // info.readconst_types |= Info::ReadConstType::Immediate;
     }
 
-    if (!EmulatorSettings::GetInstance()->IsDirectMemoryAccessEnabled()) {
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
         info.uses_dma = false;
         info.readconst_types = Info::ReadConstType::None;
     }

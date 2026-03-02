@@ -396,7 +396,7 @@ bool ProcessEvent(const SDL_Event* event) {
         if (mouse_pos.x != bd->prev_mouse_pos.x || mouse_pos.y != bd->prev_mouse_pos.y) {
             bd->prev_mouse_pos.x = mouse_pos.x;
             bd->prev_mouse_pos.y = mouse_pos.y;
-            if (EmulatorSettings::GetInstance()->GetCursorState() == HideCursorState::Idle) {
+            if (EmulatorSettings.GetCursorState() == HideCursorState::Idle) {
                 bd->lastCursorMoveTime = bd->time;
             }
         }
@@ -656,7 +656,7 @@ static void UpdateMouseCursor() {
         return;
     SdlData* bd = GetBackendData();
 
-    s16 cursorState = EmulatorSettings::GetInstance()->GetCursorState();
+    s16 cursorState = EmulatorSettings.GetCursorState();
     ImGuiMouseCursor imgui_cursor = ImGui::GetMouseCursor();
     if (io.MouseDrawCursor || imgui_cursor == ImGuiMouseCursor_None ||
         cursorState == HideCursorState::Always) {
@@ -665,7 +665,7 @@ static void UpdateMouseCursor() {
 
     } else if (cursorState == HideCursorState::Idle &&
                bd->time - bd->lastCursorMoveTime >=
-                   EmulatorSettings::GetInstance()->GetCursorHideTimeout() *
+                   EmulatorSettings.GetCursorHideTimeout() *
                        SDL_GetPerformanceFrequency()) {
 
         bool wasCursorVisible = SDL_CursorVisible();

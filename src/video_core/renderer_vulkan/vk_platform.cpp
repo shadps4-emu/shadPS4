@@ -87,7 +87,7 @@ vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::WindowSDL& e
             UNREACHABLE();
         }
     } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
-        if (EmulatorSettings::GetInstance()->IsRenderdocEnabled()) {
+        if (EmulatorSettings.IsRenderdocEnabled()) {
             LOG_ERROR(Render_Vulkan,
                       "RenderDoc is not compatible with Wayland, use an X11 window instead.");
         }
@@ -200,7 +200,7 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
         extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
     }
 
-    if (EmulatorSettings::GetInstance()->IsHdrAllowed()) {
+    if (EmulatorSettings.IsHdrAllowed()) {
         extensions.push_back(VK_EXT_SWAPCHAIN_COLOR_SPACE_EXTENSION_NAME);
     }
 
@@ -307,11 +307,11 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
 
     // Validation settings
     vk::Bool32 enable_core =
-        EmulatorSettings::GetInstance()->IsVkValidationCoreEnabled() ? vk::True : vk::False;
+        EmulatorSettings.IsVkValidationCoreEnabled() ? vk::True : vk::False;
     vk::Bool32 enable_sync =
-        EmulatorSettings::GetInstance()->IsVkValidationSyncEnabled() ? vk::True : vk::False;
+        EmulatorSettings.IsVkValidationSyncEnabled() ? vk::True : vk::False;
     vk::Bool32 enable_gpuav =
-        EmulatorSettings::GetInstance()->IsVkValidationGpuEnabled() ? vk::True : vk::False;
+        EmulatorSettings.IsVkValidationGpuEnabled() ? vk::True : vk::False;
 
     // Crash diagnostics settings
     static const auto crash_diagnostic_path =

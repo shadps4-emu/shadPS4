@@ -18,7 +18,7 @@ std::queue<OrbisSystemServiceEvent> g_event_queue;
 std::mutex g_event_queue_mutex;
 
 bool IsSplashVisible() {
-    return EmulatorSettings::GetInstance()->IsShowSplash() && g_splash_status;
+    return EmulatorSettings.IsShowSplash() && g_splash_status;
 }
 
 int PS4_SYSV_ABI sceAppMessagingClearEventFlag() {
@@ -1918,7 +1918,7 @@ s32 PS4_SYSV_ABI sceSystemServiceParamGetInt(OrbisSystemServiceParamId param_id,
     }
     switch (param_id) {
     case OrbisSystemServiceParamId::Lang:
-        *value = EmulatorSettings::GetInstance()->GetConsoleLanguage();
+        *value = EmulatorSettings.GetConsoleLanguage();
         break;
     case OrbisSystemServiceParamId::DateFormat:
         *value = u32(OrbisSystemParamDateFormat::FmtDDMMYYYY);

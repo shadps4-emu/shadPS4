@@ -104,9 +104,9 @@ static vk::Rect2D FitImage(s32 frame_width, s32 frame_height, s32 swapchain_widt
 
 Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_)
     : window{window_}, liverpool{liverpool_},
-      instance{window, EmulatorSettings::GetInstance()->GetGpuId(),
-               EmulatorSettings::GetInstance()->IsVkValidationEnabled(),
-               EmulatorSettings::GetInstance()->IsVkCrashDiagnosticEnabled()},
+      instance{window, EmulatorSettings.GetGpuId(),
+               EmulatorSettings.IsVkValidationEnabled(),
+               EmulatorSettings.IsVkCrashDiagnosticEnabled()},
       draw_scheduler{instance}, present_scheduler{instance}, flip_scheduler{instance},
       swapchain{instance, window},
       rasterizer{std::make_unique<Rasterizer>(instance, draw_scheduler, liverpool)},
@@ -125,10 +125,10 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
         free_queue.push(&frame);
     }
 
-    fsr_settings.enable = EmulatorSettings::GetInstance()->IsFsrEnabled();
-    fsr_settings.use_rcas = EmulatorSettings::GetInstance()->IsRcasEnabled();
+    fsr_settings.enable = EmulatorSettings.IsFsrEnabled();
+    fsr_settings.use_rcas = EmulatorSettings.IsRcasEnabled();
     fsr_settings.rcas_attenuation =
-        static_cast<float>(EmulatorSettings::GetInstance()->GetRcasAttenuation() / 1000.f);
+        static_cast<float>(EmulatorSettings.GetRcasAttenuation() / 1000.f);
 
     fsr_pass.Create(device, instance.GetAllocator(), num_images);
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
@@ -467,7 +467,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
     auto& scheduler = present_scheduler;
     const auto cmdbuf = scheduler.CommandBuffer();
 
-    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
+    if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Present",
         });
@@ -579,7 +579,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                 ImGui::SetCursorPos(ImGui::GetCursorStartPos() + offset);
                 ImGui::Image(game_texture, size);
 
-                if (EmulatorSettings::GetInstance()->IsNullGPU()) {
+                if (EmulatorSettings.IsNullGPU()) {
                     Core::Devtools::Layer::DrawNullGpuNotice();
                 }
             }
@@ -598,7 +598,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         }
     }
 
-    if (EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled()) {
+    if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 

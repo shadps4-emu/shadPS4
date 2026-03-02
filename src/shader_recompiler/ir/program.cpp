@@ -19,7 +19,7 @@ namespace Shader::IR {
 void DumpProgram(const Program& program, const Info& info, const std::string& type) {
     using namespace Common::FS;
 
-    if (!EmulatorSettings::GetInstance()->IsDumpShaders()) {
+    if (!EmulatorSettings.IsDumpShaders()) {
         return;
     }
 

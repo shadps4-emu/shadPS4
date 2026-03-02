@@ -457,7 +457,7 @@ int PS4_SYSV_ABI Func_D56B43060720B1E0() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    switch (EmulatorSettings::GetInstance()->GetUsbDeviceBackend()) {
+    switch (EmulatorSettings.GetUsbDeviceBackend()) {
     case UsbBackendType::SkylandersPortal:
         usb_backend = std::make_shared<SkylandersPortalBackend>();
         break;

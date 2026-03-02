@@ -141,7 +141,7 @@ public:
         const auto& log_dir = GetUserPath(PathType::LogDir);
         std::filesystem::create_directory(log_dir);
         Filter filter;
-        filter.ParseFilterString(EmulatorSettings::GetInstance()->GetLogFilter());
+        filter.ParseFilterString(EmulatorSettings.GetLogFilter());
         const auto& log_file_path = log_file.empty() ? LOG_FILE : log_file;
         instance = std::unique_ptr<Impl, decltype(&Deleter)>(
             new Impl(log_dir / log_file_path, filter), Deleter);
@@ -186,7 +186,7 @@ public:
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
                    const char* function, const char* format, const fmt::format_args& args) {
         if (!filter.CheckMessage(log_class, log_level) ||
-            !EmulatorSettings::GetInstance()->IsLogEnabled()) {
+            !EmulatorSettings.IsLogEnabled()) {
             return;
         }
 
@@ -214,7 +214,7 @@ public:
         using std::chrono::microseconds;
         using std::chrono::steady_clock;
 
-        if (EmulatorSettings::GetInstance()->IsIdenticalLogGrouped()) {
+        if (EmulatorSettings.IsIdenticalLogGrouped()) {
             std::unique_lock entry_loc(_mutex);
 
             if (_last_entry.message == message) {
@@ -227,7 +227,7 @@ public:
             }
 
             if (_last_entry.counter >= 1) {
-                if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
+                if (EmulatorSettings.GetLogType() == "async") {
                     message_queue.EmplaceWait(_last_entry);
                 } else {
                     ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });
@@ -259,7 +259,7 @@ public:
                 .counter = 1,
             };
 
-            if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
+            if (EmulatorSettings.GetLogType() == "async") {
                 message_queue.EmplaceWait(entry);
             } else {
                 ForEachBackend([&entry](auto& backend) { backend.Write(entry); });
@@ -297,14 +297,14 @@ private:
     }
 
     void StopBackendThread() {
-        if (EmulatorSettings::GetInstance()->IsIdenticalLogGrouped()) {
+        if (EmulatorSettings.IsIdenticalLogGrouped()) {
             // log last message
             if (_last_entry.counter >= 2) {
                 _last_entry.message += " x" + std::to_string(_last_entry.counter);
             }
 
             if (_last_entry.counter >= 1) {
-                if (EmulatorSettings::GetInstance()->GetLogType() == "async") {
+                if (EmulatorSettings.GetLogType() == "async") {
                     message_queue.EmplaceWait(_last_entry);
                 } else {
                     ForEachBackend([this](auto& backend) { backend.Write(this->_last_entry); });

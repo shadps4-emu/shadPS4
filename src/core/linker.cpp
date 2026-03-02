@@ -56,7 +56,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 Linker::~Linker() = default;
 
 void Linker::Execute(const std::vector<std::string>& args) {
-    if (EmulatorSettings::GetInstance()->IsDebugDump()) {
+    if (EmulatorSettings.IsDebugDump()) {
         DebugDump();
     }
 

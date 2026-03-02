@@ -166,7 +166,7 @@ public:
     }
 
     bool IsSystemLib() {
-        auto system_path = EmulatorSettings::GetInstance()->GetSysModulesDir();
+        auto system_path = EmulatorSettings.GetSysModulesDir();
         if (file.string().starts_with(system_path.string().c_str())) {
             return true;
         }

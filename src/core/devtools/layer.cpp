@@ -110,11 +110,11 @@ void L::DrawMenuBar() {
                 EndDisabled();
 
                 if (Button("Save")) {
-                    EmulatorSettings::GetInstance()->SetFsrEnabled(fsr.enable);
-                    EmulatorSettings::GetInstance()->SetRcasEnabled(fsr.use_rcas);
-                    EmulatorSettings::GetInstance()->SetRcasAttenuation(
+                    EmulatorSettings.SetFsrEnabled(fsr.enable);
+                    EmulatorSettings.SetRcasEnabled(fsr.use_rcas);
+                    EmulatorSettings.SetRcasAttenuation(
                         static_cast<int>(fsr.rcas_attenuation * 1000));
-                    EmulatorSettings::GetInstance()->Save();
+                    EmulatorSettings.Save();
                     CloseCurrentPopup();
                 }
 
@@ -311,7 +311,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
-    show_simple_fps = EmulatorSettings::GetInstance()->IsShowFpsCounter();
+    show_simple_fps = EmulatorSettings.IsShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 
@@ -472,7 +472,7 @@ void L::Draw() {
             if (ImGui::Begin("Volume Window", &show_volume,
                              ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-                Text("Volume: %d", EmulatorSettings::GetInstance()->GetVolumeSlider());
+                Text("Volume: %d", EmulatorSettings.GetVolumeSlider());
             }
             End();
         }

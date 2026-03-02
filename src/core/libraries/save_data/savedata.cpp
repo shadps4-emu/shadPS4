@@ -439,7 +439,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
             LOG_INFO(Lib_SaveData, "called with invalid block size");
         }
 
-        const auto root_save = EmulatorSettings::GetInstance()->GetHomeDir() /
+        const auto root_save = EmulatorSettings.GetHomeDir() /
                                std::to_string(mount_info->userId) / "savedata";
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;

@@ -111,7 +111,7 @@ public:
         }
 
         const float slider_gain =
-            EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f; // Faster than /100.0f
+            EmulatorSettings.GetVolumeSlider() * 0.01f; // Faster than /100.0f
         const float total_gain = max_channel_gain * slider_gain;
 
         const float current = current_gain.load(std::memory_order_acquire);
@@ -157,7 +157,7 @@ private:
         }
 
         // Initialize current gain
-        current_gain.store(EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f,
+        current_gain.store(EmulatorSettings.GetVolumeSlider() * 0.01f,
                            std::memory_order_relaxed);
 
         if (!SelectConverter()) {
@@ -203,7 +203,7 @@ private:
 
         last_volume_check_time = current_time;
 
-        const float config_volume = EmulatorSettings::GetInstance()->GetVolumeSlider() * 0.01f;
+        const float config_volume = EmulatorSettings.GetVolumeSlider() * 0.01f;
         const float stored_gain = current_gain.load(std::memory_order_acquire);
 
         // Only update if the difference is significant
@@ -370,11 +370,11 @@ private:
         switch (type) {
         case OrbisAudioOutPort::Main:
         case OrbisAudioOutPort::Bgm:
-            return EmulatorSettings::GetInstance()->GetMainOutputDevice();
+            return EmulatorSettings.GetMainOutputDevice();
         case OrbisAudioOutPort::PadSpk:
-            return EmulatorSettings::GetInstance()->GetPadSpkOutputDevice();
+            return EmulatorSettings.GetPadSpkOutputDevice();
         default:
-            return EmulatorSettings::GetInstance()->GetMainOutputDevice();
+            return EmulatorSettings.GetMainOutputDevice();
         }
     }
 

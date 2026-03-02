@@ -300,7 +300,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         RegisterPipelineData(graphics_key, pipeline_hash, sdata);
         ++num_new_pipelines;
 
-        if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
+        if (EmulatorSettings.IsShaderCollect()) {
             for (auto stage = 0; stage < MaxShaderStages; ++stage) {
                 if (infos[stage]) {
                     auto& m = modules[stage];
@@ -329,7 +329,7 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
         RegisterPipelineData(compute_key, sdata);
         ++num_new_pipelines;
 
-        if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
+        if (EmulatorSettings.IsShaderCollect()) {
             auto& m = modules[0];
             module_related_pipelines[m].emplace_back(compute_key);
         }
@@ -554,7 +554,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     vk::ShaderModule module;
 
     auto patch = GetShaderPatch(info.pgm_hash, info.stage, perm_idx, "spv");
-    const bool is_patched = patch && EmulatorSettings::GetInstance()->IsPatchShaders();
+    const bool is_patched = patch && EmulatorSettings.IsPatchShaders();
     if (is_patched) {
         LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", info.stage, info.pgm_hash);
         module = CompileSPV(*patch, instance.GetDevice());
@@ -566,7 +566,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
 
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
-    if (EmulatorSettings::GetInstance()->IsShaderCollect()) {
+    if (EmulatorSettings.IsShaderCollect()) {
         DebugState.CollectShader(name, info.l_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
     }
@@ -659,7 +659,7 @@ std::string PipelineCache::GetShaderName(Shader::Stage stage, u64 hash,
 
 void PipelineCache::DumpShader(std::span<const u32> code, u64 hash, Shader::Stage stage,
                                size_t perm_idx, std::string_view ext) {
-    if (!EmulatorSettings::GetInstance()->IsDumpShaders()) {
+    if (!EmulatorSettings.IsDumpShaders()) {
         return;
     }
 

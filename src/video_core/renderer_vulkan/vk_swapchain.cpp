@@ -164,7 +164,7 @@ void Swapchain::FindPresentFormat() {
             return format == SURFACE_FORMAT_HDR;
         }) != formats.end();
     // Also make sure that user allowed us to use HDR
-    supports_hdr &= EmulatorSettings::GetInstance()->IsHdrAllowed();
+    supports_hdr &= EmulatorSettings.IsHdrAllowed();
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
     // RGBA sRGB.
@@ -199,7 +199,7 @@ void Swapchain::FindPresentMode() {
         return;
     }
 
-    const auto requested_mode = EmulatorSettings::GetInstance()->GetPresentMode();
+    const auto requested_mode = EmulatorSettings.GetPresentMode();
     if (requested_mode == "Mailbox") {
         present_mode = vk::PresentModeKHR::eMailbox;
     } else if (requested_mode == "Fifo") {
@@ -208,7 +208,7 @@ void Swapchain::FindPresentMode() {
         present_mode = vk::PresentModeKHR::eImmediate;
     } else {
         LOG_ERROR(Render_Vulkan, "Unknown present mode {}, defaulting to Mailbox.",
-                  EmulatorSettings::GetInstance()->GetPresentMode());
+                  EmulatorSettings.GetPresentMode());
         present_mode = vk::PresentModeKHR::eMailbox;
     }
 

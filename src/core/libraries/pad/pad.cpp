@@ -31,9 +31,9 @@ int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     s32 handle, OrbisPadDeviceClassExtendedInformation* pExtInfo) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     std::memset(pExtInfo, 0, sizeof(OrbisPadDeviceClassExtendedInformation));
-    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
+    if (EmulatorSettings.IsUsingSpecialPad()) {
         pExtInfo->deviceClass =
-            (OrbisPadDeviceClass)EmulatorSettings::GetInstance()->GetSpecialPadClass();
+            (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
     }
     return ORBIS_OK;
 }
@@ -109,10 +109,10 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
         return ORBIS_OK;
     }
     pInfo->connected = true;
-    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
+    if (EmulatorSettings.IsUsingSpecialPad()) {
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
         pInfo->deviceClass =
-            (OrbisPadDeviceClass)EmulatorSettings::GetInstance()->GetSpecialPadClass();
+            (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
     }
     return ORBIS_OK;
 }
@@ -260,7 +260,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
+    if (EmulatorSettings.IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
@@ -277,7 +277,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (EmulatorSettings::GetInstance()->IsUsingSpecialPad()) {
+    if (EmulatorSettings.IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {

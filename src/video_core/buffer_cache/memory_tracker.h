@@ -74,7 +74,7 @@ public:
                     // modified. If we need to flush the flush function is going to perform CPU
                     // state change.
                     std::scoped_lock lk{manager->lock};
-                    if (EmulatorSettings::GetInstance()->GetReadbacksMode() !=
+                    if (EmulatorSettings.GetReadbacksMode() !=
                             GpuReadbacksMode::Disabled &&
                         manager->template IsRegionModified<Type::GPU>(offset, size)) {
                         return true;

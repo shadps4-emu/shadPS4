@@ -37,10 +37,10 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
-    if (EmulatorSettings::GetInstance()->IsDevKit()) {
+    if (EmulatorSettings.IsDevKit()) {
         total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
-    s32 extra_dmem = EmulatorSettings::GetInstance()->GetExtraDmemInMBytes();
+    s32 extra_dmem = EmulatorSettings.GetExtraDmemInMBytes();
     if (extra_dmem != 0) {
         LOG_WARNING(Kernel_Vmm,
                     "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",

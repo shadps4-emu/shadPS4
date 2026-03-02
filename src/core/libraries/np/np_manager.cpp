@@ -632,7 +632,7 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
     }
     memset(np_id, 0, sizeof(OrbisNpId));
     strncpy(np_id->handle.data,
-            EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser().user_name.c_str(),
+            UserManagement.GetDefaultUser().user_name.c_str(),
             sizeof(np_id->handle.data));
     return ORBIS_OK;
 }
@@ -648,7 +648,7 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
     strncpy(online_id->data,
-            EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser().user_name.c_str(),
+            UserManagement.GetDefaultUser().user_name.c_str(),
             sizeof(online_id->data));
     return ORBIS_OK;
 }
@@ -788,7 +788,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    g_signed_in = EmulatorSettings::GetInstance()->IsPSNSignedIn();
+    g_signed_in = EmulatorSettings.IsPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);

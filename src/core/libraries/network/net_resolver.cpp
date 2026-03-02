@@ -27,7 +27,7 @@ int Resolver::ResolveAsync(const char* hostname, OrbisNetInAddr* addr, int timeo
 }
 
 void Resolver::Resolve() {
-    if (!EmulatorSettings::GetInstance()->IsConnectedToNetwork()) {
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
         resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
         return;
     }

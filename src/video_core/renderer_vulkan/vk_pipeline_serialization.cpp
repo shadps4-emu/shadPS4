@@ -295,7 +295,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
 }
 
 void PipelineCache::WarmUp() {
-    if (!EmulatorSettings::GetInstance()->IsPipelineCacheEnabled()) {
+    if (!EmulatorSettings.IsPipelineCacheEnabled()) {
         return;
     }
 

@@ -456,8 +456,8 @@ s32 PS4_SYSV_ABI sceVideoOutSetWindowModeMargins(s32 handle, s32 top, s32 bottom
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     driver = std::make_unique<VideoOutDriver>(
-        EmulatorSettings::GetInstance()->GetInternalScreenWidth(),
-        EmulatorSettings::GetInstance()->GetInternalScreenHeight());
+        EmulatorSettings.GetInternalScreenWidth(),
+        EmulatorSettings.GetInternalScreenHeight());
 
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutGetFlipStatus);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutSubmitFlip);

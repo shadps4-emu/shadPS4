@@ -17,19 +17,19 @@ s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
 }
 
 s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
-    return EmulatorSettings::GetInstance()->IsNeo() &&
+    return EmulatorSettings.IsNeo() &&
            Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
 }
 
 s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
-    return EmulatorSettings::GetInstance()->IsNeo();
+    return EmulatorSettings.IsNeo();
 }
 
 s32 PS4_SYSV_ABI sceKernelGetMainSocId() {
     // These hardcoded values are based on hardware observations.
     // Different models of PS4/PS4 Pro likely return slightly different values.
     LOG_DEBUG(Lib_Kernel, "called");
-    if (EmulatorSettings::GetInstance()->IsNeo()) {
+    if (EmulatorSettings.IsNeo()) {
         return 0x740f30;
     }
     return 0x710f10;

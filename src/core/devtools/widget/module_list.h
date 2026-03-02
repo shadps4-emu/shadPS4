@@ -23,7 +23,7 @@ public:
     bool open = false;
 
     static bool IsSystemModule(const std::filesystem::path& path) {
-        const auto sys_modules_path = EmulatorSettings::GetInstance()->GetSysModulesDir();
+        const auto sys_modules_path = EmulatorSettings.GetSysModulesDir();
 
         const auto abs_path = std::filesystem::absolute(path).lexically_normal();
         const auto abs_sys_path = std::filesystem::absolute(sys_modules_path).lexically_normal();

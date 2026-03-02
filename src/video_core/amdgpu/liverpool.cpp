@@ -230,9 +230,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
         RESUME_GFX(ce_task);
     }
     const bool host_markers_enabled =
-        rasterizer && EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled();
+        rasterizer && EmulatorSettings.IsVkHostMarkersEnabled();
     const bool guest_markers_enabled =
-        rasterizer && EmulatorSettings::GetInstance()->IsVkGuestMarkersEnabled();
+        rasterizer && EmulatorSettings.IsVkGuestMarkersEnabled();
 
     const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
     while (!dcb.empty()) {
@@ -902,7 +902,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
     auto& queue = asc_queues[{vqid}];
     const bool host_markers_enabled =
-        rasterizer && EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled();
+        rasterizer && EmulatorSettings.IsVkHostMarkersEnabled();
 
     struct IndirectPatch {
         const PM4Header* header;
@@ -1205,7 +1205,7 @@ Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::sp
 void Liverpool::SubmitGfx(std::span<const u32> dcb, std::span<const u32> ccb) {
     auto& queue = mapped_queues[GfxQueueId];
 
-    if (EmulatorSettings::GetInstance()->IsCopyGpuBuffers()) {
+    if (EmulatorSettings.IsCopyGpuBuffers()) {
         std::tie(dcb, ccb) = CopyCmdBuffers(dcb, ccb);
     }
 

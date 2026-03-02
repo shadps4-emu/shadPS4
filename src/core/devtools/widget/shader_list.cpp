@@ -244,7 +244,7 @@ void ShaderList::Draw() {
         return;
     }
 
-    if (!EmulatorSettings::GetInstance()->IsShaderCollect()) {
+    if (!EmulatorSettings.IsShaderCollect()) {
         DrawCenteredText("Enable 'shader_dump' in config to see shaders");
         End();
         return;

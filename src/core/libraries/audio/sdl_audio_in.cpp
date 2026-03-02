@@ -21,7 +21,7 @@ public:
         fmt.channels = static_cast<Uint8>(port.channels_num);
         fmt.freq = static_cast<int>(port.freq);
 
-        std::string micDevStr = EmulatorSettings::GetInstance()->GetMicDevice();
+        std::string micDevStr = EmulatorSettings.GetMicDevice();
         uint32_t devId = 0;
         if (micDevStr == "None") {
             nullDevice = true;

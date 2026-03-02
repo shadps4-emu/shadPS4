@@ -117,12 +117,12 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
         error = true;
     }
     if (!error) {
-        SDL_SetWindowFullscreenMode(window, EmulatorSettings::GetInstance()->GetFullScreenMode() ==
+        SDL_SetWindowFullscreenMode(window, EmulatorSettings.GetFullScreenMode() ==
                                                     "Fullscreen"
                                                 ? displayMode
                                                 : NULL);
     }
-    SDL_SetWindowFullscreen(window, EmulatorSettings::GetInstance()->IsFullScreen());
+    SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
 
@@ -153,7 +153,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
     Input::GameControllers::TryOpenSDLControllers(controllers);
 
-    if (EmulatorSettings::GetInstance()->IsBackgroundControllerInput()) {
+    if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
 }

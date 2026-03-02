@@ -17,7 +17,7 @@ bool UserManager::AddUser(const User& user) {
 
     // Create user home directory and subfolders
     const auto user_dir =
-        EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user.user_id);
+        EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
 
     std::error_code ec;
     if (!std::filesystem::exists(user_dir)) {
@@ -36,7 +36,7 @@ bool UserManager::RemoveUser(s32 user_id) {
     if (it == m_users.user.end())
         return false; // not found
 
-    const auto user_dir = EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user_id);
+    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user_id);
 
     if (std::filesystem::exists(user_dir)) {
         std::error_code ec;
@@ -81,7 +81,7 @@ std::vector<User> UserManager::CreateDefaultUser() {
     default_user.controller_port = 1;
 
     const auto user_dir =
-        EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(default_user.user_id);
+        EmulatorSettings.GetHomeDir() / std::to_string(default_user.user_id);
 
     if (!std::filesystem::exists(user_dir)) {
         std::filesystem::create_directory(user_dir);
@@ -121,7 +121,7 @@ std::vector<User> UserManager::GetValidUsers() const {
     std::vector<User> result;
     result.reserve(m_users.user.size());
 
-    const auto home_dir = EmulatorSettings::GetInstance()->GetHomeDir();
+    const auto home_dir = EmulatorSettings.GetHomeDir();
 
     for (const auto& user : m_users.user) {
         const auto user_dir = home_dir / std::to_string(user.user_id);

@@ -7,6 +7,8 @@
 #include <vector>
 #include "common/types.h"
 
+#define UserManagement EmulatorSettings.GetUserManager()
+
 struct User {
     s32 user_id;
     u32 user_color;

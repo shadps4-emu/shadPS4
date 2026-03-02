@@ -509,7 +509,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *user_id = EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser().user_id;
+    *user_id = UserManagement.GetDefaultUser().user_id;
     return ORBIS_OK;
 }
 
@@ -589,7 +589,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
         userIdList->user_id[i] = ORBIS_USER_SERVICE_USER_ID_INVALID;
     }
 
-    auto& user_manager = EmulatorSettings::GetInstance()->GetUserManager();
+    auto& user_manager = UserManagement;
 
     std::vector<User> all_users = user_manager.GetValidUsers();
 
@@ -1084,7 +1084,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserCol
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = (OrbisUserServiceUserColor)EmulatorSettings::GetInstance()
+    *color = (OrbisUserServiceUserColor)EmulatorSettingsImpl::GetInstance()
                  ->GetUserManager()
                  .GetUserByID(user_id)
                  ->user_color;
@@ -1113,7 +1113,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
     std::string name = "shadPS4";
-    auto const* u = EmulatorSettings::GetInstance()->GetUserManager().GetUserByID(user_id);
+    auto const* u = UserManagement.GetUserByID(user_id);
     if (u != nullptr) {
         name = u->user_name;
     } else {

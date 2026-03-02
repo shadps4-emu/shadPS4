@@ -48,13 +48,13 @@ namespace Libraries::SaveData {
 
 fs::path SaveInstance::MakeTitleSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          std::string_view game_serial) {
-    return EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user_id) / "savedata" /
+    return EmulatorSettings.GetHomeDir() / std::to_string(user_id) / "savedata" /
            game_serial;
 }
 
 fs::path SaveInstance::MakeDirSavePath(OrbisUserServiceUserId user_id, std::string_view game_serial,
                                        std::string_view dir_name) {
-    return EmulatorSettings::GetInstance()->GetHomeDir() / std::to_string(user_id) / "savedata" /
+    return EmulatorSettings.GetHomeDir() / std::to_string(user_id) / "savedata" /
            game_serial / dir_name;
 }
 
@@ -73,7 +73,7 @@ fs::path SaveInstance::GetParamSFOPath(const fs::path& dir_path) {
 
 void SaveInstance::SetupDefaultParamSFO(PSF& param_sfo, std::string dir_name,
                                         std::string game_serial) {
-    int locale = EmulatorSettings::GetInstance()->GetConsoleLanguage();
+    int locale = EmulatorSettings.GetConsoleLanguage();
     if (!default_title.contains(locale)) {
         locale = 1; // default to en_US if not found
     }

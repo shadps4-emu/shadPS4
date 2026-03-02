@@ -58,7 +58,7 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     const u32 flatbuf_off_dw = inst->Flags<u32>();
-    if (!EmulatorSettings::GetInstance()->IsDirectMemoryAccessEnabled()) {
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
         return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
     }
     // We can only provide a fallback for immediate offsets.

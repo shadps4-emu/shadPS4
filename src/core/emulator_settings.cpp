@@ -16,8 +16,8 @@
 using json = nlohmann::json;
 
 // ── Singleton storage ─────────────────────────────────────────────────
-std::shared_ptr<EmulatorSettings> EmulatorSettings::s_instance = nullptr;
-std::mutex EmulatorSettings::s_mutex;
+std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::s_instance = nullptr;
+std::mutex EmulatorSettingsImpl::s_mutex;
 
 // ── nlohmann helpers for std::filesystem::path ───────────────────────
 namespace nlohmann {
@@ -34,7 +34,7 @@ struct adl_serializer<std::filesystem::path> {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-void EmulatorSettings::PrintChangedSummary(const std::vector<std::string>& changed) {
+void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& changed) {
     if (changed.empty()) {
         LOG_DEBUG(EmuSettings, "No game-specific overrides applied");
         return;
@@ -45,20 +45,20 @@ void EmulatorSettings::PrintChangedSummary(const std::vector<std::string>& chang
 }
 
 // ── Singleton ────────────────────────────────────────────────────────
-EmulatorSettings::EmulatorSettings() = default;
+EmulatorSettingsImpl::EmulatorSettingsImpl() = default;
 
-EmulatorSettings::~EmulatorSettings() {
+EmulatorSettingsImpl::~EmulatorSettingsImpl() {
     Save();
 }
 
-std::shared_ptr<EmulatorSettings> EmulatorSettings::GetInstance() {
+std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::GetInstance() {
     std::lock_guard lock(s_mutex);
     if (!s_instance)
-        s_instance = std::make_shared<EmulatorSettings>();
+        s_instance = std::make_shared<EmulatorSettingsImpl>();
     return s_instance;
 }
 
-void EmulatorSettings::SetInstance(std::shared_ptr<EmulatorSettings> instance) {
+void EmulatorSettingsImpl::SetInstance(std::shared_ptr<EmulatorSettingsImpl> instance) {
     std::lock_guard lock(s_mutex);
     s_instance = std::move(instance);
 }
@@ -66,7 +66,7 @@ void EmulatorSettings::SetInstance(std::shared_ptr<EmulatorSettings> instance) {
 // --------------------
 // General helpers
 // --------------------
-bool EmulatorSettings::AddGameInstallDir(const std::filesystem::path& dir, bool enabled) {
+bool EmulatorSettingsImpl::AddGameInstallDir(const std::filesystem::path& dir, bool enabled) {
     for (const auto& d : m_general.install_dirs.value)
         if (d.path == dir)
             return false;
@@ -74,7 +74,7 @@ bool EmulatorSettings::AddGameInstallDir(const std::filesystem::path& dir, bool 
     return true;
 }
 
-std::vector<std::filesystem::path> EmulatorSettings::GetGameInstallDirs() const {
+std::vector<std::filesystem::path> EmulatorSettingsImpl::GetGameInstallDirs() const {
     std::vector<std::filesystem::path> out;
     for (const auto& d : m_general.install_dirs.value)
         if (d.enabled)
@@ -82,15 +82,15 @@ std::vector<std::filesystem::path> EmulatorSettings::GetGameInstallDirs() const 
     return out;
 }
 
-const std::vector<GameInstallDir>& EmulatorSettings::GetAllGameInstallDirs() const {
+const std::vector<GameInstallDir>& EmulatorSettingsImpl::GetAllGameInstallDirs() const {
     return m_general.install_dirs.value;
 }
 
-void EmulatorSettings::SetAllGameInstallDirs(const std::vector<GameInstallDir>& dirs) {
+void EmulatorSettingsImpl::SetAllGameInstallDirs(const std::vector<GameInstallDir>& dirs) {
     m_general.install_dirs.value = dirs;
 }
 
-void EmulatorSettings::RemoveGameInstallDir(const std::filesystem::path& dir) {
+void EmulatorSettingsImpl::RemoveGameInstallDir(const std::filesystem::path& dir) {
     auto iterator =
         std::find_if(m_general.install_dirs.value.begin(), m_general.install_dirs.value.end(),
                      [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
@@ -99,7 +99,7 @@ void EmulatorSettings::RemoveGameInstallDir(const std::filesystem::path& dir) {
     }
 }
 
-void EmulatorSettings::SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
+void EmulatorSettingsImpl::SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
     auto iterator =
         std::find_if(m_general.install_dirs.value.begin(), m_general.install_dirs.value.end(),
                      [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
@@ -108,14 +108,14 @@ void EmulatorSettings::SetGameInstallDirEnabled(const std::filesystem::path& dir
     }
 }
 
-void EmulatorSettings::SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
+void EmulatorSettingsImpl::SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
     m_general.install_dirs.value.clear();
     for (const auto& dir : dirs_config) {
         m_general.install_dirs.value.push_back({dir, true});
     }
 }
 
-const std::vector<bool> EmulatorSettings::GetGameInstallDirsEnabled() {
+const std::vector<bool> EmulatorSettingsImpl::GetGameInstallDirsEnabled() {
     std::vector<bool> enabled_dirs;
     for (const auto& dir : m_general.install_dirs.value) {
         enabled_dirs.push_back(dir.enabled);
@@ -123,41 +123,41 @@ const std::vector<bool> EmulatorSettings::GetGameInstallDirsEnabled() {
     return enabled_dirs;
 }
 
-std::filesystem::path EmulatorSettings::GetHomeDir() {
+std::filesystem::path EmulatorSettingsImpl::GetHomeDir() {
     if (m_general.home_dir.value.empty()) {
         return Common::FS::GetUserPath(Common::FS::PathType::HomeDir);
     }
     return m_general.home_dir.value;
 }
 
-void EmulatorSettings::SetHomeDir(const std::filesystem::path& dir) {
+void EmulatorSettingsImpl::SetHomeDir(const std::filesystem::path& dir) {
     m_general.home_dir.value = dir;
 }
 
-std::filesystem::path EmulatorSettings::GetSysModulesDir() {
+std::filesystem::path EmulatorSettingsImpl::GetSysModulesDir() {
     if (m_general.sys_modules_dir.value.empty()) {
         return Common::FS::GetUserPath(Common::FS::PathType::SysModuleDir);
     }
     return m_general.sys_modules_dir.value;
 }
 
-void EmulatorSettings::SetSysModulesDir(const std::filesystem::path& dir) {
+void EmulatorSettingsImpl::SetSysModulesDir(const std::filesystem::path& dir) {
     m_general.sys_modules_dir.value = dir;
 }
 
-std::filesystem::path EmulatorSettings::GetFontsDir() {
+std::filesystem::path EmulatorSettingsImpl::GetFontsDir() {
     if (m_general.font_dir.value.empty()) {
         return Common::FS::GetUserPath(Common::FS::PathType::FontsDir);
     }
     return m_general.font_dir.value;
 }
 
-void EmulatorSettings::SetFontsDir(const std::filesystem::path& dir) {
+void EmulatorSettingsImpl::SetFontsDir(const std::filesystem::path& dir) {
     m_general.font_dir.value = dir;
 }
 
 // ── Game-specific override management ────────────────────────────────
-void EmulatorSettings::ClearGameSpecificOverrides() {
+void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_general);
     ClearGroupOverrides(m_debug);
     ClearGroupOverrides(m_input);
@@ -167,7 +167,7 @@ void EmulatorSettings::ClearGameSpecificOverrides() {
     LOG_DEBUG(EmuSettings, "All game-specific overrides cleared");
 }
 
-void EmulatorSettings::ResetGameSpecificValue(const std::string& key) {
+void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
     // Walk every overrideable group until we find the matching key.
     auto tryGroup = [&key](auto& group) {
         for (auto& item : group.GetOverrideableFields()) {
@@ -193,7 +193,7 @@ void EmulatorSettings::ResetGameSpecificValue(const std::string& key) {
     LOG_WARNING(EmuSettings, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
-bool EmulatorSettings::Save(const std::string& serial) {
+bool EmulatorSettingsImpl::Save(const std::string& serial) {
     try {
         if (!serial.empty()) {
             const auto cfgDir = Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs);
@@ -264,7 +264,7 @@ bool EmulatorSettings::Save(const std::string& serial) {
 
 // ── Load ──────────────────────────────────────────────────────────────
 
-bool EmulatorSettings::Load(const std::string& serial) {
+bool EmulatorSettingsImpl::Load(const std::string& serial) {
     try {
         if (serial.empty()) {
             // ── Global config ──────────────────────────────────────────
@@ -382,7 +382,7 @@ bool EmulatorSettings::Load(const std::string& serial) {
     }
 }
 
-void EmulatorSettings::SetDefaultValues() {
+void EmulatorSettingsImpl::SetDefaultValues() {
     m_general = GeneralSettings{};
     m_debug = DebugSettings{};
     m_input = InputSettings{};
@@ -391,7 +391,7 @@ void EmulatorSettings::SetDefaultValues() {
     m_vulkan = VulkanSettings{};
 }
 
-std::vector<std::string> EmulatorSettings::GetAllOverrideableKeys() const {
+std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {
     std::vector<std::string> keys;
     auto addGroup = [&keys](const auto& fields) {
         for (const auto& item : fields)
