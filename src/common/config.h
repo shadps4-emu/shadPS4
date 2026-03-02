@@ -26,6 +26,12 @@ struct GameInstallDir {
 
 enum HideCursorState : int { Never, Idle, Always };
 
+enum GpuReadbacksMode : int {
+    Disabled,
+    Relaxed,
+    Precise,
+};
+
 void load(const std::filesystem::path& path, bool is_game_specific = false);
 void save(const std::filesystem::path& path, bool is_game_specific = false);
 void resetGameSpecificValue(std::string entry);
@@ -66,8 +72,8 @@ bool nullGpu();
 void setNullGpu(bool enable, bool is_game_specific = false);
 bool copyGPUCmdBuffers();
 void setCopyGPUCmdBuffers(bool enable, bool is_game_specific = false);
-bool readbacks();
-void setReadbacks(bool enable, bool is_game_specific = false);
+int getReadbacksMode();
+void setReadbacksMode(int mode, bool is_game_specific = false);
 bool readbackLinearImages();
 void setReadbackLinearImages(bool enable, bool is_game_specific = false);
 bool directMemoryAccess();
@@ -104,6 +110,8 @@ void setPipelineCacheEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheArchived(bool enable, bool is_game_specific = false);
 std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
+bool groupIdenticalLogs();
+void setGroupIdenticalLogs(bool enable, bool is_game_specific = false);
 std::string getLogFilter();
 void setLogFilter(const std::string& type, bool is_game_specific = false);
 double getTrophyNotificationDuration();

@@ -99,16 +99,16 @@ public:
         if (m_ime_mode) {
             OrbisImeParam param = m_param.ime;
             if (use_param_handler) {
-                Core::ExecuteGuest(param.handler, param.arg, event);
+                param.handler(param.arg, event);
             } else {
-                Core::ExecuteGuest(handler, param.arg, event);
+                handler(param.arg, event);
             }
         } else {
             OrbisImeKeyboardParam param = m_param.key;
             if (use_param_handler) {
-                Core::ExecuteGuest(param.handler, param.arg, event);
+                param.handler(param.arg, event);
             } else {
-                Core::ExecuteGuest(handler, param.arg, event);
+                handler(param.arg, event);
             }
         }
     }

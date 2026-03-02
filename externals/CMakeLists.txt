@@ -259,16 +259,19 @@ if (WIN32)
 add_subdirectory(ext-wepoll)
 endif()
 
-if (NOT TARGET fdk-aac)
 add_subdirectory(aacdec)
-endif()
 
 #nlohmann json 
+if (NOT TARGET nlohmann_json::nlohmann_json)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
+endif()
 
 # miniz
+if (NOT TARGET miniz::miniz)
 add_subdirectory(miniz)
+add_library(miniz::miniz ALIAS miniz)
+endif()
 
 # cli11
 if (NOT TARGET CLI11::CLI11)

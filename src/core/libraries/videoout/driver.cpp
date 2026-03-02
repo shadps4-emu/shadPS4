@@ -193,7 +193,7 @@ void VideoOutDriver::Flip(const Request& req) {
         if (event != nullptr) {
             event->TriggerEvent(
                 static_cast<u64>(OrbisVideoOutInternalEventId::Flip),
-                Kernel::SceKernelEvent::Filter::VideoOut,
+                Kernel::OrbisKernelEvent::Filter::VideoOut,
                 reinterpret_cast<void*>(static_cast<u64>(OrbisVideoOutInternalEventId::Flip) |
                                         (req.flip_arg << 16)));
         }
@@ -224,7 +224,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
                                 bool is_eop /*= false*/) {
     {
         std::unique_lock lock{port->port_mutex};
-        if (index != -1 && port->flip_status.flip_pending_num >= port->NumRegisteredBuffers()) {
+        if (index != -1 && port->flip_status.flip_pending_num > 16) {
             LOG_ERROR(Lib_VideoOut, "Flip queue is full");
             return false;
         }
@@ -252,6 +252,7 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         frame = presenter->PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
+        ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
         frame = presenter->PrepareFrame(group, buffer.address_left);
     }
@@ -314,18 +315,23 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         {
             // Needs lock here as can be concurrently read by `sceVideoOutGetVblankStatus`
             std::scoped_lock lock{main_port.vo_mutex};
+
+            // Trigger flip events for the port
+            for (auto& event : main_port.vblank_events) {
+                if (event != nullptr) {
+                    event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
+                                        Kernel::OrbisKernelEvent::Filter::VideoOut,
+                                        reinterpret_cast<void*>(
+                                            static_cast<u64>(OrbisVideoOutInternalEventId::Vblank) |
+                                            (vblank_status.count << 16)));
+                }
+            }
+
+            // Update vblank status
             vblank_status.count++;
             vblank_status.process_time = Libraries::Kernel::sceKernelGetProcessTime();
             vblank_status.tsc = Libraries::Kernel::sceKernelReadTsc();
             main_port.vblank_cv.notify_all();
-        }
-
-        // Trigger flip events for the port.
-        for (auto& event : main_port.vblank_events) {
-            if (event != nullptr) {
-                event->TriggerEvent(static_cast<u64>(OrbisVideoOutInternalEventId::Vblank),
-                                    Kernel::SceKernelEvent::Filter::VideoOut, nullptr);
-            }
         }
 
         timer.End();
