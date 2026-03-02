@@ -1084,10 +1084,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserCol
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = (OrbisUserServiceUserColor)EmulatorSettingsImpl::GetInstance()
-                 ->GetUserManager()
-                 .GetUserByID(user_id)
-                 ->user_color;
+    *color = (OrbisUserServiceUserColor)UserManagement.GetUserByID(user_id)->user_color;
     return ORBIS_OK;
 }
 

@@ -192,9 +192,8 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u8>&& da
         return false;
     }
 
-    auto path = EmulatorSettings.IsPipelineCacheArchived()
-                    ? std::filesystem::path{name}
-                    : cache_path / name;
+    auto path = EmulatorSettings.IsPipelineCacheArchived() ? std::filesystem::path{name}
+                                                           : cache_path / name;
     return WriteVector(type, std::move(path), std::move(data));
 }
 
@@ -203,9 +202,8 @@ bool DataBase::Save(BlobType type, const std::string& name, std::vector<u32>&& d
         return false;
     }
 
-    auto path = EmulatorSettings.IsPipelineCacheArchived()
-                    ? std::filesystem::path{name}
-                    : cache_path / name;
+    auto path = EmulatorSettings.IsPipelineCacheArchived() ? std::filesystem::path{name}
+                                                           : cache_path / name;
     return WriteVector(type, std::move(path), std::move(data));
 }
 
@@ -214,9 +212,8 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u8>& dat
         return;
     }
 
-    auto path = EmulatorSettings.IsPipelineCacheArchived()
-                    ? std::filesystem::path{name}
-                    : cache_path / name;
+    auto path = EmulatorSettings.IsPipelineCacheArchived() ? std::filesystem::path{name}
+                                                           : cache_path / name;
     return LoadVector(type, path, data);
 }
 
@@ -225,9 +222,8 @@ void DataBase::Load(BlobType type, const std::string& name, std::vector<u32>& da
         return;
     }
 
-    auto path = EmulatorSettings.IsPipelineCacheArchived()
-                    ? std::filesystem::path{name}
-                    : cache_path / name;
+    auto path = EmulatorSettings.IsPipelineCacheArchived() ? std::filesystem::path{name}
+                                                           : cache_path / name;
     return LoadVector(type, path, data);
 }
 

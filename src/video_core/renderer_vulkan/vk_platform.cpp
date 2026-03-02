@@ -306,12 +306,9 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     LOG_INFO(Render_Vulkan, "Enabled instance layers: {}", layers_string);
 
     // Validation settings
-    vk::Bool32 enable_core =
-        EmulatorSettings.IsVkValidationCoreEnabled() ? vk::True : vk::False;
-    vk::Bool32 enable_sync =
-        EmulatorSettings.IsVkValidationSyncEnabled() ? vk::True : vk::False;
-    vk::Bool32 enable_gpuav =
-        EmulatorSettings.IsVkValidationGpuEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_core = EmulatorSettings.IsVkValidationCoreEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_sync = EmulatorSettings.IsVkValidationSyncEnabled() ? vk::True : vk::False;
+    vk::Bool32 enable_gpuav = EmulatorSettings.IsVkValidationGpuEnabled() ? vk::True : vk::False;
 
     // Crash diagnostics settings
     static const auto crash_diagnostic_path =

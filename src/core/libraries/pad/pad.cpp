@@ -32,8 +32,7 @@ int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
     std::memset(pExtInfo, 0, sizeof(OrbisPadDeviceClassExtendedInformation));
     if (EmulatorSettings.IsUsingSpecialPad()) {
-        pExtInfo->deviceClass =
-            (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
+        pExtInfo->deviceClass = (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
     }
     return ORBIS_OK;
 }
@@ -111,8 +110,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     pInfo->connected = true;
     if (EmulatorSettings.IsUsingSpecialPad()) {
         pInfo->connectionType = ORBIS_PAD_PORT_TYPE_SPECIAL;
-        pInfo->deviceClass =
-            (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
+        pInfo->deviceClass = (OrbisPadDeviceClass)EmulatorSettings.GetSpecialPadClass();
     }
     return ORBIS_OK;
 }

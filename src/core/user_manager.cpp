@@ -16,8 +16,7 @@ bool UserManager::AddUser(const User& user) {
     m_users.user.push_back(user);
 
     // Create user home directory and subfolders
-    const auto user_dir =
-        EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
+    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
 
     std::error_code ec;
     if (!std::filesystem::exists(user_dir)) {
@@ -80,8 +79,7 @@ std::vector<User> UserManager::CreateDefaultUser() {
     default_user.user_name = "shadPS4";
     default_user.controller_port = 1;
 
-    const auto user_dir =
-        EmulatorSettings.GetHomeDir() / std::to_string(default_user.user_id);
+    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(default_user.user_id);
 
     if (!std::filesystem::exists(user_dir)) {
         std::filesystem::create_directory(user_dir);

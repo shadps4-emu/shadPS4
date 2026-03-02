@@ -110,8 +110,7 @@ public:
             max_channel_gain = std::max(max_channel_gain, channel_gain);
         }
 
-        const float slider_gain =
-            EmulatorSettings.GetVolumeSlider() * 0.01f; // Faster than /100.0f
+        const float slider_gain = EmulatorSettings.GetVolumeSlider() * 0.01f; // Faster than /100.0f
         const float total_gain = max_channel_gain * slider_gain;
 
         const float current = current_gain.load(std::memory_order_acquire);
@@ -157,8 +156,7 @@ private:
         }
 
         // Initialize current gain
-        current_gain.store(EmulatorSettings.GetVolumeSlider() * 0.01f,
-                           std::memory_order_relaxed);
+        current_gain.store(EmulatorSettings.GetVolumeSlider() * 0.01f, std::memory_order_relaxed);
 
         if (!SelectConverter()) {
             FreeAlignedBuffer();

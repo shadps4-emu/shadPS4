@@ -180,9 +180,8 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         info->mtu = 1500; // default value
         break;
     case ORBIS_NET_CTL_INFO_LINK:
-        info->link = EmulatorSettings.IsConnectedToNetwork()
-                         ? ORBIS_NET_CTL_LINK_CONNECTED
-                         : ORBIS_NET_CTL_LINK_DISCONNECTED;
+        info->link = EmulatorSettings.IsConnectedToNetwork() ? ORBIS_NET_CTL_LINK_CONNECTED
+                                                             : ORBIS_NET_CTL_LINK_DISCONNECTED;
         break;
     case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
         strcpy(info->ip_address,

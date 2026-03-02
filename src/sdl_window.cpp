@@ -117,10 +117,8 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
         error = true;
     }
     if (!error) {
-        SDL_SetWindowFullscreenMode(window, EmulatorSettings.GetFullScreenMode() ==
-                                                    "Fullscreen"
-                                                ? displayMode
-                                                : NULL);
+        SDL_SetWindowFullscreenMode(
+            window, EmulatorSettings.GetFullScreenMode() == "Fullscreen" ? displayMode : NULL);
     }
     SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
 

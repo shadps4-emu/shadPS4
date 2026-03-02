@@ -665,8 +665,7 @@ static void UpdateMouseCursor() {
 
     } else if (cursorState == HideCursorState::Idle &&
                bd->time - bd->lastCursorMoveTime >=
-                   EmulatorSettings.GetCursorHideTimeout() *
-                       SDL_GetPerformanceFrequency()) {
+                   EmulatorSettings.GetCursorHideTimeout() * SDL_GetPerformanceFrequency()) {
 
         bool wasCursorVisible = SDL_CursorVisible();
         SDL_HideCursor();

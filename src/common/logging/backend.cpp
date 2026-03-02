@@ -185,8 +185,7 @@ public:
 
     void PushEntry(Class log_class, Level log_level, const char* filename, unsigned int line_num,
                    const char* function, const char* format, const fmt::format_args& args) {
-        if (!filter.CheckMessage(log_class, log_level) ||
-            !EmulatorSettings.IsLogEnabled()) {
+        if (!filter.CheckMessage(log_class, log_level) || !EmulatorSettings.IsLogEnabled()) {
             return;
         }
 

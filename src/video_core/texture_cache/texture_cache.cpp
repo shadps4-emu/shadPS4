@@ -649,8 +649,8 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (EmulatorSettings.IsReadbackLinearImagesEnabled() &&
-            !image.info.props.is_tiled && image.info.guest_address != 0) {
+        if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled &&
+            image.info.guest_address != 0) {
             download_images.emplace(image_id);
         }
     }
@@ -661,8 +661,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (EmulatorSettings.IsReadbackLinearImagesEnabled() &&
-        !image.info.props.is_tiled) {
+    if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled) {
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;

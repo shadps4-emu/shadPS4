@@ -10,7 +10,6 @@
 #include <fmt/format.h>
 #include <libusb.h>
 
-
 namespace Libraries::Usbd {
 
 s32 libusb_to_orbis_error(int retVal) {

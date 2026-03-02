@@ -99,7 +99,8 @@ void EmulatorSettingsImpl::RemoveGameInstallDir(const std::filesystem::path& dir
     }
 }
 
-void EmulatorSettingsImpl::SetGameInstallDirEnabled(const std::filesystem::path& dir, bool enabled) {
+void EmulatorSettingsImpl::SetGameInstallDirEnabled(const std::filesystem::path& dir,
+                                                    bool enabled) {
     auto iterator =
         std::find_if(m_general.install_dirs.value.begin(), m_general.install_dirs.value.end(),
                      [&dir](const GameInstallDir& install_dir) { return install_dir.path == dir; });
@@ -108,7 +109,8 @@ void EmulatorSettingsImpl::SetGameInstallDirEnabled(const std::filesystem::path&
     }
 }
 
-void EmulatorSettingsImpl::SetGameInstallDirs(const std::vector<std::filesystem::path>& dirs_config) {
+void EmulatorSettingsImpl::SetGameInstallDirs(
+    const std::vector<std::filesystem::path>& dirs_config) {
     m_general.install_dirs.value.clear();
     for (const auto& dir : dirs_config) {
         m_general.install_dirs.value.push_back({dir, true});
