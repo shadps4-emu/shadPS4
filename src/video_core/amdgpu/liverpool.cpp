@@ -902,7 +902,8 @@ template <bool is_indirect>
 Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     FIBER_ENTER(acb_task_name[vqid]);
     auto& queue = asc_queues[{vqid}];
-    const bool host_markers_enabled = rasterizer && EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled();
+    const bool host_markers_enabled =
+        rasterizer && EmulatorSettings::GetInstance()->IsVkHostMarkersEnabled();
 
     struct IndirectPatch {
         const PM4Header* header;

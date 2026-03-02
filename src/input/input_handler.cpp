@@ -691,10 +691,9 @@ bool UpdatePressedKeys(InputEvent event) {
     if (input.type == InputType::Axis) {
         // analog input, it gets added when it first sends an event,
         // and from there, it only changes the parameter
-        auto it = std::lower_bound(pressed_keys.begin(), pressed_keys.end(), input,
-                                   [](const std::pair<InputEvent, bool>& e, InputID i) {
-                                       return e.first.input < i;
-                                   });
+        auto it = std::lower_bound(
+            pressed_keys.begin(), pressed_keys.end(), input,
+            [](const std::pair<InputEvent, bool>& e, InputID i) { return e.first.input < i; });
         if (it == pressed_keys.end() || it->first.input != input) {
             pressed_keys.insert(it, {event, false});
             LOG_DEBUG(Input, "Added axis {} to the input list", event.input.sdl_id);
