@@ -11,6 +11,8 @@
 #include "emulator_settings.h"
 #include "emulator_state.h"
 
+#include <SDL3/SDL_messagebox.h>
+
 using json = nlohmann::json;
 
 // ── Singleton storage ─────────────────────────────────────────────────
@@ -293,7 +295,32 @@ bool EmulatorSettings::Load(const std::string& serial) {
                     m_userManager.GetUsers() = gj.at("Users").get<Users>();
                 LOG_DEBUG(EmuSettings, "Global config loaded successfully");
             } else {
-                LOG_DEBUG(EmuSettings, "Global config not found – using defaults");
+                if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
+                                            "config.toml")) {
+                    SDL_MessageBoxButtonData btns[2]{
+                        {0, 0, "No"},
+                        {0, 1, "Yes"},
+                    };
+                    SDL_MessageBoxData msg_box{
+                        0,
+                        nullptr,
+                        "Config Migration",
+                        "The shadPS4 config backend has been updated, and you only have "
+                        "the old version of the config. Do you wish to update it "
+                        "automatically, or continue with the default config?",
+                        2,
+                        btns,
+                        nullptr,
+                    };
+                    int result;
+                    SDL_ShowMessageBox(&msg_box, &result);
+                    if (result == 1) {
+                        SDL_ShowSimpleMessageBox(
+                            0, "Error", "sike this actually isn't implemented yet lol", nullptr);
+                        std::quick_exit(1);
+                    }
+                }
+                LOG_DEBUG(EmuSettings, "Global config not found - using defaults");
                 SetDefaultValues();
                 if (m_userManager.GetUsers().user.empty())
                     m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
