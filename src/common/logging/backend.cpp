@@ -14,7 +14,6 @@
 #endif
 
 #include "common/bounded_threadsafe_queue.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/io_file.h"
 #include "common/logging/backend.h"

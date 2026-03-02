@@ -8,7 +8,6 @@
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/path_util.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"

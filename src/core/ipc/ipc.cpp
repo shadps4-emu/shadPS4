@@ -8,7 +8,6 @@
 
 #include <SDL3/SDL.h>
 
-#include "common/config.h"
 #include "common/memory_patcher.h"
 #include "common/thread.h"
 #include "common/types.h"

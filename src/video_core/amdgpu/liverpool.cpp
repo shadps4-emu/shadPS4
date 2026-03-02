@@ -4,7 +4,6 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"

@@ -6,7 +6,7 @@
 #include "common/logging/backend.h"
 
 #if defined(ARCH_X86_64)
-#define Crash() __asm__ __volatile__("int $3")
+#define Crash() quick_exit(1)
 #elif defined(ARCH_ARM64)
 #define Crash() __asm__ __volatile__("brk 0")
 #else

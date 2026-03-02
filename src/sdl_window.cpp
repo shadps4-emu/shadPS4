@@ -8,7 +8,6 @@
 #include "SDL3/SDL_timer.h"
 #include "SDL3/SDL_video.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
@@ -32,39 +31,41 @@ namespace Frontend {
 using namespace Libraries::Pad;
 
 static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
+    using OPBDO = OrbisPadButtonDataOffset;
+
     switch (button) {
     case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-        return OrbisPadButtonDataOffset::Down;
+        return OPBDO::Down;
     case SDL_GAMEPAD_BUTTON_DPAD_UP:
-        return OrbisPadButtonDataOffset::Up;
+        return OPBDO::Up;
     case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-        return OrbisPadButtonDataOffset::Left;
+        return OPBDO::Left;
     case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-        return OrbisPadButtonDataOffset::Right;
+        return OPBDO::Right;
     case SDL_GAMEPAD_BUTTON_SOUTH:
-        return OrbisPadButtonDataOffset::Cross;
+        return OPBDO::Cross;
     case SDL_GAMEPAD_BUTTON_NORTH:
-        return OrbisPadButtonDataOffset::Triangle;
+        return OPBDO::Triangle;
     case SDL_GAMEPAD_BUTTON_WEST:
-        return OrbisPadButtonDataOffset::Square;
+        return OPBDO::Square;
     case SDL_GAMEPAD_BUTTON_EAST:
-        return OrbisPadButtonDataOffset::Circle;
+        return OPBDO::Circle;
     case SDL_GAMEPAD_BUTTON_START:
-        return OrbisPadButtonDataOffset::Options;
+        return OPBDO::Options;
     case SDL_GAMEPAD_BUTTON_TOUCHPAD:
-        return OrbisPadButtonDataOffset::TouchPad;
+        return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_BACK:
-        return OrbisPadButtonDataOffset::TouchPad;
+        return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-        return OrbisPadButtonDataOffset::L1;
+        return OPBDO::L1;
     case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-        return OrbisPadButtonDataOffset::R1;
+        return OPBDO::R1;
     case SDL_GAMEPAD_BUTTON_LEFT_STICK:
-        return OrbisPadButtonDataOffset::L3;
+        return OPBDO::L3;
     case SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-        return OrbisPadButtonDataOffset::R3;
+        return OPBDO::R3;
     default:
-        return OrbisPadButtonDataOffset::None;
+        return OPBDO::None;
     }
 }
 

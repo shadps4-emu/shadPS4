@@ -18,7 +18,6 @@
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_timer.h"
 
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
@@ -44,18 +43,169 @@ What structs are needed?
 InputBinding(key1, key2, key3)
 ControllerOutput(button, axis) - we only need a const array of these, and one of the attr-s is
 always 0 BindingConnection(inputBinding (member), controllerOutput (ref to the array element))
-
-Things to always test before pushing like a dumbass:
-Button outputs
-Axis outputs
-Input hierarchy
-Multi key inputs
-Mouse to joystick
-Key toggle
-Joystick halfmode
-
-Don't be an idiot and test only the changed part expecting everything else to not be broken
 */
+
+constexpr std::string_view GetDefaultGlobalConfig() {
+    return R"(# Anything put here will be loaded for all games,
+# alongside the game's config or default.ini depending on your preference.
+)";
+}
+
+constexpr std::string_view GetDefaultInputConfig() {
+    return R"(#Feeling lost? Check out the Help section!
+
+# Keyboard bindings
+
+triangle = kp8
+circle = kp6
+cross = kp2
+square = kp4
+# Alternatives for users without a keypad
+triangle = c
+circle = b
+cross = n
+square = v
+
+l1 = q
+r1 = u
+l2 = e
+r2 = o
+l3 = x
+r3 = m
+
+options = enter
+touchpad_center = space
+
+pad_up = up
+pad_down = down
+pad_left = left
+pad_right = right
+
+axis_left_x_minus = a
+axis_left_x_plus = d
+axis_left_y_minus = w
+axis_left_y_plus = s
+
+axis_right_x_minus = j
+axis_right_x_plus = l
+axis_right_y_minus = i
+axis_right_y_plus = k
+
+# Controller bindings
+
+triangle = triangle
+cross = cross
+square = square
+circle = circle
+
+l1 = l1
+l2 = l2
+l3 = l3
+r1 = r1
+r2 = r2
+r3 = r3
+
+options = options
+touchpad_center = back
+
+pad_up = pad_up
+pad_down = pad_down
+pad_left = pad_left
+pad_right = pad_right
+
+axis_left_x = axis_left_x
+axis_left_y = axis_left_y
+axis_right_x = axis_right_x
+axis_right_y = axis_right_y
+
+# Range of deadzones: 1 (almost none) to 127 (max)
+analog_deadzone = leftjoystick, 2, 127
+analog_deadzone = rightjoystick, 2, 127
+
+override_controller_color = false, 0, 0, 255
+)";
+}
+std::filesystem::path GetInputConfigFile(const std::string& game_id) {
+    // Read configuration file of the game, and if it doesn't exist, generate it from default
+    // If that doesn't exist either, generate that from getDefaultConfig() and try again
+    // If even the folder is missing, we start with that.
+
+    const auto config_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "input_config";
+    const auto config_file = config_dir / (game_id + ".ini");
+    const auto default_config_file = config_dir / "default.ini";
+
+    // Ensure the config directory exists
+    if (!std::filesystem::exists(config_dir)) {
+        std::filesystem::create_directories(config_dir);
+    }
+
+    // Check if the default config exists
+    if (!std::filesystem::exists(default_config_file)) {
+        // If the default config is also missing, create it from getDefaultConfig()
+        const auto default_config = GetDefaultInputConfig();
+        std::ofstream default_config_stream(default_config_file);
+        if (default_config_stream) {
+            default_config_stream << default_config;
+        }
+    }
+
+    // if empty, we only need to execute the function up until this point
+    if (game_id.empty()) {
+        return default_config_file;
+    }
+
+    // Create global config if it doesn't exist yet
+    if (game_id == "global" && !std::filesystem::exists(config_file)) {
+        if (!std::filesystem::exists(config_file)) {
+            const auto global_config = GetDefaultGlobalConfig();
+            std::ofstream global_config_stream(config_file);
+            if (global_config_stream) {
+                global_config_stream << global_config;
+            }
+        }
+    }
+    if (game_id == "global") {
+        std::map<std::string, std::string> default_bindings_to_add = {
+            {"hotkey_renderdoc_capture", "f12"},
+            {"hotkey_fullscreen", "f11"},
+            {"hotkey_show_fps", "f10"},
+            {"hotkey_pause", "f9"},
+            {"hotkey_reload_inputs", "f8"},
+            {"hotkey_toggle_mouse_to_joystick", "f7"},
+            {"hotkey_toggle_mouse_to_gyro", "f6"},
+            {"hotkey_add_virtual_user", "f5"},
+            {"hotkey_remove_virtual_user", "f4"},
+            {"hotkey_toggle_mouse_to_touchpad", "delete"},
+            {"hotkey_quit", "lctrl, lshift, end"},
+            {"hotkey_volume_up", "kpplus"},
+            {"hotkey_volume_down", "kpminus"},
+        };
+        std::ifstream global_in(config_file);
+        std::string line;
+        while (std::getline(global_in, line)) {
+            line.erase(std::remove_if(line.begin(), line.end(),
+                                      [](unsigned char c) { return std::isspace(c); }),
+                       line.end());
+            std::size_t equal_pos = line.find('=');
+            if (equal_pos == std::string::npos) {
+                continue;
+            }
+            std::string output_string = line.substr(0, equal_pos);
+            default_bindings_to_add.erase(output_string);
+        }
+        global_in.close();
+        std::ofstream global_out(config_file, std::ios::app);
+        for (auto const& b : default_bindings_to_add) {
+            global_out << b.first << " = " << b.second << "\n";
+        }
+    }
+
+    // If game-specific config doesn't exist, create it from the default config
+    if (!std::filesystem::exists(config_file)) {
+        std::filesystem::copy(default_config_file, config_file);
+    }
+    return config_file;
+}
 
 bool leftjoystick_halfmode = false, rightjoystick_halfmode = false;
 std::pair<int, int> leftjoystick_deadzone, rightjoystick_deadzone, lefttrigger_deadzone,
@@ -187,9 +337,10 @@ std::optional<int> parseInt(const std::string& s) {
 };
 
 void ParseInputConfig(const std::string game_id = "") {
-    std::string game_id_or_default = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
-    const auto config_file = Config::GetInputConfigFile(game_id_or_default);
-    const auto global_config_file = Config::GetInputConfigFile("global");
+    std::string game_id_or_default =
+        EmulatorSettings::GetInstance()->IsUseUnifiedInputConfig() ? "default" : game_id;
+    const auto config_file = GetInputConfigFile(game_id_or_default);
+    const auto global_config_file = GetInputConfigFile("global");
 
     // we reset these here so in case the user fucks up or doesn't include some of these,
     // we can fall back to default
@@ -203,8 +354,8 @@ void ParseInputConfig(const std::string game_id = "") {
     lefttrigger_deadzone = {1, 127};
     righttrigger_deadzone = {1, 127};
 
-    Config::SetOverrideControllerColor(false);
-    Config::SetControllerCustomColor(0, 0, 255);
+    GameControllers::SetOverrideControllerColor(false);
+    GameControllers::SetControllerCustomColor(0, 0, 255);
 
     int lineCount = 0;
 
@@ -371,8 +522,8 @@ void ParseInputConfig(const std::string game_id = "") {
                             lineCount, line);
                 return;
             }
-            Config::SetOverrideControllerColor(enable == "true");
-            Config::SetControllerCustomColor(*r, *g, *b);
+            GameControllers::SetOverrideControllerColor(enable == "true");
+            GameControllers::SetControllerCustomColor(*r, *g, *b);
             LOG_DEBUG(Input, "Parsed color settings: {} {} {} {}",
                       enable == "true" ? "override" : "no override", *r, *b, *g);
             return;

@@ -1,11 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <sstream>
 #include <unordered_set>
 #include <SDL3/SDL.h>
 #include <common/singleton.h>
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "controller.h"
 #include "core/emulator_settings.h"
@@ -212,6 +211,9 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
         PushState();
     }
 }
+
+bool GameControllers::override_controller_color = false;
+Colour GameControllers::controller_override_color{};
 
 bool is_first_check = true;
 

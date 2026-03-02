@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <memory>
 #include <core/libraries/system/userservice.h>
 #include "common/types.h"
 

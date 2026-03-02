@@ -10,7 +10,6 @@
 #include <fmt/xchar.h>
 #include <hwinfo/hwinfo.h>
 
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
@@ -205,9 +204,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     game_info.game_folder = game_folder;
-
-    Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
-                 true);
 
     EmulatorSettings::GetInstance()->Load(id);
 

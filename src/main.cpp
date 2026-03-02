@@ -10,7 +10,6 @@
 #include <SDL3/SDL_messagebox.h>
 
 #include <core/emulator_state.h>
-#include "common/config.h"
 #include "common/key_manager.h"
 #include "common/logging/backend.h"
 #include "common/memory_patcher.h"
@@ -40,22 +39,7 @@ int main(int argc, char* argv[]) {
     EmulatorSettings::SetInstance(emu_settings);
     emu_settings->Load();
 
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
-
-    // ---- Trophy key migration ----
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
-        !Config::getTrophyKey().empty()) {
-        auto keys = key_manager->GetAllKeys();
-        if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !Config::getTrophyKey().empty()) {
-            keys.TrophyKeySet.ReleaseTrophyKey =
-                KeyManager::HexStringToBytes(Config::getTrophyKey());
-            key_manager->SetAllKeys(keys);
-            key_manager->SaveToFile();
-        }
-    }
+    // TODO add back trophy key migration without the need of entire previous config framework
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
@@ -127,14 +111,14 @@ int main(int argc, char* argv[]) {
     // ---- Utility commands ----
     if (addGameFolder) {
         EmulatorSettings::GetInstance()->AddGameInstallDir(*addGameFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings::GetInstance()->Save();
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
 
     if (setAddonFolder) {
         EmulatorSettings::GetInstance()->SetAddonInstallDir(*setAddonFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings::GetInstance()->Save();
         std::cout << "Addon folder successfully saved.\n";
         return 0;
     }
@@ -170,11 +154,11 @@ int main(int argc, char* argv[]) {
     if (showFps)
         EmulatorSettings::GetInstance()->SetShowFpsCounter(true);
 
-    if (configClean) // TODO
-        Config::setConfigMode(Config::ConfigMode::Clean);
+    if (configClean)
+        EmulatorSettings::GetInstance()->SetConfigMode(ConfigMode::Clean);
 
     if (configGlobal)
-        Config::setConfigMode(Config::ConfigMode::Global);
+        EmulatorSettings::GetInstance()->SetConfigMode(ConfigMode::Global);
 
     if (logAppend)
         Common::Log::SetAppend();

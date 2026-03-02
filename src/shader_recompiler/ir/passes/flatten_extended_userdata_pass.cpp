@@ -5,7 +5,6 @@
 #include <boost/container/flat_map.hpp>
 #include <xbyak/xbyak.h>
 #include <xbyak/xbyak_util.h>
-#include "common/config.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"

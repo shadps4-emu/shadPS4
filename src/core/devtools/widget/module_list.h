@@ -8,7 +8,6 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"

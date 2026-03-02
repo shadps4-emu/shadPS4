@@ -3,7 +3,6 @@
 
 #include <queue>
 
-#include "common/config.h"
 #include "common/logging/log.h"
 
 #include "common/singleton.h"
@@ -510,7 +509,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetInitialUser(int* user_id) {
         LOG_ERROR(Lib_UserService, "user_id is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *user_id = EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser();
+    *user_id = EmulatorSettings::GetInstance()->GetUserManager().GetDefaultUser().user_id;
     return ORBIS_OK;
 }
 

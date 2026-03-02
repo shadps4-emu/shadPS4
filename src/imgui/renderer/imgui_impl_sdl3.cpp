@@ -4,7 +4,6 @@
 // Based on imgui_impl_sdl3.cpp from Dear ImGui repository
 
 #include <imgui.h>
-#include "common/config.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"

@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "common/config.h"
 #include "common/div_ceil.h"
 #include "common/logging/log.h"
 

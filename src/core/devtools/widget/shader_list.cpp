@@ -8,7 +8,6 @@
 #include <imgui.h>
 
 #include "common.h"
-#include "common/config.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
 #include "core/debug_state.h"

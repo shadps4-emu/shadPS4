@@ -10,7 +10,6 @@
 #include <fmt/format.h>
 #include <libusb.h>
 
-#include "common/config.h"
 
 namespace Libraries::Usbd {
 

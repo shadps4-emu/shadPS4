@@ -6,7 +6,6 @@
 
 #include <imgui.h>
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/io_file.h"
 #include "common/polyfill_thread.h"
 #include "common/stb.h"

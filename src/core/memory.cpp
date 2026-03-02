@@ -3,7 +3,6 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/elf_info.h"
 #include "core/emulator_settings.h"

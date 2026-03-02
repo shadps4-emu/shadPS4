@@ -5,7 +5,6 @@
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/error.h"
 #include "core/address_space.h"

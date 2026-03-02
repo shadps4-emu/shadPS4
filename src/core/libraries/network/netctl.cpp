@@ -13,7 +13,6 @@
 #endif
 
 #include <common/singleton.h>
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"

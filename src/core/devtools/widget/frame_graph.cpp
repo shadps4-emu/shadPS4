@@ -3,7 +3,6 @@
 
 #include "frame_graph.h"
 
-#include "common/config.h"
 #include "common/singleton.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"

@@ -36,6 +36,10 @@ struct TouchpadEntry {
     u16 y{};
 };
 
+struct Colour {
+    u8 r, g, b;
+};
+
 struct State {
 private:
     template <typename T>
@@ -167,6 +171,8 @@ private:
 
 class GameControllers {
     std::array<GameController*, 4> controllers;
+    static bool override_controller_color;
+    static Colour controller_override_color;
 
 public:
     GameControllers()
@@ -181,6 +187,19 @@ public:
     }
     static void TryOpenSDLControllers(GameControllers& controllers);
     static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
+
+    static void SetOverrideControllerColor(bool set) {
+        override_controller_color = set;
+    }
+    static void SetControllerCustomColor(u8 r, u8 g, u8 b) {
+        controller_override_color = {r, g, b};
+    }
+    static bool GetOverrideControllerColor() {
+        return override_controller_color;
+    }
+    static Colour GetControllerCustomColor() {
+        return controller_override_color;
+    }
 };
 
 } // namespace Input

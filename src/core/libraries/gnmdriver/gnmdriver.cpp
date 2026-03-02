@@ -5,7 +5,6 @@
 #include "gnmdriver.h"
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"

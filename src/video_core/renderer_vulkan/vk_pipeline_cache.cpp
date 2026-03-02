@@ -3,7 +3,6 @@
 
 #include <ranges>
 
-#include "common/config.h"
 #include "common/hash.h"
 #include "common/io_file.h"
 #include "common/path_util.h"

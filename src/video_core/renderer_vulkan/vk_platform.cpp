@@ -17,7 +17,6 @@
 #include <fmt/ranges.h>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"

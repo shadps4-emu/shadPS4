@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
@@ -462,8 +461,8 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto controllers = *Common::Singleton<GameControllers>::Instance();
-    int* rgb = Config::GetControllerCustomColor();
-    controllers[*controller_id]->SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
+    Input::Colour colour = GameControllers::GetControllerCustomColor();
+    controllers[*controller_id]->SetLightBarRGB(colour.r, colour.g, colour.b);
     return ORBIS_OK;
 }
 
@@ -534,7 +533,7 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 }
 
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
-    if (Config::GetOverrideControllerColor()) {
+    if (GameControllers::GetOverrideControllerColor()) {
         return ORBIS_OK;
     }
     auto controller_id = GamepadSelect::GetControllerIndexFromUserID(handle);
