@@ -6,8 +6,10 @@
 #include <iomanip>
 #include <map>
 #include <common/path_util.h>
+#include <common/scm_rev.h>
 #include "common/logging/log.h"
 #include "emulator_settings.h"
+#include "emulator_state.h"
 
 using json = nlohmann::json;
 
@@ -189,7 +191,7 @@ void EmulatorSettings::ResetGameSpecificValue(const std::string& key) {
     LOG_WARNING(EmuSettings, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
-bool EmulatorSettings::Save(const std::string& serial) const {
+bool EmulatorSettings::Save(const std::string& serial) {
     try {
         if (!serial.empty()) {
             const auto cfgDir = Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs);
@@ -235,6 +237,7 @@ bool EmulatorSettings::Save(const std::string& serial) const {
             const auto path =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.json";
 
+            SetConfigVersion(Common::g_scm_rev);
             json j;
             j["General"] = m_general;
             j["Debug"] = m_debug;
@@ -297,7 +300,9 @@ bool EmulatorSettings::Load(const std::string& serial) {
                 Save();
             }
             return true;
-
+            if (GetConfigVersion() != Common::g_scm_rev) {
+                Save();
+            }
         } else {
             // ── Per-game override file ─────────────────────────────────
             // Never reloads global settings.  Only applies
@@ -341,6 +346,7 @@ bool EmulatorSettings::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_vulkan, gj.at("Vulkan"), changed);
 
             PrintChangedSummary(changed);
+            EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
             return true;
         }
     } catch (const std::exception& e) {

@@ -202,6 +202,7 @@ struct DebugSettings {
     Setting<bool> debug_dump{false};               // specific
     Setting<bool> shader_collect{false};           // specific
     Setting<bool> log_enabled{true};               // specific
+    Setting<std::string> config_version{""};       // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -213,7 +214,7 @@ struct DebugSettings {
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
-                                   shader_collect, log_enabled)
+                                   shader_collect, log_enabled, config_version)
 
 // -------------------------------
 // Input settings
@@ -383,7 +384,7 @@ public:
     static std::shared_ptr<EmulatorSettings> GetInstance();
     static void SetInstance(std::shared_ptr<EmulatorSettings> instance);
 
-    bool Save(const std::string& serial = "") const;
+    bool Save(const std::string& serial = "");
     bool Load(const std::string& serial = "");
     void SetDefaultValues();
 
@@ -536,6 +537,7 @@ public:
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
     SETTING_FORWARD_BOOL(m_debug, ShaderCollect, shader_collect)
     SETTING_FORWARD_BOOL(m_debug, LogEnabled, log_enabled)
+    SETTING_FORWARD(m_debug, ConfigVersion, config_version)
 
     // GPU Settings
     SETTING_FORWARD_BOOL(m_gpu, NullGPU, null_gpu)

@@ -209,12 +209,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
                  true);
 
-    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                (id + ".toml"))) {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
-    } else {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
-    }
+    EmulatorSettings::GetInstance()->Load(id);
 
     // Initialize logging as soon as possible
     if (!id.empty() && EmulatorSettings::GetInstance()->IsSeparateLoggingEnabled()) {
@@ -235,9 +230,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
-    const bool has_game_config = std::filesystem::exists(
-        Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
-    LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
+    LOG_INFO(Config, "Game-specific config used: {}",
+             EmulatorState::GetInstance()->IsGameSpecifigConfigUsed());
 
     LOG_INFO(Config, "General LogType: {}", EmulatorSettings::GetInstance()->GetLogType());
     LOG_INFO(Config, "General isIdenticalLogGrouped: {}",
