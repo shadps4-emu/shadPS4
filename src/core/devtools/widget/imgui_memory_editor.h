@@ -88,8 +88,8 @@
 
 #if defined(_MSC_VER) || defined(_UCRT)
 #pragma warning(push)
-#pragma warning(disable                                                                            \
-                : 4996) // warning C4996: 'sprintf': This function or variable may be unsafe.
+#pragma warning(                                                                                   \
+    disable : 4996) // warning C4996: 'sprintf': This function or variable may be unsafe.
 #endif
 
 struct MemoryEditor {
