@@ -463,6 +463,24 @@ void Image::CopyImage(Image& src_image) {
     const auto& src_info = src_image.info;
     const u32 num_mips = std::min(src_info.resources.levels, info.resources.levels);
 
+    // Check for invalid depth-stencil copy combinations
+    auto src_format = src_info.pixel_format;
+    auto dst_format = info.pixel_format;
+
+    bool src_has_stencil = (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) ==
+                           vk::ImageAspectFlagBits::eStencil;
+    bool dst_has_stencil =
+        (aspect_mask & vk::ImageAspectFlagBits::eStencil) == vk::ImageAspectFlagBits::eStencil;
+
+    // If one image has stencil and the other doesn't, we CANNOT copy directly
+    if (src_has_stencil != dst_has_stencil) {
+        LOG_ERROR(Render_Vulkan,
+                  "Cannot copy between depth-stencil and depth-only images. "
+                  "src_has_stencil={}, dst_has_stencil={}",
+                  src_has_stencil, dst_has_stencil);
+        return;
+    }
+
     // Check format compatibility
     if (src_info.pixel_format != info.pixel_format) {
         LOG_DEBUG(Render_Vulkan,
@@ -501,6 +519,8 @@ void Image::CopyImage(Image& src_image) {
     // For depth/stencil images, only copy the depth aspect (skip stencil)
     if (src_image.aspect_mask & vk::ImageAspectFlagBits::eDepth) {
         aspect = vk::ImageAspectFlagBits::eDepth;
+    } else if (src_image.aspect_mask & vk::ImageAspectFlagBits::eStencil) {
+        aspect = vk::ImageAspectFlagBits::eStencil;
     }
 
     for (u32 mip = 0; mip < num_mips; ++mip) {
@@ -573,22 +593,18 @@ void Image::CopyImage(Image& src_image) {
 
     scheduler->EndRendering();
 
-    // Remove the pipeline stage flags - they don't belong here
     src_image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
-
     Transit(vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eTransferWrite, {});
 
     auto cmdbuf = scheduler->CommandBuffer();
 
     if (!image_copies.empty()) {
-        cmdbuf.copyImage(src_image.GetImage(), vk::ImageLayout::eTransferSrcOptimal, GetImage(),
-                         vk::ImageLayout::eTransferDstOptimal, image_copies);
+        cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
+                         backing->state.layout, image_copies);
     }
 
-    // Remove pipeline stage flags here too
     src_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
                       {});
-
     Transit(vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead, {});
 }
 
