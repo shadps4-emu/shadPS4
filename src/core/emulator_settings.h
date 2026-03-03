@@ -248,9 +248,10 @@ struct InputSettings {
     Setting<bool> use_special_pad{false};
     Setting<int> special_pad_class{1};
     Setting<bool> motion_controls_enabled{true}; // specific
-    Setting<bool> use_unified_Input_Config{true};
+    Setting<bool> use_unified_input_config{true};
     Setting<std::string> default_controller_id{""};
     Setting<bool> background_controller_input{false}; // specific
+    Setting<s32> camera_id{-1};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -261,13 +262,15 @@ struct InputSettings {
             make_override<InputSettings>("motion_controls_enabled",
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
-                                         &InputSettings::background_controller_input)};
+                                         &InputSettings::background_controller_input),
+            make_override<InputSettings>("camera_id",
+                                         &InputSettings::camera_id)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,
                                    usb_device_backend, use_special_pad, special_pad_class,
-                                   motion_controls_enabled, use_unified_Input_Config,
-                                   default_controller_id, background_controller_input)
+                                   motion_controls_enabled, use_unified_input_config,
+                                   default_controller_id, background_controller_input, camera_id)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -601,7 +604,8 @@ public:
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
     SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
-    SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_Input_Config)
+    SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_input_config)
+    SETTING_FORWARD(m_input, CameraId, camera_id)
 
     // Vulkan settings
     SETTING_FORWARD(m_vulkan, GpuId, gpu_id)
