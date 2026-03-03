@@ -198,7 +198,7 @@ Tcb* GetTcbBase() {
 
 thread_local std::once_flag init_tls_flag;
 
-void EnsureThreadInitialized() {
+void InitializeTLS() {
     std::call_once(init_tls_flag, [] { SetTcbBase(Libraries::Kernel::g_curthread->tcb); });
 }
 

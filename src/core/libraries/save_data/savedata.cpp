@@ -333,6 +333,9 @@ static bool match(std::string_view str, std::string_view pattern) {
             for (auto str_wild_it = str_it; str_wild_it <= str.end(); ++str_wild_it) {
                 if (match({str_wild_it, str.end()}, {pat_it + 1, pattern.end()})) {
                     return true;
+                } else if (str_wild_it == str.end()) {
+                    // Avoid incrementing str_wild_it past str.end().
+                    break;
                 }
             }
             return false;
