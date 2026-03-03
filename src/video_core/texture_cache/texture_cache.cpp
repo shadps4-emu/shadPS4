@@ -297,14 +297,6 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
     if (image_info.guest_address == cache_image.info.guest_address) {
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
-
-        if (image_info.pitch != cache_image.info.pitch) {
-            if (safe_to_delete) {
-                FreeImage(cache_image_id);
-            }
-            return {merged_image_id, -1, -1};
-        }
-
         if (image_info.BlockDim() != cache_image.info.BlockDim() ||
             lhs_block_size != rhs_block_size) {
             // Very likely this kind of overlap is caused by allocation from a pool.
