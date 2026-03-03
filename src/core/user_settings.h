@@ -39,5 +39,4 @@ private:
 
     static std::shared_ptr<UserSettingsImpl> s_instance;
     static std::mutex s_mutex;
-
 };
