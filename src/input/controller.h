@@ -150,7 +150,6 @@ public:
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     u32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     SDL_Gamepad* m_sdl_gamepad = nullptr;
-    SDL_JoystickID m_sdl_joystickid{};
 
 private:
     void PushState();
@@ -258,6 +257,7 @@ public:
     }
     static void TryOpenSDLControllers(GameControllers& controllers);
     static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
+    static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
 
     static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                      Libraries::Pad::OrbisFVector3& angularVelocity,
@@ -279,13 +279,3 @@ public:
 };
 
 } // namespace Input
-
-namespace GamepadSelect {
-
-std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
-int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID);
-std::string GetGUIDString(SDL_JoystickID* gamepadIDs, int index);
-std::string GetSelectedGamepad();
-void SetSelectedGamepad(std::string GUID);
-
-} // namespace GamepadSelect

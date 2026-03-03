@@ -13,8 +13,6 @@
 #include "core/libraries/system/userservice.h"
 #include "input/controller.h"
 
-static std::string SelectedGamepad = "";
-
 namespace Input {
 
 using Libraries::Pad::OrbisPadButtonDataOffset;
@@ -376,55 +374,10 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
     return index;
 }
 
-} // namespace Input
-
-namespace GamepadSelect {
-
-int GetDefaultGamepad(SDL_JoystickID* gamepadIDs, int gamepadCount) {
-    char GUIDbuf[33];
-    if (EmulatorSettings.GetDefaultControllerId() != "") {
-        for (int i = 0; i < gamepadCount; i++) {
-            SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
-            std::string currentGUID = std::string(GUIDbuf);
-            if (currentGUID == EmulatorSettings.GetDefaultControllerId()) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-std::optional<u8> GetControllerIndexFromUserID(s32 user_id) {
+std::optional<u8> GameControllers::GetControllerIndexFromUserID(s32 user_id) {
     if (user_id < 1 || user_id > 4)
         return std::nullopt;
     return static_cast<u8>(user_id - 1);
 }
 
-int GetIndexfromGUID(SDL_JoystickID* gamepadIDs, int gamepadCount, std::string GUID) {
-    char GUIDbuf[33];
-    for (int i = 0; i < gamepadCount; i++) {
-        SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[i]), GUIDbuf, 33);
-        std::string currentGUID = std::string(GUIDbuf);
-        if (currentGUID == GUID) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-std::string GetGUIDString(SDL_JoystickID* gamepadIDs, int index) {
-    char GUIDbuf[33];
-    SDL_GUIDToString(SDL_GetGamepadGUIDForID(gamepadIDs[index]), GUIDbuf, 33);
-    std::string GUID = std::string(GUIDbuf);
-    return GUID;
-}
-
-std::string GetSelectedGamepad() {
-    return SelectedGamepad;
-}
-
-void SetSelectedGamepad(std::string GUID) {
-    SelectedGamepad = GUID;
-}
-
-} // namespace GamepadSelect
+} // namespace Input
