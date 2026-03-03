@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/system/userservice.h"
 
@@ -16,6 +17,19 @@ struct OrbisMoveDeviceInfo {
     float sphere_radius;
     float accelerometer_offset[3];
 };
+
+enum class OrbisMoveButtonDataOffset : u16 {
+    Select = (1 << 0),
+    T = (1 << 1),
+    Move = (1 << 2),
+    Start = (1 << 3),
+    Triangle = (1 << 4),
+    Circle = (1 << 5),
+    Cross = (1 << 6),
+    Square = (1 << 7),
+    Intercepted = (1 << 15),
+};
+DECLARE_ENUM_FLAG_OPERATORS(OrbisMoveButtonDataOffset)
 
 struct OrbisMoveButtonData {
     u16 button_data;

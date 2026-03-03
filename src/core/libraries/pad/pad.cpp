@@ -330,8 +330,8 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             controller.SetLastUpdate(now);
             Libraries::Pad::OrbisFQuaternion lastOrientation = controller.GetLastOrientation();
             Libraries::Pad::OrbisFQuaternion outputOrientation = {0.0f, 0.0f, 0.0f, 1.0f};
-            GameController::CalculateOrientation(pData->acceleration, pData->angularVelocity,
-                                                 deltaTime, lastOrientation, outputOrientation);
+            GameControllers::CalculateOrientation(pData->acceleration, pData->angularVelocity,
+                                                  deltaTime, lastOrientation, outputOrientation);
             pData[i].orientation = outputOrientation;
             controller.SetLastOrientation(outputOrientation);
         }

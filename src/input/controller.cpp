@@ -150,11 +150,37 @@ void GameController::UpdateAxisSmoothing() {
     m_state.UpdateAxisSmoothing();
 }
 
-void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
-                                          Libraries::Pad::OrbisFVector3& angularVelocity,
-                                          float deltaTime,
-                                          Libraries::Pad::OrbisFQuaternion& lastOrientation,
-                                          Libraries::Pad::OrbisFQuaternion& orientation) {
+void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
+    if (m_sdl_gamepad != nullptr) {
+        SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
+    }
+}
+
+bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
+    if (m_sdl_gamepad != nullptr) {
+        return SDL_RumbleGamepad(m_sdl_gamepad, (smallMotor / 255.0f) * 0xFFFF,
+                                 (largeMotor / 255.0f) * 0xFFFF, -1);
+    }
+    return true;
+}
+
+void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
+    if (touchIndex < 2) {
+        m_state.OnTouchpad(touchIndex, touchDown, x, y);
+        PushState();
+    }
+}
+
+MoveController::MoveController() : m_states_queue(64) {}
+
+bool GameControllers::override_controller_color = false;
+Colour GameControllers::controller_override_color{};
+
+void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
+                                           Libraries::Pad::OrbisFVector3& angularVelocity,
+                                           float deltaTime,
+                                           Libraries::Pad::OrbisFQuaternion& lastOrientation,
+                                           Libraries::Pad::OrbisFQuaternion& orientation) {
     // avoid wildly off values coming from elapsed time between two samples
     // being too high, such as on the first time the controller is polled
     if (deltaTime > 1.0f) {
@@ -191,30 +217,6 @@ void GameController::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceler
               orientation.y, orientation.z, orientation.w);
 }
 
-void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
-    if (m_sdl_gamepad != nullptr) {
-        SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
-    }
-}
-
-bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
-    if (m_sdl_gamepad != nullptr) {
-        return SDL_RumbleGamepad(m_sdl_gamepad, (smallMotor / 255.0f) * 0xFFFF,
-                                 (largeMotor / 255.0f) * 0xFFFF, -1);
-    }
-    return true;
-}
-
-void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
-    if (touchIndex < 2) {
-        m_state.OnTouchpad(touchIndex, touchDown, x, y);
-        PushState();
-    }
-}
-
-bool GameControllers::override_controller_color = false;
-Colour GameControllers::controller_override_color{};
-
 bool is_first_check = true;
 
 void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
@@ -231,6 +233,17 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
             SDL_JoystickID id = SDL_GetGamepadID(pad);
             bool still_connected = false;
             for (int j = 0; j < controller_count; j++) {
+                ControllerType type = ControllerType::Standard;
+                SDL_GUID guid = SDL_GetJoystickGUID(SDL_GetJoystickFromID(new_joysticks[j]));
+                Uint16 vendor = 0, product = 0;
+                SDL_GetJoystickGUIDInfo(guid, &vendor, &product, nullptr, nullptr);
+                if (vendor == 0x054C &&    // Sony
+                    (product == 0x03D5 ||  // PSMove ZCM1
+                     product == 0x0C5E)) { // PSMove ZCM2
+                    LOG_INFO(Input, "PS Move controller found at slot {}!", j);
+                    type = ControllerType::Move;
+                    UNREACHABLE_MSG("todo refactor this entire function");
+                }
                 if (new_joysticks[j] == id) {
                     still_connected = true;
                     assigned_ids.insert(id);
