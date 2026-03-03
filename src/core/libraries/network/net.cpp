@@ -887,6 +887,10 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             }
 
             file->resolver->Resolve();
+            if (file->resolver->resolution_error != ORBIS_OK) {
+                // Resolution failed, shouldn't appear.
+                continue;
+            }
 
             const auto it =
                 std::ranges::find_if(epoll->events, [&](auto& el) { return el.first == rid; });
@@ -1402,8 +1406,21 @@ int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid) {
 }
 
 int PS4_SYSV_ABI sceNetResolverGetError(OrbisNetId resolverid, s32* status) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called rid = {}", resolverid);
-    *status = 0;
+    if (!status) {
+        LOG_ERROR(Lib_Net, "status == nullptr");
+        *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+
+    auto file = FDTable::Instance()->GetResolver(resolverid);
+    if (!file) {
+        LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
+
+    *status = file->resolver->resolution_error;
+    LOG_INFO(Lib_Net, "called rid = {}, error = {:#x}", resolverid, static_cast<u32>(*status));
     return ORBIS_OK;
 }
 
@@ -1425,8 +1442,15 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
 
     auto file = FDTable::Instance()->GetResolver(resolverid);
     if (!file) {
+        LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
+    }
+
+    if (!Config::getIsConnectedToNetwork()) {
+        *sceNetErrnoLoc() = ORBIS_NET_RESOLVER_ENODNS;
+        file->resolver->resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
+        return ORBIS_NET_ERROR_RESOLVER_ENODNS;
     }
 
     if ((flags & ORBIS_NET_RESOLVER_ASYNC) != 0) {

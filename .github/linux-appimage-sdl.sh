@@ -8,8 +8,8 @@ if [[ -z $GITHUB_WORKSPACE ]]; then
 fi
 
 # Prepare Tools for building the AppImage
-wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-checkrt/releases/download/continuous/linuxdeploy-plugin-checkrt-x86_64.sh
+wget --waitretry=3 --read-timeout=20 --timeout=15 --tries=5 -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+wget --waitretry=3 --read-timeout=20 --timeout=15 --tries=5 -q https://github.com/linuxdeploy/linuxdeploy-plugin-checkrt/releases/download/continuous/linuxdeploy-plugin-checkrt-x86_64.sh
 
 chmod a+x linuxdeploy-x86_64.AppImage
 chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
