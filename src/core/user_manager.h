@@ -7,8 +7,6 @@
 #include <vector>
 #include "common/types.h"
 
-#define UserManagement EmulatorSettings.GetUserManager()
-
 struct User {
     s32 user_id;
     u32 user_color;
@@ -42,6 +40,8 @@ public:
     const Users& GetUsers() const {
         return m_users;
     }
+
+    bool Save() const;
 
 private:
     Users m_users;

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -23,11 +23,18 @@ UserSettingsImpl::~UserSettingsImpl() {
     Save();
 }
 
+std::shared_ptr<UserSettingsImpl> UserSettingsImpl::GetInstance() {
+    std::lock_guard lock(s_mutex);
+    if (!s_instance)
+        s_instance = std::make_shared<UserSettingsImpl>();
+    return s_instance;
+}
+
 bool UserSettingsImpl::Save() const {
     const auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "users.json";
     try {
         json j;
-        j["Users"] = m_userManager.GetUsers();
+        j = m_userManager.GetUsers();
 
         std::ofstream out(path);
         if (!out) {
@@ -63,11 +70,9 @@ bool UserSettingsImpl::Load() {
         json j;
         in >> j;
 
-        if (j.contains("Users")) {
-            m_userManager.GetUsers() = j.at("Users").get<Users>();
-            LOG_DEBUG(EmuSettings, "User settings loaded successfully");
-            return true;
-        }
+        m_userManager.GetUsers() = j.get<Users>();
+        LOG_DEBUG(EmuSettings, "User settings loaded successfully");
+        return true;
 
         return false;
     } catch (const std::exception& e) {

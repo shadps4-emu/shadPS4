@@ -249,7 +249,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             j["Audio"] = m_audio;
             j["GPU"] = m_gpu;
             j["Vulkan"] = m_vulkan;
-            j["Users"] = m_userManager.GetUsers();
             std::ofstream out(path);
             if (!out) {
                 LOG_ERROR(EmuSettings, "Failed to open config for writing: {}", path.string());
@@ -293,8 +292,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 mergeGroup(m_gpu, "GPU");
                 mergeGroup(m_vulkan, "Vulkan");
 
-                if (gj.contains("Users"))
-                    m_userManager.GetUsers() = gj.at("Users").get<Users>();
                 LOG_DEBUG(EmuSettings, "Global config loaded successfully");
             } else {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
@@ -324,8 +321,6 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 }
                 LOG_DEBUG(EmuSettings, "Global config not found - using defaults");
                 SetDefaultValues();
-                if (m_userManager.GetUsers().user.empty())
-                    m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
                 Save();
             }
             if (GetConfigVersion() != Common::g_scm_rev) {
@@ -334,7 +329,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         } else {
             // ── Per-game override file ─────────────────────────────────
-            // Never reloads global settings.  Only applies
+            // Never reloads global settings. Only applies
             // game_specific_value overrides on top of the already-loaded
             // base configuration.
             const auto gamePath =

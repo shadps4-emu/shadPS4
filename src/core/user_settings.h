@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -17,6 +17,8 @@
 
 #define UserSettings (*UserSettingsImpl::GetInstance())
 
+#define UserManagement UserSettings.GetUserManager()
+
 // -------------------------------
 // User settings
 // -------------------------------
@@ -33,6 +35,8 @@ public:
     }
     bool Save() const;
     bool Load();
+
+    static std::shared_ptr<UserSettingsImpl> GetInstance();
 
 private:
     UserManager m_userManager;

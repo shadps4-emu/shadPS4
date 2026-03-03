@@ -6,6 +6,7 @@
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "user_manager.h"
+#include "user_settings.h"
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {
@@ -129,4 +130,8 @@ std::vector<User> UserManager::GetValidUsers() const {
     }
 
     return result;
+}
+
+bool UserManager::Save() const {
+    return UserSettings.Save();
 }

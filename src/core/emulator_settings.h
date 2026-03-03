@@ -389,11 +389,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VulkanSettings, gpu_id, renderdoc_enabled, vk
                                    vkvalidation_gpu_enabled, vkcrash_diagnostic_enabled,
                                    vkhost_markers, vkguest_markers, pipeline_cache_enabled,
                                    pipeline_cache_archived)
-// -------------------------------
-// User settings
-// -------------------------------
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, user_id, user_color, user_name, controller_port)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user)
 
 // -------------------------------
 // Main manager
@@ -444,11 +439,6 @@ public:
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
 
-    // user helpers
-    UserManager& GetUserManager() {
-        return m_userManager;
-    }
-
 private:
     GeneralSettings m_general{};
     DebugSettings m_debug{};
@@ -456,7 +446,6 @@ private:
     AudioSettings m_audio{};
     GPUSettings m_gpu{};
     VulkanSettings m_vulkan{};
-    UserManager m_userManager;
     ConfigMode m_configMode{ConfigMode::Default};
 
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;

@@ -12,6 +12,7 @@
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include <core/user_settings.h>
 
 namespace Libraries::Np::NpManager {
 

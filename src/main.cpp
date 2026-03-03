@@ -24,6 +24,7 @@
 #endif
 #include <common/key_manager.h>
 #include <core/emulator_settings.h>
+#include "core/user_settings.h"
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -35,9 +36,8 @@ int main(int argc, char* argv[]) {
     std::shared_ptr<EmulatorState> m_emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(m_emu_state);
     // Load configurations
-    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(emu_settings);
-    emu_settings->Load();
+    EmulatorSettings.Load();
+    UserSettings.Load();
 
     // TODO add back trophy key migration without the need of entire previous config framework
 
