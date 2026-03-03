@@ -31,10 +31,12 @@ public:
     UserManager& GetUserManager() {
         return m_userManager;
     }
+
     bool Save() const;
     bool Load();
 
     static std::shared_ptr<UserSettingsImpl> GetInstance();
+    static void SetInstance(std::shared_ptr<UserSettingsImpl> instance);
 
 private:
     UserManager m_userManager;

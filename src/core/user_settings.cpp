@@ -30,11 +30,16 @@ std::shared_ptr<UserSettingsImpl> UserSettingsImpl::GetInstance() {
     return s_instance;
 }
 
+void UserSettingsImpl::SetInstance(std::shared_ptr<UserSettingsImpl> instance) {
+    std::lock_guard lock(s_mutex);
+    s_instance = std::move(instance);
+}
+
 bool UserSettingsImpl::Save() const {
     const auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "users.json";
     try {
         json j;
-        j = m_userManager.GetUsers();
+        j["Users"] = m_userManager.GetUsers();
 
         std::ofstream out(path);
         if (!out) {
@@ -55,9 +60,11 @@ bool UserSettingsImpl::Load() {
         if (!std::filesystem::exists(path)) {
             LOG_DEBUG(EmuSettings, "User settings file not found: {}", path.string());
             // Create default user if no file exists
-            if (m_userManager.GetUsers().user.empty())
+            if (m_userManager.GetUsers().user.empty()) {
                 m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
-            Save();
+                m_userManager.GetUsers().default_user_id = 1;
+            }
+            Save(); // Save default users
             return false;
         }
 
@@ -70,13 +77,40 @@ bool UserSettingsImpl::Load() {
         json j;
         in >> j;
 
-        m_userManager.GetUsers() = j.get<Users>();
+        // Create a default Users object
+        Users default_users;
+        default_users.default_user_id = 1;
+        if (default_users.user.empty()) {
+            User default_user;
+            default_user.user_id = 1;
+            default_user.user_color = 0;
+            default_user.user_name = "shadPS4";
+            default_user.controller_port = 1;
+            default_users.user.push_back(default_user);
+        }
+
+        // Convert default_users to json for merging
+        json default_json;
+        default_json["Users"] = default_users;
+
+        // Merge the loaded json with defaults (preserves existing data, adds missing fields)
+        if (j.contains("Users")) {
+            json current = default_json["Users"];
+            current.update(j["Users"]);
+            m_userManager.GetUsers() = current.get<Users>();
+        } else {
+            m_userManager.GetUsers() = default_users;
+        }
+
         LOG_DEBUG(EmuSettings, "User settings loaded successfully");
         return true;
-
-        return false;
     } catch (const std::exception& e) {
         LOG_ERROR(EmuSettings, "Error loading user settings: {}", e.what());
+        // Fall back to defaults
+        if (m_userManager.GetUsers().user.empty()) {
+            m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
+            m_userManager.GetUsers().default_user_id = 1;
+        }
         return false;
     }
 }
