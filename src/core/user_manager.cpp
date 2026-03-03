@@ -27,6 +27,7 @@ bool UserManager::AddUser(const User& user) {
         std::filesystem::create_directory(user_dir / "inputs", ec);
     }
 
+    Save();
     return true;
 }
 
@@ -44,6 +45,7 @@ bool UserManager::RemoveUser(s32 user_id) {
     }
 
     m_users.user.erase(it, m_users.user.end());
+    Save();
     return true;
 }
 
@@ -58,6 +60,7 @@ bool UserManager::RenameUser(s32 user_id, const std::string& new_name) {
             return true;
         }
     }
+    Save();
     return false;
 }
 
@@ -100,7 +103,7 @@ bool UserManager::SetDefaultUser(u32 user_id) {
 
     m_users.default_user_id = user_id;
     SetControllerPort(user_id, 1); // Set default user to port 1
-    return true;
+    return Save();
 }
 
 User UserManager::GetDefaultUser() {
@@ -114,6 +117,7 @@ void UserManager::SetControllerPort(u32 user_id, int port) {
         if (u.user_id == user_id)
             u.controller_port = port;
     }
+    Save();
 }
 // Returns a list of users that have valid home directories
 std::vector<User> UserManager::GetValidUsers() const {

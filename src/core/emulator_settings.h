@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 #include "common/logging/log.h"
 #include "common/types.h"
-#include "core/user_manager.h"
 
 #define EmulatorSettings (*EmulatorSettingsImpl::GetInstance())
 

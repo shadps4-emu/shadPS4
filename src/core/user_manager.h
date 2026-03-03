@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "common/types.h"
+#include <nlohmann/json.hpp>
 
 struct User {
     s32 user_id;
@@ -18,6 +19,8 @@ struct Users {
     int default_user_id = 1;
     std::vector<User> user;
 };
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, user_id, user_color, user_name, controller_port)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user)
 
 class UserManager {
 public:
