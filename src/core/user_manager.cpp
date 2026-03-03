@@ -103,7 +103,7 @@ bool UserManager::SetDefaultUser(u32 user_id) {
 }
 
 User UserManager::GetDefaultUser() {
-    return m_users.user[m_users.default_user_id];
+    return *GetUserByID(m_users.default_user_id);
 }
 
 void UserManager::SetControllerPort(u32 user_id, int port) {
