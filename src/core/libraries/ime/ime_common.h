@@ -375,6 +375,16 @@ enum class OrbisImeKeyboardType : u32 {
     HUNGARIAN = 37,
 };
 
+enum class OrbisImeKeyboardDeviceType : u32 {
+    Keyboard = 0,
+    Osk = 1,
+};
+
+enum class OrbisImeKeyboardStatus : u32 {
+    Disconnected = 0,
+    Connected = 1,
+};
+
 enum class OrbisImeDeviceType : u32 {
     None = 0,
     Controller = 1,
@@ -438,6 +448,16 @@ struct OrbisImeKeyboardResourceIdArray {
     u32 resource_id[5];
 };
 
+struct OrbisImeKeyboardInfo {
+    Libraries::UserService::OrbisUserServiceUserId user_id;
+    OrbisImeKeyboardDeviceType device;
+    OrbisImeKeyboardType type;
+    u32 repeat_delay;
+    u32 repeat_rate;
+    OrbisImeKeyboardStatus status;
+    s8 reserved[12];
+};
+
 enum class OrbisImeCaretMovementDirection : u32 {
     Still = 0,
     Left = 1,
@@ -460,6 +480,23 @@ enum class OrbisImePanelType : u32 {
     Edit = 4,
     EditAndCandidate = 5,
     Accessibility = 6,
+};
+
+struct OrbisImePositionAndForm {
+    OrbisImePanelType type;
+    f32 posx;
+    f32 posy;
+    OrbisImeHorizontalAlignment horizontal_alignment;
+    OrbisImeVerticalAlignment vertical_alignment;
+    u32 width;
+    u32 height;
+};
+
+struct OrbisImeTextGeometry {
+    f32 x;
+    f32 y;
+    u32 width;
+    u32 height;
 };
 
 union OrbisImeEventParam {
