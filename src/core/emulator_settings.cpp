@@ -328,10 +328,10 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
                 Save();
             }
-            return true;
             if (GetConfigVersion() != Common::g_scm_rev) {
                 Save();
             }
+            return true;
         } else {
             // ── Per-game override file ─────────────────────────────────
             // Never reloads global settings.  Only applies
