@@ -8,10 +8,10 @@
 #include "common/logging/log.h"
 #include "controller.h"
 #include "core/emulator_settings.h"
-#include "core/user_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
+#include "core/user_settings.h"
 #include "input/controller.h"
 
 namespace Input {
