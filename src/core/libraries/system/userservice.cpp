@@ -5,6 +5,7 @@
 
 #include "common/logging/log.h"
 
+#include <core/user_settings.h>
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
@@ -12,7 +13,6 @@
 #include "core/libraries/system/userservice_error.h"
 #include "core/tls.h"
 #include "input/controller.h"
-#include <core/user_settings.h>
 
 namespace Libraries::UserService {
 
