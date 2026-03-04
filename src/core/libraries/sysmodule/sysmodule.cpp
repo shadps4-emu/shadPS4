@@ -1,19 +1,30 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/sysmodule/sysmodule.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
-#include "core/libraries/sysmodule/sysmodule_table.h"
+#include "core/libraries/sysmodule/sysmodule_internal.h"
+#include "core/linker.h"
 
 namespace Libraries::SysModule {
 
-int PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal() {
+static s32 g_sdk_version = 0;
+static std::mutex g_mutex{};
+
+s32 PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal(OrbisSysModuleInternal id, s32* handle) {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+    if ((id & 0x7fffffff) == 0) {
+        return ORBIS_SYSMODULE_INVALID_ID;
+    }
+
+    std::scoped_lock lk{g_mutex};
+    return isModuleLoaded(id, handle);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
@@ -53,17 +64,17 @@ s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
     return res;
 }
 
-int PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule() {
+s32 PS4_SYSV_ABI sceSysmoduleIsCalledFromSysModule() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded() {
+s32 PS4_SYSV_ABI sceSysmoduleIsCameraPreloaded() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
+s32 PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
     if (static_cast<u16>(id) == 0) {
         LOG_ERROR(Lib_SysModule, "Invalid sysmodule ID: {:#x}", static_cast<u16>(id));
         return ORBIS_SYSMODULE_INVALID_ID;
@@ -71,7 +82,7 @@ int PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
+s32 PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
     if ((static_cast<u32>(id) & 0x7FFFFFFF) == 0) {
         LOG_ERROR(Lib_SysModule, "Invalid internal sysmodule ID: {:#x}", static_cast<u32>(id));
         return ORBIS_SYSMODULE_INVALID_ID;
@@ -79,51 +90,51 @@ int PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
+s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal() {
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleLoadModuleInternal() {
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg() {
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleMapLibcForLibkernel() {
+s32 PS4_SYSV_ABI sceSysmoduleMapLibcForLibkernel() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmodulePreloadModuleForLibkernel() {
+s32 PS4_SYSV_ABI sceSysmodulePreloadModuleForLibkernel() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleUnloadModule() {
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModule() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal() {
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal() {
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg() {
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg() {
     LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
