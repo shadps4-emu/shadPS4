@@ -8,6 +8,7 @@
 #include "common/logging/log.h"
 #include "controller.h"
 #include "core/emulator_settings.h"
+#include "core/user_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
@@ -375,9 +376,18 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
 }
 
 std::optional<u8> GameControllers::GetControllerIndexFromUserID(s32 user_id) {
-    if (user_id < 1 || user_id > 4)
+    auto const u = UserManagement.GetUserByID(user_id);
+    if (!u) {
         return std::nullopt;
-    return static_cast<u8>(user_id - 1);
+    }
+    return u->controller_port - 1;
+}
+
+std::optional<u8> GameControllers::GetControllerIndexFromControllerID(s32 controller_id) {
+    if (controller_id < 1 || controller_id > 4) {
+        return std::nullopt;
+    }
+    return controller_id - 1;
 }
 
 } // namespace Input

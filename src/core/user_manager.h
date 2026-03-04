@@ -18,9 +18,10 @@ struct User {
 struct Users {
     int default_user_id = 1;
     std::vector<User> user;
+    std::string commit_hash{};
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, user_id, user_color, user_name, controller_port)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user, commit_hash)
 
 class UserManager {
 public:

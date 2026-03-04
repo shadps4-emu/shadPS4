@@ -258,6 +258,7 @@ public:
     static void TryOpenSDLControllers(GameControllers& controllers);
     static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
     static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
+    static std::optional<u8> GetControllerIndexFromControllerID(s32 controller_id);
 
     static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                      Libraries::Pad::OrbisFVector3& angularVelocity,

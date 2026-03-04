@@ -40,6 +40,7 @@ bool UserSettingsImpl::Save() const {
     try {
         json j;
         j["Users"] = m_userManager.GetUsers();
+        j["Users"]["commit_hash"] = std::string(Common::g_scm_rev);
 
         std::ofstream out(path);
         if (!out) {
@@ -100,6 +101,10 @@ bool UserSettingsImpl::Load() {
             m_userManager.GetUsers() = current.get<Users>();
         } else {
             m_userManager.GetUsers() = default_users;
+        }
+
+        if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev) {
+            Save();
         }
 
         LOG_DEBUG(EmuSettings, "User settings loaded successfully");

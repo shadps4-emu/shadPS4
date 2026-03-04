@@ -6,6 +6,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/pad/pad_errors.h"
+#include "core/user_settings.h"
 #include "input/controller.h"
 #include "pad.h"
 
@@ -266,8 +267,11 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (!g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
-    if (userId == -1) {
-        return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
+    if (userId < 0) {
+        return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
+    }
+    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+        return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
     if (EmulatorSettings.IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
@@ -276,11 +280,17 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
-    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}", userId, type, index);
+    auto u = UserManagement.GetUserByID(userId);
+    if (!u) {
+        return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
+    }
+    s32 pad_handle = u->controller_port;
+    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}, pad_handle = {}", userId,
+             type, index, pad_handle);
     g_opened = true;
-    scePadResetLightBar(userId);
-    scePadResetOrientation(userId);
-    return userId; // TODO: userId shouldn't be used as the handle too
+    scePadResetLightBar(pad_handle);
+    scePadResetOrientation(pad_handle);
+    return pad_handle;
 }
 
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
@@ -411,7 +421,7 @@ int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     int connected_count = 0;
     bool connected = false;
     std::vector<Input::State> states(64);
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -444,7 +454,7 @@ int PS4_SYSV_ABI scePadReadHistory() {
 
 int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     LOG_TRACE(Lib_Pad, "handle: {}", handle);
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -465,7 +475,7 @@ int PS4_SYSV_ABI scePadReadStateExt() {
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
     LOG_INFO(Lib_Pad, "(DUMMY) called");
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -488,7 +498,7 @@ int PS4_SYSV_ABI scePadResetLightBarAllByPortType() {
 int PS4_SYSV_ABI scePadResetOrientation(s32 handle) {
     LOG_INFO(Lib_Pad, "scePadResetOrientation called handle = {}", handle);
 
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -545,7 +555,7 @@ int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pPar
     if (GameControllers::GetOverrideControllerColor()) {
         return ORBIS_OK;
     }
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
@@ -625,7 +635,7 @@ int PS4_SYSV_ABI scePadSetUserColor() {
 }
 
 int PS4_SYSV_ABI scePadSetVibration(s32 handle, const OrbisPadVibrationParam* pParam) {
-    auto controller_id = GameControllers::GetControllerIndexFromUserID(handle);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
