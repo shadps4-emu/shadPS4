@@ -262,8 +262,7 @@ struct InputSettings {
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input),
-            make_override<InputSettings>("camera_id",
-                                         &InputSettings::camera_id)};
+            make_override<InputSettings>("camera_id", &InputSettings::camera_id)};
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_timeout,

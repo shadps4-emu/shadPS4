@@ -5,8 +5,8 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include "common/types.h"
 #include <nlohmann/json.hpp>
+#include "common/types.h"
 
 struct User {
     s32 user_id;
