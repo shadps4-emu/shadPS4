@@ -7,11 +7,14 @@
 
 namespace Libraries::SysModule {
 
-// libSceSysmodule hardcodes an array of valuable data
-// This array is massive, so this header is dedicated to recreating it.
+/**
+ * libSceSysmodule hardcodes an array of valuable data about loading each PS4 module.
+ * This header stores the contents of this array, as dumped from 12.52's libSceSysmodule,
+ * and altered to fit within my simplified internal module struct.
+ */
 
 // This is an internal struct. Doesn't match the real one exactly.
-struct OrbisSysmoduleModule {
+struct OrbisSysmoduleModuleInternal {
     u32 id;             // User requested ID
     s32 handle;         // Handle of the module, once loaded
     s32 flags;          // Miscellaneous details about the module
@@ -20,7 +23,8 @@ struct OrbisSysmoduleModule {
     s32 num_to_load;    // Number of indicies in the array of modules
 };
 
-// Arrays of required modules
+// Arrays of modules to load for each module.
+// The stored values are valid indices to modules in g_modules_array.
 u16 g_libSceNet_modules[1] = {5};
 u16 g_libSceIpmi_modules[1] = {6};
 u16 g_libSceMbus_modules[2] = {7, 6};
@@ -329,10 +333,10 @@ u16 g_libSceFontGsm_modules[1] = {307};
 u16 g_libSceNpPartnerSubscription_modules[1] = {308};
 u16 g_libSceNpAuthAuthorizedAppDialog_modules[1] = {309};
 
-// Actual modules array
+// This is the actual array of modules.
 constexpr u64 g_num_modules = 310;
-std::array<OrbisSysmoduleModule, g_num_modules> g_modules_array =
-    std::to_array<OrbisSysmoduleModule>(
+std::array<OrbisSysmoduleModuleInternal, g_num_modules> g_modules_array =
+    std::to_array<OrbisSysmoduleModuleInternal>(
         {{0x0, -1, 0, nullptr, nullptr, 0},
          {0x0, -1, 1, "libkernel", nullptr, 0},
          {0x0, -1, 1, "libSceLibcInternal", nullptr, 0},
