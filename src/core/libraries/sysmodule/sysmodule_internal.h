@@ -9,5 +9,6 @@
 namespace Libraries::SysModule {
 
 s32 isModuleLoaded(s32 id, s32* handle);
+bool shouldHideName(const char* module_name);
 
 } // namespace Libraries::SysModule
