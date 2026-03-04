@@ -170,6 +170,7 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
 }
 
 void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
+    // Walk every overrideable group until we find the matching key.
     auto tryGroup = [&key](auto& group) {
         for (auto& item : group.GetOverrideableFields()) {
             if (key == item.key) {
@@ -197,89 +198,34 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
     try {
         if (!serial.empty()) {
-            // ── Per-game config ─────────────────────────────────────
             const auto cfgDir = Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs);
             std::filesystem::create_directories(cfgDir);
             const auto path = cfgDir / (serial + ".json");
 
-            // Read existing config to preserve unknown sections
-            json existing_json;
-            if (std::filesystem::exists(path)) {
-                std::ifstream existing_in(path);
-                if (existing_in.good()) {
-                    existing_in >> existing_json;
-                }
-            }
+            json j = json::object();
 
-            json j = existing_json.is_null() ? json::object() : existing_json;
-
-            // Save game-specific overrides (only overrideable fields)
             json generalObj = json::object();
             SaveGroupGameSpecific(m_general, generalObj);
-
-            // Merge with existing General section to preserve unknown fields within it
-            if (j.contains("General") && j["General"].is_object()) {
-                for (auto& [key, value] : j["General"].items()) {
-                    if (!generalObj.contains(key)) {
-                        generalObj[key] = value;
-                    }
-                }
-            }
             j["General"] = generalObj;
 
             json debugObj = json::object();
             SaveGroupGameSpecific(m_debug, debugObj);
-            if (j.contains("Debug") && j["Debug"].is_object()) {
-                for (auto& [key, value] : j["Debug"].items()) {
-                    if (!debugObj.contains(key)) {
-                        debugObj[key] = value;
-                    }
-                }
-            }
             j["Debug"] = debugObj;
 
             json inputObj = json::object();
             SaveGroupGameSpecific(m_input, inputObj);
-            if (j.contains("Input") && j["Input"].is_object()) {
-                for (auto& [key, value] : j["Input"].items()) {
-                    if (!inputObj.contains(key)) {
-                        inputObj[key] = value;
-                    }
-                }
-            }
             j["Input"] = inputObj;
 
             json audioObj = json::object();
             SaveGroupGameSpecific(m_audio, audioObj);
-            if (j.contains("Audio") && j["Audio"].is_object()) {
-                for (auto& [key, value] : j["Audio"].items()) {
-                    if (!audioObj.contains(key)) {
-                        audioObj[key] = value;
-                    }
-                }
-            }
             j["Audio"] = audioObj;
 
             json gpuObj = json::object();
             SaveGroupGameSpecific(m_gpu, gpuObj);
-            if (j.contains("GPU") && j["GPU"].is_object()) {
-                for (auto& [key, value] : j["GPU"].items()) {
-                    if (!gpuObj.contains(key)) {
-                        gpuObj[key] = value;
-                    }
-                }
-            }
             j["GPU"] = gpuObj;
 
             json vulkanObj = json::object();
             SaveGroupGameSpecific(m_vulkan, vulkanObj);
-            if (j.contains("Vulkan") && j["Vulkan"].is_object()) {
-                for (auto& [key, value] : j["Vulkan"].items()) {
-                    if (!vulkanObj.contains(key)) {
-                        vulkanObj[key] = value;
-                    }
-                }
-            }
             j["Vulkan"] = vulkanObj;
 
             std::ofstream out(path);
@@ -295,45 +241,14 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             const auto path =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.json";
 
-            // Read existing config to preserve unknown sections
-            json existing_json;
-            if (std::filesystem::exists(path)) {
-                std::ifstream existing_in(path);
-                if (existing_in.good()) {
-                    existing_in >> existing_json;
-                }
-            }
-
-            // Start with unknown sections we've stored from previous loads
-            json j = json::object();
-
-            // Add all unknown sections first
-            for (const auto& [section_name, section_data] : m_unknown_sections) {
-                j[section_name] = section_data;
-            }
-
-            // Update schema version
             SetConfigVersion(Common::g_scm_rev);
-            m_debug.config_schema_version.value = CURRENT_CONFIG_SCHEMA_VERSION;
-
-            // Save known sections (this will overwrite any unknown sections with the same name)
+            json j;
             j["General"] = m_general;
             j["Debug"] = m_debug;
             j["Input"] = m_input;
             j["Audio"] = m_audio;
             j["GPU"] = m_gpu;
             j["Vulkan"] = m_vulkan;
-
-            // Merge with existing JSON to preserve any sections that weren't loaded
-            // (this is a safety net in case we missed some sections)
-            if (!existing_json.is_null()) {
-                for (auto& [key, value] : existing_json.items()) {
-                    if (!j.contains(key)) {
-                        j[key] = value;
-                    }
-                }
-            }
-
             std::ofstream out(path);
             if (!out) {
                 LOG_ERROR(EmuSettings, "Failed to open config for writing: {}", path.string());
@@ -358,43 +273,24 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             const auto configPath = userDir / "config.json";
             LOG_DEBUG(EmuSettings, "Loading global config from: {}", configPath.string());
 
-            // Clear unknown sections from previous load
-            m_unknown_sections.clear();
-
             if (std::ifstream in{configPath}; in.good()) {
-                json j;
-                in >> j;
+                json gj;
+                in >> gj;
 
-                // Check schema version
-                int file_schema_version = 1;
-                if (j.contains("Debug") && j["Debug"].contains("config_schema_version")) {
-                    file_schema_version = j["Debug"]["config_schema_version"].get<int>();
-                }
+                auto mergeGroup = [&gj](auto& group, const char* section) {
+                    if (!gj.contains(section))
+                        return;
+                    json current = group;
+                    current.update(gj.at(section));
+                    group = current.get<std::remove_reference_t<decltype(group)>>();
+                };
 
-                LOG_DEBUG(EmuSettings, "Config schema version: {} (current: {})",
-                          file_schema_version, CURRENT_CONFIG_SCHEMA_VERSION);
-
-                // Load known sections
-                if (j.contains("General"))
-                    j["General"].get_to(m_general);
-                if (j.contains("Debug"))
-                    j["Debug"].get_to(m_debug);
-                if (j.contains("Input"))
-                    j["Input"].get_to(m_input);
-                if (j.contains("Audio"))
-                    j["Audio"].get_to(m_audio);
-                if (j.contains("GPU"))
-                    j["GPU"].get_to(m_gpu);
-                if (j.contains("Vulkan"))
-                    j["Vulkan"].get_to(m_vulkan);
-
-                // Store any unknown top-level sections
-                for (auto it = j.begin(); it != j.end(); ++it) {
-                    if (!IsKnownSection(it.key())) {
-                        LOG_DEBUG(EmuSettings, "Preserving unknown section: {}", it.key());
-                        m_unknown_sections[it.key()] = it.value();
-                    }
-                }
+                mergeGroup(m_general, "General");
+                mergeGroup(m_debug, "Debug");
+                mergeGroup(m_input, "Input");
+                mergeGroup(m_audio, "Audio");
+                mergeGroup(m_gpu, "GPU");
+                mergeGroup(m_vulkan, "Vulkan");
 
                 LOG_DEBUG(EmuSettings, "Global config loaded successfully");
             } else {
@@ -418,8 +314,8 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     int result;
                     SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 1) {
-                        SDL_ShowSimpleMessageBox(0, "Error", "Migration not implemented yet",
-                                                 nullptr);
+                        SDL_ShowSimpleMessageBox(
+                            0, "Error", "sike this actually isn't implemented yet lol", nullptr);
                         std::quick_exit(1);
                     }
                 }
@@ -427,17 +323,15 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 SetDefaultValues();
                 Save();
             }
-
-            // Update schema version if needed
-            if (m_debug.config_schema_version.value < CURRENT_CONFIG_SCHEMA_VERSION) {
-                m_debug.config_schema_version.value = CURRENT_CONFIG_SCHEMA_VERSION;
+            if (GetConfigVersion() != Common::g_scm_rev) {
                 Save();
             }
-
             return true;
-
         } else {
             // ── Per-game override file ─────────────────────────────────
+            // Never reloads global settings. Only applies
+            // game_specific_value overrides on top of the already-loaded
+            // base configuration.
             const auto gamePath =
                 Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (serial + ".json");
             LOG_DEBUG(EmuSettings, "Applying game config: {}", gamePath.string());
@@ -458,7 +352,10 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
 
             std::vector<std::string> changed;
 
-            // Apply overrides - these will set game_specific_value
+            // ApplyGroupOverrides now correctly stores values as
+            // game_specific_value (see make_override in the header).
+            // ConfigMode::Default will then resolve them at getter call
+            // time without ever touching the base values.
             if (gj.contains("General"))
                 ApplyGroupOverrides(m_general, gj.at("General"), changed);
             if (gj.contains("Debug"))
@@ -489,7 +386,6 @@ void EmulatorSettingsImpl::SetDefaultValues() {
     m_audio = AudioSettings{};
     m_gpu = GPUSettings{};
     m_vulkan = VulkanSettings{};
-    m_unknown_sections.clear();
 }
 
 std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {

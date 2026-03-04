@@ -9,15 +9,12 @@
 #include <mutex>
 #include <sstream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "common/logging/log.h"
 #include "common/types.h"
 
 #define EmulatorSettings (*EmulatorSettingsImpl::GetInstance())
-#define CURRENT_CONFIG_SCHEMA_VERSION 1 // Increment when adding new settings
 
 enum HideCursorState : int {
     Never,
@@ -51,6 +48,8 @@ struct Setting {
     std::optional<T> game_specific_value{};
 
     Setting() = default;
+    // Single-argument ctor: initialises both default_value and value so
+    // that CleanMode can always recover the intended factory default.
     /*implicit*/ Setting(T init) : default_value(std::move(init)), value(default_value) {}
 
     /// Return the active value under the given mode.
@@ -67,11 +66,13 @@ struct Setting {
     }
 
     /// Write v to the base layer.
+    /// Game-specific overrides are applied exclusively via Load(serial)
     void set(const T& v) {
         value = v;
     }
 
-    /// Discard the game-specific override.
+    /// Discard the game-specific override; subsequent get(Default) will
+    /// fall back to the base value.
     void reset_game_specific() {
         game_specific_value = std::nullopt;
     }
@@ -92,7 +93,11 @@ struct OverrideItem {
     std::function<void(void* group_ptr, const nlohmann::json& entry,
                        std::vector<std::string>& changed)>
         apply;
+    /// Return the value that should be written to the per-game config file.
+    /// Falls back to base value if no game-specific override is set.
     std::function<nlohmann::json(const void* group_ptr)> get_for_save;
+
+    /// Clear game_specific_value for this field.
     std::function<void(void* group_ptr)> reset_game_specific;
 };
 
@@ -101,25 +106,40 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
     return OverrideItem{
         key,
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
+            LOG_DEBUG(EmuSettings, "[make_override] Processing key: {}", key);
+            LOG_DEBUG(EmuSettings, "[make_override] Entry JSON: {}", entry.dump());
             Struct* obj = reinterpret_cast<Struct*>(base);
             Setting<T>& dst = obj->*member;
             try {
                 T newValue = entry.get<T>();
+                LOG_DEBUG(EmuSettings, "[make_override] Parsed value: {}", newValue);
+                LOG_DEBUG(EmuSettings, "[make_override] Current value: {}", dst.value);
                 if (dst.value != newValue) {
                     std::ostringstream oss;
                     oss << key << " ( " << dst.value << " → " << newValue << " )";
                     changed.push_back(oss.str());
+                    LOG_DEBUG(EmuSettings, "[make_override] Recorded change: {}", oss.str());
                 }
                 dst.game_specific_value = newValue;
+                LOG_DEBUG(EmuSettings, "[make_override] Successfully updated {}", key);
             } catch (const std::exception& e) {
-                LOG_ERROR(EmuSettings, "ERROR parsing {}: {}", key, e.what());
+                LOG_ERROR(EmuSettings, "[make_override] ERROR parsing {}: {}", key, e.what());
+                LOG_ERROR(EmuSettings, "[make_override] Entry was: {}", entry.dump());
+                LOG_ERROR(EmuSettings, "[make_override] Type name: {}", entry.type_name());
             }
         },
+
+        // --- get_for_save -------------------------------------------
+        // Returns game_specific_value when present, otherwise base value.
+        // This means a freshly-opened game-specific dialog still shows
+        // useful (current-global) values rather than empty entries.
         [member](const void* base) -> nlohmann::json {
             const Struct* obj = reinterpret_cast<const Struct*>(base);
             const Setting<T>& src = obj->*member;
             return nlohmann::json(src.game_specific_value.value_or(src.value));
         },
+
+        // --- reset_game_specific ------------------------------------
         [member](void* base) {
             Struct* obj = reinterpret_cast<Struct*>(base);
             (obj->*member).reset_game_specific();
@@ -162,6 +182,7 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
 
+    // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<GeneralSettings>("volume_slider", &GeneralSettings::volume_slider),
@@ -197,12 +218,11 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
 // Debug settings
 // -------------------------------
 struct DebugSettings {
-    Setting<bool> separate_logging_enabled{false};
-    Setting<bool> debug_dump{false};
-    Setting<bool> shader_collect{false};
-    Setting<bool> log_enabled{true};
-    Setting<std::string> config_version{""};
-    Setting<int> config_schema_version{CURRENT_CONFIG_SCHEMA_VERSION};
+    Setting<bool> separate_logging_enabled{false}; // specific
+    Setting<bool> debug_dump{false};               // specific
+    Setting<bool> shader_collect{false};           // specific
+    Setting<bool> log_enabled{true};               // specific
+    Setting<std::string> config_version{""};       // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -214,22 +234,22 @@ struct DebugSettings {
     }
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
-                                   shader_collect, log_enabled, config_version,
-                                   config_schema_version)
+                                   shader_collect, log_enabled, config_version)
 
 // -------------------------------
 // Input settings
 // -------------------------------
+
 struct InputSettings {
-    Setting<int> cursor_state{HideCursorState::Idle};
-    Setting<int> cursor_hide_timeout{5};
-    Setting<int> usb_device_backend{UsbBackendType::Real};
+    Setting<int> cursor_state{HideCursorState::Idle};      // specific
+    Setting<int> cursor_hide_timeout{5};                   // specific
+    Setting<int> usb_device_backend{UsbBackendType::Real}; // specific
     Setting<bool> use_special_pad{false};
     Setting<int> special_pad_class{1};
-    Setting<bool> motion_controls_enabled{true};
+    Setting<bool> motion_controls_enabled{true}; // specific
     Setting<bool> use_unified_input_config{true};
     Setting<std::string> default_controller_id{""};
-    Setting<bool> background_controller_input{false};
+    Setting<bool> background_controller_input{false}; // specific
     Setting<s32> camera_id{-1};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -249,7 +269,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input, camera_id)
-
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -258,6 +277,7 @@ struct AudioSettings {
     Setting<std::string> main_output_device{"Default Device"};
     Setting<std::string> padSpk_output_device{"Default Device"};
 
+    // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<AudioSettings>("mic_device", &AudioSettings::mic_device),
@@ -266,6 +286,7 @@ struct AudioSettings {
                                          &AudioSettings::padSpk_output_device)};
     }
 };
+
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, mic_device, main_output_device,
                                    padSpk_output_device)
 
@@ -292,7 +313,7 @@ struct GPUSettings {
     Setting<bool> fsr_enabled{false};
     Setting<bool> rcas_enabled{true};
     Setting<int> rcas_attenuation{250};
-
+    // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<GPUSettings>("null_gpu", &GPUSettings::null_gpu),
@@ -323,7 +344,6 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, int
                                    direct_memory_access_enabled, dump_shaders, patch_shaders,
                                    vblank_frequency, full_screen, full_screen_mode, present_mode,
                                    hdr_allowed, fsr_enabled, rcas_enabled, rcas_attenuation)
-
 // -------------------------------
 // Vulkan settings
 // -------------------------------
@@ -339,7 +359,6 @@ struct VulkanSettings {
     Setting<bool> vkguest_markers{false};
     Setting<bool> pipeline_cache_enabled{false};
     Setting<bool> pipeline_cache_archived{false};
-
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<VulkanSettings>("gpu_id", &VulkanSettings::gpu_id),
@@ -384,6 +403,7 @@ public:
     bool Load(const std::string& serial = "");
     void SetDefaultValues();
 
+    // Config mode
     ConfigMode GetConfigMode() const {
         return m_configMode;
     }
@@ -391,11 +411,16 @@ public:
         m_configMode = mode;
     }
 
+    //
     // Game-specific override management
+    /// Clears all per-game overrides.  Call this when a game exits so
+    /// the emulator reverts to global settings.
     void ClearGameSpecificOverrides();
+
+    /// Reset a single field's game-specific override by its JSON ke
     void ResetGameSpecificValue(const std::string& key);
 
-    // General accessors
+    // general accessors
     bool AddGameInstallDir(const std::filesystem::path& dir, bool enabled = true);
     std::vector<std::filesystem::path> GetGameInstallDirs() const;
     void SetAllGameInstallDirs(const std::vector<GameInstallDir>& dirs);
@@ -412,7 +437,47 @@ public:
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
 
-    // Overrideable fields accessors
+private:
+    GeneralSettings m_general{};
+    DebugSettings m_debug{};
+    InputSettings m_input{};
+    AudioSettings m_audio{};
+    GPUSettings m_gpu{};
+    VulkanSettings m_vulkan{};
+    ConfigMode m_configMode{ConfigMode::Default};
+
+    static std::shared_ptr<EmulatorSettingsImpl> s_instance;
+    static std::mutex s_mutex;
+
+    /// Apply overrideable fields from groupJson into group.game_specific_value.
+    template <typename Group>
+    void ApplyGroupOverrides(Group& group, const nlohmann::json& groupJson,
+                             std::vector<std::string>& changed) {
+        for (auto& item : group.GetOverrideableFields()) {
+            if (!groupJson.contains(item.key))
+                continue;
+            item.apply(&group, groupJson.at(item.key), changed);
+        }
+    }
+
+    // Write all overrideable fields from group into out (for game-specific save).
+    template <typename Group>
+    static void SaveGroupGameSpecific(const Group& group, nlohmann::json& out) {
+        for (auto& item : group.GetOverrideableFields())
+            out[item.key] = item.get_for_save(&group);
+    }
+
+    // Discard every game-specific override in group.
+    template <typename Group>
+    static void ClearGroupOverrides(Group& group) {
+        for (auto& item : group.GetOverrideableFields())
+            item.reset_game_specific(&group);
+    }
+
+    static void PrintChangedSummary(const std::vector<std::string>& changed);
+
+public:
+    // Add these getters to access overrideable fields
     std::vector<OverrideItem> GetGeneralOverrideableFields() const {
         return m_general.GetOverrideableFields();
     }
@@ -433,54 +498,6 @@ public:
     }
     std::vector<std::string> GetAllOverrideableKeys() const;
 
-private:
-    GeneralSettings m_general{};
-    DebugSettings m_debug{};
-    InputSettings m_input{};
-    AudioSettings m_audio{};
-    GPUSettings m_gpu{};
-    VulkanSettings m_vulkan{};
-
-    // Store unknown top-level sections to preserve them across saves
-    std::unordered_map<std::string, nlohmann::json> m_unknown_sections;
-
-    ConfigMode m_configMode{ConfigMode::Default};
-
-    static std::shared_ptr<EmulatorSettingsImpl> s_instance;
-    static std::mutex s_mutex;
-
-    template <typename Group>
-    void ApplyGroupOverrides(Group& group, const nlohmann::json& groupJson,
-                             std::vector<std::string>& changed) {
-        for (auto& item : group.GetOverrideableFields()) {
-            if (!groupJson.contains(item.key))
-                continue;
-            item.apply(&group, groupJson.at(item.key), changed);
-        }
-    }
-
-    template <typename Group>
-    static void SaveGroupGameSpecific(const Group& group, nlohmann::json& out) {
-        for (auto& item : group.GetOverrideableFields())
-            out[item.key] = item.get_for_save(&group);
-    }
-
-    template <typename Group>
-    static void ClearGroupOverrides(Group& group) {
-        for (auto& item : group.GetOverrideableFields())
-            item.reset_game_specific(&group);
-    }
-
-    static void PrintChangedSummary(const std::vector<std::string>& changed);
-
-    // Set of known section names
-    bool IsKnownSection(const std::string& name) const {
-        static const std::unordered_set<std::string> known_sections = {
-            "General", "Debug", "Input", "Audio", "GPU", "Vulkan"};
-        return known_sections.find(name) != known_sections.end();
-    }
-
-public:
 #define SETTING_FORWARD(group, Name, field)                                                        \
     auto Get##Name() const {                                                                       \
         return (group).field.get(m_configMode);                                                    \
@@ -488,7 +505,6 @@ public:
     void Set##Name(const decltype((group).field.value)& v) {                                       \
         (group).field.value = v;                                                                   \
     }
-
 #define SETTING_FORWARD_BOOL(group, Name, field)                                                   \
     bool Is##Name() const {                                                                        \
         return (group).field.get(m_configMode);                                                    \
@@ -496,7 +512,6 @@ public:
     void Set##Name(bool v) {                                                                       \
         (group).field.value = v;                                                                   \
     }
-
 #define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
     bool Is##Name() const {                                                                        \
         return (group).field.get(m_configMode);                                                    \
@@ -532,9 +547,6 @@ public:
     SETTING_FORWARD_BOOL(m_debug, ShaderCollect, shader_collect)
     SETTING_FORWARD_BOOL(m_debug, LogEnabled, log_enabled)
     SETTING_FORWARD(m_debug, ConfigVersion, config_version)
-    int GetConfigSchemaVersion() const {
-        return m_debug.config_schema_version.get(m_configMode);
-    }
 
     // GPU Settings
     SETTING_FORWARD_BOOL(m_gpu, NullGPU, null_gpu)
