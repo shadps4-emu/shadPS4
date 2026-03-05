@@ -118,9 +118,20 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal(OrbisSysModuleInternal id) {
     return loadModule(id, 0, nullptr, nullptr);
 }
 
-s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg(OrbisSysModuleInternal id, s32 argc,
+                                                       const void* argv, u64 unk, s32* res_out) {
+    LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
+    s32 result = validateModuleId(id);
+    if (result < ORBIS_OK) {
+        return result;
+    }
+
+    if (unk != 0) {
+        return ORBIS_SYSMODULE_INVALID_ID;
+    }
+
+    std::scoped_lock lk{g_mutex};
+    return loadModule(id, argc, argv, res_out);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleMapLibcForLibkernel() {
