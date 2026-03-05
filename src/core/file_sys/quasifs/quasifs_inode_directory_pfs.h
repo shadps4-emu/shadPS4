@@ -33,22 +33,15 @@ private:
     void RebuildDirents(void) final override;
 
 public:
-    DirectoryPFS();
+    DirectoryPFS(dir_ptr parent);
     ~DirectoryPFS();
 
-    static dir_ptr Create() {
-        return std::make_shared<DirectoryPFS>();
+    static dir_ptr Create(dir_ptr parent) {
+        return std::make_shared<DirectoryPFS>(parent);
     }
 
-    virtual dir_ptr Spawn() const final override {
-        return std::make_shared<DirectoryPFS>();
-    }
-
-    dir_ptr Clone() const {
-        auto _out = std::make_shared<DirectoryPFS>(*this);
-        _out->st.st_ino = -1;
-        _out->st.st_nlink = 0;
-        return _out;
+    virtual dir_ptr Spawn(dir_ptr parent) const final override {
+        return std::make_shared<DirectoryPFS>(parent);
     }
 
     s64 read(void* buf, u64 count) final override;

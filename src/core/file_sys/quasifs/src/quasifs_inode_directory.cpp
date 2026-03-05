@@ -10,9 +10,11 @@
 
 namespace QuasiFS {
 
-QuasiDirectory::QuasiDirectory() {
+QuasiDirectory::QuasiDirectory(dir_ptr parent) {
     this->st.st_mode |= QUASI_S_IFDIR;
     this->dirent_cache_bin.reserve(512);
+    this->entries.emplace_back(".", shared_from_this());
+    this->entries.emplace_back("..", parent ? parent : shared_from_this());
 }
 
 s64 QuasiDirectory::read(void* buf, u64 count) {
@@ -101,18 +103,27 @@ s64 QuasiDirectory::getdents(void* buf, u64 count, s64* basep) {
 
 inode_ptr QuasiDirectory::lookup(const std::string& name) {
     st.st_atim.tv_sec = time(nullptr);
-    auto it = entries.find(name);
-    if (it == entries.end())
-        return nullptr;
-    return it->second;
+    for (const auto& [entry_name, entry_inode] : entries) {
+        if (name != entry_name)
+            continue;
+        return entry_inode;
+    }
+    return nullptr;
 }
 
 int QuasiDirectory::link(const std::string& name, inode_ptr child) {
     if (name.empty())
         return -POSIX_ENOENT;
-    if (entries.count(name))
+    if (is_relative_name(name.c_str()))
+        return -POSIX_EINVAL;
+
+    for (const auto& [entry_name, _] : entries) {
+        if (name != entry_name)
+            continue;
         return -POSIX_EEXIST;
-    entries[name] = child;
+    }
+
+    entries.emplace_back(name, child);
     if (!child->is_link())
         child->st.st_nlink++;
     st.st_mtim.tv_sec = time(nullptr);
@@ -121,31 +132,43 @@ int QuasiDirectory::link(const std::string& name, inode_ptr child) {
 }
 
 int QuasiDirectory::unlink(const std::string& name) {
-    auto it = entries.find(name);
-    if (it == entries.end())
+    if (is_relative_name(name.c_str()))
+        return -POSIX_EINVAL;
+
+    inode_ptr target = nullptr;
+    u64 entry_idx = 0;
+
+    for (const auto& entry_pair : entries) {
+        if (name != entry_pair.first) {
+            ++entry_idx;
+            continue;
+        }
+        target = entry_pair.second;
+        break;
+    }
+
+    if (nullptr == target)
         return -POSIX_ENOENT;
 
-    inode_ptr target = it->second;
     // if directory and not empty -> EBUSY or ENOTEMPTY
     if (target->is_dir()) {
         dir_ptr target_dir = std::reinterpret_pointer_cast<QuasiDirectory>(target);
-        for (auto entry : target_dir->entries) {
-            if (entry.first == ".")
-                continue;
-            if (entry.first == "..")
+        u32 entry_name_cast = 0;
+        for (const auto& entry : target_dir->entries) {
+            if (is_relative_name(entry.first.c_str()))
                 continue;
             return -POSIX_ENOTEMPTY;
         }
 
-        // parent loses reference from subdir [ .. ]
+        // parent does not refer to the target [ .. ]
         this->st.st_nlink--;
-        // target loses reference from itself [ . ]
+        // target is not referenced to itself [ . ]
         target->st.st_nlink--;
     }
 
-    // not referenced in original location anymore
+    // target is not referenced by parent
     target->st.st_nlink--;
-    entries.erase(it);
+    entries.erase(this->entries.begin() + entry_idx);
     dirents_changed = true;
     st.st_mtim.tv_sec = time(nullptr);
     return 0;
@@ -155,6 +178,11 @@ void QuasiDirectory::RebuildDirents(void) {
     if (!this->dirents_changed)
         return;
     this->dirents_changed = false;
+
+    std::sort(this->entries.begin(), this->entries.end(),
+              [](const dirent_pair& left, const dirent_pair& right) {
+                  return left.second->st.st_ino > right.second->st.st_ino;
+              });
 
     constexpr u32 dirent_meta_size = sizeof(dirent_t::d_fileno) + sizeof(dirent_t::d_type) +
                                      sizeof(dirent_t::d_namlen) + sizeof(dirent_t::d_reclen);

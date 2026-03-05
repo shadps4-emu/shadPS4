@@ -81,9 +81,6 @@ public:
         return std::make_shared<Socket>(domain, type, protocol);
     }
 
-    // you'd better have a good reason to use this
-    socket_ptr Clone() const = delete;
-
     // clang-format off
     virtual bool IsValid() const { SOCKET_STUB(); }
     virtual int Close() { SOCKET_STUB(); }

@@ -13,6 +13,7 @@
 
 namespace QuasiFS {
 
+template <typename RootDirectoryType>
 class Partition : public std::enable_shared_from_this<Partition> {
 private:
     fileno_t NextFileno(void) {
@@ -23,7 +24,7 @@ private:
     std::unordered_map<fileno_t, inode_ptr> inode_table{};
 
     // root directory
-    dir_ptr root;
+    std::shared_ptr<RootDirectoryType> root;
     // next available fileno
     fileno_t next_fileno = 2;
     // technically it's a device+partition id, but block id is enough lmao
@@ -41,21 +42,19 @@ public:
     // host-bound directory, permissions for root directory
     Partition();
     Partition(const fs::path& host_root = "", int root_permissions = 0755, u32 ioblock_size = 4096);
-    Partition(dir_ptr root_directory = Directory::Create(), const fs::path& host_root = "",
-              int root_permissions = 0755, u32 ioblock_size = 4096);
+
     ~Partition() = default;
 
     static partition_ptr Create(const fs::path& host_root = "", int root_permissions = 0755,
                                 u32 ioblock_size = 4096) {
-        return std::make_shared<Partition>(Directory::Create(), host_root, root_permissions,
-                                           ioblock_size);
+        return std::make_shared<Partition<RootDirectoryType>>(host_root, root_permissions,
+                                                              ioblock_size);
     }
 
-    static partition_ptr Create(const dir_ptr& root_directory = Directory::Create(),
-                                const fs::path& host_root = "", int root_permissions = 0755,
+    static partition_ptr Create(const fs::path& host_root = "", int root_permissions = 0755,
                                 u32 ioblock_size = 4096) {
-        return std::make_shared<Partition>(root_directory, host_root, root_permissions,
-                                           ioblock_size);
+        return std::make_shared<Partition<RootDirectoryType>>(host_root, root_permissions,
+                                                              ioblock_size);
     }
 
     // empty - invalid, not empty - safe
@@ -100,7 +99,6 @@ private:
     int rmInode(fileno_t fileno);
     int rmInode(const inode_ptr& node);
     bool IndexInode(const inode_ptr& node);
-    static void mkrelative(const dir_ptr& parent, const dir_ptr& child);
 };
 
 }; // namespace QuasiFS

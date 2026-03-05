@@ -22,13 +22,6 @@ public:
         return std::make_shared<VirtualFile>();
     }
 
-    file_ptr Clone() const {
-        auto _out = std::make_shared<VirtualFile>(*this);
-        _out->st.st_ino = -1;
-        _out->st.st_nlink = 0;
-        return _out;
-    }
-
     s64 read(void* buf, u64 count) override;
     s64 write(const void* buf, u64 count) override;
 

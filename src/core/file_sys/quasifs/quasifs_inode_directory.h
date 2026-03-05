@@ -4,7 +4,6 @@
 
 #pragma once
 
-// #include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -18,7 +17,7 @@
 namespace QuasiFS {
 
 // Directory
-class QuasiDirectory : public Inode {
+class QuasiDirectory : public Inode, std::enable_shared_from_this<QuasiDirectory> {
 
 protected:
 #pragma pack(push, 1)
@@ -31,14 +30,16 @@ protected:
     } dirent_t;
 #pragma pack(pop)
 
-    // TODO: sort on rebuild, PS4's dirents are neatly sorted, and debugging it is a huge
-    // inconvenience
-    // #warning Suboptimal structure for holding directory entries
-    // std::map<std::string, inode_ptr> entries{};
-    std::unordered_map<std::string, inode_ptr> entries{};
+    using dirent_pair = std::pair<std::string, inode_ptr>;
+    std::vector<dirent_pair> entries{};
 
     bool dirents_changed{false};
     std::vector<u8> dirent_cache_bin{};
+
+    bool is_relative_name(const char* name) {
+        const u32 name_cast = *reinterpret_cast<const u32*>(name);
+        return ((name_cast & 0x0000FFFF) == 0x0000002E) || ((name_cast & 0x00FFFFFF) == 0x00002E2E);
+    }
 
 private:
     virtual void RebuildDirents(void);
@@ -46,7 +47,7 @@ private:
 public:
     dir_ptr mounted_root = nullptr;
 
-    QuasiDirectory();
+    QuasiDirectory(dir_ptr parent);
     ~QuasiDirectory() = default;
 
     std::vector<std::string> Entries(void) {
@@ -57,20 +58,14 @@ public:
     }
 
     // Create out of thin air
-    static dir_ptr Create() {
-        return std::make_shared<QuasiDirectory>();
+    // Parent must be always specified
+    static dir_ptr Create(dir_ptr parent) {
+        return std::make_shared<QuasiDirectory>(parent);
     }
 
     // Allow "inheriting" type of directory
-    virtual dir_ptr Spawn() const {
-        return std::make_shared<QuasiDirectory>();
-    }
-
-    dir_ptr Clone() const {
-        auto _out = std::make_shared<QuasiDirectory>(*this);
-        _out->st.st_ino = -1;
-        _out->st.st_nlink = 0;
-        return _out;
+    virtual dir_ptr Spawn(dir_ptr parent) const {
+        return std::make_shared<QuasiDirectory>(parent);
     }
 
     //
@@ -96,7 +91,6 @@ public:
     int link(const std::string& name, inode_ptr child);
     // Remove hardlink to [name]
     int unlink(const std::string& name);
-    // list entries
 };
 
 /**

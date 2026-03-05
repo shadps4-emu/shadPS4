@@ -453,7 +453,8 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
     }
 
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    handles->DeleteHandle(eq);
+    #warning this
+    //handles->DeleteHandle(eq);
     kqueues.erase(eq);
     return ORBIS_OK;
 }

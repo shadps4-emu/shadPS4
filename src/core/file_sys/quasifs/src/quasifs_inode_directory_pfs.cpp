@@ -17,7 +17,7 @@
 
 namespace QuasiFS {
 
-DirectoryPFS::DirectoryPFS() {
+DirectoryPFS::DirectoryPFS(dir_ptr parent) : QuasiDirectory(parent) {
     this->st.st_size = 65536;            // starting value, will get updated on rebuild
     this->dirent_cache_bin.reserve(512); // It will grow anyway
 }
@@ -108,6 +108,11 @@ void DirectoryPFS::RebuildDirents(void) {
     if (!this->dirents_changed)
         return;
     this->dirents_changed = false;
+
+    std::sort(this->entries.begin(), this->entries.end(),
+              [](const dirent_pair& left, const dirent_pair& right) {
+                  return left.second->st.st_ino > right.second->st.st_ino;
+              });
 
     constexpr u32 dirent_meta_size = sizeof(dirent_pfs_t::d_fileno) + sizeof(dirent_pfs_t::d_type) +
                                      sizeof(dirent_pfs_t::d_namlen) +

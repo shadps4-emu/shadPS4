@@ -48,13 +48,6 @@ public:
 
     virtual ~Inode() = default;
 
-    inode_ptr Clone() const {
-        auto _out = std::make_shared<Inode>(*this);
-        _out->st.st_ino = 0;
-        _out->st.st_nlink = 0;
-        return _out;
-    }
-
     virtual s32 ioctl(u64 cmd, Common::VaCtx* args) {
         return -POSIX_ENOTTY;
     }

@@ -14,19 +14,19 @@
 
 namespace QuasiFS {
 
-Partition::Partition() : Partition(Directory::Create(), "", 0755, 4096) {}
+Partition::Partition() : Partition<RootDirectoryType>("", 0755, 4096) {}
 
-Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 ioblock_size)
-    : Partition(dir_ptr(), host_root, root_permissions, ioblock_size) {}
+Partition::Partition(const fs::path& host_root, const int root_permissions,
+                                        const u32 ioblock_size)
+    : Partition(host_root, root_permissions, ioblock_size) {}
 
-Partition::Partition(dir_ptr root_directory, const fs::path& host_root, const int root_permissions,
-                     const u32 ioblock_size)
-    : root(root_directory), block_id(next_block_id++), host_root(host_root.lexically_normal()),
-      ioblock_size(ioblock_size) {
+Partition::Partition<RootDirectoryType>(const fs::path& host_root, const int root_permissions,
+                                        const u32 ioblock_size)
+    : root(RootDirectoryType::Create(nullptr)), block_id(next_block_id++),
+      host_root(host_root.lexically_normal()), ioblock_size(ioblock_size) {
     // clear defaults, write
     chmod(this->root, root_permissions);
     IndexInode(this->root);
-    mkrelative(this->root, this->root);
 }
 
 fs::path Partition::SanitizePath(const fs::path& path) {
@@ -238,15 +238,13 @@ int Partition::mkdir(const dir_ptr& parent, const std::string& name) {
         return -POSIX_ENOENT;
 
     dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
-    dir_ptr child = real_parent->Spawn();
+    dir_ptr child = real_parent->Spawn(real_parent);
 
     child->st.st_blksize = ioblock_size;
     int ret = parent->link(name, child);
 
     if (ret == 0)
         IndexInode(child);
-
-    mkrelative(real_parent, child);
 
     return ret;
 }
@@ -359,10 +357,5 @@ bool Partition::IndexInode(const inode_ptr& node) {
     node->st.st_blocks = Common::AlignUp(static_cast<u64>(node->st.st_size), ioblock_size) / 512;
 
     return true;
-}
-
-void Partition::mkrelative(const dir_ptr& parent, const dir_ptr& child) {
-    child->link(".", child);
-    child->link("..", parent);
 }
 }; // namespace QuasiFS
