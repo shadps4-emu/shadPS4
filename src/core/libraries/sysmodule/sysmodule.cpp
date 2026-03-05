@@ -92,6 +92,9 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
             return ORBIS_KERNEL_ERROR_ESTART;
         }
     }
+
+    // The real library has some weird workaround for CUSA01478 and CUSA01495 here.
+    // Unless this is proven necessary, I don't plan to handle this.
     return result;
 }
 
@@ -102,12 +105,21 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal() {
 
 s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal(OrbisSysModuleInternal id) {
     LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
-    return ORBIS_OK;
+    s32 result = validateModuleId(id);
+    if (result < ORBIS_OK) {
+        return result;
+    }
+
+    // This specific module ID is loaded unlocked.
+    if (id == 0x80000039) {
+        return loadModule(id, 0, nullptr, nullptr);
+    }
+    std::scoped_lock lk{g_mutex};
+    return loadModule(id, 0, nullptr, nullptr);
 }
 
-s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg(OrbisSysModuleInternal id, s32 argc,
-                                                       void** argv, s32* result) {
-    LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg() {
+    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
     return ORBIS_OK;
 }
 
