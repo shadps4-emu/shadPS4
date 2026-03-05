@@ -133,9 +133,14 @@ s32 PS4_SYSV_ABI sceSysmodulePreloadModuleForLibkernel() {
     return preloadModulesForLibkernel();
 }
 
-s32 PS4_SYSV_ABI sceSysmoduleUnloadModule() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModule(OrbisSysModule id) {
+    LOG_ERROR(Lib_SysModule, "(STUBBED) called, id = {:#x}", id);
+    if (id == 0) {
+        return ORBIS_SYSMODULE_INVALID_ID;
+    }
+    
+    std::scoped_lock lk{g_mutex};
+    return unloadModule(id, 0, nullptr, nullptr, false);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal() {

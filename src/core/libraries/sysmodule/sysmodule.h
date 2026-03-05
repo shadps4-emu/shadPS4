@@ -28,7 +28,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal(OrbisSysModuleInternal id);
 s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg();
 s32 PS4_SYSV_ABI sceSysmoduleMapLibcForLibkernel();
 s32 PS4_SYSV_ABI sceSysmodulePreloadModuleForLibkernel();
-s32 PS4_SYSV_ABI sceSysmoduleUnloadModule();
+s32 PS4_SYSV_ABI sceSysmoduleUnloadModule(OrbisSysModule id);
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg();

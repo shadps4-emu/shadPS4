@@ -115,7 +115,7 @@ bool validateModuleId(s32 id) {
     return ORBIS_OK;
 }
 
-s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out) {
+s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
@@ -140,8 +140,7 @@ s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out) {
         const auto& host_path = mnt->GetHostPath(guest_path);
 
         // For convenience, load through linker directly instead of loading through libkernel calls.
-        // Library ignores arguments for game modules
-        s32 result = linker->LoadAndStartModule(host_path, 0, nullptr, &start_result);
+        s32 result = linker->LoadAndStartModule(host_path, argc, argv, &start_result);
         // If the module is missing, the library prints a very helpful message for developers.
         // We'll just log an error.
         if (result < 0) {
@@ -201,7 +200,7 @@ s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out) {
             LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
                      game_info->GameSerial());
             s32 handle =
-                linker->LoadAndStartModule(game_specific_module_path, 0, nullptr, &start_result);
+                linker->LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
             ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
             mod.handle = handle;
             mod.is_loaded++;
@@ -248,7 +247,7 @@ s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out) {
         const auto& module_path = sys_module_path / mod_name;
         if (std::filesystem::exists(module_path)) {
             LOG_INFO(Loader, "Loading {}", mod_name);
-            s32 handle = linker->LoadAndStartModule(module_path, 0, nullptr, &start_result);
+            s32 handle = linker->LoadAndStartModule(module_path, argc, argv, &start_result);
             ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
             mod.handle = handle;
         } else {
@@ -275,7 +274,7 @@ s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out) {
     return ORBIS_OK;
 }
 
-s32 loadModule(s32 id, s32 argc, void** argv, s32* res_out) {
+s32 loadModule(s32 id, s32 argc, const void* argv, s32* res_out) {
     // Retrieve the module to load from the table
     OrbisSysmoduleModuleInternal requested_module{};
     for (OrbisSysmoduleModuleInternal mod : g_modules_array) {
@@ -317,6 +316,67 @@ s32 loadModule(s32 id, s32 argc, void** argv, s32* res_out) {
         // If loading any module fails, abort there.
         if (result != ORBIS_OK) {
             return result;
+        }
+    }
+    return ORBIS_OK;
+}
+
+s32 unloadModule(s32 id, s32 argc, const void* argv, s32* res_out, bool is_internal) {
+    OrbisSysmoduleModuleInternal mod{};
+    for (s32 i = 0; i < g_modules_array.size(); i++) {
+        mod = g_modules_array[i];
+        if (mod.id != id) {
+            continue;
+        }
+
+        // Skips checking libSceDiscMap
+        if (i == 0x22) {
+            continue;
+        }
+
+        // If the module is loaded once, and is part of the second preload list,
+        // then return OK and do nothing.
+        for (s32 index : g_preload_list_2) {
+            if (index == i && mod.is_loaded == 1) {
+                return ORBIS_OK;
+            }
+        }
+    }
+
+    // If we failed to locate the module, return invalid id.
+    if (mod.id != id || mod.id == 0) {
+        return ORBIS_SYSMODULE_INVALID_ID;
+    }
+
+    // If the module has no dependencies, then return an internal error.
+    if (mod.num_to_load == 0 || mod.to_load == nullptr) {
+        return ORBIS_SYSMODULE_LOCK_FAILED;
+    }
+
+    // Unload the module and it's dependencies
+    for (s64 i = 0; i < mod.num_to_load; i++) {
+        OrbisSysmoduleModuleInternal dep_mod = g_modules_array[mod.to_load[i]];
+        // If this is a debug module and we're not emulating a devkit, skip it.
+        if ((dep_mod.flags & OrbisSysmoduleModuleInternalFlags::IsDebug) != 0 &&
+            !Config::isDevKitConsole()) {
+            continue;
+        }
+
+        // If the module to unload is marked as unloaded, then return not loaded
+        if (mod.is_loaded == 0) {
+            return ORBIS_SYSMODULE_NOT_LOADED;
+        }
+
+        // By this point, all necessary checks are performed, decrement the load count.
+        mod.is_loaded--;
+
+        // Normally, this is where the real library would actually unload the module,
+        // through a call to sceKernelStopUnloadModule.
+        // As we don't implement module unloading, this behavior is skipped.
+
+        // Stub success during requested module unload.
+        if (i == 0 && res_out != nullptr) {
+            *res_out = ORBIS_OK;
         }
     }
     return ORBIS_OK;
