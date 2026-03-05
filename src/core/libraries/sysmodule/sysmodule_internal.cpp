@@ -341,6 +341,9 @@ s32 unloadModule(s32 id, s32 argc, const void* argv, s32* res_out, bool is_inter
                 return ORBIS_OK;
             }
         }
+
+        // Found the correct module.
+        break;
     }
 
     // If we failed to locate the module, return invalid id.
