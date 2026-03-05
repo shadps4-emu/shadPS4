@@ -138,7 +138,7 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModule(OrbisSysModule id) {
     if (id == 0) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
-    
+
     std::scoped_lock lk{g_mutex};
     return unloadModule(id, 0, nullptr, nullptr, false);
 }
