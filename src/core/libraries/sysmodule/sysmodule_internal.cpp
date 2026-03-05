@@ -366,12 +366,12 @@ s32 unloadModule(s32 id, s32 argc, const void* argv, s32* res_out, bool is_inter
         }
 
         // If the module to unload is marked as unloaded, then return not loaded
-        if (mod.is_loaded == 0) {
+        if (dep_mod.is_loaded == 0) {
             return ORBIS_SYSMODULE_NOT_LOADED;
         }
 
         // By this point, all necessary checks are performed, decrement the load count.
-        mod.is_loaded--;
+        dep_mod.is_loaded--;
 
         // Normally, this is where the real library would actually unload the module,
         // through a call to sceKernelStopUnloadModule.
