@@ -129,8 +129,8 @@ s32 PS4_SYSV_ABI sceSysmoduleMapLibcForLibkernel() {
 }
 
 s32 PS4_SYSV_ABI sceSysmodulePreloadModuleForLibkernel() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
-    return ORBIS_OK;
+    LOG_DEBUG(Lib_SysModule, "called");
+    return preloadModulesForLibkernel();
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModule() {

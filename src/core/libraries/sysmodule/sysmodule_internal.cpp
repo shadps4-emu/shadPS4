@@ -322,4 +322,56 @@ s32 loadModule(s32 id, s32 argc, void** argv, s32* res_out) {
     return ORBIS_OK;
 }
 
+s32 preloadModulesForLibkernel() {
+    // For now, default to loading g_preload_list_3.
+    // As far as I can tell, g_preload_list_1 seems to be some sort of list with libs
+    // that games don't typically use, and g_preload_list_2 is just a reorganized version of 3.
+    s32 sdk_ver = 0;
+    ASSERT_MSG(Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver) == 0,
+               "Failed to get compiled SDK version");
+    for (u32 module_index : g_preload_list_3) {
+        // As per usual, these are arrays of indexes for g_modules_array
+        // libSceDbg, libScePerf, libSceMat, and libSceRazorCpu_debug.
+        // These are skipped unless this console is a devkit.
+        if ((module_index == 0x12 || module_index == 0x1e || module_index == 0x24 ||
+             module_index == 0x26) &&
+            !Config::isDevKitConsole()) {
+            continue;
+        }
+
+        // libSceDiscMap case, skipped on newer SDK versions.
+        if (module_index == 0x22 && sdk_ver >= Common::ElfInfo::FW_20) {
+            continue;
+        }
+
+        // libSceDbgAssist is skipped on non-testkit consoles.
+        // For now, stub check to non-devkit.
+        if (module_index == 0x23 && !Config::isDevKitConsole()) {
+            continue;
+        }
+
+        // libSceRazorCpu, skipped for old non-devkit consoles.
+        if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_45 &&
+            !Config::isDevKitConsole()) {
+            continue;
+        }
+
+        // libSceHttp2, skipped for SDK versions below 7.00.
+        if (module_index == 0x28 && sdk_ver < Common::ElfInfo::FW_70) {
+            continue;
+        }
+
+        // libSceNpWebApi2 and libSceNpGameIntent, skipped for SDK versions below 7.50
+        if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_75) {
+            continue;
+        }
+
+        // Module preload must succeed, or game will crash.
+        // Only possible fail is missing important game modules.
+        ASSERT_MSG(loadModuleInternal(module_index, 0, nullptr, nullptr) == ORBIS_OK,
+                   "Failed to preload modules");
+    }
+    return ORBIS_OK;
+}
+
 } // namespace Libraries::SysModule

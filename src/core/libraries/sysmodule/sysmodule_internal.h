@@ -14,5 +14,6 @@ bool isDebugModule(s32 id);
 bool validateModuleId(s32 id);
 s32 loadModuleInternal(s32 index, s32 argc, void** argv, s32* res_out);
 s32 loadModule(s32 id, s32 argc, void** argv, s32* res_out);
+s32 preloadModulesForLibkernel();
 
 } // namespace Libraries::SysModule
