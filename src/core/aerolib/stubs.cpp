@@ -19,7 +19,7 @@ namespace Core::AeroLib {
 // and to longer compile / CI times
 //
 // Must match STUBS_LIST define
-constexpr u32 MAX_STUBS = 8192;
+constexpr u32 MAX_STUBS = 2048;
 
 u64 UnresolvedStub() {
     LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
@@ -62,10 +62,8 @@ static u32 UsedStubEntries;
 #define XREP_512(x) XREP_256(x) XREP_256(x + 256)
 #define XREP_1024(x) XREP_512(x) XREP_512(x + 512)
 #define XREP_2048(x) XREP_1024(x) XREP_1024(x + 1024)
-#define XREP_4096(x) XREP_2048(x) XREP_2048(x + 2048)
-#define XREP_8192(x) XREP_4096(x) XREP_4096(x + 4096)
 
-#define STUBS_LIST XREP_8192(0)
+#define STUBS_LIST XREP_2048(0)
 
 static u64 (*stub_handlers[MAX_STUBS])() = {STUBS_LIST};
 
