@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "common/singleton.h"
+#include "core/signals.h"
 #include "debug_state.h"
 #include "devtools/widget/common.h"
 #include "libraries/kernel/time.h"
@@ -33,7 +34,7 @@ static void PauseThread(ThreadID id) {
     SuspendThread(handle);
     CloseHandle(handle);
 #else
-    pthread_kill(id, SIGUSR1);
+    pthread_kill(id, SIGSLEEP);
 #endif
 }
 
@@ -43,7 +44,7 @@ static void ResumeThread(ThreadID id) {
     ResumeThread(handle);
     CloseHandle(handle);
 #else
-    pthread_kill(id, SIGUSR1);
+    pthread_kill(id, SIGSLEEP);
 #endif
 }
 

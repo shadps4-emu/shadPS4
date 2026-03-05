@@ -3,6 +3,7 @@
 
 #include "dimensions.h"
 
+#include "core/libraries/kernel/threads.h"
 #include "core/tls.h"
 
 #include <mutex>
@@ -621,24 +622,46 @@ libusb_transfer_status DimensionsBackend::HandleAsyncTransfer(libusb_transfer* t
     return LIBUSB_TRANSFER_COMPLETED;
 }
 
+struct WriteThreadArgs {
+    DimensionsBackend* self;
+    libusb_transfer* transfer;
+};
+
+void* PS4_SYSV_ABI DimensionsBackend::WriteThread(void* arg) {
+    auto* args = reinterpret_cast<WriteThreadArgs*>(arg);
+
+    auto* self = args->self;
+    auto* transfer = args->transfer;
+
+    self->HandleAsyncTransfer(transfer);
+
+    const u8 flags = transfer->flags;
+    transfer->status = LIBUSB_TRANSFER_COMPLETED;
+    transfer->actual_length = transfer->length;
+    if (transfer->callback) {
+        transfer->callback(transfer);
+    }
+    if (flags & LIBUSB_TRANSFER_FREE_TRANSFER) {
+        libusb_free_transfer(transfer);
+    }
+    delete args;
+    return nullptr;
+}
+
 s32 DimensionsBackend::SubmitTransfer(libusb_transfer* transfer) {
     if (transfer->endpoint == 0x01) {
-        std::thread write_thread([this, transfer] {
-            Core::EnsureThreadInitialized();
+        using namespace Libraries::Kernel;
 
-            HandleAsyncTransfer(transfer);
+        PthreadAttrT attr{};
+        posix_pthread_attr_init(&attr);
+        PthreadT thread{};
+        auto* args = new WriteThreadArgs();
+        args->self = this;
+        args->transfer = transfer;
+        posix_pthread_create(&thread, &attr, HOST_CALL(DimensionsBackend::WriteThread), args);
+        posix_pthread_attr_destroy(&attr);
+        posix_pthread_detach(thread);
 
-            const u8 flags = transfer->flags;
-            transfer->status = LIBUSB_TRANSFER_COMPLETED;
-            transfer->actual_length = transfer->length;
-            if (transfer->callback) {
-                transfer->callback(transfer);
-            }
-            if (flags & LIBUSB_TRANSFER_FREE_TRANSFER) {
-                libusb_free_transfer(transfer);
-            }
-        });
-        write_thread.detach();
         return LIBUSB_SUCCESS;
     }
 
