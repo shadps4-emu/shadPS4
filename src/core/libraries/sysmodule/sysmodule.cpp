@@ -3,8 +3,10 @@
 
 #include <mutex>
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/sysmodule/sysmodule.h"
@@ -14,7 +16,6 @@
 
 namespace Libraries::SysModule {
 
-static s32 g_sdk_version = 0;
 static std::mutex g_mutex{};
 
 s32 PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal(OrbisSysModuleInternal id, s32* handle) {
@@ -70,7 +71,28 @@ s32 PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
-    return ORBIS_OK;
+    LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
+    s32 result = validateModuleId(id);
+    if (result < ORBIS_OK) {
+        return result;
+    }
+
+    // Only locks for internal loadModule call.
+    {
+        std::scoped_lock lk{g_mutex};
+        result = loadModule(id, 0, nullptr, nullptr);
+    }
+
+    if (result == ORBIS_KERNEL_ERROR_ESTART) {
+        s32 sdk_ver = 0;
+        result = Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver);
+        if (sdk_ver < Common::ElfInfo::FW_115 || result != ORBIS_OK) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        } else {
+            return ORBIS_KERNEL_ERROR_ESTART;
+        }
+    }
+    return result;
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal() {
@@ -78,13 +100,14 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleByNameInternal() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal(OrbisSysModuleInternal id) {
+    LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg() {
-    LOG_ERROR(Lib_SysModule, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg(OrbisSysModuleInternal id, s32 argc,
+                                                       void** argv, s32* result) {
+    LOG_INFO(Lib_SysModule, "called, id = {:#x}", id);
     return ORBIS_OK;
 }
 
