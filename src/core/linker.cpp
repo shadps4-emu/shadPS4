@@ -16,6 +16,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/sysmodule/sysmodule.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
@@ -110,7 +111,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
             ipc.WaitForStart();
         }
 
-        LoadSharedLibraries();
+        // Have libSceSysmodule preload our libraries.
+        Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
         // Some games fail without accurately emulating this behavior.

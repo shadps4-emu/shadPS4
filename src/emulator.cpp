@@ -36,7 +36,6 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
-#include "core/libraries/sysmodule/sysmodule.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "emulator.h"
@@ -397,9 +396,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                      Common::FS::PathToUTF8String(std::filesystem::absolute(eboot_path)));
         std::quick_exit(0);
     }
-
-    // Preload modules loaded during initialization
-    Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
