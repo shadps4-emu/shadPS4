@@ -401,14 +401,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Preload modules loaded during initialization
     Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
 
-    // Load all prx from game's sce_module folder
-    mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
-        if (is_file) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
-            linker->LoadModule(path);
-        }
-    });
-
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
     if (Config::getEnableDiscordRPC()) {
