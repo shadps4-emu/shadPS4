@@ -242,6 +242,8 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.json";
 
             SetConfigVersion(Common::g_scm_rev);
+
+            // Build the JSON for the fields this build knows about
             json j;
             j["General"] = m_general;
             j["Debug"] = m_debug;
@@ -249,12 +251,33 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             j["Audio"] = m_audio;
             j["GPU"] = m_gpu;
             j["Vulkan"] = m_vulkan;
+
+            // Read the existing file so we can preserve keys unknown to this build (e.g. baz from a
+            // newer build)
+            json existing = json::object();
+            if (std::ifstream existingIn{path}; existingIn.good()) {
+                try {
+                    existingIn >> existing;
+                } catch (...) {
+                    existing = json::object();
+                }
+            }
+
+            // Merge: update each section's known keys, but leave unknown keys intact
+            for (auto& [section, val] : j.items()) {
+                if (existing.contains(section) && existing[section].is_object() && val.is_object())
+                    existing[section].update(
+                        val); // overwrites known keys, keeps unknown ones (like baz)
+                else
+                    existing[section] = val;
+            }
+
             std::ofstream out(path);
-            if (!out) {
+            if (!out) { 
                 LOG_ERROR(EmuSettings, "Failed to open config for writing: {}", path.string());
                 return false;
             }
-            out << std::setw(4) << j;
+            out << std::setw(4) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {
