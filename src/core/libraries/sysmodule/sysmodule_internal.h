@@ -8,7 +8,7 @@
 
 namespace Libraries::SysModule {
 
-s32 isModuleLoaded(s32 id, s32* handle);
+s32 getModuleHandle(s32 id, s32* handle);
 bool shouldHideName(const char* module_name);
 bool isDebugModule(s32 id);
 bool validateModuleId(s32 id);

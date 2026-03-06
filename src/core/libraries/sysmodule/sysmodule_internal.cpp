@@ -25,7 +25,7 @@
 
 namespace Libraries::SysModule {
 
-s32 isModuleLoaded(s32 id, s32* handle) {
+s32 getModuleHandle(s32 id, s32* handle) {
     if (id == 0) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }

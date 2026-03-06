@@ -25,7 +25,7 @@ s32 PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal(OrbisSysModuleInternal id, 
     }
 
     std::scoped_lock lk{g_mutex};
-    return isModuleLoaded(id, handle);
+    return getModuleHandle(id, handle);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleGetModuleInfoForUnwind(VAddr addr, s32 flags,
@@ -58,7 +58,7 @@ s32 PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
     }
 
     std::scoped_lock lk{g_mutex};
-    return isModuleLoaded(id, nullptr);
+    return getModuleHandle(id, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
@@ -67,7 +67,7 @@ s32 PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
     }
 
     std::scoped_lock lk{g_mutex};
-    return isModuleLoaded(id, nullptr);
+    return getModuleHandle(id, nullptr);
 }
 
 s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
