@@ -316,6 +316,9 @@ void PipelineCache::WarmUp() {
     if (std::memcmp(profile_data.data(), &profile, sizeof(profile)) != 0) {
         LOG_WARNING(Render,
                     "Pipeline cache isn't compatible with current system. Ignoring the cache");
+        // Keep DB lifecycle consistent before early return: in archived mode, Save() later in the
+        // session may still be called and expects writable archive state.
+        Storage::DataBase::Instance().FinishPreload();
         return;
     }
 
