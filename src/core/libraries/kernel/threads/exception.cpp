@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
@@ -13,23 +14,25 @@
 #else
 #include <csignal>
 #endif
+#include <unordered_set>
+#include <core/libraries/kernel/posix_error.h>
 
 namespace Libraries::Kernel {
 
 #ifdef _WIN32
 
 // Windows doesn't have native versions of these, and we don't need to use them either.
-static s32 NativeToOrbisSignal(s32 s) {
+s32 NativeToOrbisSignal(s32 s) {
     return s;
 }
 
-static s32 OrbisToNativeSignal(s32 s) {
+s32 OrbisToNativeSignal(s32 s) {
     return s;
 }
 
 #else
 
-static s32 NativeToOrbisSignal(s32 s) {
+s32 NativeToOrbisSignal(s32 s) {
     switch (s) {
     case SIGHUP:
         return POSIX_SIGHUP;
@@ -89,12 +92,19 @@ static s32 NativeToOrbisSignal(s32 s) {
         return POSIX_SIGUSR1;
     case SIGUSR2:
         return POSIX_SIGUSR2;
+    case _SIGEMT:
+        return POSIX_SIGEMT;
+    case _SIGINFO:
+        return POSIX_SIGINFO;
     default:
+        if (s > 0 && s < 128) {
+            return s;
+        }
         UNREACHABLE_MSG("Unknown signal {}", s);
     }
 }
 
-static s32 OrbisToNativeSignal(s32 s) {
+s32 OrbisToNativeSignal(s32 s) {
     switch (s) {
     case POSIX_SIGHUP:
         return SIGHUP;
@@ -108,6 +118,8 @@ static s32 OrbisToNativeSignal(s32 s) {
         return SIGTRAP;
     case POSIX_SIGABRT:
         return SIGABRT;
+    case POSIX_SIGEMT:
+        return _SIGEMT;
     case POSIX_SIGFPE:
         return SIGFPE;
     case POSIX_SIGKILL:
@@ -150,22 +162,27 @@ static s32 OrbisToNativeSignal(s32 s) {
         return SIGPROF;
     case POSIX_SIGWINCH:
         return SIGWINCH;
+    case POSIX_SIGINFO:
+        return _SIGINFO;
     case POSIX_SIGUSR1:
         return SIGUSR1;
     case POSIX_SIGUSR2:
         return SIGUSR2;
     default:
+        if (s > 0 && s < 128) {
+            return s;
+        }
         UNREACHABLE_MSG("Unknown signal {}", s);
     }
 }
 
 #endif
 
-std::array<SceKernelExceptionHandler, 32> Handlers{};
+std::array<OrbisKernelExceptionHandler, 130> Handlers{};
 
 #ifndef _WIN64
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context) {
-    const auto handler = Handlers[native_signum];
+    const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
     if (handler) {
         auto ctx = Ucontext{};
 #ifdef __APPLE__
@@ -214,6 +231,8 @@ void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context
         ctx.uc_mcontext.mc_addr = reinterpret_cast<uint64_t>(inf->si_addr);
 #endif
         handler(NativeToOrbisSignal(native_signum), &ctx);
+    } else {
+        UNREACHABLE_MSG("Unhandled exception");
     }
 }
 #else
@@ -221,7 +240,7 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
     const char* thrName = (char*)arg1;
     int native_signum = reinterpret_cast<uintptr_t>(arg2);
     LOG_INFO(Lib_Kernel, "Exception raised successfully on thread '{}'", thrName);
-    const auto handler = Handlers[native_signum];
+    const auto handler = Handlers[NativeToOrbisSignal(native_signum)];
     if (handler) {
         auto ctx = Ucontext{};
         ctx.uc_mcontext.mc_r8 = context->R8;
@@ -243,21 +262,115 @@ void ExceptionHandler(void* arg1, void* arg2, void* arg3, PCONTEXT context) {
         ctx.uc_mcontext.mc_fs = context->SegFs;
         ctx.uc_mcontext.mc_gs = context->SegGs;
         handler(NativeToOrbisSignal(native_signum), &ctx);
+    } else {
+        UNREACHABLE_MSG("Unhandled exception");
     }
 }
 #endif
 
-int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelExceptionHandler handler) {
-    if (signum > POSIX_SIGUSR2) {
+s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
+    s->bits[0] = 0;
+    s->bits[1] = 0;
+    return 0;
+}
+
+s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
+    if (sig < 1 || sig > 128 || sig == POSIX_SIGTHR || sig == POSIX_SIGKILL ||
+        sig == POSIX_SIGSTOP) {
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    s32 native_sig = OrbisToNativeSignal(sig);
+    if (native_sig == SIGVTALRM) {
+        LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE-reserved signal {}!", sig);
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+#ifdef _WIN32
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
+    return ORBIS_OK;
+#else
+    struct sigaction native_act{};
+    if (act) {
+        native_act.sa_flags = SA_SIGINFO | SA_RESTART;
+        native_act.sa_sigaction =
+            reinterpret_cast<decltype(native_act.sa_sigaction)>(act->__sigaction_handler.sigaction);
+        if (act->sa_mask.bits[0] != 0) {
+            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
+        }
+    }
+    struct sigaction native_oact{};
+    if (act) {
+        native_oact.sa_flags = SA_SIGINFO | SA_RESTART;
+        native_oact.sa_sigaction = reinterpret_cast<decltype(native_oact.sa_sigaction)>(
+            act->__sigaction_handler.sigaction);
+        if (act->sa_mask.bits[0] != 0) {
+            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
+        }
+    }
+    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
+        act ? act->__sigaction_handler.sigaction : nullptr);
+
+    if (native_sig == SIGSEGV || native_sig == SIGBUS || native_sig == SIGILL) {
+        return ORBIS_OK; // These are handled in Core::SignalHandler
+    }
+    sigaction(native_sig, &native_act, &native_oact);
+
+    return ORBIS_OK;
+#endif
+}
+
+s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
+    if (sig < 1 || sig > 128) { // off-by-one error?
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    if (sig == 128) {
+        LOG_WARNING(Lib_Kernel, "sig {} can be raised for some reason but we don't do that here",
+                    sig);
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+    LOG_WARNING(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
+    int const native_signum = OrbisToNativeSignal(sig);
+#ifndef _WIN64
+    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
+    const auto ret = pthread_kill(pthr, native_signum);
+    if (ret != 0) {
+        LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
+                  strerror(errno));
+    }
+#else
+    USER_APC_OPTION option;
+    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
+
+    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
+                                 ExceptionHandler, (void*)thread->name.c_str(),
+                                 (void*)(s64)native_signum, nullptr);
+    ASSERT(res == 0);
+#endif
+    return ORBIS_OK;
+}
+
+// libkernel has a check in sceKernelInstallExceptionHandler and sceKernelRemoveExceptionHandler for
+// validating if the application requested a handler for an allowed signal or not. However, that is
+// just a wrapper for sigaction, which itself does not have any such restrictions, and therefore
+// this check is ridiculously trivial to go around. This, however, means that we need to support all
+// 127 - 3 possible signals, even if realistically, only homebrew will use most of them.
+static std::unordered_set<s32> orbis_allowed_signals{
+    POSIX_SIGHUP, POSIX_SIGILL, POSIX_SIGFPE, POSIX_SIGBUS, POSIX_SIGSEGV, POSIX_SIGUSR1,
+};
+
+int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExceptionHandler handler) {
+    if (!orbis_allowed_signals.contains(signum)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (Handlers[signum] != nullptr) {
+        return ORBIS_KERNEL_ERROR_EAGAIN;
     }
     LOG_INFO(Lib_Kernel, "Installing signal handler for {}", signum);
     int const native_signum = OrbisToNativeSignal(signum);
-#ifdef __APPLE__
-    ASSERT_MSG(native_signum != SIGVTALRM, "SIGVTALRM is HLE-reserved on macOS!");
-#endif
-    ASSERT_MSG(!Handlers[native_signum], "Invalid parameters");
-    Handlers[native_signum] = handler;
+    Handlers[signum] = handler;
 #ifndef _WIN64
     if (native_signum == SIGSEGV || native_signum == SIGBUS || native_signum == SIGILL) {
         return ORBIS_OK; // These are handled in Core::SignalHandler
@@ -266,21 +379,22 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, SceKernelException
     act.sa_flags = SA_SIGINFO | SA_RESTART;
     act.sa_sigaction = reinterpret_cast<decltype(act.sa_sigaction)>(SigactionHandler);
     sigemptyset(&act.sa_mask);
-    sigaction(native_signum, &act, nullptr);
+    s32 ret = sigaction(native_signum, &act, nullptr);
+    if (ret < 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum, strerror(errno));
+        SetPosixErrno(errno);
+        return ErrnoToSceKernelError(*__Error());
+    }
 #endif
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
-    if (signum > POSIX_SIGUSR2) {
+    if (!orbis_allowed_signals.contains(signum)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     int const native_signum = OrbisToNativeSignal(signum);
-    if (!Handlers[native_signum]) {
-        LOG_WARNING(Lib_Kernel, "removing non-installed handler for signum {}", signum);
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-    Handlers[native_signum] = nullptr;
+    Handlers[signum] = nullptr;
 #ifndef _WIN64
     if (native_signum == SIGSEGV || native_signum == SIGBUS || native_signum == SIGILL) {
         struct sigaction action{};
@@ -295,7 +409,13 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
         act.sa_flags = SA_SIGINFO | SA_RESTART;
         act.sa_sigaction = nullptr;
         sigemptyset(&act.sa_mask);
-        sigaction(native_signum, &act, nullptr);
+        s32 ret = sigaction(native_signum, &act, nullptr);
+        if (ret < 0) {
+            LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum,
+                      strerror(errno));
+            SetPosixErrno(errno);
+            return ErrnoToSceKernelError(*__Error());
+        }
     }
 #endif
     return ORBIS_OK;
@@ -352,6 +472,13 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
                  sceKernelDebugRaiseExceptionOnReleaseMode);
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel", 1, "libkernel", sceKernelInstallExceptionHandler);
     LIB_FUNCTION("Qhv5ARAoOEc", "libkernel", 1, "libkernel", sceKernelRemoveExceptionHandler);
+
+    LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("+F7C-hdk7+E", "libkernel", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
+    LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
+    LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
+    LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
 }
 
 } // namespace Libraries::Kernel
