@@ -14,11 +14,12 @@
 
 namespace QuasiFS {
 
-Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 ioblock_size)
+Partition::Partition(dir_ptr root, const fs::path& host_root, const int root_permissions,
+                     const u32 ioblock_size)
     : block_id(next_block_id++), host_root(host_root.lexically_normal()),
       ioblock_size(ioblock_size) {
     // clear defaults, write
-    this->root = Directory::Create();
+    this->root = std::move(root);
     chmod(this->root, root_permissions);
     IndexInode(this->root);
 }
@@ -236,7 +237,7 @@ int Partition::mkdir(const dir_ptr& parent, const std::string& name) {
         return -POSIX_ENOENT;
 
     dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
-    dir_ptr child = real_parent->Spawn();
+    dir_ptr child = real_parent->Create();
 
     child->st.st_blksize = ioblock_size;
     int ret = real_parent->link(name, child);

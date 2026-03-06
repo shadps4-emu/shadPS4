@@ -11,6 +11,11 @@
 namespace QuasiFS {
 
 class PartitionPFS : public Partition {
+private:
+    const u32 block_size{65536};
+
+    fs::path host_patch_path{};
+    dir_ptr root_patch{};
 
 public:
     // host-bound directory, permissions for root directory

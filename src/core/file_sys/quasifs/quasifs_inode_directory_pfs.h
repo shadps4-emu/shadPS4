@@ -40,10 +40,6 @@ public:
         return std::make_shared<DirectoryPFS>();
     }
 
-    virtual dir_ptr Spawn() const final override {
-        return std::make_shared<DirectoryPFS>();
-    }
-
     s64 read(void* buf, u64 count) final override;
 
     s64 getdents(void* buf, u64 count, s64* basep) final override;
