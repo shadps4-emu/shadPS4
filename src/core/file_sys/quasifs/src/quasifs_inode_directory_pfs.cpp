@@ -17,7 +17,7 @@
 
 namespace QuasiFS {
 
-DirectoryPFS::DirectoryPFS(dir_ptr parent) : QuasiDirectory(parent) {
+DirectoryPFS::DirectoryPFS() : QuasiDirectory() {
     this->st.st_size = 65536;            // starting value, will get updated on rebuild
     this->dirent_cache_bin.reserve(512); // It will grow anyway
 }

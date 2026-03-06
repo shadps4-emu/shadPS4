@@ -13,9 +13,7 @@
 
 namespace QuasiFS {
 
-template <typename RootDirectoryType>
 class Partition : public std::enable_shared_from_this<Partition> {
-private:
     fileno_t NextFileno(void) {
         return this->next_fileno++;
     };
@@ -24,7 +22,7 @@ private:
     std::unordered_map<fileno_t, inode_ptr> inode_table{};
 
     // root directory
-    std::shared_ptr<RootDirectoryType> root;
+    std::shared_ptr<Directory> root;
     // next available fileno
     fileno_t next_fileno = 2;
     // technically it's a device+partition id, but block id is enough lmao
@@ -32,29 +30,14 @@ private:
 
     static inline blkid_t next_block_id = 1;
 
-    // path to host's directory this will be bound to
-    const fs::path host_root{};
-
-    // IO block size, allocation unit (multiples of 512)
-    const u32 ioblock_size{4096};
-
 public:
     // host-bound directory, permissions for root directory
-    Partition();
     Partition(const fs::path& host_root = "", int root_permissions = 0755, u32 ioblock_size = 4096);
-
     ~Partition() = default;
 
     static partition_ptr Create(const fs::path& host_root = "", int root_permissions = 0755,
                                 u32 ioblock_size = 4096) {
-        return std::make_shared<Partition<RootDirectoryType>>(host_root, root_permissions,
-                                                              ioblock_size);
-    }
-
-    static partition_ptr Create(const fs::path& host_root = "", int root_permissions = 0755,
-                                u32 ioblock_size = 4096) {
-        return std::make_shared<Partition<RootDirectoryType>>(host_root, root_permissions,
-                                                              ioblock_size);
+        return std::make_shared<Partition>(host_root, root_permissions, ioblock_size);
     }
 
     // empty - invalid, not empty - safe

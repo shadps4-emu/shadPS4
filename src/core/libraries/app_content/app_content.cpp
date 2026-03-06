@@ -15,7 +15,7 @@
 
 #include "core/file_sys/quasifs/quasifs.h"
 #include "core/file_sys/quasifs/quasifs_inode_directory_pfs.h"
-#include "core/file_sys/quasifs/quasifs_partition.h"
+#include "core/file_sys/quasifs/quasifs_partition_pfs.h"
 
 namespace qfs = QuasiFS;
 
@@ -114,7 +114,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
             g_qfs->Operation.MKDir(mount_point->data, 0555 /* I think it's like /app0*/);
             // Didn't verify FS type
             qfs::partition_ptr partition_dlc =
-                qfs::Partition::Create(qfs::DirectoryPFS::Create(nullptr), entry.path(), 0555);
+                qfs::PartitionPFS::Create(entry.path());
             g_qfs->Mount(mount_point->data, partition_dlc, qfs::MountOptions::MOUNT_RW);
             g_qfs->SyncHost(mount_point->data);
             g_qfs->Mount(mount_point->data, partition_dlc,

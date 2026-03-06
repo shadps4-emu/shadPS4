@@ -22,7 +22,7 @@
 namespace QuasiFS {
 
 QFS::QFS(const fs::path& host_path) {
-    this->rootfs = Partition::Create(Directory::Create(nullptr), host_path);
+    this->rootfs = Partition::Create(host_path);
     this->root = rootfs->GetRoot();
     this->open_fd.reserve(50);
 

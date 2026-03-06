@@ -30,18 +30,18 @@ protected:
 #pragma pack(pop)
 
 private:
-    void RebuildDirents(void) final override;
+    void RebuildDirents(void) final;
 
 public:
-    DirectoryPFS(dir_ptr parent);
+    DirectoryPFS();
     ~DirectoryPFS();
 
-    static dir_ptr Create(dir_ptr parent) {
-        return std::make_shared<DirectoryPFS>(parent);
+    static dir_ptr Create() {
+        return std::make_shared<DirectoryPFS>();
     }
 
-    virtual dir_ptr Spawn(dir_ptr parent) const final override {
-        return std::make_shared<DirectoryPFS>(parent);
+    virtual dir_ptr Spawn() const final override {
+        return std::make_shared<DirectoryPFS>();
     }
 
     s64 read(void* buf, u64 count) final override;

@@ -14,17 +14,11 @@
 
 namespace QuasiFS {
 
-Partition::Partition() : Partition<RootDirectoryType>("", 0755, 4096) {}
-
-Partition::Partition(const fs::path& host_root, const int root_permissions,
-                                        const u32 ioblock_size)
-    : Partition(host_root, root_permissions, ioblock_size) {}
-
-Partition::Partition<RootDirectoryType>(const fs::path& host_root, const int root_permissions,
-                                        const u32 ioblock_size)
-    : root(RootDirectoryType::Create(nullptr)), block_id(next_block_id++),
-      host_root(host_root.lexically_normal()), ioblock_size(ioblock_size) {
+Partition::Partition(const fs::path& host_root, const int root_permissions, const u32 ioblock_size)
+    : block_id(next_block_id++), host_root(host_root.lexically_normal()),
+      ioblock_size(ioblock_size) {
     // clear defaults, write
+    this->root = Directory::Create();
     chmod(this->root, root_permissions);
     IndexInode(this->root);
 }
@@ -116,6 +110,7 @@ int Partition::Resolve(fs::path& path, Resolved& res) {
         is_final = std::next(_part) == path.end();
 
         if ("/" == part) {
+            // not really needed, but makes things make sense
             res.local_path = "/";
             res.parent = res.parent;
             res.node = res.node;
@@ -227,9 +222,12 @@ int Partition::touch(const dir_ptr& parent, const std::string& name, inode_ptr c
     if (nullptr == parent)
         return -POSIX_EINVAL;
 
-    auto ret = parent->link(name, child);
+    dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
+    auto ret = real_parent->link(name, child);
+
     if (ret == 0)
         IndexInode(child);
+
     return ret;
 }
 
@@ -238,10 +236,10 @@ int Partition::mkdir(const dir_ptr& parent, const std::string& name) {
         return -POSIX_ENOENT;
 
     dir_ptr real_parent = parent->mounted_root ? parent->mounted_root : parent;
-    dir_ptr child = real_parent->Spawn(real_parent);
+    dir_ptr child = real_parent->Spawn();
 
     child->st.st_blksize = ioblock_size;
-    int ret = parent->link(name, child);
+    int ret = real_parent->link(name, child);
 
     if (ret == 0)
         IndexInode(child);

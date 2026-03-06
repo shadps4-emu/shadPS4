@@ -47,7 +47,7 @@ private:
 public:
     dir_ptr mounted_root = nullptr;
 
-    QuasiDirectory(dir_ptr parent);
+    QuasiDirectory();
     ~QuasiDirectory() = default;
 
     std::vector<std::string> Entries(void) {
@@ -59,13 +59,13 @@ public:
 
     // Create out of thin air
     // Parent must be always specified
-    static dir_ptr Create(dir_ptr parent) {
-        return std::make_shared<QuasiDirectory>(parent);
+    static dir_ptr Create() {
+        return std::make_shared<QuasiDirectory>();
     }
 
     // Allow "inheriting" type of directory
-    virtual dir_ptr Spawn(dir_ptr parent) const {
-        return std::make_shared<QuasiDirectory>(parent);
+    virtual dir_ptr Spawn() const {
+        return std::make_shared<QuasiDirectory>();
     }
 
     //

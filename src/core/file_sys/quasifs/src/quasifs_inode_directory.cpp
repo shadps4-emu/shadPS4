@@ -10,11 +10,11 @@
 
 namespace QuasiFS {
 
-QuasiDirectory::QuasiDirectory(dir_ptr parent) {
+QuasiDirectory::QuasiDirectory() {
     this->st.st_mode |= QUASI_S_IFDIR;
     this->dirent_cache_bin.reserve(512);
     this->entries.emplace_back(".", shared_from_this());
-    this->entries.emplace_back("..", parent ? parent : shared_from_this());
+    this->entries.emplace_back("..", nullptr);
 }
 
 s64 QuasiDirectory::read(void* buf, u64 count) {

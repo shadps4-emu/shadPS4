@@ -707,6 +707,8 @@ set(QUASIFS src/core/file_sys/quasifs/src/quasifs.cpp
             src/core/file_sys/quasifs/quasifs_inode_symlink.h
             src/core/file_sys/quasifs/src/quasifs_partition.cpp
             src/core/file_sys/quasifs/quasifs_partition.h
+            src/core/file_sys/quasifs/src/quasifs_partition_pfs.cpp
+            src/core/file_sys/quasifs/quasifs_partition_pfs.h
 
             src/core/file_sys/devices/console_device.cpp
             src/core/file_sys/devices/console_device.h

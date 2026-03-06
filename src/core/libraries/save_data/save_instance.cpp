@@ -194,7 +194,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
 
     g_qfs->Operation.MKDir(mount_point);
     // Didn't verify FS type
-    auto part = qfs::Partition::Create(qfs::Directory::Create(nullptr), save_path);
+    auto part = qfs::Partition::Create( save_path);
     g_qfs->Mount(mount_point, part,
                  read_only ? qfs::MountOptions::MOUNT_NOOPT : qfs::MountOptions::MOUNT_RW);
     g_qfs->SyncHost(mount_point);

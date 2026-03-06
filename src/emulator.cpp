@@ -101,8 +101,7 @@ Emulator::~Emulator() {}
 void Emulator::LoadFilesystem(const std::filesystem::path& game_folder) {
     auto* qfs = Common::Singleton<qfs::QFS>::Instance();
 
-    qfs::partition_ptr partition_app0 =
-        qfs::Partition::Create(qfs::DirectoryPFS::Create(nullptr), game_folder, 0555, 65536);
+    qfs::partition_ptr partition_app0 = qfs::Partition::Create(game_folder);
     qfs::partition_ptr partition_av_contents = qfs::Partition::Create("", 0775, 16384);
     qfs::partition_ptr partition_av_contents_photo = qfs::Partition::Create("", 0755, 32768);
     qfs::partition_ptr partition_av_contents_thumbs = qfs::Partition::Create("", 0755, 32768);
@@ -350,7 +349,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     qfs::partition_ptr partition_download = qfs::Partition::Create(mount_download_dir, 0777, 65536);
     qfs::partition_ptr partition_temp = qfs::Partition::Create(mount_temp_dir, 0777, 16384);
     qfs::partition_ptr partition_sandbox_common =
-        qfs::Partition::Create(qfs::Directory::Create(nullptr), host_sandbox_common_dir, 0777, 16384);
+        qfs::Partition::Create(host_sandbox_common_dir, 0777, 16384);
     qfs->Mount("/data", partition_data, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/download0", partition_download, qfs::MountOptions::MOUNT_RW);
     qfs->Mount("/temp", partition_temp, qfs::MountOptions::MOUNT_RW);
