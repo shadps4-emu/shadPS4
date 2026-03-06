@@ -118,7 +118,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
 s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
                        OrbisVideodecPictureInfo& pPictureInfoOut) {
     pPictureInfoOut.thisSize = sizeof(pPictureInfoOut);
-    pPictureInfoOut.isValid = false;
+    pPictureInfoOut.isValid = true;
     pPictureInfoOut.isErrorPic = true;
 
     AVFrame* frame = av_frame_alloc();
