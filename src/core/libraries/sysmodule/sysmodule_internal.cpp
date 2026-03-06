@@ -430,7 +430,7 @@ s32 preloadModulesForLibkernel() {
         if (result != ORBIS_OK) {
             // On real hardware, module preloading must succeed or the game will abort.
             // To enable users to test homebrew easier, we'll log a critical error instead.
-            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes", 
+            LOG_CRITICAL(Lib_SysModule, "Failed to preload {}, expect crashes",
                          g_modules_array[module_index].name);
         }
     }
