@@ -132,10 +132,6 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     // Since we only care about a small subset of LLEs, we can simplify this logic.
     if ((mod.flags & OrbisSysmoduleModuleInternalFlags::IsGame) != 0) {
         std::string guest_path = std::string("/app0/sce_module/").append(mod.name);
-        // libSceJobManager and libSceFios2 have debug variants, which are loaded in some cases.
-        if ((index == 0xe9 || index == 3) && Config::isDevKitConsole()) {
-            guest_path.append("_debug");
-        }
         guest_path.append(".prx");
         const auto& host_path = mnt->GetHostPath(guest_path);
 
