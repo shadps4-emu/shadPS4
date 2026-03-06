@@ -86,6 +86,7 @@ struct ImageResource {
         } else {
             const auto raw = info.template ReadUdSharp<u128>(sharp_idx);
             std::memcpy(&image, &raw, sizeof(raw));
+            image.pitch = image.width;
         }
         if (!image.Valid()) {
             LOG_DEBUG(Render_Vulkan, "Encountered invalid image sharp");

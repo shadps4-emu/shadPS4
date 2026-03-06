@@ -458,6 +458,7 @@ void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
