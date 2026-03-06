@@ -96,6 +96,8 @@ s32 NativeToOrbisSignal(s32 s) {
         return POSIX_SIGEMT;
     case _SIGINFO:
         return POSIX_SIGINFO;
+    case 0:
+        return 128;
     default:
         if (s > 0 && s < 128) {
             return s;
@@ -168,6 +170,8 @@ s32 OrbisToNativeSignal(s32 s) {
         return SIGUSR1;
     case POSIX_SIGUSR2:
         return SIGUSR2;
+    case 128:
+        return 0;
     default:
         if (s > 0 && s < 128) {
             return s;
@@ -288,11 +292,11 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     }
 #ifdef _WIN32
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
-    return ORBIS_OK;
 #else
+    LOG_INFO(Lib_Kernel, "called, sig: {}", sig);
     struct sigaction native_act{};
     if (act) {
-        native_act.sa_flags = SA_SIGINFO | SA_RESTART;
+        native_act.sa_flags = act->sa_flags; // todo check compatibility, on Linux it seems fine
         native_act.sa_sigaction =
             reinterpret_cast<decltype(native_act.sa_sigaction)>(act->__sigaction_handler.sigaction);
         if (act->sa_mask.bits[0] != 0) {
@@ -301,7 +305,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     }
     struct sigaction native_oact{};
     if (act) {
-        native_oact.sa_flags = SA_SIGINFO | SA_RESTART;
+        native_oact.sa_flags = act->sa_flags;
         native_oact.sa_sigaction = reinterpret_cast<decltype(native_oact.sa_sigaction)>(
             act->__sigaction_handler.sigaction);
         if (act->sa_mask.bits[0] != 0) {
@@ -314,22 +318,19 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (native_sig == SIGSEGV || native_sig == SIGBUS || native_sig == SIGILL) {
         return ORBIS_OK; // These are handled in Core::SignalHandler
     }
-    sigaction(native_sig, &native_act, &native_oact);
-
-    return ORBIS_OK;
+    s32 ret = sigaction(native_sig, &native_act, &native_oact);
+    if (ret < 0) {
+        LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
+        *__Error() = ErrnoToSceKernelError(errno);
+        return ORBIS_FAIL;
+    }
 #endif
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     if (sig < 1 || sig > 128) { // off-by-one error?
-        *__Error() = POSIX_EINVAL;
-        return ORBIS_FAIL;
-    }
-    if (sig == 128) {
-        LOG_WARNING(Lib_Kernel, "sig {} can be raised for some reason but we don't do that here",
-                    sig);
-        *__Error() = POSIX_EINVAL;
-        return ORBIS_FAIL;
+        return POSIX_EINVAL;
     }
     LOG_WARNING(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
     int const native_signum = OrbisToNativeSignal(sig);
@@ -369,23 +370,16 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExcepti
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
     LOG_INFO(Lib_Kernel, "Installing signal handler for {}", signum);
-    int const native_signum = OrbisToNativeSignal(signum);
-    Handlers[signum] = handler;
-#ifndef _WIN64
-    if (native_signum == SIGSEGV || native_signum == SIGBUS || native_signum == SIGILL) {
-        return ORBIS_OK; // These are handled in Core::SignalHandler
-    }
-    struct sigaction act = {};
+    Sigaction act = {};
     act.sa_flags = SA_SIGINFO | SA_RESTART;
-    act.sa_sigaction = reinterpret_cast<decltype(act.sa_sigaction)>(SigactionHandler);
-    sigemptyset(&act.sa_mask);
-    s32 ret = sigaction(native_signum, &act, nullptr);
+    act.__sigaction_handler.sigaction =
+        reinterpret_cast<decltype(act.__sigaction_handler.sigaction)>(SigactionHandler);
+    posix_sigemptyset(&act.sa_mask);
+    s32 ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
-        LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum, strerror(errno));
-        SetPosixErrno(errno);
+        LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum, strerror(*__Error()));
         return ErrnoToSceKernelError(*__Error());
     }
-#endif
     return ORBIS_OK;
 }
 
@@ -395,29 +389,15 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     }
     int const native_signum = OrbisToNativeSignal(signum);
     Handlers[signum] = nullptr;
-#ifndef _WIN64
-    if (native_signum == SIGSEGV || native_signum == SIGBUS || native_signum == SIGILL) {
-        struct sigaction action{};
-        action.sa_sigaction = Core::SignalHandler;
-        action.sa_flags = SA_SIGINFO | SA_ONSTACK;
-        sigemptyset(&action.sa_mask);
-
-        ASSERT_MSG(sigaction(native_signum, &action, nullptr) == 0,
-                   "Failed to reinstate original signal handler for signal {}", native_signum);
-    } else {
-        struct sigaction act = {};
-        act.sa_flags = SA_SIGINFO | SA_RESTART;
-        act.sa_sigaction = nullptr;
-        sigemptyset(&act.sa_mask);
-        s32 ret = sigaction(native_signum, &act, nullptr);
-        if (ret < 0) {
-            LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum,
-                      strerror(errno));
-            SetPosixErrno(errno);
-            return ErrnoToSceKernelError(*__Error());
-        }
+    Sigaction act = {};
+    act.sa_flags = SA_SIGINFO;
+    act.__sigaction_handler.sigaction = nullptr;
+    posix_sigemptyset(&act.sa_mask);
+    s32 ret = posix_sigaction(signum, &act, nullptr);
+    if (ret < 0) {
+        LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum, strerror(*__Error()));
+        return ErrnoToSceKernelError(*__Error());
     }
-#endif
     return ORBIS_OK;
 }
 
@@ -425,25 +405,8 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
     if (signum != POSIX_SIGUSR1) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    LOG_WARNING(Lib_Kernel, "Raising exception on thread '{}'", thread->name);
-    int const native_signum = OrbisToNativeSignal(signum);
-#ifndef _WIN64
-    const auto pthr = reinterpret_cast<pthread_t>(thread->native_thr.GetHandle());
-    const auto ret = pthread_kill(pthr, native_signum);
-    if (ret != 0) {
-        LOG_ERROR(Kernel, "Failed to send exception signal to thread '{}': {}", thread->name,
-                  strerror(ret));
-    }
-#else
-    USER_APC_OPTION option;
-    option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
-
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
-                                 ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)(s64)native_signum, nullptr);
-    ASSERT(res == 0);
-#endif
-    return ORBIS_OK;
+    s32 ret = posix_pthread_kill(thread, signum);
+    return ErrnoToSceKernelError(ret);
 }
 
 s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
