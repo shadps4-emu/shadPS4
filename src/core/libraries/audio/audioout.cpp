@@ -206,7 +206,7 @@ s32 PS4_SYSV_ABI sceAudioOutInit() {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
 
-    audio = std::make_unique<SDLAudioOut>();
+    audio = std::make_unique<OpenALAudioOut>();
 
     LOG_INFO(Lib_AudioOut, "Audio system initialized");
     return ORBIS_OK;
