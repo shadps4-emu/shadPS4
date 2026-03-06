@@ -137,6 +137,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         // Image atomic operations
     case Opcode::IMAGE_ATOMIC_SWAP:
         return IMAGE_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::IMAGE_ATOMIC_CMPSWAP:
+        return IMAGE_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::IMAGE_ATOMIC_ADD:
         return IMAGE_ATOMIC(AtomicOp::Add, inst);
     case Opcode::IMAGE_ATOMIC_SMIN:
@@ -519,6 +521,10 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
         switch (op) {
         case AtomicOp::Swap:
             return ir.ImageAtomicExchange(handle, body, value, {});
+        case AtomicOp::CmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(val_reg + 1);
+            return ir.ImageAtomicCmpSwap(handle, body, value, cmp_val, info);
+        }
         case AtomicOp::Add:
             return ir.ImageAtomicIAdd(handle, body, value, info);
         case AtomicOp::Smin:
