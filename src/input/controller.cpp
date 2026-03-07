@@ -252,7 +252,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 }
             }
             if (!still_connected) {
-                AddUserServiceEvent({OrbisUserServiceEventType::Logout, i + 1});
+                AddUserServiceEvent({OrbisUserServiceEventType::Logout, controllers[i]->user_id});
                 SDL_CloseGamepad(pad);
                 controllers[i]->m_sdl_gamepad = nullptr;
                 controllers[i]->user_id = -1;
@@ -274,17 +274,22 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
 
         for (int i = 0; i < 4; i++) {
             if (!slot_taken[i]) {
+                auto u = UserManagement.GetUserByPlayerIndex(i + 1);
+                if (!u) {
+                    continue; // for now, if you don't specify who Player N is in the config,
+                              // Player N won't be registered at all
+                }
                 auto* c = controllers[i];
                 c->m_sdl_gamepad = pad;
                 LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
                          SDL_GetGamepadID(pad));
-                c->user_id = i + 1;
+                c->user_id = u ? u->user_id : ORBIS_USER_SERVICE_USER_ID_INVALID;
                 slot_taken[i] = true;
                 c->player_index = i;
                 if (i != 0 || (i == 0 && Common::ElfInfo::Instance()
                                                  .GetPSFAttributes()
                                                  .support_initial_user_logout.Value() == true)) {
-                    AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
+                    AddUserServiceEvent({OrbisUserServiceEventType::Login, c->user_id});
                 }
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
@@ -311,8 +316,9 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     if (is_first_check) [[unlikely]] {
         is_first_check = false;
         if (controller_count == 0) {
-            controllers[0]->user_id = 1;
-            AddUserServiceEvent({OrbisUserServiceEventType::Login, 1});
+            auto u = UserManagement.GetUserByPlayerIndex(1);
+            controllers[0]->user_id = u->user_id;
+            AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
         }
     }
     SDL_free(new_joysticks);

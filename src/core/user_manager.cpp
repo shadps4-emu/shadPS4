@@ -72,6 +72,14 @@ User* UserManager::GetUserByID(s32 user_id) {
     return nullptr;
 }
 
+User* UserManager::GetUserByPlayerIndex(s32 index) {
+    for (auto& u : m_users.user) {
+        if (u.controller_port == index)
+            return &u;
+    }
+    return nullptr;
+}
+
 const std::vector<User>& UserManager::GetAllUsers() const {
     return m_users.user;
 }

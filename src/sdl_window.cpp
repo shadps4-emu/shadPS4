@@ -15,6 +15,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
+#include "core/user_settings.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
@@ -254,10 +255,14 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_ADD_VIRTUAL_USER:
         for (int i = 0; i < 4; i++) {
             if (controllers[i]->user_id == -1) {
-                controllers[i]->user_id = i + 1;
+                auto u = UserManagement.GetUserByPlayerIndex(i + 1);
+                if (!u) {
+                    break;
+                }
+                controllers[i]->user_id = u->user_id;
                 Libraries::UserService::AddUserServiceEvent(
                     {Libraries::UserService::OrbisUserServiceEventType::Login,
-                     (s32)controllers[i]->user_id});
+                     controllers[i]->user_id});
                 break;
             }
         }
