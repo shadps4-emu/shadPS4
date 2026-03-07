@@ -54,6 +54,10 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
         if (it->second.is_integer()) {
             return static_cast<u32>(toml::get<unsigned int>(it->second));
         }
+    } else if constexpr (std::is_same_v<T, unsigned long long>) {
+        if (it->second.is_integer()) {
+            return static_cast<u32>(toml::get<unsigned long long>(it->second));
+        }
     } else if constexpr (std::is_same_v<T, double>) {
         if (it->second.is_floating()) {
             return toml::get<double>(it->second);
@@ -154,6 +158,7 @@ static ConfigEntry<bool> logAppend(false);
 static ConfigEntry<bool> logSeparate(false);
 static ConfigEntry<bool> logEnable(true);
 static ConfigEntry<u32> logMaxSkipDuration(5'000);
+static ConfigEntry<unsigned long long> logSizeLimit(100_MB);
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -409,6 +414,10 @@ bool isLogAppend() {
 
 u32 getMaxSkipDuration() {
     return logMaxSkipDuration.get();
+}
+
+unsigned long long getLogSizeLimit() {
+    return logSizeLimit.get();
 }
 
 string getUserName() {
@@ -718,6 +727,10 @@ void setMaxSkipDuration(u32 duration, bool is_game_specific) {
     logMaxSkipDuration.set(duration, is_game_specific);
 }
 
+void setLogSizeLimit(unsigned long long size, bool is_game_specific) {
+    logSizeLimit.set(size, is_game_specific);
+}
+
 void setLogAppend(bool enable, bool is_game_specific) {
     logAppend.set(enable, is_game_specific);
 }
@@ -939,6 +952,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         logSeparate.setFromToml(log, "separate", is_game_specific);
         logEnable.setFromToml(log, "enable", is_game_specific);
         logMaxSkipDuration.setFromToml(log, "maxSkipDuration", is_game_specific);
+        logSizeLimit.setFromToml(log, "sizeLimit", is_game_specific);
     }
 
     if (data.contains("Input")) {
@@ -1132,6 +1146,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     logSeparate.setTomlValue(data, "Log", "separate", is_game_specific);
     logEnable.setTomlValue(data, "Log", "enable", is_game_specific);
     logMaxSkipDuration.setTomlValue(data, "Log", "maxSkipDuration", is_game_specific);
+    logSizeLimit.setTomlValue(data, "Log", "sizeLimit", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
@@ -1270,6 +1285,7 @@ void setDefaultValues(bool is_game_specific) {
     logSeparate.set(false, is_game_specific);
     logEnable.set(true, is_game_specific);
     logMaxSkipDuration.set(5'000, is_game_specific);
+    logSizeLimit.set(100_MB, is_game_specific);
 
     // GS - Input
     cursorState.set(HideCursorState::Idle, is_game_specific);

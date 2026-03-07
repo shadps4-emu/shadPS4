@@ -80,6 +80,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - By default, the emulator use `log/shad_log.txt`.
   - `maxSkipDuration`: Amount of time in which identical lines will not be logged (milliseconds).
       - By default, 5'000 milliseconds.
+  - `sizeLimit`: Size limit for log files (bytes).
+      - By default, 100 MB.
 
      
 - `[GPU]`
