@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
@@ -15,7 +16,6 @@
 #include <csignal>
 #endif
 #include <unordered_set>
-#include <core/libraries/kernel/posix_error.h>
 
 namespace Libraries::Kernel {
 
@@ -182,6 +182,10 @@ s32 OrbisToNativeSignal(s32 s) {
 
 #endif
 
+#ifdef __APPLE__
+#define sigisemptyset(x) (*(x) == 0)
+#endif
+
 std::array<OrbisKernelExceptionHandler, 130> Handlers{};
 
 #ifndef _WIN64
@@ -319,7 +323,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         native_act.sa_flags = act->sa_flags; // todo check compatibility, on Linux it seems fine
         native_act.sa_sigaction =
             reinterpret_cast<decltype(native_act.sa_sigaction)>(SigactionHandler);
-        if (posix_sigisemptyset(&act->sa_mask)) {
+        if (!posix_sigisemptyset(&act->sa_mask)) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
         }
     }
@@ -340,7 +344,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         oact->sa_flags = native_oact.sa_flags;
         oact->__sigaction_handler.sigaction =
             reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
-        if (sigisemptyset(&native_oact.sa_mask)) {
+        if (!sigisemptyset(&native_oact.sa_mask)) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask");
         }
     }
