@@ -111,6 +111,8 @@ bool getLogSkipDuplicate();
 void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
 u32 getMaxSkipDuration();
 void setMaxSkipDuration(u32 duration, bool is_game_specific = false);
+unsigned long long getLogSizeLimit();
+void setLogSizeLimit(unsigned long long size, bool is_game_specific = false);
 bool isLogAppend();
 void setLogAppend(bool enable, bool is_game_specific = false);
 std::string getLogFilter();

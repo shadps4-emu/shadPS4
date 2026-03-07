@@ -26,12 +26,21 @@ using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
 #include "common/logging/classes.h"
 #include "common/path_util.h"
 #include "common/thread.h"
+#include "common/types.h"
 
 namespace Common::Log {
+static constexpr unsigned long long UNLIMITED_SIZE = 0;
+
 struct thread_name_formatter : spdlog::formatter {
     ~thread_name_formatter() override = default;
 
+    thread_name_formatter(unsigned long long size_limit) : _size_limit(size_limit) {}
+
     void format(const spdlog::details::log_msg& msg, spdlog::memory_buf_t& dest) override {
+        if (_size_limit != UNLIMITED_SIZE && _current_size >= _size_limit) {
+            return;
+        }
+
         dest.push_back('[');
         spdlog::details::fmt_helper::append_string_view(msg.logger_name, dest);
         dest.push_back(']');
@@ -57,11 +66,16 @@ struct thread_name_formatter : spdlog::formatter {
         dest.push_back(' ');
         spdlog::details::fmt_helper::append_string_view(msg.payload, dest);
         spdlog::details::fmt_helper::append_string_view(spdlog::details::os::default_eol, dest);
+
+        _current_size += dest.size();
     }
 
     std::unique_ptr<formatter> clone() const override {
-        return std::make_unique<thread_name_formatter>();
+        return std::make_unique<thread_name_formatter>(_size_limit);
     }
+
+    const unsigned long long _size_limit;
+    unsigned long long _current_size = 0;
 };
 
 static constexpr auto POSITON_CONSOLE_LOG = 0;
@@ -90,11 +104,15 @@ static void Setup(int argc, char* argv[]) {
 
     std::at_quick_exit(Shutdown);
 
+    spdlog::set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
+
     g_console_sink = std::make_shared<spdlog_stdout>();
 
     g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
         !Config::isLogAppend());
+    g_shad_file_sink->set_formatter(
+        std::make_unique<thread_name_formatter>(Config::getLogSizeLimit()));
 
     std::shared_ptr<spdlog::sinks::dup_filter_sink_mt> dup_filter;
 
@@ -133,14 +151,13 @@ static void Setup(int argc, char* argv[]) {
                           spdlog::thread_pool()));
         }
     }
-
-    spdlog::set_formatter(std::make_unique<thread_name_formatter>());
 }
 
 static void Redirect(const std::string& name) {
     g_game_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
-    g_game_file_sink->set_formatter(std::make_unique<Common::Log::thread_name_formatter>());
+    g_game_file_sink->set_formatter(
+        std::make_unique<Common::Log::thread_name_formatter>(Config::getLogSizeLimit()));
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         auto l = spdlog::get(name);
