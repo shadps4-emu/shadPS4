@@ -293,12 +293,28 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-    LOG_INFO(Lib_Kernel, "called, sig: {}", sig);
+#ifndef __APPLE__
+    if (native_sig >= __SIGRTMIN && native_sig < SIGRTMIN) {
+        LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE libc-reserved signal {}!", sig);
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+#else
+    if (native_sig > SIGUSR2) {
+        LOG_ERROR(Lib_Kernel,
+                  "Guest is attempting to use SIGRT signals, which aren't available on this "
+                  "platform (signal: {})!",
+                  sig);
+        *__Error() = POSIX_EINVAL;
+        return ORBIS_FAIL;
+    }
+#endif
+    LOG_INFO(Lib_Kernel, "called, sig: {}, native sig: {}", sig, native_sig);
     struct sigaction native_act{};
     if (act) {
         native_act.sa_flags = act->sa_flags; // todo check compatibility, on Linux it seems fine
         native_act.sa_sigaction =
-            reinterpret_cast<decltype(native_act.sa_sigaction)>(act->__sigaction_handler.sigaction);
+            reinterpret_cast<decltype(native_act.sa_sigaction)>(SigactionHandler);
         if (act->sa_mask.bits[0] != 0) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
         }
@@ -318,7 +334,11 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (native_sig == SIGSEGV || native_sig == SIGBUS || native_sig == SIGILL) {
         return ORBIS_OK; // These are handled in Core::SignalHandler
     }
-    s32 ret = sigaction(native_sig, &native_act, &native_oact);
+    if (native_sig > 127) {
+        LOG_WARNING(Lib_Kernel, "We can't install a handler for native signal {}!", native_sig);
+        return ORBIS_OK;
+    }
+    s32 ret = sigaction(native_sig, act ? &native_act : nullptr, oact ? &native_oact : nullptr);
     if (ret < 0) {
         LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
         *__Error() = ErrnoToSceKernelError(errno);
@@ -373,7 +393,7 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExcepti
     Sigaction act = {};
     act.sa_flags = POSIX_SA_SIGINFO | POSIX_SA_RESTART;
     act.__sigaction_handler.sigaction =
-        reinterpret_cast<decltype(act.__sigaction_handler.sigaction)>(SigactionHandler);
+        reinterpret_cast<decltype(act.__sigaction_handler.sigaction)>(handler);
     posix_sigemptyset(&act.sa_mask);
     s32 ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
