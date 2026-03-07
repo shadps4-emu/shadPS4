@@ -317,6 +317,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
         }
     }
+    auto const prev_handler = Handlers[sig];
     Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
         act ? act->__sigaction_handler.sigaction : nullptr);
 
@@ -332,8 +333,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (oact) {
         oact->sa_flags = native_oact.sa_flags;
         oact->__sigaction_handler.sigaction =
-            reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(
-                native_oact.sa_sigaction);
+            reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
         if (native_oact.sa_mask.__val[0] != 0) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", native_oact.sa_mask.__val[0]);
         }
