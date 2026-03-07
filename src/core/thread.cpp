@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
+#include "common/assert.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "thread.h"
 #ifdef _WIN64

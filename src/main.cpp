@@ -12,7 +12,7 @@
 #include <core/emulator_state.h>
 #include "common/config.h"
 #include "common/key_manager.h"
-#include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
@@ -29,13 +29,15 @@ int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+    Config::load(user_dir / "config.toml");
+
+    Common::Log::Setup(argc, argv);
+
     IPC::Instance().Init();
 
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
-
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
 
     // ---- Trophy key migration ----
     auto key_manager = KeyManager::GetInstance();
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]) {
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
-    bool logAppend = false;
+    Common::Log::g_should_append = Config::isLogAppend();
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -88,7 +90,7 @@ int main(int argc, char* argv[]) {
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
+    app.add_flag("--log-append", Common::Log::g_should_append);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
@@ -170,8 +172,8 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         Config::setConfigMode(Config::ConfigMode::Global);
 
-    if (logAppend)
-        Common::Log::SetAppend();
+    if (!Common::Log::g_should_append)
+        Common::Log::Truncate();
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
@@ -198,6 +200,8 @@ int main(int argc, char* argv[]) {
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(ebootPath, gameArgs, overrideRoot);
+
+    Common::Log::Shutdown();
 
     return 0;
 }

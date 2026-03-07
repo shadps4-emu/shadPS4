@@ -12,7 +12,6 @@
 
 #include "common/config.h"
 #include "common/debug.h"
-#include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/ipc/ipc.h"
@@ -217,11 +216,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize logging as soon as possible
     if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
-        Common::Log::Initialize(id + ".log");
-    } else {
-        Common::Log::Initialize();
+        Common::Log::Redirect(id + ".log");
     }
-    Common::Log::Start();
+
     if (!std::filesystem::exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
@@ -238,12 +235,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
     LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
+    LOG_INFO(Config, "Log sync: {}", Config::isLogSync());
+#ifdef _WIN32
+    LOG_INFO(Config, "Log type: {}", Config::getLogType());
+#endif
+    LOG_INFO(Config, "Log skipDuplicate: {}", Config::getLogSkipDuplicate());
+    LOG_INFO(Config, "Log filter: {}", Config::getLogFilter());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU readbacksMode: {}", Config::getReadbacksMode());
     LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
@@ -411,7 +412,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Load all prx from game's sce_module folder
     mnt->IterateDirectory("/app0/sce_module", [this](const auto& path, const auto is_file) {
         if (is_file) {
-            LOG_INFO(Loader, "Loading {}", fmt::UTF(path.u8string()));
+            LOG_INFO(Loader, "Loading {}", path.string());
             linker->LoadModule(path);
         }
     });
@@ -492,7 +493,8 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
     Libraries::SaveData::Backup::StopThread();
-    Common::Log::Denitializer();
+
+    Common::Log::StopRedirection();
 
     auto& ipc = IPC::Instance();
 
