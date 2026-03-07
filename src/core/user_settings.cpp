@@ -81,14 +81,32 @@ bool UserSettingsImpl::Load() {
         // Create a default Users object
         Users default_users;
         default_users.default_user_id = 1;
-        if (default_users.user.empty()) {
-            User default_user;
-            default_user.user_id = 1;
-            default_user.user_color = 0;
-            default_user.user_name = "shadPS4";
-            default_user.controller_port = 1;
-            default_users.user.push_back(default_user);
-        }
+        default_users.user = {
+            {
+                .user_id = 1000,
+                .user_color = 1,
+                .user_name = "shadPS4",
+                .controller_port = 1,
+            },
+            {
+                .user_id = 1001,
+                .user_color = 2,
+                .user_name = "shadPS4-2",
+                .controller_port = 2,
+            },
+            {
+                .user_id = 1002,
+                .user_color = 3,
+                .user_name = "shadPS4-3",
+                .controller_port = 3,
+            },
+            {
+                .user_id = 1003,
+                .user_color = 4,
+                .user_name = "shadPS4-4",
+                .controller_port = 4,
+            },
+        };
 
         // Convert default_users to json for merging
         json default_json;
