@@ -848,14 +848,17 @@ void BufferCache::RunGarbageCollector() {
     int max_deletions = aggressive ? 64 : 32;
     const auto clean_up = [&](BufferId buffer_id) {
         if (max_deletions == 0) {
-            return;
+            return true;
         }
         --max_deletions;
         Buffer& buffer = slot_buffers[buffer_id];
         // InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
         DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
+        return false;
     };
+
+    lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
 }
 
 void BufferCache::TouchBuffer(const Buffer& buffer) {
