@@ -100,7 +100,9 @@ static void Setup(int argc, char* argv[]) {
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
     spdlog::cfg::load_argv_levels(argc, argv);
 
-    spdlog::init_thread_pool(8192, 1);
+    if (Config::getLogType() == "async") {
+        spdlog::init_thread_pool(8192, 1);
+    }
 
     std::at_quick_exit(Shutdown);
 
