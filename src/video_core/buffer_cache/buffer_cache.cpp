@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstdlib>
 #include "common/alignment.h"
 #include "common/debug.h"
+#include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -15,6 +17,17 @@
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace VideoCore {
+namespace {
+
+[[nodiscard]] bool IsBufferGcVerboseLoggingEnabled() {
+    static const bool enabled = [] {
+        const char* value = std::getenv("SHADPS4_VK_BUFFER_GC_LOG");
+        return value && value[0] != '\0' && value[0] != '0';
+    }();
+    return enabled;
+}
+
+} // namespace
 
 static constexpr size_t DataShareBufferSize = 64_KB;
 static constexpr size_t StagingBufferSize = 512_MB;
@@ -84,12 +97,12 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size) {
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write) {
     liverpool->SendCommand<true>([this, device_addr, size, is_write] {
         Buffer& buffer = slot_buffers[FindBuffer(device_addr, size)];
-        DownloadBufferMemory<false>(buffer, device_addr, size, is_write);
+        static_cast<void>(DownloadBufferMemory<false>(buffer, device_addr, size, is_write));
     });
 }
 
 template <bool async>
-void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
+bool BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 size, bool is_write) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     memory_tracker->ForEachDownloadRange<false>(
@@ -112,9 +125,31 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
             gpu_modified_ranges.Subtract(device_addr_out, range_size);
         });
     if (total_size_bytes == 0) {
-        return;
+        return true;
     }
+
+    if (total_size_bytes > DownloadBufferSize) {
+        LOG_WARNING(
+            Render_Vulkan,
+            "Buffer readback request exceeded staging capacity: request={} bytes copies={} "
+            "staging_cap={} bytes buffer_id={} buffer_addr={:#x} request_addr={:#x} "
+            "request_size={} bytes (async={}, is_write={})",
+            total_size_bytes, copies.size(), DownloadBufferSize, buffer.LRUId(), buffer.CpuAddr(),
+            device_addr, size, async, is_write);
+        return false;
+    }
+
     const auto [download, offset] = download_buffer.Map(total_size_bytes);
+    if (!download) {
+        LOG_ERROR(Render_Vulkan,
+                  "Buffer readback map failed: request={} bytes staging_cap={} bytes "
+                  "buffer_id={} buffer_addr={:#x} request_addr={:#x} request_size={} bytes "
+                  "(async={}, is_write={})",
+                  total_size_bytes, DownloadBufferSize, buffer.LRUId(), buffer.CpuAddr(),
+                  device_addr, size, async, is_write);
+        return false;
+    }
+
     for (auto& copy : copies) {
         // Modify copies to have the staging offset in mind
         copy.dstOffset += offset;
@@ -142,6 +177,8 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
         scheduler.Finish();
         write_data();
     }
+
+    return true;
 }
 
 void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
@@ -843,22 +880,54 @@ void BufferCache::RunGarbageCollector() {
     if (total_used_memory < trigger_gc_memory) {
         return;
     }
+
     const bool aggressive = total_used_memory >= critical_gc_memory;
+    const bool verbose_gc_logging = IsBufferGcVerboseLoggingEnabled();
     const u64 ticks_to_destroy = std::min<u64>(aggressive ? 80 : 160, gc_tick);
-    int max_deletions = aggressive ? 64 : 32;
+    const int max_deletions_allowed = aggressive ? 64 : 32;
+    int max_deletions = max_deletions_allowed;
+    int deleted_buffers = 0;
+    int skipped_buffers = 0;
     const auto clean_up = [&](BufferId buffer_id) {
         if (max_deletions == 0) {
             return true;
         }
-        --max_deletions;
+
         Buffer& buffer = slot_buffers[buffer_id];
+        if (verbose_gc_logging) {
+            LOG_INFO(Render_Vulkan,
+                     "Buffer GC candidate: id={} addr={:#x} size={} bytes lru_id={} "
+                     "used={} trigger={} critical={} tick={}",
+                     buffer_id.index, buffer.CpuAddr(), buffer.SizeBytes(), buffer.LRUId(),
+                     total_used_memory, trigger_gc_memory, critical_gc_memory, gc_tick);
+        }
+
         // InvalidateMemory(buffer.CpuAddr(), buffer.SizeBytes());
-        DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
+        if (!DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true)) {
+            ++skipped_buffers;
+            LOG_WARNING(Render_Vulkan,
+                        "Buffer GC skipped eviction due to failed readback: id={} addr={:#x} "
+                        "size={} bytes lru_id={} tick={} used={} trigger={} critical={}",
+                        buffer_id.index, buffer.CpuAddr(), buffer.SizeBytes(), buffer.LRUId(),
+                        gc_tick, total_used_memory, trigger_gc_memory, critical_gc_memory);
+            return false;
+        }
+
+        --max_deletions;
+        ++deleted_buffers;
         DeleteBuffer(buffer_id);
         return false;
     };
 
     lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
+
+    if (verbose_gc_logging || skipped_buffers > 0) {
+        LOG_INFO(Render_Vulkan,
+                 "Buffer GC pass: tick={} aggressive={} used={} trigger={} critical={} "
+                 "max_deletions={} deleted={} skipped={} ticks_to_destroy={}",
+                 gc_tick, aggressive, total_used_memory, trigger_gc_memory, critical_gc_memory,
+                 max_deletions_allowed, deleted_buffers, skipped_buffers, ticks_to_destroy);
+    }
 }
 
 void BufferCache::TouchBuffer(const Buffer& buffer) {
