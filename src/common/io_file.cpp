@@ -334,28 +334,6 @@ bool IOFile::Commit() const {
     return commit_result;
 }
 
-bool IOFile::SetSize(u64 size) const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto set_size_result = _chsize_s(fileno(file), static_cast<s64>(size)) == 0;
-#else
-    const auto set_size_result = ftruncate(fileno(file), static_cast<s64>(size)) == 0;
-#endif
-
-    if (!set_size_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
-                  PathToUTF8String(file_path), size, ec.message());
-    }
-
-    return set_size_result;
-}
-
 u64 IOFile::GetSize() const {
     if (!IsOpen()) {
         return 0;
