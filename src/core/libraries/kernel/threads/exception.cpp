@@ -277,9 +277,7 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     }
     int const native_signum = OrbisToNativeSignal(signum);
     if (!Handlers[native_signum]) {
-        LOG_WARNING(Lib_Kernel,
-                    "sceKernelRemoveExceptionHandler: removing non-installed handler for signum {}",
-                    signum);
+        LOG_WARNING(Lib_Kernel, "removing non-installed handler for signum {}", signum);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     Handlers[native_signum] = nullptr;
