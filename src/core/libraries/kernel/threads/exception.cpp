@@ -317,15 +317,6 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
         }
     }
-    struct sigaction native_oact{};
-    if (act) {
-        native_oact.sa_flags = act->sa_flags;
-        native_oact.sa_sigaction = reinterpret_cast<decltype(native_oact.sa_sigaction)>(
-            act->__sigaction_handler.sigaction);
-        if (act->sa_mask.bits[0] != 0) {
-            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
-        }
-    }
     Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
         act ? act->__sigaction_handler.sigaction : nullptr);
 
@@ -336,7 +327,17 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         LOG_WARNING(Lib_Kernel, "We can't install a handler for native signal {}!", native_sig);
         return ORBIS_OK;
     }
+    struct sigaction native_oact{};
     s32 ret = sigaction(native_sig, act ? &native_act : nullptr, oact ? &native_oact : nullptr);
+    if (oact) {
+        oact->sa_flags = native_oact.sa_flags;
+        oact->__sigaction_handler.sigaction =
+            reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(
+                native_oact.sa_sigaction);
+        if (native_oact.sa_mask.__val[0] != 0) {
+            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", native_oact.sa_mask.__val[0]);
+        }
+    }
     if (ret < 0) {
         LOG_ERROR(Lib_Kernel, "sigaction failed: {}", strerror(errno));
         *__Error() = ErrnoToSceKernelError(errno);
