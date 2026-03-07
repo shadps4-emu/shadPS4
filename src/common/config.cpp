@@ -153,6 +153,9 @@ static std::filesystem::path fonts_path = {};
 // Log
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
+#ifdef _WIN32
+static ConfigEntry<string> logWindowsType("wincolor");
+#endif
 static ConfigEntry<bool> logSkipDuplicate(true);
 static ConfigEntry<bool> logAppend(false);
 static ConfigEntry<bool> logSeparate(false);
@@ -403,6 +406,12 @@ string getLogFilter() {
 string getLogType() {
     return logType.get();
 }
+
+#ifdef _WIN32
+string getWindowsLoggerType() {
+    return logWindowsType.get();
+}
+#endif
 
 bool getLogSkipDuplicate() {
     return logSkipDuplicate.get();
@@ -719,6 +728,12 @@ void setLogType(const string& type, bool is_game_specific) {
     logType.set(type, is_game_specific);
 }
 
+#ifdef _WIN32
+void setWindowsLoggerType(const string& type, bool is_game_specific) {
+    logWindowsType.set(type, is_game_specific);
+}
+#endif
+
 void setLogSkipDuplicate(bool enable, bool is_game_specific) {
     logSkipDuplicate.set(enable, is_game_specific);
 }
@@ -948,6 +963,9 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         logFilter.setFromToml(log, "filter", is_game_specific);
         logSkipDuplicate.setFromToml(log, "skipDuplicate", is_game_specific);
         logType.setFromToml(log, "type", is_game_specific);
+#ifdef _WIN32
+        logWindowsType.setFromToml(log, "windowsType", is_game_specific);
+#endif
         logAppend.setFromToml(log, "append", is_game_specific);
         logSeparate.setFromToml(log, "separate", is_game_specific);
         logEnable.setFromToml(log, "enable", is_game_specific);
@@ -1141,6 +1159,9 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     logFilter.setTomlValue(data, "Log", "filter", is_game_specific);
     logType.setTomlValue(data, "Log", "type", is_game_specific);
+#ifdef _WIN32
+    logWindowsType.setTomlValue(data, "Log", "windowsType", is_game_specific);
+#endif
     logSkipDuplicate.setTomlValue(data, "Log", "skipDuplicate", is_game_specific);
     logAppend.setTomlValue(data, "Log", "append", is_game_specific);
     logSeparate.setTomlValue(data, "Log", "separate", is_game_specific);
@@ -1280,6 +1301,9 @@ void setDefaultValues(bool is_game_specific) {
     // GS - Log
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
+#ifdef _WIN32
+    logWindowsType.set("windowsType", is_game_specific);
+#endif
     logSkipDuplicate.set(true, is_game_specific);
     logAppend.set(false, is_game_specific);
     logSeparate.set(false, is_game_specific);

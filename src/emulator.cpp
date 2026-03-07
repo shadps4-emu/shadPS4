@@ -240,6 +240,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
     LOG_INFO(Config, "Log type: {}", Config::getLogType());
+#ifdef _WIN32
+    LOG_INFO(Config, "Log windowsType: {}", Config::getWindowsLoggerType());
+#endif
     LOG_INFO(Config, "Log skipDuplicate: {}", Config::getLogSkipDuplicate());
     LOG_INFO(Config, "Log filter: {}", Config::getLogFilter());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());

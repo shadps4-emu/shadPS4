@@ -82,6 +82,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - By default, 5'000 milliseconds.
   - `sizeLimit`: Size limit for log files (bytes).
       - By default, 100 MB.
+  - `windowsType`: Choose between `wincolor` (WriteConsole*) and `msvc` (OutputDebugString*) - only for Windows.
+      - By default, `wincolor`.
 
      
 - `[GPU]`
