@@ -42,16 +42,16 @@ struct thread_name_formatter : spdlog::formatter {
             return;
         }
 
+        msg.color_range_start = dest.size();
+
         dest.push_back('[');
         spdlog::details::fmt_helper::append_string_view(msg.logger_name, dest);
         dest.push_back(']');
         dest.push_back(' ');
-        msg.color_range_start = dest.size();
         dest.push_back('<');
         spdlog::details::fmt_helper::append_string_view(spdlog::level::to_string_view(msg.level),
                                                         dest);
         dest.push_back('>');
-        msg.color_range_end = dest.size();
         dest.push_back(' ');
         dest.push_back('(');
         spdlog::details::fmt_helper::append_string_view(GetCurrentThreadName(), dest);
@@ -67,6 +67,8 @@ struct thread_name_formatter : spdlog::formatter {
         dest.push_back(' ');
         spdlog::details::fmt_helper::append_string_view(msg.payload, dest);
         spdlog::details::fmt_helper::append_string_view(spdlog::details::os::default_eol, dest);
+
+        msg.color_range_end = dest.size();
 
         _current_size += dest.size();
     }
@@ -116,12 +118,13 @@ static void Setup(int argc, char* argv[]) {
 
 #ifdef _WIN32
     if (Config::getLogType() == "wincolor") {
-        g_console_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+        g_console_sink =
+            std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>(spdlog::color_mode::always);
     } else {
         g_console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
     }
 #else
-    g_console_sink = std::make_shared<spdlog_stdout>();
+    g_console_sink = std::make_shared<spdlog_stdout>(spdlog::color_mode::always);
 #endif
 
     g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(

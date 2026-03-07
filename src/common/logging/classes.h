@@ -107,6 +107,7 @@ constexpr auto Render_Recompiler                = "Render.Recompiler";
 constexpr auto ImGui                            = "ImGui";
 constexpr auto Input                            = "Input";
 constexpr auto Tty                              = "Tty";
+constexpr auto IPC                              = "IPC";
 constexpr auto KeyManager                       = "KeyManager";
 constexpr auto Loader                           = "Loader";
 // clang-format on
@@ -211,6 +212,7 @@ constexpr std::array ALL_LOG_CLASSES{
     ImGui,
     Input,
     Tty,
+    IPC,
     KeyManager,
     Loader,
 };
