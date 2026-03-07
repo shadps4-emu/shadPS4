@@ -153,6 +153,7 @@ static ConfigEntry<bool> logSkipDuplicate(true);
 static ConfigEntry<bool> logAppend(false);
 static ConfigEntry<bool> logSeparate(false);
 static ConfigEntry<bool> logEnable(true);
+static ConfigEntry<u32> logMaxSkipDuration(5'000);
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
@@ -404,6 +405,10 @@ bool getLogSkipDuplicate() {
 
 bool isLogAppend() {
     return logAppend.get();
+}
+
+u32 getMaxSkipDuration() {
+    return logMaxSkipDuration.get();
 }
 
 string getUserName() {
@@ -709,6 +714,10 @@ void setLogSkipDuplicate(bool enable, bool is_game_specific) {
     logSkipDuplicate.set(enable, is_game_specific);
 }
 
+void setMaxSkipDuration(u32 duration, bool is_game_specific) {
+    logMaxSkipDuration.set(duration, is_game_specific);
+}
+
 void setLogAppend(bool enable, bool is_game_specific) {
     logAppend.set(enable, is_game_specific);
 }
@@ -929,6 +938,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         logAppend.setFromToml(log, "append", is_game_specific);
         logSeparate.setFromToml(log, "separate", is_game_specific);
         logEnable.setFromToml(log, "enable", is_game_specific);
+        logMaxSkipDuration.setFromToml(log, "maxSkipDuration", is_game_specific);
     }
 
     if (data.contains("Input")) {
@@ -1121,6 +1131,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     logAppend.setTomlValue(data, "Log", "append", is_game_specific);
     logSeparate.setTomlValue(data, "Log", "separate", is_game_specific);
     logEnable.setTomlValue(data, "Log", "enable", is_game_specific);
+    logMaxSkipDuration.setTomlValue(data, "Log", "maxSkipDuration", is_game_specific);
 
     cursorState.setTomlValue(data, "Input", "cursorState", is_game_specific);
     cursorHideTimeout.setTomlValue(data, "Input", "cursorHideTimeout", is_game_specific);
@@ -1258,6 +1269,7 @@ void setDefaultValues(bool is_game_specific) {
     logAppend.set(false, is_game_specific);
     logSeparate.set(false, is_game_specific);
     logEnable.set(true, is_game_specific);
+    logMaxSkipDuration.set(5'000, is_game_specific);
 
     // GS - Input
     cursorState.set(HideCursorState::Idle, is_game_specific);
