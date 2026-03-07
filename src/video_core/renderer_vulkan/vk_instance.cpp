@@ -343,11 +343,18 @@ bool Instance::CreateDevice() {
     }
 
     bool graphics_queue_found = false;
+    bool dedicated_compute_found = false;
     for (std::size_t i = 0; i < family_properties.size(); i++) {
         const u32 index = static_cast<u32>(i);
-        if (family_properties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+        const auto flags = family_properties[i].queueFlags;
+        if (flags & vk::QueueFlagBits::eGraphics) {
             queue_family_index = index;
             graphics_queue_found = true;
+        }
+        // Look for a dedicated compute queue (has compute but NOT graphics)
+        if ((flags & vk::QueueFlagBits::eCompute) && !(flags & vk::QueueFlagBits::eGraphics)) {
+            compute_queue_family_index = index;
+            dedicated_compute_found = true;
         }
     }
 
@@ -356,12 +363,32 @@ bool Instance::CreateDevice() {
         return false;
     }
 
+    // If no dedicated compute queue, use graphics queue for compute
+    if (!dedicated_compute_found) {
+        compute_queue_family_index = queue_family_index;
+        LOG_INFO(Render_Vulkan, "No dedicated compute queue found, using graphics queue for compute");
+    } else {
+        has_dedicated_compute_queue = true;
+        LOG_INFO(Render_Vulkan, "Found dedicated async compute queue at family index {}",
+                 compute_queue_family_index);
+    }
+
     static constexpr std::array queue_priorities = {1.0f};
-    const vk::DeviceQueueCreateInfo queue_info = {
+    std::vector<vk::DeviceQueueCreateInfo> queue_infos;
+    queue_infos.push_back({
         .queueFamilyIndex = queue_family_index,
         .queueCount = static_cast<u32>(queue_priorities.size()),
         .pQueuePriorities = queue_priorities.data(),
-    };
+    });
+
+    // Add separate compute queue if available
+    if (has_dedicated_compute_queue) {
+        queue_infos.push_back({
+            .queueFamilyIndex = compute_queue_family_index,
+            .queueCount = static_cast<u32>(queue_priorities.size()),
+            .pQueuePriorities = queue_priorities.data(),
+        });
+    }
 
     const auto topology_list_restart_features =
         feature_chain.get<vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();
@@ -370,8 +397,8 @@ bool Instance::CreateDevice() {
     const auto vk13_features = feature_chain.get<vk::PhysicalDeviceVulkan13Features>();
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
-            .queueCreateInfoCount = 1u,
-            .pQueueCreateInfos = &queue_info,
+            .queueCreateInfoCount = static_cast<u32>(queue_infos.size()),
+            .pQueueCreateInfos = queue_infos.data(),
             .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
         },
@@ -575,6 +602,7 @@ bool Instance::CreateDevice() {
 
     graphics_queue = device->getQueue(queue_family_index, 0);
     present_queue = device->getQueue(queue_family_index, 0);
+    compute_queue = device->getQueue(compute_queue_family_index, 0);
 
     if (calibrated_timestamps) {
         const auto [time_domains_result, time_domains] =

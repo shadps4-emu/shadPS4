@@ -75,6 +75,18 @@ public:
         return present_queue;
     }
 
+    vk::Queue GetComputeQueue() const {
+        return compute_queue;
+    }
+
+    u32 GetComputeQueueFamilyIndex() const {
+        return compute_queue_family_index;
+    }
+
+    bool HasDedicatedComputeQueue() const {
+        return has_dedicated_compute_queue;
+    }
+
     TracyVkCtx GetProfilerContext() const {
         return profiler_context;
     }
@@ -470,11 +482,14 @@ private:
     VmaAllocator allocator{};
     vk::Queue present_queue;
     vk::Queue graphics_queue;
+    vk::Queue compute_queue;
     std::vector<vk::PhysicalDevice> physical_devices;
     std::vector<std::string> available_extensions;
     std::unordered_map<vk::Format, vk::FormatProperties3> format_properties;
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
+    u32 compute_queue_family_index{0};
+    bool has_dedicated_compute_queue{false};
     bool custom_border_color{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};

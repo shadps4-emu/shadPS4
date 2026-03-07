@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+#include <array>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ranges>
@@ -152,6 +153,13 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                             ? image_format_properties.value.imageFormatProperties.sampleCounts
                             : vk::SampleCountFlagBits::e1;
 
+    // Check if we need concurrent sharing for async compute
+    const bool has_async = instance->HasDedicatedComputeQueue();
+    std::array<u32, 2> queue_families = {
+        instance->GetGraphicsQueueFamilyIndex(),
+        instance->GetComputeQueueFamilyIndex(),
+    };
+
     const vk::ImageCreateInfo image_ci = {
         .flags = flags,
         .imageType = ConvertImageType(info.type),
@@ -166,6 +174,9 @@ Image::Image(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
         .samples = LiverpoolToVK::NumSamples(info.num_samples, supported_samples),
         .tiling = tiling,
         .usage = usage_flags,
+        .sharingMode = has_async ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive,
+        .queueFamilyIndexCount = has_async ? static_cast<u32>(queue_families.size()) : 0,
+        .pQueueFamilyIndices = has_async ? queue_families.data() : nullptr,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 

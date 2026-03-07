@@ -89,6 +89,12 @@ void Scheduler::Wait(u64 tick) {
     master_semaphore.Wait(tick);
 }
 
+void Scheduler::Wait(vk::Semaphore semaphore, u64 value) {
+    std::scoped_lock lk{submit_mutex};
+    wait_semaphores.push_back(semaphore);
+    wait_values.push_back(value);
+}
+
 void Scheduler::PopPendingOperations() {
     master_semaphore.Refresh();
     while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
@@ -136,23 +142,38 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     const vk::Semaphore timeline = master_semaphore.Handle();
     info.AddSignal(timeline, signal_value);
 
-    static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
-        vk::PipelineStageFlagBits::eAllCommands,
-        vk::PipelineStageFlagBits::eColorAttachmentOutput,
-    };
+    // Merge cross-queue wait semaphores with info wait semaphores
+    std::vector<vk::Semaphore> all_wait_semas;
+    std::vector<u64> all_wait_values;
+    std::vector<vk::PipelineStageFlags> all_wait_stages;
+
+    // Add info semaphores first
+    for (u32 i = 0; i < info.num_wait_semas; ++i) {
+        all_wait_semas.push_back(info.wait_semas[i]);
+        all_wait_values.push_back(info.wait_ticks[i]);
+        all_wait_stages.push_back(i == 0 ? vk::PipelineStageFlagBits::eAllCommands
+                                         : vk::PipelineStageFlagBits::eColorAttachmentOutput);
+    }
+
+    // Add cross-queue sync semaphores
+    for (size_t i = 0; i < wait_semaphores.size(); ++i) {
+        all_wait_semas.push_back(wait_semaphores[i]);
+        all_wait_values.push_back(wait_values[i]);
+        all_wait_stages.push_back(vk::PipelineStageFlagBits::eAllCommands);
+    }
 
     const vk::TimelineSemaphoreSubmitInfo timeline_si = {
-        .waitSemaphoreValueCount = info.num_wait_semas,
-        .pWaitSemaphoreValues = info.wait_ticks.data(),
+        .waitSemaphoreValueCount = static_cast<u32>(all_wait_values.size()),
+        .pWaitSemaphoreValues = all_wait_values.data(),
         .signalSemaphoreValueCount = info.num_signal_semas,
         .pSignalSemaphoreValues = info.signal_ticks.data(),
     };
 
     const vk::SubmitInfo submit_info = {
         .pNext = &timeline_si,
-        .waitSemaphoreCount = info.num_wait_semas,
-        .pWaitSemaphores = info.wait_semas.data(),
-        .pWaitDstStageMask = wait_stage_masks.data(),
+        .waitSemaphoreCount = static_cast<u32>(all_wait_semas.size()),
+        .pWaitSemaphores = all_wait_semas.data(),
+        .pWaitDstStageMask = all_wait_stages.data(),
         .commandBufferCount = 1U,
         .pCommandBuffers = &current_cmdbuf,
         .signalSemaphoreCount = info.num_signal_semas,
@@ -162,6 +183,10 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
     ImGui::Core::TextureManager::Submit();
     auto submit_result = instance.GetGraphicsQueue().submit(submit_info, info.fence);
     ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
+
+    // Clear cross-queue waits after submission
+    wait_semaphores.clear();
+    wait_values.clear();
 
     master_semaphore.Refresh();
     AllocateWorkerCommandBuffers();
