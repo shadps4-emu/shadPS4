@@ -137,8 +137,8 @@ struct Siginfo {
      * FreeBSD signal handler.
      */
     int _si_code;           /* signal code */
-    s32 _si_pid;          /* sending process */
-    u32 _si_uid;          /* sender's ruid */
+    s32 _si_pid;            /* sending process */
+    u32 _si_uid;            /* sender's ruid */
     int _si_status;         /* exit value */
     void* _si_addr;         /* faulting instruction */
     union Sigval _si_value; /* signal value */
