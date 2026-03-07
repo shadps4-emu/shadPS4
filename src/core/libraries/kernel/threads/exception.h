@@ -50,7 +50,7 @@ constexpr s32 POSIX_SIGLIBRT = 33;
 #ifdef __linux__
 constexpr s32 _SIGEMT = 128;
 constexpr s32 _SIGINFO = 129;
-#else
+#elif !defined(_WIN32)
 constexpr s32 _SIGEMT = SIGEMT;
 constexpr s32 _SIGINFO = SIGINFO;
 #endif
@@ -137,8 +137,8 @@ struct Siginfo {
      * FreeBSD signal handler.
      */
     int _si_code;           /* signal code */
-    pid_t _si_pid;          /* sending process */
-    uid_t _si_uid;          /* sender's ruid */
+    s32 _si_pid;          /* sending process */
+    u32 _si_uid;          /* sender's ruid */
     int _si_status;         /* exit value */
     void* _si_addr;         /* faulting instruction */
     union Sigval _si_value; /* signal value */
