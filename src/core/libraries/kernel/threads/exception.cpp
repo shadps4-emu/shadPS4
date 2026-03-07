@@ -285,14 +285,14 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         return ORBIS_FAIL;
     }
     s32 native_sig = OrbisToNativeSignal(sig);
+#ifdef _WIN32
+    LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
+#else
     if (native_sig == SIGVTALRM) {
         LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE-reserved signal {}!", sig);
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-#ifdef _WIN32
-    LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
-#else
     LOG_INFO(Lib_Kernel, "called, sig: {}", sig);
     struct sigaction native_act{};
     if (act) {
@@ -371,13 +371,14 @@ int PS4_SYSV_ABI sceKernelInstallExceptionHandler(s32 signum, OrbisKernelExcepti
     }
     LOG_INFO(Lib_Kernel, "Installing signal handler for {}", signum);
     Sigaction act = {};
-    act.sa_flags = SA_SIGINFO | SA_RESTART;
+    act.sa_flags = POSIX_SA_SIGINFO | POSIX_SA_RESTART;
     act.__sigaction_handler.sigaction =
         reinterpret_cast<decltype(act.__sigaction_handler.sigaction)>(SigactionHandler);
     posix_sigemptyset(&act.sa_mask);
     s32 ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
-        LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum, strerror(*__Error()));
+        LOG_ERROR(Lib_Kernel, "Failed to add handler for signal {}: {}", signum,
+                  strerror(*__Error()));
         return ErrnoToSceKernelError(*__Error());
     }
     return ORBIS_OK;
@@ -390,12 +391,13 @@ int PS4_SYSV_ABI sceKernelRemoveExceptionHandler(s32 signum) {
     int const native_signum = OrbisToNativeSignal(signum);
     Handlers[signum] = nullptr;
     Sigaction act = {};
-    act.sa_flags = SA_SIGINFO;
+    act.sa_flags = POSIX_SA_SIGINFO;
     act.__sigaction_handler.sigaction = nullptr;
     posix_sigemptyset(&act.sa_mask);
     s32 ret = posix_sigaction(signum, &act, nullptr);
     if (ret < 0) {
-        LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum, strerror(*__Error()));
+        LOG_ERROR(Lib_Kernel, "Failed to remove handler for signal {}: {}", signum,
+                  strerror(*__Error()));
         return ErrnoToSceKernelError(*__Error());
     }
     return ORBIS_OK;
