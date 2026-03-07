@@ -114,9 +114,11 @@ static void Setup(int argc, char* argv[]) {
     spdlog::set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
 
 #ifdef _WIN32
-    g_console_sink = Config::getWindowsLoggerType() == "wincolor"
-                         ? std::make_shared<wincolor_stdout_sink_mt>()
-                         : std::make_shared<msvc_sink_mt>();
+    if (Config::getLogType() == "wincolor") {
+        g_console_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+    } else {
+        g_console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
+    }
 #else
     g_console_sink = std::make_shared<spdlog_stdout>();
 #endif
@@ -168,7 +170,7 @@ static void Setup(int argc, char* argv[]) {
 
 static void Redirect(const std::string& name) {
     g_game_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        GetUserPath(Common::FS::PathType::LogDir) / name, !Config::isLogAppend());
+        (GetUserPath(Common::FS::PathType::LogDir) / name).string(), !Config::isLogAppend());
     g_game_file_sink->set_formatter(
         std::make_unique<Common::Log::thread_name_formatter>(Config::getLogSizeLimit()));
 
