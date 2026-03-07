@@ -21,6 +21,10 @@
 #include "core/tls.h"
 #include "ipc/ipc.h"
 
+#ifndef _WIN32
+#include <signal.h>
+#endif
+
 namespace Core {
 
 static PS4_SYSV_ABI void ProgramExitFunc() {
@@ -106,6 +110,11 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
+#ifndef _WIN32 // Clear any existing signal mask for game threads.
+        sigset_t emptyset;
+        sigemptyset(&emptyset);
+        pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
+#endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
         }
