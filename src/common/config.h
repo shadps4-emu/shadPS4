@@ -107,6 +107,10 @@ void setPipelineCacheEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheArchived(bool enable, bool is_game_specific = false);
 std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
+#ifdef _WIN32
+std::string getWindowsLoggerType();
+void setWindowsLoggerType(const std::string& type, bool is_game_specific = false);
+#endif
 bool getLogSkipDuplicate();
 void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
 u32 getMaxSkipDuration();
