@@ -97,9 +97,13 @@ static void Shutdown() {
 }
 
 static void Setup(int argc, char* argv[]) {
-    spdlog::cfg::load_env_levels();
-    spdlog::cfg::helpers::load_levels(Config::getLogFilter());
-    spdlog::cfg::load_argv_levels(argc, argv);
+    if (Config::getLoggingEnabled()) {
+        spdlog::cfg::load_env_levels();
+        spdlog::cfg::helpers::load_levels(Config::getLogFilter());
+        spdlog::cfg::load_argv_levels(argc, argv);
+    } else {
+        spdlog::cfg::helpers::load_levels("off");
+    }
 
     if (!Config::isLogSync()) {
         spdlog::init_thread_pool(8192, 1);
