@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_set>
 #include <SDL3/SDL.h>
+#include <common/elf_info.h>
 #include <common/singleton.h>
 #include "common/logging/log.h"
 #include "controller.h"
@@ -280,7 +281,11 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 c->user_id = i + 1;
                 slot_taken[i] = true;
                 c->player_index = i;
-                AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
+                if (i != 0 || (i == 0 && Common::ElfInfo::Instance()
+                                                 .GetPSFAttributes()
+                                                 .support_initial_user_logout.Value() == true)) {
+                    AddUserServiceEvent({OrbisUserServiceEventType::Login, i + 1});
+                }
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
