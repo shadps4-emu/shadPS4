@@ -101,7 +101,7 @@ static void Setup(int argc, char* argv[]) {
     spdlog::cfg::helpers::load_levels(Config::getLogFilter());
     spdlog::cfg::load_argv_levels(argc, argv);
 
-    if (Config::getLogType() == "async") {
+    if (!Config::isLogSync()) {
         spdlog::init_thread_pool(8192, 1);
     }
 
@@ -136,13 +136,13 @@ static void Setup(int argc, char* argv[]) {
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         if (Config::getLogSkipDuplicate()) {
-            spdlog::initialize_logger(Config::getLogType() == "sync"
+            spdlog::initialize_logger(Config::isLogSync()
                                           ? std::make_shared<spdlog::logger>(name, dup_filter)
                                           : std::make_shared<spdlog::async_logger>(
                                                 name, dup_filter, spdlog::thread_pool()));
         } else {
             spdlog::initialize_logger(
-                Config::getLogType() == "sync"
+                Config::isLogSync()
                     ? std::make_shared<spdlog::logger>(
                           name,
                           std::initializer_list<spdlog::sink_ptr>{
