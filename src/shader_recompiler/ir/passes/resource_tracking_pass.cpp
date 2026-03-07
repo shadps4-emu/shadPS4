@@ -9,6 +9,7 @@
 #include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reinterpret.h"
+#include "shader_recompiler/profile.h"
 #include "video_core/amdgpu/resource.h"
 
 namespace Shader::Optimization {
@@ -254,7 +255,9 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array;
+            return desc.sharp_idx == existing.sharp_idx && desc.is_array == existing.is_array &&
+                   desc.mip_fallback_mode == existing.mip_fallback_mode &&
+                   desc.constant_mip_index == existing.constant_mip_index;
         })};
         auto& image = image_resources[index];
         image.is_atomic |= desc.is_atomic;
@@ -528,14 +531,21 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
-void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+                     const Profile& profile) {
     // Read image sharp.
     const auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const IR::Inst* image_handle = inst.Arg(0).InstRecursive();
     const auto tsharp = TrackSharp(image_handle, block, inst_info.pc);
     const bool is_atomic = IsImageAtomicInstruction(inst);
     const bool is_written = inst.GetOpcode() == IR::Opcode::ImageWrite || is_atomic;
-    const ImageResource image_res = {
+    const bool is_storage =
+        inst.GetOpcode() == IR::Opcode::ImageRead || inst.GetOpcode() == IR::Opcode::ImageWrite;
+    // ImageRead with !is_written gets emitted as OpImageFetch with LOD operand, doesn't
+    // need fallback (TODO is this 100% true?)
+    const bool needs_mip_storage_fallback =
+        inst_info.has_lod && is_written && !profile.supports_image_load_store_lod;
+    ImageResource image_res = {
         .sharp_idx = tsharp,
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = is_atomic,
@@ -543,8 +553,41 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
         .is_written = is_written,
         .is_r128 = bool(inst_info.is_r128),
     };
+
     auto image = image_res.GetSharp(info);
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
+
+    if (needs_mip_storage_fallback) {
+        // If the mip level to IMAGE_(LOAD/STORE)_MIP is a constant, set up ImageResource
+        // so that we will only bind a single level.
+        // If index is dynamic, we will bind levels as an array
+        const auto view_type = image.GetViewType(image_res.is_array);
+
+        IR::Inst* body = inst.Arg(1).InstRecursive();
+        const auto lod_arg = [&] -> IR::Value {
+            switch (view_type) {
+            case AmdGpu::ImageType::Color1D: // x, [lod]
+                return body->Arg(1);
+            case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
+            case AmdGpu::ImageType::Color2D:      // x, y, [lod]
+                return body->Arg(2);
+            case AmdGpu::ImageType::Color2DArray: // x, y, slice, [lod]
+            case AmdGpu::ImageType::Color3D:      // x, y, z, [lod]
+                return body->Arg(3);
+            case AmdGpu::ImageType::Color2DMsaa:
+            case AmdGpu::ImageType::Color2DMsaaArray:
+            default:
+                UNREACHABLE_MSG("Invalid image type {}", view_type);
+            }
+        }();
+
+        if (lod_arg.IsImmediate()) {
+            image_res.mip_fallback_mode = MipStorageFallbackMode::ConstantIndex;
+            image_res.constant_mip_index = lod_arg.U32();
+        } else {
+            image_res.mip_fallback_mode = MipStorageFallbackMode::DynamicIndex;
+        }
+    }
 
     // Patch image instruction if image is FMask.
     if (AmdGpu::IsFmask(image.GetDataFmt())) {
@@ -1079,7 +1122,11 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     const auto has_ms = view_type == AmdGpu::ImageType::Color2DMsaa ||
                         view_type == AmdGpu::ImageType::Color2DMsaaArray;
     ASSERT(!inst_info.has_lod || !has_ms);
-    const auto lod = inst_info.has_lod ? IR::U32{arg} : IR::U32{};
+    // If we are binding a single mip level as fallback, drop the argument
+    const auto lod =
+        (inst_info.has_lod && image_res.mip_fallback_mode != MipStorageFallbackMode::ConstantIndex)
+            ? IR::U32{arg}
+            : IR::U32{};
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
     const auto is_storage = image_res.is_written;
@@ -1110,7 +1157,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 }
 
-void ResourceTrackingPass(IR::Program& program) {
+void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
     // Iterate resource instructions and patch them after finding the sharp.
     auto& info = program.info;
 
@@ -1121,7 +1168,7 @@ void ResourceTrackingPass(IR::Program& program) {
             if (IsBufferInstruction(inst)) {
                 PatchBufferSharp(*block, inst, info, descriptors);
             } else if (IsImageInstruction(inst)) {
-                PatchImageSharp(*block, inst, info, descriptors);
+                PatchImageSharp(*block, inst, info, descriptors, profile);
             }
         }
     }
