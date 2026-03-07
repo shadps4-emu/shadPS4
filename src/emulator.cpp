@@ -240,7 +240,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
     LOG_INFO(Config, "Log type: {}", Config::getLogType());
-    LOG_INFO(Config, "Log skip: {}", Config::groupIdenticalLogs());
+    LOG_INFO(Config, "Log skipDuplicate: {}", Config::getLogSkipDuplicate());
     LOG_INFO(Config, "Log filter: {}", Config::getLogFilter());
     LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
     LOG_INFO(Config, "GPU readbacksMode: {}", Config::getReadbacksMode());
