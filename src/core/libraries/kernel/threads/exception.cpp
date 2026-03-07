@@ -278,6 +278,10 @@ s32 PS4_SYSV_ABI posix_sigemptyset(Sigset* s) {
     return 0;
 }
 
+bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
+    return s->bits[0] == 0 && s->bits[1] == 0;
+}
+
 s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (sig < 1 || sig > 128 || sig == POSIX_SIGTHR || sig == POSIX_SIGKILL ||
         sig == POSIX_SIGSTOP) {
@@ -313,7 +317,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         native_act.sa_flags = act->sa_flags; // todo check compatibility, on Linux it seems fine
         native_act.sa_sigaction =
             reinterpret_cast<decltype(native_act.sa_sigaction)>(SigactionHandler);
-        if (act->sa_mask.bits[0] != 0) {
+        if (posix_sigisemptyset(&act->sa_mask)) {
             LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", act->sa_mask.bits[0]);
         }
     }
@@ -334,8 +338,8 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         oact->sa_flags = native_oact.sa_flags;
         oact->__sigaction_handler.sigaction =
             reinterpret_cast<decltype(oact->__sigaction_handler.sigaction)>(prev_handler);
-        if (native_oact.sa_mask.__val[0] != 0) {
-            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask: {:x}", native_oact.sa_mask.__val[0]);
+        if (sigisemptyset(&native_oact.sa_mask)) {
+            LOG_ERROR(Lib_Kernel, "Unhandled sa_mask");
         }
     }
     if (ret < 0) {
