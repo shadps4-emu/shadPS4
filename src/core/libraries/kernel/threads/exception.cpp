@@ -288,10 +288,12 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-    s32 native_sig = OrbisToNativeSignal(sig);
 #ifdef _WIN32
     LOG_ERROR(Lib_Kernel, "(STUBBED) called, sig: {}", sig);
+    Handlers[sig] = reinterpret_cast<OrbisKernelExceptionHandler>(
+        act ? act->__sigaction_handler.sigaction : nullptr);
 #else
+    s32 native_sig = OrbisToNativeSignal(sig);
     if (native_sig == SIGVTALRM) {
         LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE-reserved signal {}!", sig);
         *__Error() = POSIX_EINVAL;
@@ -431,7 +433,10 @@ int PS4_SYSV_ABI sceKernelRaiseException(PthreadT thread, int signum) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     s32 ret = posix_pthread_kill(thread, signum);
-    return ErrnoToSceKernelError(ret);
+    if (ret < 0) {
+        return ErrnoToSceKernelError(ret);
+    }
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceKernelDebugRaiseException(s32 error, s64 unk) {
