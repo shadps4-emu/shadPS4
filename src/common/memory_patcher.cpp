@@ -8,7 +8,6 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <pugixml.hpp>
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"

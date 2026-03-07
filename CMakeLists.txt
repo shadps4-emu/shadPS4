@@ -232,10 +232,11 @@ find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(OpenAL CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3_mixer 2.8.1 CONFIG)
-if (SDL3_mixer_FOUND)
-    find_package(SDL3 3.1.2 CONFIG)
-endif()
+# Since we use a non-upstream version of SDL3, we can't check for local packages.
+# find_package(SDL3_mixer 2.8.1 CONFIG)
+# if (SDL3_mixer_FOUND)
+#     find_package(SDL3 3.1.2 CONFIG)
+# endif()
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -707,8 +708,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
+           src/common/concepts.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
@@ -866,8 +866,14 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/emulator_settings.cpp
+         src/core/emulator_settings.h
+         src/core/user_manager.cpp
+         src/core/user_manager.h
          src/core/emulator_state.cpp
          src/core/emulator_state.h
+         src/core/user_settings.cpp
+         src/core/user_settings.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")

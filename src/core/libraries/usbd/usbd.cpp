@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "usbd.h"
 
 #include <fmt/format.h>
 #include <libusb.h>
-
-#include "common/config.h"
 
 namespace Libraries::Usbd {
 
@@ -457,14 +456,14 @@ int PS4_SYSV_ABI Func_D56B43060720B1E0() {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    switch (Config::getUsbDeviceBackend()) {
-    case Config::SkylandersPortal:
+    switch (EmulatorSettings.GetUsbDeviceBackend()) {
+    case UsbBackendType::SkylandersPortal:
         usb_backend = std::make_shared<SkylandersPortalBackend>();
         break;
-    case Config::InfinityBase:
+    case UsbBackendType::InfinityBase:
         usb_backend = std::make_shared<InfinityBaseBackend>();
         break;
-    case Config::DimensionsToypad:
+    case UsbBackendType::DimensionsToypad:
         usb_backend = std::make_shared<DimensionsToypadBackend>();
         break;
     default:

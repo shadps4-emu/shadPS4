@@ -10,7 +10,6 @@
 #include <SDL3/SDL_messagebox.h>
 
 #include <core/emulator_state.h>
-#include "common/config.h"
 #include "common/key_manager.h"
 #include "common/logging/backend.h"
 #include "common/memory_patcher.h"
@@ -23,6 +22,9 @@
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <common/key_manager.h>
+#include <core/emulator_settings.h>
+#include "core/user_settings.h"
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -30,26 +32,14 @@ int main(int argc, char* argv[]) {
 #endif
 
     IPC::Instance().Init();
+    // Init emulator state
+    std::shared_ptr<EmulatorState> m_emu_state = std::make_shared<EmulatorState>();
+    EmulatorState::SetInstance(m_emu_state);
+    // Load configurations
+    EmulatorSettings.Load();
+    UserSettings.Load();
 
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
-
-    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
-
-    // ---- Trophy key migration ----
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
-        !Config::getTrophyKey().empty()) {
-        auto keys = key_manager->GetAllKeys();
-        if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !Config::getTrophyKey().empty()) {
-            keys.TrophyKeySet.ReleaseTrophyKey =
-                KeyManager::HexStringToBytes(Config::getTrophyKey());
-            key_manager->SetAllKeys(keys);
-            key_manager->SaveToFile();
-        }
-    }
+    // TODO add back trophy key migration without the need of entire previous config framework
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
@@ -120,15 +110,15 @@ int main(int argc, char* argv[]) {
 
     // ---- Utility commands ----
     if (addGameFolder) {
-        Config::addGameInstallDir(*addGameFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings.AddGameInstallDir(*addGameFolder);
+        EmulatorSettings.Save();
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
 
     if (setAddonFolder) {
-        Config::setAddonInstallDir(*setAddonFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings.SetAddonInstallDir(*setAddonFolder);
+        EmulatorSettings.Save();
         std::cout << "Addon folder successfully saved.\n";
         return 0;
     }
@@ -152,9 +142,9 @@ int main(int argc, char* argv[]) {
 
     if (fullscreenStr) {
         if (*fullscreenStr == "true") {
-            Config::setIsFullscreen(true);
+            EmulatorSettings.SetFullScreen(true);
         } else if (*fullscreenStr == "false") {
-            Config::setIsFullscreen(false);
+            EmulatorSettings.SetFullScreen(false);
         } else {
             std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
             return 1;
@@ -162,13 +152,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (showFps)
-        Config::setShowFpsCounter(true);
+        EmulatorSettings.SetShowFpsCounter(true);
 
     if (configClean)
-        Config::setConfigMode(Config::ConfigMode::Clean);
+        EmulatorSettings.SetConfigMode(ConfigMode::Clean);
 
     if (configGlobal)
-        Config::setConfigMode(Config::ConfigMode::Global);
+        EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
     if (logAppend)
         Common::Log::SetAppend();
@@ -178,7 +168,7 @@ int main(int argc, char* argv[]) {
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
-        for (const auto& installDir : Config::getGameInstallDirs()) {
+        for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
             if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;

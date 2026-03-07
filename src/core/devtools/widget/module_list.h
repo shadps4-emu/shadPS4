@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -8,9 +8,9 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 
 namespace Core::Devtools::Widget {
 
@@ -23,7 +23,7 @@ public:
     bool open = false;
 
     static bool IsSystemModule(const std::filesystem::path& path) {
-        const auto sys_modules_path = Config::getSysModulesPath();
+        const auto sys_modules_path = EmulatorSettings.GetSysModulesDir();
 
         const auto abs_path = std::filesystem::absolute(path).lexically_normal();
         const auto abs_sys_path = std::filesystem::absolute(sys_modules_path).lexically_normal();

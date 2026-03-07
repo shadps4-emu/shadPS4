@@ -54,17 +54,16 @@ struct EntryParams {
 };
 
 struct HeapAPI {
-    PS4_SYSV_ABI void* (*heap_malloc)(size_t);
+    PS4_SYSV_ABI void* (*heap_malloc)(u64);
     PS4_SYSV_ABI void (*heap_free)(void*);
-    PS4_SYSV_ABI void* (*heap_calloc)(size_t, size_t);
-    PS4_SYSV_ABI void* (*heap_realloc)(void*, size_t);
-    PS4_SYSV_ABI void* (*heap_memalign)(size_t, size_t);
-    PS4_SYSV_ABI int (*heap_posix_memalign)(void**, size_t, size_t);
-    // NOTE: Fields below may be inaccurate
-    PS4_SYSV_ABI int (*heap_reallocalign)(void);
-    PS4_SYSV_ABI void (*heap_malloc_stats)(void);
-    PS4_SYSV_ABI int (*heap_malloc_stats_fast)(void);
-    PS4_SYSV_ABI size_t (*heap_malloc_usable_size)(void*);
+    PS4_SYSV_ABI void* (*heap_calloc)(u64, u64);
+    PS4_SYSV_ABI void* (*heap_realloc)(void*, u64);
+    PS4_SYSV_ABI void* (*heap_memalign)(u64, u64);
+    PS4_SYSV_ABI s32 (*heap_posix_memalign)(void**, u64, u64);
+    PS4_SYSV_ABI s32 (*heap_reallocalign)(void*, u64, u64);
+    PS4_SYSV_ABI s32 (*heap_malloc_stats)(void*);
+    PS4_SYSV_ABI s32 (*heap_malloc_stats_fast)(void*);
+    PS4_SYSV_ABI u64 (*heap_malloc_usable_size)(void*);
 };
 
 using AppHeapAPI = HeapAPI*;
@@ -125,9 +124,17 @@ public:
         }
     }
 
+    void LoadLibcInternal() {
+        for (auto& module : m_modules) {
+            if (module->name.contains("libSceLibcInternal")) {
+                module->Start(0, nullptr, nullptr);
+            }
+        }
+    }
+
     void LoadSharedLibraries() {
         for (auto& module : m_modules) {
-            if (module->IsSharedLib()) {
+            if (module->IsSharedLib() && !module->name.contains("libSceLibcInternal")) {
                 module->Start(0, nullptr, nullptr);
             }
         }

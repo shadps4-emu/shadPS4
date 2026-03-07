@@ -10,7 +10,6 @@
 #include <fmt/xchar.h>
 #include <hwinfo/hwinfo.h>
 
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
@@ -28,6 +27,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
@@ -205,18 +205,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
 
-    Config::load(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"),
-                 true);
-
-    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                (id + ".toml"))) {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
-    } else {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
-    }
+    EmulatorSettings.Load(id);
 
     // Initialize logging as soon as possible
-    if (!id.empty() && Config::getSeparateLogFilesEnabled()) {
+    if (!id.empty() && EmulatorSettings.IsSeparateLoggingEnabled()) {
         Common::Log::Initialize(id + ".log");
     } else {
         Common::Log::Initialize();
@@ -234,32 +226,35 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
-    const bool has_game_config = std::filesystem::exists(
-        Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".toml"));
-    LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
+    LOG_INFO(Config, "Game-specific config used: {}",
+             EmulatorState::GetInstance()->IsGameSpecifigConfigUsed());
 
-    LOG_INFO(Config, "General LogType: {}", Config::getLogType());
-    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", Config::groupIdenticalLogs());
-    LOG_INFO(Config, "General isNeo: {}", Config::isNeoModeConsole());
-    LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
-    LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
-    LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
-    LOG_INFO(Config, "GPU isNullGpu: {}", Config::nullGpu());
-    LOG_INFO(Config, "GPU readbacksMode: {}", Config::getReadbacksMode());
-    LOG_INFO(Config, "GPU readbackLinearImages: {}", Config::readbackLinearImages());
-    LOG_INFO(Config, "GPU directMemoryAccess: {}", Config::directMemoryAccess());
-    LOG_INFO(Config, "GPU shouldDumpShaders: {}", Config::dumpShaders());
-    LOG_INFO(Config, "GPU vblankFrequency: {}", Config::vblankFreq());
-    LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", Config::copyGPUCmdBuffers());
-    LOG_INFO(Config, "Vulkan gpuId: {}", Config::getGpuId());
-    LOG_INFO(Config, "Vulkan vkValidation: {}", Config::vkValidationEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationCore: {}", Config::vkValidationCoreEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationSync: {}", Config::vkValidationSyncEnabled());
-    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", Config::vkValidationGpuEnabled());
-    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", Config::getVkCrashDiagnosticEnabled());
-    LOG_INFO(Config, "Vulkan hostMarkers: {}", Config::getVkHostMarkersEnabled());
-    LOG_INFO(Config, "Vulkan guestMarkers: {}", Config::getVkGuestMarkersEnabled());
-    LOG_INFO(Config, "Vulkan rdocEnable: {}", Config::isRdocEnabled());
+    LOG_INFO(Config, "General LogType: {}", EmulatorSettings.GetLogType());
+    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", EmulatorSettings.IsIdenticalLogGrouped());
+    LOG_INFO(Config, "General isNeo: {}", EmulatorSettings.IsNeo());
+    LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
+    LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
+    LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings.IsPSNSignedIn());
+    LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings.IsNullGPU());
+    LOG_INFO(Config, "GPU readbacksMode: {}", EmulatorSettings.GetReadbacksMode());
+    LOG_INFO(Config, "GPU readbackLinearImages: {}",
+             EmulatorSettings.IsReadbackLinearImagesEnabled());
+    LOG_INFO(Config, "GPU directMemoryAccess: {}", EmulatorSettings.IsDirectMemoryAccessEnabled());
+    LOG_INFO(Config, "GPU shouldDumpShaders: {}", EmulatorSettings.IsDumpShaders());
+    LOG_INFO(Config, "GPU vblankFrequency: {}", EmulatorSettings.GetVblankFrequency());
+    LOG_INFO(Config, "GPU shouldCopyGPUBuffers: {}", EmulatorSettings.IsCopyGpuBuffers());
+    LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
+    LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationSync: {}", EmulatorSettings.IsVkValidationSyncEnabled());
+    LOG_INFO(Config, "Vulkan vkValidationGpu: {}", EmulatorSettings.IsVkValidationGpuEnabled());
+    LOG_INFO(Config, "Vulkan crashDiagnostics: {}", EmulatorSettings.IsVkCrashDiagnosticEnabled());
+    LOG_INFO(Config, "Vulkan hostMarkers: {}", EmulatorSettings.IsVkHostMarkersEnabled());
+    LOG_INFO(Config, "Vulkan guestMarkers: {}", EmulatorSettings.IsVkGuestMarkersEnabled());
+    LOG_INFO(Config, "Vulkan rdocEnable: {}", EmulatorSettings.IsRenderdocEnabled());
+    LOG_INFO(Config, "Vulkan PipelineCacheEnabled: {}", EmulatorSettings.IsPipelineCacheEnabled());
+    LOG_INFO(Config, "Vulkan PipelineCacheArchived: {}",
+             EmulatorSettings.IsPipelineCacheArchived());
 
     hwinfo::Memory ram;
     hwinfo::OS os;
@@ -295,7 +290,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize components
     memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
+    controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
 
     // Load renderdoc module
@@ -336,8 +331,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         }
     }
-    window = std::make_unique<Frontend::WindowSDL>(
-        Config::getWindowWidth(), Config::getWindowHeight(), controller, window_title);
+    window = std::make_unique<Frontend::WindowSDL>(EmulatorSettings.GetWindowWidth(),
+                                                   EmulatorSettings.GetWindowHeight(), controllers,
+                                                   window_title);
 
     g_window = window.get();
 
@@ -368,7 +364,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     VideoCore::SetOutputDir(mount_captures_dir, id);
 
     // Mount system fonts
-    const auto& fonts_dir = Config::getFontsPath();
+    const auto& fonts_dir = EmulatorSettings.GetFontsDir();
     if (!std::filesystem::exists(fonts_dir)) {
         std::filesystem::create_directory(fonts_dir);
     }
@@ -418,7 +414,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
-    if (Config::getEnableDiscordRPC()) {
+    if (EmulatorSettings.IsDiscordRPCEnabled()) {
         auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
         if (rpc->getRPCEnabled() == false) {
             rpc->init();
@@ -569,12 +565,14 @@ void Emulator::LoadSystemModules(const std::string& game_serial) {
          {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
          {"libSceCesCs.sprx", nullptr},
          {"libSceAudiodec.sprx", nullptr},
+         {"libScePadTracker.sprx", nullptr},
+         {"libSceMoveTracker.sprx", nullptr},
          {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
          {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
          {"libSceFreeTypeOt.sprx", nullptr}});
 
     std::vector<std::filesystem::path> found_modules;
-    const auto& sys_module_path = Config::getSysModulesPath();
+    const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
     for (const auto& entry : std::filesystem::directory_iterator(sys_module_path)) {
         found_modules.push_back(entry.path());
     }
