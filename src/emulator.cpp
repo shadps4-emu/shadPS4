@@ -239,9 +239,9 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "General isDevKit: {}", Config::isDevKitConsole());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", Config::getIsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", Config::getPSNSignedIn());
-    LOG_INFO(Config, "Log type: {}", Config::getLogType());
+    LOG_INFO(Config, "Log sync: {}", Config::isLogSync());
 #ifdef _WIN32
-    LOG_INFO(Config, "Log windowsType: {}", Config::getWindowsLoggerType());
+    LOG_INFO(Config, "Log type: {}", Config::getLogType());
 #endif
     LOG_INFO(Config, "Log skipDuplicate: {}", Config::getLogSkipDuplicate());
     LOG_INFO(Config, "Log filter: {}", Config::getLogFilter());

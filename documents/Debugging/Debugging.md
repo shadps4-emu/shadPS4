@@ -59,10 +59,10 @@ You can configure the emulator by editing the `config.toml` file found in the `u
    <summary>Some configuration entries worth changing</summary>
 
 - `[Log]`
-  - `type`: Configures logging synchronization (`sync`/`async`)
-    - By default, the emulator logs messages asynchronously for better performance. Some log messages may end up being received out-of-order.
-    - It can be beneficial to set this to `sync` in order for the log to accurately maintain message order, at the cost of performance.
-    - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `sync` and send that log as well.
+  - `sync`: Log synchronously (`true`/`false`)
+    - By default `true`, the emulator logs messages synchronously to respect the order.
+    - It can be beneficial to set this to `false` for better performance.
+    - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `true` and send that log instead.
   - `filter`: Sets the logging category for various logging classes.
     - Format: `<class>=<level>,...`
     - Multiple classes can be set by separating them with a comma. (example: `Render=warning,Debug=critical,Lib.Pad=error`)
@@ -82,7 +82,7 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - By default, 5'000 milliseconds.
   - `sizeLimit`: Size limit for log files (bytes).
       - By default, 100 MB.
-  - `windowsType`: Choose between `wincolor` (WriteConsole*) and `msvc` (OutputDebugString*) - only for Windows.
+  - `type`: Choose between `wincolor` (WriteConsole*) and `msvc` (OutputDebugString*) - only for Windows.
       - By default, `wincolor`.
 
      

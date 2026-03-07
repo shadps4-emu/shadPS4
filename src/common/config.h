@@ -105,11 +105,11 @@ bool isPipelineCacheArchived();
 void setRdocEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheArchived(bool enable, bool is_game_specific = false);
+bool isLogSync();
+void setLogSync(bool sync, bool is_game_specific = false);
+#ifdef _WIN32
 std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
-#ifdef _WIN32
-std::string getWindowsLoggerType();
-void setWindowsLoggerType(const std::string& type, bool is_game_specific = false);
 #endif
 bool getLogSkipDuplicate();
 void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
