@@ -4,10 +4,13 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include "types.h"
 
 namespace Config {
+using SysModulesMap = std::unordered_map<std::string, bool>;
 
 enum class ConfigMode {
     Default,
@@ -167,6 +170,7 @@ void setFontsPath(const std::filesystem::path& path);
 enum UsbBackendType : int { Real, SkylandersPortal, InfinityBase, DimensionsToypad };
 int getUsbDeviceBackend();
 void setUsbDeviceBackend(int value, bool is_game_specific = false);
+const SysModulesMap& getEnabledSysModules();
 
 // TODO
 std::filesystem::path GetSaveDataPath();
