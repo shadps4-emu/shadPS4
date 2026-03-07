@@ -67,6 +67,7 @@ int main(int argc, char* argv[]) {
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
+    Common::Log::g_should_append = Config::isLogAppend();
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -89,6 +90,7 @@ int main(int argc, char* argv[]) {
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
+    app.add_flag("--log-append", Common::Log::g_should_append);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
@@ -177,6 +179,9 @@ int main(int argc, char* argv[]) {
 
     if (configGlobal)
         Config::setConfigMode(Config::ConfigMode::Global);
+
+    if (!Common::Log::g_should_append)
+        Common::Log::Truncate();
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);

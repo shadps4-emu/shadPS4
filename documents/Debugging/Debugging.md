@@ -75,7 +75,7 @@ You can configure the emulator by editing the `config.toml` file found in the `u
   - `skipDuplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
     - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
-      - By default, the emulator will overwrite the log file.
+      - By default, the emulator will overwrite the log file. (it can also be by-passed with CLI `--log-append`)
   - `separate`: Write log to `log/{GAME ID}.log` instead of `log/shad_log.txt` (`true`/`false`)
       - By default, the emulator use `log/shad_log.txt`.
   - `maxSkipDuration`: Amount of time in which identical lines will not be logged (milliseconds).

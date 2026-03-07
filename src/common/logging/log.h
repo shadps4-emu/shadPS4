@@ -88,6 +88,7 @@ static constexpr auto POSITON_DUPLICATE_SINK = 0;
 extern std::shared_ptr<spdlog_stdout> g_console_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_shad_file_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_game_file_sink;
+extern bool g_should_append;
 
 static void Shutdown() {
     g_game_file_sink.reset();
@@ -124,8 +125,7 @@ static void Setup(int argc, char* argv[]) {
 #endif
 
     g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
-        !Config::isLogAppend());
+        (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string());
     g_shad_file_sink->set_formatter(
         std::make_unique<thread_name_formatter>(Config::getLogSizeLimit()));
 
@@ -170,7 +170,7 @@ static void Setup(int argc, char* argv[]) {
 
 static void Redirect(const std::string& name) {
     g_game_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-        (GetUserPath(Common::FS::PathType::LogDir) / name).string(), !Config::isLogAppend());
+        (GetUserPath(Common::FS::PathType::LogDir) / name).string(), !g_should_append);
     g_game_file_sink->set_formatter(
         std::make_unique<Common::Log::thread_name_formatter>(Config::getLogSizeLimit()));
 
@@ -193,6 +193,13 @@ static void Redirect(const std::string& name) {
 static void StopRedirection() {
     g_game_file_sink->set_level(spdlog::level::off);
     g_shad_file_sink->set_level(spdlog::level::trace);
+}
+
+static void Truncate() {
+    if (g_game_file_sink != nullptr) {
+        g_game_file_sink->truncate();
+    }
+    g_shad_file_sink->truncate();
 }
 } // namespace Common::Log
 
