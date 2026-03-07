@@ -109,6 +109,8 @@ std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
 bool getLogSkipDuplicate();
 void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
+u32 getMaxSkipDuration();
+void setMaxSkipDuration(u32 duration, bool is_game_specific = false);
 bool isLogAppend();
 void setLogAppend(bool enable, bool is_game_specific = false);
 std::string getLogFilter();

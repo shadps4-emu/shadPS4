@@ -78,6 +78,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - By default, the emulator will overwrite the log file.
   - `separate`: Write log to `log/{GAME ID}.log` instead of `log/shad_log.txt` (`true`/`false`)
       - By default, the emulator use `log/shad_log.txt`.
+  - `maxSkipDuration`: Amount of time in which identical lines will not be logged (milliseconds).
+      - By default, 5'000 milliseconds.
 
      
 - `[GPU]`

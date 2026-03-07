@@ -100,7 +100,7 @@ static void Setup(int argc, char* argv[]) {
 
     if (Config::getLogSkipDuplicate()) {
         dup_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
-            /*TODO config*/ std::chrono::seconds(5));
+            std::chrono::milliseconds(Config::getMaxSkipDuration()));
         dup_filter->set_sinks(
             {g_console_sink, g_shad_file_sink,
              std::make_shared<
