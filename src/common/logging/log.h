@@ -14,6 +14,12 @@
 #include <spdlog/sinks/dup_filter_sink.h>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#ifdef _WIN32
+#include <spdlog/sinks/wincolor_sink.h>
+using spdlog_stdout = spdlog::sinks::wincolor_stdout_sink_mt;
+#else
+using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
+#endif
 #include <spdlog/spdlog.h>
 
 #include "common/config.h"
@@ -64,7 +70,7 @@ static constexpr auto POSITON_GAME_LOG = 2;
 
 static constexpr auto POSITON_DUPLICATE_SINK = 0;
 
-extern std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> g_console_sink;
+extern std::shared_ptr<spdlog_stdout> g_console_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_shad_file_sink;
 extern std::shared_ptr<spdlog::sinks::basic_file_sink_mt> g_game_file_sink;
 
@@ -84,7 +90,7 @@ static void Setup(int argc, char* argv[]) {
 
     std::at_quick_exit(Shutdown);
 
-    g_console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    g_console_sink = std::make_shared<spdlog_stdout>();
 
     g_shad_file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
         (GetUserPath(Common::FS::PathType::LogDir) / "shad_log.txt").string(),
