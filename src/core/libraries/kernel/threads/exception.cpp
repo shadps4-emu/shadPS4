@@ -305,8 +305,6 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
                   "Guest is attempting to use SIGRT signals, which aren't available on this "
                   "platform (signal: {})!",
                   sig);
-        *__Error() = POSIX_EINVAL;
-        return ORBIS_FAIL;
     }
 #endif
     LOG_INFO(Lib_Kernel, "called, sig: {}, native sig: {}", sig, native_sig);
