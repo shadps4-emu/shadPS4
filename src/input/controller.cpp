@@ -318,7 +318,11 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         if (controller_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
-            AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
+            if (Common::ElfInfo::Instance()
+                    .GetPSFAttributes()
+                    .support_initial_user_logout.Value() == true) {
+                AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
+            }
         }
     }
     SDL_free(new_joysticks);
