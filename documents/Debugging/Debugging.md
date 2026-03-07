@@ -72,8 +72,8 @@ You can configure the emulator by editing the `config.toml` file found in the `u
       - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad=critical` to only log critical-level messages.
       - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `off,Render.Vulkan=info` (if you want critical at least `critical,Render.Vulkan=info`)
     - this option is evaluated after the environment variable `SPDLOG_LEVEL` but before the command line argument (their syntax are `SPDLOG_LEVEL="..."`, `"SPDLOG_LEVEL=..."` respectively)
-  - `skip`: Group same logs in one line with a counter (`true`/`false`)
-    - By default, the emulator will skip same line for 5 seconds.
+  - `skipDuplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
+    - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
       - By default, the emulator will overwrite the log file.
   - `separate`: Write log to `log/{GAME ID}.log` instead of `log/shad_log.txt` (`true`/`false`)

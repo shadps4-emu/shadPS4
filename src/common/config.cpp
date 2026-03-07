@@ -149,7 +149,7 @@ static std::filesystem::path fonts_path = {};
 // Log
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
-static ConfigEntry<bool> logSkip(true);
+static ConfigEntry<bool> logSkipDuplicate(true);
 static ConfigEntry<bool> logAppend(false);
 static ConfigEntry<bool> logSeparate(false);
 static ConfigEntry<bool> logEnable(true);
@@ -398,8 +398,8 @@ string getLogType() {
     return logType.get();
 }
 
-bool groupIdenticalLogs() {
-    return logSkip.get();
+bool getLogSkipDuplicate() {
+    return logSkipDuplicate.get();
 }
 
 bool isLogAppend() {
@@ -705,8 +705,8 @@ void setLogType(const string& type, bool is_game_specific) {
     logType.set(type, is_game_specific);
 }
 
-void setIdenticalLogGrouped(bool enable, bool is_game_specific) {
-    logSkip.set(enable, is_game_specific);
+void setLogSkipDuplicate(bool enable, bool is_game_specific) {
+    logSkipDuplicate.set(enable, is_game_specific);
 }
 
 void setLogAppend(bool enable, bool is_game_specific) {
@@ -924,7 +924,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         const toml::value& log = data.at("Log");
 
         logFilter.setFromToml(log, "filter", is_game_specific);
-        logSkip.setFromToml(log, "skip", is_game_specific);
+        logSkipDuplicate.setFromToml(log, "skipDuplicate", is_game_specific);
         logType.setFromToml(log, "type", is_game_specific);
         logAppend.setFromToml(log, "append", is_game_specific);
         logSeparate.setFromToml(log, "separate", is_game_specific);
@@ -1117,7 +1117,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
 
     logFilter.setTomlValue(data, "Log", "filter", is_game_specific);
     logType.setTomlValue(data, "Log", "type", is_game_specific);
-    logSkip.setTomlValue(data, "Log", "skip", is_game_specific);
+    logSkipDuplicate.setTomlValue(data, "Log", "skipDuplicate", is_game_specific);
     logAppend.setTomlValue(data, "Log", "append", is_game_specific);
     logSeparate.setTomlValue(data, "Log", "separate", is_game_specific);
     logEnable.setTomlValue(data, "Log", "enable", is_game_specific);
@@ -1254,7 +1254,7 @@ void setDefaultValues(bool is_game_specific) {
     // GS - Log
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
-    logSkip.set(true, is_game_specific);
+    logSkipDuplicate.set(true, is_game_specific);
     logAppend.set(false, is_game_specific);
     logSeparate.set(false, is_game_specific);
     logEnable.set(true, is_game_specific);

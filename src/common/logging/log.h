@@ -98,7 +98,7 @@ static void Setup(int argc, char* argv[]) {
 
     std::shared_ptr<spdlog::sinks::dup_filter_sink_mt> dup_filter;
 
-    if (Config::groupIdenticalLogs()) {
+    if (Config::getLogSkipDuplicate()) {
         dup_filter = std::make_shared<spdlog::sinks::dup_filter_sink_mt>(
             /*TODO config*/ std::chrono::seconds(5));
         dup_filter->set_sinks(
@@ -108,7 +108,7 @@ static void Setup(int argc, char* argv[]) {
     }
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
-        if (Config::groupIdenticalLogs()) {
+        if (Config::getLogSkipDuplicate()) {
             spdlog::initialize_logger(Config::getLogType() == "sync"
                                           ? std::make_shared<spdlog::logger>(name, dup_filter)
                                           : std::make_shared<spdlog::async_logger>(
@@ -144,7 +144,7 @@ static void Redirect(const std::string& name) {
 
     for (const auto& name : Common::Log::ALL_LOG_CLASSES) {
         auto l = spdlog::get(name);
-        auto& sinks = Config::groupIdenticalLogs()
+        auto& sinks = Config::getLogSkipDuplicate()
                           ? std::dynamic_pointer_cast<spdlog::sinks::dup_filter_sink_mt>(
                                 l->sinks()[POSITON_DUPLICATE_SINK])
                                 ->sinks()
