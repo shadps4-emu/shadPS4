@@ -80,7 +80,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
     // libSceLibcInternal. libSceLibcInternal's _malloc_init serves as an additional initialization
     // function called by libkernel.
     heap_api = new HeapAPI{};
-    static PS4_SYSV_ABI void (*malloc_init)() = nullptr;
+    static PS4_SYSV_ABI s32 (*malloc_init)() = nullptr;
 
     for (const auto& m : m_modules) {
         const auto& mod = m.get();
@@ -90,7 +90,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
             // and for all the memory allocating functions, so we can initialize our heap API
             for (const auto& sym : mod->export_sym.GetSymbols()) {
                 if (sym.nid_name.compare("_malloc_init") == 0) {
-                    malloc_init = reinterpret_cast<PS4_SYSV_ABI void (*)()>(sym.virtual_address);
+                    malloc_init = reinterpret_cast<PS4_SYSV_ABI s32 (*)()>(sym.virtual_address);
                 }
                 if (sym.nid_name.compare("malloc") == 0) {
                     heap_api->heap_malloc =
@@ -184,7 +184,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
         if (malloc_init != nullptr) {
             // Call _malloc_init
-            malloc_init();
+            s32 ret = malloc_init();
+            ASSERT_MSG(ret == 0, "malloc_init failed");
         }
 
         // Have libSceSysmodule preload our libraries.
