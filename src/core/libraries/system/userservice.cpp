@@ -596,9 +596,8 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
 
     // Filter users with valid port assignments (1-4)
     std::vector<User> valid_users;
-    std::copy_if(
-        all_users.begin(), all_users.end(), std::back_inserter(valid_users),
-        [](const User& user) { return user.player_index >= 1 && user.player_index <= 4; });
+    std::copy_if(all_users.begin(), all_users.end(), std::back_inserter(valid_users),
+                 [](const User& user) { return user.player_index >= 1 && user.player_index <= 4; });
 
     // Sort filtered users by port assignment (1-4)
     std::sort(valid_users.begin(), valid_users.end(),
