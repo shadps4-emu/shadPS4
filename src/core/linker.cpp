@@ -70,7 +70,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
     static_tls_size = module->tls.offset = module->tls.image_size;
 
     // Map libSceLibcInternal
-    const auto& libc_internal_path = Config::getSysModulesPath() / "libSceLibcInternal.sprx";
+    const auto& libc_internal_path =
+        EmulatorSettings.GetSysModulesDir() / "libSceLibcInternal.sprx";
     if (std::filesystem::exists(libc_internal_path)) {
         LoadModule(libc_internal_path);
     }
