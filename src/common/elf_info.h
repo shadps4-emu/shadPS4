@@ -88,7 +88,10 @@ public:
     static constexpr u32 FW_50 = 0x5000000;
     static constexpr u32 FW_55 = 0x5500000;
     static constexpr u32 FW_60 = 0x6000000;
+    static constexpr u32 FW_70 = 0x7000000;
+    static constexpr u32 FW_75 = 0x7500000;
     static constexpr u32 FW_80 = 0x8000000;
+    static constexpr u32 FW_115 = 0x11500000;
 
     static ElfInfo& Instance() {
         return *Singleton<ElfInfo>::Instance();

@@ -233,6 +233,11 @@ public:
         return vk12_features.shaderSharedInt64Atomics;
     }
 
+    /// Returns true if the subgroup size can be set to match guest subgroup size
+    bool IsSubgroupSize64Supported() const {
+        return vk13_features.subgroupSizeControl && vk13_props.maxSubgroupSize >= 64;
+    }
+
     /// Returns true when VK_KHR_workgroup_memory_explicit_layout is supported.
     bool IsWorkgroupMemoryExplicitLayoutSupported() const {
         return workgroup_memory_explicit_layout &&
@@ -455,9 +460,11 @@ private:
     vk::PhysicalDeviceMemoryProperties memory_properties;
     vk::PhysicalDeviceVulkan11Properties vk11_props;
     vk::PhysicalDeviceVulkan12Properties vk12_props;
+    vk::PhysicalDeviceVulkan13Properties vk13_props;
     vk::PhysicalDevicePushDescriptorPropertiesKHR push_descriptor_props;
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceVulkan12Features vk12_features;
+    vk::PhysicalDeviceVulkan13Features vk13_features;
     vk::PhysicalDevicePortabilitySubsetFeaturesKHR portability_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceRobustness2FeaturesEXT robustness2_features;
