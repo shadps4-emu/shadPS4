@@ -284,7 +284,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
     }
-    s32 pad_handle = u->controller_port;
+    s32 pad_handle = u->player_index;
     LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}, pad_handle = {}", userId,
              type, index, pad_handle);
     g_opened = true;
@@ -480,7 +480,20 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto controllers = *Common::Singleton<GameControllers>::Instance();
-    Input::Colour colour = GameControllers::GetControllerCustomColor();
+    s32 colour_index = UserManagement.GetUserByPlayerIndex(handle)->user_color - 1;
+    Input::Colour colour{255, 0, 0};
+    if (colour_index >= 0 && colour_index <= 3) {
+        static constexpr Input::Colour colours[4]{
+            {0, 0, 255},   // blue
+            {255, 0, 0},   // red
+            {0, 255, 0},   // green
+            {255, 0, 255}, // pink
+        };
+        colour = colours[colour_index];
+    } else {
+        LOG_ERROR(Lib_Pad, "Invalid user colour value {} for controller {}, falling back to blue",
+                  colour_index, handle);
+    }
     controllers[*controller_id]->SetLightBarRGB(colour.r, colour.g, colour.b);
     return ORBIS_OK;
 }

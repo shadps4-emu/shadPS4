@@ -74,7 +74,7 @@ User* UserManager::GetUserByID(s32 user_id) {
 
 User* UserManager::GetUserByPlayerIndex(s32 index) {
     for (auto& u : m_users.user) {
-        if (u.controller_port == index)
+        if (u.player_index == index)
             return &u;
     }
     return nullptr;
@@ -84,23 +84,48 @@ const std::vector<User>& UserManager::GetAllUsers() const {
     return m_users.user;
 }
 
-std::vector<User> UserManager::CreateDefaultUser() {
-    User default_user;
-    default_user.user_id = 1;
-    default_user.user_color = 0; // BLUE
-    default_user.user_name = "shadPS4";
-    default_user.controller_port = 1;
+Users UserManager::CreateDefaultUsers() {
+    Users default_users;
+    default_users.default_user_id = 1;
+    default_users.user = {
+        {
+            .user_id = 1000,
+            .user_name = "shadPS4",
+            .user_color = 1,
+            .player_index = 1,
+        },
+        {
+            .user_id = 1001,
+            .user_name = "shadPS4-2",
+            .user_color = 2,
+            .player_index = 2,
+        },
+        {
+            .user_id = 1002,
+            .user_name = "shadPS4-3",
+            .user_color = 3,
+            .player_index = 3,
+        },
+        {
+            .user_id = 1003,
+            .user_name = "shadPS4-4",
+            .user_color = 4,
+            .player_index = 4,
+        },
+    };
 
-    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(default_user.user_id);
+    for (auto& u : default_users.user) {
+        const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
 
-    if (!std::filesystem::exists(user_dir)) {
-        std::filesystem::create_directory(user_dir);
-        std::filesystem::create_directory(user_dir / "savedata");
-        std::filesystem::create_directory(user_dir / "trophy");
-        std::filesystem::create_directory(user_dir / "inputs");
+        if (!std::filesystem::exists(user_dir)) {
+            std::filesystem::create_directory(user_dir);
+            std::filesystem::create_directory(user_dir / "savedata");
+            std::filesystem::create_directory(user_dir / "trophy");
+            std::filesystem::create_directory(user_dir / "inputs");
+        }
     }
 
-    return {default_user};
+    return default_users;
 }
 
 bool UserManager::SetDefaultUser(u32 user_id) {
@@ -120,10 +145,10 @@ User UserManager::GetDefaultUser() {
 
 void UserManager::SetControllerPort(u32 user_id, int port) {
     for (auto& u : m_users.user) {
-        if (u.user_id != user_id && u.controller_port == port)
-            u.controller_port = -1;
+        if (u.user_id != user_id && u.player_index == port)
+            u.player_index = -1;
         if (u.user_id == user_id)
-            u.controller_port = port;
+            u.player_index = port;
     }
     Save();
 }

@@ -387,7 +387,7 @@ std::optional<u8> GameControllers::GetControllerIndexFromUserID(s32 user_id) {
     if (!u) {
         return std::nullopt;
     }
-    return u->controller_port - 1;
+    return u->player_index - 1;
 }
 
 std::optional<u8> GameControllers::GetControllerIndexFromControllerID(s32 controller_id) {

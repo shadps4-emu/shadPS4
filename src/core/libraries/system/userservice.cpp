@@ -598,11 +598,11 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
     std::vector<User> valid_users;
     std::copy_if(
         all_users.begin(), all_users.end(), std::back_inserter(valid_users),
-        [](const User& user) { return user.controller_port >= 1 && user.controller_port <= 4; });
+        [](const User& user) { return user.player_index >= 1 && user.player_index <= 4; });
 
     // Sort filtered users by port assignment (1-4)
     std::sort(valid_users.begin(), valid_users.end(),
-              [](const User& a, const User& b) { return a.controller_port < b.controller_port; });
+              [](const User& a, const User& b) { return a.player_index < b.player_index; });
 
     // Fill slots consecutively based on sorted valid users
     int num_users =
@@ -611,7 +611,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
     for (int i = 0; i < num_users; i++) {
         userIdList->user_id[i] = valid_users[i].user_id;
         LOG_DEBUG(Lib_UserService, "Slot {}: User ID {} (port {})", i, valid_users[i].user_id,
-                  valid_users[i].controller_port);
+                  valid_users[i].player_index);
     }
 
     LOG_DEBUG(Lib_UserService, "Returning {} logged-in users with valid port assignments",

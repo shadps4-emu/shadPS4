@@ -62,8 +62,7 @@ bool UserSettingsImpl::Load() {
             LOG_DEBUG(EmuSettings, "User settings file not found: {}", path.string());
             // Create default user if no file exists
             if (m_userManager.GetUsers().user.empty()) {
-                m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
-                m_userManager.GetUsers().default_user_id = 1;
+                m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
             }
             Save(); // Save default users
             return false;
@@ -79,34 +78,7 @@ bool UserSettingsImpl::Load() {
         in >> j;
 
         // Create a default Users object
-        Users default_users;
-        default_users.default_user_id = 1;
-        default_users.user = {
-            {
-                .user_id = 1000,
-                .user_color = 1,
-                .user_name = "shadPS4",
-                .controller_port = 1,
-            },
-            {
-                .user_id = 1001,
-                .user_color = 2,
-                .user_name = "shadPS4-2",
-                .controller_port = 2,
-            },
-            {
-                .user_id = 1002,
-                .user_color = 3,
-                .user_name = "shadPS4-3",
-                .controller_port = 3,
-            },
-            {
-                .user_id = 1003,
-                .user_color = 4,
-                .user_name = "shadPS4-4",
-                .controller_port = 4,
-            },
-        };
+        auto default_users = m_userManager.CreateDefaultUsers();
 
         // Convert default_users to json for merging
         json default_json;
@@ -131,8 +103,7 @@ bool UserSettingsImpl::Load() {
         LOG_ERROR(EmuSettings, "Error loading user settings: {}", e.what());
         // Fall back to defaults
         if (m_userManager.GetUsers().user.empty()) {
-            m_userManager.GetUsers().user = m_userManager.CreateDefaultUser();
-            m_userManager.GetUsers().default_user_id = 1;
+            m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
         }
         return false;
     }
