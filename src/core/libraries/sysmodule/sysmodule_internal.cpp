@@ -223,7 +223,8 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceAudiodec.sprx", nullptr},
              {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
              {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr}});
+             {"libSceFreeTypeOt.sprx", nullptr},
+             {"libScePadTracker.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
@@ -423,12 +424,6 @@ s32 preloadModulesForLibkernel() {
         // libSceNpWebApi2 and libSceNpGameIntent, skipped for SDK versions below 7.50
         if ((module_index == 0x29 || module_index == 0x2a) && sdk_ver < Common::ElfInfo::FW_75) {
             continue;
-        }
-
-        if (module_index == 1 || module_index == 2) {
-            // libkernel and libSceLibcInternal aren't directly loaded here.
-            // All we do for those is increment is_loaded
-            g_modules_array[module_index].is_loaded++;
         }
 
         // Load the actual module
