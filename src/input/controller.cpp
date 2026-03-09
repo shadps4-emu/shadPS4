@@ -286,11 +286,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 c->user_id = u ? u->user_id : ORBIS_USER_SERVICE_USER_ID_INVALID;
                 slot_taken[i] = true;
                 c->player_index = i;
-                if (i != 0 || (i == 0 && Common::ElfInfo::Instance()
-                                                 .GetPSFAttributes()
-                                                 .support_initial_user_logout.Value() == true)) {
-                    AddUserServiceEvent({OrbisUserServiceEventType::Login, c->user_id});
-                }
+                AddUserServiceEvent({OrbisUserServiceEventType::Login, c->user_id});
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
@@ -318,11 +314,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         if (controller_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
-            if (Common::ElfInfo::Instance()
-                    .GetPSFAttributes()
-                    .support_initial_user_logout.Value() == true) {
-                AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
-            }
+            AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
         }
     }
     SDL_free(new_joysticks);
