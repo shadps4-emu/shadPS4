@@ -86,7 +86,6 @@ const std::vector<User>& UserManager::GetAllUsers() const {
 
 Users UserManager::CreateDefaultUsers() {
     Users default_users;
-    default_users.default_user_id = 1;
     default_users.user = {
         {
             .user_id = 1000,
@@ -113,6 +112,7 @@ Users UserManager::CreateDefaultUsers() {
             .player_index = 4,
         },
     };
+    default_users.default_user_id = default_users.user[0].user_id;
 
     for (auto& u : default_users.user) {
         const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
