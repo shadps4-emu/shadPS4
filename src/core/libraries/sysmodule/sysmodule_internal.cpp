@@ -425,6 +425,12 @@ s32 preloadModulesForLibkernel() {
             continue;
         }
 
+        if (module_index == 1 || module_index == 2) {
+            // libkernel and libSceLibcInternal aren't directly loaded here.
+            // All we do for those is increment is_loaded
+            g_modules_array[module_index].is_loaded++;
+        }
+
         // Load the actual module
         s32 result = loadModuleInternal(module_index, 0, nullptr, nullptr);
         if (result != ORBIS_OK) {
