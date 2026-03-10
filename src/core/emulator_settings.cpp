@@ -377,7 +377,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         nullptr,
                     };
                     int result = 1;
-                    // SDL_ShowMessageBox(&msg_box, &result);
+                    SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 1) {
                         if (TransferSettings()) {
                             Save();
