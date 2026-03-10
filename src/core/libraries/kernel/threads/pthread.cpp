@@ -199,10 +199,17 @@ static void RunThread(void* arg) {
     g_curthread = curthread;
     Common::SetCurrentThreadName(curthread->name.c_str());
     DebugState.AddCurrentThreadToGuestList();
+    Core::InitializeTLS();
+
+    curthread->native_thr.Initialize();
+
+    // Clear the stack before running the guest thread
+    if (False(g_curthread->attr.flags & PthreadAttrFlags::StackUser)) {
+        ClearStack();
+    }
 
     /* Run the current thread's start routine with argument: */
-    curthread->native_thr.Initialize();
-    void* ret = Core::ExecuteGuest(curthread->start_routine, curthread->arg);
+    void* ret = curthread->start_routine(curthread->arg);
 
     /* Remove thread from tracking */
     DebugState.RemoveCurrentThreadFromGuestList();
@@ -658,6 +665,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Z4QosVuAsA0", "libkernel", 1, "libkernel", posix_pthread_once);
     LIB_FUNCTION("EotR8a3ASf4", "libkernel", 1, "libkernel", posix_pthread_self);
     LIB_FUNCTION("OxhIB8LB-PQ", "libkernel", 1, "libkernel", posix_pthread_create);
+    LIB_FUNCTION("Jmi+9w9u0E4", "libkernel", 1, "libkernel", posix_pthread_create_name_np);
     LIB_FUNCTION("lZzFeSxPl08", "libkernel", 1, "libkernel", posix_pthread_setcancelstate);
     LIB_FUNCTION("CBNtXOoef-E", "libkernel", 1, "libkernel", posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libkernel", 1, "libkernel", posix_sched_get_priority_min);

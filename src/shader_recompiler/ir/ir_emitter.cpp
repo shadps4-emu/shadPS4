@@ -2055,6 +2055,11 @@ Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, c
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
 }
 
+Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, const Value& value,
+                                    const Value& cmp_value, TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicCmpSwap32, Flags{info}, handle, coords, value, cmp_value);
+}
+
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
                                 const Value& address1, const Value& address2, const Value& address3,
                                 const Value& address4, TextureInstInfo info) {
