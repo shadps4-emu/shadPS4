@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/ajm/ajm.h"
@@ -127,8 +127,11 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AvPlayer::RegisterLib(sym);
     Libraries::Videodec::RegisterLib(sym);
     Libraries::Videodec2::RegisterLib(sym);
-    // Libraries::Audio3d::RegisterLib(sym);
-    Libraries::Audio3dOpenAL::RegisterLib(sym);
+    if (EmulatorSettings.GetAudioBackend() == AudioBackend::OpenAL) {
+        Libraries::Audio3dOpenAL::RegisterLib(sym);
+    } else {
+        Libraries::Audio3d::RegisterLib(sym);
+    }
     Libraries::Ime::RegisterLib(sym);
     Libraries::GameLiveStreaming::RegisterLib(sym);
     Libraries::SharePlay::RegisterLib(sym);
