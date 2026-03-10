@@ -124,6 +124,13 @@ public:
         }
     }
 
+    void RelocateAllImports() {
+        std::scoped_lock lk{mutex};
+        for (auto& module : m_modules) {
+            Relocate(module.get());
+        }
+    }
+
     void SetHeapAPI(void* func[]) {
         heap_api = reinterpret_cast<AppHeapAPI>(func);
     }
