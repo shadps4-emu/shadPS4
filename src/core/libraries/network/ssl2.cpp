@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/ssl2.h"
+#include "core/libraries/network/ssl2_error.h"
 
 namespace Libraries::Ssl2 {
 
@@ -108,8 +109,13 @@ int PS4_SYSV_ABI sceSslEnableVerifyOption() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSslFreeCaCerts() {
-    LOG_ERROR(Lib_Ssl2, "(STUBBED) called");
+int PS4_SYSV_ABI sceSslFreeCaCerts(s32 ssl_ctx_id, OrbisSslCaCerts* certs) {
+    LOG_ERROR(Lib_Ssl2, "(DUMMY) called");
+    if (certs == nullptr) {
+        return ORBIS_SSL_ERROR_INVALID_ARGUMENT;
+    }
+    delete (certs->certs);
+    // delete (certs->pool);
     return ORBIS_OK;
 }
 
@@ -128,17 +134,13 @@ int PS4_SYSV_ABI sceSslGetAlpnSelected() {
     return ORBIS_OK;
 }
 
-struct OrbisSslCaCerts {
-    void* certs;
-    u64 num;
-    void* pool;
-};
-
-int PS4_SYSV_ABI sceSslGetCaCerts(int sslCtxId, OrbisSslCaCerts* certs) {
-    // check if it is same as libSceSsl
+int PS4_SYSV_ABI sceSslGetCaCerts(s32 ssl_ctx_id, OrbisSslCaCerts* certs) {
     LOG_ERROR(Lib_Ssl2, "(DUMMY) called");
-    certs->certs = nullptr;
-    certs->num = 0;
+    if (certs == nullptr) {
+        return ORBIS_SSL_ERROR_INVALID_ARGUMENT;
+    }
+    certs->certs = new OrbisSslData{nullptr, 0};
+    certs->num = 1;
     certs->pool = nullptr;
     return ORBIS_OK;
 }
