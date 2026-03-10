@@ -368,11 +368,11 @@ private:
         switch (type) {
         case OrbisAudioOutPort::Main:
         case OrbisAudioOutPort::Bgm:
-            return EmulatorSettings.GetMainOutputDevice();
+            return EmulatorSettings.GetSDLMainOutputDevice();
         case OrbisAudioOutPort::PadSpk:
-            return EmulatorSettings.GetPadSpkOutputDevice();
+            return EmulatorSettings.GetSDLPadSpkOutputDevice();
         default:
-            return EmulatorSettings.GetMainOutputDevice();
+            return EmulatorSettings.GetSDLMainOutputDevice();
         }
     }
 

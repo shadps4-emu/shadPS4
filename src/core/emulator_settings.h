@@ -41,6 +41,12 @@ enum class ConfigMode {
     Clean,
 };
 
+enum AudioBackend : int {
+    SDL,
+    OpenAL,
+    // Add more backends as needed
+};
+
 template <typename T>
 struct Setting {
     T default_value{};
@@ -273,22 +279,34 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
 // Audio settings
 // -------------------------------
 struct AudioSettings {
-    Setting<std::string> mic_device{"Default Device"};
-    Setting<std::string> main_output_device{"Default Device"};
-    Setting<std::string> padSpk_output_device{"Default Device"};
+    Setting<u32> audio_backend{AudioBackend::SDL};
+    Setting<std::string> sdl_mic_device{"Default Device"};
+    Setting<std::string> sdl_main_output_device{"Default Device"};
+    Setting<std::string> sdl_padSpk_output_device{"Default Device"};
+    Setting<std::string> openal_mic_device{"Default Device"};
+    Setting<std::string> openal_main_output_device{"Default Device"};
+    Setting<std::string> openal_padSpk_output_device{"Default Device"};
 
-    // TODO add overrides
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
-            make_override<AudioSettings>("mic_device", &AudioSettings::mic_device),
-            make_override<AudioSettings>("main_output_device", &AudioSettings::main_output_device),
-            make_override<AudioSettings>("padSpk_output_device",
-                                         &AudioSettings::padSpk_output_device)};
+            make_override<AudioSettings>("audio_backend", &AudioSettings::audio_backend),
+            make_override<AudioSettings>("sdl_mic_device", &AudioSettings::sdl_mic_device),
+            make_override<AudioSettings>("sdl_main_output_device",
+                                         &AudioSettings::sdl_main_output_device),
+            make_override<AudioSettings>("sdl_padSpk_output_device",
+                                         &AudioSettings::sdl_padSpk_output_device),
+            make_override<AudioSettings>("openal_mic_device", &AudioSettings::openal_mic_device),
+            make_override<AudioSettings>("openal_main_output_device",
+                                         &AudioSettings::openal_main_output_device),
+            make_override<AudioSettings>("openal_padSpk_output_device",
+                                         &AudioSettings::openal_padSpk_output_device)};
     }
 };
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, mic_device, main_output_device,
-                                   padSpk_output_device)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AudioSettings, audio_backend, sdl_mic_device,
+                                   sdl_main_output_device, sdl_padSpk_output_device,
+                                   openal_mic_device, openal_main_output_device,
+                                   openal_padSpk_output_device)
 
 // -------------------------------
 // GPU settings
@@ -537,9 +555,13 @@ public:
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
 
     // Audio settings
-    SETTING_FORWARD(m_audio, MicDevice, mic_device)
-    SETTING_FORWARD(m_audio, MainOutputDevice, main_output_device)
-    SETTING_FORWARD(m_audio, PadSpkOutputDevice, padSpk_output_device)
+    SETTING_FORWARD(m_audio, AudioBackend, audio_backend)
+    SETTING_FORWARD(m_audio, SDLMicDevice, sdl_mic_device)
+    SETTING_FORWARD(m_audio, SDLMainOutputDevice, sdl_main_output_device)
+    SETTING_FORWARD(m_audio, SDLPadSpkOutputDevice, sdl_padSpk_output_device)
+    SETTING_FORWARD(m_audio, OpenALMicDevice, openal_mic_device)
+    SETTING_FORWARD(m_audio, OpenALMainOutputDevice, openal_main_output_device)
+    SETTING_FORWARD(m_audio, OpenALPadSpkOutputDevice, openal_padSpk_output_device)
 
     // Debug settings
     SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
