@@ -414,9 +414,12 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/save_data/dialog/savedatadialog.h
                 src/core/libraries/save_data/dialog/savedatadialog_ui.cpp
                 src/core/libraries/save_data/dialog/savedatadialog_ui.h
-                src/core/libraries/system/sysmodule.cpp
-                src/core/libraries/system/sysmodule.h
-                src/core/libraries/system/system_error.h
+                src/core/libraries/sysmodule/sysmodule.cpp
+                src/core/libraries/sysmodule/sysmodule.h
+                src/core/libraries/sysmodule/sysmodule_internal.cpp
+                src/core/libraries/sysmodule/sysmodule_internal.h
+                src/core/libraries/sysmodule/sysmodule_error.h
+                src/core/libraries/sysmodule/sysmodule_table.h
                 src/core/libraries/system/systemservice.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/systemservice_error.h

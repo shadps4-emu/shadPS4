@@ -21,7 +21,7 @@
 #ifndef _WIN32
 namespace Libraries::Kernel {
 void SigactionHandler(int native_signum, siginfo_t* inf, ucontext_t* raw_context);
-extern std::array<SceKernelExceptionHandler, 32> Handlers;
+extern std::array<OrbisKernelExceptionHandler, 32> Handlers;
 } // namespace Libraries::Kernel
 #endif
 
@@ -86,7 +86,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             // If the guest has installed a custom signal handler, and the access violation didn't
             // come from HLE memory tracking, pass the signal on
-            if (Libraries::Kernel::Handlers[sig]) {
+            if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
                 Libraries::Kernel::SigactionHandler(sig, info,
                                                     reinterpret_cast<ucontext_t*>(raw_context));
                 return;
@@ -99,7 +99,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     }
     case SIGILL:
         if (!signals->DispatchIllegalInstruction(raw_context)) {
-            if (Libraries::Kernel::Handlers[sig]) {
+            if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
                 Libraries::Kernel::SigactionHandler(sig, info,
                                                     reinterpret_cast<ucontext_t*>(raw_context));
                 return;
