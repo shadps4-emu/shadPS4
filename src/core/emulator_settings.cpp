@@ -7,6 +7,7 @@
 #include <map>
 #include <common/path_util.h>
 #include <common/scm_rev.h>
+#include <toml.hpp>
 #include "common/logging/log.h"
 #include "emulator_settings.h"
 #include "emulator_state.h"
@@ -31,6 +32,50 @@ struct adl_serializer<std::filesystem::path> {
     }
 };
 } // namespace nlohmann
+
+namespace toml {
+// why is it so hard to avoid exceptions with this library
+template <typename T>
+std::optional<T> get_optional(const toml::value& v, const std::string& key) {
+    if (!v.is_table())
+        return std::nullopt;
+    const auto& tbl = v.as_table();
+    auto it = tbl.find(key);
+    if (it == tbl.end())
+        return std::nullopt;
+
+    if constexpr (std::is_same_v<T, int>) {
+        if (it->second.is_integer()) {
+            return static_cast<int>(toml::get<int>(it->second));
+        }
+    } else if constexpr (std::is_same_v<T, unsigned int>) {
+        if (it->second.is_integer()) {
+            return static_cast<u32>(toml::get<unsigned int>(it->second));
+        }
+    } else if constexpr (std::is_same_v<T, double>) {
+        if (it->second.is_floating()) {
+            return toml::get<double>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        if (it->second.is_string()) {
+            return toml::get<std::string>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
+        if (it->second.is_string()) {
+            return toml::get<std::string>(it->second);
+        }
+    } else if constexpr (std::is_same_v<T, bool>) {
+        if (it->second.is_boolean()) {
+            return toml::get<bool>(it->second);
+        }
+    } else {
+        static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
+    }
+
+    return std::nullopt;
+}
+
+} // namespace toml
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -331,12 +376,18 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         btns,
                         nullptr,
                     };
-                    int result;
-                    SDL_ShowMessageBox(&msg_box, &result);
+                    int result = 1;
+                    // SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 1) {
-                        SDL_ShowSimpleMessageBox(
-                            0, "Error", "sike this actually isn't implemented yet lol", nullptr);
-                        std::quick_exit(1);
+                        if (TransferSettings()) {
+                            Save();
+                            return true;
+                        } else {
+                            SDL_ShowSimpleMessageBox(0, "Config Migration",
+                                                     "Error transferring settings, exiting.",
+                                                     nullptr);
+                            std::quick_exit(1);
+                        }
                     }
                 }
                 LOG_DEBUG(EmuSettings, "Global config not found - using defaults");
@@ -406,6 +457,157 @@ void EmulatorSettingsImpl::SetDefaultValues() {
     m_audio = AudioSettings{};
     m_gpu = GPUSettings{};
     m_vulkan = VulkanSettings{};
+}
+
+bool EmulatorSettingsImpl::TransferSettings() {
+    toml::value og_data;
+    json new_data = json::object();
+    try {
+        auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "config.toml";
+        std::ifstream ifs;
+        ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        ifs.open(path, std::ios_base::binary);
+        og_data = toml::parse(ifs, std::string{fmt::UTF(path.filename().u8string()).data});
+    } catch (std::exception& ex) {
+        fmt::print("Got exception trying to load config file. Exception: {}\n", ex.what());
+        return false;
+    }
+    auto setFromToml = [&]<typename T>(Setting<T>& n, toml::value const& t, std::string k) {
+        n = toml::get_optional<T>(t, k).value_or(n.default_value);
+    };
+    if (og_data.contains("General")) {
+        const toml::value& general = og_data.at("General");
+        auto& s = m_general;
+
+        setFromToml(s.volume_slider, general, "volumeSlider");
+        setFromToml(s.neo_mode, general, "isPS4Pro");
+        setFromToml(s.dev_kit_mode, general, "isDevKit");
+        setFromToml(s.psn_signed_in, general, "isPSNSignedIn");
+        setFromToml(s.trophy_popup_disabled, general, "isTrophyPopupDisabled");
+        setFromToml(s.trophy_notification_duration, general, "trophyNotificationDuration");
+        setFromToml(s.discord_rpc_enabled, general, "enableDiscordRPC");
+        setFromToml(s.log_filter, general, "logFilter");
+        setFromToml(s.log_type, general, "logType");
+        setFromToml(s.identical_log_grouped, general, "isIdenticalLogGrouped");
+        setFromToml(s.show_splash, general, "showSplash");
+        setFromToml(s.trophy_notification_side, general, "sideTrophy");
+        setFromToml(s.connected_to_network, general, "isConnectedToNetwork");
+        setFromToml(s.sys_modules_dir, general, "sysModulesPath");
+        setFromToml(s.font_dir, general, "fontsPath");
+        // setFromToml(, general, "userName");
+        // setFromToml(s.defaultControllerID, general, "defaultControllerID");
+    }
+
+    if (og_data.contains("Input")) {
+        const toml::value& input = og_data.at("Input");
+        auto& s = m_input;
+
+        setFromToml(s.cursor_state, input, "cursorState");
+        setFromToml(s.cursor_hide_timeout, input, "cursorHideTimeout");
+        setFromToml(s.use_special_pad, input, "useSpecialPad");
+        setFromToml(s.special_pad_class, input, "specialPadClass");
+        setFromToml(s.motion_controls_enabled, input, "isMotionControlsEnabled");
+        setFromToml(s.use_unified_input_config, input, "useUnifiedInputConfig");
+        setFromToml(s.background_controller_input, input, "backgroundControllerInput");
+        setFromToml(s.usb_device_backend, input, "usbDeviceBackend");
+    }
+
+    if (og_data.contains("Audio")) {
+        const toml::value& audio = og_data.at("Audio");
+        auto& s = m_audio;
+
+        setFromToml(s.sdl_mic_device, audio, "micDevice");
+        setFromToml(s.sdl_main_output_device, audio, "mainOutputDevice");
+        setFromToml(s.sdl_padSpk_output_device, audio, "padSpkOutputDevice");
+    }
+
+    if (og_data.contains("GPU")) {
+        const toml::value& gpu = og_data.at("GPU");
+        auto& s = m_gpu;
+
+        setFromToml(s.window_width, gpu, "screenWidth");
+        setFromToml(s.window_height, gpu, "screenHeight");
+        setFromToml(s.internal_screen_width, gpu, "internalScreenWidth");
+        setFromToml(s.internal_screen_height, gpu, "internalScreenHeight");
+        setFromToml(s.null_gpu, gpu, "nullGpu");
+        setFromToml(s.copy_gpu_buffers, gpu, "copyGPUBuffers");
+        setFromToml(s.readbacks_mode, gpu, "readbacksMode");
+        setFromToml(s.readback_linear_images_enabled, gpu, "readbackLinearImages");
+        setFromToml(s.direct_memory_access_enabled, gpu, "directMemoryAccess");
+        setFromToml(s.dump_shaders, gpu, "dumpShaders");
+        setFromToml(s.patch_shaders, gpu, "patchShaders");
+        setFromToml(s.vblank_frequency, gpu, "vblankFrequency");
+        setFromToml(s.full_screen, gpu, "Fullscreen");
+        setFromToml(s.full_screen_mode, gpu, "FullscreenMode");
+        setFromToml(s.present_mode, gpu, "presentMode");
+        setFromToml(s.hdr_allowed, gpu, "allowHDR");
+        setFromToml(s.fsr_enabled, gpu, "fsrEnabled");
+        setFromToml(s.rcas_enabled, gpu, "rcasEnabled");
+        setFromToml(s.rcas_attenuation, gpu, "rcasAttenuation");
+    }
+
+    if (og_data.contains("Vulkan")) {
+        const toml::value& vk = og_data.at("Vulkan");
+        auto& s = m_vulkan;
+
+        setFromToml(s.gpu_id, vk, "gpuId");
+        setFromToml(s.vkvalidation_enabled, vk, "validation");
+        setFromToml(s.vkvalidation_core_enabled, vk, "validation_core");
+        setFromToml(s.vkvalidation_sync_enabled, vk, "validation_sync");
+        setFromToml(s.vkvalidation_gpu_enabled, vk, "validation_gpu");
+        setFromToml(s.vkcrash_diagnostic_enabled, vk, "crashDiagnostic");
+        setFromToml(s.vkhost_markers, vk, "hostMarkers");
+        setFromToml(s.vkguest_markers, vk, "guestMarkers");
+        setFromToml(s.renderdoc_enabled, vk, "rdocEnable");
+        setFromToml(s.pipeline_cache_enabled, vk, "pipelineCacheEnable");
+        setFromToml(s.pipeline_cache_archived, vk, "pipelineCacheArchive");
+    }
+
+    if (og_data.contains("Debug")) {
+        const toml::value& debug = og_data.at("Debug");
+        auto& s = m_debug;
+
+        setFromToml(s.debug_dump, debug, "DebugDump");
+        setFromToml(s.separate_logging_enabled, debug, "isSeparateLogFilesEnabled");
+        setFromToml(s.shader_collect, debug, "CollectShader");
+        setFromToml(s.log_enabled, debug, "logEnabled");
+        setFromToml(m_general.show_fps_counter, debug, "showFpsCounter");
+    }
+
+    if (og_data.contains("Settings")) {
+        const toml::value& settings = og_data.at("Settings");
+        auto& s = m_general;
+        setFromToml(s.console_language, settings, "consoleLanguage");
+    }
+
+    if (og_data.contains("GUI")) {
+        const toml::value& gui = og_data.at("GUI");
+        auto& s = m_general;
+
+        // TODO
+
+        // const auto install_dir_array =
+        //     toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
+        // try {
+        //     install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
+        // } catch (...) {
+        //     // If it does not exist, assume that all are enabled.
+        //     install_dirs_enabled.resize(install_dir_array.size(), true);
+        // }
+        // if (install_dirs_enabled.size() < install_dir_array.size()) {
+        //     install_dirs_enabled.resize(install_dir_array.size(), true);
+        // }
+        // settings_install_dirs.clear();
+        // for (size_t i = 0; i < install_dir_array.size(); i++) {
+        //     settings_install_dirs.push_back(
+        //         {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
+        // }
+        // save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
+        // settings_addon_install_dir =
+        //     toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
+    }
+
+    return true;
 }
 
 std::vector<std::string> EmulatorSettingsImpl::GetAllOverrideableKeys() const {
