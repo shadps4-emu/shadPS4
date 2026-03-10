@@ -198,6 +198,18 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     game_info.game_folder = game_folder;
+    std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
+    NPBindFile npbind;
+    if (!npbind.Load(npbindPath.string())) {
+        LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
+    } else {
+        auto npCommIds = npbind.GetNpCommIds();
+        if (npCommIds.empty()) {
+            LOG_WARNING(Common_Filesystem, "No NPComm IDs found in npbind.dat");
+        } else {
+            game_info.npCommIds = std::move(npCommIds);
+        }
+    }
 
     EmulatorSettings.Load(id);
 
@@ -294,32 +306,19 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (!id.empty()) {
         MemoryPatcher::g_game_serial = id;
 
-        // Load npbind.dat using the new class
-        std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
-        NPBindFile npbind;
-        if (!npbind.Load(npbindPath.string())) {
-            LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
-        } else {
-            auto npCommIds = npbind.GetNpCommIds();
-            if (npCommIds.empty()) {
-                LOG_WARNING(Common_Filesystem, "No NPComm IDs found in npbind.dat");
-            } else {
-                int index = 0;
-                for (std::string npCommId : npCommIds) {        
-                    for (User user : UserSettings.GetUserManager().GetValidUsers()) {
-                        const auto trophyDir =
-                            Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
-                            std::to_string(user.user_id) / "trophy" / npCommId;
-                        if (!std::filesystem::exists(trophyDir)) {
-                            TRP trp;
-                            if (!trp.Extract(game_folder, index,npCommId,trophyDir)) {
-                                LOG_ERROR(Loader, "Couldn't extract trophies");
-                            }
-                        }
+        int index = 0;
+        for (std::string npCommId : game_info.npCommIds) {
+            for (User user : UserSettings.GetUserManager().GetValidUsers()) {
+                const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                                       std::to_string(user.user_id) / "trophy" / npCommId;
+                if (!std::filesystem::exists(trophyDir)) {
+                    TRP trp;
+                    if (!trp.Extract(game_folder, index, npCommId, trophyDir)) {
+                        LOG_ERROR(Loader, "Couldn't extract trophies");
                     }
-                    index++;
                 }
             }
+            index++;
         }
     }
 

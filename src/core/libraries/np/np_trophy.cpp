@@ -14,9 +14,9 @@
 #include "core/libraries/np/trophy_ui.h"
 #include "core/memory.h"
 
-namespace Libraries::Np::NpTrophy {
+#include "common/elf_info.h"
 
-std::string game_serial;
+namespace Libraries::Np::NpTrophy {
 
 static constexpr auto MaxTrophyHandles = 4u;
 static constexpr auto MaxTrophyContexts = 8u;
@@ -251,11 +251,11 @@ int PS4_SYSV_ABI sceNpTrophyGetGameIcon(OrbisNpTrophyContext context, OrbisNpTro
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
 
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
+
     auto icon_file = trophy_dir / trophy_folder / "Icons" / "ICON0.PNG";
 
     Common::FS::IOFile icon(icon_file, Common::FS::FileAccessMode::Read);
@@ -304,11 +304,9 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
-
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
     auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
@@ -411,11 +409,9 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
-
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
     auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
@@ -522,11 +518,9 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
-
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
     auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
@@ -596,11 +590,9 @@ s32 PS4_SYSV_ABI sceNpTrophyGetTrophyUnlockState(OrbisNpTrophyContext context,
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
-
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
     auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
@@ -964,11 +956,9 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         return ORBIS_NP_TROPHY_ERROR_INVALID_CONTEXT;
     }
     ContextKey contextkey = trophy_contexts[contextId];
-    char trophy_folder[9];
-    snprintf(trophy_folder, sizeof(trophy_folder), "trophy%02d", contextkey.second);
-
-    const auto trophy_dir =
-        Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / game_serial / "TrophyFiles";
+    std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[contextkey.second];
+    const auto trophy_dir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                            std::to_string(contextkey.first) / "trophy";
     auto trophy_file = trophy_dir / trophy_folder / "Xml" / "TROP.XML";
 
     pugi::xml_document doc;
