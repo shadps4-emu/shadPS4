@@ -252,6 +252,10 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
             if (init_func) {
                 LOG_INFO(Loader, "Can't Load {} switching to HLE", mod_name);
                 init_func(&linker->GetHLESymbols());
+
+                // When loading HLEs, we need to relocate imports
+                // This ensures later module loads can see our HLE functions.
+                linker->RelocateAllImports();
             } else {
                 LOG_INFO(Loader, "No HLE available for {} module", mod_name);
             }
