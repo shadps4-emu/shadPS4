@@ -23,43 +23,43 @@ namespace Libraries::Np::NpTrophy {
 // Index = OrbisSystemServiceParamId language value reported by the system.
 // clang-format off
 static constexpr std::array<std::string_view, 31> s_language_xml_names = {
-    "TROP00.XML", // 00 Japanese
-    "TROP01.XML", // 01 English (US)
-    "TROP02.XML", // 02 French
-    "TROP03.XML", // 03 Spanish (ES)
-    "TROP04.XML", // 04 German
-    "TROP05.XML", // 05 Italian
-    "TROP06.XML", // 06 Dutch
-    "TROP07.XML", // 07 Portuguese (PT)
-    "TROP08.XML", // 08 Russian
-    "TROP09.XML", // 09 Korean
-    "TROP10.XML", // 10 Traditional Chinese
-    "TROP11.XML", // 11 Simplified Chinese
-    "TROP12.XML", // 12 Finnish
-    "TROP13.XML", // 13 Swedish
-    "TROP14.XML", // 14 Danish
-    "TROP15.XML", // 15 Norwegian
-    "TROP16.XML", // 16 Polish
-    "TROP17.XML", // 17 Portuguese (BR)
-    "TROP18.XML", // 18 English (GB)
-    "TROP19.XML", // 19 Turkish
-    "TROP20.XML", // 20 Spanish (LA)
-    "TROP21.XML", // 21 Arabic
-    "TROP22.XML", // 22 French (CA)
-    "TROP23.XML", // 23 Czech
-    "TROP24.XML", // 24 Hungarian
-    "TROP25.XML", // 25 Greek
-    "TROP26.XML", // 26 Romanian
-    "TROP27.XML", // 27 Thai
-    "TROP28.XML", // 28 Vietnamese
-    "TROP29.XML", // 29 Indonesian
-    "TROP30.XML", // 30 (reserved / future)
+    "TROP_00.XML", // 00 Japanese
+    "TROP_01.XML", // 01 English (US)
+    "TROP_02.XML", // 02 French
+    "TROP_03.XML", // 03 Spanish (ES)
+    "TROP_04.XML", // 04 German
+    "TROP_05.XML", // 05 Italian
+    "TROP_06.XML", // 06 Dutch
+    "TROP_07.XML", // 07 Portuguese (PT)
+    "TROP_08.XML", // 08 Russian
+    "TROP_09.XML", // 09 Korean
+    "TROP_10.XML", // 10 Traditional Chinese
+    "TROP_11.XML", // 11 Simplified Chinese
+    "TROP_12.XML", // 12 Finnish
+    "TROP_13.XML", // 13 Swedish
+    "TROP_14.XML", // 14 Danish
+    "TROP_15.XML", // 15 Norwegian
+    "TROP_16.XML", // 16 Polish
+    "TROP_17.XML", // 17 Portuguese (BR)
+    "TROP_18.XML", // 18 English (GB)
+    "TROP_19.XML", // 19 Turkish
+    "TROP_20.XML", // 20 Spanish (LA)
+    "TROP_21.XML", // 21 Arabic
+    "TROP_22.XML", // 22 French (CA)
+    "TROP_23.XML", // 23 Czech
+    "TROP_24.XML", // 24 Hungarian
+    "TROP_25.XML", // 25 Greek
+    "TROP_26.XML", // 26 Romanian
+    "TROP_27.XML", // 27 Thai
+    "TROP_28.XML", // 28 Vietnamese
+    "TROP_29.XML", // 29 Indonesian
+    "TROP_30.XML", // 30 Unkrainian
 };
 // clang-format on
 
 // Returns the best available trophy XML path for the current system language.
 // Resolution order:
-//   1. TROPXX.XML for the active system language (e.g. TROP01.XML for English)
+//   1. TROP_XX.XML for the active system language (e.g. TROP01.XML for English)
 //   2. TROP.XML    (master / language-neutral fallback)
 static std::filesystem::path GetTrophyXmlPath(const std::filesystem::path& xml_dir,
                                               int system_language) {
