@@ -40,6 +40,8 @@ int main(int argc, char* argv[]) {
     UserSettings.Load();
 
     // TODO add back trophy key migration without the need of entire previous config framework
+    auto key_manager = KeyManager::GetInstance();
+    key_manager->LoadFromFile();
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
