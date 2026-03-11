@@ -63,6 +63,36 @@ struct Liverpool {
     std::array<CbDbExtent, NUM_COLOR_BUFFERS> last_cb_extent{};
     CbDbExtent last_db_extent{};
 
+    // Dirty-tracking flags for pipeline cache and render state fast paths.
+    // Set by PM4 register writes, cleared by the rasterizer after use.
+    bool graphics_key_dirty{true};
+    bool graphics_sh_ud_dirty{true};
+    bool context_regs_dirty{true};
+    bool render_targets_dirty{true};
+
+    /// Returns true if the register write range falls entirely within user-data SGPRs.
+    static bool IsUserDataOnlyWrite(u32 reg_word_addr, u32 write_count) noexcept {
+        // User-data SGPR ranges for each HW shader stage (GCN ISA)
+        struct Range {
+            u32 lo, hi;
+        };
+        static constexpr Range ud_ranges[] = {
+            {0x2C0C, 0x2C0C + 16}, // PS
+            {0x2C4C, 0x2C4C + 16}, // VS
+            {0x2C8C, 0x2C8C + 16}, // GS
+            {0x2CCC, 0x2CCC + 16}, // ES
+            {0x2D0C, 0x2D0C + 16}, // HS
+            {0x2D4C, 0x2D4C + 16}, // LS
+        };
+        const u32 end = reg_word_addr + write_count;
+        for (const auto& r : ud_ranges) {
+            if (reg_word_addr >= r.lo && end <= r.hi) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 public:
     explicit Liverpool();
     ~Liverpool();

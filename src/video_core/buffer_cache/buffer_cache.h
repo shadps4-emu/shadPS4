@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <boost/container/small_vector.hpp>
 #include "common/lru_cache.h"
 #include "common/slot_vector.h"
@@ -155,6 +156,21 @@ public:
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
+    /// Returns true if any buffer allocations changed since last call.
+    bool ConsumeVramChanged() {
+        return vram_changed.exchange(false, std::memory_order_relaxed);
+    }
+
+    /// Sets the cached device memory usage value.
+    void SetMemoryUsage(u64 usage) {
+        total_used_memory = usage;
+    }
+
+    /// Resets the temporary buffer pool for the current frame.
+    void ResetTempBufferPool() {
+        temp_buffer_cursor = 0;
+    }
+
 private:
     template <typename Func>
     void ForEachBufferInRange(VAddr device_addr, u64 size, Func&& func) {
@@ -217,6 +233,8 @@ private:
     u64 trigger_gc_memory = 0;
     u64 critical_gc_memory = 0;
     u64 gc_tick = 0;
+    std::atomic<bool> vram_changed{false};
+    u32 temp_buffer_cursor{};
     Common::LeastRecentlyUsedCache<BufferId, u64> lru_cache;
     RangeSet gpu_modified_ranges;
     SplitRangeMap<BufferId> buffer_ranges;

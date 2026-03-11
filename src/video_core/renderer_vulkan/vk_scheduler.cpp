@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
+
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/thread.h"
@@ -90,6 +92,9 @@ void Scheduler::Wait(u64 tick) {
 }
 
 void Scheduler::PopPendingOperations() {
+    if (pending_ops.empty()) {
+        return;
+    }
     master_semaphore.Refresh();
     while (!pending_ops.empty() && master_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
@@ -197,6 +202,13 @@ void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
 }
 
 void DynamicState::Commit(const Instance& instance, const vk::CommandBuffer& cmdbuf) {
+    // Fast-path: skip all checks when nothing is dirty.
+    u32 dirty_bits;
+    static_assert(sizeof(dirty_state) <= sizeof(u32));
+    std::memcpy(&dirty_bits, &dirty_state, sizeof(dirty_state));
+    if (dirty_bits == 0) {
+        return;
+    }
     if (dirty_state.viewports) {
         dirty_state.viewports = false;
         cmdbuf.setViewportWithCount(viewports);

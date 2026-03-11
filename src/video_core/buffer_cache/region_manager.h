@@ -120,6 +120,9 @@ public:
         }
 
         RegionBits& bits = GetRegionBits<type>();
+        if (bits.None()) {
+            return;
+        }
         RegionBits mask(bits, start_page, end_page);
 
         if constexpr (clear) {
@@ -153,8 +156,7 @@ public:
         }
 
         const RegionBits& bits = GetRegionBits<type>();
-        RegionBits test(bits, start_page, end_page);
-        return test.Any();
+        return bits.AnyInRange(start_page, end_page);
     }
 
     LockType lock;

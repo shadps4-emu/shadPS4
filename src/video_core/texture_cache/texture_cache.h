@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -193,6 +194,16 @@ public:
     /// Runs the garbage collector.
     void RunGarbageCollector();
 
+    /// Returns true if any image allocations changed since last call.
+    bool ConsumeVramChanged() {
+        return vram_changed.exchange(false, std::memory_order_relaxed);
+    }
+
+    /// Sets the cached device memory usage value.
+    void SetMemoryUsage(u64 usage) {
+        total_used_memory = usage;
+    }
+
     template <typename Func>
     void ForEachImageInRegion(VAddr cpu_addr, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, ImageId, Image&>::type;
@@ -311,6 +322,7 @@ private:
     u64 pressure_gc_memory = 0;
     u64 critical_gc_memory = 0;
     u64 gc_tick = 0;
+    std::atomic<bool> vram_changed{false};
     Common::LeastRecentlyUsedCache<ImageId, u64> lru_cache;
     PageTable page_table;
     std::mutex mutex;

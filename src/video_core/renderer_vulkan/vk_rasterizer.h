@@ -8,6 +8,7 @@
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
+#include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/texture_cache/texture_cache.h"
 
 namespace AmdGpu {
@@ -20,8 +21,6 @@ class MemoryManager;
 
 namespace Vulkan {
 
-class Scheduler;
-class RenderState;
 class GraphicsPipeline;
 
 class Rasterizer {
@@ -89,7 +88,7 @@ private:
     void DepthStencilCopy(bool is_depth, bool is_stencil);
     void EliminateFastClear();
 
-    void UpdateDynamicState(const GraphicsPipeline* pipeline, bool is_indexed) const;
+    void UpdateDynamicState(const GraphicsPipeline* pipeline, bool is_indexed);
     void UpdateViewportScissorState() const;
     void UpdateDepthStencilState() const;
     void UpdatePrimitiveState(bool is_indexed) const;
@@ -113,6 +112,8 @@ private:
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
     bool IsComputeImageClear(const Pipeline* pipeline);
+    bool IsComputeBufferCopy(const Pipeline* pipeline);
+    bool IsComputeBufferFill(const Pipeline* pipeline);
 
 private:
     friend class VideoCore::BufferCache;
@@ -145,6 +146,19 @@ private:
     boost::container::static_vector<ImageBindingInfo, Shader::NUM_IMAGES> image_bindings;
     bool fault_process_pending{};
     bool attachment_feedback_loop{};
+
+    // Cached state for draw-call deduplication
+    u64 last_dma_sync_tick{};
+    u32 cached_rt_mrt_mask{~0u};
+    u32 cached_rt_depth_ctl{~0u};
+    u32 cached_rt_color_ctl{~0u};
+    u32 cached_rt_target_mask{~0u};
+    bool render_targets_cached{};
+    RenderState cached_render_state{};
+    bool cached_depth_clear{};
+    bool cached_stencil_clear{};
+    vk::Pipeline last_bound_pipeline{};
+    u32 gc_query_tick{};
 };
 
 } // namespace Vulkan

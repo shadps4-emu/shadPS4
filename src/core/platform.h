@@ -14,6 +14,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <queue>
+#include <vector>
 
 namespace Platform {
 
@@ -66,19 +67,35 @@ struct IrqController {
         ASSERT_MSG(static_cast<u32>(irq) <= static_cast<u32>(InterruptId::InterruptIdMax),
                    "Unexpected IRQ signaled");
         auto& ctx = irq_contexts.try_emplace(irq).first->second;
-        std::unique_lock lock{ctx.m_lock};
+
+        // Snapshot handler lists under the lock, then release before invoking.
+        // Handlers can take other locks or block; holding the IRQ lock would
+        // serialize unrelated operations and create long stalls.
+        std::vector<IrqHandler> persistent{};
+        IrqHandler one_shot{};
+        bool has_one_shot = false;
+        {
+            std::unique_lock lock{ctx.m_lock};
+
+            persistent.reserve(ctx.persistent_handlers.size());
+            for (auto& [uid, h] : ctx.persistent_handlers) {
+                persistent.emplace_back(h);
+            }
+
+            if (!ctx.one_time_subscribers.empty()) {
+                one_shot = std::move(ctx.one_time_subscribers.front());
+                ctx.one_time_subscribers.pop();
+                has_one_shot = true;
+            }
+        }
 
         LOG_TRACE(Core, "IRQ signaled: {}", magic_enum::enum_name(irq));
 
-        for (auto& [uid, h] : ctx.persistent_handlers) {
+        for (auto& h : persistent) {
             h(irq);
         }
-
-        if (!ctx.one_time_subscribers.empty()) {
-            const auto& h = ctx.one_time_subscribers.front();
-            h(irq);
-
-            ctx.one_time_subscribers.pop();
+        if (has_one_shot) {
+            one_shot(irq);
         }
     }
 

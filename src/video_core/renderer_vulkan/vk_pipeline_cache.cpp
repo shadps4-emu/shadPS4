@@ -284,9 +284,34 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 PipelineCache::~PipelineCache() = default;
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
+    // Fast path 1: Only user-data SGPRs changed (VB addresses, push constants).
+    // Skip full pipeline key rebuild; just refresh shader user-data.
+    if (!liverpool->graphics_key_dirty && liverpool->graphics_sh_ud_dirty) {
+        liverpool->graphics_sh_ud_dirty = false;
+        if (cached_graphics_pipeline && RefreshUserDataOnly()) {
+            return cached_graphics_pipeline;
+        }
+        // Fall through to full rebuild if fast path fails
+    }
+
+    // Fast path 2: Nothing changed at all — return previous pipeline.
+    if (!liverpool->graphics_key_dirty && !liverpool->graphics_sh_ud_dirty &&
+        cached_graphics_pipeline) {
+        return cached_graphics_pipeline;
+    }
+
+    liverpool->graphics_key_dirty = false;
+    liverpool->graphics_sh_ud_dirty = false;
+
     if (!RefreshGraphicsKey()) {
         return nullptr;
     }
+
+    // Fast path 3: Same key as last draw — skip hash map lookup.
+    if (cached_graphics_pipeline && graphics_key == cached_graphics_key) {
+        return cached_graphics_pipeline;
+    }
+
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
         const auto pipeline_hash = std::hash<GraphicsPipelineKey>{}(graphics_key);
@@ -310,7 +335,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
         }
         fetch_shader.reset();
     }
-    return it->second.get();
+    cached_graphics_key = graphics_key;
+    cached_graphics_pipeline = it->second.get();
+    return cached_graphics_pipeline;
 }
 
 const ComputePipeline* PipelineCache::GetComputePipeline() {
@@ -634,6 +661,7 @@ std::optional<vk::ShaderModule> PipelineCache::ReplaceShader(vk::ShaderModule mo
             }
         }
     }
+    cached_graphics_pipeline = nullptr;
     if (module_related_pipelines.contains(module)) {
         auto& pipeline_keys = module_related_pipelines[module];
         for (auto& key : pipeline_keys) {
@@ -692,4 +720,35 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
     file.Read(code);
     return code;
 }
+bool PipelineCache::RefreshUserDataOnly() {
+    // Lightweight path: only update shader user-data without rebuilding the pipeline key.
+    const auto& regs = liverpool->regs;
+
+    const auto update_stage = [&](Shader::LogicalStage l_stage,
+                                  const auto& program) -> bool {
+        auto* info = const_cast<Shader::Info*>(infos[u32(l_stage)]);
+        if (!info) {
+            return true;
+        }
+        const u32 num_user_data = program.settings.num_user_regs;
+        std::memcpy(const_cast<u32*>(info->user_data.data()), &program.user_data,
+                    num_user_data * sizeof(u32));
+        info->RefreshFlatBuf();
+        return true;
+    };
+
+    if (!update_stage(Shader::LogicalStage::Vertex, regs.vs_program)) {
+        return false;
+    }
+    if (!update_stage(Shader::LogicalStage::Fragment, regs.ps_program)) {
+        return false;
+    }
+    if (regs.stage_enable.IsStageEnabled(u32(Stage::Geometry))) {
+        if (!update_stage(Shader::LogicalStage::Geometry, regs.gs_program)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace Vulkan

@@ -582,6 +582,7 @@ BufferId BufferCache::CreateBuffer(VAddr device_addr, u32 wanted_size) {
         JoinOverlap(new_buffer_id, overlap_id, !overlap.has_stream_leap);
     }
     Register(new_buffer_id);
+    vram_changed.store(true, std::memory_order_relaxed);
     return new_buffer_id;
 }
 
@@ -837,9 +838,6 @@ void BufferCache::RunGarbageCollector() {
     SCOPE_EXIT {
         ++gc_tick;
     };
-    if (instance.CanReportMemoryUsage()) {
-        total_used_memory = instance.GetDeviceMemoryUsage();
-    }
     if (total_used_memory < trigger_gc_memory) {
         return;
     }

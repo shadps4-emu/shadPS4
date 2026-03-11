@@ -311,6 +311,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto reg_addr = Regs::ConfigRegWordOffset + set_data->reg_offset;
                 const auto* payload = reinterpret_cast<const u32*>(header + 2);
                 std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
+                graphics_key_dirty = true;
+                context_regs_dirty = true;
                 break;
             }
             case PM4ItOpcode::SetContextReg: {
@@ -319,6 +321,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* payload = reinterpret_cast<const u32*>(header + 2);
 
                 std::memcpy(&regs.reg_array[reg_addr], payload, (count - 1) * sizeof(u32));
+                context_regs_dirty = true;
+                graphics_key_dirty = true;
 
                 // In the case of HW, render target memory has alignment as color block operates on
                 // tiles. There is no information of actual resource extents stored in CB context
@@ -336,6 +340,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 case ContextRegs::CbColor5Base:
                 case ContextRegs::CbColor6Base:
                 case ContextRegs::CbColor7Base: {
+                    render_targets_dirty = true;
                     const auto col_buf_id = (reg_addr - ContextRegs::CbColor0Base) /
                                             (ContextRegs::CbColor1Base - ContextRegs::CbColor0Base);
                     ASSERT(col_buf_id < NUM_COLOR_BUFFERS);
@@ -368,7 +373,10 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                         ASSERT_MSG(payload[nop_offset] == 0xc0001000,
                                    "NOP hint is missing in CB setup sequence");
                         last_cb_extent[col_buf_id].raw = payload[nop_offset + 1];
+                    } else {
+                        last_cb_extent[col_buf_id].raw = 0;
                     }
+                    render_targets_dirty = true;
                     break;
                 }
                 case ContextRegs::DbZInfo: {
@@ -379,6 +387,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     } else {
                         last_db_extent.raw = 0;
                     }
+                    render_targets_dirty = true;
                     break;
                 }
                 default:
@@ -399,6 +408,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 } else {
                     std::memcpy(&regs.reg_array[Regs::ShRegWordOffset + set_data->reg_offset],
                                 header + 2, set_size);
+                    // Classify: user-data SGPR writes only need a lightweight update
+                    if (IsUserDataOnlyWrite(Regs::ShRegWordOffset + set_data->reg_offset,
+                                            count - 1)) {
+                        graphics_sh_ud_dirty = true;
+                    } else {
+                        graphics_key_dirty = true;
+                    }
                 }
                 break;
             }
@@ -406,6 +422,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* set_data = reinterpret_cast<const PM4CmdSetData*>(header);
                 std::memcpy(&regs.reg_array[Regs::UconfigRegWordOffset + set_data->reg_offset],
                             header + 2, (count - 1) * sizeof(u32));
+                graphics_key_dirty = true;
+                context_regs_dirty = true;
                 break;
             }
             case PM4ItOpcode::SetPredication: {

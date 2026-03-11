@@ -29,6 +29,11 @@ public:
     bool IsRegionCpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<true>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
+                // Lockless pre-check: skip lock acquisition when no CPU bits are set.
+                // Safe on x86-64 due to TSO guarantees with aligned u64 reads.
+                if (manager->template GetRegionBits<Type::CPU>().None()) {
+                    return false;
+                }
                 std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::CPU>(offset, size);
             });
@@ -38,6 +43,9 @@ public:
     bool IsRegionGpuModified(VAddr query_cpu_addr, u64 query_size) noexcept {
         return IteratePages<false>(
             query_cpu_addr, query_size, [](RegionManager* manager, u64 offset, size_t size) {
+                if (manager->template GetRegionBits<Type::GPU>().None()) {
+                    return false;
+                }
                 std::scoped_lock lk{manager->lock};
                 return manager->template IsRegionModified<Type::GPU>(offset, size);
             });
@@ -49,6 +57,16 @@ public:
                             [](RegionManager* manager, u64 offset, size_t size) {
                                 std::scoped_lock lk{manager->lock};
                                 manager->template ChangeRegionState<Type::CPU, true>(
+                                    manager->GetCpuAddr() + offset, size);
+                            });
+    }
+
+    /// Mark region as GPU modified
+    void MarkRegionAsGpuModified(VAddr dirty_cpu_addr, u64 query_size) {
+        IteratePages<false>(dirty_cpu_addr, query_size,
+                            [this](RegionManager* manager, u64 offset, size_t size) {
+                                std::scoped_lock lk{manager->lock};
+                                manager->template ChangeRegionState<Type::GPU, true>(
                                     manager->GetCpuAddr() + offset, size);
                             });
     }
@@ -77,6 +95,8 @@ public:
                         manager->template IsRegionModified<Type::GPU>(offset, size)) {
                         return true;
                     }
+                    manager->template ChangeRegionState<Type::GPU, false>(
+                        manager->GetCpuAddr() + offset, size);
                     manager->template ChangeRegionState<Type::CPU, true>(
                         manager->GetCpuAddr() + offset, size);
                     return false;
@@ -87,11 +107,28 @@ public:
             });
     }
 
+    /// Removes all protection from a page (discards any non-downloaded GPU modifications)
+    void InvalidateRegion(VAddr cpu_addr, u64 size) noexcept {
+        IteratePages<false>(cpu_addr, size, [](RegionManager* manager, u64 offset, size_t size) {
+            std::scoped_lock lk{manager->lock};
+            manager->template ChangeRegionState<Type::GPU, false>(manager->GetCpuAddr() + offset,
+                                                                  size);
+            manager->template ChangeRegionState<Type::CPU, true>(manager->GetCpuAddr() + offset,
+                                                                 size);
+        });
+    }
+
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
     void ForEachUploadRange(VAddr query_cpu_range, u64 query_size, bool is_written, auto&& func,
                             auto&& on_upload) {
         IteratePages<true>(query_cpu_range, query_size,
                            [&func, is_written](RegionManager* manager, u64 offset, size_t size) {
+                               // Lockless pre-check: when not a GPU write target,
+                               // skip lock entirely if no CPU modifications exist.
+                               if (!is_written &&
+                                   manager->template GetRegionBits<Type::CPU>().None()) {
+                                   return;
+                               }
                                manager->lock.lock();
                                manager->template ForEachModifiedRange<Type::CPU, true>(
                                    manager->GetCpuAddr() + offset, size, func);
@@ -116,6 +153,9 @@ public:
     void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
         IteratePages<false>(query_cpu_range, query_size,
                             [&func](RegionManager* manager, u64 offset, size_t size) {
+                                if (manager->template GetRegionBits<Type::GPU>().None()) {
+                                    return;
+                                }
                                 std::scoped_lock lk{manager->lock};
                                 manager->template ForEachModifiedRange<Type::GPU, clear>(
                                     manager->GetCpuAddr() + offset, size, func);

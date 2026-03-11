@@ -220,7 +220,11 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto [vertex_offset, instance_offset] = GetDrawOffsets(regs, vs_info, fetch_shader);
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    const auto pipeline_handle = pipeline->Handle();
+    if (pipeline_handle != last_bound_pipeline) {
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
+        last_bound_pipeline = pipeline_handle;
+    }
 
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
@@ -276,7 +280,11 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     // instance offsets will be automatically applied by Vulkan from indirect args buffer.
 
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    const auto pipeline_handle = pipeline->Handle();
+    if (pipeline_handle != last_bound_pipeline) {
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
+        last_bound_pipeline = pipeline_handle;
+    }
 
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
@@ -375,14 +383,34 @@ void Rasterizer::OnSubmit() {
         buffer_cache.ProcessFaultBuffer();
     }
     texture_cache.ProcessDownloadImages();
+
+    // Reset cached draw state for the new submission
+    last_bound_pipeline = VK_NULL_HANDLE;
+    render_targets_cached = false;
+
+    // Event-driven VRAM query: only poll device memory when allocations changed
+    if (instance.CanReportMemoryUsage()) {
+        const bool alloc_changed =
+            texture_cache.ConsumeVramChanged() | buffer_cache.ConsumeVramChanged();
+        if (alloc_changed || (++gc_query_tick % 900u) == 0) {
+            const u64 vram_usage = instance.GetDeviceMemoryUsage();
+            texture_cache.SetMemoryUsage(vram_usage);
+            buffer_cache.SetMemoryUsage(vram_usage);
+        }
+    }
+
     texture_cache.RunGarbageCollector();
     buffer_cache.RunGarbageCollector();
+    buffer_cache.ResetTempBufferPool();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    if (IsComputeImageCopy(pipeline) || IsComputeMetaClear(pipeline) ||
-        IsComputeImageClear(pipeline)) {
-        return false;
+    if (pipeline->IsCompute()) {
+        if (IsComputeMetaClear(pipeline) || IsComputeImageCopy(pipeline) ||
+            IsComputeImageClear(pipeline) || IsComputeBufferCopy(pipeline) ||
+            IsComputeBufferFill(pipeline)) {
+            return false;
+        }
     }
 
     set_writes.clear();
@@ -406,10 +434,15 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     if (uses_dma) {
-        // We only use fault buffer for DMA right now.
-        Common::RecursiveSharedLock lock{mapped_ranges_mutex};
-        for (auto& range : mapped_ranges) {
-            buffer_cache.SynchronizeBuffersInRange(range.lower(), range.upper() - range.lower());
+        // Throttle DMA sync to once per scheduler tick
+        const u64 tick = scheduler.CurrentTick();
+        if (tick != last_dma_sync_tick) {
+            last_dma_sync_tick = tick;
+            Common::RecursiveSharedLock lock{mapped_ranges_mutex};
+            for (auto& range : mapped_ranges) {
+                buffer_cache.SynchronizeBuffersInRange(range.lower(),
+                                                      range.upper() - range.lower());
+            }
         }
         fault_process_pending = true;
     }
@@ -573,6 +606,57 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     image1.Clear(clear, range);
     image1.flags |= VideoCore::ImageFlagBits::GpuModified;
     image1.flags &= ~VideoCore::ImageFlagBits::Dirty;
+    return true;
+}
+
+bool Rasterizer::IsComputeBufferCopy(const Pipeline* pipeline) {
+    const auto& cs_pgm = liverpool->GetCsRegs();
+    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+        return false;
+    }
+    const auto& desc0 = info.buffers[0];
+    const auto& desc1 = info.buffers[1];
+    if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
+        return false;
+    }
+    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
+    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
+    if (buf0.GetSize() != buf1.GetSize() || (buf0.GetSize() % 256) != 0 ||
+        cs_pgm.dim_x != (buf0.GetSize() / 256)) {
+        return false;
+    }
+    // Neither buffer aliases a tracked image -- pure memory-to-memory copy
+    if (texture_cache.FindImageFromRange(buf0.base_address, buf0.GetSize()) ||
+        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize())) {
+        return false;
+    }
+    const auto& src_buf = desc0.is_written ? buf1 : buf0;
+    const auto& dst_buf = desc0.is_written ? buf0 : buf1;
+    CopyBuffer(dst_buf.base_address, src_buf.base_address, src_buf.GetSize(), false, false);
+    return true;
+}
+
+bool Rasterizer::IsComputeBufferFill(const Pipeline* pipeline) {
+    const auto& cs_pgm = liverpool->GetCsRegs();
+    const auto& info = pipeline->GetStage(Shader::LogicalStage::Compute);
+    if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() != 2 || !info.images.empty()) {
+        return false;
+    }
+    const auto& desc0 = info.buffers[0];
+    const auto& desc1 = info.buffers[1];
+    // First buffer is a 4-byte value (read-only), second is the destination (write-only)
+    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
+    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
+    if (desc0.is_written || !desc1.is_written || buf0.GetSize() != 4) {
+        return false;
+    }
+    if (texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize())) {
+        return false;
+    }
+    u32 fill_value{};
+    std::memcpy(&fill_value, reinterpret_cast<const void*>(buf0.base_address), sizeof(u32));
+    FillBuffer(buf1.base_address, buf1.GetSize(), fill_value, false);
     return true;
 }
 
@@ -1043,14 +1127,19 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     }
 }
 
-void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) const {
-    UpdateViewportScissorState();
-    UpdateDepthStencilState();
-    UpdatePrimitiveState(is_indexed);
-    UpdateRasterizationState();
-    UpdateColorBlendingState(pipeline);
+void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) {
+    if (liverpool->context_regs_dirty) {
+        UpdateViewportScissorState();
+        UpdateDepthStencilState();
+        UpdatePrimitiveState(is_indexed);
+        UpdateRasterizationState();
+        UpdateColorBlendingState(pipeline);
+        liverpool->context_regs_dirty = false;
+    }
 
+    // Feedback loop state is always checked since it depends on per-draw binding
     auto& dynamic_state = scheduler.GetDynamicState();
+    dynamic_state.SetAttachmentFeedbackLoopEnabled(attachment_feedback_loop);
     dynamic_state.Commit(instance, scheduler.CommandBuffer());
 }
 
