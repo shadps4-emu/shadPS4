@@ -308,14 +308,22 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
         int index = 0;
         for (std::string npCommId : game_info.npCommIds) {
+            const auto trophyDir =
+                Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / npCommId;
+            if (!std::filesystem::exists(trophyDir)) {
+                TRP trp;
+                if (!trp.Extract(game_folder, index, npCommId, trophyDir)) {
+                    LOG_ERROR(Loader, "Couldn't extract trophies");
+                }
+            }
             for (User user : UserSettings.GetUserManager().GetValidUsers()) {
-                const auto trophyDir = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
-                                       std::to_string(user.user_id) / "trophy" / npCommId;
-                if (!std::filesystem::exists(trophyDir)) {
-                    TRP trp;
-                    if (!trp.Extract(game_folder, index, npCommId, trophyDir)) {
-                        LOG_ERROR(Loader, "Couldn't extract trophies");
-                    }
+                auto const user_trophy_file =
+                    Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                    std::to_string(user.user_id) / "trophy" / (npCommId + ".xml");
+                if (!std::filesystem::exists(user_trophy_file)) {
+                    std::error_code discard;
+                    std::filesystem::copy_file(trophyDir / "Xml" / "TROPCONF.XML", user_trophy_file,
+                                               discard);
                 }
             }
             index++;
