@@ -99,7 +99,6 @@ int main(int argc, char* argv[]) {
         const auto& extras = app.remaining();
         if (!extras.empty()) {
             gameArgs = extras;
-            gameArgs.erase(gameArgs.begin());
         }
     });
 
@@ -140,6 +139,14 @@ int main(int argc, char* argv[]) {
             gameArgs.erase(gameArgs.begin());
         } else {
             std::cerr << "Error: Please provide a game path or ID.\n";
+            return 1;
+        }
+    }
+    if (!gameArgs.empty()) {
+        if (gameArgs.front() == "--") {
+            gameArgs.erase(gameArgs.begin());
+        } else {
+            std::cerr << "Error: unhandled flags" << std::format("{}", gameArgs) << "\n";
             return 1;
         }
     }
