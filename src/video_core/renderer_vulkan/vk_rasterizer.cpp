@@ -405,10 +405,17 @@ void Rasterizer::OnSubmit() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
+    const bool readbacks_enabled =
+        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
     if (pipeline->IsCompute()) {
+        // Image HLE patterns are always safe.
         if (IsComputeMetaClear(pipeline) || IsComputeImageCopy(pipeline) ||
-            IsComputeImageClear(pipeline) || IsComputeBufferCopy(pipeline) ||
-            IsComputeBufferFill(pipeline)) {
+            IsComputeImageClear(pipeline)) {
+            return false;
+        }
+        // Buffer HLE patterns bypass normal sync flow — only safe when readbacks are off.
+        if (!readbacks_enabled &&
+            (IsComputeBufferCopy(pipeline) || IsComputeBufferFill(pipeline))) {
             return false;
         }
     }
@@ -434,9 +441,9 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     }
 
     if (uses_dma) {
-        // Throttle DMA sync to once per scheduler tick
+        // When readbacks are enabled, always sync (no throttling) to match original behavior.
         const u64 tick = scheduler.CurrentTick();
-        if (tick != last_dma_sync_tick) {
+        if (readbacks_enabled || tick != last_dma_sync_tick) {
             last_dma_sync_tick = tick;
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
             for (auto& range : mapped_ranges) {
