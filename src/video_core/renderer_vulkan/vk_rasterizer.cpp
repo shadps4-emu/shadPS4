@@ -221,9 +221,16 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto pipeline_handle = pipeline->Handle();
-    if (pipeline_handle != last_bound_pipeline) {
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
-        last_bound_pipeline = pipeline_handle;
+    {
+        // Gate pipeline bind dedup: when readbacks enabled, always bind (original behavior).
+        // When readbacks disabled, skip redundant binds for same pipeline handle within same
+        // submission.
+        const bool readbacks_on =
+            Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+        if (readbacks_on || pipeline_handle != last_bound_pipeline) {
+            cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
+            last_bound_pipeline = pipeline_handle;
+        }
     }
 
     if (is_indexed) {
@@ -281,9 +288,13 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto pipeline_handle = pipeline->Handle();
-    if (pipeline_handle != last_bound_pipeline) {
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
-        last_bound_pipeline = pipeline_handle;
+    {
+        const bool readbacks_on =
+            Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+        if (readbacks_on || pipeline_handle != last_bound_pipeline) {
+            cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
+            last_bound_pipeline = pipeline_handle;
+        }
     }
 
     if (is_indexed) {
@@ -1135,7 +1146,11 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 }
 
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) {
-    if (liverpool->context_regs_dirty) {
+    // When readbacks are enabled, always update dynamic state (original behavior).
+    // When readbacks are disabled, skip updates if context registers haven't changed.
+    const bool readbacks_on =
+        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+    if (readbacks_on || liverpool->context_regs_dirty) {
         UpdateViewportScissorState();
         UpdateDepthStencilState();
         UpdatePrimitiveState(is_indexed);

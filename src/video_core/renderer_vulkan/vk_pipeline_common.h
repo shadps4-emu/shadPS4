@@ -53,6 +53,10 @@ public:
         return *stages[u32(stage)];
     }
 
+    const Shader::Info* GetStagePtr(Shader::LogicalStage stage) const noexcept {
+        return stages[u32(stage)];
+    }
+
     bool IsCompute() const {
         return is_compute;
     }
