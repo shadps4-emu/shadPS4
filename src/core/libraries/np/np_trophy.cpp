@@ -398,9 +398,9 @@ int PS4_SYSV_ABI sceNpTrophyGetGameInfo(OrbisNpTrophyContext context, OrbisNpTro
     }
 
     pugi::xml_document save_doc;
-    pugi::xml_parse_result save_result = doc.load_file(ctx.xml_save_file.native().c_str());
+    pugi::xml_parse_result save_result = save_doc.load_file(ctx.xml_save_file.native().c_str());
 
-    if (!result) {
+    if (!save_result) {
         LOG_ERROR(Lib_NpTrophy, "Failed to parse user trophy xml : {}", result.description());
         return ORBIS_OK;
     }
@@ -522,9 +522,9 @@ int PS4_SYSV_ABI sceNpTrophyGetGroupInfo(OrbisNpTrophyContext context, OrbisNpTr
     }
 
     pugi::xml_document save_doc;
-    pugi::xml_parse_result save_result = doc.load_file(ctx.xml_save_file.native().c_str());
+    pugi::xml_parse_result save_result = save_doc.load_file(ctx.xml_save_file.native().c_str());
 
-    if (!result) {
+    if (!save_result) {
         LOG_ERROR(Lib_NpTrophy, "Failed to parse user trophy xml : {}", result.description());
         return ORBIS_OK;
     }
@@ -704,9 +704,9 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyInfo(OrbisNpTrophyContext context, OrbisNpT
     }
 
     pugi::xml_document save_doc;
-    pugi::xml_parse_result save_result = doc.load_file(ctx.xml_save_file.native().c_str());
+    pugi::xml_parse_result save_result = save_doc.load_file(ctx.xml_save_file.native().c_str());
 
-    if (!result) {
+    if (!save_result) {
         LOG_ERROR(Lib_NpTrophy, "Failed to parse user trophy xml : {}", result.description());
         return ORBIS_OK;
     }
@@ -875,6 +875,30 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
     const auto& xml_dir = ctx.xml_dir;
     const auto& trophy_file = ctx.trophy_xml_path;
 
+    pugi::xml_document save_doc;
+    pugi::xml_parse_result save_result = save_doc.load_file(ctx.xml_save_file.native().c_str());
+
+    if (!save_result) {
+        LOG_ERROR(Lib_NpTrophy, "Failed to parse user trophy xml : {}", save_result.description());
+        return ORBIS_OK;
+    }
+    auto save_trophyconf = save_doc.child("trophyconf");
+    for (const pugi::xml_node& node : save_trophyconf.children()) {
+        std::string_view node_name = node.name();
+        if (std::string_view(node.name()) != "trophy")
+            continue;
+
+        int current_trophy_id = node.attribute("id").as_int(ORBIS_NP_TROPHY_INVALID_TROPHY_ID);
+        bool current_trophy_unlockstate = node.attribute("unlockstate").as_bool();
+
+        if (current_trophy_id == trophyId) {
+            if (current_trophy_unlockstate) {
+                LOG_INFO(Lib_NpTrophy, "Trophy already unlocked");
+                return ORBIS_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
+            }
+        }
+    }
+
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(trophy_file.native().c_str());
 
@@ -920,10 +944,6 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         }
 
         if (current_trophy_id == trophyId) {
-            if (current_trophy_unlockstate) {
-                LOG_INFO(Lib_NpTrophy, "Trophy already unlocked");
-                return ORBIS_NP_TROPHY_ERROR_TROPHY_ALREADY_UNLOCKED;
-            }
             trophy_found = true;
             trophy_name = node.child("name").text().as_string();
             trophy_type = current_trophy_type;
