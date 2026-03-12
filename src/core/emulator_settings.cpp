@@ -278,7 +278,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                 LOG_ERROR(EmuSettings, "Failed to open game config for writing: {}", path.string());
                 return false;
             }
-            out << std::setw(4) << j;
+            out << std::setw(2) << j;
             return !out.fail();
 
         } else {
@@ -319,7 +319,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                 LOG_ERROR(EmuSettings, "Failed to open config for writing: {}", path.string());
                 return false;
             }
-            out << std::setw(4) << existing;
+            out << std::setw(2) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {

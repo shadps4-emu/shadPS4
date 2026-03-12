@@ -47,7 +47,7 @@ bool UserSettingsImpl::Save() const {
             LOG_ERROR(EmuSettings, "Failed to open user settings for writing: {}", path.string());
             return false;
         }
-        out << std::setw(4) << j;
+        out << std::setw(2) << j;
         return !out.fail();
     } catch (const std::exception& e) {
         LOG_ERROR(EmuSettings, "Error saving user settings: {}", e.what());
