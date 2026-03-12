@@ -94,8 +94,8 @@ Instance::Instance(bool enable_validation, bool enable_crash_diagnostic)
 
 Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
                    bool enable_validation /*= false*/, bool enable_crash_diagnostic /*= false*/)
-    : instance{CreateInstance(window.GetWindowInfo().type, enable_validation,
-                              enable_crash_diagnostic)},
+    : instance{
+          CreateInstance(window.GetWindowInfo().type, enable_validation, enable_crash_diagnostic)},
       physical_devices{EnumeratePhysicalDevices(instance)} {
     if (enable_validation) {
         debug_callback = CreateDebugCallback(*instance);

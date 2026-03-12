@@ -13,8 +13,8 @@
 #include <functional>
 #include <mutex>
 #include <unordered_map>
-#include <queue>
 #include <vector>
+#include <queue>
 
 namespace Platform {
 

@@ -35,8 +35,7 @@ public:
             [readbacks_enabled](RegionManager* manager, u64 offset, size_t size) {
                 // Lockless pre-check: skip lock acquisition when no CPU bits are set.
                 // Disabled when readbacks are enabled to avoid races with page fault handlers.
-                if (!readbacks_enabled &&
-                    manager->template GetRegionBits<Type::CPU>().None()) {
+                if (!readbacks_enabled && manager->template GetRegionBits<Type::CPU>().None()) {
                     return false;
                 }
                 std::scoped_lock lk{manager->lock};
@@ -51,8 +50,7 @@ public:
         return IteratePages<false>(
             query_cpu_addr, query_size,
             [readbacks_enabled](RegionManager* manager, u64 offset, size_t size) {
-                if (!readbacks_enabled &&
-                    manager->template GetRegionBits<Type::GPU>().None()) {
+                if (!readbacks_enabled && manager->template GetRegionBits<Type::GPU>().None()) {
                     return false;
                 }
                 std::scoped_lock lk{manager->lock};
@@ -131,10 +129,12 @@ public:
         const bool readbacks_enabled =
             Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
         IteratePages<true>(query_cpu_range, query_size,
-                           [&func, is_written, readbacks_enabled](RegionManager* manager, u64 offset, size_t size) {
+                           [&func, is_written, readbacks_enabled](RegionManager* manager,
+                                                                  u64 offset, size_t size) {
                                // Lockless pre-check: when not a GPU write target,
                                // skip lock entirely if no CPU modifications exist.
-                               // Disabled when readbacks are enabled to avoid races with page fault handlers.
+                               // Disabled when readbacks are enabled to avoid races with page fault
+                               // handlers.
                                if (!readbacks_enabled && !is_written &&
                                    manager->template GetRegionBits<Type::CPU>().None()) {
                                    return;
@@ -163,16 +163,16 @@ public:
     void ForEachDownloadRange(VAddr query_cpu_range, u64 query_size, auto&& func) {
         const bool readbacks_enabled =
             Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
-        IteratePages<false>(query_cpu_range, query_size,
-                            [&func, readbacks_enabled](RegionManager* manager, u64 offset, size_t size) {
-                                if (!readbacks_enabled &&
-                                    manager->template GetRegionBits<Type::GPU>().None()) {
-                                    return;
-                                }
-                                std::scoped_lock lk{manager->lock};
-                                manager->template ForEachModifiedRange<Type::GPU, clear>(
-                                    manager->GetCpuAddr() + offset, size, func);
-                            });
+        IteratePages<false>(
+            query_cpu_range, query_size,
+            [&func, readbacks_enabled](RegionManager* manager, u64 offset, size_t size) {
+                if (!readbacks_enabled && manager->template GetRegionBits<Type::GPU>().None()) {
+                    return;
+                }
+                std::scoped_lock lk{manager->lock};
+                manager->template ForEachModifiedRange<Type::GPU, clear>(
+                    manager->GetCpuAddr() + offset, size, func);
+            });
     }
 
 private:

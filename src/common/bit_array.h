@@ -206,8 +206,7 @@ public:
         const size_t start_bit = start % BITS_PER_WORD;
         const size_t end_bit = (end - 1) % BITS_PER_WORD;
         const u64 start_mask = ~((1ULL << start_bit) - 1);
-        const u64 end_mask =
-            end_bit == BITS_PER_WORD - 1 ? ~0ULL : (1ULL << (end_bit + 1)) - 1;
+        const u64 end_mask = end_bit == BITS_PER_WORD - 1 ? ~0ULL : (1ULL << (end_bit + 1)) - 1;
         if (first_word == last_word) {
             return (data[first_word] & start_mask & end_mask) != 0;
         }
