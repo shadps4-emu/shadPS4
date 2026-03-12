@@ -100,6 +100,8 @@ int main(int argc, char* argv[]) {
         if (!extras.empty()) {
             gameArgs = extras;
         }
+        // This adds the -- too, remove it.
+        gameArgs.erase(gameArgs.begin());
     });
 
     // ---- No-args behavior ----
