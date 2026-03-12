@@ -91,6 +91,7 @@ int main(int argc, char* argv[]) {
         const auto& extras = app.remaining();
         if (!extras.empty()) {
             gameArgs = extras;
+            gameArgs.erase(gameArgs.begin());
         }
     });
 
