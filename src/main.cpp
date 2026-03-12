@@ -99,9 +99,8 @@ int main(int argc, char* argv[]) {
         const auto& extras = app.remaining();
         if (!extras.empty()) {
             gameArgs = extras;
+            gameArgs.erase(gameArgs.begin());
         }
-        // This adds the -- too, remove it.
-        gameArgs.erase(gameArgs.begin());
     });
 
     // ---- No-args behavior ----
