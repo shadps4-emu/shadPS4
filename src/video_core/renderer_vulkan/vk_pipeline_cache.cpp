@@ -284,31 +284,42 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 PipelineCache::~PipelineCache() = default;
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
-    // Fast path 1: Only user-data SGPRs changed (VB addresses, push constants).
-    // Skip full pipeline key rebuild; just refresh shader user-data.
-    if (!liverpool->graphics_key_dirty && liverpool->graphics_sh_ud_dirty) {
-        liverpool->graphics_sh_ud_dirty = false;
-        if (cached_graphics_pipeline && RefreshUserDataOnly()) {
+    const bool readbacks_enabled =
+        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+
+    // Pipeline cache fast paths are only safe when readbacks are disabled.
+    // When readbacks are enabled, always do a full pipeline key rebuild to match
+    // original pre-optimization behavior.
+    if (!readbacks_enabled) {
+        // Fast path 1: Only user-data SGPRs changed (VB addresses, push constants).
+        // Skip full pipeline key rebuild; just refresh shader user-data.
+        if (!liverpool->graphics_key_dirty && liverpool->graphics_sh_ud_dirty) {
+            liverpool->graphics_sh_ud_dirty = false;
+            if (cached_graphics_pipeline && RefreshUserDataOnly()) {
+                return cached_graphics_pipeline;
+            }
+            // Fall through to full rebuild if fast path fails
+            liverpool->graphics_key_dirty = true;
+        }
+
+        // Fast path 2: Nothing changed at all — return previous pipeline.
+        if (!liverpool->graphics_key_dirty && !liverpool->graphics_sh_ud_dirty &&
+            cached_graphics_pipeline) {
             return cached_graphics_pipeline;
         }
-        // Fall through to full rebuild if fast path fails
-    }
-
-    // Fast path 2: Nothing changed at all — return previous pipeline.
-    if (!liverpool->graphics_key_dirty && !liverpool->graphics_sh_ud_dirty &&
-        cached_graphics_pipeline) {
-        return cached_graphics_pipeline;
     }
 
     liverpool->graphics_key_dirty = false;
     liverpool->graphics_sh_ud_dirty = false;
 
     if (!RefreshGraphicsKey()) {
+        cached_graphics_pipeline = nullptr;
         return nullptr;
     }
 
     // Fast path 3: Same key as last draw — skip hash map lookup.
-    if (cached_graphics_pipeline && graphics_key == cached_graphics_key) {
+    if (!readbacks_enabled && cached_graphics_pipeline &&
+        graphics_key == cached_graphics_key) {
         return cached_graphics_pipeline;
     }
 
@@ -722,11 +733,17 @@ std::optional<std::vector<u32>> PipelineCache::GetShaderPatch(u64 hash, Shader::
 }
 bool PipelineCache::RefreshUserDataOnly() {
     // Lightweight path: only update shader user-data without rebuilding the pipeline key.
+    // Uses the cached pipeline's stage pointers instead of the shared infos[] array
+    // to avoid aliasing with compute shader data in infos[0].
+    if (!cached_graphics_pipeline) {
+        return false;
+    }
     const auto& regs = liverpool->regs;
 
     const auto update_stage = [&](Shader::LogicalStage l_stage,
                                   const auto& program) -> bool {
-        auto* info = const_cast<Shader::Info*>(infos[u32(l_stage)]);
+        auto* info =
+            const_cast<Shader::Info*>(cached_graphics_pipeline->GetStagePtr(l_stage));
         if (!info) {
             return true;
         }
