@@ -161,8 +161,13 @@ int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId 
     if (userId == -1 || !g_opened) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    LOG_DEBUG(Lib_Pad, "(DUMMY) called");
-    return userId;
+    auto const u = UserManagement.GetUserByID(userId);
+    if (!u) {
+        return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
+    }
+    s32 pad_handle = u->player_index;
+    LOG_DEBUG(Lib_Pad, "called, userid: {}, out pad handle: ", userId, pad_handle);
+    return pad_handle;
 }
 
 int PS4_SYSV_ABI scePadGetIdleCount() {
