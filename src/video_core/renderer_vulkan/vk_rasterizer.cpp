@@ -225,8 +225,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         // Gate pipeline bind dedup: when readbacks enabled, always bind (original behavior).
         // When readbacks disabled, skip redundant binds for same pipeline handle within same
         // submission.
-        const bool readbacks_on =
-            Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+        const bool readbacks_on = Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
         if (readbacks_on || pipeline_handle != last_bound_pipeline) {
             cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
             last_bound_pipeline = pipeline_handle;
@@ -289,8 +288,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     const auto cmdbuf = scheduler.CommandBuffer();
     const auto pipeline_handle = pipeline->Handle();
     {
-        const bool readbacks_on =
-            Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+        const bool readbacks_on = Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
         if (readbacks_on || pipeline_handle != last_bound_pipeline) {
             cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline_handle);
             last_bound_pipeline = pipeline_handle;
@@ -416,8 +414,7 @@ void Rasterizer::OnSubmit() {
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
-    const bool readbacks_enabled =
-        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+    const bool readbacks_enabled = Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
     if (pipeline->IsCompute()) {
         // Image HLE patterns are always safe.
         if (IsComputeMetaClear(pipeline) || IsComputeImageCopy(pipeline) ||
@@ -459,7 +456,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
             Common::RecursiveSharedLock lock{mapped_ranges_mutex};
             for (auto& range : mapped_ranges) {
                 buffer_cache.SynchronizeBuffersInRange(range.lower(),
-                                                      range.upper() - range.lower());
+                                                       range.upper() - range.lower());
             }
         }
         fault_process_pending = true;
@@ -1148,8 +1145,7 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
 void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool is_indexed) {
     // When readbacks are enabled, always update dynamic state (original behavior).
     // When readbacks are disabled, skip updates if context registers haven't changed.
-    const bool readbacks_on =
-        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+    const bool readbacks_on = Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
     if (readbacks_on || liverpool->context_regs_dirty) {
         UpdateViewportScissorState();
         UpdateDepthStencilState();

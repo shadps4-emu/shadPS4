@@ -284,8 +284,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 PipelineCache::~PipelineCache() = default;
 
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
-    const bool readbacks_enabled =
-        Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
+    const bool readbacks_enabled = Config::getReadbacksMode() != Config::GpuReadbacksMode::Disabled;
 
     // Pipeline cache fast paths are only safe when readbacks are disabled.
     // When readbacks are enabled, always do a full pipeline key rebuild to match
@@ -318,8 +317,7 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline() {
     }
 
     // Fast path 3: Same key as last draw — skip hash map lookup.
-    if (!readbacks_enabled && cached_graphics_pipeline &&
-        graphics_key == cached_graphics_key) {
+    if (!readbacks_enabled && cached_graphics_pipeline && graphics_key == cached_graphics_key) {
         return cached_graphics_pipeline;
     }
 
@@ -740,10 +738,8 @@ bool PipelineCache::RefreshUserDataOnly() {
     }
     const auto& regs = liverpool->regs;
 
-    const auto update_stage = [&](Shader::LogicalStage l_stage,
-                                  const auto& program) -> bool {
-        auto* info =
-            const_cast<Shader::Info*>(cached_graphics_pipeline->GetStagePtr(l_stage));
+    const auto update_stage = [&](Shader::LogicalStage l_stage, const auto& program) -> bool {
+        auto* info = const_cast<Shader::Info*>(cached_graphics_pipeline->GetStagePtr(l_stage));
         if (!info) {
             return true;
         }
