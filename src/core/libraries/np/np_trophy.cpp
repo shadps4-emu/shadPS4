@@ -74,27 +74,6 @@ static std::filesystem::path GetTrophyXmlPath(const std::filesystem::path& xml_d
     return xml_dir / "TROP.XML";
 }
 
-static std::vector<std::filesystem::path> GetAllTrophyXmlPaths(
-    const std::filesystem::path& xml_dir) {
-    std::vector<std::filesystem::path> paths;
-
-    // Always include the master file.
-    auto master = xml_dir / "TROP.XML";
-    if (std::filesystem::exists(master)) {
-        paths.push_back(master);
-    }
-
-    // Include every language file that is actually present.
-    for (const auto& name : s_language_xml_names) {
-        auto lang_path = xml_dir / name;
-        if (std::filesystem::exists(lang_path)) {
-            paths.push_back(lang_path);
-        }
-    }
-
-    return paths;
-}
-
 static void ApplyUnlockToXmlFile(const std::filesystem::path& xml_path, OrbisNpTrophyId trophyId,
                                  u64 trophyTimestamp, bool unlock_platinum,
                                  OrbisNpTrophyId platinumId, u64 platinumTimestamp) {
@@ -150,6 +129,7 @@ struct TrophyContext {
     bool registered = false;
     std::filesystem::path trophy_xml_path; // resolved once at CreateContext
     std::filesystem::path xml_dir;         // .../Xml/
+    std::filesystem::path xml_save_file;   // The actual file for tracking progress per-user.
     std::filesystem::path icons_dir;       // .../Icons/
 };
 static Common::SlotVector<OrbisNpTrophyHandle> trophy_handles{};
@@ -239,9 +219,11 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     ctx.context_id = *context;
 
     // Resolve and cache all paths once so callers never recompute them.
-    const std::string trophy_folder = Common::ElfInfo::Instance().GetNpCommIds()[service_label];
-    const auto trophy_base = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
-                             std::to_string(user_id) / "trophy" / trophy_folder;
+    const std::string np_comm_id = Common::ElfInfo::Instance().GetNpCommIds()[service_label];
+    const auto trophy_base =
+        Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
+    ctx.xml_save_file = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
+                             std::to_string(user_id) / "trophy" / (np_comm_id + ".xml");
     ctx.xml_dir = trophy_base / "Xml";
     ctx.icons_dir = trophy_base / "Icons";
     ctx.trophy_xml_path = GetTrophyXmlPath(ctx.xml_dir, EmulatorSettings.GetConsoleLanguage());
@@ -598,7 +580,7 @@ int PS4_SYSV_ABI sceNpTrophyGetTrophyIcon(OrbisNpTrophyContext context, OrbisNpT
     if (!ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_NOT_REGISTERED;
 
-    // Check that the trophy is unlocked — icons are only available for earned trophies.
+    // Check that the trophy is unlocked ï¿½ icons are only available for earned trophies.
     pugi::xml_document doc;
     if (!doc.load_file(ctx.trophy_xml_path.native().c_str())) {
         LOG_ERROR(Lib_NpTrophy, "Failed to open trophy XML: {}", ctx.trophy_xml_path.string());
@@ -946,14 +928,9 @@ int PS4_SYSV_ABI sceNpTrophyUnlockTrophy(OrbisNpTrophyContext context, OrbisNpTr
         AddTrophyToQueue(platinum_icon_path, platinum_name, "P");
     }
 
-    // TROP.XML + TROP00.XML .. TROP30.XML are all written so that switching
-    // the system language never loses trophy progress.
-    const auto all_xml_paths = GetAllTrophyXmlPaths(xml_dir);
-    for (const auto& xml_path : all_xml_paths) {
-        ApplyUnlockToXmlFile(xml_path, trophyId, trophy_timestamp, unlock_platinum, platinum_id,
-                             platinum_timestamp);
-    }
-    LOG_INFO(Lib_NpTrophy, "Trophy {} written to {} XML file(s)", trophyId, all_xml_paths.size());
+    ApplyUnlockToXmlFile(ctx.xml_save_file, trophyId, trophy_timestamp, unlock_platinum, platinum_id,
+                         platinum_timestamp);
+    LOG_INFO(Lib_NpTrophy, "Trophy {} successfully saved.", trophyId);
 
     return ORBIS_OK;
 }
