@@ -7,6 +7,7 @@
 #include "emulator_settings.h"
 #include "user_manager.h"
 #include "user_settings.h"
+#include "libraries/system/userservice.h"
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {
@@ -167,6 +168,31 @@ std::vector<User> UserManager::GetValidUsers() const {
     }
 
     return result;
+}
+
+LoggedInUsers UserManager::GetLoggedInUsers() const {
+    return logged_in_users;
+}
+
+using namespace Libraries::UserService;
+
+void UserManager::LoginUser(User* u, s32 player_index) {
+    if (!u) {
+        return;
+    }
+    u->logged_in = true;
+    // u->player_index = player_index;
+    AddUserServiceEvent({OrbisUserServiceEventType::Login, u->user_id});
+    logged_in_users[player_index - 1] = u;
+}
+
+void UserManager::LogoutUser(User* u) {
+    if (!u) {
+        return;
+    }
+    u->logged_in = false;
+    AddUserServiceEvent({OrbisUserServiceEventType::Logout, u->user_id});
+    logged_in_users[u->player_index - 1] = {};
 }
 
 bool UserManager::Save() const {

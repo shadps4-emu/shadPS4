@@ -195,7 +195,6 @@ void WindowSDL::WaitEvent() {
         break;
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
-        // todo handle userserviceevents here
         Input::GameControllers::TryOpenSDLControllers(controllers);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
@@ -260,9 +259,7 @@ void WindowSDL::WaitEvent() {
                     break;
                 }
                 controllers[i]->user_id = u->user_id;
-                Libraries::UserService::AddUserServiceEvent(
-                    {Libraries::UserService::OrbisUserServiceEventType::Login,
-                     controllers[i]->user_id});
+                UserManagement.LoginUser(u, i + 1);
                 break;
             }
         }
@@ -271,9 +268,7 @@ void WindowSDL::WaitEvent() {
         LOG_INFO(Input, "Remove user");
         for (int i = 3; i >= 0; i--) {
             if (controllers[i]->user_id != -1) {
-                Libraries::UserService::AddUserServiceEvent(
-                    {Libraries::UserService::OrbisUserServiceEventType::Logout,
-                     (s32)controllers[i]->user_id});
+                UserManagement.LogoutUser(UserManagement.GetUserByID(controllers[i]->user_id));
                 controllers[i]->user_id = -1;
                 break;
             }

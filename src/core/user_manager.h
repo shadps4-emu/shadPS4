@@ -9,10 +9,12 @@
 #include "common/types.h"
 
 struct User {
-    s32 user_id;
-    std::string user_name;
+    s32 user_id = -1;
+    std::string user_name = "";
     u32 user_color;
-    int player_index; // 1-4
+    int player_index = 0; // 1-4
+
+    bool logged_in = false;
 };
 
 struct Users {
@@ -22,6 +24,8 @@ struct Users {
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, user_id, user_color, user_name, player_index)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, default_user_id, user, commit_hash)
+
+using LoggedInUsers = std::array<User*, 4>;
 
 class UserManager {
 public:
@@ -38,6 +42,9 @@ public:
     User GetDefaultUser();
     void SetControllerPort(u32 user_id, int port);
     std::vector<User> GetValidUsers() const;
+    LoggedInUsers GetLoggedInUsers() const;
+    void LoginUser(User* u, s32 player_index);
+    void LogoutUser(User* u);
 
     Users& GetUsers() {
         return m_users;
@@ -50,4 +57,5 @@ public:
 
 private:
     Users m_users;
+    LoggedInUsers logged_in_users{};
 };

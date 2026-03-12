@@ -119,7 +119,7 @@ void AddUserServiceEvent(const OrbisUserServiceEvent e) {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
-    LOG_TRACE(Lib_UserService, "(DUMMY) called");
+    LOG_TRACE(Lib_UserService, "called");
 
     if (!user_service_event_queue.empty()) {
         OrbisUserServiceEvent& temp = user_service_event_queue.front();
@@ -592,29 +592,15 @@ s32 PS4_SYSV_ABI sceUserServiceGetLoginUserIdList(OrbisUserServiceLoginUserIdLis
 
     auto& user_manager = UserManagement;
 
-    std::vector<User> all_users = user_manager.GetValidUsers();
+    auto logged_in_users = user_manager.GetLoggedInUsers();
 
-    // Filter users with valid port assignments (1-4)
-    std::vector<User> valid_users;
-    std::copy_if(all_users.begin(), all_users.end(), std::back_inserter(valid_users),
-                 [](const User& user) { return user.player_index >= 1 && user.player_index <= 4; });
-
-    // Sort filtered users by port assignment (1-4)
-    std::sort(valid_users.begin(), valid_users.end(),
-              [](const User& a, const User& b) { return a.player_index < b.player_index; });
-
-    // Fill slots consecutively based on sorted valid users
-    int num_users =
-        std::min(static_cast<int>(valid_users.size()), ORBIS_USER_SERVICE_MAX_LOGIN_USERS);
-
-    for (int i = 0; i < num_users; i++) {
-        userIdList->user_id[i] = valid_users[i].user_id;
-        LOG_DEBUG(Lib_UserService, "Slot {}: User ID {} (port {})", i, valid_users[i].user_id,
-                  valid_users[i].player_index);
+    for (int i = 0; i < ORBIS_USER_SERVICE_MAX_LOGIN_USERS; i++) {
+        s32 id =
+            logged_in_users[i] ? logged_in_users[i]->user_id : ORBIS_USER_SERVICE_USER_ID_INVALID;
+        userIdList->user_id[i] = id;
+        LOG_DEBUG(Lib_UserService, "Slot {}: User ID {} (port {})", i, id,
+                  logged_in_users[i] ? logged_in_users[i]->player_index : -1);
     }
-
-    LOG_DEBUG(Lib_UserService, "Returning {} logged-in users with valid port assignments",
-              num_users);
     return ORBIS_OK;
 }
 int PS4_SYSV_ABI sceUserServiceGetMicLevel() {

@@ -223,6 +223,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     using namespace Libraries::UserService;
     int controller_count;
     SDL_JoystickID* new_joysticks = SDL_GetGamepads(&controller_count);
+    LOG_INFO(Input, "{} controllers are currently connected", controller_count);
 
     std::unordered_set<SDL_JoystickID> assigned_ids;
     std::array<bool, 4> slot_taken{false, false, false, false};
@@ -252,7 +253,8 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 }
             }
             if (!still_connected) {
-                AddUserServiceEvent({OrbisUserServiceEventType::Logout, controllers[i]->user_id});
+                auto u = UserManagement.GetUserByID(controllers[i]->user_id);
+                UserManagement.LogoutUser(u);
                 SDL_CloseGamepad(pad);
                 controllers[i]->m_sdl_gamepad = nullptr;
                 controllers[i]->user_id = -1;
@@ -269,13 +271,15 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
             continue;
 
         SDL_Gamepad* pad = SDL_OpenGamepad(id);
-        if (!pad)
+        if (!pad) {
             continue;
+        }
 
         for (int i = 0; i < 4; i++) {
             if (!slot_taken[i]) {
                 auto u = UserManagement.GetUserByPlayerIndex(i + 1);
                 if (!u) {
+                    LOG_INFO(Input, "User {} not found", i + 1);
                     continue; // for now, if you don't specify who Player N is in the config,
                               // Player N won't be registered at all
                 }
@@ -283,10 +287,9 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 c->m_sdl_gamepad = pad;
                 LOG_INFO(Input, "Gamepad registered for slot {}! Handle: {}", i,
                          SDL_GetGamepadID(pad));
-                c->user_id = u ? u->user_id : ORBIS_USER_SERVICE_USER_ID_INVALID;
+                c->user_id = u->user_id;
                 slot_taken[i] = true;
-                c->player_index = i;
-                AddUserServiceEvent({OrbisUserServiceEventType::Login, c->user_id});
+                UserManagement.LoginUser(u, i + 1);
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         c->gyro_poll_rate =
@@ -314,7 +317,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         if (controller_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
-            AddUserServiceEvent({OrbisUserServiceEventType::Login, controllers[0]->user_id});
+            UserManagement.LoginUser(u, 1);
         }
     }
     SDL_free(new_joysticks);
