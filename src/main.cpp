@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
         if (gameArgs.front() == "--") {
             gameArgs.erase(gameArgs.begin());
         } else {
-            std::cerr << "Error: unhandled flags" << std::format("{}", gameArgs) << "\n";
+            std::cerr << "Error: unhandled flags\n";
             return 1;
         }
     }
