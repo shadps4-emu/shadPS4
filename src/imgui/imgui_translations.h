@@ -87,7 +87,13 @@ namespace ImguiTranslate {
 
 std::string tr(std::string input) {
     std::string language = langMap[Config::GetLanguage()];
+    if (!tableMap.contains(input))
+        return input;
+
     std::map<std::string, std::string> translationTable = tableMap[input];
+    if (!translationTable.contains(language))
+        return input;
+
     return translationTable[language];
 }
 
