@@ -130,6 +130,7 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"pad_left", SDL_GAMEPAD_BUTTON_DPAD_LEFT},
     {"pad_right", SDL_GAMEPAD_BUTTON_DPAD_RIGHT},
     {"options", SDL_GAMEPAD_BUTTON_START},
+    {"move", SDL_GAMEPAD_BUTTON_MISC1},
 
     // these are outputs only (touchpad can only be bound to itself)
     {"touchpad_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT},
@@ -175,6 +176,7 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
 
     {"l2", {SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 127}},
     {"r2", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}},
+    {"t", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}}, // move
 
     // should only use these to bind analog inputs to analog outputs
     {"axis_left_x", {SDL_GAMEPAD_AXIS_LEFTX, 127}},

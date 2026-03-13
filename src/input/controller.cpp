@@ -243,7 +243,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                      product == 0x0C5E)) { // PSMove ZCM2
                     LOG_INFO(Input, "PS Move controller found at slot {}!", j);
                     type = ControllerType::Move;
-                    UNREACHABLE_MSG("todo refactor this entire function");
+                    LOG_CRITICAL(Input, "todo refactor this entire function");
                 }
                 if (new_joysticks[j] == id) {
                     still_connected = true;
