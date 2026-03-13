@@ -1916,4 +1916,3 @@ void CachedStyleSetScalar(Libraries::Font::OrbisFontStyleFrame& cached_style, fl
     std::memcpy(&cached_style.cached_scalar_bits, &value, sizeof(value));
 }
 } // namespace Libraries::Font::Internal
-

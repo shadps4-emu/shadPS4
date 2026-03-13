@@ -679,8 +679,7 @@ s32 PS4_SYSV_ABI sceFontCreateRendererWithEdition(const OrbisFontMem* memory,
                     static_cast<const Libraries::FontFt::OrbisFontRendererSelection*>(
                         create_params);
                 const u32 render_size = selection ? selection->size : 0u;
-                void* renderer_mem =
-                    alloc_fn(memory->mspace_handle, render_size);
+                void* renderer_mem = alloc_fn(memory->mspace_handle, render_size);
                 void* workspace = alloc_fn(memory->mspace_handle, 0x4000);
 
                 rc = ORBIS_FONT_ERROR_ALLOCATION_FAILED;
@@ -2585,8 +2584,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontInstance(OrbisFontHandle fontHandle, OrbisFontHa
             LOG_ERROR(Lib_Font, "INVALID_LIBRARY");
             return ORBIS_FONT_ERROR_INVALID_FONT_HANDLE;
         }
-        out_handle =
-            static_cast<OrbisFontHandle>(alloc_fn(lib->alloc_ctx, 0x100));
+        out_handle = static_cast<OrbisFontHandle>(alloc_fn(lib->alloc_ctx, 0x100));
         if (!out_handle) {
             release_src_lock();
             if (pFontHandle) {
@@ -3385,8 +3383,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             }
             Internal::RemoveState(handle);
         } else {
-            handle = static_cast<OrbisFontHandle>(
-                alloc_fn(lib_local->alloc_ctx, 0x100));
+            handle = static_cast<OrbisFontHandle>(alloc_fn(lib_local->alloc_ctx, 0x100));
             if (!handle) {
                 LOG_ERROR(Lib_Font, "ALLOCATION_FAILED");
                 return release_library_and_clear_out(ORBIS_FONT_ERROR_ALLOCATION_FAILED);
@@ -4851,8 +4848,7 @@ s32 PS4_SYSV_ABI sceFontRendererSetOutlineBufferPolicy(OrbisFontRenderer fontRen
     }
 
     if (!renderer->workspace || renderer->workspace_size != desired_size) {
-        void* new_workspace =
-            alloc_fn(renderer->alloc_ctx, static_cast<u32>(desired_size));
+        void* new_workspace = alloc_fn(renderer->alloc_ctx, static_cast<u32>(desired_size));
         if (!new_workspace) {
             LOG_ERROR(Lib_Font, "ALLOCATION_FAILED");
             return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
@@ -6385,4 +6381,3 @@ void RegisterlibSceFont(Core::Loader::SymbolsResolver* sym) {
 };
 
 } // namespace Libraries::Font
-

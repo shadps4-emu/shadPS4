@@ -2560,8 +2560,7 @@ static void* FtAlloc(FT_Memory memory, long size) {
         return nullptr;
     }
     const auto alloc_fn = reinterpret_cast<GuestAllocFn>(ctx->alloc_vtbl[0]);
-    return alloc_fn ? alloc_fn(ctx->alloc_ctx, static_cast<u32>(size))
-                    : nullptr;
+    return alloc_fn ? alloc_fn(ctx->alloc_ctx, static_cast<u32>(size)) : nullptr;
 }
 
 static void FtFree(FT_Memory memory, void* block) {
@@ -2679,8 +2678,7 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
     void** alloc_vtbl =
         reinterpret_cast<void**>(const_cast<Libraries::Font::OrbisFontMemInterface*>(mem->iface));
 
-    auto* ctx =
-        static_cast<FtLibraryCtx*>(alloc_fn(alloc_ctx, sizeof(FtLibraryCtx)));
+    auto* ctx = static_cast<FtLibraryCtx*>(alloc_fn(alloc_ctx, sizeof(FtLibraryCtx)));
     if (!ctx) {
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
     }
@@ -2688,8 +2686,7 @@ s32 PS4_SYSV_ABI LibraryInitStub(const void* memory, void* library) {
     ctx->alloc_ctx = alloc_ctx;
     ctx->alloc_vtbl = alloc_vtbl;
 
-    FT_Memory ft_mem =
-        static_cast<FT_Memory>(alloc_fn(alloc_ctx, sizeof(FT_MemoryRec_)));
+    FT_Memory ft_mem = static_cast<FT_Memory>(alloc_fn(alloc_ctx, sizeof(FT_MemoryRec_)));
     if (!ft_mem) {
         free_fn(alloc_ctx, ctx);
         return ORBIS_FONT_ERROR_ALLOCATION_FAILED;
@@ -3604,4 +3601,3 @@ s32 PS4_SYSV_ABI LibraryConfigureGlyphStub(void* fontObj, std::uint32_t* in_para
 }
 
 } // namespace Libraries::FontFt::Internal
-
