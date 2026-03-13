@@ -5,38 +5,6 @@
 
 #include "common/config.h"
 
-std::map<u32, std::string> langMap = {{0, "Japanese"},
-                                      {1, "English (US)"},
-                                      {2, "French"},
-                                      {3, "Spanish"},
-                                      {4, "German"},
-                                      {5, "Italian"},
-                                      {6, "Dutch"},
-                                      {7, "Portuguese (PT)"},
-                                      {8, "Russian"},
-                                      {9, "Korean"},
-                                      {10, "Chinese (Traditional)"},
-                                      {11, "Chinese (Simplified)"},
-                                      {12, "Finnish"},
-                                      {13, "Swedish"},
-                                      {14, "Danish"},
-                                      {15, "Norwegian"},
-                                      {16, "Polish"},
-                                      {17, "Portuguese (BR)"},
-                                      {18, "English (UK)"},
-                                      {19, "Turkish"},
-                                      {20, "Spanish (Latin America)"},
-                                      {21, "Arabic"},
-                                      {22, "French (Canada)"},
-                                      {23, "Czech"},
-                                      {24, "Hungarian"},
-                                      {25, "Greek"},
-                                      {26, "Romanian"},
-                                      {27, "Thai"},
-                                      {28, "Vietnamese"},
-                                      {29, "Indonesian"},
-                                      {30, "Ukrainian"}};
-
 ///////////// ImGui Translation Tables
 
 // disable clang line limits for ease of translation
@@ -79,6 +47,38 @@ const std::map<std::string, std::string> TrophyEarnedTable = {
 
 ///////////// End ImGui Translation Tables
 
+std::map<u32, std::string> langMap = {{0, "Japanese"},
+                                      {1, "English (US)"},
+                                      {2, "French"},
+                                      {3, "Spanish"},
+                                      {4, "German"},
+                                      {5, "Italian"},
+                                      {6, "Dutch"},
+                                      {7, "Portuguese (PT)"},
+                                      {8, "Russian"},
+                                      {9, "Korean"},
+                                      {10, "Chinese (Traditional)"},
+                                      {11, "Chinese (Simplified)"},
+                                      {12, "Finnish"},
+                                      {13, "Swedish"},
+                                      {14, "Danish"},
+                                      {15, "Norwegian"},
+                                      {16, "Polish"},
+                                      {17, "Portuguese (BR)"},
+                                      {18, "English (UK)"},
+                                      {19, "Turkish"},
+                                      {20, "Spanish (Latin America)"},
+                                      {21, "Arabic"},
+                                      {22, "French (Canada)"},
+                                      {23, "Czech"},
+                                      {24, "Hungarian"},
+                                      {25, "Greek"},
+                                      {26, "Romanian"},
+                                      {27, "Thai"},
+                                      {28, "Vietnamese"},
+                                      {29, "Indonesian"},
+                                      {30, "Ukrainian"}};
+
 std::map<std::string, std::map<std::string, std::string>> tableMap = {
     {"Trophy Earned", TrophyEarnedTable},
 };
@@ -86,13 +86,15 @@ std::map<std::string, std::map<std::string, std::string>> tableMap = {
 namespace ImguiTranslate {
 
 std::string tr(std::string input) {
-    std::string language = langMap[Config::GetLanguage()];
-    if (!tableMap.contains(input))
+    if (!tableMap.contains(input)) {
         return input;
+    }
 
     std::map<std::string, std::string> translationTable = tableMap[input];
-    if (!translationTable.contains(language))
+    std::string language = langMap[Config::GetLanguage()];
+    if (!translationTable.contains(language)) {
         return input;
+    }
 
     return translationTable[language];
 }
