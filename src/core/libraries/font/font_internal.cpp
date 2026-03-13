@@ -576,7 +576,7 @@ void RemoveLibState(Libraries::Font::OrbisFontLib lib) {
         if (free_fn) {
             const auto free_fn_guest =
                 reinterpret_cast<void(PS4_SYSV_ABI*)(void* object, void* p)>(free_fn);
-            Core::ExecuteGuest(free_fn_guest, alloc_ctx, p);
+            free_fn_guest(alloc_ctx, p);
             return;
         }
         std::free(p);
@@ -1916,3 +1916,4 @@ void CachedStyleSetScalar(Libraries::Font::OrbisFontStyleFrame& cached_style, fl
     std::memcpy(&cached_style.cached_scalar_bits, &value, sizeof(value));
 }
 } // namespace Libraries::Font::Internal
+
