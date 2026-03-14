@@ -260,6 +260,11 @@ struct Pthread {
     static constexpr u32 ThrMagic = 0xd09ba115U;
     static constexpr u32 MaxDeferWaiters = 50;
 
+    struct DeferredWakeEntry {
+        Pthread* thread;
+        u64 wait_generation;
+    };
+
     std::atomic<s32> tid;
     std::mutex lock;
     u32 cycle;
@@ -305,7 +310,10 @@ struct Pthread {
     bool will_sleep;
     bool has_user_waiters;
     int nwaiter_defer;
-    BinarySemaphore* defer_waiters[MaxDeferWaiters];
+    DeferredWakeEntry defer_waiters[MaxDeferWaiters]{};
+    std::atomic<u64> cond_wait_generation{0};
+    std::atomic<u64> cond_wait_armed_generation{0};
+    std::atomic<u64> last_cond_wake_generation{0};
 
     bool InCritical() const noexcept {
         return locklevel > 0 || critical_count > 0;
@@ -319,16 +327,54 @@ struct Pthread {
         return cancel_pending && cancel_enable && no_cancel == 0;
     }
 
+    u64 BeginCondWaitGeneration() noexcept {
+        return cond_wait_generation.fetch_add(1, std::memory_order_relaxed) + 1;
+    }
+
+    u64 GetCondWaitGeneration() const noexcept {
+        return cond_wait_generation.load(std::memory_order_relaxed);
+    }
+
+    void ArmCondWaitGeneration(const u64 generation) noexcept {
+        cond_wait_armed_generation.store(generation, std::memory_order_relaxed);
+    }
+
+    u64 GetCondWaitArmedGeneration() const noexcept {
+        return cond_wait_armed_generation.load(std::memory_order_relaxed);
+    }
+
+    void ClearCondWaitGenerationArm() noexcept {
+        cond_wait_armed_generation.store(0, std::memory_order_relaxed);
+    }
+
+    void SetLastCondWakeGeneration(const u64 generation) noexcept {
+        last_cond_wake_generation.store(generation, std::memory_order_relaxed);
+    }
+
+    u64 GetLastCondWakeGeneration() const noexcept {
+        return last_cond_wake_generation.load(std::memory_order_relaxed);
+    }
+
     void WakeAll() {
         for (int i = 0; i < nwaiter_defer; i++) {
-            defer_waiters[i]->release();
+            const DeferredWakeEntry entry = defer_waiters[i];
+            defer_waiters[i] = {};
+            if (entry.thread == nullptr) {
+                continue;
+            }
+            if (entry.thread->GetCondWaitGeneration() != entry.wait_generation ||
+                entry.thread->GetCondWaitArmedGeneration() != entry.wait_generation) {
+                continue;
+            }
+            entry.thread->SetLastCondWakeGeneration(entry.wait_generation);
+            entry.thread->wake_sema.release();
         }
         nwaiter_defer = 0;
     }
 
     void ClearWake() {
-        // Try to acquire wake semaphore to reset it.
-        void(wake_sema.try_acquire());
+        while (wake_sema.try_acquire_non_alertable()) {
+        }
     }
 
     bool Sleep(const OrbisKernelTimespec* abstime, u64 usec) {
