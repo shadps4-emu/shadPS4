@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -20,3 +20,6 @@ constexpr int ORBIS_PAD_ERROR_INVALID_BUFFER_LENGTH = 0x80920102;
 constexpr int ORBIS_PAD_ERROR_INVALID_REPORT_LENGTH = 0x80920103;
 constexpr int ORBIS_PAD_ERROR_INVALID_REPORT_ID = 0x80920104;
 constexpr int ORBIS_PAD_ERROR_SEND_AGAIN = 0x80920105;
+
+constexpr s32 ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER = 0x809b0001;
+constexpr s32 ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN = 0x809b0081;

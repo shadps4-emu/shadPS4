@@ -1,12 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <common/singleton.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/move/move.h"
 #include "core/libraries/move/move_error.h"
+#include "input/controller.h"
 #include "move.h"
+
+auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
 
 namespace Libraries::Move {
 
@@ -44,15 +48,51 @@ s32 PS4_SYSV_ABI sceMoveGetDeviceInfo(s32 handle, OrbisMoveDeviceInfo* info) {
     return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
 }
 
+static OrbisMoveButtonDataOffset PadToMoveOffset(Libraries::Pad::OrbisPadButtonDataOffset p) {
+    OrbisMoveButtonDataOffset m{};
+    using OPBDO = Libraries::Pad::OrbisPadButtonDataOffset;
+    using OMBDO = OrbisMoveButtonDataOffset;
+#define CONVERT(_pad, _move)                                                                       \
+    do {                                                                                           \
+        if (True(p & OPBDO::_pad))                                                                 \
+            m |= OMBDO::_move;                                                                     \
+    } while (0)
+    CONVERT(Circle, Circle);
+    CONVERT(Cross, Cross);
+    CONVERT(Square, Square);
+    CONVERT(Triangle, Triangle);
+    CONVERT(Options, Start);
+    CONVERT(L2, T);
+    CONVERT(L1, Move);
+#undef CONVERT
+    return m;
+}
+
 s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
-    LOG_TRACE(Lib_Move, "(called");
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     if (data == nullptr) {
         return ORBIS_MOVE_ERROR_INVALID_ARG;
     }
-    return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    if (!controllers.moves(0)->m_sdl_gamepad) {
+        return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    }
+    LOG_DEBUG(Lib_Move, "called");
+    auto m = controllers.moves(0);
+    Input::State s{};
+    bool connected;
+    int connected_count;
+    m->ReadState(&s, &connected, &connected_count);
+    data->button_data.trigger_data = u16(s.axes[std::to_underlying(Input::Axis::TriggerRight)]);
+    data->button_data.button_data = std::to_underlying(PadToMoveOffset(s.buttonsState));
+    data->accelerometer[0] = s.acceleration.x;
+    data->accelerometer[1] = s.acceleration.y;
+    data->accelerometer[2] = s.acceleration.z;
+    data->gyro[0] = s.angularVelocity.x;
+    data->gyro[1] = s.angularVelocity.y;
+    data->gyro[2] = s.angularVelocity.z;
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceMoveReadStateRecent(s32 handle, s64 timestamp, OrbisMoveData* data,
@@ -83,15 +123,23 @@ s32 PS4_SYSV_ABI sceMoveSetVibration(s32 handle, u8 intensity) {
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
-    return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    if (!controllers.moves(0)->m_sdl_gamepad) {
+        return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    }
+    controllers.moves(0)->SetVibration(0, intensity);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceMoveSetLightSphere(s32 handle, u8 red, u8 green, u8 blue) {
-    LOG_TRACE(Lib_Move, "called");
+    LOG_DEBUG(Lib_Move, "called");
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
-    return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    if (!controllers.moves(0)->m_sdl_gamepad) {
+        return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    }
+    controllers.moves(0)->SetLightBarRGB(red, green, blue);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceMoveResetLightSphere(s32 handle) {

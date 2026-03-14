@@ -232,10 +232,11 @@ find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(OpenAL CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3_mixer 2.8.1 CONFIG)
-if (SDL3_mixer_FOUND)
-    find_package(SDL3 3.1.2 CONFIG)
-endif()
+# Since we use a non-upstream version of SDL3, we can't check for local packages.
+# find_package(SDL3_mixer 2.8.1 CONFIG)
+# if (SDL3_mixer_FOUND)
+#     find_package(SDL3 3.1.2 CONFIG)
+# endif()
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -295,8 +296,15 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
               src/core/libraries/audio/sdl_audio_out.cpp
+              src/core/libraries/audio/openal_audio_out.cpp
+              src/core/libraries/audio/openal_manager.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
+              src/core/libraries/audio3d/audio3d.cpp
+              src/core/libraries/audio3d/audio3d_openal.cpp
+              src/core/libraries/audio3d/audio3d_openal.h
+              src/core/libraries/audio3d/audio3d.h
+              src/core/libraries/audio3d/audio3d_error.h
 )
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
@@ -461,9 +469,6 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_submixer.cpp
                 src/core/libraries/ngs2/ngs2_submixer.h
                 src/core/libraries/ajm/ajm_error.h
-                src/core/libraries/audio3d/audio3d.cpp
-                src/core/libraries/audio3d/audio3d.h
-                src/core/libraries/audio3d/audio3d_error.h
                 src/core/libraries/game_live_streaming/gamelivestreaming.cpp
                 src/core/libraries/game_live_streaming/gamelivestreaming.h
                 src/core/libraries/remote_play/remoteplay.cpp
@@ -710,8 +715,7 @@ set(COMMON src/common/logging/backend.cpp
            src/common/bit_field.h
            src/common/bounded_threadsafe_queue.h
            src/common/concepts.h
-           src/common/config.cpp
-           src/common/config.h
+           src/common/concepts.h
            src/common/cstring.h
            src/common/debug.h
            src/common/decoder.cpp
@@ -869,8 +873,14 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/thread.h
          src/core/tls.cpp
          src/core/tls.h
+         src/core/emulator_settings.cpp
+         src/core/emulator_settings.h
+         src/core/user_manager.cpp
+         src/core/user_manager.h
          src/core/emulator_state.cpp
          src/core/emulator_state.h
+         src/core/user_settings.cpp
+         src/core/user_settings.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")

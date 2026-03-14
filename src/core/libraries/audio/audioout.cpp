@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
@@ -6,10 +6,9 @@
 #include <shared_mutex>
 #include <stop_token>
 #include <thread>
+#include <core/emulator_settings.h>
 #include <magic_enum/magic_enum.hpp>
-
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/libraries/audio/audioout.h"
@@ -206,7 +205,11 @@ s32 PS4_SYSV_ABI sceAudioOutInit() {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
 
-    audio = std::make_unique<SDLAudioOut>();
+    if (EmulatorSettings.GetAudioBackend() == AudioBackend::OpenAL) {
+        audio = std::make_unique<OpenALAudioOut>();
+    } else {
+        audio = std::make_unique<SDLAudioOut>();
+    }
 
     LOG_INFO(Lib_AudioOut, "Audio system initialized");
     return ORBIS_OK;
