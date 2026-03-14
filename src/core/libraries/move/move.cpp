@@ -123,7 +123,11 @@ s32 PS4_SYSV_ABI sceMoveSetVibration(s32 handle, u8 intensity) {
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
-    return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    if (!controllers.moves(0)->m_sdl_gamepad) {
+        return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
+    }
+    controllers.moves(0)->SetVibration(0, intensity);
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceMoveSetLightSphere(s32 handle, u8 red, u8 green, u8 blue) {
