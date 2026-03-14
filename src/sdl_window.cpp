@@ -75,7 +75,7 @@ static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint3
     controller->UpdateAxisSmoothing();
     controller->Gyro(0);
     controller->Acceleration(0);
-    return 4;
+    return interval;
 }
 
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
@@ -285,6 +285,7 @@ void WindowSDL::WaitEvent() {
 void WindowSDL::InitTimers() {
     for (int i = 0; i < 4; ++i) {
         SDL_AddTimer(4, &PollController, controllers[i]);
+        SDL_AddTimer(13, &PollController, controllers.moves(i));
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }

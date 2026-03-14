@@ -86,8 +86,12 @@ s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
     m->ReadState(&s, &connected, &connected_count);
     data->button_data.trigger_data = u16(s.axes[std::to_underlying(Input::Axis::TriggerRight)]);
     data->button_data.button_data = std::to_underlying(PadToMoveOffset(s.buttonsState));
-    data->accelerometer[1] = m->accel_buf[1];
-    data->accelerometer[2] = m->accel_buf[2];
+    data->accelerometer[0] = s.acceleration.x;
+    data->accelerometer[1] = s.acceleration.y;
+    data->accelerometer[2] = s.acceleration.z;
+    data->gyro[0] = s.angularVelocity.x;
+    data->gyro[1] = s.angularVelocity.y;
+    data->gyro[2] = s.angularVelocity.z;
     return ORBIS_OK;
 }
 
