@@ -151,17 +151,17 @@ static std::filesystem::path sys_modules_path = {};
 static std::filesystem::path fonts_path = {};
 
 // Log
+static ConfigEntry<bool> logAppend(false);
+static ConfigEntry<bool> logEnable(true);
 static ConfigEntry<string> logFilter("");
+static ConfigEntry<u32> logMaxSkipDuration(5'000);
+static ConfigEntry<bool> logSeparate(false);
+static ConfigEntry<unsigned long long> logSizeLimit(100_MB);
+static ConfigEntry<bool> logSkipDuplicate(true);
 static ConfigEntry<bool> logSync(true);
 #ifdef _WIN32
 static ConfigEntry<string> logType("wincolor");
 #endif
-static ConfigEntry<bool> logSkipDuplicate(true);
-static ConfigEntry<bool> logAppend(false);
-static ConfigEntry<bool> logSeparate(false);
-static ConfigEntry<bool> logEnable(true);
-static ConfigEntry<u32> logMaxSkipDuration(5'000);
-static ConfigEntry<unsigned long long> logSizeLimit(100_MB);
 
 // Input
 static ConfigEntry<int> cursorState(HideCursorState::Idle);
