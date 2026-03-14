@@ -202,7 +202,9 @@ static void Truncate() {
     if (g_game_file_sink != nullptr) {
         g_game_file_sink->truncate();
     }
-    g_shad_file_sink->truncate();
+    if (g_shad_file_sink != nullptr) {
+        g_shad_file_sink->truncate();
+    }
 }
 } // namespace Common::Log
 
