@@ -81,7 +81,6 @@ static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint3
 static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,
                                                 Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    LOG_INFO(Input, "called");
     controller->PollLightColour();
     return interval;
 }
@@ -382,10 +381,6 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
             } else {
                 gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
                 if (gamepad < 4) {
-                    // LOG_INFO(Input, "gyro: {:+05.0f} {:+05.0f} {:+05.0f}",
-                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[0]) / 256,
-                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[1]) / 256,
-                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[2]) / 256);
                     controllers.moves(gamepad)->UpdateGyro(event->gsensor.data);
                 }
             }

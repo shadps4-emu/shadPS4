@@ -78,7 +78,7 @@ s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
     if (!controllers.moves(0)->m_sdl_gamepad) {
         return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
     }
-    // LOG_INFO(Lib_Move, "called");
+    LOG_DEBUG(Lib_Move, "called");
     auto m = controllers.moves(0);
     Input::State s{};
     bool connected;
@@ -127,7 +127,7 @@ s32 PS4_SYSV_ABI sceMoveSetVibration(s32 handle, u8 intensity) {
 }
 
 s32 PS4_SYSV_ABI sceMoveSetLightSphere(s32 handle, u8 red, u8 green, u8 blue) {
-    LOG_TRACE(Lib_Move, "called");
+    LOG_DEBUG(Lib_Move, "called");
     if (!g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
