@@ -131,6 +131,8 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     while (true) {
         int ret = avcodec_receive_frame(mCodecContext, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            pPictureInfoOut.isValid = true;
+            pPictureInfoOut.isErrorPic = false;
             break;
         } else if (ret < 0) {
             LOG_ERROR(Lib_Videodec, "Error receiving frame from decoder: {}", ret);
