@@ -194,6 +194,7 @@ static void Redirect(const std::string& name) {
 }
 
 static void StopRedirection() {
+    g_game_file_sink->flush();
     g_game_file_sink->set_level(spdlog::level::off);
     g_shad_file_sink->set_level(spdlog::level::trace);
 }
