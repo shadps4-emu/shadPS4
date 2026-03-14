@@ -26,14 +26,14 @@ jobs:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: fsfe/reuse-action@v5
 
   clang-format:
     runs-on: ubuntu-24.04
     continue-on-error: true
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Install
@@ -54,7 +54,7 @@ jobs:
       shorthash: ${{ steps.vars.outputs.shorthash }}
       fullhash: ${{ steps.vars.outputs.fullhash }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Get date and git hash
       id: vars
       run: |
@@ -69,7 +69,7 @@ jobs:
     runs-on: windows-2025
     needs: get-info
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -108,7 +108,7 @@ jobs:
     runs-on: macos-15
     needs: get-info
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: get-info
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         submodules: recursive
 
