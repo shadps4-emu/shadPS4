@@ -505,7 +505,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                                   nullptr, &si, &pi);
 
     if (!success) {
-        std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
+        LOG_INFO(Common, "Failed to restart game: {}", GetLastError());
         std::quick_exit(1);
     }
 
@@ -524,12 +524,13 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     pid_t pid = fork();
     if (pid == 0) {
+        Common::Log::Shutdown();
         // Child process - execute the new instance
         execvp(executableName, argv.data());
         std::cerr << "Failed to restart game: execvp failed" << std::endl;
         std::quick_exit(1);
     } else if (pid < 0) {
-        std::cerr << "Failed to restart game: fork failed" << std::endl;
+        LOG_INFO(Common, "Failed to restart game: fork failed");
         std::quick_exit(1);
     }
 #else
