@@ -115,6 +115,9 @@ int PS4_SYSV_ABI sceSslFreeCaCerts(s32 ssl_ctx_id, OrbisSslCaCerts* certs) {
         return ORBIS_SSL_ERROR_INVALID_ARGUMENT;
     }
     if (certs->certs != nullptr) {
+        for (s32 data = 0; data < certs->num; data++) {
+            free(certs->certs[data].ptr);
+        }
         delete (certs->certs);
     }
 
@@ -142,8 +145,12 @@ int PS4_SYSV_ABI sceSslGetCaCerts(s32 ssl_ctx_id, OrbisSslCaCerts* certs) {
     if (certs == nullptr) {
         return ORBIS_SSL_ERROR_INVALID_ARGUMENT;
     }
-    std::string dummy_buffer{"data"};
-    certs->certs = new OrbisSslData{dummy_buffer.data(), dummy_buffer.length()};
+    // Allocate a buffer to store dummy data in.
+    const char* dummy_data = "dummy";
+    u64 dummy_length = strlen(dummy_data) + 1;
+    char* data = static_cast<char*>(malloc(dummy_length));
+    strncpy(data, dummy_data, dummy_length);
+    certs->certs = new OrbisSslData{data, dummy_length};
     certs->num = 1;
     certs->pool = nullptr;
     return ORBIS_OK;
