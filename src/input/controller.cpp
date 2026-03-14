@@ -269,12 +269,29 @@ void GameControllers::TryOpenSDLControllers() {
              product == 0x0C5E)) { // PSMove ZCM2
             LOG_INFO(Input, "PS Move controller found at slot {}!", j);
             if (is_first_check) { // ABSOLUTELY HORRIBLE HACK but I just want it hooked up
-                                  // quickly
-                move_controllers[move_count]->m_sdl_gamepad = pad;
+                // quickly
+                auto c = move_controllers[move_count];
+                c->m_sdl_gamepad = pad;
                 auto u = UserManagement.GetDefaultUser();
-                move_controllers[move_count]->user_id = u.user_id;
-                move_controllers[move_count]->m_connected = true;
+                c->user_id = u.user_id;
+                c->m_connected = true;
                 move_count++;
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                    c->gyro_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                    LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                              c->user_id);
+                }
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                    c->accel_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                    LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                              c->user_id);
+                }
             }
             continue;
         }

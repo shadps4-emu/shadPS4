@@ -78,7 +78,7 @@ s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
     if (!controllers.moves(0)->m_sdl_gamepad) {
         return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
     }
-    LOG_INFO(Lib_Move, "(called");
+    LOG_INFO(Lib_Move, "called");
     auto m = controllers.moves(0);
     Input::State s{};
     bool connected;
