@@ -432,9 +432,8 @@ public:
 };
 
 class ControllerOutput {
-    static GameControllers controllers;
-
 public:
+    static GameControllers controllers;
     static void GetGetGamepadIndexFromSDLJoystickID(const SDL_JoystickID id) {}
     static void LinkJoystickAxes();
 
@@ -529,7 +528,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 40;
+    static constexpr u64 output_count = 41;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -554,6 +553,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
+        ControllerOutput(SDL_GAMEPAD_BUTTON_MISC1),           // Move
 
         // Axis mappings
         // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -566,7 +566,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
 
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
-        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), // R2 / Move T
 
         ControllerOutput(HOTKEY_FULLSCREEN),
         ControllerOutput(HOTKEY_PAUSE),

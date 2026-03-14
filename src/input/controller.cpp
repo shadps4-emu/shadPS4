@@ -171,8 +171,6 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
     }
 }
 
-MoveController::MoveController() : m_states_queue(64) {}
-
 bool GameControllers::override_controller_color = false;
 Colour GameControllers::controller_override_color{};
 
@@ -219,9 +217,10 @@ void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& accele
 
 bool is_first_check = true;
 
-void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
+void GameControllers::TryOpenSDLControllers() {
     using namespace Libraries::UserService;
     int controller_count;
+    s32 move_count = 0;
     SDL_JoystickID* new_joysticks = SDL_GetGamepads(&controller_count);
     LOG_INFO(Input, "{} controllers are currently connected", controller_count);
 
@@ -233,18 +232,8 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
         if (pad) {
             SDL_JoystickID id = SDL_GetGamepadID(pad);
             bool still_connected = false;
+            ControllerType type = ControllerType::Standard;
             for (int j = 0; j < controller_count; j++) {
-                ControllerType type = ControllerType::Standard;
-                SDL_GUID guid = SDL_GetJoystickGUID(SDL_GetJoystickFromID(new_joysticks[j]));
-                Uint16 vendor = 0, product = 0;
-                SDL_GetJoystickGUIDInfo(guid, &vendor, &product, nullptr, nullptr);
-                if (vendor == 0x054C &&    // Sony
-                    (product == 0x03D5 ||  // PSMove ZCM1
-                     product == 0x0C5E)) { // PSMove ZCM2
-                    LOG_INFO(Input, "PS Move controller found at slot {}!", j);
-                    type = ControllerType::Move;
-                    LOG_CRITICAL(Input, "todo refactor this entire function");
-                }
                 if (new_joysticks[j] == id) {
                     still_connected = true;
                     assigned_ids.insert(id);
@@ -259,8 +248,6 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
                 controllers[i]->m_sdl_gamepad = nullptr;
                 controllers[i]->user_id = -1;
                 slot_taken[i] = false;
-            } else {
-                controllers[i]->player_index = i;
             }
         }
     }
@@ -272,6 +259,23 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
 
         SDL_Gamepad* pad = SDL_OpenGamepad(id);
         if (!pad) {
+            continue;
+        }
+        SDL_GUID guid = SDL_GetJoystickGUID(SDL_GetJoystickFromID(new_joysticks[j]));
+        Uint16 vendor = 0, product = 0;
+        SDL_GetJoystickGUIDInfo(guid, &vendor, &product, nullptr, nullptr);
+        if (vendor == 0x054C &&    // Sony
+            (product == 0x03D5 ||  // PSMove ZCM1
+             product == 0x0C5E)) { // PSMove ZCM2
+            LOG_INFO(Input, "PS Move controller found at slot {}!", j);
+            if (is_first_check) { // ABSOLUTELY HORRIBLE HACK but I just want it hooked up
+                                  // quickly
+                move_controllers[move_count]->m_sdl_gamepad = pad;
+                auto u = UserManagement.GetDefaultUser();
+                move_controllers[move_count]->user_id = u.user_id;
+                move_controllers[move_count]->m_connected = true;
+                move_count++;
+            }
             continue;
         }
 
@@ -314,7 +318,7 @@ void GameControllers::TryOpenSDLControllers(GameControllers& controllers) {
     }
     if (is_first_check) [[unlikely]] {
         is_first_check = false;
-        if (controller_count == 0) {
+        if (controller_count - move_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
             UserManagement.LoginUser(u, 1);
@@ -380,9 +384,26 @@ void GameController::PushState() {
 }
 
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
-    s32 index = SDL_GetGamepadPlayerIndex(SDL_GetGamepadFromID(id));
+    auto g = SDL_GetGamepadFromID(id);
+    ASSERT(g != nullptr);
+    for (int i = 0; i < 4; i++) {
+        if (controllers[i]->m_sdl_gamepad == g) {
+            return i;
+        }
+    }
     LOG_TRACE(Input, "Gamepad index: {}", index);
-    return index;
+    return -1;
+}
+
+u8 GameControllers::GetMoveIndexFromJoystickId(SDL_JoystickID id) {
+    auto g = SDL_GetGamepadFromID(id);
+    for (int i = 0; i < 4; i++) {
+        if (move_controllers[i]->m_sdl_gamepad == g) {
+            return i;
+        }
+    }
+    LOG_TRACE(Input, "Move index: {}", index);
+    return -1;
 }
 
 std::optional<u8> GameControllers::GetControllerIndexFromUserID(s32 user_id) {

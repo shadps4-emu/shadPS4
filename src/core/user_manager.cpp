@@ -141,7 +141,7 @@ bool UserManager::SetDefaultUser(u32 user_id) {
 }
 
 User UserManager::GetDefaultUser() {
-    return *GetUserByID(m_users.default_user_id);
+    return *GetUserByPlayerIndex(1);
 }
 
 void UserManager::SetControllerPort(u32 user_id, int port) {

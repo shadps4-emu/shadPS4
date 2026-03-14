@@ -153,7 +153,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
-    Input::GameControllers::TryOpenSDLControllers(controllers);
+    controllers.TryOpenSDLControllers();
 
     if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -195,7 +195,7 @@ void WindowSDL::WaitEvent() {
         break;
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
-        Input::GameControllers::TryOpenSDLControllers(controllers);
+        controllers.TryOpenSDLControllers();
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
@@ -354,21 +354,37 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // as it would break the entire touchpad handling
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
-        controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gbutton.which)]
-            ->Button(OrbisPadButtonDataOffset::TouchPad, input_down);
+        controllers[controllers.GetGamepadIndexFromJoystickId(event->gbutton.which)]->Button(
+            OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
     }
+
+    u8 gamepad;
 
     switch (event->type) {
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
         switch ((SDL_SensorType)event->gsensor.sensor) {
         case SDL_SENSOR_GYRO:
-            controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->UpdateGyro(event->gsensor.data);
+            gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
+            if (gamepad >= 0) {
+                controllers[gamepad]->UpdateGyro(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad >= 0) {
+                    controllers.moves(gamepad)->UpdateGyro(event->gsensor.data);
+                }
+            }
             break;
         case SDL_SENSOR_ACCEL:
-            controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gsensor.which)]
-                ->UpdateAcceleration(event->gsensor.data);
+            gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
+            if (gamepad >= 0) {
+                controllers[gamepad]->UpdateAcceleration(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad >= 0) {
+                    controllers.moves(gamepad)->UpdateAcceleration(event->gsensor.data);
+                }
+            }
             break;
         default:
             break;
@@ -377,7 +393,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        controllers[Input::GameControllers::GetGamepadIndexFromJoystickId(event->gtouchpad.which)]
+        controllers[controllers.GetGamepadIndexFromJoystickId(event->gtouchpad.which)]
             ->SetTouchpadState(event->gtouchpad.finger,
                                event->type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP, event->gtouchpad.x,
                                event->gtouchpad.y);

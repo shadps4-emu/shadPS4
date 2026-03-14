@@ -163,72 +163,6 @@ private:
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
 
-    u8 player_index = -1;
-    State m_state;
-
-    std::mutex m_states_queue_mutex;
-    RingBufferQueue<State> m_states_queue;
-};
-
-class MoveController {
-    friend class GameControllers;
-
-public:
-    MoveController();
-    virtual ~MoveController() = default;
-
-    void ReadState(State* state, bool* isConnected, int* connectedCount);
-    int ReadStates(State* states, int states_num, bool* isConnected, int* connectedCount);
-
-    void Button(Libraries::Move::OrbisMoveButtonDataOffset button, bool isPressed);
-    void Axis(Input::Axis axis, int value, bool smooth = true);
-    void Gyro(int id);
-    void Acceleration(int id);
-    void UpdateGyro(const float gyro[3]);
-    void UpdateAcceleration(const float acceleration[3]);
-    void UpdateAxisSmoothing();
-    void SetLightBarRGB(u8 r, u8 g, u8 b);
-    bool SetVibration(u8 smallMotor, u8 largeMotor);
-    void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
-
-    u8 GetTouchCount();
-    void SetTouchCount(u8 touchCount);
-    u8 GetSecondaryTouchCount();
-    void SetSecondaryTouchCount(u8 touchCount);
-    u8 GetPreviousTouchNum();
-    void SetPreviousTouchNum(u8 touchNum);
-    bool WasSecondaryTouchReset();
-    void UnsetSecondaryTouchResetBool();
-
-    void SetLastOrientation(Libraries::Pad::OrbisFQuaternion& orientation);
-    Libraries::Pad::OrbisFQuaternion GetLastOrientation();
-    std::chrono::steady_clock::time_point GetLastUpdate();
-    void SetLastUpdate(std::chrono::steady_clock::time_point lastUpdate);
-    static void CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
-                                     Libraries::Pad::OrbisFVector3& angularVelocity,
-                                     float deltaTime,
-                                     Libraries::Pad::OrbisFQuaternion& lastOrientation,
-                                     Libraries::Pad::OrbisFQuaternion& orientation);
-
-    float gyro_poll_rate;
-    float accel_poll_rate;
-    float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
-    u32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
-    SDL_Gamepad* m_sdl_gamepad = nullptr;
-
-private:
-    void PushState();
-
-    bool m_connected = true;
-    int m_connected_count = 1;
-    u8 m_touch_count = 0;
-    u8 m_secondary_touch_count = 0;
-    u8 m_previous_touchnum = 0;
-    bool m_was_secondary_reset = false;
-    std::chrono::steady_clock::time_point m_last_update = {};
-    Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
-
-    u8 player_index = -1;
     State m_state;
 
     std::mutex m_states_queue_mutex;
@@ -237,7 +171,7 @@ private:
 
 class GameControllers {
     std::array<GameController*, 4> controllers;
-    std::array<MoveController*, 4> move_controllers;
+    std::array<GameController*, 4> move_controllers;
 
     static bool override_controller_color;
     static Colour controller_override_color;
@@ -246,8 +180,8 @@ public:
     GameControllers()
         : controllers({new GameController(), new GameController(), new GameController(),
                        new GameController()}),
-          move_controllers({new MoveController(), new MoveController(), new MoveController(),
-                            new MoveController()}) {};
+          move_controllers({new GameController(), new GameController(), new GameController(),
+                            new GameController()}) {};
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
         if (i > 3) {
@@ -255,8 +189,15 @@ public:
         }
         return controllers[i];
     }
-    static void TryOpenSDLControllers(GameControllers& controllers);
-    static u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
+    GameController* moves(const size_t& i) const {
+        if (i > 3) {
+            UNREACHABLE_MSG("Index {} is out of bounds for GameControllers!", i);
+        }
+        return move_controllers[i];
+    }
+    void TryOpenSDLControllers();
+    u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
+    u8 GetMoveIndexFromJoystickId(SDL_JoystickID id);
     static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
     static std::optional<u8> GetControllerIndexFromControllerID(s32 controller_id);
 

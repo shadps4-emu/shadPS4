@@ -215,11 +215,13 @@ std::list<std::pair<InputEvent, bool>> pressed_keys;
 std::list<InputID> toggled_keys;
 static std::vector<BindingConnection> connections;
 
-std::array<ControllerAllOutputs, 4> output_arrays = {
-    ControllerAllOutputs(0),
-    ControllerAllOutputs(1),
-    ControllerAllOutputs(2),
-    ControllerAllOutputs(3),
+GameControllers ControllerOutput::controllers =
+    *Common::Singleton<Input::GameControllers>::Instance();
+
+std::array<ControllerAllOutputs, 8> output_arrays = {
+    ControllerAllOutputs(0), ControllerAllOutputs(1), ControllerAllOutputs(2),
+    ControllerAllOutputs(3), ControllerAllOutputs(4), ControllerAllOutputs(5),
+    ControllerAllOutputs(6), ControllerAllOutputs(7),
 };
 
 void ControllerOutput::LinkJoystickAxes() {
@@ -262,6 +264,8 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     case SDL_GAMEPAD_BUTTON_BACK:
         return OPBDO::TouchPad;
     case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
+        return OPBDO::L1;
+    case SDL_GAMEPAD_BUTTON_MISC1: // Move
         return OPBDO::L1;
     case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
         return OPBDO::R1;
@@ -570,7 +574,7 @@ void ParseInputConfig(const std::string game_id = "") {
         // isn't specified for either inputs or output (both are -1), then multiply the binding and
         // add it to all 4 controllers
         if (connection.HasGamepadInput() && input_gamepad_id == -1 && output_gamepad_id == -1) {
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < output_arrays.size(); i++) {
                 BindingConnection copy = connection.CopyWithChangedGamepadId(i + 1);
                 copy.output = &*std::ranges::find(output_arrays[i].data, *connection.output);
                 connections.push_back(copy);
@@ -640,19 +644,28 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        gamepad = GameControllers::GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
+        gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
+        if (gamepad < 1) {
+            gamepad = ControllerOutput::controllers.GetMoveIndexFromJoystickId(e.gbutton.which) + 5;
+            if (gamepad < 5) {
+                return InputEvent();
+            }
+        }
         return InputEvent({InputType::Controller, (u32)e.gbutton.button, gamepad}, e.gbutton.down,
                           0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        gamepad = GameControllers::GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
+        gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
+        if (gamepad < 1) {
+            gamepad = ControllerOutput::controllers.GetMoveIndexFromJoystickId(e.gaxis.which) + 5;
+            if (gamepad < 5) {
+                return InputEvent();
+            }
+        }
         return InputEvent({InputType::Axis, (u32)e.gaxis.axis, gamepad}, true, e.gaxis.value / 256);
     default:
         return InputEvent();
     }
 }
-
-GameControllers ControllerOutput::controllers =
-    *Common::Singleton<Input::GameControllers>::Instance();
 
 void ToggleKeyInList(InputID input) {
     if (input.type == InputType::Axis) {
@@ -714,9 +727,14 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     }
     old_button_state = new_button_state;
     old_param = *new_param;
-    bool is_game_specific = EmulatorState::GetInstance()->IsGameSpecifigConfigUsed();
+    GameController* controller;
+    if (gamepad_index < 4)
+        controller = controllers[gamepad_index];
+    else if (gamepad_index < 8)
+        controller = controllers.moves(gamepad_index - 4); // magic number :(
+    else
+        UNREACHABLE();
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
-        auto controller = controllers[gamepad_index];
         switch (button) {
         case SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT:
             controller->SetTouchpadState(0, new_button_state, 0.25f, 0.5f);
@@ -816,18 +834,18 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case Axis::TriggerLeft:
             ApplyDeadzone(new_param, lefttrigger_deadzone);
-            controllers[gamepad_index]->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(OrbisPadButtonDataOffset::L2, *new_param > 0x20);
+            controller->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
+            controller->Button(OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
             ApplyDeadzone(new_param, righttrigger_deadzone);
-            controllers[gamepad_index]->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
-            controllers[gamepad_index]->Button(OrbisPadButtonDataOffset::R2, *new_param > 0x20);
+            controller->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
+            controller->Button(OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;
         default:
             break;
         }
-        controllers[gamepad_index]->Axis(c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
+        controller->Axis(c_axis, GetAxis(-0x80, 0x7f, *new_param * multiplier));
     }
 }
 
@@ -959,7 +977,7 @@ InputEvent BindingConnection::ProcessBinding() {
 void ActivateOutputsFromInputs() {
 
     // todo find a better solution
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < output_arrays.size(); i++) {
 
         // Reset values and flags
         for (auto& it : pressed_keys) {
