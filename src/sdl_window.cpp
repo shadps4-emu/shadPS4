@@ -78,6 +78,14 @@ static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint3
     return interval;
 }
 
+static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,
+                                                Uint32 interval) {
+    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+    LOG_INFO(Input, "called");
+    controller->PollLightColour();
+    return interval;
+}
+
 WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
                      std::string_view window_title)
     : width{width_}, height{height_}, controllers{*controllers_} {
@@ -286,6 +294,8 @@ void WindowSDL::InitTimers() {
     for (int i = 0; i < 4; ++i) {
         SDL_AddTimer(4, &PollController, controllers[i]);
         SDL_AddTimer(13, &PollController, controllers.moves(i));
+        // the move ball resets every 5 seconds.
+        SDL_AddTimer(500, &PollControllerLightColour, controllers.moves(i));
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
@@ -372,6 +382,10 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
             } else {
                 gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
                 if (gamepad < 4) {
+                    // LOG_INFO(Input, "gyro: {:+05.0f} {:+05.0f} {:+05.0f}",
+                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[0]) / 256,
+                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[1]) / 256,
+                    //          *reinterpret_cast<f32 const*>(&event->gsensor.data[2]) / 256);
                     controllers.moves(gamepad)->UpdateGyro(event->gsensor.data);
                 }
             }

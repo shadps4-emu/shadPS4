@@ -151,8 +151,15 @@ void GameController::UpdateAxisSmoothing() {
 }
 
 void GameController::SetLightBarRGB(u8 r, u8 g, u8 b) {
+    colour = {r, g, b};
     if (m_sdl_gamepad != nullptr) {
         SDL_SetGamepadLED(m_sdl_gamepad, r, g, b);
+    }
+}
+
+void GameController::PollLightColour() {
+    if (m_sdl_gamepad != nullptr) {
+        SDL_SetGamepadLED(m_sdl_gamepad, colour.r, colour.g, colour.b);
     }
 }
 

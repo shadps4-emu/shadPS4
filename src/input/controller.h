@@ -128,6 +128,7 @@ public:
     void UpdateAcceleration(const float acceleration[3]);
     void UpdateAxisSmoothing();
     void SetLightBarRGB(u8 r, u8 g, u8 b);
+    void PollLightColour();
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
 
@@ -162,6 +163,7 @@ private:
     bool m_was_secondary_reset = false;
     std::chrono::steady_clock::time_point m_last_update = {};
     Libraries::Pad::OrbisFQuaternion m_orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+    Colour colour;
 
     State m_state;
 
