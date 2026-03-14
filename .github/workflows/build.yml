@@ -99,7 +99,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
 
     - name: Upload Windows SDL artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: shadps4-win64-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{github.workspace}}/build/shadPS4.exe
@@ -150,7 +150,7 @@ jobs:
         mv ${{github.workspace}}/build/shadps4 upload
         mv ${{github.workspace}}/build/MoltenVK_icd.json upload
         mv ${{github.workspace}}/build/libMoltenVK.dylib upload
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: shadps4-macos-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: upload/
@@ -200,7 +200,7 @@ jobs:
       run: |
         ls -la ${{ github.workspace }}/build/shadps4
     
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: shadps4-ubuntu64-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: ${{ github.workspace }}/build/shadps4
@@ -211,7 +211,7 @@ jobs:
     - name: Package and Upload Linux SDL artifact
       run: |
         tar cf shadps4-linux-sdl.tar.gz -C ${{github.workspace}}/build shadps4
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: shadps4-linux-sdl-${{ needs.get-info.outputs.date }}-${{ needs.get-info.outputs.shorthash }}
         path: Shadps4-sdl.AppImage
