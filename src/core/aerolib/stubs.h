@@ -9,6 +9,6 @@ namespace Core::AeroLib {
 
 u64 UnresolvedStub();
 
-u64 GetStub(const char* nid);
+u64 GetStub(const char* nid, const NidEntry*& out_nid_entry);
 
 } // namespace Core::AeroLib

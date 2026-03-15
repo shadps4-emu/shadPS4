@@ -353,12 +353,11 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         }
     }
 
-    const auto aeronid = AeroLib::FindByNid(sr.name.c_str());
-    if (aeronid) {
-        return_info->name = aeronid->name;
-        return_info->virtual_address = AeroLib::GetStub(aeronid->nid);
+    const AeroLib::NidEntry* aero_nid_entry = nullptr;
+    return_info->virtual_address = AeroLib::GetStub(sr.name.c_str(), aero_nid_entry);
+    if (aero_nid_entry) {
+        return_info->name = aero_nid_entry->name;
     } else {
-        return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
         return_info->name = "Unknown !!!";
     }
     LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,

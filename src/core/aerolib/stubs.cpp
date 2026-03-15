@@ -27,7 +27,7 @@ u64 UnresolvedStub() {
 }
 
 static u64 UnknownStub() {
-    LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
+    LOG_ERROR(Core, "Stub: Unknown (missing nid) called, returning zero to {}", __builtin_return_address(0));
     return 0;
 }
 
@@ -67,16 +67,17 @@ static u32 UsedStubEntries;
 
 static u64 (*stub_handlers[MAX_STUBS])() = {STUBS_LIST};
 
-u64 GetStub(const char* nid) {
+u64 GetStub(const char* nid, const NidEntry*& out_nid_entry) {
     if (UsedStubEntries >= MAX_STUBS) {
+        out_nid_entry = nullptr;
         return (u64)&UnknownStub;
     }
 
-    const auto entry = FindByNid(nid);
-    if (!entry) {
+    out_nid_entry = FindByNid(nid);
+    if (!out_nid_entry) {
         stub_nids_unknown[UsedStubEntries] = nid;
     } else {
-        stub_nids[UsedStubEntries] = entry;
+        stub_nids[UsedStubEntries] = out_nid_entry;
     }
 
     return (u64)stub_handlers[UsedStubEntries++];
