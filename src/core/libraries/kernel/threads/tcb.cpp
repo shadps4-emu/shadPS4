@@ -20,7 +20,10 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* addr_out = linker->AllocateTlsForThread(initial);
-    ASSERT_MSG(addr_out, "Unable to allocate guest TCB");
+    if (!addr_out) {
+        LOG_ERROR(Core_Linker, "Unable to allocate guest TCB, TLS allocation failed!");
+        return nullptr;
+    }
 
     // Initialize allocated memory and allocate DTV table.
     const u32 num_dtvs = linker->MaxTlsIndex();
