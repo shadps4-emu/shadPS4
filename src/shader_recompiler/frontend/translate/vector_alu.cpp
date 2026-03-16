@@ -1219,7 +1219,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
         }
         if (set_exec) {
-            ir.SetExec(result);
+            UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
         }
 
         switch (inst.dst[1].field) {
