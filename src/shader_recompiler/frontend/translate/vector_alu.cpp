@@ -1136,109 +1136,108 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
-    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
-    const IR::U1 src0 = [&] {
+    const IR::U64 src0 = [&]() -> IR::U64 {
         switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
-        case OperandField::VccLo:
-            return ir.GetVcc();
+        case OperandField::ScalarGPR: {
+            IR::U32 low = ir.GetScalarReg(IR::ScalarReg(inst.src[0].code));
+            IR::U32 high = ir.GetScalarReg(IR::ScalarReg(inst.src[0].code + 1));
+            return ir.PackUint2x32(ir.CompositeConstruct(low, high));
+        }
+        case OperandField::VectorGPR: {
+            IR::U32 low = ir.GetVectorReg(IR::VectorReg(inst.src[0].code));
+            IR::U32 high = ir.GetVectorReg(IR::VectorReg(inst.src[0].code + 1));
+            return ir.PackUint2x32(ir.CompositeConstruct(low, high));
+        }
+        case OperandField::VccLo: {
+            IR::U1 vcc_bit = ir.GetVcc();
+            // Fix: Cast both Imm64 calls to avoid ambiguity
+            IR::Value vcc_val =
+                ir.Select(vcc_bit, ir.Imm64(static_cast<u64>(-1)), ir.Imm64(static_cast<u64>(0)));
+            return IR::U64{vcc_val};
+        }
+        case OperandField::ConstZero:
+            return ir.Imm64(static_cast<u64>(0));
+        case OperandField::SignedConstIntPos:
+            return ir.Imm64(static_cast<u64>(inst.src[0].code));
+        case OperandField::SignedConstIntNeg:
+            return ir.Imm64(static_cast<u64>(-s32(inst.src[0].code)));
         default:
             UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
         }
     }();
 
-    // For constant cases
-    if (is_zero || is_neg_one) {
-        if (is_neg_one) {
-            ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
-                       "SignedConstIntNeg must be -1");
+    const IR::U64 src1 = [&]() -> IR::U64 {
+        switch (inst.src[1].field) {
+        case OperandField::ScalarGPR: {
+            IR::U32 low = ir.GetScalarReg(IR::ScalarReg(inst.src[1].code));
+            IR::U32 high = ir.GetScalarReg(IR::ScalarReg(inst.src[1].code + 1));
+            return ir.PackUint2x32(ir.CompositeConstruct(low, high));
         }
-
-        const IR::U1 result = [&] {
-            switch (op) {
-            case ConditionOp::EQ:
-                return is_zero ? ir.LogicalNot(src0) : src0;
-            case ConditionOp::LG: // NE
-                return is_zero ? src0 : ir.LogicalNot(src0);
-            case ConditionOp::GT:
-                ASSERT(is_zero);
-                return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
-            default:
-                UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
-            }
-        }();
-
-        if (is_signed) {
-            UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
-        }
-        if (set_exec) {
-            UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
-        }
-
-        switch (inst.dst[1].field) {
-        case OperandField::VccLo:
-            return ir.SetVcc(result);
-        case OperandField::ScalarGPR:
-            return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
-        default:
-            UNREACHABLE();
-        }
-        return;
-    }
-
-    // Handle VectorGPR case - src1 is a 64-bit vector value
-    if (inst.src[1].field == OperandField::VectorGPR) {
-        // Get the 64-bit vector value from two consecutive VGPRs
-        const IR::U32 low = ir.GetVectorReg(IR::VectorReg(inst.src[1].code));
-        const IR::U32 high = ir.GetVectorReg(IR::VectorReg(inst.src[1].code + 1));
-
-        const IR::U64 src1_64 =
-            ir.PackUint2x32(ir.CompositeConstruct(low, high)); // Combine into 64-bit value
-
-        const IR::Value src0_val = ir.Select(src0, ir.Imm32(1), ir.Imm32(0));
-        const IR::U32 src0_32 = IR::U32{src0_val};
-        const IR::U64 src0_64 = ir.PackUint2x32(ir.CompositeConstruct(src0_32, ir.Imm32(0U)));
-
-        // Perform the 64-bit comparison
-        const IR::U1 result = [&] {
-            switch (op) {
-            case ConditionOp::EQ:
-                return ir.IEqual(src0_64, src1_64);
-            case ConditionOp::LG: // NE
-                return ir.INotEqual(src0_64, src1_64);
-            case ConditionOp::GT:
-                return ir.IGreaterThan(src0_64, src1_64, false);
-            default:
-                UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
-            }
-        }();
-
-        if (is_signed) {
-            UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
-        }
-        if (set_exec) {
-            UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
-        }
-
-        switch (inst.dst[1].field) {
-        case OperandField::VccLo:
-            return ir.SetVcc(result);
-        case OperandField::ScalarGPR:
-            return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
         case OperandField::VectorGPR: {
-            IR::Value result_val = ir.Select(result, ir.Imm32(1), ir.Imm32(0));
-            ir.SetVectorReg(IR::VectorReg(inst.dst[1].code), IR::U32{result_val});
-        } break;
-        default:
-            UNREACHABLE_MSG("Unsupported dst field: {}", u32(inst.dst[1].field));
+            IR::U32 low = ir.GetVectorReg(IR::VectorReg(inst.src[1].code));
+            IR::U32 high = ir.GetVectorReg(IR::VectorReg(inst.src[1].code + 1));
+            return ir.PackUint2x32(ir.CompositeConstruct(low, high));
         }
-        return;
+        case OperandField::VccLo: {
+            IR::U1 vcc_bit = ir.GetVcc();
+            IR::Value vcc_val =
+                ir.Select(vcc_bit, ir.Imm64(static_cast<u64>(-1)), ir.Imm64(static_cast<u64>(0)));
+            return IR::U64{vcc_val};
+        }
+        case OperandField::ConstZero:
+            return ir.Imm64(static_cast<u64>(0));
+        case OperandField::SignedConstIntPos:
+            return ir.Imm64(static_cast<u64>(inst.src[1].code));
+        case OperandField::SignedConstIntNeg:
+            return ir.Imm64(static_cast<u64>(-s32(inst.src[1].code)));
+        default:
+            UNREACHABLE_MSG("Unsupported src[1] operand field: {}", u32(inst.src[1].field));
+        }
+    }();
+
+    // Perform the 64-bit comparison
+    const IR::U1 result = [&] {
+        switch (op) {
+        case ConditionOp::EQ:
+            return ir.IEqual(src0, src1);
+        case ConditionOp::LG: // NE
+            return ir.INotEqual(src0, src1);
+        case ConditionOp::GT:
+            return ir.IGreaterThan(src0, src1, false); // false = unsigned
+        case ConditionOp::LT:
+            return ir.ILessThan(src0, src1, false);
+        case ConditionOp::GE:
+            return ir.IGreaterThanEqual(src0, src1, false);
+        case ConditionOp::LE:
+            return ir.ILessThanEqual(src0, src1, false);
+        default:
+            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+        }
+    }();
+
+    // Handle flags
+    if (is_signed) {
+        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
+    }
+    if (set_exec) {
+        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
     }
 
-    UNREACHABLE_MSG("Unsupported src[1] operand field for V_CMP_U64: {}", u32(inst.src[1].field));
+    // Write result (1-bit boolean) to destination
+    switch (inst.dst[1].field) {
+    case OperandField::VccLo:
+        return ir.SetVcc(result);
+    case OperandField::ScalarGPR:
+        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
+    case OperandField::VectorGPR: {
+        IR::Value result_val = ir.Select(result, ir.Imm32(1), ir.Imm32(0));
+        ir.SetVectorReg(IR::VectorReg(inst.dst[1].code), IR::U32{result_val});
+    } break;
+    default:
+        UNREACHABLE_MSG("Unsupported dst field: {}", u32(inst.dst[1].field));
+    }
 }
+
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::U32 src1{GetSrc(inst.src[1])};
