@@ -269,7 +269,13 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
             subresource_states.clear();
         }
     } else { // Full resource transition
-        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask) {
+        constexpr auto write_flags =
+            vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eShaderWrite |
+            vk::AccessFlagBits2::eColorAttachmentWrite |
+            vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
+            vk::AccessFlagBits2::eMemoryWrite;
+        const bool is_write = static_cast<bool>(dst_mask & write_flags);
+        if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
             return {};
         }
 
