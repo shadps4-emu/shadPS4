@@ -886,6 +886,8 @@ Value IREmitter::Select(const U1& condition, const Value& true_value, const Valu
         return Inst(Opcode::SelectU1, condition, true_value, false_value);
     case Type::U32:
         return Inst(Opcode::SelectU32, condition, true_value, false_value);
+    case Type::U64:
+        return Inst(Opcode::SelectU64, condition, true_value, false_value);
     case Type::F32:
         return Inst(Opcode::SelectF32, condition, true_value, false_value);
     default:
