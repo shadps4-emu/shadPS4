@@ -15,8 +15,8 @@ namespace Libraries::Kernel {
 
 thread_local Pthread* g_curthread{};
 
-Core::Tcb* TcbCtor(Pthread* thread, int initial);
-void TcbDtor(Core::Tcb* oldtls);
+Core::Tcb* InitializeTLSForThread(Pthread* thread, int initial);
+void FreeTLSForThread(Core::Tcb* old_tls_tcb);
 
 ThreadState::ThreadState() {
     // Reserve memory for maximum amount of threads allowed.
@@ -96,9 +96,9 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
     Core::Tcb* tcb = nullptr;
     if (curthread != nullptr) {
         std::scoped_lock lk{tcb_lock};
-        tcb = TcbCtor(thread, 0 /* not initial tls */);
+        tcb = InitializeTLSForThread(thread, 0 /* not initial tls */);
     } else {
-        tcb = TcbCtor(thread, 1 /* initial tls */);
+        tcb = InitializeTLSForThread(thread, 1 /* initial tls */);
     }
     if (tcb != nullptr) {
         // Initialize thread struct memory to 0. This is safe since it will be constructed
@@ -118,9 +118,9 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
 void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     if (curthread != nullptr) {
         std::scoped_lock lk{tcb_lock};
-        TcbDtor(thread->tcb);
+        FreeTLSForThread(thread->tcb);
     } else {
-        TcbDtor(thread->tcb);
+        FreeTLSForThread(thread->tcb);
     }
     thread->tcb = nullptr;
     std::destroy_at(thread);

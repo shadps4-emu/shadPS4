@@ -15,7 +15,36 @@ static constexpr size_t TlsTcbAlign = 0x20;
 
 static std::shared_mutex RtldLock;
 
-Core::Tcb* TcbCtor(Pthread* thread, int initial) {
+Core::Tcb* InitializeTLSForThread(Pthread* thread, int initial) {
+    // TLS memory layout per thread:
+    //
+    //  tls                       tcb
+    //   |                         |
+    //   v                         v
+    //   [ main module static TLS ][ TCB ]
+    //   ^                            |
+    //   |                         tcb_dtv
+    //   |                            |
+    //   |                            v
+    //   |                       [ DTV table                              ]
+    //   |                       [ [0] gen counter                        ]
+    //   |                       [ [1] num entries                        ]
+    //   +---------------------- [ [2] -> main module TLS (static block)  ]
+    //                           [ [3] -> module2 TLS (dynamic)           ] ---> [ separate heap block ] 
+    //                           [ [4] -> module3 TLS (dynamic)           ] ---> [ separate heap block ]
+    //                           ...
+    //                           [ [N] -> moduleN TLS (dynamic)           ] ---> [ separate heap block ]
+    //
+    // Static module TLS lives between tls and tcb, accessed via fixed negative
+    // offsets from tcb (x86-64 TLS ABI). Only the main module has
+    // static TLS - its size, image size, and offset from tcb are all equal (static_tls_size).
+    // 
+    // All other modules use dynamic allocation via TlsGetAddr.
+    // Dynamic module TLS blocks are allocated separately on first access and
+    // tracked in the DTV. 
+    // 
+    // The static TLS, the TCB, the dynamic blocks in the DTV table and the DTV table itself must all be freed on thread exit.
+
     std::scoped_lock lk{RtldLock};
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
@@ -61,9 +90,11 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
     return tcb;
 }
 
-void TcbDtor(Core::Tcb* oldtls) {
+void FreeTLSForThread(Core::Tcb* old_tls_tcb) {
+    // See "AllocateTLSForThread()" for the TLS memory model
+
     std::scoped_lock lk{RtldLock};
-    auto* dtv_table = oldtls->tcb_dtv;
+    auto* dtv_table = old_tls_tcb->tcb_dtv;
 
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     const u32 max_tls_index = linker->MaxTlsIndex();
@@ -71,16 +102,20 @@ void TcbDtor(Core::Tcb* oldtls) {
     ASSERT_MSG(num_dtvs <= max_tls_index, "Out of bounds DTV access");
 
     const u32 static_tls_size = linker->StaticTlsSize();
-    const u8* tls_base = (const u8*)oldtls - static_tls_size;
+    u8* tls_base = (u8*)old_tls_tcb - static_tls_size;
 
-    for (int i = 1; i < num_dtvs; i++) {
+    // Free dynamic allocated TLS data from the DTV entries
+    for (int i = 1; i <= num_dtvs; i++) {
         u8* dtv_ptr = dtv_table[i + 1].pointer;
-        if (dtv_ptr && (dtv_ptr < tls_base || (const u8*)oldtls < dtv_ptr)) {
+        if (dtv_ptr && (dtv_ptr < tls_base || (const u8*)old_tls_tcb < dtv_ptr)) {
             linker->FreeTlsForNonPrimaryThread(dtv_ptr);
         }
     }
-
+    // Free the DTV table itself
     delete[] dtv_table;
+
+    // Free static TLS and TCB data
+    linker->FreeTlsForNonPrimaryThread(tls_base);
 }
 
 struct TlsIndex {
