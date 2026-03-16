@@ -1159,9 +1159,10 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.Imm64(static_cast<u64>(0));
         case OperandField::SignedConstIntPos:
             return ir.Imm64(static_cast<u64>(inst.src[0].code));
-        case OperandField::SignedConstIntNeg:
+        case OperandField::SignedConstIntNeg: {
             s32 decoded_value = -s32(inst.src[0].code) + SignedConstIntNegMin - 1;
             return ir.Imm64(static_cast<u64>(decoded_value));
+        }
         default:
             UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
         }
@@ -1189,9 +1190,10 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.Imm64(static_cast<u64>(0));
         case OperandField::SignedConstIntPos:
             return ir.Imm64(static_cast<u64>(inst.src[1].code));
-        case OperandField::SignedConstIntNeg:
+        case OperandField::SignedConstIntNeg: {
             s32 decoded_value = -s32(inst.src[0].code) + SignedConstIntNegMin - 1;
             return ir.Imm64(static_cast<u64>(decoded_value));
+        }
         default:
             UNREACHABLE_MSG("Unsupported src[1] operand field: {}", u32(inst.src[1].field));
         }
