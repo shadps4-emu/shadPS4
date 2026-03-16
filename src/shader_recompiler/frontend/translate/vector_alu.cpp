@@ -1150,7 +1150,6 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
         }
         case OperandField::VccLo: {
             IR::U1 vcc_bit = ir.GetVcc();
-            // Fix: Cast both Imm64 calls to avoid ambiguity
             IR::Value vcc_val =
                 ir.Select(vcc_bit, ir.Imm64(static_cast<u64>(-1)), ir.Imm64(static_cast<u64>(0)));
             return IR::U64{vcc_val};
@@ -1191,7 +1190,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
         case OperandField::SignedConstIntPos:
             return ir.Imm64(static_cast<u64>(inst.src[1].code));
         case OperandField::SignedConstIntNeg: {
-            s32 decoded_value = -s32(inst.src[0].code) + SignedConstIntNegMin - 1;
+            s32 decoded_value = -s32(inst.src[1].code) + SignedConstIntNegMin - 1;
             return ir.Imm64(static_cast<u64>(decoded_value));
         }
         default:
