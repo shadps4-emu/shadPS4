@@ -246,7 +246,7 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_fp32_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat32),
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
-        .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
+        .supports_image_load_store_lod = /*instance_.IsImageLoadStoreLodSupported()*/ false, // TEST
         .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),
         .supports_trinary_minmax = instance_.IsAmdShaderTrinaryMinMaxSupported(),
         // TODO: Emitted bounds checks cause problems with phi control flow; needs to be fixed.
