@@ -352,10 +352,10 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            value = ir.IAbs(value);
+            value = ir.BitwiseAnd(value, ir.Imm32(0x7FFFFFFFu));
         }
         if (operand.input_modifier.neg) {
-            value = ir.INeg(value);
+            value = ir.BitwiseXor(value, ir.Imm32(0x80000000u));
         }
     }
     return value;
