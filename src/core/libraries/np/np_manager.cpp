@@ -19,6 +19,7 @@ namespace Libraries::Np::NpManager {
 static bool g_signed_in = false;
 static s32 g_active_requests = 0;
 static std::mutex g_request_mutex;
+OrbisNpTitleId g_np_title_id = {};
 
 static std::map<std::string, std::function<void()>> g_np_callbacks;
 static std::mutex g_np_callbacks_mutex;
@@ -686,6 +687,17 @@ sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServi
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceNpSetNpTitleId(OrbisNpTitleId* title_id, OrbisNpTitleSecret* title_secret) {
+    if (!title_id || !title_secret) {
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_DEBUG(Lib_NpManager, "titleId = {}", title_id->id);
+
+    g_np_title_id = *title_id;
+
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   bool* has_signed_up) {
     LOG_DEBUG(Lib_NpManager, "called");
@@ -825,6 +837,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("XDncXQIJUSk", "libSceNpManager", 1, "libSceNpManager", sceNpGetOnlineId);
     LIB_FUNCTION("eQH7nWPcAgc", "libSceNpManager", 1, "libSceNpManager", sceNpGetState);
     LIB_FUNCTION("VgYczPGB5ss", "libSceNpManager", 1, "libSceNpManager", sceNpGetUserIdByAccountId);
+    LIB_FUNCTION("Ec63y59l9tw", "libSceNpManager", 1, "libSceNpManager", sceNpSetNpTitleId);
     LIB_FUNCTION("Oad3rvY-NJQ", "libSceNpManager", 1, "libSceNpManager", sceNpHasSignedUp);
     LIB_FUNCTION("3Zl8BePTh9Y", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallback);
     LIB_FUNCTION("JELHf4xPufo", "libSceNpManager", 1, "libSceNpManager", sceNpCheckCallbackForLib);

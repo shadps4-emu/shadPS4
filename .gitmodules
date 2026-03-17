@@ -133,3 +133,9 @@
 [submodule "externals/openal-soft"]
 	path = externals/openal-soft
 	url = https://github.com/shadexternals/openal-soft.git
+[submodule "externals/cppcodec"]
+	path = externals/cppcodec
+	url = https://github.com/tplgy/cppcodec.git
+[submodule "externals/ixwebsocket"]
+	path = externals/ixwebsocket
+	url = https://github.com/machinezone/IXWebSocket
