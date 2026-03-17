@@ -63,6 +63,17 @@ public:
     void BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
                        const Shader::PushData& push_data) const;
 
+    /// Overload for async compute - binds resources to a specific command buffer
+    void BindResources(vk::CommandBuffer cmdbuf, DescriptorWrites& set_writes,
+                       const BufferBarriers& buffer_barriers,
+                       const Shader::PushData& push_data) const;
+
+    /// Overload for async compute with custom descriptor heap
+    void BindResources(vk::CommandBuffer cmdbuf, DescriptorWrites& set_writes,
+                       const BufferBarriers& buffer_barriers,
+                       const Shader::PushData& push_data,
+                       DescriptorHeap& override_heap) const;
+
 protected:
     [[nodiscard]] std::string GetDebugString() const;
 

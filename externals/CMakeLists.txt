@@ -151,7 +151,7 @@ endif()
 
 # sirit
 add_subdirectory(sirit)
-if (WIN32)
+if (WIN32 AND NOT MSVC)
     target_compile_options(sirit PRIVATE "-Wno-error=unused-command-line-argument")
 endif()
 

@@ -223,6 +223,9 @@ Frame* Presenter::PrepareLastFrame() {
         return nullptr;
     }
 
+    // Ensure any pending async compute work is synced before presenting
+    rasterizer->SyncComputeForPresent();
+
     Frame* frame = last_submit_frame;
 
     while (true) {
@@ -296,6 +299,9 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     const auto image_id = texture_cache.FindImage(desc);
     texture_cache.UpdateImage(image_id);
 
+    // Ensure any pending async compute work is synced before presenting
+    rasterizer->SyncComputeForPresent();
+
     Frame* frame = GetRenderFrame();
 
     const auto frame_subresources = vk::ImageSubresourceRange{
@@ -352,6 +358,9 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
 }
 
 Frame* Presenter::PrepareBlankFrame(bool present_thread) {
+    // Ensure any pending async compute work is synced before presenting
+    rasterizer->SyncComputeForPresent();
+
     // Request a free presentation frame.
     Frame* frame = GetRenderFrame();
 
