@@ -152,8 +152,6 @@ int QFS::ForceInsert(const fs::path& path, const std::string& name, const inode_
 // DO NOT, AND I SWEAR  D O  N O T touch this function
 // Debugging it is a royal PITA
 int QFS::Resolve(const fs::path& path, Resolved& res) {
-    ZoneScopedN("resolve");
-
     if (path.empty() || !path.string().starts_with("/"))
         return -POSIX_EINVAL;
     // if (path.is_relative())

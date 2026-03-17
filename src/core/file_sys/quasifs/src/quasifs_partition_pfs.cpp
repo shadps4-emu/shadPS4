@@ -15,11 +15,7 @@
 
 namespace QuasiFS {
 
-PartitionPFS::PartitionPFS(const fs::path& host_root = "") : host_root(host_root) {
-    this->root = DirectoryPFS::Create();
-    this->chmod(this->root, 0555);
-    this->IndexInode(this->root);
-    LOG_ERROR(Kernel_Fs, "PFS partition initialized");
-}
+PartitionPFS::PartitionPFS(const fs::path& host_root)
+    : Partition(DirectoryPFS::Create(), host_root, 0555, 65536) {}
 
 }; // namespace QuasiFS

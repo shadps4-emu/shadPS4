@@ -62,12 +62,6 @@ public:
     static dir_ptr Create() {
         return std::make_shared<QuasiDirectory>();
     }
-
-    // Allow "inheriting" type of directory
-    virtual dir_ptr Spawn() const {
-        return std::make_shared<QuasiDirectory>();
-    }
-
     //
     // Inode overrides
     //

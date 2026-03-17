@@ -14,41 +14,38 @@
 namespace QuasiFS {
 
 class Partition : public std::enable_shared_from_this<Partition> {
-    private:
-    fileno_t NextFileno(void) {
-        return this->next_fileno++;
-    };
-
-
-
-
-    // technically it's a device+partition id, but block id is enough lmao
-    const blkid_t block_id{++next_block_id};
-    // IO block size, allocation unit (multiples of 512)
-    const u32 ioblock_size{4096};
-
-    // 1 is reserved for the partition superblock
+private:
+    static inline blkid_t next_block_id{1};
+    // next available fileno
     fileno_t next_fileno{2};
 
-    // basically device ID
-    static inline blkid_t next_block_id = 1;
-
-    protected:
+protected:
+    fileno_t NextFileno() {
+        return this->next_fileno++;
+    };
     // file list
     std::unordered_map<fileno_t, inode_ptr> inode_table{};
     // path to host's directory this will be bound to
     const fs::path host_root{};
     // root directory
-    std::shared_ptr<Directory> root{nullptr};
+    dir_ptr root;
+
+    // host path (if bound)
+    fs::path host_root{};
+    // technically it's a device+partition id, but block id is enough lmao
+    const blkid_t block_id;
+    const u32 ioblock_size;
 
 public:
     // host-bound directory, permissions for root directory
-    Partition(const fs::path& host_root = "", int root_permissions = 0755, u32 ioblock_size = 4096);
+    Partition(dir_ptr root = Directory::Create(), const fs::path& host_root = "",
+              int root_permissions = 0755, u32 ioblock_size = 4096);
     ~Partition() = default;
 
     static partition_ptr Create(const fs::path& host_root = "", int root_permissions = 0755,
                                 u32 ioblock_size = 4096) {
-        return std::make_shared<Partition>(host_root, root_permissions, ioblock_size);
+        return std::make_shared<Partition>(Directory::Create(), host_root, root_permissions,
+                                           ioblock_size);
     }
 
     // empty - invalid, not empty - safe
@@ -74,9 +71,9 @@ public:
     int touch(const dir_ptr& parent, const std::string& name) {
         if constexpr (std::is_base_of_v<Inode, T>)
             return touch(parent, name, T::Create());
-        UNREACHABLE_MSG(" QuasiFS:Partition:Touch Created element must derive from Inode");
+        UNREACHABLE_MSG("QuasiFS:Partition:Touch Created element must derive from Inode");
         static_assert(std::is_base_of_v<Inode, T>,
-                      " QuasiFS:Partition:Touch Created element must derive from Inode");
+                      "QuasiFS:Partition:Touch Created element must derive from Inode");
         return -666;
     }
     int touch(const dir_ptr& parent, const std::string& name, inode_ptr child);
