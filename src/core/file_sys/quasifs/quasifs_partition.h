@@ -14,21 +14,32 @@
 namespace QuasiFS {
 
 class Partition : public std::enable_shared_from_this<Partition> {
+    private:
     fileno_t NextFileno(void) {
         return this->next_fileno++;
     };
 
+
+
+
+    // technically it's a device+partition id, but block id is enough lmao
+    const blkid_t block_id{++next_block_id};
+    // IO block size, allocation unit (multiples of 512)
+    const u32 ioblock_size{4096};
+
+    // 1 is reserved for the partition superblock
+    fileno_t next_fileno{2};
+
+    // basically device ID
+    static inline blkid_t next_block_id = 1;
+
+    protected:
     // file list
     std::unordered_map<fileno_t, inode_ptr> inode_table{};
-
+    // path to host's directory this will be bound to
+    const fs::path host_root{};
     // root directory
-    std::shared_ptr<Directory> root;
-    // next available fileno
-    fileno_t next_fileno = 2;
-    // technically it's a device+partition id, but block id is enough lmao
-    const blkid_t block_id;
-
-    static inline blkid_t next_block_id = 1;
+    std::shared_ptr<Directory> root{nullptr};
 
 public:
     // host-bound directory, permissions for root directory
