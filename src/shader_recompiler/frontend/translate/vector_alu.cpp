@@ -1162,10 +1162,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return {ir.Imm32(v), ir.Imm32(v < 0 ? -1 : 0)};
         }
         case VccLo:
-            // treat as 32-bit values, zero-extend to 64-bit
-            {
-                return {ir.GetVccLo(), ir.GetVccHi()};
-            }
+            return {ir.GetVccLo(), ir.GetVccHi()};
         default:
             UNREACHABLE_MSG("Unsupported operand field {}", u32(op.field));
         }
