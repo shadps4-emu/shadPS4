@@ -10,10 +10,8 @@
 
 #ifdef _WIN32
 #define SIGSLEEP -1
-#elif defined(__APPLE__)
-#define SIGSLEEP SIGVTALRM
 #else
-#define SIGSLEEP SIGRTMAX
+#define SIGSLEEP SIGVTALRM
 #endif
 namespace Core {
 

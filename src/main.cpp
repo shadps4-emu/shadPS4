@@ -142,6 +142,14 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+    if (!gameArgs.empty()) {
+        if (gameArgs.front() == "--") {
+            gameArgs.erase(gameArgs.begin());
+        } else {
+            std::cerr << "Error: unhandled flags\n";
+            return 1;
+        }
+    }
 
     // ---- Apply flags ----
     if (patchFile)

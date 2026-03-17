@@ -137,6 +137,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         // Image atomic operations
     case Opcode::IMAGE_ATOMIC_SWAP:
         return IMAGE_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::IMAGE_ATOMIC_CMPSWAP:
+        return IMAGE_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::IMAGE_ATOMIC_ADD:
         return IMAGE_ATOMIC(AtomicOp::Add, inst);
     case Opcode::IMAGE_ATOMIC_SMIN:
@@ -458,6 +460,7 @@ void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
@@ -519,6 +522,10 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
         switch (op) {
         case AtomicOp::Swap:
             return ir.ImageAtomicExchange(handle, body, value, {});
+        case AtomicOp::CmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(val_reg + 1);
+            return ir.ImageAtomicCmpSwap(handle, body, value, cmp_val, info);
+        }
         case AtomicOp::Add:
             return ir.ImageAtomicIAdd(handle, body, value, info);
         case AtomicOp::Smin:
