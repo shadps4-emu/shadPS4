@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -6,9 +7,9 @@
 
 #include <fmt/format.h>
 
-#include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/value.h"
@@ -18,7 +19,7 @@ namespace Shader::IR {
 void DumpProgram(const Program& program, const Info& info, const std::string& type) {
     using namespace Common::FS;
 
-    if (!Config::dumpShaders()) {
+    if (!EmulatorSettings.IsDumpShaders()) {
         return;
     }
 
