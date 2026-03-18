@@ -147,7 +147,7 @@ Id ImageAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
     const auto& texture = ctx.images[handle & 0xFFFF];
     const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
-    return (ctx.*atomic_func)(ctx.F32[1], pointer, scope, semantics, semantics, value, cmp_value);
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, semantics, value, cmp_value);
 }
 } // Anonymous namespace
 
