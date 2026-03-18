@@ -38,7 +38,10 @@
     <category translate="no">Game</category>
   </categories>
   <releases>
-      <release version="0.14.0" date="2026-02-07">
+	 <release version="0.15.0" date="2026-03-17">
+	   <url>https://github.com/shadps4-emu/shadPS4/releases/tag/v.0.15.0</url>
+	  </release>
+     <release version="0.14.0" date="2026-02-07">
       <url>https://github.com/shadps4-emu/shadPS4/releases/tag/v.0.14.0</url>
     </release>
     <release version="0.13.0" date="2025-12-24">
