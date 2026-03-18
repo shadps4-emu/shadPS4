@@ -220,20 +220,33 @@ Id EmitImageGradient(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id
 
 Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id color_type = texture.data_types->Get(4);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Sample, ms);
     Id texel;
     if (!texture.is_storage) {
+        const Id image = ctx.OpLoad(texture.image_type, texture.id);
         operands.Add(spv::ImageOperandsMask::Lod, lod);
         texel = ctx.OpImageFetch(color_type, image, coords, operands.mask, operands.operands);
     } else {
+        Id image_ptr = texture.id;
         if (ctx.profile.supports_image_load_store_lod) {
             operands.Add(spv::ImageOperandsMask::Lod, lod);
         } else if (Sirit::ValidId(lod)) {
-            LOG_WARNING(Render, "Image read with LOD not supported by driver");
+#if 1
+            // It's  confusing what interactions will cause this code path so leave it as
+            // unreachable until a case is found.
+            // Normally IMAGE_LOAD_MIP should translate -> OpImageFetch
+            UNREACHABLE_MSG("Unsupported ImageRead with Lod");
+#else
+            LOG_WARNING(Render, "Fallback for ImageRead with LOD");
+            ASSERT(texture.mip_fallback_mode == MipStorageFallbackMode::DynamicIndex);
+            const Id single_image_ptr_type =
+                ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
+            image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
+#endif
         }
+        const Id image = ctx.OpLoad(texture.image_type, image_ptr);
         texel = ctx.OpImageRead(color_type, image, coords, operands.mask, operands.operands);
     }
     return texture.is_integer ? ctx.OpBitcast(ctx.F32[4], texel) : texel;
@@ -242,15 +255,20 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
 void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod, Id ms,
                     Id color) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id image = ctx.OpLoad(texture.image_type, texture.id);
+    Id image_ptr = texture.id;
     const Id color_type = texture.data_types->Get(4);
     ImageOperands operands;
     operands.Add(spv::ImageOperandsMask::Sample, ms);
     if (ctx.profile.supports_image_load_store_lod) {
         operands.Add(spv::ImageOperandsMask::Lod, lod);
     } else if (Sirit::ValidId(lod)) {
-        LOG_WARNING(Render, "Image write with LOD not supported by driver");
+        LOG_WARNING(Render, "Fallback for ImageWrite with LOD");
+        ASSERT(texture.mip_fallback_mode == MipStorageFallbackMode::DynamicIndex);
+        const Id single_image_ptr_type =
+            ctx.TypePointer(spv::StorageClass::UniformConstant, texture.image_type);
+        image_ptr = ctx.OpAccessChain(single_image_ptr_type, image_ptr, std::array{lod});
     }
+    const Id image = ctx.OpLoad(texture.image_type, image_ptr);
     const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
     ctx.OpImageWrite(image, coords, texel, operands.mask, operands.operands);
 }
