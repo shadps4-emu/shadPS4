@@ -352,10 +352,10 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            value = ir.IAbs(value);
+            value = ir.BitwiseAnd(value, ir.Imm32(0x7FFFFFFFu));
         }
         if (operand.input_modifier.neg) {
-            value = ir.INeg(value);
+            value = ir.BitwiseXor(value, ir.Imm32(0x80000000u));
         }
     }
     return value;
@@ -452,6 +452,23 @@ T Translator::GetSrc64(const InstOperand& operand) {
         }
         if (operand.input_modifier.neg) {
             value = ir.FPNeg(value);
+        }
+    } else {
+        // GCN VOP3 abs/neg modifier bits operate on the sign bit (bit 63 for
+        // 64-bit values). Unpack, modify the high dword's bit 31, repack.
+        if (operand.input_modifier.abs) {
+            const auto unpacked = ir.UnpackUint2x32(value);
+            const auto lo = IR::U32{ir.CompositeExtract(unpacked, 0)};
+            const auto hi = IR::U32{ir.CompositeExtract(unpacked, 1)};
+            const auto hi_abs = ir.BitwiseAnd(hi, ir.Imm32(0x7FFFFFFFu));
+            value = ir.PackUint2x32(ir.CompositeConstruct(lo, hi_abs));
+        }
+        if (operand.input_modifier.neg) {
+            const auto unpacked = ir.UnpackUint2x32(value);
+            const auto lo = IR::U32{ir.CompositeExtract(unpacked, 0)};
+            const auto hi = IR::U32{ir.CompositeExtract(unpacked, 1)};
+            const auto hi_neg = ir.BitwiseXor(hi, ir.Imm32(0x80000000u));
+            value = ir.PackUint2x32(ir.CompositeConstruct(lo, hi_neg));
         }
     }
     return value;
