@@ -131,8 +131,6 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
     while (true) {
         int ret = avcodec_receive_frame(mCodecContext, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            pPictureInfoOut.isValid = true;
-            pPictureInfoOut.isErrorPic = false;
             break;
         } else if (ret < 0) {
             LOG_ERROR(Lib_Videodec, "Error receiving frame from decoder: {}", ret);
@@ -167,12 +165,18 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
             u32(frame->crop_bottom + (height - frame->height));
         // TODO maybe more avc?
 
+        frameCount++;
+
         if (frameCount > 1) {
             LOG_WARNING(Lib_Videodec, "We have more than 1 frame");
         }
     }
 
     av_frame_free(&frame);
+    if (frameCount == 0) {
+        pPictureInfoOut.isValid = true;
+        pPictureInfoOut.isErrorPic = false;
+    }
     return ORBIS_OK;
 }
 
