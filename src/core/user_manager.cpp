@@ -5,9 +5,9 @@
 #include <iostream>
 #include <common/path_util.h>
 #include "emulator_settings.h"
+#include "libraries/system/userservice.h"
 #include "user_manager.h"
 #include "user_settings.h"
-#include "libraries/system/userservice.h"
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {
