@@ -28,8 +28,11 @@ int PS4_SYSV_ABI sys_connect(OrbisNetId s, const OrbisNetSockaddr* addr, u32 add
     if (returncode >= 0) {
         return returncode;
     }
-    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
-              (u32)*Libraries::Kernel::__Error());
+    u32 error = *Libraries::Kernel::__Error();
+    // Don't log EINPROGRESS or EISCONN, these are normal to see from non-blocking communication.
+    if (error != ORBIS_NET_EINPROGRESS && error != ORBIS_NET_EISCONN) {
+        LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name, error);
+    }
     return -1;
 }
 
@@ -59,8 +62,13 @@ int PS4_SYSV_ABI sys_accept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen)
     LOG_DEBUG(Lib_Net, "s = {} ({})", s, file->m_guest_name);
     auto new_sock = file->socket->Accept(addr, paddrlen);
     if (!new_sock) {
-        LOG_ERROR(Lib_Net, "s = {} ({}) returned error code creating new socket for accepting: {}",
-                  s, file->m_guest_name, (u32)*Libraries::Kernel::__Error());
+        u32 error = *Libraries::Kernel::__Error();
+        // Don't log EWOULDBLOCK, this is normal to see from non-blocking communication.
+        if (error != ORBIS_NET_EWOULDBLOCK) {
+            LOG_ERROR(Lib_Net,
+                      "s = {} ({}) returned error code creating new socket for accepting: {}", s,
+                      file->m_guest_name, error);
+        }
         return -1;
     }
     auto fd = FDTable::Instance()->CreateHandle();
@@ -396,8 +404,11 @@ s64 PS4_SYSV_ABI sys_recvfrom(OrbisNetId s, void* buf, u64 len, int flags, Orbis
     if (returncode >= 0) {
         return returncode;
     }
-    LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name,
-              (u32)*Libraries::Kernel::__Error());
+    // Don't log EWOULDBLOCK, this is normal to see from non-blocking communication.
+    u32 error = *Libraries::Kernel::__Error();
+    if (error != ORBIS_NET_EWOULDBLOCK) {
+        LOG_ERROR(Lib_Net, "s = {} ({}) returned error code: {}", s, file->m_guest_name, error);
+    }
     return -1;
 }
 

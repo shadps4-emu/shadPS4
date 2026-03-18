@@ -360,6 +360,9 @@ public:
                                        TextureInstInfo info);
     [[nodiscard]] Value ImageAtomicExchange(const Value& handle, const Value& coords,
                                             const Value& value, TextureInstInfo info);
+    [[nodiscard]] Value ImageAtomicCmpSwap(const Value& handle, const Value& coords,
+                                           const Value& value, const Value& cmp_value,
+                                           TextureInstInfo info);
 
     [[nodiscard]] Value ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
                                        const Value& address1, const Value& address2,
