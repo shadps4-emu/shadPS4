@@ -242,7 +242,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         new_thread->attr.sched_policy = curthread->attr.sched_policy;
     }
 
-    static int TidCounter = 1;
+    static std::atomic<int> TidCounter = 1;
     new_thread->tid = ++TidCounter;
 
     if (new_thread->attr.stackaddr_attr == nullptr) {
