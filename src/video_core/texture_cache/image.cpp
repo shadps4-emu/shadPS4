@@ -647,6 +647,10 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 
     cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal,
                              buffer_copies);
+
+    // Match CopyImage: transition to general so shaders can sample the result.
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
