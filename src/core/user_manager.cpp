@@ -113,7 +113,6 @@ Users UserManager::CreateDefaultUsers() {
             .player_index = 4,
         },
     };
-    default_users.default_user_id = default_users.user[0].user_id;
 
     for (auto& u : default_users.user) {
         const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
@@ -135,7 +134,6 @@ bool UserManager::SetDefaultUser(u32 user_id) {
     if (it == m_users.user.end())
         return false;
 
-    m_users.default_user_id = user_id;
     SetControllerPort(user_id, 1); // Set default user to port 1
     return Save();
 }
