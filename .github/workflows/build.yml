@@ -27,7 +27,7 @@ jobs:
     continue-on-error: true
     steps:
     - uses: actions/checkout@v6
-    - uses: fsfe/reuse-action@v5
+    - uses: fsfe/reuse-action@v6
 
   clang-format:
     runs-on: ubuntu-24.04
