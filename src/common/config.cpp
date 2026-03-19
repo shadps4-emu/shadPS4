@@ -181,6 +181,7 @@ static ConfigEntry<u32> vblankFrequency(60);
 static ConfigEntry<bool> isFullscreen(false);
 static ConfigEntry<string> fullscreenMode("Windowed");
 static ConfigEntry<string> presentMode("Mailbox");
+static ConfigEntry<string> rendererBackend("Vulkan");
 static ConfigEntry<bool> isHDRAllowed(false);
 static ConfigEntry<bool> fsrEnabled(false);
 static ConfigEntry<bool> rcasEnabled(true);
@@ -334,6 +335,10 @@ string getFullscreenMode() {
 
 std::string getPresentMode() {
     return presentMode.get();
+}
+
+std::string getRendererBackend() {
+    return rendererBackend.get();
 }
 
 bool getisTrophyPopupDisabled() {
@@ -651,6 +656,10 @@ void setPresentMode(std::string mode, bool is_game_specific) {
     presentMode.set(mode, is_game_specific);
 }
 
+void setRendererBackend(std::string backend, bool is_game_specific) {
+    rendererBackend.set(std::move(backend), is_game_specific);
+}
+
 void setisTrophyPopupDisabled(bool disable, bool is_game_specific) {
     isTrophyPopupDisabled.set(disable, is_game_specific);
 }
@@ -952,6 +961,7 @@ void load(const std::filesystem::path& path, bool is_game_specific) {
         isFullscreen.setFromToml(gpu, "Fullscreen", is_game_specific);
         fullscreenMode.setFromToml(gpu, "FullscreenMode", is_game_specific);
         presentMode.setFromToml(gpu, "presentMode", is_game_specific);
+        rendererBackend.setFromToml(gpu, "backend", is_game_specific);
         isHDRAllowed.setFromToml(gpu, "allowHDR", is_game_specific);
         fsrEnabled.setFromToml(gpu, "fsrEnabled", is_game_specific);
         rcasEnabled.setFromToml(gpu, "rcasEnabled", is_game_specific);
@@ -1126,6 +1136,7 @@ void save(const std::filesystem::path& path, bool is_game_specific) {
     isFullscreen.setTomlValue(data, "GPU", "Fullscreen", is_game_specific);
     fullscreenMode.setTomlValue(data, "GPU", "FullscreenMode", is_game_specific);
     presentMode.setTomlValue(data, "GPU", "presentMode", is_game_specific);
+    rendererBackend.setTomlValue(data, "GPU", "backend", is_game_specific);
     isHDRAllowed.setTomlValue(data, "GPU", "allowHDR", is_game_specific);
     fsrEnabled.setTomlValue(data, "GPU", "fsrEnabled", is_game_specific);
     rcasEnabled.setTomlValue(data, "GPU", "rcasEnabled", is_game_specific);
@@ -1260,6 +1271,7 @@ void setDefaultValues(bool is_game_specific) {
     isFullscreen.set(false, is_game_specific);
     fullscreenMode.set("Windowed", is_game_specific);
     presentMode.set("Mailbox", is_game_specific);
+    rendererBackend.set("Vulkan", is_game_specific);
     isHDRAllowed.set(false, is_game_specific);
     fsrEnabled.set(true, is_game_specific);
     rcasEnabled.set(true, is_game_specific);

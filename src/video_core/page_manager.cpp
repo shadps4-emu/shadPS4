@@ -10,7 +10,7 @@
 #include "core/memory.h"
 #include "core/signals.h"
 #include "video_core/page_manager.h"
-#include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "video_core/renderer/rasterizer.h"
 
 #ifndef _WIN64
 #include <sys/mman.h>
@@ -87,9 +87,9 @@ struct PageManager::Impl {
     static constexpr size_t ADDRESS_BITS = 40;
     static constexpr size_t NUM_ADDRESS_PAGES = 1ULL << (40 - PAGE_BITS);
     static constexpr size_t NUM_ADDRESS_LOCKS = NUM_ADDRESS_PAGES / PAGES_PER_LOCK;
-    inline static Vulkan::Rasterizer* rasterizer;
+    inline static VideoCore::Render::IRasterizer* rasterizer;
 #ifdef ENABLE_USERFAULTFD
-    Impl(Vulkan::Rasterizer* rasterizer_) {
+    Impl(VideoCore::Render::IRasterizer* rasterizer_) {
         rasterizer = rasterizer_;
         uffd = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK | UFFD_USER_MODE_ONLY);
         ASSERT_MSG(uffd != -1, "{}", Common::GetLastErrorMsg());
@@ -181,7 +181,7 @@ struct PageManager::Impl {
     std::jthread ufd_thread;
     int uffd;
 #else
-    Impl(Vulkan::Rasterizer* rasterizer_) {
+    Impl(VideoCore::Render::IRasterizer* rasterizer_) {
         rasterizer = rasterizer_;
 
         // Should be called first.
@@ -364,7 +364,7 @@ struct PageManager::Impl {
     std::array<LockType, NUM_ADDRESS_LOCKS> locks{};
 };
 
-PageManager::PageManager(Vulkan::Rasterizer* rasterizer_)
+PageManager::PageManager(VideoCore::Render::IRasterizer* rasterizer_)
     : impl{std::make_unique<Impl>(rasterizer_)} {}
 
 PageManager::~PageManager() = default;

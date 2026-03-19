@@ -1009,6 +1009,14 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/buffer_cache/range_set.h
                src/video_core/buffer_cache/region_definitions.h
                src/video_core/buffer_cache/region_manager.h
+               src/video_core/renderer/backend.h
+               src/video_core/renderer/backend_factory.cpp
+               src/video_core/renderer/backend_factory.h
+               src/video_core/renderer/presenter.h
+               src/video_core/renderer/rasterizer.h
+               src/video_core/renderer/shader_debug_provider.h
+               src/video_core/renderer_headless/headless_backend.cpp
+               src/video_core/renderer_headless/headless_backend.h
                src/video_core/renderer_vulkan/liverpool_to_vk.cpp
                src/video_core/renderer_vulkan/liverpool_to_vk.h
                src/video_core/renderer_vulkan/vk_common.cpp
@@ -1043,6 +1051,8 @@ set(VIDEO_CORE src/video_core/amdgpu/cb_db_extent.h
                src/video_core/renderer_vulkan/vk_shader_util.h
                src/video_core/renderer_vulkan/vk_swapchain.cpp
                src/video_core/renderer_vulkan/vk_swapchain.h
+               src/video_core/renderer_vulkan/vulkan_backend.cpp
+               src/video_core/renderer_vulkan/vulkan_backend.h
                src/video_core/renderer_vulkan/host_passes/fsr_pass.cpp
                src/video_core/renderer_vulkan/host_passes/fsr_pass.h
                src/video_core/renderer_vulkan/host_passes/pp_pass.cpp

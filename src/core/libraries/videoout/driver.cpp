@@ -11,9 +11,8 @@
 #include "core/libraries/videoout/videoout_error.h"
 #include "imgui/renderer/imgui_core.h"
 #include "video_core/amdgpu/liverpool.h"
-#include "video_core/renderer_vulkan/vk_presenter.h"
+#include "video_core/renderer/backend_factory.h"
 
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
@@ -139,7 +138,8 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
         port->buffer_labels[startIndex + i] = 0;
         port->SignalVoLabel();
 
-        presenter->RegisterVideoOutSurface(group, address);
+        auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
+        presenter.RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -165,12 +165,13 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
     return ORBIS_OK;
 }
 
-void VideoOutDriver::Flip(const Request& req) {
+void VideoOutDriver::Flip(Request req) {
+    auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
     // Update HDR status before presenting.
-    presenter->SetHDR(req.port->is_hdr);
+    presenter.SetHDR(req.port->is_hdr);
 
     // Present the frame.
-    presenter->Present(req.frame);
+    presenter.Present(std::move(req.frame));
 
     // Update flip status.
     auto* port = req.port;
@@ -209,14 +210,16 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    const auto empty_frame = presenter->PrepareBlankFrame(false);
-    presenter->Present(empty_frame);
+    auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
+    auto empty_frame = presenter.PrepareBlankFrame(false);
+    presenter.Present(std::move(empty_frame));
 }
 
 void VideoOutDriver::DrawLastFrame() {
-    const auto frame = presenter->PrepareLastFrame();
+    auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
+    auto frame = presenter.PrepareLastFrame();
     if (frame != nullptr) {
-        presenter->Present(frame, true);
+        presenter.Present(std::move(frame), true);
     }
 }
 
@@ -247,19 +250,20 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 }
 
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
-    Vulkan::Frame* frame;
+    auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
+    std::unique_ptr<VideoCore::Render::IFrameHandle> frame;
     if (index == -1) {
-        frame = presenter->PrepareBlankFrame(false);
+        frame = presenter.PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
         ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left);
+        frame = presenter.PrepareFrame(group, buffer.address_left);
     }
 
     std::scoped_lock lock{mutex};
     requests.push({
-        .frame = frame,
+        .frame = std::move(frame),
         .port = port,
         .flip_arg = flip_arg,
         .index = index,
@@ -278,7 +282,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const auto receive_request = [this] -> Request {
         std::scoped_lock lk{mutex};
         if (!requests.empty()) {
-            const auto request = requests.front();
+            auto request = std::move(requests.front());
             requests.pop();
             return request;
         }
@@ -297,7 +301,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
         // Check if it's time to take a request.
         auto& vblank_status = main_port.vblank_status;
         if (vblank_status.count % (main_port.flip_rate + 1) == 0) {
-            const auto request = receive_request();
+            auto request = receive_request();
             if (!request) {
                 if (timer.GetTotalWait().count() < 0) { // Dont draw too fast
                     if (!main_port.is_open) {
@@ -307,7 +311,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
                     }
                 }
             } else {
-                Flip(request);
+                Flip(std::move(request));
                 FRAME_END;
             }
         }

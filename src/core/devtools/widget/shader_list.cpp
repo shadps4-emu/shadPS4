@@ -15,10 +15,7 @@
 #include "core/devtools/options.h"
 #include "imgui/imgui_std.h"
 #include "sdl_window.h"
-#include "video_core/renderer_vulkan/vk_presenter.h"
-#include "video_core/renderer_vulkan/vk_rasterizer.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
+#include "video_core/renderer/backend_factory.h"
 
 using namespace ImGui;
 
@@ -31,12 +28,16 @@ ShaderList::Selection::Selection(int index)
     isa_editor->SetReadOnly(true);
     glsl_editor->SetPalette(TextEditor::GetDarkPalette());
     glsl_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-    presenter->GetWindow().RequestKeyboard();
+    if (auto* backend = VideoCore::Render::TryGetRenderBackend()) {
+        backend->GetPresenter().GetWindow().RequestKeyboard();
+    }
 }
 
 ShaderList::Selection::~Selection() {
     if (index >= 0) {
-        presenter->GetWindow().ReleaseKeyboard();
+        if (auto* backend = VideoCore::Render::TryGetRenderBackend()) {
+            backend->GetPresenter().GetWindow().ReleaseKeyboard();
+        }
     }
 }
 
@@ -58,9 +59,19 @@ void ShaderList::Selection::ReloadShader(DebugStateType::ShaderDump& value) {
     if (spv.empty()) {
         return;
     }
-    auto& cache = presenter->GetRasterizer().GetPipelineCache();
-    if (const auto m = cache.ReplaceShader(value.module, spv); m) {
-        value.module = *m;
+    auto* backend = VideoCore::Render::TryGetRenderBackend();
+    if (backend == nullptr) {
+        return;
+    }
+    auto* debug_provider = backend->GetShaderDebugProvider();
+    if (debug_provider == nullptr) {
+        return;
+    }
+    const auto module_handle =
+        reinterpret_cast<uint64_t>(static_cast<VkShaderModule>(value.module));
+    if (const auto replacement = debug_provider->ReplaceShader(module_handle, spv); replacement) {
+        value.module = vk::ShaderModule{
+            reinterpret_cast<VkShaderModule>(static_cast<uintptr_t>(*replacement))};
     }
 }
 

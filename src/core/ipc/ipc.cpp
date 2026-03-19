@@ -19,9 +19,7 @@
 #include "input/input_handler.h"
 #include "sdl_window.h"
 #include "src/core/libraries/usbd/usbd.h"
-#include "video_core/renderer_vulkan/vk_presenter.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
+#include "video_core/renderer/backend_factory.h"
 
 /**
  * Protocol summary:
@@ -157,19 +155,24 @@ void IPC::InputLoop() {
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
             bool use_fsr = next_u64() != 0;
-            if (presenter) {
-                presenter->GetFsrSettingsRef().enable = use_fsr;
+            if (auto* backend = VideoCore::Render::TryGetRenderBackend()) {
+                auto settings = backend->GetPresenter().GetDisplaySettings();
+                settings.fsr_enabled = use_fsr;
+                backend->GetPresenter().SetDisplaySettings(settings);
             }
         } else if (cmd == "SET_RCAS") {
             bool use_rcas = next_u64() != 0;
-            if (presenter) {
-                presenter->GetFsrSettingsRef().use_rcas = use_rcas;
+            if (auto* backend = VideoCore::Render::TryGetRenderBackend()) {
+                auto settings = backend->GetPresenter().GetDisplaySettings();
+                settings.rcas_enabled = use_rcas;
+                backend->GetPresenter().SetDisplaySettings(settings);
             }
         } else if (cmd == "SET_RCAS_ATTENUATION") {
             int value = static_cast<int>(next_u64());
-            if (presenter) {
-                presenter->GetFsrSettingsRef().rcas_attenuation =
-                    static_cast<float>(value / 1000.0f);
+            if (auto* backend = VideoCore::Render::TryGetRenderBackend()) {
+                auto settings = backend->GetPresenter().GetDisplaySettings();
+                settings.rcas_attenuation = static_cast<float>(value / 1000.0f);
+                backend->GetPresenter().SetDisplaySettings(settings);
             }
         } else if (cmd == "USB_LOAD_FIGURE") {
             const auto ref = Libraries::Usbd::usb_backend->GetImplRef();

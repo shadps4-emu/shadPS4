@@ -5,6 +5,7 @@
 
 #include <map>
 #include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <string_view>
 #include "common/enum.h"
@@ -14,8 +15,8 @@
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
 
-namespace Vulkan {
-class Rasterizer;
+namespace VideoCore::Render {
+class IRasterizer;
 }
 
 namespace Libraries::Kernel {
@@ -165,7 +166,7 @@ public:
     explicit MemoryManager();
     ~MemoryManager();
 
-    void SetRasterizer(Vulkan::Rasterizer* rasterizer_) {
+    void SetRasterizer(VideoCore::Render::IRasterizer* rasterizer_) {
         rasterizer = rasterizer_;
     }
 
@@ -339,7 +340,7 @@ private:
     u64 flexible_usage{};
     u64 pool_budget{};
     s32 sdk_version{};
-    Vulkan::Rasterizer* rasterizer{};
+    VideoCore::Render::IRasterizer* rasterizer{};
 
     struct PrtArea {
         VAddr start;

@@ -15,14 +15,12 @@
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
-#include "video_core/renderer_vulkan/vk_presenter.h"
+#include "video_core/renderer/backend_factory.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
 #include "widget/module_list.h"
 #include "widget/shader_list.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 using namespace ::Core::Devtools;
@@ -90,29 +88,33 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
-            auto& pp_settings = presenter->GetPPSettingsRef();
+            auto& presenter = VideoCore::Render::GetRenderBackend().GetPresenter();
+            auto display_settings = presenter.GetDisplaySettings();
             if (BeginMenu("Brightness")) {
-                SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
+                SliderFloat("Gamma", &display_settings.gamma, 0.1f, 2.0f);
+                presenter.SetDisplaySettings(display_settings);
                 ImGui::EndMenu();
             }
             if (BeginMenu("FSR")) {
-                auto& fsr = presenter->GetFsrSettingsRef();
-                Checkbox("FSR Enabled", &fsr.enable);
-                BeginDisabled(!fsr.enable);
+                Checkbox("FSR Enabled", &display_settings.fsr_enabled);
+                BeginDisabled(!display_settings.fsr_enabled);
                 {
-                    Checkbox("RCAS", &fsr.use_rcas);
-                    BeginDisabled(!fsr.use_rcas);
+                    Checkbox("RCAS", &display_settings.rcas_enabled);
+                    BeginDisabled(!display_settings.rcas_enabled);
                     {
-                        SliderFloat("RCAS Attenuation", &fsr.rcas_attenuation, 0.0, 3.0);
+                        SliderFloat("RCAS Attenuation", &display_settings.rcas_attenuation, 0.0,
+                                    3.0);
                     }
                     EndDisabled();
                 }
                 EndDisabled();
+                presenter.SetDisplaySettings(display_settings);
 
                 if (Button("Save")) {
-                    Config::setFsrEnabled(fsr.enable);
-                    Config::setRcasEnabled(fsr.use_rcas);
-                    Config::setRcasAttenuation(static_cast<int>(fsr.rcas_attenuation * 1000));
+                    Config::setFsrEnabled(display_settings.fsr_enabled);
+                    Config::setRcasEnabled(display_settings.rcas_enabled);
+                    Config::setRcasAttenuation(
+                        static_cast<int>(display_settings.rcas_attenuation * 1000));
                     Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                  "config.toml");
                     CloseCurrentPopup();

@@ -45,6 +45,8 @@ std::string getFullscreenMode();
 void setFullscreenMode(std::string mode, bool is_game_specific = false);
 std::string getPresentMode();
 void setPresentMode(std::string mode, bool is_game_specific = false);
+std::string getRendererBackend();
+void setRendererBackend(std::string backend, bool is_game_specific = false);
 u32 getWindowWidth();
 u32 getWindowHeight();
 void setWindowWidth(u32 width, bool is_game_specific = false);

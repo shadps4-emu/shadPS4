@@ -6,14 +6,11 @@
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
 #include "core/libraries/videoout/video_out.h"
+#include "video_core/renderer/presenter.h"
 
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-
-namespace Vulkan {
-struct Frame;
-}
 
 namespace Libraries::VideoOut {
 
@@ -92,7 +89,7 @@ public:
 
 private:
     struct Request {
-        Vulkan::Frame* frame;
+        std::unique_ptr<VideoCore::Render::IFrameHandle> frame;
         VideoOutPort* port;
         s64 flip_arg;
         s32 index;
@@ -103,7 +100,7 @@ private:
         }
     };
 
-    void Flip(const Request& req);
+    void Flip(Request req);
     void DrawBlankFrame(); // Video port out not open
     void DrawLastFrame();  // Used when there is no flip request
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
