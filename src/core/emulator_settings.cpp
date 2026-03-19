@@ -584,27 +584,48 @@ bool EmulatorSettingsImpl::TransferSettings() {
         const toml::value& gui = og_data.at("GUI");
         auto& s = m_general;
 
-        // TODO
+        // Transfer install directories
+        try {
+            const auto install_dir_array =
+                toml::find_or<std::vector<std::string>>(gui, "installDirs", {});
+            std::vector<bool> install_dirs_enabled;
 
-        // const auto install_dir_array =
-        //     toml::find_or<std::vector<std::u8string>>(gui, "installDirs", {});
-        // try {
-        //     install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
-        // } catch (...) {
-        //     // If it does not exist, assume that all are enabled.
-        //     install_dirs_enabled.resize(install_dir_array.size(), true);
-        // }
-        // if (install_dirs_enabled.size() < install_dir_array.size()) {
-        //     install_dirs_enabled.resize(install_dir_array.size(), true);
-        // }
-        // settings_install_dirs.clear();
-        // for (size_t i = 0; i < install_dir_array.size(); i++) {
-        //     settings_install_dirs.push_back(
-        //         {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
-        // }
-        // save_data_path = toml::find_fs_path_or(gui, "saveDataPath", save_data_path);
-        // settings_addon_install_dir =
-        //     toml::find_fs_path_or(gui, "addonInstallDir", settings_addon_install_dir);
+            try {
+                install_dirs_enabled = toml::find<std::vector<bool>>(gui, "installDirsEnabled");
+            } catch (...) {
+                // If it does not exist, assume that all are enabled.
+                install_dirs_enabled.resize(install_dir_array.size(), true);
+            }
+
+            if (install_dirs_enabled.size() < install_dir_array.size()) {
+                install_dirs_enabled.resize(install_dir_array.size(), true);
+            }
+
+            std::vector<GameInstallDir> settings_install_dirs;
+            for (size_t i = 0; i < install_dir_array.size(); i++) {
+                settings_install_dirs.push_back(
+                    {std::filesystem::path{install_dir_array[i]}, install_dirs_enabled[i]});
+            }
+            s.install_dirs.value = settings_install_dirs;
+        } catch (const std::exception& e) {
+            LOG_WARNING(EmuSettings, "Failed to transfer install directories: {}", e.what());
+        }
+
+        // Transfer addon install directory
+        try {
+            std::string addon_install_dir_str;
+            if (gui.contains("addonInstallDir")) {
+                const auto& addon_value = gui.at("addonInstallDir");
+                if (addon_value.is_string()) {
+                    addon_install_dir_str = toml::get<std::string>(addon_value);
+                    if (!addon_install_dir_str.empty()) {
+                        s.addon_install_dir.value = std::filesystem::path{addon_install_dir_str};
+                    }
+                }
+            }
+        } catch (const std::exception& e) {
+            LOG_WARNING(EmuSettings, "Failed to transfer addon install directory: {}", e.what());
+        }
     }
 
     return true;
