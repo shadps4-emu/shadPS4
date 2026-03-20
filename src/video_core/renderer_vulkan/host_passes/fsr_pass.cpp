@@ -407,6 +407,13 @@ void FsrPass::ResizeAndInvalidate(u32 width, u32 height) {
 void FsrPass::CreateImages(Img& img) const {
     img.dirty = false;
 
+    // Destroy previous resources before re-creating at new size.
+    // Views first, then images (views reference the images).
+    img.intermediary_image_view.reset();
+    img.output_image_view.reset();
+    img.intermediary_image.Destroy();
+    img.output_image.Destroy();
+
     vk::ImageCreateInfo image_create_info{
         .imageType = vk::ImageType::e2D,
         .format = vk::Format::eR16G16B16A16Sfloat,
