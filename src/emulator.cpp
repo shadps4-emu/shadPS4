@@ -197,8 +197,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
 
-    EmulatorSettings.Load(
-        (Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".json")).string());
+    EmulatorSettings.Load(id);
     if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
                                 (id + ".json"))) {
         EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
