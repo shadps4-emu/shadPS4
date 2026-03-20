@@ -82,6 +82,14 @@ UniqueImage::~UniqueImage() {
     }
 }
 
+void UniqueImage::Destroy() {
+    if (image) {
+        vmaDestroyImage(allocator, image, allocation);
+        image = vk::Image{};
+        allocation = {};
+    }
+}
+
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     this->image_ci = image_ci;
     ASSERT(!image);
