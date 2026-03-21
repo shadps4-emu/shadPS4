@@ -1223,13 +1223,16 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
                 // Increment phys_handle
                 phys_handle++;
             }
-
-            // Check if VMA can be merged with adjacent areas after physical area modifications.
-            vma_handle = MergeAdjacent(vma_map, vma_handle);
         }
         current_addr += size_in_vma;
         remaining_size -= size_in_vma;
-        vma_handle++;
+
+        // Check if VMA can be merged with adjacent areas after modifications.
+        vma_handle = MergeAdjacent(vma_map, vma_handle);
+        if (vma_handle->second.base + vma_handle->second.size <= current_addr) {
+            // If we're now in the next VMA, then go to the next handle.
+            vma_handle++;
+        }
     }
 
     return ORBIS_OK;
@@ -1262,10 +1265,15 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
                 vma.name = name;
             }
         }
-        it = MergeAdjacent(vma_map, it);
         remaining_size -= size_in_vma;
         current_addr += size_in_vma;
-        it++;
+
+        // Check if VMA can be merged with adjacent areas after modifications.
+        it = MergeAdjacent(vma_map, it);
+        if (it->second.base + it->second.size <= current_addr) {
+            // If we're now in the next VMA, then go to the next handle.
+            it++;
+        }
     }
 }
 
