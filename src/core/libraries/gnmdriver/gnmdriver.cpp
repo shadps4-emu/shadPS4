@@ -1,17 +1,17 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "gnm_error.h"
 #include "gnmdriver.h"
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/slot_vector.h"
 #include "core/address_space.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/gnmdriver/gnm_error.h"
 #include "core/libraries/gnmdriver/gnmdriver_init.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -1172,13 +1172,14 @@ bool PS4_SYSV_ABI sceGnmIsUserPaEnabled() {
 }
 
 int PS4_SYSV_ABI sceGnmLogicalCuIndexToPhysicalCuIndex() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+    LOG_TRACE(Lib_GnmDriver, "called");
+    // Not available in retail firmware
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceGnmLogicalCuMaskToPhysicalCuMask(s64, s32 logical_cu_mask) {
+    LOG_INFO(Lib_GnmDriver, "called, logical_cu_mask: {}", logical_cu_mask);
+    return logical_cu_mask;
 }
 
 int PS4_SYSV_ABI sceGnmLogicalTcaUnitToPhysical() {
@@ -2874,7 +2875,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
         sdk_version = 0;
     }
 
-    if (Config::copyGPUCmdBuffers()) {
+    if (EmulatorSettings.IsCopyGpuBuffers()) {
         liverpool->ReserveCopyBufferSpace();
     }
 

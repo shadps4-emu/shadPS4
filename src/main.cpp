@@ -9,6 +9,7 @@
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
 
+#include <core/emulator_settings.h>
 #include <core/emulator_state.h>
 #include "common/config.h"
 #include "common/key_manager.h"
@@ -19,10 +20,10 @@
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
+#include <core/user_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]) {
 
     auto emu_state = std::make_shared<EmulatorState>();
     EmulatorState::SetInstance(emu_state);
+    UserSettings.Load();
 
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
@@ -50,6 +52,11 @@ int main(int argc, char* argv[]) {
             key_manager->SaveToFile();
         }
     }
+
+    // Load configurations
+    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
+    EmulatorSettingsImpl::SetInstance(emu_settings);
+    emu_settings->Load();
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
@@ -120,15 +127,15 @@ int main(int argc, char* argv[]) {
 
     // ---- Utility commands ----
     if (addGameFolder) {
-        Config::addGameInstallDir(*addGameFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings.AddGameInstallDir(*addGameFolder);
+        EmulatorSettings.Save();
         std::cout << "Game folder successfully saved.\n";
         return 0;
     }
 
     if (setAddonFolder) {
-        Config::setAddonInstallDir(*setAddonFolder);
-        Config::save(user_dir / "config.toml");
+        EmulatorSettings.SetAddonInstallDir(*setAddonFolder);
+        EmulatorSettings.Save();
         std::cout << "Addon folder successfully saved.\n";
         return 0;
     }
@@ -160,9 +167,9 @@ int main(int argc, char* argv[]) {
 
     if (fullscreenStr) {
         if (*fullscreenStr == "true") {
-            Config::setIsFullscreen(true);
+            EmulatorSettings.SetFullScreen(true);
         } else if (*fullscreenStr == "false") {
-            Config::setIsFullscreen(false);
+            EmulatorSettings.SetFullScreen(false);
         } else {
             std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
             return 1;
@@ -170,13 +177,13 @@ int main(int argc, char* argv[]) {
     }
 
     if (showFps)
-        Config::setShowFpsCounter(true);
+        EmulatorSettings.SetShowFpsCounter(true);
 
     if (configClean)
-        Config::setConfigMode(Config::ConfigMode::Clean);
+        EmulatorSettings.SetConfigMode(ConfigMode::Clean);
 
     if (configGlobal)
-        Config::setConfigMode(Config::ConfigMode::Global);
+        EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
     if (logAppend)
         Common::Log::SetAppend();
@@ -186,7 +193,7 @@ int main(int argc, char* argv[]) {
     if (!std::filesystem::exists(ebootPath)) {
         bool found = false;
         constexpr int maxDepth = 5;
-        for (const auto& installDir : Config::getGameInstallDirs()) {
+        for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
             if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
                 ebootPath = *foundPath;
                 found = true;
