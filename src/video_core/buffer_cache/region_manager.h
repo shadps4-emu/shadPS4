@@ -5,6 +5,7 @@
 
 #include "common/div_ceil.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 
 #ifdef __linux__
 #include "common/adaptive_mutex.h"

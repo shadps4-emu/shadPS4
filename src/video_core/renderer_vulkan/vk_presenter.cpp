@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/debug.h"
@@ -596,7 +596,6 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
             TracyVkCollect(profiler_ctx, cmdbuf);
         }
     }
-
     if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }

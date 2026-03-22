@@ -115,10 +115,10 @@ s32 PS4_SYSV_ABI sceNpWebApi2IntInitialize2(const OrbisNpWebApi2IntInitialize2Ar
     if (args == nullptr || args->struct_size != sizeof(OrbisNpWebApi2IntInitialize2Args)) {
         return ORBIS_NP_WEBAPI2_ERROR_INVALID_ARGUMENT;
     }
-    LOG_ERROR(
-        Lib_NpWebApi2,
-        "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = '{}', group = {:#x}",
-        args->lib_http_ctx_id, args->pool_size, args->name, args->push_config_group);
+    LOG_ERROR(Lib_NpWebApi2,
+              "(STUBBED) called, lib_http_ctx_id = {:#x}, pool_size = {:#x}, name = '{}', "
+              "group = {:#x}",
+              args->lib_http_ctx_id, args->pool_size, args->name, args->push_config_group);
     return ORBIS_OK;
 }
 

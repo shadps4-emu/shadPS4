@@ -5,6 +5,7 @@
 #include <mutex>
 
 #include "common/logging/log.h"
+#include "common/config.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"

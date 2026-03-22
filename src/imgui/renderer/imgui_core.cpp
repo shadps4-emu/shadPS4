@@ -218,6 +218,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
     if (draw_data->CmdListsCount == 0) {
         return;
     }
+
     if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "ImGui Render",

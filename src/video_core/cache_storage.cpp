@@ -5,6 +5,7 @@
 #include "common/io_file.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
+#include "core/emulator_settings.h"
 
 #include "core/emulator_settings.h"
 #include "video_core/cache_storage.h"

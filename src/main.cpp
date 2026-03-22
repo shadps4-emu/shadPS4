@@ -9,6 +9,7 @@
 #include <CLI/CLI.hpp>
 #include <SDL3/SDL_messagebox.h>
 
+#include <core/emulator_settings.h>
 #include <core/emulator_state.h>
 #include "common/key_manager.h"
 #include "common/logging/backend.h"
@@ -18,7 +19,6 @@
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -42,6 +42,11 @@ int main(int argc, char* argv[]) {
     // TODO add back trophy key migration without the need of entire previous config framework
     auto key_manager = KeyManager::GetInstance();
     key_manager->LoadFromFile();
+
+    // Load configurations
+    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
+    EmulatorSettingsImpl::SetInstance(emu_settings);
+    emu_settings->Load();
 
     CLI::App app{"shadPS4 Emulator CLI"};
 
