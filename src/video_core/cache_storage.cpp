@@ -7,7 +7,6 @@
 #include "common/thread.h"
 #include "core/emulator_settings.h"
 
-#include "core/emulator_settings.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
