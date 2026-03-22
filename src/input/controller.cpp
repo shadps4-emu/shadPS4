@@ -415,7 +415,7 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
             return i;
         }
     }
-    LOG_TRACE(Input, "Gamepad index: {}", index);
+    //LOG_TRACE(Input, "Gamepad index: {}", index);
     return -1;
 }
 
@@ -426,7 +426,7 @@ u8 GameControllers::GetMoveIndexFromJoystickId(SDL_JoystickID id) {
             return i;
         }
     }
-    LOG_TRACE(Input, "Move index: {}", index);
+    //LOG_TRACE(Input, "Move index: {}", index);
     return -1;
 }
 
