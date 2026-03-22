@@ -12,6 +12,7 @@
 #include "common/elf_info.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "imgui/renderer/imgui_core.h"
@@ -114,7 +115,7 @@ void SDLInputEngine::Init() {
     int selectedIndex = GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count,
                                                         GamepadSelect::GetSelectedGamepad());
     int defaultIndex =
-        GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count, Config::getDefaultControllerID());
+        GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count, EmulatorSettings.GetDefaultControllerId());
 
     // If user selects a gamepad in the GUI, use that, otherwise try the default
     if (!m_gamepad) {
@@ -149,7 +150,7 @@ void SDLInputEngine::Init() {
         LOG_INFO(Input, "Detected DualSense Controller");
     }
 
-    if (Config::getIsMotionControlsEnabled()) {
+    if (EmulatorSettings.IsMotionControlsEnabled()) {
         if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, true)) {
             m_gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_GYRO);
             LOG_INFO(Input, "Gyro initialized, poll rate: {}", m_gyro_poll_rate);
@@ -170,7 +171,7 @@ void SDLInputEngine::Init() {
 
     SDL_free(gamepads);
 
-    int* rgb = Config::GetControllerCustomColor();
+    const auto rgb = EmulatorSettings.GetControllerCustomColor();
 
     if (isDualSense) {
         if (SDL_SetJoystickLED(joystick, rgb[0], rgb[1], rgb[2]) == 0) {
@@ -323,9 +324,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
     if (!error) {
         SDL_SetWindowFullscreenMode(
-            window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
+            window, EmulatorSettings.GetFullScreenMode() == "Fullscreen" ? displayMode : NULL);
     }
-    SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
+    SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
@@ -358,7 +359,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
 
-    if (Config::getBackgroundControllerInput()) {
+    if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
 }

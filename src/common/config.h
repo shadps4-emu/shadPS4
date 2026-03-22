@@ -105,10 +105,20 @@ bool isPipelineCacheArchived();
 void setRdocEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheEnabled(bool enable, bool is_game_specific = false);
 void setPipelineCacheArchived(bool enable, bool is_game_specific = false);
+bool isLogSync();
+void setLogSync(bool sync, bool is_game_specific = false);
+#ifdef _WIN32
 std::string getLogType();
 void setLogType(const std::string& type, bool is_game_specific = false);
-bool groupIdenticalLogs();
-void setGroupIdenticalLogs(bool enable, bool is_game_specific = false);
+#endif
+bool getLogSkipDuplicate();
+void setLogSkipDuplicate(bool enable, bool is_game_specific = false);
+u32 getMaxSkipDuration();
+void setMaxSkipDuration(u32 duration, bool is_game_specific = false);
+unsigned long long getLogSizeLimit();
+void setLogSizeLimit(unsigned long long size, bool is_game_specific = false);
+bool isLogAppend();
+void setLogAppend(bool enable, bool is_game_specific = false);
 std::string getLogFilter();
 void setLogFilter(const std::string& type, bool is_game_specific = false);
 double getTrophyNotificationDuration();

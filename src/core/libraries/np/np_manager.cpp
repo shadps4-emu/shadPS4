@@ -7,11 +7,13 @@
 
 #include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include "core/user_settings.h"
 
 namespace Libraries::Np::NpManager {
 
@@ -631,7 +633,8 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(np_id, 0, sizeof(OrbisNpId));
-    strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
+    const auto name = UserManagement.GetUserByID(user_id)->user_name;
+    strncpy(np_id->handle.data, name.c_str(), sizeof(np_id->handle.data));
     return ORBIS_OK;
 }
 
@@ -645,7 +648,8 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
-    strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
+    const auto name = UserManagement.GetUserByID(user_id)->user_name;
+    strncpy(online_id->data, name.c_str(), sizeof(online_id->data));
     return ORBIS_OK;
 }
 
@@ -784,7 +788,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    g_signed_in = Config::getPSNSignedIn();
+    g_signed_in = EmulatorSettings.IsPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);

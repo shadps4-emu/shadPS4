@@ -23,6 +23,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
@@ -223,7 +224,7 @@ InputBinding GetBindingFromString(std::string& line) {
 }
 
 void ParseInputConfig(const std::string game_id = "") {
-    std::string game_id_or_default = Config::GetUseUnifiedInputConfig() ? "default" : game_id;
+    std::string game_id_or_default = EmulatorSettings.IsUseUnifiedInputConfig() ? "default" : game_id;
     const auto config_file = Config::GetInputConfigFile(game_id_or_default);
     const auto global_config_file = Config::GetInputConfigFile("global");
 
@@ -239,8 +240,8 @@ void ParseInputConfig(const std::string game_id = "") {
     lefttrigger_deadzone = {1, 127};
     righttrigger_deadzone = {1, 127};
 
-    Config::SetOverrideControllerColor(false);
-    Config::SetControllerCustomColor(0, 0, 255);
+    EmulatorSettings.SetOverrideControllerColor(false);
+    EmulatorSettings.SetControllerCustomColor({0, 0, 255});
 
     int lineCount = 0;
 
@@ -389,8 +390,8 @@ void ParseInputConfig(const std::string game_id = "") {
                             lineCount, line);
                 return;
             }
-            Config::SetOverrideControllerColor(enable == "true");
-            Config::SetControllerCustomColor(*r, *g, *b);
+            EmulatorSettings.SetOverrideControllerColor(enable == "true");
+            EmulatorSettings.SetControllerCustomColor({*r, *g, *b});
             LOG_DEBUG(Input, "Parsed color settings: {} {} {} {}",
                       enable == "true" ? "override" : "no override", *r, *b, *g);
             return;
@@ -598,12 +599,12 @@ void ControllerOutput::FinalizeUpdate() {
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
         case HOTKEY_VOLUME_UP:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() + 10, 0, 500),
+            Config::setVolumeSlider(std::clamp(EmulatorSettings.GetVolumeSlider() + 10, 0, 500),
                                     is_game_specific);
             Overlay::ShowVolume();
             break;
         case HOTKEY_VOLUME_DOWN:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() - 10, 0, 500),
+            Config::setVolumeSlider(std::clamp(EmulatorSettings.GetVolumeSlider() - 10, 0, 500),
                                     is_game_specific);
             Overlay::ShowVolume();
             break;
