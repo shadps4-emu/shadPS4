@@ -132,7 +132,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::string id;
     std::string title;
     std::string app_version;
-    u32 sdk_version;
+    u32 sdk_version{};
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
     if (param_sfo_exists) {
@@ -141,10 +141,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         const auto title_id = param_sfo->GetString("TITLE_ID");
-        if (content_id.has_value() && !content_id->empty()) {
-            id = std::string(*content_id, 7, 9);
-        } else if (title_id.has_value()) {
+        if (content_id.has_value() && content_id->size() >= 16) {
+            id = content_id->substr(7, 9);
+        } else if (title_id.has_value() && !title_id->empty()) {
             id = *title_id;
+        } else if (content_id.has_value() && !content_id->empty()) {
+            LOG_WARNING(Loader, "CONTENT_ID too short to derive game id: {}", *content_id);
         }
         title = param_sfo->GetString("TITLE").value_or("Unknown title");
         fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
@@ -173,7 +175,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
             sdk_ver_len -= sdk_ver_offset;
             std::string sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len).data();
             // Number is stored in base 16.
-            sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
+            try {
+                sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
+            } catch (const std::exception& e) {
+                LOG_WARNING(Loader, "Failed to parse sdk_ver '{}' from PUBTOOLINFO: {}",
+                            sdk_ver_string, e.what());
+                sdk_version = fw_version;
+            }
         }
     }
 
