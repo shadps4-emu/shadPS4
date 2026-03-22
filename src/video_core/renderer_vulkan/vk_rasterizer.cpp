@@ -1,8 +1,8 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/debug.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -38,7 +38,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool} {
-    if (!Config::nullGpu()) {
+    if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
@@ -1313,8 +1313,8 @@ void Rasterizer::UpdateColorBlendingState(const GraphicsPipeline* pipeline) cons
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1324,8 +1324,8 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) 
 }
 
 void Rasterizer::ScopeMarkerEnd(bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1333,8 +1333,8 @@ void Rasterizer::ScopeMarkerEnd(bool from_guest) {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1345,8 +1345,8 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest
 
 void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                          bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();

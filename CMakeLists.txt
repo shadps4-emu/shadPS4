@@ -295,8 +295,15 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
               src/core/libraries/audio/sdl_audio_out.cpp
+              src/core/libraries/audio/openal_audio_out.cpp
+              src/core/libraries/audio/openal_manager.h
               src/core/libraries/ngs2/ngs2.cpp
               src/core/libraries/ngs2/ngs2.h
+              src/core/libraries/audio3d/audio3d.cpp
+              src/core/libraries/audio3d/audio3d_openal.cpp
+              src/core/libraries/audio3d/audio3d_openal.h
+              src/core/libraries/audio3d/audio3d.h
+              src/core/libraries/audio3d/audio3d_error.h
 )
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
@@ -873,6 +880,12 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/tls.h
          src/core/emulator_state.cpp
          src/core/emulator_state.h
+         src/core/emulator_settings.cpp
+         src/core/emulator_settings.h
+         src/core/user_manager.cpp
+         src/core/user_manager.h
+         src/core/user_settings.cpp
+         src/core/user_settings.h
 )
 
 if (ARCHITECTURE STREQUAL "x86_64")

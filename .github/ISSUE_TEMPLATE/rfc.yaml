@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Docs - https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Request For Comments (RFC)
+description: Ask for feedback on major architectural changes or design choices
+title: "[RFC]: "
+labels: ["RFC"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Important: Read First
+
+        RFCs are for major architectural changes, design direction, or changes that benefit from structured discussion before merge.
+
+        Please make an effort to search for an existing RFC or issue before opening a new one.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for a similar RFC or issue in this repository and did not find one.
+          required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: |
+        Explain the problem this RFC is trying to solve.
+
+        Describe why the current design is insufficient and why this change is worth discussing now.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_change
+    attributes:
+      label: Proposed Change
+      description: |
+        Describe the proposed change in enough detail for maintainers and contributors to evaluate it.
+
+        Include the high-level design, affected areas, and any important constraints.
+    validations:
+      required: true
+
+  - type: textarea
+    id: feedback_period
+    attributes:
+      label: Feedback Period
+      description: |
+        State the intended review window for this RFC.
+
+        Example: one week, two weeks, or until specific maintainers have reviewed it.
+      placeholder: "Example: 1 week"
+    validations:
+      required: false
+
+  - type: textarea
+    id: cc_list
+    attributes:
+      label: CC List
+      description: |
+        List any maintainers or contributors you want to explicitly notify for feedback.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Any Other Things
+      description: |
+        Add any other relevant context, tradeoffs, diagrams, migration notes, or links to related work.
+    validations:
+      required: false

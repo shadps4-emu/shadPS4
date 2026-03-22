@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
@@ -108,7 +108,7 @@ bool validateModuleId(s32 id) {
     }
 
     // Cannot load debug modules on retail hardware.
-    if (isDebugModule(id) && !Config::isDevKitConsole()) {
+    if (isDebugModule(id) && !EmulatorSettings.IsDevKit()) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
@@ -154,7 +154,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         std::string mod_name = std::string(mod.name);
 
         // libSceGnmDriver case
-        if (index == 0xd && Config::isDevKitConsole()) {
+        if (index == 0xd && EmulatorSettings.IsDevKit()) {
             // There are some other checks involved here that I am not familiar with.
             // Since we're not exactly running libSceGnmDriver LLE, this shouldn't matter too much.
             mod_name.append("_padebug");
@@ -168,7 +168,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         }
 
         // libSceVrTracker case
-        if (index == 0xb3 && Config::isDevKitConsole()) {
+        if (index == 0xb3 && EmulatorSettings.IsDevKit()) {
             mod_name.append("_debug");
         }
 
@@ -178,7 +178,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
             // PS4 Pro running in enhanced mode
             mod_name.append("ForNeoMode");
         } else if ((mod.flags & OrbisSysmoduleModuleInternalFlags::IsNeo) != 0 &&
-                   Config::isNeoModeConsole()) {
+                   EmulatorSettings.IsNeo()) {
             // PS4 Pro running in base mode
             mod_name.append("ForNeo");
         }
@@ -188,7 +188,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
 
         // Now we need to check if the requested library is allowed to LLE.
         // First, we allow all modules from game-specific sys_modules
-        const auto& sys_module_path = Config::getSysModulesPath();
+        const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
         const auto& game_specific_module_path =
             sys_module_path / game_info->GameSerial() / mod_name;
         if (std::filesystem::exists(game_specific_module_path)) {
@@ -223,7 +223,8 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceAudiodec.sprx", nullptr},
              {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
              {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr}});
+             {"libSceFreeTypeOt.sprx", nullptr},
+             {"libScePadTracker.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
@@ -299,7 +300,7 @@ s32 loadModule(s32 id, s32 argc, const void* argv, s32* res_out) {
     for (s64 i = requested_module.num_to_load - 1; i >= 0; i--) {
         // Modules flagged as debug modules only load for devkits
         u32 mod_index = requested_module.to_load[i];
-        if ((!Config::isDevKitConsole() &&
+        if ((!EmulatorSettings.IsDevKit() &&
              g_modules_array[mod_index].flags & OrbisSysmoduleModuleInternalFlags::IsDebug) != 0) {
             continue;
         }
@@ -361,7 +362,7 @@ s32 unloadModule(s32 id, s32 argc, const void* argv, s32* res_out, bool is_inter
         OrbisSysmoduleModuleInternal dep_mod = g_modules_array[mod.to_load[i]];
         // If this is a debug module and we're not emulating a devkit, skip it.
         if ((dep_mod.flags & OrbisSysmoduleModuleInternalFlags::IsDebug) != 0 &&
-            !Config::isDevKitConsole()) {
+            !EmulatorSettings.IsDevKit()) {
             continue;
         }
 
@@ -398,7 +399,7 @@ s32 preloadModulesForLibkernel() {
         // These are skipped unless this console is a devkit.
         if ((module_index == 0x12 || module_index == 0x1e || module_index == 0x24 ||
              module_index == 0x26) &&
-            !Config::isDevKitConsole()) {
+            !EmulatorSettings.IsDevKit()) {
             continue;
         }
 
@@ -409,13 +410,13 @@ s32 preloadModulesForLibkernel() {
 
         // libSceDbgAssist is skipped on non-testkit consoles.
         // For now, stub check to non-devkit.
-        if (module_index == 0x23 && !Config::isDevKitConsole()) {
+        if (module_index == 0x23 && !EmulatorSettings.IsDevKit()) {
             continue;
         }
 
         // libSceRazorCpu, skipped for old non-devkit consoles.
         if (module_index == 0x25 && sdk_ver < Common::ElfInfo::FW_45 &&
-            !Config::isDevKitConsole()) {
+            !EmulatorSettings.IsDevKit()) {
             continue;
         }
 

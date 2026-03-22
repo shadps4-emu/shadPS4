@@ -3,9 +3,9 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/elf_info.h"
+#include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -37,11 +37,11 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                                        bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
-    if (Config::isDevKitConsole()) {
+    if (EmulatorSettings.IsDevKit()) {
         total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
-    s32 extra_dmem = Config::getExtraDmemInMbytes();
-    if (Config::getExtraDmemInMbytes() != 0) {
+    s32 extra_dmem = EmulatorSettings.GetExtraDmemInMBytes();
+    if (extra_dmem != 0) {
         LOG_WARNING(Kernel_Vmm,
                     "extraDmemInMbytes is {} MB! Old Direct Size: {:#x} -> New Direct Size: {:#x}",
                     extra_dmem, total_size, total_size + extra_dmem * 1_MB);
@@ -1223,13 +1223,16 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
                 // Increment phys_handle
                 phys_handle++;
             }
-
-            // Check if VMA can be merged with adjacent areas after physical area modifications.
-            vma_handle = MergeAdjacent(vma_map, vma_handle);
         }
         current_addr += size_in_vma;
         remaining_size -= size_in_vma;
-        vma_handle++;
+
+        // Check if VMA can be merged with adjacent areas after modifications.
+        vma_handle = MergeAdjacent(vma_map, vma_handle);
+        if (vma_handle->second.base + vma_handle->second.size <= current_addr) {
+            // If we're now in the next VMA, then go to the next handle.
+            vma_handle++;
+        }
     }
 
     return ORBIS_OK;
@@ -1262,10 +1265,15 @@ void MemoryManager::NameVirtualRange(VAddr virtual_addr, u64 size, std::string_v
                 vma.name = name;
             }
         }
-        it = MergeAdjacent(vma_map, it);
         remaining_size -= size_in_vma;
         current_addr += size_in_vma;
-        it++;
+
+        // Check if VMA can be merged with adjacent areas after modifications.
+        it = MergeAdjacent(vma_map, it);
+        if (it->second.base + it->second.size <= current_addr) {
+            // If we're now in the next VMA, then go to the next handle.
+            it++;
+        }
     }
 }
 
