@@ -7,11 +7,6 @@
 #include <mutex>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
-
-#ifdef ENABLE_QT_GUI
-#include <qt_gui/background_music_player.h>
-#endif
-
 #include "common/assert.h"
 #include "common/path_util.h"
 #include "common/singleton.h"

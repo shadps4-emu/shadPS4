@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/singleton.h"
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "net_error.h"
 #include "net_resolver.h"
@@ -27,7 +27,7 @@ int Resolver::ResolveAsync(const char* hostname, OrbisNetInAddr* addr, int timeo
 }
 
 void Resolver::Resolve() {
-    if (!Config::getIsConnectedToNetwork()) {
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
         resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
         return;
     }
