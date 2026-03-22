@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "assert.h"
 #include "bit_field.h"
@@ -73,6 +74,7 @@ class ElfInfo {
 
     std::filesystem::path splash_path{};
     std::filesystem::path game_folder{};
+    std::vector<std::string> npCommIds{};
 
 public:
     static constexpr u32 FW_10 = 0x1000000;
@@ -138,6 +140,10 @@ public:
 
     [[nodiscard]] const std::filesystem::path& GetGameFolder() const {
         return game_folder;
+    }
+
+    [[nodiscard]] const std::vector<std::string> GetNpCommIds() const {
+        return npCommIds;
     }
 };
 

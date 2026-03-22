@@ -82,6 +82,14 @@ UniqueImage::~UniqueImage() {
     }
 }
 
+void UniqueImage::Destroy() {
+    if (image) {
+        vmaDestroyImage(allocator, image, allocation);
+        image = vk::Image{};
+        allocation = {};
+    }
+}
+
 void UniqueImage::Create(const vk::ImageCreateInfo& image_ci) {
     this->image_ci = image_ci;
     ASSERT(!image);
@@ -239,13 +247,11 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
                 ASSERT(subres_idx < subresource_states.size());
                 auto& state = subresource_states[subres_idx];
 
-                if (state.layout != dst_layout || state.access_mask != dst_mask ||
-                    static_cast<bool>(dst_mask &
-                                      (vk::AccessFlagBits2::eTransferWrite |
-                                       vk::AccessFlagBits2::eShaderWrite |
-                                       vk::AccessFlagBits2::eColorAttachmentWrite |
-                                       vk::AccessFlagBits2::eDepthStencilAttachmentWrite |
-                                       vk::AccessFlagBits2::eMemoryWrite))) {
+                constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+                                             vk::AccessFlagBits2::eShaderWrite |
+                                             vk::AccessFlagBits2::eMemoryWrite;
+                const bool is_write = static_cast<bool>(state.access_mask & write_flags);
+                if (state.layout != dst_layout || state.access_mask != dst_mask || is_write) {
                     barriers.emplace_back(vk::ImageMemoryBarrier2{
                         .srcStageMask = state.pl_stage,
                         .srcAccessMask = state.access_mask,
@@ -275,11 +281,10 @@ Image::Barriers Image::GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 
             subresource_states.clear();
         }
     } else { // Full resource transition
-        constexpr auto write_flags =
-            vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eShaderWrite |
-            vk::AccessFlagBits2::eColorAttachmentWrite |
-            vk::AccessFlagBits2::eDepthStencilAttachmentWrite | vk::AccessFlagBits2::eMemoryWrite;
-        const bool is_write = static_cast<bool>(dst_mask & write_flags);
+        constexpr auto write_flags = vk::AccessFlagBits2::eTransferWrite |
+                                     vk::AccessFlagBits2::eShaderWrite |
+                                     vk::AccessFlagBits2::eMemoryWrite;
+        const bool is_write = static_cast<bool>(last_state.access_mask & write_flags);
         if (last_state.layout == dst_layout && last_state.access_mask == dst_mask && !is_write) {
             return {};
         }
@@ -377,6 +382,8 @@ void Image::Upload(std::span<const vk::BufferImageCopy> upload_copies, vk::Buffe
         .bufferMemoryBarrierCount = 1,
         .pBufferMemoryBarriers = &post_barrier,
     });
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
     flags &= ~ImageFlagBits::Dirty;
 }
 
@@ -647,8 +654,6 @@ void Image::CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset)
 
     cmdbuf.copyBufferToImage(buffer, GetImage(), vk::ImageLayout::eTransferDstOptimal,
                              buffer_copies);
-
-    // Match CopyImage: transition to general so shaders can sample the result.
     Transit(vk::ImageLayout::eGeneral,
             vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
@@ -690,6 +695,8 @@ void Image::CopyMip(Image& src_image, u32 mip, u32 slice) {
     const auto cmdbuf = scheduler->CommandBuffer();
     cmdbuf.copyImage(src_image.GetImage(), src_image.backing->state.layout, GetImage(),
                      backing->state.layout, image_copy);
+    Transit(vk::ImageLayout::eGeneral,
+            vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eTransferRead, {});
 }
 
 void Image::Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
