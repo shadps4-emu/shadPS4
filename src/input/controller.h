@@ -181,7 +181,7 @@ class GameControllers {
 public:
     GameControllers()
         : controllers({new GameController(), new GameController(), new GameController(),
-                       new GameController()}),
+                       new GameController(), new GameController()}),
           move_controllers({new GameController(), new GameController(), new GameController(),
                             new GameController()}) {};
     virtual ~GameControllers() = default;
