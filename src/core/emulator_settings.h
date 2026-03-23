@@ -465,6 +465,8 @@ private:
     VulkanSettings m_vulkan{};
     ConfigMode m_configMode{ConfigMode::Default};
 
+    bool m_loaded{false};
+
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;
     static std::mutex s_mutex;
 

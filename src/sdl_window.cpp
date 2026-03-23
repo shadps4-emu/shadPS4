@@ -26,6 +26,7 @@
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
 #endif
+#include <core/emulator_settings.h>
 
 namespace Frontend {
 
