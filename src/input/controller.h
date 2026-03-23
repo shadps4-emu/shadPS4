@@ -186,7 +186,7 @@ public:
                             new GameController()}) {};
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
-        if (i > 3) {
+        if (i > 4) {
             UNREACHABLE_MSG("Index {} is out of bounds for GameControllers!", i);
         }
         return controllers[i];
