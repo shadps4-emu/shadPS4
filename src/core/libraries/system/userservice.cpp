@@ -4,6 +4,7 @@
 #include "common/config.h"
 #include "common/logging/log.h"
 
+#include <queue>
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
@@ -103,6 +104,13 @@ int PS4_SYSV_ABI sceUserServiceGetDeletedUserInfo() {
 int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag() {
     LOG_ERROR(Lib_UserService, "(STUBBED) called");
     return ORBIS_OK;
+}
+
+std::queue<OrbisUserServiceEvent> user_service_event_queue = {};
+
+void AddUserServiceEvent(const OrbisUserServiceEvent e) {
+    LOG_DEBUG(Lib_UserService, "Event added to queue: {} {}", (u8)e.event, e.userId);
+    user_service_event_queue.push(e);
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
