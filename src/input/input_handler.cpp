@@ -218,10 +218,10 @@ static std::vector<BindingConnection> connections;
 GameControllers ControllerOutput::controllers =
     *Common::Singleton<Input::GameControllers>::Instance();
 
-std::array<ControllerAllOutputs, 8> output_arrays = {
+std::array<ControllerAllOutputs, 9> output_arrays = {
     ControllerAllOutputs(0), ControllerAllOutputs(1), ControllerAllOutputs(2),
     ControllerAllOutputs(3), ControllerAllOutputs(4), ControllerAllOutputs(5),
-    ControllerAllOutputs(6), ControllerAllOutputs(7),
+    ControllerAllOutputs(6), ControllerAllOutputs(7), ControllerAllOutputs(8),
 };
 
 void ControllerOutput::LinkJoystickAxes() {
@@ -728,9 +728,9 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     old_button_state = new_button_state;
     old_param = *new_param;
     GameController* controller;
-    if (gamepad_index < 4)
+    if (gamepad_index < 5)
         controller = controllers[gamepad_index];
-    else if (gamepad_index < 8)
+    else if (gamepad_index < 9)
         controller = controllers.moves(gamepad_index - 4); // magic number :(
     else
         UNREACHABLE();

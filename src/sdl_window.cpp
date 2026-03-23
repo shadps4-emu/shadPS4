@@ -377,7 +377,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
         switch ((SDL_SensorType)event->gsensor.sensor) {
         case SDL_SENSOR_GYRO:
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
-            if (gamepad < 4) {
+            if (gamepad < 5) {
                 controllers[gamepad]->UpdateGyro(event->gsensor.data);
             } else {
                 gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
@@ -388,7 +388,7 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
             break;
         case SDL_SENSOR_ACCEL:
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
-            if (gamepad < 4) {
+            if (gamepad < 5) {
                 controllers[gamepad]->UpdateAcceleration(event->gsensor.data);
             } else {
                 gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);

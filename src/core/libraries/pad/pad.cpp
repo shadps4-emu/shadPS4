@@ -276,6 +276,10 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
     if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+        if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
+            LOG_INFO(Lib_Pad, "Opened a TV remote device");
+            return 5;
+        }
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
     if (EmulatorSettings.IsUsingSpecialPad()) {

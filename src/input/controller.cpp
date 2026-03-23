@@ -410,7 +410,7 @@ void GameController::PushState() {
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
     auto g = SDL_GetGamepadFromID(id);
     ASSERT(g != nullptr);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         if (controllers[i]->m_sdl_gamepad == g) {
             return i;
         }
@@ -439,7 +439,7 @@ std::optional<u8> GameControllers::GetControllerIndexFromUserID(s32 user_id) {
 }
 
 std::optional<u8> GameControllers::GetControllerIndexFromControllerID(s32 controller_id) {
-    if (controller_id < 1 || controller_id > 4) {
+    if (controller_id < 1 || controller_id > 5) {
         return std::nullopt;
     }
     return controller_id - 1;
