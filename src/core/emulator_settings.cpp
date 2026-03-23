@@ -93,7 +93,8 @@ void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& c
 EmulatorSettingsImpl::EmulatorSettingsImpl() = default;
 
 EmulatorSettingsImpl::~EmulatorSettingsImpl() {
-    Save();
+    if (m_loaded)
+        Save();
 }
 
 std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::GetInstance() {
@@ -380,6 +381,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                     SDL_ShowMessageBox(&msg_box, &result);
                     if (result == 1) {
                         if (TransferSettings()) {
+                            m_loaded = true;
                             Save();
                             return true;
                         } else {
@@ -397,6 +399,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             if (GetConfigVersion() != Common::g_scm_rev) {
                 Save();
             }
+            m_loaded = true;
             return true;
         } else {
             // ── Per-game override file ─────────────────────────────────
