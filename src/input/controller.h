@@ -172,7 +172,7 @@ private:
 };
 
 class GameControllers {
-    std::array<GameController*, 4> controllers;
+    std::array<GameController*, 5> controllers;
     std::array<GameController*, 4> move_controllers;
 
     static bool override_controller_color;
