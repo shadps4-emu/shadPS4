@@ -49,12 +49,12 @@ namespace Libraries::SaveData {
 
 fs::path SaveInstance::MakeTitleSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
                                          std::string_view game_serial) {
-    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial;
+    return EmulatorSettings.GetSaveDataPath() / std::to_string(user_id) / game_serial;
 }
 
 fs::path SaveInstance::MakeDirSavePath(Libraries::UserService::OrbisUserServiceUserId user_id,
                                        std::string_view game_serial, std::string_view dir_name) {
-    return Config::GetSaveDataPath() / std::to_string(user_id) / game_serial / dir_name;
+    return EmulatorSettings.GetSaveDataPath() / std::to_string(user_id) / game_serial / dir_name;
 }
 
 uint64_t SaveInstance::GetMaxBlockFromSFO(const PSF& psf) {

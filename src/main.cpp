@@ -13,51 +13,28 @@
 #include <core/emulator_state.h>
 #include "common/config.h"
 #include "common/key_manager.h"
-#include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
+#include <core/user_settings.h>
 #include "emulator.h"
 #ifdef _WIN32
 #include <windows.h>
 #endif
-#include <core/user_settings.h>
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
-    IPC::Instance().Init();
-
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
-    UserSettings.Load();
-
+    // 1. Load config
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
-    Config::load(user_dir / "config.toml");
+    EmulatorSettings.Load(user_dir / "config.toml");
 
-    // ---- Trophy key migration ----
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
-        !Config::getTrophyKey().empty()) {
-        auto keys = key_manager->GetAllKeys();
-        if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !Config::getTrophyKey().empty()) {
-            keys.TrophyKeySet.ReleaseTrophyKey =
-                KeyManager::HexStringToBytes(Config::getTrophyKey());
-            key_manager->SetAllKeys(keys);
-            key_manager->SaveToFile();
-        }
-    }
-
-    // Load configurations
-    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(emu_settings);
-    emu_settings->Load();
-
+    // 2. Load CLI
     CLI::App app{"shadPS4 Emulator CLI"};
 
     // ---- CLI state ----
@@ -72,7 +49,7 @@ int main(int argc, char* argv[]) {
     bool showFps = false;
     bool configClean = false;
     bool configGlobal = false;
-    bool logAppend = false;
+    Common::Log::g_should_append = EmulatorSettings.IsLogAppend();
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -95,7 +72,7 @@ int main(int argc, char* argv[]) {
     app.add_flag("--show-fps", showFps);
     app.add_flag("--config-clean", configClean);
     app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
+    app.add_flag("--log-append", Common::Log::g_should_append);
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
@@ -123,6 +100,35 @@ int main(int argc, char* argv[]) {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
         return app.exit(e);
+    }
+
+    // 3. Wait for potential previous instance
+    if (waitPid)
+        Core::Debugger::WaitForPid(*waitPid);
+
+    // 4. Load Log
+    Common::Log::Setup(argc, argv);
+
+    // 5. Load IPC
+    IPC::Instance().Init();
+
+    // 6. Load emulator
+    auto emu_state = std::make_shared<EmulatorState>();
+    EmulatorState::SetInstance(emu_state);
+    UserSettings.Load();
+
+    // ---- Trophy key migration ----
+    auto key_manager = KeyManager::GetInstance();
+    key_manager->LoadFromFile();
+    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
+        !EmulatorSettings.GetTrophyKey().empty()) {
+        auto keys = key_manager->GetAllKeys();
+        if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !EmulatorSettings.GetTrophyKey().empty()) {
+            keys.TrophyKeySet.ReleaseTrophyKey =
+                KeyManager::HexStringToBytes(EmulatorSettings.GetTrophyKey());
+            key_manager->SetAllKeys(keys);
+            key_manager->SaveToFile();
+        }
     }
 
     // ---- Utility commands ----
@@ -185,8 +191,8 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
-    if (logAppend)
-        Common::Log::SetAppend();
+    if (!Common::Log::g_should_append)
+        Common::Log::Truncate();
 
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
@@ -205,9 +211,6 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-
-    if (waitPid)
-        Core::Debugger::WaitForPid(*waitPid);
 
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];

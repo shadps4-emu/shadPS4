@@ -15,6 +15,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/string_util.h"
+#include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
@@ -441,7 +442,7 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
             LOG_INFO(Lib_SaveData, "called with invalid block size");
         }
 
-        const auto root_save = Config::GetSaveDataPath();
+        const auto root_save = EmulatorSettings.GetSaveDataPath();
         fs::create_directories(root_save);
         const auto available = fs::space(root_save).available;
 
@@ -615,7 +616,7 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
     if (check->param != nullptr) {
         PSF sfo;
         if (!sfo.Open(backup_path / "sce_sys" / "param.sfo")) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}", fmt::UTF(backup_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}", backup_path.string());
             return Error::INTERNAL;
         }
         check->param->FromSFO(sfo);
@@ -826,7 +827,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
         const auto sfo_path = SaveInstance::GetParamSFOPath(dir_path);
         PSF sfo;
         if (!sfo.Open(sfo_path)) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", fmt::UTF(sfo_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", sfo_path.string());
             ASSERT_MSG(false, "Failed to read SFO");
         }
 

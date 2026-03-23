@@ -36,23 +36,23 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     vk::DebugUtilsMessageSeverityFlagBitsEXT severity, vk::DebugUtilsMessageTypeFlagsEXT type,
     const vk::DebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
 
-    Common::Log::Level level{};
+    spdlog::level::level_enum level{};
     switch (severity) {
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-        level = Common::Log::Level::Error;
+        level = spdlog::level::err;
         break;
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-        level = Common::Log::Level::Info;
+        level = spdlog::level::info;
         break;
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
     case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-        level = Common::Log::Level::Debug;
+        level = spdlog::level::debug;
         break;
     default:
-        level = Common::Log::Level::Info;
+        level = spdlog::level::info;
     }
 
-    LOG_GENERIC(Common::Log::Class::Render_Vulkan, level, "{}: {}",
+    LOG_GENERIC(Common::Log::Render_Vulkan, level, "{}: {}",
                 callback_data->pMessageIdName ? callback_data->pMessageIdName : "<null>",
                 callback_data->pMessage ? callback_data->pMessage : "<null>");
 

@@ -11,7 +11,6 @@
 #include <hwinfo/hwinfo.h>
 
 #include "common/debug.h"
-#include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/emulator_settings.h"
@@ -206,12 +205,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     // Initialize logging as soon as possible
-    if (!id.empty() && EmulatorSettings.IsSeparateLoggingEnabled()) {
-        Common::Log::Initialize(id + ".log");
-    } else {
-        Common::Log::Initialize();
+    if (!id.empty() && EmulatorSettings.IsLogSeparate()) {
+        Common::Log::Redirect(id + ".log");
     }
-    Common::Log::Start();
+
     if (!std::filesystem::exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
@@ -228,12 +225,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".json"));
     LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
 
-    LOG_INFO(Config, "General LogType: {}", EmulatorSettings.GetLogType());
-    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", EmulatorSettings.IsIdenticalLogGrouped());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings.IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings.IsPSNSignedIn());
+    LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
+#ifdef _WIN32
+    LOG_INFO(Config, "Log type: {}", EmulatorSettings.GetLogType());
+#endif
+    LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
+    LOG_INFO(Config, "Log filter: {}", EmulatorSettings.GetLogFilter());
     LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings.IsNullGPU());
     LOG_INFO(Config, "GPU readbacksMode: {}", EmulatorSettings.GetReadbacksMode());
     LOG_INFO(Config, "GPU readbackLinearImages: {}",
@@ -476,7 +477,8 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
     Libraries::SaveData::Backup::StopThread();
-    Common::Log::Denitializer();
+
+    Common::Log::Shutdown();
 
     auto& ipc = IPC::Instance();
 
@@ -506,7 +508,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                                   nullptr, &si, &pi);
 
     if (!success) {
-        std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
+        std::cerr << "Failed to restart game: " << GetLastError() << std::endl;
         std::quick_exit(1);
     }
 

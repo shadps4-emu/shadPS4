@@ -133,7 +133,7 @@ private:
     ComputePipelineKey compute_key{};
     u32 num_new_pipelines{}; // new pipelines added to the cache since the game start
 
-    // Only if Config::collectShadersForDebug()
+    // Only if EmulatorSettings.collectShadersForDebug()
     tsl::robin_map<vk::ShaderModule,
                    std::vector<std::variant<GraphicsPipelineKey, ComputePipelineKey>>>
         module_related_pipelines;
