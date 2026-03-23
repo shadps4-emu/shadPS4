@@ -24,6 +24,7 @@
 #ifdef __APPLE__
 #include "SDL3/SDL_metal.h"
 #endif
+#include <core/emulator_settings.h>
 
 namespace Input {
 
@@ -323,9 +324,9 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     }
     if (!error) {
         SDL_SetWindowFullscreenMode(
-            window, Config::getFullscreenMode() == "Fullscreen" ? displayMode : NULL);
+            window, EmulatorSettings.GetFullScreenMode() == "Fullscreen" ? displayMode : NULL);
     }
-    SDL_SetWindowFullscreen(window, Config::getIsFullscreen());
+    SDL_SetWindowFullscreen(window, EmulatorSettings.IsFullScreen());
     SDL_SyncWindow(window);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);

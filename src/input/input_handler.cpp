@@ -23,6 +23,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
