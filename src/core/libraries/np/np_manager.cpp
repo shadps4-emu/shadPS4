@@ -5,6 +5,7 @@
 #include <mutex>
 #include <variant>
 
+#include <core/emulator_settings.h>
 #include "common/config.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -784,7 +785,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    g_signed_in = Config::getPSNSignedIn();
+    g_signed_in = EmulatorSettings.IsPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);
