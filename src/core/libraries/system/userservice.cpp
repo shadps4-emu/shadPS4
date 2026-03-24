@@ -6,9 +6,9 @@
 #include "common/logging/log.h"
 
 #include <core/user_settings.h>
+#include <queue>
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
-#include <queue>
 #include "core/libraries/libs.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
