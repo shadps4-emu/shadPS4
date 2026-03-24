@@ -33,7 +33,7 @@ endif()
 
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
-option(ENABLE_TESTS "Build unit tests (requires GTest)" ON)
+option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
