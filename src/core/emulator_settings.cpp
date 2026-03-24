@@ -363,8 +363,8 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
                     SDL_MessageBoxButtonData btns[2]{
-                        {0, 0, "No"},
-                        {0, 1, "Yes"},
+                        {0, 0, "Continue with defaults"},
+                        {0, 1, "Update automatically"},
                     };
                     SDL_MessageBoxData msg_box{
                         0,
