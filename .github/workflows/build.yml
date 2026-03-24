@@ -104,7 +104,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev uuid-dev uuid-dev
 
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
@@ -117,7 +117,8 @@ jobs:
             -DCMAKE_CXX_COMPILER="${{ matrix.compiler_cxx }}" \
             -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DBUILD_TESTING=ON
+            -DBUILD_TESTING=ON \
+            ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=x86_64' || '' }}
         shell: bash
 
       - name: Build all tests
@@ -125,7 +126,7 @@ jobs:
         shell: bash
 
       - name: Run tests with CTest
-        run: ctest --test-dir ${{github.workspace}}/build -C Debug --output-on-failure --progress
+        run: ctest --test-dir build -C Debug --output-on-failure --progress
         shell: bash
 
   windows-sdl:
