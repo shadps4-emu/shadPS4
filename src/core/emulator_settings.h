@@ -112,26 +112,26 @@ inline OverrideItem make_override(const char* key, Setting<T> Struct::* member) 
     return OverrideItem{
         key,
         [member, key](void* base, const nlohmann::json& entry, std::vector<std::string>& changed) {
-            LOG_DEBUG(EmuSettings, "[make_override] Processing key: {}", key);
-            LOG_DEBUG(EmuSettings, "[make_override] Entry JSON: {}", entry.dump());
+            LOG_DEBUG(Config, "[make_override] Processing key: {}", key);
+            LOG_DEBUG(Config, "[make_override] Entry JSON: {}", entry.dump());
             Struct* obj = reinterpret_cast<Struct*>(base);
             Setting<T>& dst = obj->*member;
             try {
                 T newValue = entry.get<T>();
-                LOG_DEBUG(EmuSettings, "[make_override] Parsed value: {}", newValue);
-                LOG_DEBUG(EmuSettings, "[make_override] Current value: {}", dst.value);
+                LOG_DEBUG(Config, "[make_override] Parsed value: {}", newValue);
+                LOG_DEBUG(Config, "[make_override] Current value: {}", dst.value);
                 if (dst.value != newValue) {
                     std::ostringstream oss;
                     oss << key << " ( " << dst.value << " → " << newValue << " )";
                     changed.push_back(oss.str());
-                    LOG_DEBUG(EmuSettings, "[make_override] Recorded change: {}", oss.str());
+                    LOG_DEBUG(Config, "[make_override] Recorded change: {}", oss.str());
                 }
                 dst.game_specific_value = newValue;
-                LOG_DEBUG(EmuSettings, "[make_override] Successfully updated {}", key);
+                LOG_DEBUG(Config, "[make_override] Successfully updated {}", key);
             } catch (const std::exception& e) {
-                LOG_ERROR(EmuSettings, "[make_override] ERROR parsing {}: {}", key, e.what());
-                LOG_ERROR(EmuSettings, "[make_override] Entry was: {}", entry.dump());
-                LOG_ERROR(EmuSettings, "[make_override] Type name: {}", entry.type_name());
+                LOG_ERROR(Config, "[make_override] ERROR parsing {}: {}", key, e.what());
+                LOG_ERROR(Config, "[make_override] Entry was: {}", entry.dump());
+                LOG_ERROR(Config, "[make_override] Type name: {}", entry.type_name());
             }
         },
 
