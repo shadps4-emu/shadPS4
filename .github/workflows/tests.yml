@@ -61,8 +61,8 @@ jobs:
             -DBUILD_TESTING=ON
         shell: bash
         
-      - name: Build tests
-        run: cmake --build build --config Debug --target test_emulator_settings
+      - name: Build all tests
+        run: cmake --build build --config Debug
         shell: bash
         
       - name: Run tests with CTest
