@@ -196,6 +196,32 @@ void ImageInfo::UpdateSize() {
                 mip_w, mip_h, thickness, num_bits, num_samples, tile_mode, mip, alt_tile);
             break;
         }
+        case AmdGpu::ArrayMode::Array3DTiledXThick: {
+            ASSERT(!props.is_block);
+            ASSERT(resources.layers == 1);
+            u32 thickness = 8;
+            mip_d += (-mip_d) & (thickness - 1);
+            std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled3D(
+                mip_w, mip_h, mip_d, num_bits, num_samples, tile_mode, mip, alt_tile);
+            break;
+        }
+        case AmdGpu::ArrayMode::Array3DTiledThick: {
+            ASSERT(!props.is_block);
+            ASSERT(resources.layers == 1);
+            u32 thickness = 4;
+            mip_d += (-mip_d) & (thickness - 1);
+            std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled3D(
+                mip_w, mip_h, mip_d, num_bits, num_samples, tile_mode, mip, alt_tile);
+            break;
+        }
+        case AmdGpu::ArrayMode::Array3DTiledThin1: {
+            ASSERT(!props.is_block);
+            ASSERT(resources.layers == 1);
+            std::tie(mip_info.pitch, mip_info.height, mip_info.size) = ImageSizeMacroTiled3D(
+                mip_w, mip_h, mip_d, num_bits, num_samples, tile_mode, mip, alt_tile);
+            break;
+        }
+
         default: {
             UNREACHABLE_MSG("Unknown array mode {}", magic_enum::enum_name(array_mode));
         }
@@ -204,7 +230,13 @@ void ImageInfo::UpdateSize() {
             mip_info.pitch = std::max(mip_info.pitch * 4, 32u);
             mip_info.height = std::max(mip_info.height * 4, 32u);
         }
-        mip_info.size *= mip_d * resources.layers;
+        if (array_mode == AmdGpu::ArrayMode::Array3DTiledThin1 ||
+            array_mode == AmdGpu::ArrayMode::Array3DTiledThick ||
+            array_mode == AmdGpu::ArrayMode::Array3DTiledXThick) {
+            mip_info.size *= resources.layers; // 3D tiled already includes depth
+        } else {
+            mip_info.size *= mip_d * resources.layers;
+        }
         mip_info.offset = guest_size;
         guest_size += mip_info.size;
     }
