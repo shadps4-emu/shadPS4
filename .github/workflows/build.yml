@@ -122,11 +122,11 @@ jobs:
         shell: bash
 
       - name: Build all tests
-        run: cmake --build build --config Debug
+        run: cmake --build build
         shell: bash
 
       - name: Run tests with CTest
-        run: ctest --test-dir build -C Debug --output-on-failure --progress
+        run: ctest --test-dir build --output-on-failure --progress
         shell: bash
 
   windows-sdl:
