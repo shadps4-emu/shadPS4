@@ -398,9 +398,6 @@ void ParseInputConfig(const std::string game_id = "") {
         std::string input_string = line.substr(equal_pos + 1);
         s8 input_gamepad_id = -1, output_gamepad_id = -1; // -1 means it's not specified
 
-        // todo: here the inputs and outputs are formatted and split, we need to extract the
-        // controller ID now
-
         // input gamepad id is only for controllers, it's discarded otherwise
         std::size_t input_colon_pos = input_string.find(':');
         if (input_colon_pos != std::string::npos) {
@@ -428,7 +425,8 @@ void ParseInputConfig(const std::string game_id = "") {
 
         std::size_t comma_pos = input_string.find(',');
 
-        // todo: make remapping work for special bindings for gamepads that are not the first
+        // todo make override_controller_color and analog_deadzone be controller specific
+        // instead of global
         if (output_string == "mouse_to_joystick") {
             if (input_string == "left") {
                 SetMouseToJoystick(1);
@@ -545,7 +543,6 @@ void ParseInputConfig(const std::string game_id = "") {
         auto hotkey_it = string_to_hotkey_map.find(output_string);
         auto axis_it = string_to_axis_map.find(output_string);
         if (button_it != string_to_cbutton_map.end()) {
-            // todo add new shit here
             connection = BindingConnection(
                 binding,
                 &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
@@ -556,7 +553,6 @@ void ParseInputConfig(const std::string game_id = "") {
                 &*std::ranges::find(output_arrays[std::clamp(output_gamepad_id - 1, 0, 3)].data,
                                     ControllerOutput(hotkey_it->second)));
         } else if (axis_it != string_to_axis_map.end()) {
-            // todo add new shit here
             int value_to_set = binding.keys[2].type == InputType::Axis ? 0 : axis_it->second.value;
             connection = BindingConnection(
                 binding,
@@ -570,7 +566,7 @@ void ParseInputConfig(const std::string game_id = "") {
                         lineCount, line);
             return;
         }
-        // todo make the following: if the input binding contains a controller input, and gamepad ID
+        // if the input binding contains a controller input, and gamepad ID
         // isn't specified for either inputs or output (both are -1), then multiply the binding and
         // add it to all 4 controllers
         if (connection.HasGamepadInput() && input_gamepad_id == -1 && output_gamepad_id == -1) {
@@ -594,7 +590,6 @@ void ParseInputConfig(const std::string game_id = "") {
     config_stream.close();
     std::sort(connections.begin(), connections.end());
     for (auto& c : connections) {
-        // todo add new shit here
         LOG_DEBUG(Input, "Binding: {} : {}", c.output->ToString(), c.binding.ToString());
     }
     LOG_DEBUG(Input, "Done parsing the input config!");
@@ -628,7 +623,6 @@ u32 GetMouseWheelEvent(const SDL_Event& event) {
 }
 
 InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
-    // todo add new shit here
     u8 gamepad = 1;
     switch (e.type) {
     case SDL_EVENT_KEY_DOWN:

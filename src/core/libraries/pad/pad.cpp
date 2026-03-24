@@ -166,7 +166,7 @@ int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId 
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
     s32 pad_handle = u->player_index;
-    LOG_DEBUG(Lib_Pad, "called, userid: {}, out pad handle: ", userId, pad_handle);
+    LOG_DEBUG(Lib_Pad, "called, userid: {}, out pad handle: {}", userId, pad_handle);
     return pad_handle;
 }
 
@@ -424,9 +424,6 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
 
 int PS4_SYSV_ABI scePadRead(s32 handle, OrbisPadData* pData, s32 num) {
     LOG_TRACE(Lib_Pad, "called");
-    if (handle < 1) {
-        return ORBIS_PAD_ERROR_INVALID_HANDLE;
-    }
     int connected_count = 0;
     bool connected = false;
     std::vector<Input::State> states(64);
@@ -483,7 +480,7 @@ int PS4_SYSV_ABI scePadReadStateExt() {
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
-    LOG_INFO(Lib_Pad, "(DUMMY) called");
+    LOG_DEBUG(Lib_Pad, "called, handle: {}", handle);
     auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
@@ -609,8 +606,12 @@ int PS4_SYSV_ABI scePadSetLightBarBlinking() {
 
 int PS4_SYSV_ABI scePadSetLightBarForTracker(s32 handle, const OrbisPadLightBarParam* pParam) {
     LOG_INFO(Lib_Pad, "called, r: {} g: {} b: {}", pParam->r, pParam->g, pParam->b);
-    auto* controller = Common::Singleton<GameController>::Instance();
-    controller->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
+    auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
+    if (!controller_id) {
+        return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
+    auto controllers = *Common::Singleton<GameControllers>::Instance();
+    controllers[*controller_id]->SetLightBarRGB(pParam->r, pParam->g, pParam->b);
     return ORBIS_OK;
 }
 
