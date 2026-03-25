@@ -121,6 +121,19 @@ jobs:
             ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=x86_64' || '' }}
         shell: bash
 
+      - name: Create shadPS4 user data directory (Linux)
+        if: runner.os == 'Linux'
+        run: mkdir -p ~/.local/share/shadPS4
+
+      - name: Create shadPS4 user data directory (macOS)
+        if: runner.os == 'macOS'
+        run: mkdir -p ~/Library/Application\ Support/shadPS4
+
+      - name: Create shadPS4 user data directory (Windows)
+        if: runner.os == 'Windows'
+        run: mkdir -p "$APPDATA/shadPS4"
+        shell: bash
+
       - name: Build all tests
         run: cmake --build build
         shell: bash
