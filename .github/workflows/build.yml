@@ -117,7 +117,7 @@ jobs:
             -DCMAKE_CXX_COMPILER="${{ matrix.compiler_cxx }}" \
             -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
             -DCMAKE_BUILD_TYPE=Debug \
-            -DBUILD_TESTING=ON \
+            -DENABLE_TESTS=ON \
             ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=x86_64' || '' }}
         shell: bash
 
