@@ -256,7 +256,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         // Open failed in platform-specific code, errno needs to be converted.
         h->DeleteHandle(handle);
         SetPosixErrno(e);
-        LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", *__Error());
+        LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
         return -1;
     }
 
