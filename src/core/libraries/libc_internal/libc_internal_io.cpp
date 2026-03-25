@@ -199,7 +199,11 @@ OrbisFILE* PS4_SYSV_ABI internal_fopen(const char* path, const char* mode) {
     std::scoped_lock lk{g_file_mtx};
     LOG_INFO(Lib_LibcInternal, "called, path {}, mode {}", path, mode);
     OrbisFILE* file = internal__Fofind();
-    return internal__Foprep(path, mode, file, -1, 0, 0);
+    OrbisFILE* ret_file = internal__Foprep(path, mode, file, -1, 0, 0);
+    if (ret_file == nullptr) {
+        LOG_ERROR(Lib_LibcInternal, "failed to open file {}", path);
+    }
+    return ret_file;
 }
 
 s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* file) {
