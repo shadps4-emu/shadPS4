@@ -737,7 +737,7 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
+    auto& controllers = *Common::Singleton<Input::GameControllers>::Instance();
     SDL_Gamepad* SDLGamepad = controllers[0]->m_sdl_gamepad;
     // Update list of gamepads to use
     if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
