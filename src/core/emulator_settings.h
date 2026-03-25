@@ -594,16 +594,17 @@ public:
     SETTING_FORWARD_BOOL_READONLY(m_gpu, PatchShaders, patch_shaders)
 
     u32 GetVblankFrequency() {
-        if (m_gpu.vblank_frequency.value < 60) {
-            m_gpu.vblank_frequency.value = 60;
+        if (m_gpu.vblank_frequency.value < 30) {
+            return 30;
         }
-        return m_gpu.vblank_frequency.value;
+        return m_gpu.vblank_frequency.get();
     }
-    void SetVblankFrequency(const u32& v) {
-        if (v < 60) {
-            m_gpu.vblank_frequency.value = 60;
+    void SetVblankFrequency(const u32& v, bool is_specific = false) {
+        u32 val = v < 30 ? 30 : v;
+        if (is_specific) {
+            m_gpu.vblank_frequency.game_specific_value = val;
         } else {
-            m_gpu.vblank_frequency.value = v;
+            m_gpu.vblank_frequency.value = val;
         }
     }
 

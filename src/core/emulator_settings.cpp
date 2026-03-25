@@ -25,10 +25,13 @@ namespace nlohmann {
 template <>
 struct adl_serializer<std::filesystem::path> {
     static void to_json(json& j, const std::filesystem::path& p) {
-        j = p.string();
+        const auto u8 = p.u8string();
+        j = std::string(reinterpret_cast<const char*>(u8.data()), u8.size());
     }
     static void from_json(const json& j, std::filesystem::path& p) {
-        p = j.get<std::string>();
+        const std::string s = j.get<std::string>();
+        p = std::filesystem::path(
+            std::u8string_view(reinterpret_cast<const char8_t*>(s.data()), s.size()));
     }
 };
 } // namespace nlohmann
