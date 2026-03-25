@@ -282,11 +282,14 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         }
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
+    if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
+        return ORBIS_PAD_ERROR_INVALID_ARG;
+    }
     if (EmulatorSettings.IsUsingSpecialPad()) {
         if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
+        if (type != ORBIS_PAD_PORT_TYPE_STANDARD)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
     auto u = UserManagement.GetUserByID(userId);
