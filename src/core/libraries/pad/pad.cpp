@@ -14,9 +14,11 @@ namespace Libraries::Pad {
 
 using Input::GameController;
 using Input::GameControllers;
+using namespace Libraries::UserService;
 
 static bool g_initialized = false;
-static bool g_opened = false;
+static std::unordered_map<OrbisUserServiceUserId, s32> user_id_pad_handle_map{};
+static constexpr s32 tv_remote_handle = 5;
 
 int PS4_SYSV_ABI scePadClose(s32 handle) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
@@ -158,14 +160,14 @@ int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId 
     if (!g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
-    if (userId == -1 || !g_opened) {
+    if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    auto const u = UserManagement.GetUserByID(userId);
-    if (!u) {
+    auto it = user_id_pad_handle_map.find(userId);
+    if (it == user_id_pad_handle_map.end()) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    s32 pad_handle = u->player_index;
+    s32 pad_handle = it->second;
     LOG_DEBUG(Lib_Pad, "called, userid: {}, out pad handle: {}", userId, pad_handle);
     return pad_handle;
 }
@@ -275,10 +277,11 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (userId < 0) {
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
-    if (userId == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+    if (userId == ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
         if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
             LOG_INFO(Lib_Pad, "Opened a TV remote device");
-            return 5;
+            user_id_pad_handle_map[ORBIS_USER_SERVICE_USER_ID_SYSTEM] = tv_remote_handle;
+            return tv_remote_handle;
         }
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
     }
@@ -297,11 +300,11 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
     }
     s32 pad_handle = u->player_index;
-    LOG_INFO(Lib_Pad, "(DUMMY) called user_id = {} type = {} index = {}, pad_handle = {}", userId,
-             type, index, pad_handle);
-    g_opened = true;
+    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
+             index, pad_handle);
     scePadResetLightBar(pad_handle);
     scePadResetOrientation(pad_handle);
+    user_id_pad_handle_map[userId] = pad_handle;
     return pad_handle;
 }
 
@@ -315,7 +318,17 @@ int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId us
         if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
             return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
     }
-    return userId; // dummy
+    auto u = UserManagement.GetUserByID(userId);
+    if (!u) {
+        return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
+    }
+    s32 pad_handle = u->player_index;
+    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
+             index, pad_handle);
+    scePadResetLightBar(pad_handle);
+    scePadResetOrientation(pad_handle);
+    user_id_pad_handle_map[userId] = pad_handle;
+    return pad_handle;
 }
 
 int PS4_SYSV_ABI scePadOpenExt2() {
