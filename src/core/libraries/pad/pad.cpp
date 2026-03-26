@@ -516,6 +516,9 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         LOG_ERROR(Lib_Pad, "Invalid user colour value {} for controller {}, falling back to blue",
                   colour_index, handle);
     }
+    if (auto oc = GameControllers::GetControllerCustomColor(*controller_id)) {
+        colour = *oc;
+    }
     controllers[*controller_id]->SetLightBarRGB(colour.r, colour.g, colour.b);
     return ORBIS_OK;
 }
@@ -587,12 +590,12 @@ int PS4_SYSV_ABI scePadSetForceIntercepted() {
 }
 
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam) {
-    if (GameControllers::GetOverrideControllerColor()) {
-        return ORBIS_OK;
-    }
     auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
+    }
+    if (GameControllers::GetControllerCustomColor(*controller_id)) {
+        return ORBIS_OK;
     }
     if (pParam != nullptr) {
         LOG_DEBUG(Lib_Pad, "called handle = {} rgb = {} {} {}", handle, pParam->r, pParam->g,

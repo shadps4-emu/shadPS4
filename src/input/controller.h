@@ -172,8 +172,7 @@ private:
 class GameControllers {
     std::array<GameController*, 5> controllers;
 
-    static bool override_controller_color;
-    static Colour controller_override_color;
+    static std::array<std::optional<Colour>, 4> controller_override_colors;
 
 public:
     GameControllers()
@@ -196,17 +195,11 @@ public:
                                      float deltaTime,
                                      Libraries::Pad::OrbisFQuaternion& lastOrientation,
                                      Libraries::Pad::OrbisFQuaternion& orientation);
-    static void SetOverrideControllerColor(bool set) {
-        override_controller_color = set;
+    static void SetControllerCustomColor(s32 i, u8 r, u8 g, u8 b) {
+        controller_override_colors[i] = {r, g, b};
     }
-    static void SetControllerCustomColor(u8 r, u8 g, u8 b) {
-        controller_override_color = {r, g, b};
-    }
-    static bool GetOverrideControllerColor() {
-        return override_controller_color;
-    }
-    static Colour GetControllerCustomColor() {
-        return controller_override_color;
+    static std::optional<Colour> GetControllerCustomColor(s32 i) {
+        return controller_override_colors[i];
     }
 };
 

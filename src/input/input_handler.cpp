@@ -208,8 +208,8 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
 }
 
 bool leftjoystick_halfmode = false, rightjoystick_halfmode = false;
-std::pair<int, int> leftjoystick_deadzone, rightjoystick_deadzone, lefttrigger_deadzone,
-    righttrigger_deadzone;
+std::array<std::pair<int, int>, 4> leftjoystick_deadzone, rightjoystick_deadzone,
+    lefttrigger_deadzone, righttrigger_deadzone;
 
 std::list<std::pair<InputEvent, bool>> pressed_keys;
 std::list<InputID> toggled_keys;
@@ -353,13 +353,14 @@ void ParseInputConfig(const std::string game_id = "") {
     float mouse_speed = 1;
     float mouse_speed_offset = 0.125;
 
-    leftjoystick_deadzone = {1, 127};
-    rightjoystick_deadzone = {1, 127};
-    lefttrigger_deadzone = {1, 127};
-    righttrigger_deadzone = {1, 127};
+    // me when I'm in a type deduction tournament and my opponent is clang
+    constexpr std::array<std::pair<int, int>, 4> default_deadzone = {
+        std::pair{1, 127}, {1, 127}, {1, 127}, {1, 127}};
 
-    GameControllers::SetOverrideControllerColor(false);
-    GameControllers::SetControllerCustomColor(0, 0, 255);
+    leftjoystick_deadzone = default_deadzone;
+    rightjoystick_deadzone = default_deadzone;
+    lefttrigger_deadzone = default_deadzone;
+    righttrigger_deadzone = default_deadzone;
 
     int lineCount = 0;
 
@@ -490,15 +491,17 @@ void ParseInputConfig(const std::string game_id = "") {
 
             std::pair<int, int> deadzone = {*inner_deadzone, *outer_deadzone};
 
-            static std::unordered_map<std::string, std::pair<int, int>&> deadzone_map = {
-                {"leftjoystick", leftjoystick_deadzone},
-                {"rightjoystick", rightjoystick_deadzone},
-                {"l2", lefttrigger_deadzone},
-                {"r2", righttrigger_deadzone},
-            };
+            static std::unordered_map<std::string, std::array<std::pair<int, int>, 4>&>
+                deadzone_map = {
+                    {"leftjoystick", leftjoystick_deadzone},
+                    {"rightjoystick", rightjoystick_deadzone},
+                    {"l2", lefttrigger_deadzone},
+                    {"r2", righttrigger_deadzone},
+                };
+            output_gamepad_id = output_gamepad_id == -1 ? 1 : output_gamepad_id;
 
             if (auto it = deadzone_map.find(device); it != deadzone_map.end()) {
-                it->second = deadzone;
+                it->second[output_gamepad_id - 1] = deadzone;
                 LOG_DEBUG(Input, "Parsed deadzone: {} {} {}", device, inner_deadzone_str,
                           outer_deadzone_str);
             } else {
@@ -524,10 +527,12 @@ void ParseInputConfig(const std::string game_id = "") {
                             lineCount, line);
                 return;
             }
-            GameControllers::SetOverrideControllerColor(enable == "true");
-            GameControllers::SetControllerCustomColor(*r, *g, *b);
-            LOG_DEBUG(Input, "Parsed color settings: {} {} {} {}",
-                      enable == "true" ? "override" : "no override", *r, *b, *g);
+            output_gamepad_id = output_gamepad_id == -1 ? 1 : output_gamepad_id;
+            if (enable == "true") {
+                GameControllers::SetControllerCustomColor(output_gamepad_id - 1, *r, *g, *b);
+            }
+            LOG_DEBUG(Input, "Parsed color settings: {} {} - {} {} {}",
+                      enable == "true" ? "override" : "no override", output_gamepad_id, *r, *b, *g);
             return;
         }
 
@@ -804,21 +809,21 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
         switch (c_axis) {
         case Axis::LeftX:
         case Axis::LeftY:
-            ApplyDeadzone(new_param, leftjoystick_deadzone);
+            ApplyDeadzone(new_param, leftjoystick_deadzone[gamepad_index]);
             multiplier = leftjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::RightX:
         case Axis::RightY:
-            ApplyDeadzone(new_param, rightjoystick_deadzone);
+            ApplyDeadzone(new_param, rightjoystick_deadzone[gamepad_index]);
             multiplier = rightjoystick_halfmode ? 0.5 : 1.0;
             break;
         case Axis::TriggerLeft:
-            ApplyDeadzone(new_param, lefttrigger_deadzone);
+            ApplyDeadzone(new_param, lefttrigger_deadzone[gamepad_index]);
             controller->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
             controller->Button(OrbisPadButtonDataOffset::L2, *new_param > 0x20);
             return;
         case Axis::TriggerRight:
-            ApplyDeadzone(new_param, righttrigger_deadzone);
+            ApplyDeadzone(new_param, righttrigger_deadzone[gamepad_index]);
             controller->Axis(c_axis, GetAxis(0x0, 0x7f, *new_param));
             controller->Button(OrbisPadButtonDataOffset::R2, *new_param > 0x20);
             return;

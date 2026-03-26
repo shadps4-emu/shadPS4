@@ -178,8 +178,8 @@ void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, f
     }
 }
 
-bool GameControllers::override_controller_color = false;
-Colour GameControllers::controller_override_color{};
+std::array<std::optional<Colour>, 4> GameControllers::controller_override_colors{
+    std::nullopt, std::nullopt, std::nullopt, std::nullopt};
 
 void GameControllers::CalculateOrientation(Libraries::Pad::OrbisFVector3& acceleration,
                                            Libraries::Pad::OrbisFVector3& angularVelocity,
