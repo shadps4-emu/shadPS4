@@ -223,8 +223,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceAudiodec.sprx", nullptr},
              {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
              {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr},
-             {"libScePadTracker.sprx", nullptr}});
+             {"libSceFreeTypeOt.sprx", nullptr}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(

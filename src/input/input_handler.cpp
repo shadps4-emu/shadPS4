@@ -23,6 +23,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
@@ -598,13 +599,13 @@ void ControllerOutput::FinalizeUpdate() {
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
             break;
         case HOTKEY_VOLUME_UP:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() + 10, 0, 500),
-                                    is_game_specific);
+            EmulatorSettings.SetVolumeSlider(
+                std::clamp(EmulatorSettings.GetVolumeSlider() + 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_VOLUME_DOWN:
-            Config::setVolumeSlider(std::clamp(Config::getVolumeSlider() - 10, 0, 500),
-                                    is_game_specific);
+            EmulatorSettings.SetVolumeSlider(
+                std::clamp(EmulatorSettings.GetVolumeSlider() - 10, 0, 500));
             Overlay::ShowVolume();
             break;
         case HOTKEY_QUIT:
