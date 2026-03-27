@@ -10,7 +10,7 @@
     pkgsLinux = nixpkgs.legacyPackages.x86_64-linux;
   in 
   {
-    devShells.x86_64-linux.default = pkgsLinux.mkShell {
+    devShells.x86_64-linux.default = pkgsLinux.mkShell.override {stdenv = pkgsLinux.clangStdenv; } {
       packages = with pkgsLinux; [
         clang-tools
         cmake
