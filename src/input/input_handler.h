@@ -526,7 +526,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 39;
+    static constexpr u64 output_count = 40;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -563,6 +563,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
 
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
 
         ControllerOutput(HOTKEY_FULLSCREEN),
         ControllerOutput(HOTKEY_PAUSE),
