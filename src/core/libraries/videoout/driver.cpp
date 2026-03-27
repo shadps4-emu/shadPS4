@@ -55,17 +55,27 @@ int VideoOutDriver::Open(const ServiceThreadParams* params) {
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
     main_port.is_open = true;
-    liverpool->SetVoPort(&main_port);
+    main_port.flip_status.gc_queue_num = 0;
+    main_port.flip_status.flip_pending_num = 0;
+    liverpool->SetVideoOut(&main_port, this);
     return 1;
 }
 
 void VideoOutDriver::Close(s32 handle) {
+    // Drain all pending GPU submissions before closing.
+    // Must be done before taking mutex since the GPU thread needs it to
+    // enqueue flip requests.
+    liverpool->WaitGpuIdle();
+
     std::scoped_lock lock{mutex};
 
     main_port.is_open = false;
     main_port.flip_rate = 0;
     main_port.prev_index = -1;
+    main_port.flip_status.gc_queue_num = 0;
+    main_port.flip_status.flip_pending_num = 0;
     ASSERT(main_port.flip_events.empty());
+    liverpool->SetVideoOut(nullptr, nullptr);
 }
 
 VideoOutPort* VideoOutDriver::GetPort(int handle) {
@@ -220,8 +230,7 @@ void VideoOutDriver::DrawLastFrame() {
     }
 }
 
-bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
-                                bool is_eop /*= false*/) {
+bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg) {
     {
         std::unique_lock lock{port->port_mutex};
         if (index != -1 && port->flip_status.flip_pending_num > 16) {
@@ -229,21 +238,18 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
             return false;
         }
 
-        if (is_eop) {
-            ++port->flip_status.gc_queue_num;
-        }
-        ++port->flip_status.flip_pending_num; // integral GPU and CPU pending flips counter
+        ++port->flip_status.flip_pending_num;
         port->flip_status.submit_tsc = Libraries::Kernel::sceKernelReadTsc();
     }
 
-    if (!is_eop) {
-        // Non EOP flips can arrive from any thread so ask GPU thread to perform them
-        liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
-    } else {
-        SubmitFlipInternal(port, index, flip_arg, is_eop);
-    }
+    // CPU flips can arrive from any thread so ask GPU thread to perform them
+    liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, false); });
 
     return true;
+}
+
+void VideoOutDriver::EnqueueFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
+    SubmitFlipInternal(port, index, flip_arg, is_eop);
 }
 
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {

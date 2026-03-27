@@ -2081,6 +2081,11 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
     // check for `prepareFlip` packet
     cmdbuf += size - 64;
     ASSERT_MSG(cmdbuf[0] == 0xc03e1000, "Can't find `prepareFlip` packet");
+    // PS4 returns 0x80d11080 instead of crashing
+    // if (cmdbuf[0] != 0xc03e1000) {
+    //     LOG_ERROR(Lib_GnmDriver, "Can't find `prepareFlip` packet");
+    //     return 0x80d11080; // SCE_GNM_ERROR_SUBMISSION_AND_FLIP_FAILED_INVALID_COMMAND_BUFFER
+    // }
 
     std::array<u32, 7> backup{};
     std::memcpy(backup.data(), cmdbuf, backup.size() * sizeof(decltype(backup)::value_type));
@@ -2089,15 +2094,14 @@ static inline s32 PatchFlipRequest(u32* cmdbuf, u32 size, u32 vo_handle, u32 buf
                "Invalid flip packet");
     ASSERT_MSG(buf_idx != 0xffff'ffffu, "Invalid VO buffer index");
 
-    const s32 flip_result = VideoOut::sceVideoOutSubmitEopFlip(vo_handle, buf_idx, flip_mode,
-                                                               flip_arg, nullptr /*unk*/);
+    const s32 flip_result = liverpool->ReserveFlip();
     if (flip_result != 0) {
         if (flip_result == 0x80290012) {
             LOG_ERROR(Lib_GnmDriver, "Flip queue is full");
             return 0x80d11081;
         } else {
-            LOG_ERROR(Lib_GnmDriver, "Flip request failed");
-            return flip_result;
+            LOG_ERROR(Lib_GnmDriver, "Flip request failed with {:#x}", flip_result);
+            return 0x80d11082; // SCE_GNM_ERROR_SUBMISSION_AND_FLIP_FAILED_REQUEST_FAILED
         }
     }
 
@@ -2169,6 +2173,14 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffers(u32 count, u32* dcb_gpu_addrs
         vo_handle, buf_idx, flip_mode, flip_arg);
 }
 
+// Shared submission loop. When flip has a value, it is associated with the
+// last command buffer in the batch so the flip triggers after the final
+// command buffer completes.
+static s32 SubmitCommandBuffersInternal(u32 count, const u32* dcb_gpu_addrs[],
+                                        u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
+                                        u32* ccb_sizes_in_bytes,
+                                        std::optional<AmdGpu::Liverpool::FlipRequest> flip);
+
 s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
     u32 workload, u32 count, u32* dcb_gpu_addrs[], u32* dcb_sizes_in_bytes, u32* ccb_gpu_addrs[],
     u32* ccb_sizes_in_bytes, u32 vo_handle, u32 buf_idx, u32 flip_mode, s64 flip_arg) {
@@ -2183,9 +2195,10 @@ s32 PS4_SYSV_ABI sceGnmSubmitAndFlipCommandBuffersForWorkload(
         return patch_result;
     }
 
-    return sceGnmSubmitCommandBuffers(count, const_cast<const u32**>(dcb_gpu_addrs),
-                                      dcb_sizes_in_bytes, const_cast<const u32**>(ccb_gpu_addrs),
-                                      ccb_sizes_in_bytes);
+    return SubmitCommandBuffersInternal(count, const_cast<const u32**>(dcb_gpu_addrs),
+                                        dcb_sizes_in_bytes, const_cast<const u32**>(ccb_gpu_addrs),
+                                        ccb_sizes_in_bytes,
+                                        AmdGpu::Liverpool::FlipRequest{buf_idx, flip_arg});
 }
 
 int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
@@ -2193,6 +2206,14 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                        u32* dcb_sizes_in_bytes,
                                                        const u32* ccb_gpu_addrs[],
                                                        u32* ccb_sizes_in_bytes) {
+    return SubmitCommandBuffersInternal(count, dcb_gpu_addrs, dcb_sizes_in_bytes, ccb_gpu_addrs,
+                                        ccb_sizes_in_bytes, std::nullopt);
+}
+
+static s32 SubmitCommandBuffersInternal(u32 count, const u32* dcb_gpu_addrs[],
+                                        u32* dcb_sizes_in_bytes, const u32* ccb_gpu_addrs[],
+                                        u32* ccb_sizes_in_bytes,
+                                        std::optional<AmdGpu::Liverpool::FlipRequest> flip) {
     HLE_TRACE;
     LOG_DEBUG(Lib_GnmDriver, "called");
 
@@ -2288,7 +2309,9 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                 .base_addr = reinterpret_cast<uintptr_t>(ccb),
             });
         }
-        liverpool->SubmitGfx(dcb_span, ccb_span);
+        // Associate the flip with the last command buffer in the batch.
+        const bool is_last = (cbpair == count - 1);
+        liverpool->SubmitGfx(dcb_span, ccb_span, is_last ? flip : std::nullopt);
     }
 
     return ORBIS_OK;
