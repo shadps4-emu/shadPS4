@@ -32,47 +32,40 @@ struct OrbisNpScoreAccountIdPcId {
     u8 pad[4];
 };
 
-struct OrbisNpScoreRankDataA {
-    OrbisNpOnlineId onlineId;
-    u8 reserved[68];
-    OrbisNpScorePcId pcId;
-    OrbisNpScoreRankNumber rank1;
-    OrbisNpScoreRankNumber rank2;
-    OrbisNpScoreRankNumber rank3;
-    int hasGameData;
-    u8 pad[4];
-    OrbisNpScoreValue score;
-    Rtc::OrbisRtcTick recordTime;
-    OrbisNpAccountId accountId;
-    u8 pad1[8];
-};
-
-static_assert(sizeof(OrbisNpScoreRankDataA) == 0x90);
-
-struct OrbisNpScorePlayerRankDataA {
-    int hasData;
-    u8 pad[4];
-    OrbisNpScoreRankDataA rankData;
-};
-
-static_assert(sizeof(OrbisNpScorePlayerRankDataA) == 0x98);
-
 struct OrbisNpScoreRankData {
-    OrbisNpOnlineId onlineId;
-    u8 reserved[52];
+    OrbisNpId npId;
+    u8 reserved[49];
+    u8 pad0[3];
     OrbisNpScorePcId pcId;
-    OrbisNpScoreRankNumber rank1;
-    OrbisNpScoreRankNumber rank2;
-    OrbisNpScoreRankNumber rank3;
-    int hasGameData;
-    u8 pad[4];
+    OrbisNpScoreRankNumber serialRank;
+    OrbisNpScoreRankNumber rank;
+    OrbisNpScoreRankNumber highestRank;
     OrbisNpScoreValue score;
+    int hasGameData;
+    u8 pad1[4];
     Rtc::OrbisRtcTick recordTime;
-    OrbisNpAccountId accountId;
-    u8 pad1[8];
 };
 
 static_assert(sizeof(OrbisNpScoreRankData) == 0x80);
+
+struct OrbisNpScoreRankDataA {
+    OrbisNpOnlineId onlineId;
+    u8 reserved0[16];
+    u8 reserved[49];
+    u8 pad0[3];
+    OrbisNpScorePcId pcId;
+    OrbisNpScoreRankNumber serialRank;
+    OrbisNpScoreRankNumber rank;
+    OrbisNpScoreRankNumber highestRank;
+    int hasGameData;
+    u8 pad1[4];
+    OrbisNpScoreValue score;
+    Rtc::OrbisRtcTick recordTime;
+    OrbisNpAccountId accountId;
+    u8 pad2[8];
+};
+
+static_assert(sizeof(OrbisNpScoreRankDataA) == 0x90);
 
 struct OrbisNpScorePlayerRankData {
     int hasData;
@@ -81,6 +74,14 @@ struct OrbisNpScorePlayerRankData {
 };
 
 static_assert(sizeof(OrbisNpScorePlayerRankData) == 0x88);
+
+struct OrbisNpScorePlayerRankDataA {
+    int hasData;
+    u8 pad[4];
+    OrbisNpScoreRankDataA rankData;
+};
+
+static_assert(sizeof(OrbisNpScorePlayerRankDataA) == 0x98);
 
 struct OrbisNpScoreComment {
     char comment[64];
