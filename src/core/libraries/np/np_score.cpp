@@ -87,9 +87,9 @@ struct NpScoreRequest {
 
     template <typename T>
     void GetRankingByRange(OrbisNpScoreBoardId scoreBoardId, OrbisNpScoreRankNumber startRank,
-                           T* ranks, u64 ranksLen,
-                           OrbisNpScoreGameInfo* gameInfos, OrbisNpScoreComment* comments,
-                           Rtc::OrbisRtcTick* lastUpdate, OrbisNpScoreRankNumber* totalRecords) {
+                           T* ranks, u64 ranksLen, OrbisNpScoreGameInfo* gameInfos,
+                           OrbisNpScoreComment* comments, Rtc::OrbisRtcTick* lastUpdate,
+                           OrbisNpScoreRankNumber* totalRecords) {
         requestFuture = std::async(std::launch::async, [=]() {
             httplib::Client client = NewClient();
             auto uri = std::format("/score/v1/ranking/{}/by-range?startRank={}&scores={}",
@@ -467,11 +467,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync(
     int reqId, OrbisNpScoreBoardId scoreBoardId, OrbisNpScoreNpIdPcId* accountIds,
     u64 accountIdsBytes, OrbisNpScorePlayerRankData* ranks, u64 ranksBytes,
@@ -550,6 +545,36 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
         totalRecords, option);
 }
 
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(int reqId, OrbisNpScoreBoardId scoreBoardId,
+                                            OrbisNpId* npIds, u64 npIdsBytes,
+                                            OrbisNpScorePlayerRankData* ranks, u64 ranksBytes,
+                                            OrbisNpScoreComment* comments, u64 commentsBytes,
+                                            OrbisNpScoreGameInfo* gameInfos, u64 gameInfosBytes,
+                                            u64 accountsLen, Rtc::OrbisRtcTick* lastUpdate,
+                                            OrbisNpScoreRankNumber* totalRecords, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called, reqId = {:#x}, scoreBoardId = {}, npIds = {}, npIdsBytes = "
+              "{}, ranks = {}, "
+              "comments = {}, gameInfos = {}, accountsLen = {}",
+              reqId, scoreBoardId, fmt::ptr(npIds), npIdsBytes, fmt::ptr(ranks), fmt::ptr(comments),
+              fmt::ptr(gameInfos), accountsLen);
+
+    int ret = sceNpScoreGetRankingByNpIdAsync(
+        reqId, scoreBoardId, npIds, npIdsBytes, ranks, ranksBytes, comments, commentsBytes,
+        gameInfos, gameInfosBytes, accountsLen, lastUpdate, totalRecords, option);
+
+    if (ret < 0) {
+        return ret;
+    }
+
+    int result = 0;
+    if (sceNpScoreWaitAsync(reqId, &result) == 0) {
+        return result;
+    }
+
+    return -1; //?
+}
+
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId(
     int reqId, OrbisNpScoreBoardId scoreBoardId, OrbisNpScoreNpIdPcId* accountIds,
     u64 accountIdsBytes, OrbisNpScorePlayerRankData* ranks, u64 ranksBytes,
@@ -621,20 +646,22 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
-    int reqId, OrbisNpScoreBoardId scoreBoardId, OrbisNpScoreRankNumber startRank,
-    OrbisNpScoreRankData* ranks, u64 ranksBytes, OrbisNpScoreComment* comments, u64 commentsBytes,
-    OrbisNpScoreGameInfo* gameInfos, u64 gameInfosBytes, u64 ranksLen,
-    Rtc::OrbisRtcTick* lastUpdate, OrbisNpScoreRankNumber* totalRecords, void* option) {
+int PS4_SYSV_ABI sceNpScoreGetRankingByRange(int reqId, OrbisNpScoreBoardId scoreBoardId,
+                                             OrbisNpScoreRankNumber startRank,
+                                             OrbisNpScoreRankData* ranks, u64 ranksBytes,
+                                             OrbisNpScoreComment* comments, u64 commentsBytes,
+                                             OrbisNpScoreGameInfo* gameInfos, u64 gameInfosBytes,
+                                             u64 ranksLen, Rtc::OrbisRtcTick* lastUpdate,
+                                             OrbisNpScoreRankNumber* totalRecords, void* option) {
     LOG_ERROR(Lib_NpScore,
-            "(STUBBED) called, reqId = {:#x}, scoreBoardId = {}, startRank = {}, ranks = {}, "
-            "comments = {}, gameInfos = {}, ranksLen = {}",
-            reqId, scoreBoardId, startRank, fmt::ptr(ranks), fmt::ptr(comments),
-            fmt::ptr(gameInfos), ranksLen);
+              "(STUBBED) called, reqId = {:#x}, scoreBoardId = {}, startRank = {}, ranks = {}, "
+              "comments = {}, gameInfos = {}, ranksLen = {}",
+              reqId, scoreBoardId, startRank, fmt::ptr(ranks), fmt::ptr(comments),
+              fmt::ptr(gameInfos), ranksLen);
 
-    int ret = sceNpScoreGetRankingByRangeAsync(
-        reqId, scoreBoardId, startRank, ranks, ranksBytes, comments,
-        commentsBytes, gameInfos, gameInfosBytes, ranksLen, lastUpdate, totalRecords, option);
+    int ret = sceNpScoreGetRankingByRangeAsync(reqId, scoreBoardId, startRank, ranks, ranksBytes,
+                                               comments, commentsBytes, gameInfos, gameInfosBytes,
+                                               ranksLen, lastUpdate, totalRecords, option);
 
     if (ret < 0) {
         return ret;
@@ -692,20 +719,22 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeA(
-    int reqId, OrbisNpScoreBoardId scoreBoardId, OrbisNpScoreRankNumber startRank,
-    OrbisNpScoreRankDataA* ranks, u64 ranksBytes, OrbisNpScoreComment* comments, u64 commentsBytes,
-    OrbisNpScoreGameInfo* gameInfos, u64 gameInfosBytes, u64 ranksLen,
-    Rtc::OrbisRtcTick* lastUpdate, OrbisNpScoreRankNumber* totalRecords, void* option) {
+int PS4_SYSV_ABI sceNpScoreGetRankingByRangeA(int reqId, OrbisNpScoreBoardId scoreBoardId,
+                                              OrbisNpScoreRankNumber startRank,
+                                              OrbisNpScoreRankDataA* ranks, u64 ranksBytes,
+                                              OrbisNpScoreComment* comments, u64 commentsBytes,
+                                              OrbisNpScoreGameInfo* gameInfos, u64 gameInfosBytes,
+                                              u64 ranksLen, Rtc::OrbisRtcTick* lastUpdate,
+                                              OrbisNpScoreRankNumber* totalRecords, void* option) {
     LOG_ERROR(Lib_NpScore,
-            "(STUBBED) called, reqId = {:#x}, scoreBoardId = {}, startRank = {}, ranks = {}, "
-            "comments = {}, gameInfos = {}, ranksLen = {}",
-            reqId, scoreBoardId, startRank, fmt::ptr(ranks), fmt::ptr(comments),
-            fmt::ptr(gameInfos), ranksLen);
+              "(STUBBED) called, reqId = {:#x}, scoreBoardId = {}, startRank = {}, ranks = {}, "
+              "comments = {}, gameInfos = {}, ranksLen = {}",
+              reqId, scoreBoardId, startRank, fmt::ptr(ranks), fmt::ptr(comments),
+              fmt::ptr(gameInfos), ranksLen);
 
-    int ret = sceNpScoreGetRankingByRangeAAsync(
-        reqId, scoreBoardId, startRank, ranks, ranksBytes, comments,
-        commentsBytes, gameInfos, gameInfosBytes, ranksLen, lastUpdate, totalRecords, option);
+    int ret = sceNpScoreGetRankingByRangeAAsync(reqId, scoreBoardId, startRank, ranks, ranksBytes,
+                                                comments, commentsBytes, gameInfos, gameInfosBytes,
+                                                ranksLen, lastUpdate, totalRecords, option);
 
     if (ret < 0) {
         return ret;
