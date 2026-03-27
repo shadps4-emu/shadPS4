@@ -37,10 +37,11 @@
         libpng.dev
 
         libxcb
-        xcb-util
+        libxcb-util
         libxcb-keysyms
         libxcb-wm
         wayland-protocols
+        libglvnd
       ];
 
       shellHook = ''
