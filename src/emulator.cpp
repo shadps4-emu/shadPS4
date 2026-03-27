@@ -289,7 +289,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize components
     memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
+    controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
 
     // Load renderdoc module
@@ -331,7 +331,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(EmulatorSettings.GetWindowWidth(),
-                                                   EmulatorSettings.GetWindowHeight(), controller,
+                                                   EmulatorSettings.GetWindowHeight(), controllers,
                                                    window_title);
 
     g_window = window.get();
