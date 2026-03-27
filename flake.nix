@@ -21,7 +21,6 @@
         gef
         strace
 
-        sdl3.dev
         openal
         zlib.dev
         libedit.dev
@@ -30,18 +29,40 @@
         ffmpeg.dev
         fmt.dev
         glslang.dev
-        libxkbcommon
         wayland.dev
-        libxcb.dev
         stb
         libpng.dev
+        
+        # Specific SDL3 dependencies:
+        sdl3.dev
+        alsa-lib
+        hidapi
+        ibus.dev
+        jack2.dev
+        libdecor.dev
+        libthai.dev
+        fribidi.dev
+        libxcb.dev
+        libGL.dev
+        libpulseaudio.dev
+        libusb1.dev
+        libx11.dev
+        libxcursor.dev
+        libxext
+        libxfixes.dev
+        libxi.dev
+        libxinerama.dev
+        libxkbcommon
+        libxrandr.dev
+        libxrender.dev
+        libxtst
+        pipewire.dev
+        libxscrnsaver
+        sndio
+      ];
 
-        libxcb
-        libxcb-util
-        libxcb-keysyms
-        libxcb-wm
-        wayland-protocols
-        libglvnd
+      LD_LIBRARY_PATH = pkgsLinux.lib.makeLibraryPath [
+        pkgsLinux.mesa
       ];
 
       shellHook = ''
