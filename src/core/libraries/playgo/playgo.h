@@ -41,5 +41,8 @@ s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayG
                                       uint32_t numberOfEntries);
 s32 PS4_SYSV_ABI scePlayGoTerminate();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::PlayGo

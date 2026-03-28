@@ -10,5 +10,9 @@ class SymbolsResolver;
 }
 
 namespace Libraries::LibcInternal {
-void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym);
+
+struct MathEngine {
+    MathEngine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::LibcInternal

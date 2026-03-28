@@ -23,7 +23,7 @@ namespace Libraries::Net {
 #else
 #define ERROR_CASE(errname)                                                                        \
     case (errname):                                                                                \
-        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                                       \
+        *Libraries::Kernel::__Error() = ORBIS_NET_##errname;                               \
         return -1;
 #endif
 

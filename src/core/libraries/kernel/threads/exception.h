@@ -186,6 +186,8 @@ struct Ucontext {
 s32 NativeToOrbisSignal(s32 s);
 s32 OrbisToNativeSignal(s32 s);
 
-void RegisterException(Core::Loader::SymbolsResolver* sym);
+struct ExceptionEngine {
+    ExceptionEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

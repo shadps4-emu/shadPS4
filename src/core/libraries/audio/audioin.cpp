@@ -442,7 +442,7 @@ int PS4_SYSV_ABI sceAudioInVmicWrite() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("IQtWgnrw6v8", "libSceAudioIn", 1, "libSceAudioIn",
                  sceAudioInChangeAppModuleState);
     LIB_FUNCTION("Jh6WbHhnI68", "libSceAudioIn", 1, "libSceAudioIn", sceAudioInClose);

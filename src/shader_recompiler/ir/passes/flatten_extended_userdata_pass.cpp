@@ -19,6 +19,7 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
+#include "shadps4_app.h"
 #include "src/common/arch.h"
 #include "src/common/decoder.h"
 

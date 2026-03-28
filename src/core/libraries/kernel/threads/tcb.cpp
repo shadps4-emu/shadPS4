@@ -90,7 +90,7 @@ void* PS4_SYSV_ABI __tls_get_addr(TlsIndex* index) {
     return linker->TlsGetAddr(index->ti_module, index->ti_offset);
 }
 
-void RegisterRtld(Core::Loader::SymbolsResolver* sym) {
+RtldEngine::RtldEngine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", __tls_get_addr);
 }
 

@@ -83,5 +83,8 @@ struct OrbisNpTssGetDataOptParam {
 
 s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Np::NpTus

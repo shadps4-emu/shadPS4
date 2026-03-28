@@ -71,6 +71,9 @@ int PS4_SYSV_ABI sceImeVshUpdate();
 int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 
 } // namespace Libraries::Ime

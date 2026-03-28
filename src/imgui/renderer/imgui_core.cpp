@@ -14,6 +14,7 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 

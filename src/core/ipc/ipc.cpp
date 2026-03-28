@@ -16,12 +16,12 @@
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "core/libraries/audio/audioout.h"
+#include "core/libraries/libs.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "src/core/libraries/usbd/usbd.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 /**
  * Protocol summary:
@@ -65,14 +65,14 @@ extern std::unique_ptr<Vulkan::Presenter> presenter;
  *   - RESTART(argn: number, argv: ...string): Request restart of the emulator, must call STOP
  **/
 
-void IPC::Init() {
+void IPC::Init(EmulatorState& emulator_state) {
     const char* enabledEnv = std::getenv("SHADPS4_ENABLE_IPC");
     enabled = enabledEnv && strcmp(enabledEnv, "true") == 0;
     if (!enabled) {
         return;
     }
 
-    EmulatorState::GetInstance()->SetAutoPatchesLoadEnabled(false);
+    emulator_state.SetAutoPatchesLoadEnabled(false);
 
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");
@@ -157,18 +157,18 @@ void IPC::InputLoop() {
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
             bool use_fsr = next_u64() != 0;
-            if (presenter) {
-                presenter->GetFsrSettingsRef().enable = use_fsr;
+            if (ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter) {
+                ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter->GetFsrSettingsRef().enable = use_fsr;
             }
         } else if (cmd == "SET_RCAS") {
             bool use_rcas = next_u64() != 0;
-            if (presenter) {
-                presenter->GetFsrSettingsRef().use_rcas = use_rcas;
+            if (ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter) {
+                ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter->GetFsrSettingsRef().use_rcas = use_rcas;
             }
         } else if (cmd == "SET_RCAS_ATTENUATION") {
             int value = static_cast<int>(next_u64());
-            if (presenter) {
-                presenter->GetFsrSettingsRef().rcas_attenuation =
+            if (ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter) {
+                ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.presenter->GetFsrSettingsRef().rcas_attenuation =
                     static_cast<float>(value / 1000.0f);
             }
         } else if (cmd == "USB_LOAD_FIGURE") {

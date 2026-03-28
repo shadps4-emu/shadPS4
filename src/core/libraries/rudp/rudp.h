@@ -46,5 +46,8 @@ s32 PS4_SYSV_ABI sceRudpSetOption();
 s32 PS4_SYSV_ABI sceRudpTerminate();
 s32 PS4_SYSV_ABI sceRudpWrite();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Rudp

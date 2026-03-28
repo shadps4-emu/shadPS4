@@ -14,6 +14,7 @@
 #endif
 #include "common/debug.h"
 #include "common/types.h"
+#include "shadps4_app.h"
 #include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/page_manager.h"
 

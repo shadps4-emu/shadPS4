@@ -186,5 +186,8 @@ int PS4_SYSV_ABI sceSaveDataUnregisterEventCallback();
 int PS4_SYSV_ABI sceSaveDataUpload();
 int PS4_SYSV_ABI Func_02E4C4D201716422();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::SaveData

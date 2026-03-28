@@ -15,6 +15,8 @@
 
 #include <vk_mem_alloc.h>
 
+#include "imgui/renderer/imgui_core.h"
+
 namespace Vulkan {
 
 namespace {
@@ -183,6 +185,7 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 }
 
 Instance::~Instance() {
+    ImGui::Core::Shutdown(GetDevice());
     vmaDestroyAllocator(allocator);
 }
 

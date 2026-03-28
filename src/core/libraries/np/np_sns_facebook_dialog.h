@@ -11,5 +11,8 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpSnsFacebookDialog {
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Np::NpSnsFacebookDialog

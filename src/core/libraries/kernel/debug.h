@@ -9,6 +9,8 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
-void RegisterDebug(Core::Loader::SymbolsResolver* sym);
+struct DebugEngine {
+    DebugEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

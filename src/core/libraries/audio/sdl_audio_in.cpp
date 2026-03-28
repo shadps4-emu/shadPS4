@@ -7,6 +7,7 @@
 #include <core/emulator_settings.h>
 #include "audioin.h"
 #include "audioin_backend.h"
+#include "shadps4_app.h"
 
 namespace Libraries::AudioIn {
 

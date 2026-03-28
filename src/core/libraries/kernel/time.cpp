@@ -28,28 +28,27 @@
 
 namespace Libraries::Kernel {
 
-static u64 initial_ptc;
-static std::unique_ptr<Common::NativeClock> clock;
-
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
-    return clock->GetTscFrequency();
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock->GetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
     // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
-    return clock->GetTimeUS(initial_ptc);
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock->GetTimeUS(
+        ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.initial_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return clock->GetUptime() - initial_ptc;
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock->GetUptime() -
+           ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.initial_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
-    return clock->GetTscFrequency();
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock->GetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    return clock->GetUptime();
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock->GetUptime();
 }
 
 static s32 posix_nanosleep_impl(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp,
@@ -474,11 +473,11 @@ s32 PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
 
 namespace Dev {
 u64& GetInitialPtc() {
-    return initial_ptc;
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.initial_ptc;
 }
 
 Common::NativeClock* GetClock() {
-    return clock.get();
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.m_time_engine.clock.get();
 }
 
 } // namespace Dev
@@ -543,10 +542,8 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
     return ret;
 }
 
-void RegisterTime(Core::Loader::SymbolsResolver* sym) {
-    clock = std::make_unique<Common::NativeClock>();
-    initial_ptc = clock->GetUptime();
-
+TimeEngine::TimeEngine(Core::Loader::SymbolsResolver* sym)
+    : clock(std::make_unique<Common::NativeClock>()), initial_ptc(clock->GetUptime()) {
     // POSIX
     LIB_FUNCTION("NhpspxdjEKU", "libkernel", 1, "libkernel", posix_nanosleep);
     LIB_FUNCTION("NhpspxdjEKU", "libScePosix", 1, "libkernel", posix_nanosleep);

@@ -33,5 +33,8 @@ s32 PS4_SYSV_ABI sceFontSelectGlyphsFt();
 s32 PS4_SYSV_ABI sceFontSelectLibraryFt();
 s32 PS4_SYSV_ABI sceFontSelectRendererFt();
 
-void RegisterlibSceFontFt(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::FontFt

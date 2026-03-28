@@ -20,5 +20,8 @@ s32 PS4_SYSV_ABI sceNpProfileDialogOpenA();
 s32 PS4_SYSV_ABI sceNpProfileDialogTerminate();
 s32 PS4_SYSV_ABI sceNpProfileDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Np::NpProfileDialog

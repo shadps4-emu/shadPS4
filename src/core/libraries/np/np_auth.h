@@ -55,5 +55,8 @@ struct OrbisNpAuthGetIdTokenParameterA {
     const char* scope;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Np::NpAuth

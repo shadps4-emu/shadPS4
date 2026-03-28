@@ -8,6 +8,7 @@
 #include "core/emulator_settings.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "shadps4_app.h"
 
 using namespace ImGui;
 

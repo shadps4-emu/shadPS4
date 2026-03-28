@@ -9,6 +9,7 @@
 #include "net_error.h"
 #include "net_resolver.h"
 #include "net_util.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Net {
 

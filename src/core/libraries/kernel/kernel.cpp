@@ -27,6 +27,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/sys_net.h"
+#include "core/linker.h"
 
 #ifdef _WIN64
 #include <Rpc.h>
@@ -40,42 +41,6 @@
 #include "aio.h"
 
 namespace Libraries::Kernel {
-
-static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
-
-boost::asio::io_context io_context;
-static std::mutex m_asio_req;
-static std::condition_variable_any cv_asio_req;
-static std::atomic<u32> asio_requests;
-static std::jthread service_thread;
-
-Core::EntryParams entry_params{};
-
-void KernelSignalRequest() {
-    std::unique_lock lock{m_asio_req};
-    ++asio_requests;
-    cv_asio_req.notify_one();
-}
-
-static void KernelServiceThread(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
-
-    while (!stoken.stop_requested()) {
-        HLE_TRACE;
-        {
-            std::unique_lock lock{m_asio_req};
-            Common::CondvarWait(cv_asio_req, lock, stoken, [] { return asio_requests != 0; });
-        }
-        if (stoken.stop_requested()) {
-            break;
-        }
-
-        io_context.run();
-        io_context.restart();
-
-        asio_requests = 0;
-    }
-}
 
 static PS4_SYSV_ABI void stack_chk_fail() {
     UNREACHABLE();
@@ -142,6 +107,12 @@ void SetPosixErrno(s32 e) {
         LOG_WARNING(Kernel, "Unhandled errno {}", e);
         g_posix_errno = e;
     }
+}
+
+void Engine::KernelSignalRequest() {
+    std::unique_lock lock{m_asio_req};
+    ++asio_requests;
+    cv_asio_req.notify_one();
 }
 
 static u64 g_mspace_atomic_id_mask = 0;
@@ -259,11 +230,11 @@ s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
 }
 
 s32 PS4_SYSV_ABI getargc() {
-    return entry_params.argc;
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.entry_params.argc;
 }
 
 const char** PS4_SYSV_ABI getargv() {
-    return entry_params.argv;
+    return ShadPs4App::GetInstance()->m_hle_layer->m_kernel.entry_params.argv;
 }
 
 s32 PS4_SYSV_ABI get_authinfo(s32 pid, AuthInfoData* p2) {
@@ -298,20 +269,31 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    service_thread = std::jthread{KernelServiceThread};
+void Engine::KernelServiceThread(const std::stop_token& stoken) {
+    Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
 
-    Libraries::Kernel::RegisterFileSystem(sym);
-    Libraries::Kernel::RegisterTime(sym);
-    Libraries::Kernel::RegisterThreads(sym);
-    Libraries::Kernel::RegisterKernelEventFlag(sym);
-    Libraries::Kernel::RegisterMemory(sym);
-    Libraries::Kernel::RegisterEventQueue(sym);
-    Libraries::Kernel::RegisterProcess(sym);
-    Libraries::Kernel::RegisterException(sym);
-    Libraries::Kernel::RegisterAio(sym);
-    Libraries::Kernel::RegisterDebug(sym);
+    while (!stoken.stop_requested()) {
+        HLE_TRACE;
+        {
+            std::unique_lock lock{m_asio_req};
+            Common::CondvarWait(cv_asio_req, lock, stoken, [this] { return asio_requests != 0; });
+        }
+        if (stoken.stop_requested()) {
+            break;
+        }
 
+        io_context.run();
+        io_context.restart();
+
+        asio_requests = 0;
+    }
+}
+
+Engine::Engine(Core::Loader::SymbolsResolver* sym)
+    : m_file_system_engine(sym), m_time_engine(sym), m_threads_engine(sym),
+      m_kernel_event_flag_engine(sym), m_memory_engine(sym), m_event_queue_engine(sym),
+      m_process_engine(sym), m_exception_engine(sym), m_aio_engine(sym), m_debug_engine(sym),
+      service_thread{[this](const std::stop_token& stoken) { KernelServiceThread(stoken); }} {
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);
     LIB_FUNCTION("YeU23Szo3BM", "libkernel", 1, "libkernel", sceKernelGetAllowedSdkVersionOnSystem);
@@ -373,6 +355,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ca7v6Cxulzs", "libkernel", 1, "libkernel", sceKernelSetGPO);
     LIB_FUNCTION("iKJMWrAumPE", "libkernel", 1, "libkernel", getargc);
     LIB_FUNCTION("FJmglmTMdr4", "libkernel", 1, "libkernel", getargv);
+}
+
+Engine::~Engine() {
+    service_thread.request_stop();
 }
 
 } // namespace Libraries::Kernel

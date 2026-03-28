@@ -124,5 +124,8 @@ using OrbisNpWebApiInternalServicePushEventCallbackA = PS4_SYSV_ABI void (*)(); 
 
 using OrbisNpWebApiNotificationCallback = PS4_SYSV_ABI void (*)(); // dummy
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Np::NpWebApi

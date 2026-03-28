@@ -1512,7 +1512,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 }
 #endif
 
-void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
+FileSystemEngine::FileSystemEngine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", posix_open);
     LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", posix_open);

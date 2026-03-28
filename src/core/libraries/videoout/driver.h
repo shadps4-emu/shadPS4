@@ -1,15 +1,22 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include "common/debug.h"
 #include "common/polyfill_thread.h"
-#include "core/libraries/videoout/video_out.h"
+//#include "core/libraries/videoout/video_out.h"
 
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+
+#include "core/libraries/kernel/equeue.h"
+#include "core/libraries/videoout/buffer.h"
+#include "core/libraries/videoout/flip_status.h"
+#include "core/libraries/videoout/sce_video_out_resolution_status.h"
+#include "core/libraries/videoout/sce_video_out_vblank_status.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
 namespace Vulkan {
 struct Frame;
@@ -76,7 +83,7 @@ struct ServiceThreadParams {
 
 class VideoOutDriver {
 public:
-    VideoOutDriver(u32 width, u32 height);
+    VideoOutDriver(u32 width, u32 height, Vulkan::Presenter& presenter);
     ~VideoOutDriver();
 
     int Open(const ServiceThreadParams* params);
@@ -89,6 +96,9 @@ public:
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
     bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
+
+    std::jthread present_thread;
+    std::condition_variable cond_var;
 
 private:
     struct Request {
@@ -109,9 +119,9 @@ private:
     void SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
     void PresentThread(std::stop_token token);
 
+    Vulkan::Presenter& m_presenter;
     std::mutex mutex;
     VideoOutPort main_port{};
-    std::jthread present_thread;
     std::queue<Request> requests;
 };
 

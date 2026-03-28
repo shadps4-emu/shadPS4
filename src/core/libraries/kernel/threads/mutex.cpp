@@ -431,7 +431,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_setpshared(PthreadMutexAttrT* attr, s32
     return ORBIS_OK;
 }
 
-void RegisterMutex(Core::Loader::SymbolsResolver* sym) {
+MutexEngine::MutexEngine(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", posix_pthread_mutex_lock);

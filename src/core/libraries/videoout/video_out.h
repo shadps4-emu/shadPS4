@@ -4,28 +4,24 @@
 #pragma once
 
 #include <core/libraries/system/userservice.h>
+
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/videoout/buffer.h"
+#include "core/libraries/videoout/driver.h"
+#include "core/libraries/videoout/flip_status.h"
+#include "core/libraries/videoout/sce_video_out_resolution_status.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::VideoOut {
+//class VideoOutDriver;
 
 // SceVideoOutBusType
 constexpr int SCE_VIDEO_OUT_BUS_TYPE_MAIN = 0;                    // Main output
 constexpr int SCE_VIDEO_OUT_BUS_TYPE_AUX_SOCIAL_SCREEN = 5;       // Aux output for social
 constexpr int SCE_VIDEO_OUT_BUS_TYPE_AUX_GAME_LIVE_STREAMING = 6; // Aux output for screaming
-
-// SceVideoOutRefreshRate
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_UNKNOWN = 0;
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_23_98HZ = 1;
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_50HZ = 2;
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_59_94HZ = 3;
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_119_88HZ = 13;
-constexpr int SCE_VIDEO_OUT_REFRESH_RATE_89_91HZ = 35;
-constexpr s64 SCE_VIDEO_OUT_REFRESH_RATE_ANY = 0xFFFFFFFFFFFFFFFFUL;
 
 constexpr int SCE_VIDEO_OUT_PIXEL_FORMAT_A8R8G8B8_SRGB = 0x80000000;
 constexpr int SCE_VIDEO_OUT_PIXEL_FORMAT_A8B8G8R8_SRGB = 0x80002200;
@@ -65,40 +61,6 @@ enum class OrbisVideoOutInternalEventId : s16 {
 
 enum class AspectRatioMode : s32 {
     Ratio16_9 = 0,
-};
-
-struct FlipStatus {
-    u64 count = 0;
-    u64 process_time = 0;
-    u64 tsc = 0;
-    s64 flip_arg = -1;
-    u64 submit_tsc = 0;
-    u64 reserved0 = 0;
-    s32 gc_queue_num = 0;
-    s32 flip_pending_num = 0;
-    s32 current_buffer = -1;
-    u32 reserved1 = 0;
-};
-
-struct SceVideoOutResolutionStatus {
-    s32 full_width = 1280;
-    s32 full_height = 720;
-    s32 pane_width = 1280;
-    s32 pane_height = 720;
-    u64 refresh_rate = SCE_VIDEO_OUT_REFRESH_RATE_59_94HZ;
-    float screen_size_in_inch = 50;
-    u16 flags = 0;
-    u16 reserved0 = 0;
-    u32 reserved1[3] = {0};
-};
-
-struct SceVideoOutVblankStatus {
-    u64 count = 0;
-    u64 process_time = 0;
-    u64 tsc = 0;
-    u64 reserved[1] = {0};
-    u8 flags = 0;
-    u8 pad1[7] = {};
 };
 
 struct SceVideoOutDeviceCapabilityInfo {
@@ -141,6 +103,10 @@ s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettin
 // Internal system functions
 s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, void** unk);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    std::unique_ptr<VideoOutDriver> driver;
+
+    Engine(Core::Loader::SymbolsResolver* sym, Vulkan::Presenter& presenter);
+};
 
 } // namespace Libraries::VideoOut

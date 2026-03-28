@@ -8,6 +8,7 @@
 #include <vector>
 #include "core/libraries/kernel/threads.h"
 #include "core/module.h"
+#include "core/entry_params.h"
 
 namespace Core {
 
@@ -43,15 +44,6 @@ struct OrbisProcParam {
 };
 
 using ExitFunc = PS4_SYSV_ABI void (*)();
-
-class Linker;
-
-struct EntryParams {
-    int argc;
-    u32 padding;
-    const char* argv[33];
-    VAddr entry_addr;
-};
 
 struct HeapAPI {
     PS4_SYSV_ABI void* (*heap_malloc)(u64);
@@ -154,11 +146,12 @@ public:
     void Execute(const std::vector<std::string>& args = {});
     void DebugDump();
 
+    Libraries::Kernel::Thread main_thread;
+
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
     MemoryManager* memory;
-    Libraries::Kernel::Thread main_thread;
     std::mutex mutex;
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};

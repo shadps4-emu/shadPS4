@@ -313,7 +313,7 @@ int PS4_SYSV_ABI Func_28F8791A771D39C7() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Md+HYkCBZB4", "libSceSsl", 1, "libSceSsl", CA_MGMT_extractKeyBlobEx);
     LIB_FUNCTION("9bKYzKP6kYU", "libSceSsl", 1, "libSceSsl", CA_MGMT_extractPublicKeyInfo);
     LIB_FUNCTION("ipLIammTj2Q", "libSceSsl", 1, "libSceSsl", CA_MGMT_freeKeyBlob);

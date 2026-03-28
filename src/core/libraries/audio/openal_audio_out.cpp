@@ -17,6 +17,7 @@
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/audio/openal_manager.h"
 #include "core/libraries/kernel/threads.h"
+#include "shadps4_app.h"
 
 // SIMD support detection
 #if defined(__x86_64__) || defined(_M_X64)

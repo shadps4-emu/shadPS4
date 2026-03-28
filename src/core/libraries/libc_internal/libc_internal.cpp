@@ -16,16 +16,11 @@
 
 namespace Libraries::LibcInternal {
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    RegisterlibSceLibcInternalMath(sym);
-    RegisterlibSceLibcInternalStr(sym);
-    RegisterlibSceLibcInternalMemory(sym);
-    RegisterlibSceLibcInternalIo(sym);
-    RegisterlibSceLibcInternalThreads(sym);
-}
+EngineV1::EngineV1(Core::Loader::SymbolsResolver* sym)
+    : m_math_engine(sym), m_str_engine(sym), m_memory_engine(sym), m_io_engine(sym),
+      m_threads_engine(sym) {}
 
-void ForceRegisterLib(Core::Loader::SymbolsResolver* sym) {
-    // Used to forcibly enable HLEs for broken LLE functions.
-    ForceRegisterlibSceLibcInternalIo(sym);
-}
+// Used to forcibly enable HLEs for broken LLE functions.
+EngineV2::EngineV2(Core::Loader::SymbolsResolver* sym) : m_io_engine(sym) {}
+
 } // namespace Libraries::LibcInternal

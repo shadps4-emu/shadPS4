@@ -13,6 +13,7 @@
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/resource.h"
 
 #define MAGIC_ENUM_RANGE_MIN 0

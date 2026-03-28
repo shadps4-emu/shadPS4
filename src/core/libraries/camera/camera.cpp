@@ -9,11 +9,11 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "shadps4_app.h"
 
 #include <utility>
-
 #include <thread>
-#include "SDL3/SDL_camera.h"
+#include <SDL3/SDL_camera.h>
 
 namespace Libraries::Camera {
 
@@ -1125,7 +1125,7 @@ s32 PS4_SYSV_ABI sceCameraStopByHandle(s32 handle) {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
 
     LIB_FUNCTION("QhjrPkRPUZQ", "libSceCamera", 1, "libSceCamera", sceCameraAccGetData);

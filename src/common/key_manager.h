@@ -29,10 +29,6 @@ public:
     KeyManager();
     ~KeyManager();
 
-    // ------------------- Singleton -------------------
-    static std::shared_ptr<KeyManager> GetInstance();
-    static void SetInstance(std::shared_ptr<KeyManager> instance);
-
     // ------------------- File operations -------------------
     bool LoadFromFile();
     bool SaveToFile();

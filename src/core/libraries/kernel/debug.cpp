@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
+#include "core/libraries/kernel/debug.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
@@ -13,7 +14,7 @@ void PS4_SYSV_ABI sceKernelDebugOutText(void* unk, char* text) {
     return;
 }
 
-void RegisterDebug(Core::Loader::SymbolsResolver* sym) {
+DebugEngine::DebugEngine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9JYNqN6jAKI", "libkernel", 1, "libkernel", sceKernelDebugOutText);
 }
 

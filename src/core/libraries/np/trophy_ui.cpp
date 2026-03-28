@@ -13,6 +13,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "imgui/imgui_std.h"
+#include "shadps4_app.h"
 
 CMRC_DECLARE(res);
 namespace fs = std::filesystem;
@@ -38,8 +39,7 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     if (std::filesystem::exists(trophyIconPath)) {
         trophy_icon = RefCountedTexture::DecodePngFile(trophyIconPath);
     } else {
-        LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}",
-                  fmt::UTF(trophyIconPath.u8string()));
+        LOG_ERROR(Lib_NpTrophy, "Couldnt load trophy icon at {}", trophyIconPath.string());
     }
 
     std::string pathString = "src/images/";

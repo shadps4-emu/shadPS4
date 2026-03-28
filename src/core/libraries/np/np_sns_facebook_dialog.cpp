@@ -14,7 +14,7 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus(
     return Libraries::CommonDialog::Status::NONE;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fjV7C8H0Y8k", "libSceNpSnsFacebookDialog", 1, "libSceNpSnsFacebookDialog",
                  sceNpSnsFacebookDialogUpdateStatus);
 };

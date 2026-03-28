@@ -3,9 +3,25 @@
 
 #pragma once
 
+#include <boost/asio/io_context.hpp>
+#include <condition_variable>
+#include <thread>
+
 #include "common/types.h"
+#include "core/entry_params.h"
+#include "core/libraries/kernel/aio.h"
+#include "core/libraries/kernel/debug.h"
+#include "core/libraries/kernel/equeue.h"
+#include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/kernel.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
-#include "core/linker.h"
+#include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/process.h"
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/threads/pthread.h"
+#include "core/libraries/kernel/time.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -19,7 +35,36 @@ void SetPosixErrno(s32 e);
 s32* PS4_SYSV_ABI __Error();
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
 
-extern Core::EntryParams entry_params;
+struct Engine {
+    FileSystemEngine m_file_system_engine;
+    TimeEngine m_time_engine;
+    ThreadsEngine m_threads_engine;
+    KernelEventFlagEngine m_kernel_event_flag_engine;
+    MemoryEngine m_memory_engine;
+    EventQueueEngine m_event_queue_engine;
+    ProcessEngine m_process_engine;
+    ExceptionEngine m_exception_engine;
+    AioEngine m_aio_engine;
+    DebugEngine m_debug_engine;
+
+    Engine(Core::Loader::SymbolsResolver* sym);
+    ~Engine();
+
+    static constexpr u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
+
+    boost::asio::io_context io_context;
+    std::mutex m_asio_req;
+    std::condition_variable_any cv_asio_req;
+    std::atomic<u32> asio_requests;
+    std::jthread service_thread;
+
+    Core::EntryParams entry_params{};
+
+    void KernelServiceThread(const std::stop_token& stoken);
+
+    void KernelSignalRequest();
+};
+
 
 template <class F, F f>
 struct OrbisWrapperImpl;
@@ -38,8 +83,6 @@ struct OrbisWrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<decltype(&(func)), func>::wrap)
 
 #define CURRENT_FIRMWARE_VERSION 0x13500011
-
-s32* PS4_SYSV_ABI __Error();
 
 struct SwVersionStruct {
     u64 struct_size;
@@ -78,6 +121,4 @@ struct OrbisKernelAppInfo {
     OrbisKernelTitleWorkaround title_workaround;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
-
-} // namespace Libraries::Kernel
+} // namespace Libraries

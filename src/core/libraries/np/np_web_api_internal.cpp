@@ -7,6 +7,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/network/http.h"
 #include "np_web_api_internal.h"
+#include "shadps4_app.h"
 
 #include <magic_enum/magic_enum.hpp>
 

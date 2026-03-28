@@ -55,7 +55,7 @@ s32 PS4_SYSV_ABI internal__Mtxdst(Libraries::Kernel::PthreadMutexT* mtx) {
     return result != 0;
 }
 
-void RegisterlibSceLibcInternalThreads(Core::Loader::SymbolsResolver* sym) {
+ThreadsEngine::ThreadsEngine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("z7STeF6abuU", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxinit);
     LIB_FUNCTION("pE4Ot3CffW0", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxlock);
     LIB_FUNCTION("cMwgSSmpE5o", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxunlock);

@@ -34,5 +34,8 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::SysModule

@@ -608,5 +608,8 @@ int PS4_SYSV_ABI Func_CB5E885E225F69F0();
 
 void PushSystemServiceEvent(const OrbisSystemServiceEvent& event);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::SystemService

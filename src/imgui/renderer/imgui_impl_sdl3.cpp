@@ -11,6 +11,7 @@
 #include "input/controller.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 
 // SDL
 #include <SDL3/SDL.h>

@@ -5,6 +5,7 @@
 
 #include "common/assert.h"
 #include "core/emulator_settings.h"
+#include "shadps4_app.h"
 #include "video_core/host_shaders/fs_tri_vert.h"
 #include "video_core/host_shaders/post_process_frag.h"
 #include "video_core/renderer_vulkan/vk_platform.h"

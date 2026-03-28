@@ -27,6 +27,7 @@
 #include "save_backup.h"
 #include "save_instance.h"
 #include "save_memory.h"
+#include "shadps4_app.h"
 
 namespace fs = std::filesystem;
 namespace chrono = std::chrono;
@@ -619,7 +620,7 @@ Error PS4_SYSV_ABI sceSaveDataCheckBackupData(const OrbisSaveDataCheckBackupData
     if (check->param != nullptr) {
         PSF sfo;
         if (!sfo.Open(backup_path / "sce_sys" / "param.sfo")) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}", fmt::UTF(backup_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO at {}", backup_path.string());
             return Error::INTERNAL;
         }
         check->param->FromSFO(sfo);
@@ -830,7 +831,7 @@ Error PS4_SYSV_ABI sceSaveDataDirNameSearch(const OrbisSaveDataDirNameSearchCond
         const auto sfo_path = SaveInstance::GetParamSFOPath(dir_path);
         PSF sfo;
         if (!sfo.Open(sfo_path)) {
-            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", fmt::UTF(sfo_path.u8string()));
+            LOG_ERROR(Lib_SaveData, "Failed to read SFO: {}", sfo_path.string());
             ASSERT_MSG(false, "Failed to read SFO");
         }
 
@@ -1732,7 +1733,7 @@ int PS4_SYSV_ABI Func_02E4C4D201716422() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("dQ2GohUHXzk", "libSceSaveData", 1, "libSceSaveData", sceSaveDataAbort);
     LIB_FUNCTION("z1JA8-iJt3k", "libSceSaveData", 1, "libSceSaveData", sceSaveDataBackup);
     LIB_FUNCTION("kLJQ3XioYiU", "libSceSaveData", 1, "libSceSaveData", sceSaveDataBindPsnAccount);

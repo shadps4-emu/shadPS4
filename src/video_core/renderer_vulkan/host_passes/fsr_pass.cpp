@@ -10,6 +10,7 @@
 
 #define A_CPU
 #include "core/debug_state.h"
+#include "shadps4_app.h"
 #include "video_core/host_shaders/fsr/ffx_a.h"
 #include "video_core/host_shaders/fsr/ffx_fsr1.h"
 

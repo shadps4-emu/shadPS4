@@ -16,6 +16,7 @@
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpTrophy {
 
@@ -1367,7 +1368,7 @@ int PS4_SYSV_ABI Func_FA7A2DD770447552() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("aTnHs7W-9Uk", "libSceNpTrophy", 1, "libSceNpTrophy", sceNpTrophyAbortHandle);
     LIB_FUNCTION("cqGkYAN-gRw", "libSceNpTrophy", 1, "libSceNpTrophy",
                  sceNpTrophyCaptureScreenshot);

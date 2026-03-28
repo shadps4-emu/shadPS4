@@ -9,6 +9,7 @@
 #include "core/emulator_settings.h"
 #include "core/loader/elf.h"
 #include "core/loader/symbols_resolver.h"
+#include "shadps4_app.h"
 
 namespace Core {
 

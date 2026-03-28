@@ -27,6 +27,7 @@
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
+#include "shadps4_app.h"
 
 namespace Input {
 /*

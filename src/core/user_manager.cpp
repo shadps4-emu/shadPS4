@@ -6,6 +6,7 @@
 #include <common/path_util.h>
 #include "emulator_settings.h"
 #include "libraries/system/userservice.h"
+#include "shadps4_app.h"
 #include "user_manager.h"
 #include "user_settings.h"
 

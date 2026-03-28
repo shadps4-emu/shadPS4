@@ -6,6 +6,7 @@
 #include <chrono>
 #include <sys/types.h>
 #include "common/types.h"
+#include "common/native_clock.h"
 
 namespace Common {
 class NativeClock;
@@ -87,6 +88,11 @@ s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp);
 s32 PS4_SYSV_ABI posix_settimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 
-void RegisterTime(Core::Loader::SymbolsResolver* sym);
+struct TimeEngine {
+    std::unique_ptr<Common::NativeClock> clock;
+    u64 initial_ptc;
+
+    TimeEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/emulator_settings.h"
+#include "shadps4_app.h"
 #ifdef WIN32
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <Ws2tcpip.h>
@@ -1732,7 +1734,7 @@ int PS4_SYSV_ABI sceNetEmulationSet() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZRAJo-A-ukc", "libSceNet", 1, "libSceNet", in6addr_any);
     LIB_FUNCTION("XCuA-GqjA-k", "libSceNet", 1, "libSceNet", in6addr_loopback);
     LIB_FUNCTION("VZgoeBxPXUQ", "libSceNet", 1, "libSceNet", sce_net_dummy);

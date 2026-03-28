@@ -92,7 +92,7 @@ public:
         return needs_hdr;
     }
 
-private:
+public:
     /// Selects the best available swapchain image format
     void FindPresentFormat();
 

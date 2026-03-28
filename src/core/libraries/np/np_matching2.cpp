@@ -12,6 +12,7 @@
 #include "core/libraries/np/np_matching2.h"
 #include "core/libraries/np/np_types.h"
 #include "core/libraries/system/userservice.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpMatching2 {
 
@@ -768,7 +769,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(OrbisNpMatching2ContextId ctx
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("10t3e5+JPnU", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2Initialize);
     LIB_FUNCTION("Mqp3lJ+sjy4", "libSceNpMatching2", 1, "libSceNpMatching2",

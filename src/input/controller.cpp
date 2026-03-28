@@ -14,6 +14,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
 #include "input/controller.h"
+#include "shadps4_app.h"
 
 namespace Input {
 

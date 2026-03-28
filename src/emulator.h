@@ -7,18 +7,17 @@
 #include <optional>
 #include <thread>
 
-#include "common/singleton.h"
-#include "core/linker.h"
 #include "input/controller.h"
 #include "sdl_window.h"
 
 namespace Core {
 
-using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
+class Linker;
+class MemoryManager;
 
 struct SysModules {
     std::string_view module_name;
-    HLEInitDef callback;
+    bool should_init;
 };
 
 class Emulator {

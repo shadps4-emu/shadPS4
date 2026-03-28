@@ -7,14 +7,13 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/libs.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
 #include "imgui/renderer/imgui_core.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
-extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
 
@@ -40,22 +39,37 @@ constexpr u32 PixelFormatBpp(PixelFormat pixel_format) {
     }
 }
 
-VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
+VideoOutDriver::VideoOutDriver(u32 width, u32 height, Vulkan::Presenter& presenter) : m_presenter(presenter) {
     main_port.resolution.full_width = width;
     main_port.resolution.full_height = height;
     main_port.resolution.pane_width = width;
     main_port.resolution.pane_height = height;
-    present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
+    present_thread = std::jthread([&](std::stop_token token) {
+        {
+            std::unique_lock lk(mutex);
+            cond_var.wait(lk, []{ return ShadPs4App::GetInstance()->m_hle_layer != nullptr; });
+        }
+
+        try {
+            PresentThread(token);
+        }
+        catch (const std::runtime_error& exception) {
+            LOG_TRACE(Lib_VideoOut, "Thread stop: {}", exception.what());
+        }
+    });
 }
 
-VideoOutDriver::~VideoOutDriver() = default;
+VideoOutDriver::~VideoOutDriver() {
+    present_thread.request_stop();
+    present_thread.join();
+}
 
 int VideoOutDriver::Open(const ServiceThreadParams* params) {
     if (main_port.is_open) {
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
     main_port.is_open = true;
-    liverpool->SetVoPort(&main_port);
+    ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.liverpool->SetVoPort(&main_port);
     return 1;
 }
 
@@ -139,7 +153,7 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
         port->buffer_labels[startIndex + i] = 0;
         port->SignalVoLabel();
 
-        presenter->RegisterVideoOutSurface(group, address);
+        m_presenter.RegisterVideoOutSurface(group, address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -167,10 +181,10 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 
 void VideoOutDriver::Flip(const Request& req) {
     // Update HDR status before presenting.
-    presenter->SetHDR(req.port->is_hdr);
+    m_presenter.SetHDR(req.port->is_hdr);
 
     // Present the frame.
-    presenter->Present(req.frame);
+    m_presenter.Present(req.frame);
 
     // Update flip status.
     auto* port = req.port;
@@ -209,14 +223,14 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    const auto empty_frame = presenter->PrepareBlankFrame(false);
-    presenter->Present(empty_frame);
+    const auto empty_frame = m_presenter.PrepareBlankFrame(false);
+    m_presenter.Present(empty_frame);
 }
 
 void VideoOutDriver::DrawLastFrame() {
-    const auto frame = presenter->PrepareLastFrame();
+    const auto frame = m_presenter.PrepareLastFrame();
     if (frame != nullptr) {
-        presenter->Present(frame, true);
+        m_presenter.Present(frame, true);
     }
 }
 
@@ -238,7 +252,7 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 
     if (!is_eop) {
         // Non EOP flips can arrive from any thread so ask GPU thread to perform them
-        liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
+        ShadPs4App::GetInstance()->m_hle_layer->m_gnm_driver.liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
     } else {
         SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
@@ -249,12 +263,12 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = presenter->PrepareBlankFrame(false);
+        frame = m_presenter.PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
         ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left);
+        frame = m_presenter.PrepareFrame(group, buffer.address_left);
     }
 
     std::scoped_lock lock{mutex};

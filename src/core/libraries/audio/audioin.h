@@ -84,5 +84,8 @@ int PS4_SYSV_ABI sceAudioInVmicCreate();
 int PS4_SYSV_ABI sceAudioInVmicDestroy();
 int PS4_SYSV_ABI sceAudioInVmicWrite();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::AudioIn

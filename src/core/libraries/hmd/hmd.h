@@ -261,7 +261,19 @@ s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49();
 s32 PS4_SYSV_ABI Func_FC193BD653F2AF2E();
 s32 PS4_SYSV_ABI Func_FF2E0E53015FE231();
 
-void RegisterDistortion(Core::Loader::SymbolsResolver* sym);
-void RegisterReprojection(Core::Loader::SymbolsResolver* sym);
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct DistortionEngine {
+    DistortionEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct ReprojectionEngine {
+    ReprojectionEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct Engine {
+    DistortionEngine m_distortion_engine;
+    ReprojectionEngine m_reprojection_engine;
+
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Hmd

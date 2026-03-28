@@ -13,6 +13,7 @@
 #include "core/emulator_settings.h"
 #include "imgui_impl_vulkan.h"
 #include "texture_manager.h"
+#include "shadps4_app.h"
 
 namespace ImGui {
 

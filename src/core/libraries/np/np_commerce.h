@@ -11,6 +11,9 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpCommerce {
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 
 } // namespace Libraries::Np::NpCommerce

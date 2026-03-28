@@ -23,6 +23,8 @@ Scheduler::Scheduler(const Instance& instance)
 }
 
 Scheduler::~Scheduler() {
+    priority_pending_ops_thread.request_stop();
+
 #if TRACY_GPU_ENABLED
     std::free(profiler_scope);
 #endif

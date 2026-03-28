@@ -141,7 +141,7 @@ s32 PS4_SYSV_ABI sceNpPartyUnregisterPrivateHandler() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3e4k2mzLkmc", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCheckCallback);
     LIB_FUNCTION("nOZRy-slBoA", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCreate);
     LIB_FUNCTION("XQSUbbnpPBA", "libSceNpParty", 1, "libSceNpParty", sceNpPartyCreateA);

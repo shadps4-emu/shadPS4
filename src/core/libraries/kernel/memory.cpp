@@ -807,7 +807,7 @@ s32 PS4_SYSV_ABI sceKernelGetPrtAperture(s32 id, VAddr* address, u64* size) {
     return ORBIS_OK;
 }
 
-void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
+MemoryEngine::MemoryEngine(Core::Loader::SymbolsResolver* sym) {
     ASSERT_MSG(sceKernelGetCompiledSdkVersion(&g_sdk_version) == ORBIS_OK,
                "Failed to get compiled SDK verision.");
 

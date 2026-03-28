@@ -15,6 +15,9 @@ constexpr s32 SCE_RANDOM_MAX_SIZE = 64;
 
 s32 PS4_SYSV_ABI sceRandomGetRandomNumber(u8* buf, std::size_t size);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 
 } // namespace Libraries::Random

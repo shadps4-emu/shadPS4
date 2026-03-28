@@ -12,6 +12,7 @@
 #include "common/debug.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
+#include "shadps4_app.h"
 #include "video_core/buffer_cache/region_manager.h"
 
 namespace VideoCore {

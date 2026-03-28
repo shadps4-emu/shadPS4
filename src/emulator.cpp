@@ -11,7 +11,6 @@
 #include <hwinfo/hwinfo.h>
 
 #include "common/debug.h"
-#include "common/logging/backend.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/emulator_settings.h"
@@ -41,6 +40,7 @@
 #include "core/memory.h"
 #include "core/user_settings.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderdoc.h"
 
@@ -215,12 +215,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     EmulatorSettings.Load(id);
 
     // Initialize logging as soon as possible
-    if (!id.empty() && EmulatorSettings.IsSeparateLoggingEnabled()) {
-        Common::Log::Initialize(id + ".log");
-    } else {
-        Common::Log::Initialize();
+    if (!id.empty() && EmulatorSettings.IsLogSeparate()) {
+        Common::Log::Redirect(id + ".log");
     }
-    Common::Log::Start();
+
     if (!std::filesystem::exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
                      std::filesystem::absolute(file).string());
@@ -234,14 +232,18 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
     LOG_INFO(Config, "Game-specific config used: {}",
-             EmulatorState::GetInstance()->IsGameSpecifigConfigUsed());
+             ShadPs4App::GetInstance()->m_emulator_state.IsGameSpecifigConfigUsed());
 
-    LOG_INFO(Config, "General LogType: {}", EmulatorSettings.GetLogType());
-    LOG_INFO(Config, "General isIdenticalLogGrouped: {}", EmulatorSettings.IsIdenticalLogGrouped());
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings.IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
     LOG_INFO(Config, "General isConnectedToNetwork: {}", EmulatorSettings.IsConnectedToNetwork());
     LOG_INFO(Config, "General isPsnSignedIn: {}", EmulatorSettings.IsPSNSignedIn());
+    LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
+    LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
+    LOG_INFO(Config, "Log filter: {}", EmulatorSettings.GetLogFilter());
+#ifdef _WIN32
+    LOG_INFO(Config, "Log type: {}", EmulatorSettings.GetLogType());
+#endif
     LOG_INFO(Config, "GPU isNullGpu: {}", EmulatorSettings.IsNullGPU());
     LOG_INFO(Config, "GPU readbacksMode: {}", EmulatorSettings.GetReadbacksMode());
     LOG_INFO(Config, "GPU readbackLinearImages: {}",
@@ -412,7 +414,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     // Initialize kernel and library facilities.
-    Libraries::InitHLELibs(&linker->GetHLESymbols());
+    ShadPs4App::GetInstance()->m_hle_layer = std::make_unique<Libraries::HleLayer>(&linker->GetHLESymbols());
+    ShadPs4App::GetInstance()->m_hle_layer->m_video_out.driver->cond_var.notify_all();
 
     // Load the module with the linker
     if (linker->LoadModule(eboot_path) == -1) {
@@ -432,16 +435,19 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 #endif
 
+    std::unique_ptr<std::jthread> play_time_thread;
+
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();
 
-        std::thread([this, id]() {
-            while (true) {
-                std::this_thread::sleep_for(std::chrono::seconds(60));
+        play_time_thread = std::make_unique<std::jthread>([this, id](std::stop_token token) {
+            Common::SetCurrentThreadName("shadPS4:UpdatePlayTime");
+            while (!token.stop_requested()) {
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 UpdatePlayTime(id);
                 start_time = std::chrono::steady_clock::now();
             }
-        }).detach();
+        });
     }
 
     args.insert(args.begin(), eboot_name.generic_string());
@@ -455,7 +461,14 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     UpdatePlayTime(id);
     Storage::DataBase::Instance().Close();
 
-    std::quick_exit(0);
+    //ShadPs4App::GetInstance()->m_hle_layer.reset();
+    linker->main_thread.Stop();
+
+    if (play_time_thread != nullptr) {
+        play_time_thread->request_stop();
+    }
+
+    //std::quick_exit(0);
 }
 
 void Emulator::Restart(std::filesystem::path eboot_path,
@@ -497,9 +510,9 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     LOG_INFO(Common, "Restarting the emulator with args: {}", fmt::join(args, " "));
     Libraries::SaveData::Backup::StopThread();
-    Common::Log::Denitializer();
+    Common::Log::Shutdown();
 
-    auto& ipc = IPC::Instance();
+    auto& ipc = ShadPs4App::GetInstance()->m_ipc;
 
     if (ipc.IsEnabled()) {
         ipc.SendRestart(args);
@@ -527,7 +540,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
                                   nullptr, &si, &pi);
 
     if (!success) {
-        std::cerr << "Failed to restart game: {}" << GetLastError() << std::endl;
+        std::cerr << "Failed to restart game: " << GetLastError() << std::endl;
         std::quick_exit(1);
     }
 

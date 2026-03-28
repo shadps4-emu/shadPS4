@@ -69,7 +69,7 @@ s32 PS4_SYSV_ABI Func_F8E9DB52CD425743(UserService::OrbisUserServiceUserId user_
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pMxXhNozUX8", "libSceNpPartner001", 1, "libSceNpPartner001",
                  Func_A4CC5784DA33517F);
     LIB_FUNCTION("pQfYTZHznMc", "libSceNpPartner001", 1, "libSceNpPartner001",

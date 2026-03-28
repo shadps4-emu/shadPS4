@@ -11,6 +11,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {

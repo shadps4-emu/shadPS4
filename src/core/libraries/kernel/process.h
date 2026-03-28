@@ -30,6 +30,8 @@ s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver);
 s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
                                                  OrbisModuleInfoForUnwind* info);
 
-void RegisterProcess(Core::Loader::SymbolsResolver* sym);
+struct ProcessEngine {
+    ProcessEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

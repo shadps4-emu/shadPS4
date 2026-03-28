@@ -63,5 +63,8 @@ s32 PS4_SYSV_ABI scePngEncEncode(OrbisPngEncHandle, const OrbisPngEncEncodeParam
                                  OrbisPngEncOutputInfo* outputInfo);
 s32 PS4_SYSV_ABI scePngEncQueryMemorySize(const OrbisPngEncCreateParam* param);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::PngEnc

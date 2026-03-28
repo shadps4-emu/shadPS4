@@ -43,5 +43,8 @@ struct OrbisMoveData {
     float temperature;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Move

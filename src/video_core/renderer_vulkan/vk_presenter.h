@@ -107,18 +107,18 @@ private:
 
     void SetExpectedGameSize(s32 width, s32 height);
 
-private:
+public:
     float expected_ratio{1920.0 / 1080.0f};
     u32 expected_frame_width{1920};
     u32 expected_frame_height{1080};
 
+    Frontend::WindowSDL& window;
+    Instance instance;
     HostPasses::FsrPass fsr_pass;
     HostPasses::FsrPass::Settings fsr_settings{};
     HostPasses::PostProcessingPass::Settings pp_settings{};
     HostPasses::PostProcessingPass pp_pass;
-    Frontend::WindowSDL& window;
     AmdGpu::Liverpool* liverpool;
-    Instance instance;
     Scheduler draw_scheduler;
     Scheduler present_scheduler;
     Scheduler flip_scheduler;

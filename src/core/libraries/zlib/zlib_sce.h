@@ -17,5 +17,8 @@ s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout);
 s32 PS4_SYSV_ABI sceZlibGetResult(u64 request_id, u32* dst_length, s32* status);
 s32 PS4_SYSV_ABI sceZlibFinalize();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Zlib

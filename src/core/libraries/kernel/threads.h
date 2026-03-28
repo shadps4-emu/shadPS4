@@ -39,7 +39,19 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
 
-void RegisterThreads(Core::Loader::SymbolsResolver* sym);
+struct ThreadsEngine {
+    MutexEngine m_mutex_engine;
+    CondEngine m_cond_engine;
+    RwlockEngine m_rwlock_engine;
+    SemaphoreEngine m_semaphore_engine;
+    SpecEngine m_spec_engine;
+    ThreadAttrEngine m_thread_attr_engine;
+    ThreadEngine m_thread_engine;
+    RtldEngine m_rtld_engine;
+    PthreadCleanEngine m_pthread_clean_engine;
+
+    ThreadsEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 void PS4_SYSV_ABI ClearStack();
 

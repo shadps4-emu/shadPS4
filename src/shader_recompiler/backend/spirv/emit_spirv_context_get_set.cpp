@@ -9,6 +9,7 @@
 #include "shader_recompiler/ir/attribute.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
+#include "shadps4_app.h"
 
 #include <magic_enum/magic_enum.hpp>
 

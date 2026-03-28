@@ -15,11 +15,9 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
-
-extern boost::asio::io_context io_context;
-extern void KernelSignalRequest();
 
 static std::unordered_map<s32, EqueueInternal*> kqueues;
 static constexpr auto HrTimerSpinlockThresholdNs = 1200000u;
@@ -133,7 +131,7 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
            event.event.filter == OrbisKernelEvent::Filter::HrTimer);
 
     if (!it->timer) {
-        it->timer = std::make_unique<boost::asio::steady_timer>(io_context, event.timer_interval);
+        it->timer = std::make_unique<boost::asio::steady_timer>(ShadPs4App::GetInstance()->m_hle_layer->m_kernel.io_context, event.timer_interval);
     } else {
         // If the timer already exists we are scheduling a reoccurrence after the next period.
         // Set the expiration time to the previous occurrence plus the period.
@@ -153,7 +151,8 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
             }
             callback(this->m_handle, event_data);
         });
-    KernelSignalRequest();
+
+    ShadPs4App::GetInstance()->m_hle_layer->m_kernel.KernelSignalRequest();
 
     return true;
 }
@@ -641,7 +640,7 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
     return ev->data;
 }
 
-void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
+EventQueueEngine::EventQueueEngine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
     LIB_FUNCTION("RW-GEfpnsqg", "libScePosix", 1, "libkernel", posix_kevent);
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);

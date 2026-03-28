@@ -160,5 +160,8 @@ int PS4_SYSV_ABI Func_97F056BAD90AADE7();
 int PS4_SYSV_ABI Func_C55104A33B35B264();
 int PS4_SYSV_ABI Func_D56B43060720B1E0();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::Usbd

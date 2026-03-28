@@ -10,18 +10,6 @@ EmulatorState::EmulatorState() {}
 
 EmulatorState::~EmulatorState() {}
 
-std::shared_ptr<EmulatorState> EmulatorState::GetInstance() {
-    std::lock_guard<std::mutex> lock(s_mutex);
-    if (!s_instance)
-        s_instance = std::make_shared<EmulatorState>();
-    return s_instance;
-}
-
-void EmulatorState::SetInstance(std::shared_ptr<EmulatorState> instance) {
-    std::lock_guard<std::mutex> lock(s_mutex);
-    s_instance = instance;
-}
-
 bool EmulatorState::IsGameRunning() const {
     return m_running;
 }

@@ -35,7 +35,9 @@ static void ExitThread() {
     }
 
     auto* thread_state = ThrState::Instance();
-    ASSERT(thread_state->active_threads.fetch_sub(1) != 1);
+    if (thread_state->active_threads.fetch_sub(1) == 1) {
+        LOG_WARNING(Kernel_Pthread, "Exiting last thread.");
+    }
 
     curthread->lock.lock();
     curthread->state = PthreadState::Dead;
@@ -127,7 +129,9 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     };
 
     PthreadCleanup cup{backout_join, pthread, 0};
-    curthread->cleanup.push_front(&cup);
+    if (curthread != nullptr) {
+        curthread->cleanup.push_front(&cup);
+    }
 
     //_thr_cancel_enter(curthread);
 
@@ -139,7 +143,9 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     }
 
     //_thr_cancel_leave(curthread, 0);
-    curthread->cleanup.pop_front();
+    if (curthread != nullptr) {
+        curthread->cleanup.pop_front();
+    }
 
     if (ret == POSIX_ETIMEDOUT) {
         backout_join(pthread);
@@ -640,7 +646,7 @@ int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
     return posix_pthread_setaffinity_np(thread, sizeof(Cpuset), &cpuset);
 }
 
-void RegisterThread(Core::Loader::SymbolsResolver* sym) {
+ThreadEngine::ThreadEngine(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", posix_pthread_equal);

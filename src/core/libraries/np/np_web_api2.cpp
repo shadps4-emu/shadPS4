@@ -8,6 +8,7 @@
 #include "core/libraries/np/np_web_api2.h"
 #include "core/libraries/np/np_web_api2_error.h"
 #include "core/libraries/system/userservice.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpWebApi2 {
 
@@ -251,7 +252,7 @@ s32 PS4_SYSV_ABI Func_E0DF39A36F087DB9() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("zpiPsH7dbFQ", "libSceNpWebApi2", 1, "libSceNpWebApi2", sceNpWebApi2AbortRequest);
     LIB_FUNCTION("egOOvrnF6mI", "libSceNpWebApi2", 1, "libSceNpWebApi2",
                  sceNpWebApi2AddHttpRequestHeader);

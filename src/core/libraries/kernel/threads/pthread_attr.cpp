@@ -284,7 +284,7 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const u64 mask) {
     return posix_pthread_attr_setaffinity_np(attr, sizeof(Cpuset), &cpuset);
 }
 
-void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
+ThreadAttrEngine::ThreadAttrEngine(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("wtkt-teR1so", "libScePosix", 1, "libkernel", posix_pthread_attr_init);
     LIB_FUNCTION("vQm4fDEsWi8", "libScePosix", 1, "libkernel", posix_pthread_attr_getstack);

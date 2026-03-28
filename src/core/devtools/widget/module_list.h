@@ -11,6 +11,7 @@
 #include "common/elf_info.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "shadps4_app.h"
 
 namespace Core::Devtools::Widget {
 

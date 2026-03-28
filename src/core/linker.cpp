@@ -21,6 +21,8 @@
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+#include "libraries/libs.h"
+#include "shadps4_app.h"
 
 #ifndef _WIN32
 #include <signal.h>
@@ -109,14 +111,14 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
-    main_thread.Run([this, module, &args](std::stop_token) {
+    main_thread.Run([this, module, &args](std::stop_token stop_token) {
         Common::SetCurrentThreadName("Game:Main");
 #ifndef _WIN32 // Clear any existing signal mask for game threads.
         sigset_t emptyset;
         sigemptyset(&emptyset);
         pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
 #endif
-        if (auto& ipc = IPC::Instance()) {
+        if (auto& ipc = ShadPs4App::GetInstance()->m_ipc) {
             ipc.WaitForStart();
         }
 
@@ -136,7 +138,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
         ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
 
         // Start main module.
-        EntryParams& params = Libraries::Kernel::entry_params;
+        auto& params = ShadPs4App::GetInstance()->m_hle_layer->m_kernel.entry_params;
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
@@ -147,6 +149,11 @@ void Linker::Execute(const std::vector<std::string>& args) {
         }
         params.entry_addr = module->GetEntryAddress();
         Libraries::Kernel::ClearStack();
+        static bool stop_requested = false;
+        if (stop_token.stop_requested() || stop_requested) {
+            stop_requested = true;
+            return;
+        }
         RunMainEntry(&params);
     });
 }

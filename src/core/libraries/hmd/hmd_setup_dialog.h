@@ -34,5 +34,8 @@ s32 PS4_SYSV_ABI sceHmdSetupDialogOpen(const OrbisHmdSetupDialogParam* param);
 s32 PS4_SYSV_ABI sceHmdSetupDialogTerminate();
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceHmdSetupDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::HmdSetupDialog

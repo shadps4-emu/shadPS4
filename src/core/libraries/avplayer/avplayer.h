@@ -290,6 +290,9 @@ enum class AvPlayerAvSyncMode {
 
 using AvPlayerLogCallback = int PS4_SYSV_ABI (*)(void* p, const char* format, va_list args);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Engine {
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 
 } // namespace Libraries::AvPlayer

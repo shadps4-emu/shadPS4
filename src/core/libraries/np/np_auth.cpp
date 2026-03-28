@@ -10,6 +10,7 @@
 #include "core/libraries/np/np_auth_error.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/system/userservice.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpAuth {
 
@@ -362,7 +363,7 @@ s32 PS4_SYSV_ABI sceNpAuthDeleteRequest(s32 req_id) {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     g_signed_in = EmulatorSettings.IsPSNSignedIn();
 
     LIB_FUNCTION("6bwFkosYRQg", "libSceNpAuth", 1, "libSceNpAuth", sceNpAuthCreateRequest);

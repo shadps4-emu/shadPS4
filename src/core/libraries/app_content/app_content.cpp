@@ -13,6 +13,7 @@
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
+#include "shadps4_app.h"
 
 namespace Libraries::AppContent {
 
@@ -447,7 +448,7 @@ int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AS45QoYHjc4", "libSceAppContent", 1, "libSceAppContentUtil", _Z5dummyv);
     LIB_FUNCTION("ZiATpP9gEkA", "libSceAppContent", 1, "libSceAppContentUtil",
                  sceAppContentAddcontDelete);

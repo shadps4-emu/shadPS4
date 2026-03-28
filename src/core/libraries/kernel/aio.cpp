@@ -312,7 +312,7 @@ s32 PS4_SYSV_ABI sceKernelAioInitializeParam() {
     return ORBIS_OK;
 }
 
-void RegisterAio(Core::Loader::SymbolsResolver* sym) {
+AioEngine::AioEngine(Core::Loader::SymbolsResolver* sym) {
     id_index = 1;
     id_state = (int*)malloc(sizeof(int) * MAX_QUEUE);
     memset(id_state, 0, sizeof(sizeof(int) * MAX_QUEUE));

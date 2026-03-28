@@ -12,6 +12,7 @@
 #include "core/file_sys/fs.h"
 #include "save_backup.h"
 #include "save_instance.h"
+#include "shadps4_app.h"
 
 constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
 constexpr auto OrbisSaveDataBlocksMax = 32768;  // 1 GiB

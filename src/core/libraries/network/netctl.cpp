@@ -20,6 +20,7 @@
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
 #include "net_util.h"
+#include "shadps4_app.h"
 
 namespace Libraries::NetCtl {
 
@@ -598,7 +599,7 @@ int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("XtClSOC1xcU", "libSceNetBwe", 1, "libSceNetCtl", sceNetBweCheckCallbackIpcInt);
     LIB_FUNCTION("YALqoY4aeY0", "libSceNetBwe", 1, "libSceNetCtl", sceNetBweClearEventIpcInt);
     LIB_FUNCTION("ouyROWhGUbM", "libSceNetBwe", 1, "libSceNetCtl",

@@ -5,6 +5,6 @@
 
 namespace Libraries::Posix {
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {}
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {}
 
 } // namespace Libraries::Posix

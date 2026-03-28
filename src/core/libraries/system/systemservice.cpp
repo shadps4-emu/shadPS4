@@ -9,6 +9,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 
 namespace Libraries::SystemService {
 
@@ -2446,7 +2447,7 @@ void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
     g_event_queue.push(event);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("alZfRdr2RP8", "libSceAppMessaging", 1, "libSceSystemService",
                  sceAppMessagingClearEventFlag);
     LIB_FUNCTION("jKgAUl6cLy0", "libSceAppMessaging", 1, "libSceSystemService",

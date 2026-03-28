@@ -863,7 +863,8 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym)
+    : m_distortion_engine(sym), m_reprojection_engine(sym) {
     Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
     LIB_FUNCTION("6biw1XHTSqQ", "libSceHmd", 1, "libSceHmd", sceHmdClose);
     LIB_FUNCTION("BWY-qKM5hxE", "libSceHmd", 1, "libSceHmd", sceHmdGet2DEyeOffset);
@@ -1021,9 +1022,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sWZSZB-mnw4", "libSceHmd", 1, "libSceHmd", Func_B16652641FE69F0E);
     LIB_FUNCTION("-Bk71lPyry4", "libSceHmd", 1, "libSceHmd", Func_FC193BD653F2AF2E);
     LIB_FUNCTION("-y4OUwFf4jE", "libSceHmd", 1, "libSceHmd", Func_FF2E0E53015FE231);
-
-    RegisterDistortion(sym);
-    RegisterReprojection(sym);
 };
 
 } // namespace Libraries::Hmd

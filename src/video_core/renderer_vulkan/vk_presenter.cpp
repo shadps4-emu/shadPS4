@@ -11,6 +11,7 @@
 #include "imgui/renderer/imgui_core.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -137,14 +138,34 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
 
 Presenter::~Presenter() {
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
+
     draw_scheduler.Finish();
+    present_scheduler.Finish();
+    flip_scheduler.Finish();
+    Check(draw_scheduler.CommandBuffer().reset());
+    Check(present_scheduler.CommandBuffer().reset());
+    Check(flip_scheduler.CommandBuffer().reset());
+
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
         vmaDestroyImage(instance.GetAllocator(), frame.image, frame.allocation);
         device.destroyImageView(frame.image_view);
         device.destroyFence(frame.present_done);
     }
-    ImGui::Core::Shutdown(device);
+    /*
+    while (!free_queue.empty()) {
+        auto& iv = free_queue.front();
+
+        if (iv->image_view) {
+            device.destroyImageView(iv->image_view);
+        }
+
+        if (iv->image) {
+            device.destroyImage(iv->image);
+        }
+
+        free_queue.pop();
+    }*/
 }
 
 bool Presenter::IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const {

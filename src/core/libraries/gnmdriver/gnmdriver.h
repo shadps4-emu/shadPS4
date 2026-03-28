@@ -5,6 +5,8 @@
 
 #include "common/types.h"
 #include "core/libraries/kernel/equeue.h"
+#include "video_core/amdgpu/liverpool.h"
+#include "video_core/renderer_vulkan/vk_presenter.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -299,5 +301,17 @@ int PS4_SYSV_ABI Func_BFB41C057478F0BF();
 int PS4_SYSV_ABI Func_E51D44DB8151238C();
 int PS4_SYSV_ABI Func_F916890425496553();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Context {
+    Context() {
+        LOG_INFO(Lib_GnmDriver, "Initializing presenter");
+    }
+};
+
+struct Engine : Context {
+    std::unique_ptr<AmdGpu::Liverpool> liverpool;
+    std::unique_ptr<Vulkan::Presenter> presenter;
+
+    Engine(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::GnmDriver

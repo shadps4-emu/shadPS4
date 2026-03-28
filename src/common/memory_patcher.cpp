@@ -14,6 +14,7 @@
 #include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "memory_patcher.h"
+#include "shadps4_app.h"
 
 namespace MemoryPatcher {
 
@@ -192,7 +193,7 @@ void OnGameLoaded() {
         } else {
             ApplyPatchesFromXML(file_path);
         }
-    } else if (EmulatorState::GetInstance()->IsAutoPatchesLoadEnabled()) {
+    } else if (ShadPs4App::GetInstance()->m_emulator_state.IsAutoPatchesLoadEnabled()) {
         for (auto const& repo : std::filesystem::directory_iterator(patch_dir)) {
             if (!repo.is_directory()) {
                 continue;

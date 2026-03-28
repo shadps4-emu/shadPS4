@@ -18,16 +18,9 @@ void PS4_SYSV_ABI ClearStack() {
     sp = nullptr;
 }
 
-void RegisterThreads(Core::Loader::SymbolsResolver* sym) {
-    RegisterMutex(sym);
-    RegisterCond(sym);
-    RegisterRwlock(sym);
-    RegisterSemaphore(sym);
-    RegisterSpec(sym);
-    RegisterThreadAttr(sym);
-    RegisterThread(sym);
-    RegisterRtld(sym);
-    RegisterPthreadClean(sym);
-}
+ThreadsEngine::ThreadsEngine(Core::Loader::SymbolsResolver* sym)
+    : m_mutex_engine(sym), m_cond_engine(sym), m_rwlock_engine(sym), m_semaphore_engine(sym),
+      m_spec_engine(sym), m_thread_attr_engine(sym), m_thread_engine(sym), m_rtld_engine(sym),
+      m_pthread_clean_engine(sym) {}
 
 } // namespace Libraries::Kernel

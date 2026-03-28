@@ -352,15 +352,44 @@ using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
 
-void RegisterMutex(Core::Loader::SymbolsResolver* sym);
-void RegisterCond(Core::Loader::SymbolsResolver* sym);
-void RegisterRwlock(Core::Loader::SymbolsResolver* sym);
-void RegisterSemaphore(Core::Loader::SymbolsResolver* sym);
-void RegisterSpec(Core::Loader::SymbolsResolver* sym);
-void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym);
-void RegisterThread(Core::Loader::SymbolsResolver* sym);
-void RegisterRtld(Core::Loader::SymbolsResolver* sym);
-void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym);
-void RegisterPthreadClean(Core::Loader::SymbolsResolver* sym);
+struct MutexEngine {
+    MutexEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct CondEngine {
+    CondEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct RwlockEngine {
+    RwlockEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct SemaphoreEngine {
+    SemaphoreEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct SpecEngine {
+    SpecEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct ThreadAttrEngine {
+    ThreadAttrEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct ThreadEngine {
+    ThreadEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct RtldEngine {
+    RtldEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct KernelEventFlagEngine {
+    KernelEventFlagEngine(Core::Loader::SymbolsResolver* sym);
+};
+
+struct PthreadCleanEngine {
+    PthreadCleanEngine(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

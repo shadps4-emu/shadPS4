@@ -397,7 +397,7 @@ s32 PS4_SYSV_ABI scePthreadSemGetvalue(PthreadSem** sem, s32* sval) {
     return ORBIS_OK;
 }
 
-void RegisterSemaphore(Core::Loader::SymbolsResolver* sym) {
+SemaphoreEngine::SemaphoreEngine(Core::Loader::SymbolsResolver* sym) {
     // Orbis
     LIB_FUNCTION("188x57JYp0g", "libkernel", 1, "libkernel", sceKernelCreateSema);
     LIB_FUNCTION("Zxa0VhQVTsk", "libkernel", 1, "libkernel", sceKernelWaitSema);

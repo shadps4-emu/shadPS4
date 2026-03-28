@@ -10,6 +10,8 @@
 #include <thread>
 #include <vector>
 
+class EmulatorState;
+
 class IPC {
     bool enabled{false};
     std::jthread input_thread{};
@@ -18,11 +20,7 @@ class IPC {
     std::binary_semaphore start_semaphore{0};
 
 public:
-    static IPC& Instance() {
-        return *Common::Singleton<IPC>::Instance();
-    }
-
-    void Init();
+    void Init(EmulatorState& emulator_state);
 
     operator bool() const {
         return enabled;

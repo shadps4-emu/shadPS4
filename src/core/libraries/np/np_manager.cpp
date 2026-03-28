@@ -13,6 +13,7 @@
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpManager {
 
@@ -786,7 +787,7 @@ void DeregisterNpCallback(std::string key) {
     g_np_callbacks.erase(key);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Engine::Engine(Core::Loader::SymbolsResolver* sym) {
     g_signed_in = EmulatorSettings.IsPSNSignedIn();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);

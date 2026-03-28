@@ -21,6 +21,7 @@
 #include "input/input_handler.h"
 #include "input/input_mouse.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "video_core/renderdoc.h"
 
 #ifdef __APPLE__
@@ -72,11 +73,18 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
 }
 
 static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
-    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->UpdateAxisSmoothing();
-    controller->Gyro(0);
-    controller->Acceleration(0);
-    return interval;
+    try {
+        auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+        controller->UpdateAxisSmoothing();
+        controller->Gyro(0);
+        controller->Acceleration(0);
+        return interval;
+    }
+    catch (const std::runtime_error& exception) {
+        LOG_TRACE(Frontend, "Thread stop: {}", exception.what());
+    }
+    //timer is canceled and will be removed.
+    return 0;
 }
 
 static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,

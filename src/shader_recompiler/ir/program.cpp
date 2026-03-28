@@ -13,6 +13,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/value.h"
+#include "shadps4_app.h"
 
 namespace Shader::IR {
 
