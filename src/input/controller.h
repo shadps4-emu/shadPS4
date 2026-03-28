@@ -20,6 +20,7 @@ namespace Input {
 
 enum class ControllerType {
     Standard,
+    Move,
 };
 
 enum class Axis {
@@ -171,13 +172,16 @@ private:
 
 class GameControllers {
     std::array<GameController*, 5> controllers;
+    std::array<GameController*, 4> move_controllers;
 
     static std::array<std::optional<Colour>, 4> controller_override_colors;
 
 public:
     GameControllers()
         : controllers({new GameController(), new GameController(), new GameController(),
-                       new GameController(), new GameController()}) {};
+                       new GameController(), new GameController()}),
+          move_controllers({new GameController(), new GameController(), new GameController(),
+                            new GameController()}) {};
     virtual ~GameControllers() = default;
     GameController* operator[](const size_t& i) const {
         if (i > 4) {
@@ -185,8 +189,15 @@ public:
         }
         return controllers[i];
     }
+    GameController* moves(const size_t& i) const {
+        if (i > 3) {
+            UNREACHABLE_MSG("Index {} is out of bounds for GameControllers!", i);
+        }
+        return move_controllers[i];
+    }
     void TryOpenSDLControllers();
     u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
+    u8 GetMoveIndexFromJoystickId(SDL_JoystickID id);
     static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
     static std::optional<u8> GetControllerIndexFromControllerID(s32 controller_id);
 
