@@ -3,102 +3,182 @@
 
 #include <map>
 
-#include "common/config.h"
+#include "core/emulator_settings.h"
 
 ///////////// ImGui Translation Tables
 
 // disable clang line limits for ease of translation
 // clang-format off
 
-const std::map<std::string, std::string> TrophyEarnedTable = {
-    {"Japanese", "Trophy Earned"},
-    {"English (US)", "Trophy Earned"},
-    {"French", "Trophy Earned"},
-    {"Spanish", "Trophy Earned"},
-    {"German", "Trophy Earned"},
-    {"Italian", "Trophy Earned"},
-    {"Dutch", "Trophy Earned"},
-    {"Portuguese (PT)", "Trophy Earned"},
-    {"Russian", "Trophy Earned"},
-    {"Korean", "Trophy Earned"},
-    {"Chinese (Traditional)", "Trophy Earned"},
-    {"Chinese (Simplified)", "Trophy Earned"},
-    {"Finnish", "Trophy Earned"},
-    {"Swedish", "Trophy Earned"},
-    {"Danish", "Trophy Earned"},
-    {"Norwegian", "Trophy Earned"},
-    {"Polish", "Trophy Earned"},
-    {"Portuguese (BR)", "Trophy Earned"},
-    {"English (UK)", "Trophy Earned"},
-    {"Turkish", "Trophy Earned"},
-    {"Spanish (Latin America)", "Trophy Earned"},
-    {"Arabic", "Trophy Earned"},
-    {"French (Canada)", "Trophy Earned"},
-    {"Czech", "Trophy Earned"},
-    {"Hungarian", "Trophy Earned"},
-    {"Greek", "Trophy Earned"},
-    {"Romanian", "Trophy Earned"},
-    {"Thai", "Trophy Earned"},
-    {"Vietnamese", "Trophy Earned"},
-    {"Indonesian", "Trophy Earned"},
-    {"Ukrainian", "Trophy Earned"}};
+const std::map<std::string, std::string> JapaneseMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> FrenchMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> FrenchCanadaMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> SpanishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> SpanishLatinAmericanMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> GermanMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> ItalianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> DutchMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> PortugesePtMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> PortugeseBrMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> RussianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> KoreanMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> ChineseTraditionalMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> ChineseSimplifiedMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> FinnishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> SwedishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> DanishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> NorwegianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> PolishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> TurkishMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> ArabicMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> CzechMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> HungarianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> GreekMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> RomanianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> ThaiMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> VietnameseMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> IndonesianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
+
+const std::map<std::string, std::string> UkranianMap = {
+    {"Trophy Earned", "Trophy Earned"},
+};
 
 // clang-format on
 
 ///////////// End ImGui Translation Tables
 
-const std::map<u32, std::string> langMap = {
-    {0, "Japanese"},
-    {1, "English (US)"},
-    {2, "French"},
-    {3, "Spanish"},
-    {4, "German"},
-    {5, "Italian"},
-    {6, "Dutch"},
-    {7, "Portuguese (PT)"},
-    {8, "Russian"},
-    {9, "Korean"},
-    {10, "Chinese (Traditional)"},
-    {11, "Chinese (Simplified)"},
-    {12, "Finnish"},
-    {13, "Swedish"},
-    {14, "Danish"},
-    {15, "Norwegian"},
-    {16, "Polish"},
-    {17, "Portuguese (BR)"},
-    {18, "English (UK)"},
-    {19, "Turkish"},
-    {20, "Spanish (Latin America)"},
-    {21, "Arabic"},
-    {22, "French (Canada)"},
-    {23, "Czech"},
-    {24, "Hungarian"},
-    {25, "Greek"},
-    {26, "Romanian"},
-    {27, "Thai"},
-    {28, "Vietnamese"},
-    {29, "Indonesian"},
-    {30, "Ukrainian"},
-};
-
-const std::map<std::string, std::map<std::string, std::string>> tableMap = {
-    {"Trophy Earned", TrophyEarnedTable},
+const std::map<u32, std::map<std::string, std::string>> langMap = {
+    {0, JapaneseMap},
+    // {1, EnglishUsMap}, - not used
+    {2, FrenchMap},
+    {3, SpanishMap},
+    {4, GermanMap},
+    {5, ItalianMap},
+    {6, DutchMap},
+    {7, PortugesePtMap},
+    {8, RussianMap},
+    {9, KoreanMap},
+    {10, ChineseTraditionalMap},
+    {11, ChineseSimplifiedMap},
+    {12, FinnishMap},
+    {13, SwedishMap},
+    {14, DanishMap},
+    {15, NorwegianMap},
+    {16, PolishMap},
+    {17, PortugeseBrMap},
+    // {18, "English (UK)"}, - not used
+    {19, TurkishMap},
+    {20, SpanishLatinAmericanMap},
+    {21, ArabicMap},
+    {22, FrenchCanadaMap},
+    {23, CzechMap},
+    {24, HungarianMap},
+    {25, GreekMap},
+    {26, RomanianMap},
+    {27, ThaiMap},
+    {28, VietnameseMap},
+    {29, IndonesianMap},
+    {30, UkranianMap},
 };
 
 namespace ImguiTranslate {
 
 std::string tr(std::string input) {
-    if (!tableMap.contains(input)) {
+    // since we're coding in English
+    if (EmulatorSettings.GetConsoleLanguage() == 1 || EmulatorSettings.GetConsoleLanguage() == 18)
+        return input;
+
+    const std::map<std::string, std::string> translationTable =
+        langMap.at(EmulatorSettings.GetConsoleLanguage());
+
+    if (!translationTable.contains(input)) {
         return input;
     }
 
-    const std::map<std::string, std::string> translationTable = tableMap.at(input);
-    std::string language = langMap.at(Config::GetLanguage());
-    if (!translationTable.contains(language)) {
-        return input;
-    }
-
-    return translationTable.at(language);
+    return translationTable.at(input);
 }
 
 } // namespace ImguiTranslate
