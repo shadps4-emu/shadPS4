@@ -317,3 +317,14 @@ endif()
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
 
+# cppcodec
+add_library(Cppcodec INTERFACE)
+target_include_directories(Cppcodec INTERFACE cppcodec/)
+
+# IXWebSocket
+if (NOT TARGET ixwebsocket)
+    if (NOT WIN32)
+        set(USE_TLS ON CACHE BOOL "" FORCE)
+    endif()
+    add_subdirectory(ixwebsocket)
+endif()
