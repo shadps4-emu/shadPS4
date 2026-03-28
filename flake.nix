@@ -33,6 +33,7 @@
           wayland.dev
           stb
           libpng.dev
+          libuuid
 
           # Specific SDL3 dependencies:
           sdl3.dev
