@@ -53,6 +53,13 @@ sudo zypper install clang git cmake libasound2 libpulse-devel \
 nix-shell shell.nix
 ```
 
+#### Nix Flake Development Shell
+```bash
+nix develop
+cmake -S . -B build/ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_EXPORT_COMPILE_COMMANDS=ON  
+ln -s ./build/compile_commands.json .
+```
+
 #### Other Linux distributions
 
 You can try one of two methods:
