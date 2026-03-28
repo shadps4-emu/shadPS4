@@ -8,6 +8,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <pugixml.hpp>
+#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -193,16 +194,56 @@ void OnGameLoaded() {
             ApplyPatchesFromXML(file_path);
         }
     } else if (EmulatorState::GetInstance()->IsAutoPatchesLoadEnabled()) {
+        if (g_game_serial.empty()) {
+            ApplyPendingPatches();
+            return;
+        }
         for (auto const& repo : std::filesystem::directory_iterator(patch_dir)) {
             if (!repo.is_directory()) {
                 continue;
             }
-            std::ifstream json_file{repo.path() / "files.json"};
-            nlohmann::json available_patches = nlohmann::json::parse(json_file);
+            const auto json_path = repo.path() / "files.json";
+            if (!std::filesystem::exists(json_path)) {
+                continue;
+            }
+
+            std::ifstream json_file{json_path};
+            if (!json_file.is_open()) {
+                LOG_ERROR(Loader, "Failed to open patch index: {}", json_path.string());
+                continue;
+            }
+
+            nlohmann::json available_patches;
+            try {
+                available_patches = nlohmann::json::parse(json_file);
+            } catch (const std::exception& e) {
+                LOG_ERROR(Loader, "Failed to parse patch index {}: {}", json_path.string(),
+                          e.what());
+                continue;
+            }
+
+            if (!available_patches.is_object()) {
+                LOG_ERROR(Loader, "Invalid patch index (expected object): {}", json_path.string());
+                continue;
+            }
+
             std::filesystem::path game_patch_file;
-            for (auto const& [filename, serials] : available_patches.items()) {
-                if (std::find(serials.begin(), serials.end(), g_game_serial) != serials.end()) {
-                    game_patch_file = repo.path() / filename;
+            for (auto it = available_patches.begin(); it != available_patches.end(); ++it) {
+                const auto& serials = it.value();
+                if (!serials.is_array()) {
+                    continue;
+                }
+
+                bool matches = false;
+                for (const auto& serial : serials) {
+                    if (serial.is_string() &&
+                        serial.get_ref<const std::string&>() == g_game_serial) {
+                        matches = true;
+                        break;
+                    }
+                }
+                if (matches) {
+                    game_patch_file = repo.path() / it.key();
                     break;
                 }
             }
