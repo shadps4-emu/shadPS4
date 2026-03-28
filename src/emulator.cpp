@@ -322,7 +322,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                     Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
                     std::to_string(user.user_id) / "trophy" / (npCommId + ".xml");
                 if (!std::filesystem::exists(user_trophy_file)) {
-                    std::filesystem::create_directories(user_trophy_file.parent_path());
+                    auto temp = user_trophy_file.parent_path();
+                    std::filesystem::create_directories(temp);
                     std::error_code discard;
                     std::filesystem::copy_file(trophyDir / "Xml" / "TROPCONF.XML", user_trophy_file,
                                                discard);
