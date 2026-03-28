@@ -182,6 +182,7 @@ OPCODE(CompositeShuffleF32x4,                               F32x4,          F32x
 // Select operations
 OPCODE(SelectU1,                                            U1,             U1,             U1,             U1,                                             )
 OPCODE(SelectU32,                                           U32,            U1,             U32,            U32,                                            )
+OPCODE(SelectU64,                                           U64,            U1,             U32,            U32,                                            )
 OPCODE(SelectF32,                                           F32,            U1,             F32,            F32,                                            )
 
 // Bitwise conversions
