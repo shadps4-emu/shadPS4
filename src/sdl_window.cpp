@@ -302,6 +302,9 @@ void WindowSDL::WaitEvent() {
 void WindowSDL::InitTimers() {
     for (int i = 0; i < 4; ++i) {
         SDL_AddTimer(4, &PollController, controllers[i]);
+        SDL_AddTimer(13, &PollController, controllers.moves(i));
+        // the move ball resets every 5 seconds, however, for some reason this flickers
+        SDL_AddTimer(500, &PollControllerLightColour, controllers.moves(i));
     }
     SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
@@ -385,12 +388,22 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
             if (gamepad < 5) {
                 controllers[gamepad]->UpdateGyro(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad < 4) {
+                    controllers.moves(gamepad)->UpdateGyro(event->gsensor.data);
+                }
             }
             break;
         case SDL_SENSOR_ACCEL:
             gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
             if (gamepad < 5) {
                 controllers[gamepad]->UpdateAcceleration(event->gsensor.data);
+            } else {
+                gamepad = controllers.GetMoveIndexFromJoystickId(event->gsensor.which);
+                if (gamepad < 4) {
+                    controllers.moves(gamepad)->UpdateAcceleration(event->gsensor.data);
+                }
             }
             break;
         default:
