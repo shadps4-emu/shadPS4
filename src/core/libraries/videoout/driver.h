@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -88,7 +88,11 @@ public:
                         const BufferAttribute* attribute);
     int UnregisterBuffers(VideoOutPort* port, s32 attributeIndex);
 
-    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
+    bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg);
+
+    // Push a frame to the presenter. Called by Liverpool (GPU thread) when
+    // a submission with an associated flip completes.
+    void EnqueueFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop);
 
 private:
     struct Request {
