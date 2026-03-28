@@ -4,7 +4,6 @@
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -13,13 +12,19 @@
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/sysmodule/sysmodule.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+
+#ifndef _WIN32
+#include <signal.h>
+#endif
 
 namespace Core {
 
@@ -56,7 +61,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 Linker::~Linker() = default;
 
 void Linker::Execute(const std::vector<std::string>& args) {
-    if (Config::debugDump()) {
+    if (EmulatorSettings.IsDebugDump()) {
         DebugDump();
     }
 
@@ -106,11 +111,17 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
+#ifndef _WIN32 // Clear any existing signal mask for game threads.
+        sigset_t emptyset;
+        sigemptyset(&emptyset);
+        pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
+#endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
         }
 
-        LoadSharedLibraries();
+        // Have libSceSysmodule preload our libraries.
+        Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
         // Some games fail without accurately emulating this behavior.
@@ -350,8 +361,10 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
         return_info->name = "Unknown !!!";
     }
-    LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-              return_info->name, library->name, module->name);
+    if (library->name != "libc" && library->name != "libSceFios2") {
+        LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
+                    return_info->name, library->name, module->name);
+    }
     return false;
 }
 

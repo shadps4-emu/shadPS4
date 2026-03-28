@@ -87,11 +87,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     if (!read && !write && !rdwr) {
         // Start by checking for invalid flags.
         *__Error() = POSIX_EINVAL;
+        LOG_ERROR(Kernel_Fs, "Opening path {} failed, invalid flags {:#x}", raw_path, flags);
         return -1;
     }
 
     if (strlen(raw_path) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
+        LOG_ERROR(Kernel_Fs, "Opening path {} failed, path is too long", raw_path);
         return -1;
     }
 
@@ -137,6 +139,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Error if file exists
             h->DeleteHandle(handle);
             *__Error() = POSIX_EEXIST;
+            LOG_ERROR(Kernel_Fs, "Creating {} failed, file already exists", raw_path);
             return -1;
         }
 
@@ -145,6 +148,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
                 // Can't create files in a read only directory
                 h->DeleteHandle(handle);
                 *__Error() = POSIX_EROFS;
+                LOG_ERROR(Kernel_Fs, "Creating {} failed, path is read-only", raw_path);
                 return -1;
             }
             // Create a file if it doesn't exist
@@ -154,6 +158,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
         h->DeleteHandle(handle);
         *__Error() = POSIX_ENOENT;
+        LOG_ERROR(Kernel_Fs, "Opening path {} failed, file does not exist", raw_path);
         return -1;
     }
 
@@ -169,6 +174,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // This will trigger when create & directory is specified, this is expected.
             h->DeleteHandle(handle);
             *__Error() = POSIX_ENOTDIR;
+            LOG_ERROR(Kernel_Fs, "Opening directory {} failed, file is not a directory", raw_path);
             return -1;
         }
 
@@ -176,6 +182,8 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Cannot open directories with any type of write access
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
+            LOG_ERROR(Kernel_Fs, "Opening directory {} failed, cannot open directories for writing",
+                      raw_path);
             return -1;
         }
 
@@ -183,6 +191,8 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Cannot open directories with truncate
             h->DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
+            LOG_ERROR(Kernel_Fs, "Opening directory {} failed, cannot truncate directories",
+                      raw_path);
             return -1;
         }
 
@@ -201,6 +211,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Can't open files with truncate flag in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
+            LOG_ERROR(Kernel_Fs, "Truncating {} failed, path is read-only", raw_path);
             return -1;
         } else if (truncate) {
             // Open the file as read-write so we can truncate regardless of flags.
@@ -219,6 +230,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             // Can't open files with write/read-write access in a read only directory
             h->DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
+            LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
             return -1;
         } else if (write) {
             if (append) {
@@ -244,6 +256,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         // Open failed in platform-specific code, errno needs to be converted.
         h->DeleteHandle(handle);
         SetPosixErrno(e);
+        LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
         return -1;
     }
 
@@ -258,7 +271,6 @@ s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
 s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
     s32 result = open(path, flags, mode);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
         return ErrnoToSceKernelError(*__Error());
     }
     return result;

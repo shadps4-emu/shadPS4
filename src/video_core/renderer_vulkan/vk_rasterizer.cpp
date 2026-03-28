@@ -1,8 +1,8 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/debug.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -38,7 +38,7 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool} {
-    if (!Config::nullGpu()) {
+    if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
     memory->SetRasterizer(this);
@@ -662,6 +662,13 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
 
 void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
     image_bindings.clear();
+    const u32 first_image_idx = image_infos.size();
+    // For loading/storing to explicit mip levels, when no native instruction support, bind an array
+    // of descriptors consecutively, 1 for each mip level. The shader can index this with LOD
+    // operand.
+    // This array holds the size of each consecutive array with the number of bindings consumed.
+    // This is currently always 1 for anything other than mip fallback arrays.
+    boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
 
     for (const auto& image_desc : stage.images) {
         const auto tsharp = image_desc.GetSharp(stage);
@@ -671,25 +678,43 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
         if (tsharp.GetDataFmt() == AmdGpu::DataFormat::FormatInvalid) {
             image_bindings.emplace_back(std::piecewise_construct, std::tuple{}, std::tuple{});
+            image_descriptor_array_sizes.push_back(1);
             continue;
         }
 
-        auto& [image_id, desc] = image_bindings.emplace_back(std::piecewise_construct, std::tuple{},
-                                                             std::tuple{tsharp, image_desc});
-        image_id = texture_cache.FindImage(desc);
-        auto* image = &texture_cache.GetImage(image_id);
-        if (image->depth_id) {
-            // If this image has an associated depth image, it's a stencil attachment.
-            // Redirect the access to the actual depth-stencil buffer.
-            image_id = image->depth_id;
-            image = &texture_cache.GetImage(image_id);
+        const Shader::MipStorageFallbackMode mip_fallback_mode = image_desc.mip_fallback_mode;
+        const u32 num_bindings = image_desc.NumBindings(stage);
+
+        for (auto i = 0; i < num_bindings; i++) {
+            auto& [image_id, desc] = image_bindings.emplace_back(
+                std::piecewise_construct, std::tuple{}, std::tuple{tsharp, image_desc});
+
+            if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
+                ASSERT(num_bindings == 1);
+                desc.view_info.range.base.level += image_desc.constant_mip_index;
+                desc.view_info.range.extent.levels = 1;
+            } else if (mip_fallback_mode == Shader::MipStorageFallbackMode::DynamicIndex) {
+                desc.view_info.range.base.level += i;
+                desc.view_info.range.extent.levels = 1;
+            }
+
+            image_id = texture_cache.FindImage(desc);
+            auto* image = &texture_cache.GetImage(image_id);
+            if (image->depth_id) {
+                // If this image has an associated depth image, it's a stencil attachment.
+                // Redirect the access to the actual depth-stencil buffer.
+                image_id = image->depth_id;
+                image = &texture_cache.GetImage(image_id);
+            }
+            if (image->binding.is_bound) {
+                // The image is already bound. In case if it is about to be used as storage we
+                // need to force general layout on it.
+                image->binding.force_general |= image_desc.is_written;
+            }
+            image->binding.is_bound = 1u;
         }
-        if (image->binding.is_bound) {
-            // The image is already bound. In case if it is about to be used as storage we need
-            // to force general layout on it.
-            image->binding.force_general |= image_desc.is_written;
-        }
-        image->binding.is_bound = 1u;
+
+        image_descriptor_array_sizes.push_back(num_bindings);
     }
 
     // Second pass to re-bind images that were updated after binding
@@ -749,16 +774,26 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image_infos.emplace_back(VK_NULL_HANDLE, *image_view.image_view,
                                      image.backing->state.layout);
         }
+    }
 
+    u32 image_info_idx = first_image_idx;
+    u32 image_binding_idx = 0;
+    for (u32 array_size : image_descriptor_array_sizes) {
+        const auto& [_, desc] = image_bindings[image_binding_idx];
+        const bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         set_writes.push_back({
             .dstSet = VK_NULL_HANDLE,
-            .dstBinding = binding.unified++,
+            .dstBinding = binding.unified,
             .dstArrayElement = 0,
-            .descriptorCount = 1,
+            .descriptorCount = array_size,
             .descriptorType =
                 is_storage ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage,
-            .pImageInfo = &image_infos.back(),
+            .pImageInfo = &image_infos[image_info_idx],
         });
+
+        image_info_idx += array_size;
+        image_binding_idx += array_size;
+        binding.unified += array_size;
     }
 
     for (const auto& sampler : stage.samplers) {
@@ -1278,8 +1313,8 @@ void Rasterizer::UpdateColorBlendingState(const GraphicsPipeline* pipeline) cons
 }
 
 void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1289,8 +1324,8 @@ void Rasterizer::ScopeMarkerBegin(const std::string_view& str, bool from_guest) 
 }
 
 void Rasterizer::ScopeMarkerEnd(bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1298,8 +1333,8 @@ void Rasterizer::ScopeMarkerEnd(bool from_guest) {
 }
 
 void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();
@@ -1310,8 +1345,8 @@ void Rasterizer::ScopedMarkerInsert(const std::string_view& str, bool from_guest
 
 void Rasterizer::ScopedMarkerInsertColor(const std::string_view& str, const u32 color,
                                          bool from_guest) {
-    if ((from_guest && !Config::getVkGuestMarkersEnabled()) ||
-        (!from_guest && !Config::getVkHostMarkersEnabled())) {
+    if ((from_guest && !EmulatorSettings.IsVkGuestMarkersEnabled()) ||
+        (!from_guest && !EmulatorSettings.IsVkHostMarkersEnabled())) {
         return;
     }
     const auto cmdbuf = scheduler.CommandBuffer();

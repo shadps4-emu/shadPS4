@@ -1447,7 +1447,7 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
         return ORBIS_NET_ERROR_EBADF;
     }
 
-    if (!Config::getIsConnectedToNetwork()) {
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
         *sceNetErrnoLoc() = ORBIS_NET_RESOLVER_ENODNS;
         file->resolver->resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
         return ORBIS_NET_ERROR_RESOLVER_ENODNS;

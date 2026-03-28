@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
+#include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -352,10 +352,10 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
     } else {
         if (operand.input_modifier.abs) {
-            value = ir.IAbs(value);
+            value = ir.BitwiseAnd(value, ir.Imm32(0x7FFFFFFFu));
         }
         if (operand.input_modifier.neg) {
-            value = ir.INeg(value);
+            value = ir.BitwiseXor(value, ir.Imm32(0x80000000u));
         }
     }
     return value;
@@ -452,6 +452,23 @@ T Translator::GetSrc64(const InstOperand& operand) {
         }
         if (operand.input_modifier.neg) {
             value = ir.FPNeg(value);
+        }
+    } else {
+        // GCN VOP3 abs/neg modifier bits operate on the sign bit (bit 63 for
+        // 64-bit values). Unpack, modify the high dword's bit 31, repack.
+        if (operand.input_modifier.abs) {
+            const auto unpacked = ir.UnpackUint2x32(value);
+            const auto lo = IR::U32{ir.CompositeExtract(unpacked, 0)};
+            const auto hi = IR::U32{ir.CompositeExtract(unpacked, 1)};
+            const auto hi_abs = ir.BitwiseAnd(hi, ir.Imm32(0x7FFFFFFFu));
+            value = ir.PackUint2x32(ir.CompositeConstruct(lo, hi_abs));
+        }
+        if (operand.input_modifier.neg) {
+            const auto unpacked = ir.UnpackUint2x32(value);
+            const auto lo = IR::U32{ir.CompositeExtract(unpacked, 0)};
+            const auto hi = IR::U32{ir.CompositeExtract(unpacked, 1)};
+            const auto hi_neg = ir.BitwiseXor(hi, ir.Imm32(0x80000000u));
+            value = ir.PackUint2x32(ir.CompositeConstruct(lo, hi_neg));
         }
     }
     return value;
@@ -552,7 +569,7 @@ void Translator::EmitFetch(const GcnInst& inst) {
     const auto fetch_data = ParseFetchShader(info);
     ASSERT(fetch_data.has_value());
 
-    if (Config::dumpShaders()) {
+    if (EmulatorSettings.IsDumpShaders()) {
         using namespace Common::FS;
         const auto dump_dir = GetUserPath(PathType::ShaderDir) / "dumps";
         if (!std::filesystem::exists(dump_dir)) {

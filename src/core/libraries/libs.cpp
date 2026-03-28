@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/config.h"
 #include "core/libraries/ajm/ajm.h"
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio3d/audio3d.h"
+#include "core/libraries/audio3d/audio3d_openal.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/camera/camera.h"
 #include "core/libraries/companion/companion_httpd.h"
@@ -57,10 +57,10 @@
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/share_play/shareplay.h"
 #include "core/libraries/signin_dialog/signindialog.h"
+#include "core/libraries/sysmodule/sysmodule.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
 #include "core/libraries/system/posix.h"
-#include "core/libraries/system/sysmodule.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system_gesture/system_gesture.h"
@@ -127,7 +127,11 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::AvPlayer::RegisterLib(sym);
     Libraries::Videodec::RegisterLib(sym);
     Libraries::Videodec2::RegisterLib(sym);
-    Libraries::Audio3d::RegisterLib(sym);
+    if (EmulatorSettings.GetAudioBackend() == AudioBackend::OpenAL) {
+        Libraries::Audio3dOpenAL::RegisterLib(sym);
+    } else {
+        Libraries::Audio3d::RegisterLib(sym);
+    }
     Libraries::Ime::RegisterLib(sym);
     Libraries::GameLiveStreaming::RegisterLib(sym);
     Libraries::SharePlay::RegisterLib(sym);

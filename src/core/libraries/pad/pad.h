@@ -280,7 +280,7 @@ int PS4_SYSV_ABI scePadGetFeatureReport();
 int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                  s32 index);
 int PS4_SYSV_ABI scePadGetIdleCount();
-int PS4_SYSV_ABI scePadGetInfo();
+int PS4_SYSV_ABI scePadGetInfo(u32* data);
 int PS4_SYSV_ABI scePadGetInfoByPortType();
 int PS4_SYSV_ABI scePadGetLicenseControllerInformation();
 int PS4_SYSV_ABI scePadGetMotionSensorPosition();
@@ -324,7 +324,7 @@ int PS4_SYSV_ABI scePadSetForceIntercepted();
 int PS4_SYSV_ABI scePadSetLightBar(s32 handle, const OrbisPadLightBarParam* pParam);
 int PS4_SYSV_ABI scePadSetLightBarBaseBrightness();
 int PS4_SYSV_ABI scePadSetLightBarBlinking();
-int PS4_SYSV_ABI scePadSetLightBarForTracker();
+int PS4_SYSV_ABI scePadSetLightBarForTracker(s32 handle, const OrbisPadLightBarParam* pParam);
 int PS4_SYSV_ABI scePadSetLoginUserNumber();
 int PS4_SYSV_ABI scePadSetMotionSensorState(s32 handle, bool bEnable);
 int PS4_SYSV_ABI scePadSetProcessFocus();
