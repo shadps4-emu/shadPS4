@@ -74,5 +74,60 @@
           echo "Entering shadPS4 development shell!"
         '';
       };
+      
+      debugLinux = pkgsLinux.stdenv.mkDerivation {
+        pname = "shadPS4";
+        version = "git";
+        system = "x86_64-linux";
+        src = ./.;
+        dontStrip = true;
+
+        nativeBuildInputs = with pkgsLinux; [ 
+          cmake 
+          ninja
+          libcxx
+          pkg-config
+          boost
+          vulkan-headers
+          magic-enum
+          fmt
+        ];
+
+        buildInputs = with pkgsLinux; [
+          mesa
+          util-linux
+          libuuid
+          libedit
+          ffmpeg
+          sdl3
+          alsa-lib
+          libpulseaudio
+          libusb1
+          libxkbcommon
+          libgbm
+          ibusMinimal
+          libGL
+          libdecor
+          libdrm
+          jack2
+          pipewire
+          sndio
+          vulkan-loader
+          wayland
+          wayland-scanner
+          libX11
+        ];
+
+        cmakeFlags = [
+          "-DCMAKE_BUILD_TYPE=Debug"
+        ];
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p bin
+          cp shadPS4 bin/
+          runHook postInstall
+        '';
+      };
     };
 }
