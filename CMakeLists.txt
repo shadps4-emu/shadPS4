@@ -1091,6 +1091,7 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
           src/imgui/imgui_texture.h
+          src/imgui/imgui_translations.cpp
           src/imgui/imgui_translations.h
           src/imgui/renderer/imgui_core.cpp
           src/imgui/renderer/imgui_core.h
