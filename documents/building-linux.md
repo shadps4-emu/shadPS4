@@ -60,6 +60,10 @@ cmake -S . -B build/ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMA
 ln -s ./build/compile_commands.json .
 ```
 
+#### Nix Flake Build
+```bash
+nix build .?submodules=1#debugLinux
+```
 #### Other Linux distributions
 
 You can try one of two methods:
