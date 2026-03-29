@@ -133,3 +133,6 @@
 [submodule "externals/openal-soft"]
 	path = externals/openal-soft
 	url = https://github.com/shadexternals/openal-soft.git
+[submodule "externals/cppcodec"]
+	path = externals/cppcodec
+	url = https://github.com/tplgy/cppcodec.git

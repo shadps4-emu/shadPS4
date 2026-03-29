@@ -317,3 +317,6 @@ endif()
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
 
+# cppcodec
+add_library(Cppcodec INTERFACE)
+target_include_directories(Cppcodec INTERFACE cppcodec/)
