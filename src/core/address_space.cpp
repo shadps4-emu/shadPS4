@@ -681,15 +681,14 @@ struct AddressSpace::Impl {
             throw std::bad_alloc{};
         }
         shm_unlink(shm_path.c_str());
-#elif defined(__FreeBSD__)
-        backing_fd = memfd_create("BackingDmem", 0);
-        if (backing_fd < 0) {
-            LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
-            throw std::bad_alloc{};
-        }
 #else
+#ifndef __FreeBSD__
         madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
-
+#endif
+        // NOTE: If you add MFD_HUGETLB or whatever, remember that FBSD will break (libc bug)
+        // so please, do not, add MFD_* whatever unless you ifdef it away (must be 0 for FBSD)
+        // using sized pages as well causes incessant vm_reclaim calls in kernel, do not use on FBSD
+        // under any circumstances.
         backing_fd = memfd_create("BackingDmem", 0);
         if (backing_fd < 0) {
             LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
