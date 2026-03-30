@@ -10,6 +10,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__FreeBSD__)
+#include <machine/sysarch.h>
 #elif defined(__APPLE__) && defined(ARCH_X86_64)
 #include <architecture/i386/table.h>
 #include <boost/icl/interval_set.hpp>
@@ -166,6 +168,17 @@ void SetTcbBase(void* image_address) {
 
 Tcb* GetTcbBase() {
     return Libraries::Kernel::g_curthread->tcb;
+}
+
+#elif defined(__FreeBSD__)
+void SetTcbBase(void* image_address) {
+    amd64_set_gsbase(image_address);
+}
+
+Tcb* GetTcbBase() {
+    void *addr = nullptr;
+    amd64_get_gsbase(&addr);
+    return static_cast<Tcb*>(addr);
 }
 
 #else
