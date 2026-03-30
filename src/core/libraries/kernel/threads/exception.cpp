@@ -325,7 +325,7 @@ s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
         *__Error() = POSIX_EINVAL;
         return ORBIS_FAIL;
     }
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
     if (native_sig >= __SIGRTMIN && native_sig < SIGRTMIN) {
         LOG_ERROR(Lib_Kernel, "Guest is attempting to use the HLE libc-reserved signal {}!", sig);
         *__Error() = POSIX_EINVAL;
