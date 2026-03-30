@@ -116,10 +116,16 @@
           wayland
           wayland-scanner
           libX11
+          libxrandr
+          libxext
+          libxcursor
+          libxi
+          libxscrnsaver
+          libxtst
+          libxcb
           libdecor
           libxkbcommon
           libGL
-          #mesa
           #util-linux
           libuuid
           #libedit
@@ -142,13 +148,12 @@
         let
           libs = with pkgsLinux; [
             libGL.out
-            vulkan-loader.out
             mesa
           ];
         in
         ''
           wrapProgram $out/bin/${exec_name} \
-            --set LD_LIBRARY_PATH ${pkgsLinux.lib.makeLibraryPath libs} \
+            --set LD_LIBRARY_PATH ${pkgsLinux.lib.makeLibraryPath libs}
         '';
 
         #installPhase = ''
