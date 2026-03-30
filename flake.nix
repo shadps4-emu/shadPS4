@@ -112,8 +112,7 @@
             libuuid
           ];
 
-          cmakeFlags = [
-            "-DCMAKE_BUILD_TYPE=Debug"
+          defaultFlags = [
             "-DCMAKE_INSTALL_PREFIX=$out"
           ];
         in
@@ -127,7 +126,9 @@
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
-            cmakeFlags = cmakeFlags;
+            cmakeFlags = [
+              "-DCMAKE_BUILD_TYPE=Debug"
+            ] ++ [defaultFlags];
           };
           release = pkgsLinux.stdenv.mkDerivation {
             pname = "${execName}";
@@ -137,7 +138,9 @@
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
-            cmakeFlags = cmakeFlags;
+            cmakeFlags = [
+              "-DCMAKE_BUILD_TYPE=Release"
+            ] ++ [defaultFlags];
           };
           releaseWithDebugInfo = pkgsLinux.stdenv.mkDerivation {
             pname = "${execName}";
@@ -148,7 +151,9 @@
 
             nativeBuildInputs = nativeInputs;
             buildInputs = buildInputs;
-            cmakeFlags = cmakeFlags;
+            cmakeFlags = [
+              "-DCMAKE_BUILD_TYPE=Release"
+            ] ++ [defaultFlags];
           };
         };
     };
