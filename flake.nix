@@ -76,7 +76,7 @@
       };
       
       debugLinux = pkgsLinux.stdenv.mkDerivation {
-        pname = "shadPS4";
+        pname = "shadps4";
         version = "git";
         system = "x86_64-linux";
         src = ./.;
@@ -130,14 +130,15 @@
 
         cmakeFlags = [
           "-DCMAKE_BUILD_TYPE=Debug"
+          "-DCMAKE_INSTALL_PREFIX=$out"
         ];
 
-        installPhase = ''
-          runHook preInstall
-          mkdir -p bin
-          cp shadPS4 bin/
-          runHook postInstall
-        '';
+        #installPhase = ''
+        #  runHook preInstall
+        #  mkdir -p bin
+        #  cp shadps4 $out/bin/
+        #  runHook postInstall
+        #'';
       };
     };
 }
