@@ -62,7 +62,13 @@ ln -s ./build/compile_commands.json .
 
 #### Nix Flake Build
 ```bash
-nix build .?submodules=1#debugLinux
+nix build .?submodules=1#linux.debug
+```
+```bash
+nix build .?submodules=1#linux.release
+```
+```bash
+nix build .?submodules=1#linux.releaseWithDebugInfo
 ```
 #### Other Linux distributions
 
