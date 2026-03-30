@@ -75,8 +75,12 @@
         '';
       };
       
-      debugLinux = pkgsLinux.stdenv.mkDerivation {
-        pname = "shadps4";
+      debugLinux = 
+      let
+        exec_name = "shadps4";
+      in 
+      pkgsLinux.stdenv.mkDerivation {
+        pname = "${exec_name}";
         version = "git";
         system = "x86_64-linux";
         src = ./.;
@@ -142,9 +146,8 @@
           ];
         in
         ''
-          wrapProgram $out/bin/vulkan-app \
+          wrapProgram $out/bin/${exec_name} \
             --set LD_LIBRARY_PATH ${pkgsLinux.lib.makeLibraryPath libs} \
-            --set SHADER_PATH "$out/bin/shaders"
         '';
 
         #installPhase = ''
