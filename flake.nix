@@ -38,7 +38,6 @@
           libpng.dev
           libuuid
 
-          # Specific SDL3 dependencies:
           sdl3.dev
           alsa-lib
           hidapi
@@ -65,103 +64,92 @@
           libxscrnsaver
           sndio
         ];
-
-        LD_LIBRARY_PATH = pkgsLinux.lib.makeLibraryPath [
-          pkgsLinux.mesa
-        ];
-
         shellHook = ''
           echo "Entering shadPS4 development shell!"
         '';
       };
-      
-      debugLinux = 
-      let
-        exec_name = "shadps4";
-      in 
-      pkgsLinux.stdenv.mkDerivation {
-        pname = "${exec_name}";
-        version = "git";
-        system = "x86_64-linux";
-        src = ./.;
-        dontStrip = true;
 
-        nativeBuildInputs = with pkgsLinux; [ 
-          cmake 
-          ninja
-          pkg-config
-          #libcxx
-          magic-enum
-          fmt
-          eudev
-          makeWrapper
-        ];
-
-        buildInputs = with pkgsLinux; [
-          boost
-          cli11
-          openal
-          nlohmann_json
-          vulkan-loader
-          vulkan-headers
-          vulkan-memory-allocator
-          toml11
-          zlib
-          zydis
-          pugixml
-          ffmpeg
-          libpulseaudio
-          pipewire
-          vulkan-loader
-          wayland
-          wayland-scanner
-          libX11
-          libxrandr
-          libxext
-          libxcursor
-          libxi
-          libxscrnsaver
-          libxtst
-          libxcb
-          libdecor
-          libxkbcommon
-          libGL
-          #util-linux
-          libuuid
-          #libedit
-          #sdl3
-          #alsa-lib
-          #libusb1
-          #libgbm
-          #ibusMinimal
-          #libdrm
-          #jack2
-          #sndio
-        ];
-
-        cmakeFlags = [
-          "-DCMAKE_BUILD_TYPE=Debug"
-          "-DCMAKE_INSTALL_PREFIX=$out"
-        ];
-
-        postFixup = 
+      linux =
         let
-          libs = with pkgsLinux; [
-            libGL.out
-            mesa
+          execName = "shadps4";
+          nativeInputs = with pkgsLinux; [
+            cmake
+            ninja
+            pkg-config
+            magic-enum
+            fmt
+            eudev
+          ];
+          buildInputs = with pkgsLinux; [
+            boost
+            cli11
+            openal
+            nlohmann_json
+            vulkan-loader
+            vulkan-headers
+            vulkan-memory-allocator
+            toml11
+            zlib
+            zydis
+            pugixml
+            ffmpeg
+            libpulseaudio
+            pipewire
+            vulkan-loader
+            wayland
+            wayland-scanner
+            libX11
+            libxrandr
+            libxext
+            libxcursor
+            libxi
+            libxscrnsaver
+            libxtst
+            libxcb
+            libdecor
+            libxkbcommon
+            libGL
+            libuuid
+          ];
+
+          cmakeFlags = [
+            "-DCMAKE_BUILD_TYPE=Debug"
+            "-DCMAKE_INSTALL_PREFIX=$out"
           ];
         in
-        ''
-          wrapProgram $out/bin/${exec_name} \
-            --set LD_LIBRARY_PATH ${pkgsLinux.lib.makeLibraryPath libs}
-        '';
+        {
+          debug = pkgsLinux.stdenv.mkDerivation {
+            pname = "${execName}";
+            version = "git";
+            system = "x86_64-linux";
+            src = ./.;
+            dontStrip = true;
 
-        #installPhase = ''
-        #  runHook preInstall
-        #  mkdir -p bin
-        #  cp shadps4 $out/bin/
-        #  runHook postInstall
-        #'';
-      };
+            nativeBuildInputs = nativeInputs;
+            buildInputs = buildInputs;
+            cmakeFlags = cmakeFlags;
+          };
+          release = pkgsLinux.stdenv.mkDerivation {
+            pname = "${execName}";
+            version = "git";
+            system = "x86_64-linux";
+            src = ./.;
+
+            nativeBuildInputs = nativeInputs;
+            buildInputs = buildInputs;
+            cmakeFlags = cmakeFlags;
+          };
+          releaseWithDebugInfo = pkgsLinux.stdenv.mkDerivation {
+            pname = "${execName}";
+            version = "git";
+            system = "x86_64-linux";
+            src = ./.;
+            dontStrip = true;
+
+            nativeBuildInputs = nativeInputs;
+            buildInputs = buildInputs;
+            cmakeFlags = cmakeFlags;
+          };
+        };
     };
 }
