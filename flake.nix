@@ -90,6 +90,7 @@
           magic-enum
           fmt
           eudev
+          makeWrapper
         ];
 
         buildInputs = with pkgsLinux; [
@@ -132,6 +133,19 @@
           "-DCMAKE_BUILD_TYPE=Debug"
           "-DCMAKE_INSTALL_PREFIX=$out"
         ];
+
+        postFixup = 
+        let
+          libs = with pkgsLinux; [
+            libGL.out
+            vulkan-loader.out
+          ];
+        in
+        ''
+          wrapProgram $out/bin/vulkan-app \
+            --set LD_LIBRARY_PATH ${pkgsLinux.lib.makeLibraryPath libs} \
+            --set SHADER_PATH "$out/bin/shaders"
+        '';
 
         #installPhase = ''
         #  runHook preInstall
