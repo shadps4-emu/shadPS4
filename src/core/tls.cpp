@@ -157,28 +157,22 @@ Tcb* GetTcbBase() {
     return tcb;
 }
 
-#elif defined(ARCH_X86_64) && !defined(__FreeBSD__)
+#elif defined(ARCH_X86_64)
 
 // Linux x86_64
-
+#if defined(__FreeBSD__)
+void SetTcbBase(void* image_address) {
+    amd64_set_gsbase(image_address);
+}
+#else
 void SetTcbBase(void* image_address) {
     const int ret = syscall(SYS_arch_prctl, ARCH_SET_GS, (unsigned long)image_address);
     ASSERT_MSG(ret == 0, "Failed to set GS base: errno {}", errno);
 }
+#endif
 
 Tcb* GetTcbBase() {
     return Libraries::Kernel::g_curthread->tcb;
-}
-
-#elif defined(__FreeBSD__)
-void SetTcbBase(void* image_address) {
-    amd64_set_gsbase(image_address);
-}
-
-Tcb* GetTcbBase() {
-    void *addr = nullptr;
-    amd64_get_gsbase(&addr);
-    return static_cast<Tcb*>(addr);
 }
 
 #else
