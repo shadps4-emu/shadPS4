@@ -143,6 +143,7 @@
           libs = with pkgsLinux; [
             libGL.out
             vulkan-loader.out
+            mesa
           ];
         in
         ''
