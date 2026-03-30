@@ -85,37 +85,47 @@
         nativeBuildInputs = with pkgsLinux; [ 
           cmake 
           ninja
-          libcxx
           pkg-config
-          boost
-          vulkan-headers
+          #libcxx
           magic-enum
           fmt
+          eudev
         ];
 
         buildInputs = with pkgsLinux; [
-          mesa
-          util-linux
-          libuuid
-          libedit
+          boost
+          cli11
+          openal
+          nlohmann_json
+          vulkan-loader
+          vulkan-headers
+          vulkan-memory-allocator
+          toml11
+          zlib
+          zydis
+          pugixml
           ffmpeg
-          sdl3
-          alsa-lib
           libpulseaudio
-          libusb1
-          libxkbcommon
-          libgbm
-          ibusMinimal
-          libGL
-          libdecor
-          libdrm
-          jack2
           pipewire
-          sndio
           vulkan-loader
           wayland
           wayland-scanner
           libX11
+          libdecor
+          libxkbcommon
+          libGL
+          #mesa
+          #util-linux
+          libuuid
+          #libedit
+          #sdl3
+          #alsa-lib
+          #libusb1
+          #libgbm
+          #ibusMinimal
+          #libdrm
+          #jack2
+          #sndio
         ];
 
         cmakeFlags = [
