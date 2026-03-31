@@ -26,6 +26,7 @@ enum OperandFieldRange {
 struct InputModifiers {
     bool neg = false;
     bool abs = false;
+    bool sext = false;
 };
 
 /// These are applied before storing an operand register.
@@ -34,11 +35,31 @@ struct OutputModifiers {
     float multiplier = 0.f;
 };
 
+enum class SdwaSelector : u32 {
+    Byte0 = 0,
+    Byte1 = 1,
+    Byte2 = 2,
+    Byte3 = 3,
+    Word0 = 4,
+    Word1 = 5,
+    Dword = 6,
+    Invalid = 7,
+};
+
+enum class SdwaDstUnused : u32 {
+    Pad = 0,
+    Sext = 1,
+    Preserve = 2,
+    Invalid = 3,
+};
+
 struct InstOperand {
     OperandField field = OperandField::Undefined;
     ScalarType type = ScalarType::Undefined;
     InputModifiers input_modifier = {};
     OutputModifiers output_modifier = {};
+    SdwaDstUnused sdwa_dst = SdwaDstUnused::Invalid;
+    SdwaSelector sdwa_sel = SdwaSelector::Invalid;
     u32 code = 0xFFFFFFFF;
 };
 
@@ -181,6 +202,51 @@ union InstControl {
     InstControlDS ds;
     InstControlVINTRP vintrp;
     InstControlEXP exp;
+};
+
+struct SdwaVopc {
+    u32 src0 : 8;
+    u32 dst_sel : 3;
+    u32 dst_u : 2;
+    u32 clamp : 1;
+    u32 omod : 2;
+    u32 src0_sel : 3;
+    u32 src0_sext : 1;
+    u32 src0_neg : 1;
+    u32 src0_abs : 1;
+    u32 : 1;
+    u32 s0 : 1;
+
+    u32 src1_sel : 3;
+    u32 src1_sext : 1;
+    u32 src1_neg : 1;
+    u32 src1_abs : 1;
+    u32 : 1;
+    u32 s1 : 1;
+};
+
+struct SdwaVop12 {
+    u32 src0 : 8;
+    u32 sdst : 7;
+    u32 sd : 1;
+    u32 src0_sel : 3;
+    u32 src0_sext : 1;
+    u32 src0_neg : 1;
+    u32 src0_abs : 1;
+    u32 : 1;
+    u32 s0 : 1;
+
+    u32 src1_sel : 3;
+    u32 src1_sext : 1;
+    u32 src1_neg : 1;
+    u32 src1_abs : 1;
+    u32 : 1;
+    u32 s1 : 1;
+};
+
+union Sdwa {
+    SdwaVopc vopc;
+    SdwaVop12 vop12;
 };
 
 struct GcnInst {

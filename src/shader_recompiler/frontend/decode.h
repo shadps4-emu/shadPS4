@@ -70,6 +70,7 @@ private:
     void decodeInstruction32(InstEncoding encoding, GcnCodeSlice& code);
     void decodeInstruction64(InstEncoding encoding, GcnCodeSlice& code);
     void decodeLiteralConstant(InstEncoding encoding, GcnCodeSlice& code);
+    void decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSlice& code);
 
     // 32 bits encodings
     void decodeInstructionSOP1(uint32_t hexInstruction);
