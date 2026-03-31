@@ -116,6 +116,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
+    case Opcode::BUFFER_ATOMIC_FCMPSWAP:
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::FCmpSwap, inst);
 
         // MIMG
         // Image load operations
@@ -378,6 +380,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::CmpSwap: {
             const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
             return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
+        }
+        case AtomicOp::FCmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            return ir.BufferAtomicFCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
         }
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, buffer_info);
