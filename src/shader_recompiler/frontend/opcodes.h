@@ -662,6 +662,33 @@ enum class OpcodeVOP3 : u32 {
     OP_RANGE_VOP3 = V_EXP_LEGACY_F32 + 1,
 };
 
+enum class OpcodeVOP3P : u32 {
+    V_PK_MAD_I16 = 0,
+    V_PK_MUL_LO_U16 = 1,
+    V_PK_ADD_I16 = 2,
+    V_PK_SUB_I16 = 3,
+    V_PK_LSHLREV_B16 = 4,
+    V_PK_LSHRREV_B16 = 5,
+    V_PK_ASHRREV_I16 = 6,
+    V_PK_MAX_I16 = 7,
+    V_PK_MIN_I16 = 8,
+    V_PK_MAD_U16 = 9,
+    V_PK_ADD_U16 = 10,
+    V_PK_SUB_U16 = 11,
+    V_PK_MAX_U16 = 12,
+    V_PK_MIN_U16 = 13,
+    V_PK_FMA_F16 = 14,
+    V_PK_ADD_F16 = 15,
+    V_PK_MUL_F16 = 16,
+    V_PK_MIN_F16 = 17,
+    V_PK_MAX_F16 = 18,
+    V_MAD_MIX_F32 = 32,
+    V_MAD_MIXLO_F16 = 33,
+    V_MAD_MIXHI_F16 = 34,
+
+    OP_RANGE_VOP3P = V_MAD_MIXHI_F16 + 1,
+};
+
 enum class OpcodeVOP1 : u32 {
     V_NOP = 0,
     V_MOV_B32 = 1,
@@ -1313,6 +1340,7 @@ enum class OpcodeMap : u32 {
     OP_MAP_MTBUF = OP_MAP_MUBUF + (u32)OpcodeMUBUF::OP_RANGE_MUBUF,
     OP_MAP_MIMG = OP_MAP_MTBUF + (u32)OpcodeMTBUF::OP_RANGE_MTBUF,
     OP_MAP_EXP = OP_MAP_MIMG + (u32)OpcodeMIMG::OP_RANGE_MIMG,
+    OP_MAP_VOP3P = OP_MAP_EXP + (u32)OpcodeEXP::OP_RANGE_EXP,
 };
 
 enum class Opcode : u32 {
@@ -2192,6 +2220,29 @@ enum class Opcode : u32 {
     IMAGE_SAMPLE_C_CD_CL_O = 111 + (u32)OpcodeMap::OP_MAP_MIMG,
     // EXP
     EXP = 0 + (u32)OpcodeMap::OP_MAP_EXP,
+    // VOP3P
+    V_PK_MAD_I16 = 0 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MUL_LO_U16 = 1 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_ADD_I16 = 2 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_SUB_I16 = 3 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_LSHLREV_B16 = 4 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_LSHRREV_B16 = 5 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_ASHRREV_I16 = 6 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MAX_I16 = 7 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MIN_I16 = 8 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MAD_U16 = 9 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_ADD_U16 = 10 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_SUB_U16 = 11 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MAX_U16 = 12 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MIN_U16 = 13 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_FMA_F16 = 14 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_ADD_F16 = 15 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MUL_F16 = 16 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MIN_F16 = 17 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_PK_MAX_F16 = 18 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_MAD_MIX_F32 = 32 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_MAD_MIXLO_F16 = 33 + (u32)OpcodeMap::OP_MAP_VOP3P,
+    V_MAD_MIXHI_F16 = 34 + (u32)OpcodeMap::OP_MAP_VOP3P,
 };
 
 enum class EncodingMask : u32 {
@@ -2222,6 +2273,8 @@ enum class InstEncoding : u32 {
     VOP3 = 0x00000034u << 26,
     /// bits [31:26] - (1 1 1 1 1 0)
     EXP = 0x0000003Eu << 26,
+    /// bits [31:26] - (1 1 0 0 1 1)
+    VOP3P = 0x00000033u << 26,
     /// bits [31:26] - (1 1 0 0 1 0)
     VINTRP = 0x00000032u << 26,
     /// bits [31:26] - (1 1 0 1 1 0)
@@ -2271,6 +2324,7 @@ enum class InstClass : u32 {
     VectorBitField32,
     VectorThreadMask,
     VectorBitField64,
+    VectorFpArith16,
     VectorFpArith32,
     VectorFpRound32,
     VectorFpField32,
@@ -2281,6 +2335,7 @@ enum class InstClass : u32 {
     VectorFpField64,
     VectorFpTran64,
     VectorFpCmp64,
+    VectorIntArith16,
     VectorIntArith32,
     VectorIntArith64,
     VectorIntCmp32,
@@ -2360,8 +2415,10 @@ enum class InstCategory : u32 {
 enum class ScalarType : u32 {
     Undefined,
     Any,
+    Uint16,
     Uint32,
     Uint64,
+    Sint16,
     Sint32,
     Sint64,
     Float16,
