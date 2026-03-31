@@ -325,7 +325,7 @@ s32 PS4_SYSV_ABI posix_sigalstack(const OrbisKernelExceptionHandlerStack* ss,
         old_ss->ss_size = native_old_ss.ss_size;
     }
 #else
-    LOG_ERROR(Lib_Kernel, "UNIMPLEMENTED");
+    LOG_ERROR(Lib_Kernel, "(stubbed)");
 #endif
     return ORBIS_OK;
 }
