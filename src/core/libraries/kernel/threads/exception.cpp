@@ -308,6 +308,28 @@ bool PS4_SYSV_ABI posix_sigisemptyset(Sigset* s) {
     return s->bits[0] == 0 && s->bits[1] == 0;
 }
 
+s32 PS4_SYSV_ABI posix_sigalstack(const OrbisKernelExceptionHandlerStack* ss,
+                                  OrbisKernelExceptionHandlerStack* old_ss) {
+#ifdef __unix__
+    stack_t native_ss{};
+    if (ss) {
+        native_ss.ss_sp = ss->ss_sp;
+        native_ss.ss_flags = ss->ss_flags;
+        native_ss.ss_size = ss->ss_size;
+    }
+    stack_t native_old_ss{};
+    sigaltstack(&native_ss, &native_old_ss);
+    if (old_ss) {
+        old_ss->ss_sp = native_old_ss.ss_sp;
+        old_ss->ss_flags = native_old_ss.ss_flags;
+        old_ss->ss_size = native_old_ss.ss_size;
+    }
+#else
+    LOG_ERROR(Lib_Kernel, "UNIMPLEMENTED");
+#endif
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI posix_sigaction(s32 sig, Sigaction* act, Sigaction* oact) {
     if (sig < 1 || sig > 128 || sig == POSIX_SIGTHR || sig == POSIX_SIGKILL ||
         sig == POSIX_SIGSTOP) {
@@ -495,9 +517,12 @@ void RegisterException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("KiJEPEWRyUY", "libkernel", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("+F7C-hdk7+E", "libkernel", 1, "libkernel", posix_sigemptyset);
     LIB_FUNCTION("yH-uQW3LbX0", "libkernel", 1, "libkernel", posix_pthread_kill);
+    LIB_FUNCTION("sHziAegVp74", "libkernel", 1, "libkernel", posix_sigalstack);
+
     LIB_FUNCTION("KiJEPEWRyUY", "libScePosix", 1, "libkernel", posix_sigaction);
     LIB_FUNCTION("+F7C-hdk7+E", "libScePosix", 1, "libkernel", posix_sigemptyset);
     LIB_FUNCTION("yH-uQW3LbX0", "libScePosix", 1, "libkernel", posix_pthread_kill);
+    LIB_FUNCTION("sHziAegVp74", "libScePosix", 1, "libkernel", posix_sigalstack);
 }
 
 } // namespace Libraries::Kernel
