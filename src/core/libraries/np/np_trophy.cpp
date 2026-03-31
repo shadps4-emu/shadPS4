@@ -222,8 +222,8 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     const std::string np_comm_id = Common::ElfInfo::Instance().GetNpCommIds()[service_label];
     const auto trophy_base =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
-    ctx.xml_save_file = Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
-                        std::to_string(user_id) / "trophy" / (np_comm_id + ".xml");
+    ctx.xml_save_file =
+        EmulatorSettings.GetHomeDir() / std::to_string(user_id) / "trophy" / (np_comm_id + ".xml");
     ctx.xml_dir = trophy_base / "Xml";
     ctx.icons_dir = trophy_base / "Icons";
     ctx.trophy_xml_path = GetTrophyXmlPath(ctx.xml_dir, EmulatorSettings.GetConsoleLanguage());

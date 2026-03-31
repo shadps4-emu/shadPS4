@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include "common/alignment.h"
 #include "common/types.h"
@@ -15,9 +16,10 @@ class Rasterizer;
 namespace VideoCore {
 
 class PageManager {
+    // PAGE_SIZE and PAGE_BITS conflicts with machine/param.h definitions on freebsd!
     // Use the same page size as the tracker.
-    static constexpr size_t PAGE_BITS = TRACKER_PAGE_BITS;
-    static constexpr size_t PAGE_SIZE = TRACKER_BYTES_PER_PAGE;
+    static constexpr size_t PM_PAGE_BITS = TRACKER_PAGE_BITS;
+    static constexpr size_t PM_PAGE_SIZE = TRACKER_BYTES_PER_PAGE;
 
     // Keep the lock granularity the same as region granularity. (since each regions has
     // itself a lock)
@@ -43,12 +45,12 @@ public:
 
     /// Returns page aligned address.
     static constexpr VAddr GetPageAddr(VAddr addr) {
-        return Common::AlignDown(addr, PAGE_SIZE);
+        return Common::AlignDown(addr, PM_PAGE_SIZE);
     }
 
     /// Returns address of the next page.
     static constexpr VAddr GetNextPageAddr(VAddr addr) {
-        return Common::AlignUp(addr + 1, PAGE_SIZE);
+        return Common::AlignUp(addr + 1, PM_PAGE_SIZE);
     }
 
 private:
