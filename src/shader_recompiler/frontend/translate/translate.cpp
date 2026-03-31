@@ -442,6 +442,20 @@ T Translator::GetSrc64(const InstOperand& operand) {
         }
         break;
     case OperandField::VccHi:
+        UNREACHABLE();
+    case OperandField::ExecLo: {
+        const auto exec_bit = ir.GetExec();
+        if constexpr (is_float) {
+            UNREACHABLE();
+        } else {
+            const auto ones32 = ir.Imm32(~u32{0});
+            const auto zero32 = ir.Imm32(u32{0});
+            const auto lo = IR::U32(ir.Select(exec_bit, ones32, zero32));
+            const auto hi = IR::U32(ir.Select(exec_bit, ones32, zero32));
+            value = ir.PackUint2x32(ir.CompositeConstruct(lo, hi));
+        }
+        break;
+    }
     default:
         UNREACHABLE();
     }

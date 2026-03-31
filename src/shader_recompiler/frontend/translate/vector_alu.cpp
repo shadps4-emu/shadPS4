@@ -1150,44 +1150,80 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
     const bool is_zero = inst.src[1].field == OperandField::ConstZero;
-    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
-    ASSERT(is_zero || is_neg_one);
-    if (is_neg_one) {
-        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
-                   "SignedConstIntNeg must be -1");
+    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg &&
+                            (-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1);
+    const bool src0_is_thread_bit = inst.src[0].field == OperandField::ScalarGPR ||
+                                    inst.src[0].field == OperandField::VccLo ||
+                                    inst.src[0].field == OperandField::ExecLo;
+    const bool use_thread_bit_path = (is_zero || is_neg_one) && src0_is_thread_bit;
+
+    if (use_thread_bit_path) {
+        const IR::U1 src0 = [&] {
+            switch (inst.src[0].field) {
+            case OperandField::ScalarGPR:
+                return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
+            case OperandField::VccLo:
+                return ir.GetVcc();
+            case OperandField::ExecLo:
+                return ir.GetExec();
+            default:
+                UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
+            }
+        }();
+        const IR::U1 result = [&] {
+            switch (op) {
+            case ConditionOp::EQ:
+                return is_zero ? ir.LogicalNot(src0) : src0;
+            case ConditionOp::LG:
+                return is_zero ? src0 : ir.LogicalNot(src0);
+            case ConditionOp::GT:
+                ASSERT(is_zero);
+                return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            default:
+                UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+            }
+        }();
+
+        if (set_exec) {
+            ir.SetExec(result);
+        }
+        switch (inst.dst[1].field) {
+        case OperandField::VccLo:
+            return ir.SetVcc(result);
+        case OperandField::ScalarGPR:
+            return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
+        default:
+            UNREACHABLE();
+        }
     }
 
-    const IR::U1 src0 = [&] {
-        switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        default:
-            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
-        }
-    }();
+    const IR::U64 src0{GetSrc64<IR::U64>(inst.src[0])};
+    const IR::U64 src1{GetSrc64<IR::U64>(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
+        case ConditionOp::F:
+            return ir.Imm1(false);
+        case ConditionOp::TRU:
+            return ir.Imm1(true);
         case ConditionOp::EQ:
-            return is_zero ? ir.LogicalNot(src0) : src0;
-        case ConditionOp::LG: // NE
-            return is_zero ? src0 : ir.LogicalNot(src0);
+            return ir.IEqual(src0, src1);
+        case ConditionOp::LG:
+            return ir.INotEqual(src0, src1);
         case ConditionOp::GT:
-            ASSERT(is_zero);
-            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            return ir.IGreaterThan(src0, src1, is_signed);
+        case ConditionOp::LT:
+            return ir.ILessThan(src0, src1, is_signed);
+        case ConditionOp::LE:
+            return ir.ILessThanEqual(src0, src1, is_signed);
+        case ConditionOp::GE:
+            return ir.IGreaterThanEqual(src0, src1, is_signed);
         default:
-            UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
+            UNREACHABLE();
         }
     }();
-
-    if (is_signed) {
-        UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
-    }
     if (set_exec) {
-        UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
+        ir.SetExec(result);
     }
-
     switch (inst.dst[1].field) {
     case OperandField::VccLo:
         return ir.SetVcc(result);
