@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -36,7 +36,8 @@ class TRP {
 public:
     TRP();
     ~TRP();
-    bool Extract(const std::filesystem::path& trophyPath, const std::string titleId);
+    bool Extract(const std::filesystem::path& trophyPath, int index, std::string npCommId,
+                 const std::filesystem::path& outputPath);
 
 private:
     bool ProcessPngEntry(Common::FS::IOFile& file, const TrpEntry& entry,
@@ -45,9 +46,6 @@ private:
                                   const std::filesystem::path& outputPath, std::string_view name,
                                   const std::array<u8, 16>& user_key, const std::string& npCommId);
 
-    std::vector<u8> NPcommID = std::vector<u8>(12);
-    std::array<u8, 16> np_comm_id{};
     std::array<u8, 16> esfmIv{};
-    std::filesystem::path trpFilesPath;
     static constexpr int iv_len = 16;
 };

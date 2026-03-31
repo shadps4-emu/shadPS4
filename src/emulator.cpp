@@ -28,6 +28,7 @@
 #include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
@@ -38,6 +39,7 @@
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/user_settings.h"
 #include "emulator.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderdoc.h"
@@ -50,6 +52,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
+#include <core/file_format/npbind.h>
 
 Frontend::WindowSDL* g_window = nullptr;
 
@@ -196,14 +199,20 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     game_info.game_folder = game_folder;
+    std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
+    NPBindFile npbind;
+    if (!npbind.Load(npbindPath.string())) {
+        LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
+    } else {
+        auto npCommIds = npbind.GetNpCommIds();
+        if (npCommIds.empty()) {
+            LOG_WARNING(Common_Filesystem, "No NPComm IDs found in npbind.dat");
+        } else {
+            game_info.npCommIds = std::move(npCommIds);
+        }
+    }
 
     EmulatorSettings.Load(id);
-    if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) /
-                                (id + ".json"))) {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
-    } else {
-        EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(false);
-    }
 
     // Initialize logging as soon as possible
     if (!id.empty() && EmulatorSettings.IsSeparateLoggingEnabled()) {
@@ -224,9 +233,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
-    const bool has_game_config = std::filesystem::exists(
-        Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (id + ".json"));
-    LOG_INFO(Config, "Game-specific config exists: {}", has_game_config);
+    LOG_INFO(Config, "Game-specific config used: {}",
+             EmulatorState::GetInstance()->IsGameSpecifigConfigUsed());
 
     LOG_INFO(Config, "General LogType: {}", EmulatorSettings.GetLogType());
     LOG_INFO(Config, "General isIdenticalLogGrouped: {}", EmulatorSettings.IsIdenticalLogGrouped());
@@ -289,7 +297,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize components
     memory = Core::Memory::Instance();
-    controller = Common::Singleton<Input::GameController>::Instance();
+    controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
 
     // Load renderdoc module
@@ -298,15 +306,30 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize patcher and trophies
     if (!id.empty()) {
         MemoryPatcher::g_game_serial = id;
-        Libraries::Np::NpTrophy::game_serial = id;
 
-        const auto trophyDir =
-            Common::FS::GetUserPath(Common::FS::PathType::MetaDataDir) / id / "TrophyFiles";
-        if (!std::filesystem::exists(trophyDir)) {
-            TRP trp;
-            if (!trp.Extract(game_folder, id)) {
-                LOG_ERROR(Loader, "Couldn't extract trophies");
+        int index = 0;
+        for (std::string npCommId : game_info.npCommIds) {
+            const auto trophyDir =
+                Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / npCommId;
+            if (!std::filesystem::exists(trophyDir)) {
+                TRP trp;
+                if (!trp.Extract(game_folder, index, npCommId, trophyDir)) {
+                    LOG_ERROR(Loader, "Couldn't extract trophies");
+                }
             }
+            for (User user : UserSettings.GetUserManager().GetValidUsers()) {
+                auto const user_trophy_file = EmulatorSettings.GetHomeDir() /
+                                              std::to_string(user.user_id) / "trophy" /
+                                              (npCommId + ".xml");
+                if (!std::filesystem::exists(user_trophy_file)) {
+                    auto temp = user_trophy_file.parent_path();
+                    std::filesystem::create_directories(temp);
+                    std::error_code discard;
+                    std::filesystem::copy_file(trophyDir / "Xml" / "TROPCONF.XML", user_trophy_file,
+                                               discard);
+                }
+            }
+            index++;
         }
     }
 
@@ -331,7 +354,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(EmulatorSettings.GetWindowWidth(),
-                                                   EmulatorSettings.GetWindowHeight(), controller,
+                                                   EmulatorSettings.GetWindowHeight(), controllers,
                                                    window_title);
 
     g_window = window.get();
@@ -512,7 +535,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-#elif defined(__APPLE__) || defined(__linux__)
+#elif defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__)
     std::vector<char*> argv;
 
     // Emulator executable

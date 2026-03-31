@@ -33,6 +33,7 @@ endif()
 
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
+option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -244,7 +245,7 @@ find_package(VulkanMemoryAllocator 3.1.0 CONFIG)
 find_package(xbyak 7.07 CONFIG)
 find_package(xxHash 0.8.2 MODULE)
 find_package(ZLIB 1.3 MODULE)
-find_package(Zydis 5.0.0 CONFIG)
+find_package(Zydis 5.0.0 MODULE)
 find_package(pugixml 1.14 CONFIG)
 if (APPLE)
     find_package(date 3.0.1 CONFIG)
@@ -1090,6 +1091,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/imgui_layer.h
           src/imgui/imgui_std.h
           src/imgui/imgui_texture.h
+          src/imgui/imgui_translations.cpp
+          src/imgui/imgui_translations.h
           src/imgui/renderer/imgui_core.cpp
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
@@ -1114,6 +1117,8 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+if(NOT ENABLE_TESTS)
+
 add_executable(shadps4
     ${AUDIO_CORE}
     ${IMGUI}
@@ -1134,7 +1139,14 @@ create_target_directory_groups(shadps4)
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers libusb::usb lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
+target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+    target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
+    target_link_libraries(shadps4 PRIVATE "/usr/local/lib/libuuid.so")
+else()
+    target_link_libraries(shadps4 PRIVATE libusb::usb)
+endif()
 
 target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
@@ -1179,6 +1191,8 @@ if (APPLE)
     endif()
 
     # Replacement for std::chrono::time_zone
+    target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
 endif()
 
@@ -1267,3 +1281,8 @@ endif()
 
 # Install rules
 install(TARGETS shadps4 BUNDLE DESTINATION .)
+
+else()
+    enable_testing()
+    add_subdirectory(tests)
+endif()

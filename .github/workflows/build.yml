@@ -14,6 +14,8 @@ on:
       - "documents/**"
       - "**/*.md"
 
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
@@ -64,6 +66,81 @@ jobs:
         echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
         echo "shorthash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         echo "fullhash=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+  test:
+    name: Run C++ Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            compiler_cxx: clang-cl
+            compiler_c: clang-cl
+          - os: ubuntu-latest
+            compiler_cxx: clang++
+            compiler_c: clang
+          - os: macos-latest
+            compiler_cxx: clang++
+            compiler_c: clang
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Setup Visual Studio shell (Windows only)
+        if: runner.os == 'Windows'
+        uses: egor-tensin/vs-shell@v2
+        with:
+          arch: x64
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev uuid-dev uuid-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_CXX_COMPILER="${{ matrix.compiler_cxx }}" \
+            -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DENABLE_TESTS=ON \
+            ${{ runner.os == 'macOS' && '-DCMAKE_OSX_ARCHITECTURES=x86_64' || '' }}
+        shell: bash
+
+      - name: Create shadPS4 user data directory (Linux)
+        if: runner.os == 'Linux'
+        run: mkdir -p ~/.local/share/shadPS4
+
+      - name: Create shadPS4 user data directory (macOS)
+        if: runner.os == 'macOS'
+        run: mkdir -p ~/Library/Application\ Support/shadPS4
+
+      - name: Create shadPS4 user data directory (Windows)
+        if: runner.os == 'Windows'
+        run: mkdir -p "$APPDATA/shadPS4"
+        shell: bash
+
+      - name: Build all tests
+        run: cmake --build build
+        shell: bash
+
+      - name: Run tests with CTest
+        run: ctest --test-dir build --output-on-failure --progress
+        shell: bash
 
   windows-sdl:
     runs-on: windows-2025

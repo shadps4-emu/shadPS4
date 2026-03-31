@@ -1,13 +1,13 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
 #include <mutex>
 #include <variant>
 
-#include <core/emulator_settings.h>
-#include "common/config.h"
+#include <core/user_settings.h>
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
@@ -632,7 +632,8 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(np_id, 0, sizeof(OrbisNpId));
-    strncpy(np_id->handle.data, Config::getUserName().c_str(), sizeof(np_id->handle.data));
+    strncpy(np_id->handle.data, UserManagement.GetDefaultUser().user_name.c_str(),
+            sizeof(np_id->handle.data));
     return ORBIS_OK;
 }
 
@@ -646,7 +647,8 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     memset(online_id, 0, sizeof(OrbisNpOnlineId));
-    strncpy(online_id->data, Config::getUserName().c_str(), sizeof(online_id->data));
+    strncpy(online_id->data, UserManagement.GetDefaultUser().user_name.c_str(),
+            sizeof(online_id->data));
     return ORBIS_OK;
 }
 

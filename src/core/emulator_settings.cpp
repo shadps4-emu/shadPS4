@@ -25,10 +25,13 @@ namespace nlohmann {
 template <>
 struct adl_serializer<std::filesystem::path> {
     static void to_json(json& j, const std::filesystem::path& p) {
-        j = p.string();
+        const auto u8 = p.u8string();
+        j = std::string(reinterpret_cast<const char*>(u8.data()), u8.size());
     }
     static void from_json(const json& j, std::filesystem::path& p) {
-        p = j.get<std::string>();
+        const std::string s = j.get<std::string>();
+        p = std::filesystem::path(
+            std::u8string_view(reinterpret_cast<const char8_t*>(s.data()), s.size()));
     }
 };
 } // namespace nlohmann
@@ -81,12 +84,12 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
 
 void EmulatorSettingsImpl::PrintChangedSummary(const std::vector<std::string>& changed) {
     if (changed.empty()) {
-        LOG_DEBUG(EmuSettings, "No game-specific overrides applied");
+        LOG_DEBUG(Config, "No game-specific overrides applied");
         return;
     }
-    LOG_DEBUG(EmuSettings, "Game-specific overrides applied:");
+    LOG_DEBUG(Config, "Game-specific overrides applied:");
     for (const auto& k : changed)
-        LOG_DEBUG(EmuSettings, "    * {}", k);
+        LOG_DEBUG(Config, "    * {}", k);
 }
 
 // ── Singleton ────────────────────────────────────────────────────────
@@ -212,7 +215,7 @@ void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_audio);
     ClearGroupOverrides(m_gpu);
     ClearGroupOverrides(m_vulkan);
-    LOG_DEBUG(EmuSettings, "All game-specific overrides cleared");
+    LOG_DEBUG(Config, "All game-specific overrides cleared");
 }
 
 void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
@@ -238,7 +241,7 @@ void EmulatorSettingsImpl::ResetGameSpecificValue(const std::string& key) {
         return;
     if (tryGroup(m_vulkan))
         return;
-    LOG_WARNING(EmuSettings, "ResetGameSpecificValue: key '{}' not found", key);
+    LOG_WARNING(Config, "ResetGameSpecificValue: key '{}' not found", key);
 }
 
 bool EmulatorSettingsImpl::Save(const std::string& serial) {
@@ -276,7 +279,7 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_ERROR(EmuSettings, "Failed to open game config for writing: {}", path.string());
+                LOG_ERROR(Config, "Failed to open game config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << j;
@@ -317,14 +320,14 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
 
             std::ofstream out(path);
             if (!out) {
-                LOG_ERROR(EmuSettings, "Failed to open config for writing: {}", path.string());
+                LOG_ERROR(Config, "Failed to open config for writing: {}", path.string());
                 return false;
             }
             out << std::setw(2) << existing;
             return !out.fail();
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(EmuSettings, "Error saving settings: {}", e.what());
+        LOG_ERROR(Config, "Error saving settings: {}", e.what());
         return false;
     }
 }
@@ -337,7 +340,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // ── Global config ──────────────────────────────────────────
             const auto userDir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
             const auto configPath = userDir / "config.json";
-            LOG_DEBUG(EmuSettings, "Loading global config from: {}", configPath.string());
+            LOG_DEBUG(Config, "Loading global config from: {}", configPath.string());
 
             if (std::ifstream in{configPath}; in.good()) {
                 json gj;
@@ -358,13 +361,13 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 mergeGroup(m_gpu, "GPU");
                 mergeGroup(m_vulkan, "Vulkan");
 
-                LOG_DEBUG(EmuSettings, "Global config loaded successfully");
+                LOG_DEBUG(Config, "Global config loaded successfully");
             } else {
                 if (std::filesystem::exists(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
                                             "config.toml")) {
                     SDL_MessageBoxButtonData btns[2]{
-                        {0, 0, "No"},
-                        {0, 1, "Yes"},
+                        {0, 0, "Defaults"},
+                        {0, 1, "Update"},
                     };
                     SDL_MessageBoxData msg_box{
                         0,
@@ -392,7 +395,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         }
                     }
                 }
-                LOG_DEBUG(EmuSettings, "Global config not found - using defaults");
+                LOG_DEBUG(Config, "Global config not found - using defaults");
                 SetDefaultValues();
                 Save();
             }
@@ -408,16 +411,16 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             // base configuration.
             const auto gamePath =
                 Common::FS::GetUserPath(Common::FS::PathType::CustomConfigs) / (serial + ".json");
-            LOG_DEBUG(EmuSettings, "Applying game config: {}", gamePath.string());
+            LOG_DEBUG(Config, "Applying game config: {}", gamePath.string());
 
             if (!std::filesystem::exists(gamePath)) {
-                LOG_DEBUG(EmuSettings, "No game-specific config found for {}", serial);
+                LOG_DEBUG(Config, "No game-specific config found for {}", serial);
                 return false;
             }
 
             std::ifstream in(gamePath);
             if (!in) {
-                LOG_ERROR(EmuSettings, "Failed to open game config: {}", gamePath.string());
+                LOG_ERROR(Config, "Failed to open game config: {}", gamePath.string());
                 return false;
             }
 
@@ -448,7 +451,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
             return true;
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(EmuSettings, "Error loading settings: {}", e.what());
+        LOG_ERROR(Config, "Error loading settings: {}", e.what());
         return false;
     }
 }
@@ -611,7 +614,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
             }
             s.install_dirs.value = settings_install_dirs;
         } catch (const std::exception& e) {
-            LOG_WARNING(EmuSettings, "Failed to transfer install directories: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer install directories: {}", e.what());
         }
 
         // Transfer addon install directory
@@ -627,7 +630,42 @@ bool EmulatorSettingsImpl::TransferSettings() {
                 }
             }
         } catch (const std::exception& e) {
-            LOG_WARNING(EmuSettings, "Failed to transfer addon install directory: {}", e.what());
+            LOG_WARNING(Config, "Failed to transfer addon install directory: {}", e.what());
+        }
+    }
+    if (og_data.contains("General")) {
+        const toml::value& general = og_data.at("General");
+        auto& s = m_general;
+        // Transfer sysmodules install directory
+        try {
+            std::string sysmodules_install_dir_str;
+            if (general.contains("sysModulesPath")) {
+                const auto& sysmodule_value = general.at("sysModulesPath");
+                if (sysmodule_value.is_string()) {
+                    sysmodules_install_dir_str = toml::get<std::string>(sysmodule_value);
+                    if (!sysmodules_install_dir_str.empty()) {
+                        s.sys_modules_dir.value = std::filesystem::path{sysmodules_install_dir_str};
+                    }
+                }
+            }
+        } catch (const std::exception& e) {
+            LOG_WARNING(Config, "Failed to transfer sysmodules install directory: {}", e.what());
+        }
+
+        // Transfer font install directory
+        try {
+            std::string font_install_dir_str;
+            if (general.contains("fontsPath")) {
+                const auto& font_value = general.at("fontsPath");
+                if (font_value.is_string()) {
+                    font_install_dir_str = toml::get<std::string>(font_value);
+                    if (!font_install_dir_str.empty()) {
+                        s.font_dir.value = std::filesystem::path{font_install_dir_str};
+                    }
+                }
+            }
+        } catch (const std::exception& e) {
+            LOG_WARNING(Config, "Failed to transfer font install directory: {}", e.what());
         }
     }
 
