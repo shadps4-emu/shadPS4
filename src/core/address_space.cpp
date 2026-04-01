@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/error.h"
 #include "core/address_space.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
@@ -187,7 +187,7 @@ struct AddressSpace::Impl {
         user_size = supported_user_max - USER_MIN - 1;
 
         // Increase BackingSize to account for config options.
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
+        BackingSize += EmulatorSettings.GetExtraDmemInMBytes() * 1_MB;
 
         // Allocate backing file that represents the total physical memory.
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
@@ -606,14 +606,18 @@ enum PosixPageProtection {
 
 struct AddressSpace::Impl {
     Impl() {
-        BackingSize += Config::getExtraDmemInMbytes() * 1_MB;
+        BackingSize += EmulatorSettings.GetExtraDmemInMBytes() * 1_MB;
         // Allocate virtual address placeholder for our address space.
         system_managed_size = SystemManagedSize;
         system_reserved_size = SystemReservedSize;
         user_size = UserSize;
 
         constexpr int protection_flags = PROT_READ | PROT_WRITE;
-        constexpr int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+        int map_flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED; // compiler knows its constexpr
+#if !defined(__FreeBSD__)
+        map_flags |= MAP_NORESERVE;
+#endif
+
 #if defined(__APPLE__) && defined(ARCH_X86_64)
         // On ARM64 Macs, we run into limitations due to the commpage from 0xFC0000000 - 0xFFFFFFFFF
         // and the GPU carveout region from 0x1000000000 - 0x6FFFFFFFFF. Because this creates gaps
@@ -628,7 +632,7 @@ struct AddressSpace::Impl {
             mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
 #else
         const auto virtual_size = system_managed_size + system_reserved_size + user_size;
-#if defined(ARCH_X86_64)
+#if defined(ARCH_X86_64) && !defined(__FreeBSD__)
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN), virtual_size,
                                        protection_flags, map_flags, -1, 0));
@@ -636,8 +640,10 @@ struct AddressSpace::Impl {
         system_reserved_base = reinterpret_cast<u8*>(SYSTEM_RESERVED_MIN);
         user_base = reinterpret_cast<u8*>(USER_MIN);
 #else
+        // FreeBSD can't stand MAP_FIXED or it may overwrite mmap() itself!
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
+        map_flags &= ~MAP_FIXED;
         const auto virtual_base =
             reinterpret_cast<u8*>(mmap(nullptr, virtual_size, protection_flags, map_flags, -1, 0));
         system_managed_base = virtual_base;
@@ -676,8 +682,13 @@ struct AddressSpace::Impl {
         }
         shm_unlink(shm_path.c_str());
 #else
+#ifndef __FreeBSD__
         madvise(virtual_base, virtual_size, MADV_HUGEPAGE);
-
+#endif
+        // NOTE: If you add MFD_HUGETLB or whatever, remember that FBSD will break (libc bug)
+        // so please, do not, add MFD_* whatever unless you ifdef it away (must be 0 for FBSD)
+        // using sized pages as well causes incessant vm_reclaim calls in kernel, do not use on FBSD
+        // under any circumstances.
         backing_fd = memfd_create("BackingDmem", 0);
         if (backing_fd < 0) {
             LOG_CRITICAL(Kernel_Vmm, "memfd_create failed: {}", strerror(errno));
