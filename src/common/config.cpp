@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -142,7 +142,7 @@ static ConfigEntry<double> trophyNotificationDuration(6.0);
 static ConfigEntry<string> logFilter("");
 static ConfigEntry<string> logType("sync");
 static ConfigEntry<bool> isIdenticalLogGrouped(true);
-static ConfigEntry<string> userName("shadPS4");
+static ConfigEntry<string> userName("shadBloodborne");
 static ConfigEntry<bool> isShowSplash(false);
 static ConfigEntry<string> isSideTrophy("right");
 static ConfigEntry<bool> isConnectedToNetwork(false);
@@ -1236,7 +1236,7 @@ void setDefaultValues(bool is_game_specific) {
     logFilter.set("", is_game_specific);
     logType.set("sync", is_game_specific);
     isIdenticalLogGrouped.set("isIdenticalLogGrouped", is_game_specific);
-    userName.set("shadPS4", is_game_specific);
+    userName.set("shadBloodborne", is_game_specific);
     isShowSplash.set(false, is_game_specific);
     isSideTrophy.set("right", is_game_specific);
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -94,7 +94,7 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
-    Common::SetCurrentThreadName("shadPS4:Main");
+    Common::SetCurrentThreadName("sB:Main");
     if (waitForDebuggerBeforeRun) {
         Debugger::WaitForDebuggerAttach();
     }
@@ -227,7 +227,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::quick_exit(0);
     }
 
-    LOG_INFO(Loader, "Starting bloodborneps4 emulator v{} ", Common::g_version);
+    LOG_INFO(Loader, "Starting shadBloodborne emulator v{} ", Common::g_version);
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);
@@ -339,17 +339,17 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::string remote_host = Common::GetRemoteNameFromLink();
     if (Common::g_is_release) {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} | {}", Common::g_version, game_title);
+            window_title = fmt::format("shadBloodborne v{} | {}", Common::g_version, game_title);
         } else {
             window_title =
-                fmt::format("shadPS4 {}/v{} | {}", remote_host, Common::g_version, game_title);
+                fmt::format("shadBloodborne {}/v{} | {}", remote_host, Common::g_version, game_title);
         }
     } else {
         if (remote_host == "shadps4-emu" || remote_url.length() == 0) {
-            window_title = fmt::format("shadPS4 v{} {} {} | {}", Common::g_version,
+            window_title = fmt::format("shadBloodborne v{} {} {} | {}", Common::g_version,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         } else {
-            window_title = fmt::format("shadPS4 v{} {}/{} {} | {}", Common::g_version, remote_host,
+            window_title = fmt::format("shadBloodborne v{} {}/{} {} | {}", Common::g_version, remote_host,
                                        Common::g_scm_branch, Common::g_scm_desc, game_title);
         }
     }

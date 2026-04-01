@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 /**
  * (c) 2014-2016 Alexandro Sanchez Bach. All rights reserved.
  * Released under GPL v2 license. Read LICENSE for more details.
- * Some modifications for using with shadps4 by georgemoralis
+ * Some modifications for using with shadBloodborne by georgemoralis
  */
 
 #pragma once

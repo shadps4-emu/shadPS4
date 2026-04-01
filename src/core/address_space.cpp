@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
@@ -43,7 +43,7 @@ constexpr VAddr SYSTEM_RESERVED_MAX = 0xFFFFFFFFFULL;
 constexpr VAddr USER_MIN = 0x1000000000ULL;
 #endif
 #if defined(__linux__)
-// Linux maps the shadPS4 executable around here, so limit the user maximum
+// Linux maps the shadBloodborne executable around here, so limit the user maximum
 constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
 #else
 constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;

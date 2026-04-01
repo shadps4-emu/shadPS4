@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
@@ -18,7 +18,7 @@ void RPC::init() {
 void RPC::setStatusIdling() {
     DiscordRichPresence rpc{};
     rpc.largeImageKey = "https://cdn.jsdelivr.net/gh/shadps4-emu/shadPS4@main/.github/shadps4.png";
-    rpc.largeImageText = "shadPS4 is a PS4 emulator";
+    rpc.largeImageText = "shadBloodborne is a Bloodborne emulator";
     rpc.startTimestamp = startTimestamp;
     rpc.details = "Idle";
 

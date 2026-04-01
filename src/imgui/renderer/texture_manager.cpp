@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <deque>
@@ -134,7 +134,7 @@ Inner::~Inner() {
 }
 
 void WorkerLoop() {
-    Common::SetCurrentThreadName("shadPS4:ImGuiTextureManager");
+    Common::SetCurrentThreadName("sB:ImGuiTextureManager");
     std::mutex mtx;
     while (g_is_worker_running) {
         std::unique_lock lk{mtx};

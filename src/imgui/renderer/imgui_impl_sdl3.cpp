@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Based on imgui_impl_sdl3.cpp from Dear ImGui repository
@@ -531,7 +531,7 @@ bool Init(SDL_Window* window) {
     // Setup backend capabilities flags
     SdlData* bd = IM_NEW(SdlData)();
     io.BackendPlatformUserData = (void*)bd;
-    io.BackendPlatformName = "imgui_impl_sdl3_shadps4";
+    io.BackendPlatformName = "imgui_impl_sdl3_shadBloodborne";
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // We can honor GetMouseCursor() values
     io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // We can honor io.WantSetMousePos requests
                                                          // (optional, rarely used)

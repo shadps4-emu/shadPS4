@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -271,7 +271,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     const std::chrono::nanoseconds vblank_period(1000000000 /
                                                  EmulatorSettings.GetVblankFrequency());
 
-    Common::SetCurrentThreadName("shadPS4:PresentThread");
+    Common::SetCurrentThreadName("sB:PresentThread");
     Common::SetCurrentThreadRealtime(vblank_period);
 
     Common::AccurateTimer timer{vblank_period};

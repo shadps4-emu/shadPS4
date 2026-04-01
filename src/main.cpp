@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <filesystem>
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     EmulatorSettingsImpl::SetInstance(emu_settings);
     emu_settings->Load();
 
-    CLI::App app{"shadPS4 Emulator CLI"};
+    CLI::App app{"shadBloodborne Emulator CLI"};
 
     // ---- CLI state ----
     std::optional<std::string> gamePath;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
 
     // ---- No-args behavior ----
     if (argc == 1) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadBloodborne",
                                  "This is a CLI application. Please use the QTLauncher for a GUI:\n"
                                  "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
                                  nullptr);

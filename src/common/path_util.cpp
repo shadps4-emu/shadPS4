@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -91,18 +91,18 @@ static auto UserPaths = [] {
         // NOTE: On Windows we currently just create the portable directory instead.
 #ifdef __APPLE__
         user_dir =
-            std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadPS4";
+            std::filesystem::path(getenv("HOME")) / "Library" / "Application Support" / "shadBloodborne";
 #elif defined(__linux__)
         const char* xdg_data_home = getenv("XDG_DATA_HOME");
         if (xdg_data_home != nullptr && strlen(xdg_data_home) > 0) {
-            user_dir = std::filesystem::path(xdg_data_home) / "shadPS4";
+            user_dir = std::filesystem::path(xdg_data_home) / "shadBloodborne";
         } else {
-            user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadPS4";
+            user_dir = std::filesystem::path(getenv("HOME")) / ".local" / "share" / "shadBloodborne";
         }
 #elif _WIN32
         TCHAR appdata[MAX_PATH] = {0};
         SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, appdata);
-        user_dir = std::filesystem::path(appdata) / "shadPS4";
+        user_dir = std::filesystem::path(appdata) / "shadBloodborne";
 #endif
     }
 

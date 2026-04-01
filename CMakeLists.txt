@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 # Version 3.24 needed for FetchContent OVERRIDE_FIND_PACKAGE
@@ -17,7 +17,7 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-project(shadPS4 CXX C ASM ${ADDITIONAL_LANGUAGES})
+project(shadBloodborne CXX C ASM ${ADDITIONAL_LANGUAGES})
 
 # Forcing PIE makes sure that the base address is high enough so that it doesn't clash with the PS4 memory.
 if(UNIX AND NOT APPLE)
@@ -206,7 +206,7 @@ set(EMULATOR_VERSION_MAJOR "0")
 set(EMULATOR_VERSION_MINOR "15")
 set(EMULATOR_VERSION_PATCH "1")
 
-set_source_files_properties(src/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
+set_source_files_properties(src/shadBloodborne.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
 
 set(APP_VERSION "${EMULATOR_VERSION_MAJOR}.${EMULATOR_VERSION_MINOR}.${EMULATOR_VERSION_PATCH} WIP")
 set(APP_IS_RELEASE false)
@@ -960,7 +960,7 @@ set(EMULATOR src/emulator.cpp
 
 if(NOT ENABLE_TESTS)
 
-add_executable(shadps4
+add_executable(shadBloodborne
     ${AUDIO_CORE}
     ${IMGUI}
     ${INPUT}
@@ -976,38 +976,38 @@ add_executable(shadps4
     src/sdl_window.cpp
 )
 
-create_target_directory_groups(shadps4)
+create_target_directory_groups(shadBloodborne)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
-target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
+target_link_libraries(shadBloodborne PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
+target_link_libraries(shadBloodborne PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
+target_link_libraries(shadBloodborne PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
-    target_link_libraries(shadps4 PRIVATE "/usr/lib/libusb.so")
-    target_link_libraries(shadps4 PRIVATE "/usr/local/lib/libuuid.so")
+    target_link_libraries(shadBloodborne PRIVATE "/usr/lib/libusb.so")
+    target_link_libraries(shadBloodborne PRIVATE "/usr/local/lib/libuuid.so")
 else()
-    target_link_libraries(shadps4 PRIVATE libusb::usb)
+    target_link_libraries(shadBloodborne PRIVATE libusb::usb)
 endif()
 
-target_compile_definitions(shadps4 PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
+target_compile_definitions(shadBloodborne PRIVATE IMGUI_USER_CONFIG="imgui/imgui_config.h")
 target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURCE_DIR}/src/imgui/imgui_config.h")
 
 if (ENABLE_DISCORD_RPC)
-    target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+    target_compile_definitions(shadBloodborne PRIVATE ENABLE_DISCORD_RPC)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    # Optional due to https://github.com/shadps4-emu/shadPS4/issues/1704
+    # Optional due to https://github.com/shadBloodborne-emu/shadBloodborne/issues/1704
     if (ENABLE_USERFAULTFD)
-        target_compile_definitions(shadps4 PRIVATE ENABLE_USERFAULTFD)
+        target_compile_definitions(shadBloodborne PRIVATE ENABLE_USERFAULTFD)
     endif()
 
-    target_link_libraries(shadps4 PRIVATE uuid)
+    target_link_libraries(shadBloodborne PRIVATE uuid)
 endif()
 
 if (APPLE)
     # Include MoltenVK, along with an ICD file so it can be found by the system Vulkan loader if used for loading layers.
-    set_property(TARGET shadps4 APPEND PROPERTY BUILD_RPATH "@executable_path")
+    set_property(TARGET shadBloodborne APPEND PROPERTY BUILD_RPATH "@executable_path")
     set(MVK_DST ${CMAKE_CURRENT_BINARY_DIR})
     set(MVK_DYLIB_SRC ${CMAKE_CURRENT_BINARY_DIR}/externals/MoltenVK/MoltenVK/libMoltenVK.dylib)
     set(MVK_DYLIB_DST ${MVK_DST}/libMoltenVK.dylib)
@@ -1024,21 +1024,21 @@ if (APPLE)
         COMMAND ${CMAKE_COMMAND} -E copy ${MVK_DYLIB_SRC} ${MVK_DYLIB_DST})
     add_custom_target(CopyMoltenVK DEPENDS ${MVK_ICD_DST} ${MVK_DYLIB_DST})
     add_dependencies(CopyMoltenVK MoltenVK)
-    add_dependencies(shadps4 CopyMoltenVK)
+    add_dependencies(shadBloodborne CopyMoltenVK)
 
     if (ARCHITECTURE STREQUAL "x86_64")
         # Reserve system-managed memory space.
-        target_link_options(shadps4 PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-segaddr,USER_AREA,0x7000000000,-image_base,0x700000000000)
+        target_link_options(shadBloodborne PRIVATE -Wl,-ld_classic,-no_pie,-no_fixup_chains,-no_huge,-pagezero_size,0x4000,-segaddr,TCB_SPACE,0x4000,-segaddr,SYSTEM_MANAGED,0x400000,-segaddr,SYSTEM_RESERVED,0x7FFFFC000,-segaddr,USER_AREA,0x7000000000,-image_base,0x700000000000)
     endif()
 
     # Replacement for std::chrono::time_zone
-    target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
+    target_link_libraries(shadBloodborne PRIVATE date::date-tz epoll-shim)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
-    target_link_libraries(shadps4 PRIVATE date::date-tz epoll-shim)
+    target_link_libraries(shadBloodborne PRIVATE date::date-tz epoll-shim)
 endif()
 
 if (WIN32)
-    target_link_libraries(shadps4 PRIVATE mincore wepoll wbemuuid)
+    target_link_libraries(shadBloodborne PRIVATE mincore wepoll wbemuuid)
 
     if (MSVC)
         # MSVC likes putting opinions on what people can use, disable:
@@ -1056,45 +1056,45 @@ if (WIN32)
     add_compile_definitions(NTDDI_VERSION=0x0A000006 _WIN32_WINNT=0x0A00 WINVER=0x0A00)
 
     if (MSVC)
-        target_link_libraries(shadps4 PRIVATE clang_rt.builtins-x86_64.lib)
+        target_link_libraries(shadBloodborne PRIVATE clang_rt.builtins-x86_64.lib)
     endif()
 
     # Disable ASLR so we can reserve the user area
     if (MSVC)
-        target_link_options(shadps4 PRIVATE /DYNAMICBASE:NO)
+        target_link_options(shadBloodborne PRIVATE /DYNAMICBASE:NO)
     else()
-        target_link_options(shadps4 PRIVATE -Wl,--disable-dynamicbase)
+        target_link_options(shadBloodborne PRIVATE -Wl,--disable-dynamicbase)
     endif()
 
     # Increase stack commit area (Needed, otherwise there are crashes)
     if (MSVC)
-        target_link_options(shadps4 PRIVATE /STACK:0x200000,0x200000)
+        target_link_options(shadBloodborne PRIVATE /STACK:0x200000,0x200000)
     else()
-        target_link_options(shadps4 PRIVATE -Wl,--stack,2097152)
+        target_link_options(shadBloodborne PRIVATE -Wl,--stack,2097152)
     endif()
 
     # Change base image address
     if (MSVC)
-        target_link_options(shadps4 PRIVATE /BASE:0x700000000000)
+        target_link_options(shadBloodborne PRIVATE /BASE:0x700000000000)
     else()
-        target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
+        target_link_options(shadBloodborne PRIVATE -Wl,--image-base=0x700000000000)
     endif()
 endif()
 
 if (WIN32)
-    target_sources(shadps4 PRIVATE src/shadps4.rc)
+    target_sources(shadBloodborne PRIVATE src/shadBloodborne.rc)
 endif()
 
 add_compile_definitions(BOOST_ASIO_STANDALONE)
 
-target_include_directories(shadps4 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(shadBloodborne PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Shaders sources
 set(HOST_SHADERS_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/src/video_core/host_shaders)
 
 add_subdirectory(${HOST_SHADERS_INCLUDE})
-add_dependencies(shadps4 host_shaders)
-target_include_directories(shadps4 PRIVATE ${HOST_SHADERS_INCLUDE})
+add_dependencies(shadBloodborne host_shaders)
+target_include_directories(shadBloodborne PRIVATE ${HOST_SHADERS_INCLUDE})
 
 # embed resources
 
@@ -1107,21 +1107,21 @@ cmrc_add_resource_library(embedded-resources
         src/images/gold.png
         src/images/platinum.png
         src/images/silver.png)
-target_link_libraries(shadps4 PRIVATE res::embedded)
+target_link_libraries(shadBloodborne PRIVATE res::embedded)
 
 # ImGui resources
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/renderer)
-add_dependencies(shadps4 ImGui_Resources)
-target_include_directories(shadps4 PRIVATE ${IMGUI_RESOURCES_INCLUDE})
+add_dependencies(shadBloodborne ImGui_Resources)
+target_include_directories(shadBloodborne PRIVATE ${IMGUI_RESOURCES_INCLUDE})
 
 
 # Discord RPC
 if (ENABLE_DISCORD_RPC)
-    target_link_libraries(shadps4 PRIVATE discord-rpc)
+    target_link_libraries(shadBloodborne PRIVATE discord-rpc)
 endif()
 
 # Install rules
-install(TARGETS shadps4 BUNDLE DESTINATION .)
+install(TARGETS shadBloodborne BUNDLE DESTINATION .)
 
 else()
     enable_testing()

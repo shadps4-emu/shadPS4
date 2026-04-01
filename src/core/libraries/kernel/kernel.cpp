@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
@@ -58,7 +58,7 @@ void KernelSignalRequest() {
 }
 
 static void KernelServiceThread(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
+    Common::SetCurrentThreadName("sB:KernelServiceThread");
 
     while (!stoken.stop_requested()) {
         HLE_TRACE;

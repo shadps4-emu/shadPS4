@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Based on imgui_impl_vulkan.cpp from Dear ImGui repository
@@ -1243,7 +1243,7 @@ bool Init(InitInfo info) {
     // Setup backend capabilities flags
     auto* bd = IM_NEW(VkData)(info);
     io.BackendRendererUserData = (void*)bd;
-    io.BackendRendererName = "imgui_impl_vulkan_shadps4";
+    io.BackendRendererName = "imgui_impl_vulkan_shadBloodborne";
     // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
     io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;
 

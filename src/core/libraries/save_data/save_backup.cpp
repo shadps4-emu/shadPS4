@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <deque>
@@ -79,7 +79,7 @@ static void backup(const std::filesystem::path& dir_name) {
 }
 
 static void BackupThreadBody() {
-    Common::SetCurrentThreadName("shadPS4:SaveData:BackupThread");
+    Common::SetCurrentThreadName("sB:SaveData:BackupThread");
     while (g_backup_status != WorkerStatus::Stopping) {
         g_backup_status = WorkerStatus::Waiting;
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <queue>
@@ -1096,7 +1096,7 @@ s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::si
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    std::string name = "shadPS4";
+    std::string name = "shadBloodborne";
     auto const* u = UserManagement.GetUserByID(user_id);
     if (u != nullptr) {
         name = u->user_name;

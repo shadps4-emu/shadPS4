@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
-// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
@@ -275,7 +275,7 @@ private:
 
     void StartBackendThread() {
         backend_thread = std::jthread([this](std::stop_token stop_token) {
-            Common::SetCurrentThreadName("shadPS4:Log");
+            Common::SetCurrentThreadName("sB:Log");
             Entry entry;
             const auto write_logs = [this, &entry]() {
                 ForEachBackend([&entry](auto& backend) { backend.Write(entry); });

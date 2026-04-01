@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -171,7 +171,7 @@ void Scheduler::SubmitExecution(SubmitInfo& info) {
 }
 
 void Scheduler::PriorityPendingOpsThread(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:GpuSchedPriorityPendingOpsRunner");
+    Common::SetCurrentThreadName("sB:GpuSchedPriorityPendingOpsRunner");
 
     while (!stoken.stop_requested()) {
         PendingOp op;

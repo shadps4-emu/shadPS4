@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/preprocessor/stringize.hpp>
@@ -90,7 +90,7 @@ void Liverpool::ProcessCommands() {
 }
 
 void Liverpool::Process(std::stop_token stoken) {
-    Common::SetCurrentThreadName("shadPS4:GpuCommandProcessor");
+    Common::SetCurrentThreadName("sB:GpuCommandProcessor");
     gpu_id = std::this_thread::get_id();
 
     while (!stoken.stop_requested()) {

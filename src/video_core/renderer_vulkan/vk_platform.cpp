@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Include the vulkan platform specific header
@@ -293,9 +293,9 @@ vk::UniqueInstance CreateInstance(Frontend::WindowSystemType window_type, bool e
     const auto extensions = GetLayerExtensions(GetInstanceExtensions(window_type, true), layers);
 
     const vk::ApplicationInfo application_info = {
-        .pApplicationName = "shadPS4",
+        .pApplicationName = "shadBloodborne",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-        .pEngineName = "shadPS4 Vulkan",
+        .pEngineName = "shadBloodborne Vulkan",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion = available_version,
     };

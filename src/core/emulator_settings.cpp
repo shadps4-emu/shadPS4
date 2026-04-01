@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -373,7 +373,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                         0,
                         nullptr,
                         "Config Migration",
-                        "The shadPS4 config backend has been updated, and you only have "
+                        "The shadBloodborne config backend has been updated, and you only have "
                         "the old version of the config. Do you wish to update it "
                         "automatically, or continue with the default config?",
                         2,

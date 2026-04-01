@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "winresrc.h"
@@ -27,12 +27,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "shadPS4 - PlayStation 4 Emulator\0"
+            VALUE "FileDescription", "shadBloodborne - Bloodborne Emulator\0"
             VALUE "FileVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
-            VALUE "InternalName", "shadPS4\0"
-            VALUE "LegalCopyright", "Copyright 2025 shadPS4 Team\0"
-            VALUE "OriginalFilename", "shadPS4.exe\0"
-            VALUE "ProductName", "shadPS4\0"
+            VALUE "InternalName", "shadBloodborne\0"
+            VALUE "LegalCopyright", "Copyright 2025 shadBloodborne Team\0"
+            VALUE "OriginalFilename", "shadBloodborne.exe\0"
+            VALUE "ProductName", "shadBloodborne\0"
             VALUE "ProductVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
         END
     END

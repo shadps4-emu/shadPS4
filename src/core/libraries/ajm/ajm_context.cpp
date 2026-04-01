@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -61,7 +61,7 @@ s32 AjmContext::ModuleRegister(AjmCodecType type) {
 }
 
 void AjmContext::WorkerThread(std::stop_token stop) {
-    Common::SetCurrentThreadName("shadPS4:AjmWorker");
+    Common::SetCurrentThreadName("sB:AjmWorker");
     while (!stop.stop_requested()) {
         auto batch = batch_queue.PopWait(stop);
         if (batch != nullptr && !batch->canceled) {

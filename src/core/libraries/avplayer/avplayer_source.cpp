@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
@@ -443,7 +443,7 @@ void AvPlayerSource::ReleaseAVFormatContext(AVFormatContext* context) {
 
 void AvPlayerSource::DemuxerThread(std::stop_token stop) {
     using namespace std::chrono;
-    Common::SetCurrentThreadName("shadPS4:AvDemuxer");
+    Common::SetCurrentThreadName("sB:AvDemuxer");
 
     if (!m_audio_stream_index.has_value() && !m_video_stream_index.has_value()) {
         LOG_WARNING(Lib_AvPlayer, "Could not start DEMUXER thread. No streams enabled.");
@@ -616,7 +616,7 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::VideoDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
-    Common::SetCurrentThreadName("shadPS4:AvVideoDecoder");
+    Common::SetCurrentThreadName("sB:AvVideoDecoder");
 
     LOG_INFO(Lib_AvPlayer, "Video Decoder Thread started");
     while ((!m_is_eof || m_video_packets.Size() != 0) && !stop.stop_requested()) {
@@ -738,7 +738,7 @@ Frame AvPlayerSource::PrepareAudioFrame(GuestBuffer buffer, const AVFrame& frame
 
 void AvPlayerSource::AudioDecoderThread(std::stop_token stop) {
     using namespace std::chrono;
-    Common::SetCurrentThreadName("shadPS4:AvAudioDecoder");
+    Common::SetCurrentThreadName("sB:AvAudioDecoder");
 
     LOG_INFO(Lib_AvPlayer, "Audio Decoder Thread started");
     while ((!m_is_eof || m_audio_packets.Size() != 0) && !stop.stop_requested()) {

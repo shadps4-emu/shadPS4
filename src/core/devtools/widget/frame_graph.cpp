@@ -1,4 +1,4 @@
-//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadBloodborne Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "frame_graph.h"
