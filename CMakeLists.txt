@@ -298,13 +298,6 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/sdl_audio_out.cpp
               src/core/libraries/audio/openal_audio_out.cpp
               src/core/libraries/audio/openal_manager.h
-              src/core/libraries/ngs2/ngs2.cpp
-              src/core/libraries/ngs2/ngs2.h
-              src/core/libraries/audio3d/audio3d.cpp
-              src/core/libraries/audio3d/audio3d_openal.cpp
-              src/core/libraries/audio3d/audio3d_openal.h
-              src/core/libraries/audio3d/audio3d.h
-              src/core/libraries/audio3d/audio3d_error.h
 )
 
 set(GNM_LIB src/core/libraries/gnmdriver/gnmdriver.cpp
@@ -440,55 +433,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/rtc/rtc.cpp
                 src/core/libraries/rtc/rtc.h
                 src/core/libraries/rtc/rtc_error.h
-                src/core/libraries/rudp/rudp.cpp
-                src/core/libraries/rudp/rudp.h
-                src/core/libraries/disc_map/disc_map.cpp
-                src/core/libraries/disc_map/disc_map.h
-                src/core/libraries/disc_map/disc_map_codes.h
-                src/core/libraries/ngs2/ngs2.cpp
-                src/core/libraries/ngs2/ngs2.h
-                src/core/libraries/ngs2/ngs2_error.h
-                src/core/libraries/ngs2/ngs2_impl.cpp
-                src/core/libraries/ngs2/ngs2_impl.h
-                src/core/libraries/ngs2/ngs2_custom.cpp
-                src/core/libraries/ngs2/ngs2_custom.h
-                src/core/libraries/ngs2/ngs2_reverb.cpp
-                src/core/libraries/ngs2/ngs2_reverb.h
-                src/core/libraries/ngs2/ngs2_geom.cpp
-                src/core/libraries/ngs2/ngs2_geom.h
-                src/core/libraries/ngs2/ngs2_pan.cpp
-                src/core/libraries/ngs2/ngs2_pan.h
-                src/core/libraries/ngs2/ngs2_report.cpp
-                src/core/libraries/ngs2/ngs2_report.h
-                src/core/libraries/ngs2/ngs2_eq.cpp
-                src/core/libraries/ngs2/ngs2_eq.h
-                src/core/libraries/ngs2/ngs2_mastering.cpp
-                src/core/libraries/ngs2/ngs2_mastering.h
-                src/core/libraries/ngs2/ngs2_sampler.cpp
-                src/core/libraries/ngs2/ngs2_sampler.h
-                src/core/libraries/ngs2/ngs2_submixer.cpp
-                src/core/libraries/ngs2/ngs2_submixer.h
                 src/core/libraries/ajm/ajm_error.h
-                src/core/libraries/audio3d/audio3d.cpp
-                src/core/libraries/audio3d/audio3d.h
-                src/core/libraries/audio3d/audio3d_error.h
-                src/core/libraries/game_live_streaming/gamelivestreaming.cpp
-                src/core/libraries/game_live_streaming/gamelivestreaming.h
-                src/core/libraries/remote_play/remoteplay.cpp
-                src/core/libraries/remote_play/remoteplay.h
-                src/core/libraries/share_play/shareplay.cpp
-                src/core/libraries/share_play/shareplay.h
-                src/core/libraries/razor_cpu/razor_cpu.cpp
-                src/core/libraries/razor_cpu/razor_cpu.h
-                src/core/libraries/mouse/mouse.cpp
-                src/core/libraries/mouse/mouse.h
-                src/core/libraries/web_browser_dialog/webbrowserdialog.cpp
-                src/core/libraries/web_browser_dialog/webbrowserdialog.h
-                src/core/libraries/font/font.cpp
-                src/core/libraries/font/font.h
-                src/core/libraries/font/fontft.cpp
-                src/core/libraries/font/fontft.h
-                src/core/libraries/font/font_error.h
 
 )
 
@@ -498,21 +443,6 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/video_out.cpp
                  src/core/libraries/videoout/video_out.h
                  src/core/libraries/videoout/videoout_error.h
-)
-
-set(HLE_LIBC_INTERNAL_LIB src/core/libraries/libc_internal/libc_internal.cpp
-                 src/core/libraries/libc_internal/libc_internal.h
-                 src/core/libraries/libc_internal/libc_internal_io.cpp
-                 src/core/libraries/libc_internal/libc_internal_io.h
-                 src/core/libraries/libc_internal/libc_internal_memory.cpp
-                 src/core/libraries/libc_internal/libc_internal_memory.h
-                 src/core/libraries/libc_internal/libc_internal_str.cpp
-                 src/core/libraries/libc_internal/libc_internal_str.h
-                 src/core/libraries/libc_internal/libc_internal_math.cpp
-                 src/core/libraries/libc_internal/libc_internal_math.h
-                 src/core/libraries/libc_internal/libc_internal_threads.cpp
-                 src/core/libraries/libc_internal/libc_internal_threads.h
-                 src/core/libraries/libc_internal/printf.h
 )
 
 set(IME_LIB src/core/libraries/ime/error_dialog.cpp
@@ -539,19 +469,6 @@ set(SYSTEM_GESTURE_LIB
             src/core/libraries/system_gesture/system_gesture.h
 )
 
-set(PNG_LIB src/core/libraries/libpng/pngdec.cpp
-            src/core/libraries/libpng/pngdec.h
-            src/core/libraries/libpng/pngdec_error.h
-            src/core/libraries/libpng/pngenc.cpp
-            src/core/libraries/libpng/pngenc.h
-            src/core/libraries/libpng/pngenc_error.h
-)
-
-set(JPEG_LIB src/core/libraries/jpeg/jpeg_error.h
-             src/core/libraries/jpeg/jpegenc.cpp
-             src/core/libraries/jpeg/jpegenc.h
-)
-
 set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo.h
                src/core/libraries/playgo/playgo_dialog.cpp
@@ -559,41 +476,7 @@ set(PLAYGO_LIB src/core/libraries/playgo/playgo.cpp
                src/core/libraries/playgo/playgo_types.h
 )
 
-set(RANDOM_LIB src/core/libraries/random/random.cpp
-               src/core/libraries/random/random.h
-               src/core/libraries/random/random_error.h
-)
-
-set(USBD_LIB src/core/libraries/usbd/usbd.cpp
-             src/core/libraries/usbd/usbd.h
-             src/core/libraries/usbd/usb_backend.h
-             src/core/libraries/usbd/emulated/dimensions.cpp
-             src/core/libraries/usbd/emulated/dimensions.h
-             src/core/libraries/usbd/emulated/infinity.cpp
-             src/core/libraries/usbd/emulated/infinity.h
-             src/core/libraries/usbd/emulated/skylander.cpp
-             src/core/libraries/usbd/emulated/skylander.h
-)
-
-set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
-              src/core/libraries/fiber/fiber.cpp
-              src/core/libraries/fiber/fiber.h
-              src/core/libraries/fiber/fiber_error.h
-)
-
 set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
-
-set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
-             src/core/libraries/videodec/videodec2_impl.h
-             src/core/libraries/videodec/videodec2.cpp
-             src/core/libraries/videodec/videodec2.h
-             src/core/libraries/videodec/videodec2_avc.h
-             src/core/libraries/videodec/videodec.cpp
-             src/core/libraries/videodec/videodec.h
-             src/core/libraries/videodec/videodec_error.h
-             src/core/libraries/videodec/videodec_impl.cpp
-             src/core/libraries/videodec/videodec_impl.h
-)
 
 set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_common.cpp
@@ -632,43 +515,10 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/object_manager.h
 )
 
-set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
-             src/core/libraries/zlib/zlib_sce.h
-             src/core/libraries/zlib/zlib_error.h
-)
-
-set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
-             src/core/libraries/hmd/hmd_reprojection.cpp
-             src/core/libraries/hmd/hmd_distortion.cpp
-             src/core/libraries/hmd/hmd.h
-             src/core/libraries/hmd/hmd_setup_dialog.cpp
-             src/core/libraries/hmd/hmd_setup_dialog.h
-             src/core/libraries/vr_tracker/vr_tracker.cpp
-             src/core/libraries/vr_tracker/vr_tracker.h
-)
-
 set(MISC_LIBS  src/core/libraries/screenshot/screenshot.cpp
                src/core/libraries/screenshot/screenshot.h
-               src/core/libraries/move/move.cpp
-               src/core/libraries/move/move.h
-               src/core/libraries/move/move_error.h
-               src/core/libraries/ulobjmgr/ulobjmgr.cpp
-               src/core/libraries/ulobjmgr/ulobjmgr.h
-               src/core/libraries/signin_dialog/signindialog.cpp
-               src/core/libraries/signin_dialog/signindialog.h
 )
 
-set(CAMERA_LIBS  src/core/libraries/camera/camera.cpp
-                 src/core/libraries/camera/camera.h
-                 src/core/libraries/camera/camera_error.h
-)
-
-set(COMPANION_LIBS  src/core/libraries/companion/companion_httpd.cpp
-                    src/core/libraries/companion/companion_httpd.h
-                    src/core/libraries/companion/companion_util.cpp
-                    src/core/libraries/companion/companion_util.h
-                    src/core/libraries/companion/companion_error.h
-)
 set(DEV_TOOLS src/core/devtools/layer.cpp
               src/core/devtools/layer.h
               src/core/devtools/layer_extra.cpp
@@ -846,19 +696,10 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_GESTURE_LIB}
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
-         ${PNG_LIB}
-         ${JPEG_LIB}
          ${PLAYGO_LIB}
          ${RANDOM_LIB}
-         ${USBD_LIB}
-         ${ZLIB_LIB}
          ${MISC_LIBS}
          ${IME_LIB}
-         ${FIBER_LIB}
-         ${VDEC_LIB}
-         ${VR_LIBS}
-         ${CAMERA_LIBS}
-         ${COMPANION_LIBS}
          ${DEV_TOOLS}
          src/core/debug_state.cpp
          src/core/debug_state.h

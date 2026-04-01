@@ -227,7 +227,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::quick_exit(0);
     }
 
-    LOG_INFO(Loader, "Starting shadps4 emulator v{} ", Common::g_version);
+    LOG_INFO(Loader, "Starting bloodborneps4 emulator v{} ", Common::g_version);
     LOG_INFO(Loader, "Revision {}", Common::g_scm_rev);
     LOG_INFO(Loader, "Branch {}", Common::g_scm_branch);
     LOG_INFO(Loader, "Description {}", Common::g_scm_desc);

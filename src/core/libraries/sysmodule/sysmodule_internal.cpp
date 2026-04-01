@@ -6,16 +6,9 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
-#include "core/libraries/disc_map/disc_map.h"
-#include "core/libraries/font/font.h"
-#include "core/libraries/font/fontft.h"
-#include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
-#include "core/libraries/libc_internal/libc_internal.h"
-#include "core/libraries/libpng/pngenc.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/ngs2/ngs2.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
@@ -209,21 +202,10 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // We need to check a few things here.
         // First, check if this is a module we allow LLE for.
         static s32 stub_handle = 100;
-        constexpr auto ModulesToLoad = std::to_array<Core::SysModules>(
-            {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
-             {"libSceUlt.sprx", nullptr},
-             {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
-             {"libSceJpegDec.sprx", nullptr},
-             {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
-             {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
-             {"libSceJson.sprx", nullptr},
-             {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
-             {"libSceCesCs.sprx", nullptr},
-             {"libSceAudiodec.sprx", nullptr},
-             {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr}});
+        constexpr auto ModulesToLoad = std::to_array<Core::SysModules>({
+            {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
+            {"libSceLibcInternal.sprx", nullptr},
+        });
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
