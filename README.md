@@ -87,11 +87,11 @@ To get the list of all available commands and also a more detailed description o
 
 Below is a list of commonly used command patterns:
 ```sh
-shadBloodborne CUSA00001 # Searches for a game folder called CUSA00001 in the list of game install folders, and boots it.
-shadBloodborne --fullscreen true --config-clean CUSA00001    # the game argument is always the last one,
-shadBloodborne -g CUSA00001 --fullscreen true --config-clean # ...unless manually specified otherwise.
+shadBloodborne CUSA00900 # Searches for a game folder called CUSA00900 in the list of game install folders, and boots it.
+shadBloodborne --fullscreen true --config-clean CUSA00900    # the game argument is always the last one,
+shadBloodborne -g CUSA00900 --fullscreen true --config-clean # ...unless manually specified otherwise.
 shadBloodborne /path/to/game.elf # Boots a PS4 ELF file directly. Useful if you want to boot an executable that is not named eboot.bin.
-shadBloodborne CUSA00001 -- -flag1 -flag2 # Passes '-flag1' and '-flag2' to the game executable in argv.
+shadBloodborne CUSA00900 -- -flag1 -flag2 # Passes '-flag1' and '-flag2' to the game executable in argv.
 ```
 
 # Debugging and reporting issues
