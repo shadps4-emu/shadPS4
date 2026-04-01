@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadBloodborne Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 shadBloodborne Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Some helpers to get operand indices of instructions by name to make it a bit safer.
