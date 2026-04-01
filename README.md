@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 <h1 align="center">
   <br>
-  <a href="https://shadps4.net/"><img src="https://github.com/shadps4-emu/shadPS4/blob/main/.github/shadps4.png" width="220"></a>
+  <a href="https://shadps4.net/"><img src=".github/shadBloodborne.png" width="220"></a>
   <br>
   <b>shadBloodborne</b>
   <br>
@@ -164,7 +164,7 @@ The following firmware modules are supported and must be placed in shadBloodborn
 
 - [**kalaposfos13**](https://github.com/kalaposfos13)
 
-Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
+Logo is done by [**Tlarok**](https://github.com/tlarok)
 
 # Contributing
 
