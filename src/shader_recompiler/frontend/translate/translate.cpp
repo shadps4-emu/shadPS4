@@ -4,6 +4,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/process.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -339,8 +340,22 @@ T Translator::GetSrc(const InstOperand& operand) {
             value = ir.BitCast<IR::U32>(ir.GetScc());
         }
         break;
-    default:
-        UNREACHABLE();
+    default: {
+        if (Libraries::Kernel::sceKernelIsNeoMode()) {
+            switch (operand.field) {
+            case OperandField::Inv2Pi:
+                value = get_imm(static_cast<float>(1.0f / (2.0f * std::numbers::pi)));
+                break;
+            case OperandField::Sdwa:
+                UNREACHABLE_MSG("unhandled SDWA");
+            case OperandField::Dpp:
+                UNREACHABLE_MSG("unhandled DPP");
+            default:
+                break;
+            }
+        }
+        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+    }
     }
 
     if constexpr (is_float) {
