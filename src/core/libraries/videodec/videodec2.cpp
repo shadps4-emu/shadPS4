@@ -203,36 +203,23 @@ s32 PS4_SYSV_ABI sceVideodec2GetPictureInfo(const OrbisVideodec2OutputInfo* outp
         LOG_ERROR(Lib_Vdec2, "No picture info available");
         return ORBIS_OK;
     }
+    if (gPictureInfos.empty()) {
+        LOG_ERROR(Lib_Vdec2, "No picture info available");
+        return ORBIS_OK;
+    }
 
-    // If the game uses the older Videodec2 structs, we need to accomodate that.
-    if (outputInfo->thisSize != sizeof(OrbisVideodec2OutputInfo)) {
-        if (gLegacyPictureInfos.empty()) {
-            LOG_ERROR(Lib_Vdec2, "No picture info available");
-            return ORBIS_OK;
+    if (p1stPictureInfoOut) {
+        // Copy enough data to check thisSize.
+        u64 picture_size = 0;
+        memcpy(&picture_size, p1stPictureInfoOut, sizeof(u64));
+        if ((picture_size | 0x10) != sizeof(OrbisVideodec2AvcPictureInfo)) {
+            LOG_ERROR(Lib_Vdec2, "Invalid struct size");
+            return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
         }
-        if (p1stPictureInfoOut) {
-            OrbisVideodec2LegacyAvcPictureInfo* picInfo =
-                static_cast<OrbisVideodec2LegacyAvcPictureInfo*>(p1stPictureInfoOut);
-            if (picInfo->thisSize != sizeof(OrbisVideodec2LegacyAvcPictureInfo)) {
-                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
-                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
-            }
-            *picInfo = gLegacyPictureInfos.back();
-        }
-    } else {
-        if (gPictureInfos.empty()) {
-            LOG_ERROR(Lib_Vdec2, "No picture info available");
-            return ORBIS_OK;
-        }
-        if (p1stPictureInfoOut) {
-            OrbisVideodec2AvcPictureInfo* picInfo =
-                static_cast<OrbisVideodec2AvcPictureInfo*>(p1stPictureInfoOut);
-            if (picInfo->thisSize != sizeof(OrbisVideodec2AvcPictureInfo)) {
-                LOG_ERROR(Lib_Vdec2, "Invalid struct size");
-                return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
-            }
-            *picInfo = gPictureInfos.back();
-        }
+        // Copy the requested picture data to the output.
+        memcpy(p1stPictureInfoOut, &gPictureInfos.back(), picture_size);
+        // Correct the outputted picture struct size.
+        memcpy(p1stPictureInfoOut, &picture_size, sizeof(u64));
     }
 
     if (outputInfo->pictureCount > 1) {
