@@ -214,13 +214,11 @@ int P2PSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     }
     return total_recv;
 #else
-    return ConvertReturnErrorCode(
-        ::recvmsg(sock, reinterpret_cast<msghdr*>(msg), native_flags));
+    return ConvertReturnErrorCode(::recvmsg(sock, reinterpret_cast<msghdr*>(msg), native_flags));
 #endif
 }
 
-int P2PSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from,
-                             u32* fromlen) {
+int P2PSocket::ReceivePacket(void* buf, u32 len, int flags, OrbisNetSockaddr* from, u32* fromlen) {
     std::scoped_lock lock{receive_mutex};
     int native_flags = convertOrbisFlagsToPosix(socket_type, flags);
     if (from == nullptr) {
