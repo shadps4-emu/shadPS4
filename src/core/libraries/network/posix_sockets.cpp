@@ -27,7 +27,7 @@ namespace Libraries::Net {
         return -1;
 #endif
 
-static int ConvertReturnErrorCode(int retval) {
+int ConvertReturnErrorCode(int retval) {
     if (retval < 0) {
 #ifdef _WIN32
         switch (WSAGetLastError()) {
@@ -118,7 +118,7 @@ static int ConvertReturnErrorCode(int retval) {
     return retval;
 }
 
-static int ConvertLevels(int level) {
+int ConvertLevels(int level) {
     switch (level) {
     case ORBIS_NET_SOL_SOCKET:
         return SOL_SOCKET;
@@ -132,7 +132,7 @@ static int ConvertLevels(int level) {
     return -1;
 }
 
-static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst) {
+void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst) {
     if (src == nullptr || dst == nullptr)
         return;
     memset(dst, 0, sizeof(sockaddr));
@@ -143,7 +143,7 @@ static void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
-static void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
+void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     if (src == nullptr || dst == nullptr)
         return;
     memset(dst, 0, sizeof(OrbisNetSockaddr));
@@ -184,7 +184,7 @@ int PosixSocket::Listen(int backlog) {
     return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
-static int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
+int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
     int posix_flags = 0;
 
     if (sce_flags & ORBIS_NET_MSG_PEEK)

@@ -57,6 +57,13 @@ struct Socket;
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
+// Shared socket helper functions defined in posix_sockets.cpp
+int ConvertReturnErrorCode(int retval);
+int ConvertLevels(int level);
+void convertOrbisNetSockaddrToPosix(const OrbisNetSockaddr* src, sockaddr* dst);
+void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst);
+int convertOrbisFlagsToPosix(int sock_type, int sce_flags);
+
 struct OrbisNetLinger {
     s32 l_onoff;
     s32 l_linger;
@@ -126,10 +133,14 @@ struct PosixSocket : public Socket {
 };
 
 struct P2PSocket : public Socket {
-    explicit P2PSocket(int domain, int type, int protocol) : Socket(domain, type, protocol) {}
-    bool IsValid() const override {
-        return true;
-    }
+    net_socket sock;
+    int sockopt_so_nbio = 0;
+    int socket_type;
+    u16 vport = 0; // PS4 virtual port
+
+    explicit P2PSocket(int domain, int type, int protocol);
+    ~P2PSocket() override;
+    bool IsValid() const override;
     int Close() override;
     int SetSocketOptions(int level, int optname, const void* optval, u32 optlen) override;
     int GetSocketOptions(int level, int optname, void* optval, u32* optlen) override;
@@ -146,7 +157,7 @@ struct P2PSocket : public Socket {
     int GetPeerName(OrbisNetSockaddr* addr, u32* namelen) override;
     int fstat(Libraries::Kernel::OrbisKernelStat* stat) override;
     std::optional<net_socket> Native() override {
-        return {};
+        return sock;
     }
 };
 

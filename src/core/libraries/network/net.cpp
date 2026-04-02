@@ -34,7 +34,7 @@ using FDTable = Common::Singleton<Core::FileSys::HandleTable>;
 
 static thread_local int32_t net_errno = 0;
 
-static bool g_isNetInitialized = true; // TODO init it properly
+static bool g_isNetInitialized = false;
 
 static int ConvertFamilies(int family) {
     switch (family) {
@@ -127,6 +127,8 @@ int PS4_SYSV_ABI sce_net_in6addr_nodelocal_allnodes() {
 }
 
 OrbisNetId PS4_SYSV_ABI sceNetAccept(OrbisNetId s, OrbisNetSockaddr* addr, u32* paddrlen) {
+    LOG_DEBUG(Lib_Net, "called, s = {}, addr = {}, paddrlen = {}", s, fmt::ptr(addr),
+              fmt::ptr(paddrlen));
     if (!g_isNetInitialized) {
         return ORBIS_NET_ERROR_ENOTINIT;
     }
@@ -657,8 +659,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be added to epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be added to epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
@@ -666,9 +667,10 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
 #ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
-            ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *native_handle, &native_event) == 0);
-            epoll->events.emplace_back(id, *event);
+            ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *native_handle,
+                             &native_event) == 0);
 #endif
+            epoll->events.emplace_back(id, *event);
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -707,8 +709,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be modified in epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be modified in epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
@@ -716,9 +717,10 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
 #ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
-            ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle, &native_event) == 0);
-            *it = {id, *event};
+            ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle,
+                             &native_event) == 0);
 #endif
+            *it = {id, *event};
             break;
         }
         default:
@@ -751,15 +753,15 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
         case Core::FileSys::FileType::Socket: {
             auto native_handle = file->socket->Native();
             if (!native_handle) {
-                // P2P socket, cannot be removed from epoll
-                LOG_ERROR(Lib_Net, "P2P socket cannot be removed from epoll (unimplemented)");
+                LOG_ERROR(Lib_Net, "socket {} has no native handle", id);
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
+
 #ifndef __FreeBSD__
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *native_handle, nullptr) == 0);
-            epoll->events.erase(it);
 #endif
+            epoll->events.erase(it);
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -1700,7 +1702,8 @@ int PS4_SYSV_ABI sceNetSysctl() {
 }
 
 int PS4_SYSV_ABI sceNetTerm() {
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    LOG_DEBUG(Lib_Net, "called");
+    g_isNetInitialized = false;
     return ORBIS_OK;
 }
 
