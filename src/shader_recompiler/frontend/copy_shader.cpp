@@ -79,6 +79,7 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
                 ASSERT(sources[index] != -1);
                 offsets[inst.src[1].code] += sources[index];
             }
+            data.num_comps++;
             break;
         }
         default:
