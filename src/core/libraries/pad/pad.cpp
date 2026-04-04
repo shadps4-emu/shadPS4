@@ -423,12 +423,18 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             states[i].touchpad[1].ID = 2;
         }
 
-        pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
-        pData[i].touchData.touch[0].y = states[i].touchpad[0].y;
-        pData[i].touchData.touch[0].id = states[i].touchpad[0].ID;
-        pData[i].touchData.touch[1].x = states[i].touchpad[1].x;
-        pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
-        pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
+        if (!states[i].touchpad[0].state && states[i].touchpad[1].state) {
+            pData[i].touchData.touch[0].x = states[i].touchpad[1].x;
+            pData[i].touchData.touch[0].y = states[i].touchpad[1].y;
+            pData[i].touchData.touch[0].id = states[i].touchpad[1].ID;
+        } else {
+            pData[i].touchData.touch[0].x = states[i].touchpad[0].x;
+            pData[i].touchData.touch[0].y = states[i].touchpad[0].y;
+            pData[i].touchData.touch[0].id = states[i].touchpad[0].ID;
+            pData[i].touchData.touch[1].x = states[i].touchpad[1].x;
+            pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
+            pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
+        }
         pData[i].connected = connected;
         pData[i].timestamp = states[i].time;
         pData[i].connectedCount = connected_count;
