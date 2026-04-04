@@ -80,6 +80,15 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
     patch_path /= rel_path;
 
+    std::filesystem::path mods_path = mount->host_path;
+    mods_path += "-mods";
+    mods_path /= rel_path;
+
+    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
+        std::filesystem::exists(mods_path)) {
+        return mods_path;
+    }
+
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
         !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
         return patch_path;
