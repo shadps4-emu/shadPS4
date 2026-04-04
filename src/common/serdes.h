@@ -42,7 +42,8 @@ struct Archive {
     }
 
     void Advance(size_t size) {
-        ASSERT(offset + size <= container.size());
+        ASSERT_MSG(offset + size <= container.size(),
+                   "Invalid or corrupted deserialization container/shader cache");
         offset += size;
     }
 
@@ -104,7 +105,8 @@ struct Writer {
 struct Reader {
     template <typename T>
     void Read(T* ptr, size_t size) {
-        ASSERT(ar.offset + size <= ar.container.size());
+        ASSERT_MSG(ar.offset + size <= ar.container.size(),
+                   "Invalid or corrupted deserialization container/shader cache");
         std::memcpy(reinterpret_cast<void*>(ptr), ar.CurrPtr(), size);
         ar.Advance(size);
     }
