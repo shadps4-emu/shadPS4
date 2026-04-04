@@ -154,22 +154,37 @@ void convertPosixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sin_addr, &src_in->sin_addr, 4);
 }
 
-bool PosixSocket::IsValid() const {
-#ifdef _WIN32
-    return sock != INVALID_SOCKET;
-#else
-    return sock != -1;
-#endif
-}
-
-int PosixSocket::Close() {
+int NativeSocket::Close() {
     std::scoped_lock lock{m_mutex};
 #ifdef _WIN32
     auto out = closesocket(sock);
+    sock = INVALID_SOCKET;
 #else
     auto out = ::close(sock);
+    sock = -1;
 #endif
     return ConvertReturnErrorCode(out);
+}
+
+int NativeSocket::Listen(int backlog) {
+    std::scoped_lock lock{m_mutex};
+    return ConvertReturnErrorCode(::listen(sock, backlog));
+}
+
+int NativeSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
+#ifdef _WIN32
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
+    sb->st_mode = 0000777u | 0140000u;
+    return 0;
+#else
+    struct stat st {};
+    int result = ::fstat(sock, &st);
+    sb->st_mode = 0000777u | 0140000u;
+    sb->st_size = st.st_size;
+    sb->st_blocks = st.st_blocks;
+    sb->st_blksize = st.st_blksize;
+    return ConvertReturnErrorCode(result);
+#endif
 }
 
 int PosixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
@@ -177,11 +192,6 @@ int PosixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     sockaddr addr2;
     convertOrbisNetSockaddrToPosix(addr, &addr2);
     return ConvertReturnErrorCode(::bind(sock, &addr2, sizeof(sockaddr_in)));
-}
-
-int PosixSocket::Listen(int backlog) {
-    std::scoped_lock lock{m_mutex};
-    return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
 int convertOrbisFlagsToPosix(int sock_type, int sce_flags) {
@@ -281,7 +291,8 @@ int PosixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
 
 #else
     int native_flags = convertOrbisFlagsToPosix(socket_type, flags);
-    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), native_flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = sendmsg(sock, &native_msg, native_flags);
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -374,7 +385,9 @@ int PosixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
 
 #else
     int native_flags = convertOrbisFlagsToPosix(socket_type, flags);
-    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), native_flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = recvmsg(sock, &native_msg, native_flags);
+    msg->msg_flags = native_msg.msg_flags;
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -523,7 +536,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
             return -1;
         }
         case ORBIS_NET_SO_LINGER: {
-            if (socket_type != ORBIS_NET_SOCK_STREAM) {
+            if (socket_type != ORBIS_NET_SOCK_STREAM && socket_type != ORBIS_NET_SOCK_STREAM_P2P) {
                 *Libraries::Kernel::__Error() = ORBIS_NET_EPROCUNAVAIL;
                 return -1;
             }
@@ -687,23 +700,6 @@ int PosixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
         *namelen = sizeof(OrbisNetSockaddrIn);
     }
     return ConvertReturnErrorCode(res);
-}
-
-int PosixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
-#ifdef _WIN32
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    sb->st_mode = 0000777u | 0140000u;
-    return 0;
-#else
-    struct stat st{};
-    int result = ::fstat(sock, &st);
-    sb->st_mode = 0000777u | 0140000u;
-    sb->st_size = st.st_size;
-    sb->st_blocks = st.st_blocks;
-    sb->st_blksize = st.st_blksize;
-    // sb->st_flags = st.st_flags;
-    return ConvertReturnErrorCode(result);
-#endif
 }
 
 } // namespace Libraries::Net

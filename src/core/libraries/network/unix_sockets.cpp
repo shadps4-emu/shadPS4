@@ -36,34 +36,11 @@ static void convertUnixSockaddrToOrbis(sockaddr* src, OrbisNetSockaddr* dst) {
     memcpy(&dst_in->sun_path, &src_in->sun_path, dst_in->sun_len);
 }
 
-bool UnixSocket::IsValid() const {
-#ifdef _WIN32
-    return sock != INVALID_SOCKET;
-#else
-    return sock != -1;
-#endif
-}
-
-int UnixSocket::Close() {
-    std::scoped_lock lock{m_mutex};
-#ifdef _WIN32
-    auto out = closesocket(sock);
-#else
-    auto out = ::close(sock);
-#endif
-    return ConvertReturnErrorCode(out);
-}
-
 int UnixSocket::Bind(const OrbisNetSockaddr* addr, u32 addrlen) {
     std::scoped_lock lock{m_mutex};
     sockaddr_un addr2;
     convertOrbisNetSockaddrToUnix(addr, &addr2);
     return ConvertReturnErrorCode(::bind(sock, (const sockaddr*)&addr2, sizeof(sockaddr_un)));
-}
-
-int UnixSocket::Listen(int backlog) {
-    std::scoped_lock lock{m_mutex};
-    return ConvertReturnErrorCode(::listen(sock, backlog));
 }
 
 int UnixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
@@ -87,7 +64,8 @@ int UnixSocket::SendMessage(const OrbisNetMsghdr* msg, int flags) {
     }
     return static_cast<int>(bytesSent);
 #else
-    int res = sendmsg(sock, reinterpret_cast<const msghdr*>(msg), flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = sendmsg(sock, &native_msg, flags);
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -126,7 +104,9 @@ int UnixSocket::ReceiveMessage(OrbisNetMsghdr* msg, int flags) {
     }
     return static_cast<int>(bytesReceived);
 #else
-    int res = recvmsg(sock, reinterpret_cast<msghdr*>(msg), flags);
+    msghdr native_msg = ConvertOrbisToNativeMsghdr(msg);
+    int res = recvmsg(sock, &native_msg, flags);
+    msg->msg_flags = native_msg.msg_flags;
     return ConvertReturnErrorCode(res);
 #endif
 }
@@ -254,23 +234,6 @@ int UnixSocket::GetPeerName(OrbisNetSockaddr* name, u32* namelen) {
         *namelen = sizeof(OrbisNetSockaddrUn);
     }
     return ConvertReturnErrorCode(res);
-}
-
-int UnixSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
-#ifdef _WIN32
-    LOG_ERROR(Lib_Net, "(STUBBED) called");
-    sb->st_mode = 0000777u | 0140000u;
-    return 0;
-#else
-    struct stat st{};
-    int result = ::fstat(sock, &st);
-    sb->st_mode = 0000777u | 0140000u;
-    sb->st_size = st.st_size;
-    sb->st_blocks = st.st_blocks;
-    sb->st_blksize = st.st_blksize;
-    // sb->st_flags = st.st_flags;
-    return ConvertReturnErrorCode(result);
-#endif
 }
 
 } // namespace Libraries::Net
