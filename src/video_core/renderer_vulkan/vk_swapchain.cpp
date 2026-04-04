@@ -261,6 +261,12 @@ void Swapchain::Destroy() {
         LOG_WARNING(Render_Vulkan, "Failed to wait for device to become idle: {}",
                     vk::to_string(wait_result));
     }
+
+    for (auto& image_view : images_view) {
+        device.destroyImageView(image_view);
+    }
+    images_view.clear();
+
     if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }
