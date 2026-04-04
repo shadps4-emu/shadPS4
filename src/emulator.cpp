@@ -292,6 +292,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
+    std::filesystem::path mods_folder = game_folder;
+    mods_folder += "-mods";
+
+    if (std::filesystem::exists(mods_folder) && !std::filesystem::is_empty(mods_folder)) {
+        LOG_INFO(Loader, "Files found in game mods folder");
+    }
+
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
 
