@@ -14,6 +14,7 @@
 
 #ifdef _WIN32
 #include <wepoll.h>
+#include <winsock2.h>
 #endif
 
 // TODO: FreeBSD requires libepoll-shim for epoll support
