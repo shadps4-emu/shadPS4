@@ -177,7 +177,7 @@ int NativeSocket::fstat(Libraries::Kernel::OrbisKernelStat* sb) {
     sb->st_mode = 0000777u | 0140000u;
     return 0;
 #else
-    struct stat st {};
+    struct stat st{};
     int result = ::fstat(sock, &st);
     sb->st_mode = 0000777u | 0140000u;
     sb->st_size = st.st_size;
