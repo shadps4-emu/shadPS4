@@ -208,7 +208,7 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
 }
 
 bool leftjoystick_halfmode = false, rightjoystick_halfmode = false;
-std::array<std::pair<int, int>, 4> leftjoystick_deadzone, rightjoystick_deadzone,
+std::array<std::pair<int, int>, 9> leftjoystick_deadzone, rightjoystick_deadzone,
     lefttrigger_deadzone, righttrigger_deadzone;
 
 std::list<std::pair<InputEvent, bool>> pressed_keys;
@@ -354,8 +354,8 @@ void ParseInputConfig(const std::string game_id = "") {
     float mouse_speed_offset = 0.125;
 
     // me when I'm in a type deduction tournament and my opponent is clang
-    constexpr std::array<std::pair<int, int>, 4> default_deadzone = {
-        std::pair{1, 127}, {1, 127}, {1, 127}, {1, 127}};
+    constexpr std::array<std::pair<int, int>, 9> default_deadzone = {
+        std::pair{1, 127}, {1, 127}, {1, 127}, {1, 127}, {1, 127}, {1, 127}, {1, 127}, {1, 127}};
 
     leftjoystick_deadzone = default_deadzone;
     rightjoystick_deadzone = default_deadzone;
@@ -491,7 +491,7 @@ void ParseInputConfig(const std::string game_id = "") {
 
             std::pair<int, int> deadzone = {*inner_deadzone, *outer_deadzone};
 
-            static std::unordered_map<std::string, std::array<std::pair<int, int>, 4>&>
+            static std::unordered_map<std::string, std::array<std::pair<int, int>, 9>&>
                 deadzone_map = {
                     {"leftjoystick", leftjoystick_deadzone},
                     {"rightjoystick", rightjoystick_deadzone},
@@ -644,10 +644,22 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
         gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
+        if (gamepad == 0) {
+            gamepad = ControllerOutput::controllers.GetMoveIndexFromJoystickId(e.gbutton.which) + 6;
+            if (gamepad < 6) {
+                return InputEvent();
+            }
+        }
         return InputEvent({InputType::Controller, (u32)e.gbutton.button, gamepad}, e.gbutton.down,
                           0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
         gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
+        if (gamepad < 1) {
+            gamepad = ControllerOutput::controllers.GetMoveIndexFromJoystickId(e.gaxis.which) + 6;
+            if (gamepad < 6) {
+                return InputEvent();
+            }
+        }
         return InputEvent({InputType::Axis, (u32)e.gaxis.axis, gamepad}, true, e.gaxis.value / 256);
     default:
         return InputEvent();
@@ -717,6 +729,8 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     GameController* controller;
     if (gamepad_index < 5)
         controller = controllers[gamepad_index];
+    else if (gamepad_index < 9)
+        controller = controllers.moves(gamepad_index - 5); // magic number :(
     else
         UNREACHABLE();
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
