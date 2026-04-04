@@ -727,13 +727,13 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             }
 
             // P2P dgram sockets only support EPOLLIN (matches PS4 kernel behavior)
-            auto epoll_events_mod = event->events;
+            auto epoll_events = event->events;
             if (file->socket->socket_type == ORBIS_NET_SOCK_DGRAM_P2P) {
-                epoll_events_mod &= ORBIS_NET_EPOLLIN;
+                epoll_events &= ORBIS_NET_EPOLLIN;
             }
 
 #ifndef __FreeBSD__
-            epoll_event native_event = {.events = ConvertEpollEventsIn(epoll_events_mod),
+            epoll_event native_event = {.events = ConvertEpollEventsIn(epoll_events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle, &native_event) == 0);
 #endif
@@ -893,6 +893,9 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
         LOG_TRACE(Lib_Net, "timed out");
     } else {
         for (int j = 0; j < result; ++j) {
+            if (i >= maxevents) {
+                break;
+            }
             const auto& current_event = native_events[j];
             // Skip the abort fd event (registered with data.fd = -1)
             if (current_event.data.fd == -1) {
@@ -1734,8 +1737,7 @@ int PS4_SYSV_ABI sceNetSysctl() {
 }
 
 int PS4_SYSV_ABI sceNetTerm() {
-    LOG_DEBUG(Lib_Net, "called");
-    g_isNetInitialized = false;
+    LOG_ERROR(Lib_Net, "(STUBBED) called");
     return ORBIS_OK;
 }
 

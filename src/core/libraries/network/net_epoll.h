@@ -16,6 +16,7 @@
 #include <wepoll.h>
 #endif
 
+// TODO: FreeBSD requires libepoll-shim for epoll support
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -35,8 +36,12 @@ struct Epoll {
     epoll_handle epoll_fd;
     std::deque<u32> async_resolutions{};
     std::atomic<bool> aborted{false};
-#ifdef __linux__
-    int abort_fd = -1;
+#ifdef _WIN32
+    SOCKET abort_sock = INVALID_SOCKET; // loopback UDP socket for abort wake
+#elif defined(__linux__)
+    int abort_fd = -1; // eventfd for abort wake
+#else
+    int abort_pipe[2] = {-1, -1}; // self-pipe for abort wake (macOS/BSD)
 #endif
 
     explicit Epoll(const char* name_);
