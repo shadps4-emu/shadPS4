@@ -13,10 +13,27 @@
 namespace Libraries::Videodec {
 
 static inline void CopyNV12Data(u8* dst, const AVFrame& src) {
-    u32 width = Common::AlignUp((u32)src.width, 16);
-    u32 height = Common::AlignUp((u32)src.height, 16);
-    std::memcpy(dst, src.data[0], src.width * src.height);
-    std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
+    const u32 width = Common::AlignUp(u32(src.width), 16);
+    const u32 height = Common::AlignUp(u32(src.height), 16);
+
+    // Copy Y plane: source stride is linesize[0], destination stride is width.
+    if (u32(src.linesize[0]) == width) {
+        std::memcpy(dst, src.data[0], width * src.height);
+    } else {
+        for (u32 y = 0; y < u32(src.height); ++y) {
+            std::memcpy(dst + y * width, src.data[0] + y * src.linesize[0], src.width);
+        }
+    }
+
+    // Copy interleaved UV plane: source stride is linesize[1], destination stride is width.
+    const auto chroma_dst = dst + width * height;
+    if (u32(src.linesize[1]) == width) {
+        std::memcpy(chroma_dst, src.data[1], width * (src.height / 2));
+    } else {
+        for (u32 y = 0; y < u32(src.height) / 2; ++y) {
+            std::memcpy(chroma_dst + y * width, src.data[1] + y * src.linesize[1], src.width);
+        }
+    }
 }
 
 VdecDecoder::VdecDecoder(const OrbisVideodecConfigInfo& pCfgInfoIn,
@@ -100,7 +117,7 @@ s32 VdecDecoder::Decode(const OrbisVideodecInputData& pInputDataIn,
         pPictureInfoOut.codecType = 0;
         pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
         pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
-        pPictureInfoOut.framePitch = frame->linesize[0];
+        pPictureInfoOut.framePitch = Common::AlignUp((u32)frame->width, 16);
 
         pPictureInfoOut.isValid = true;
         pPictureInfoOut.isErrorPic = false;
@@ -150,7 +167,7 @@ s32 VdecDecoder::Flush(OrbisVideodecFrameBuffer& pFrameBufferInOut,
         pPictureInfoOut.codecType = 0;
         pPictureInfoOut.frameWidth = Common::AlignUp((u32)frame->width, 16);
         pPictureInfoOut.frameHeight = Common::AlignUp((u32)frame->height, 16);
-        pPictureInfoOut.framePitch = frame->linesize[0];
+        pPictureInfoOut.framePitch = Common::AlignUp((u32)frame->width, 16);
 
         pPictureInfoOut.isValid = true;
         pPictureInfoOut.isErrorPic = false;
