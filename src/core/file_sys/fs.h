@@ -36,6 +36,13 @@ public:
         bool read_only;
     };
 
+    enum class HostPathType {
+        Default, // Prioritizes Mod, then patch, then base
+        Base,
+        Patch,
+        Mod
+    };
+
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
@@ -45,7 +52,8 @@ public:
     void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
-                                      bool* is_read_only = nullptr, bool force_base_path = false);
+                                      bool* is_read_only = nullptr,
+                                      HostPathType host_path = HostPathType::Default);
     using IterateDirectoryCallback =
         std::function<void(const std::filesystem::path& host_path, bool is_file)>;
     void IterateDirectory(std::string_view guest_directory,
