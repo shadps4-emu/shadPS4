@@ -575,13 +575,32 @@ set(USBD_LIB src/core/libraries/usbd/usbd.cpp
              src/core/libraries/usbd/emulated/skylander.h
 )
 
-set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
-              src/core/libraries/fiber/fiber.cpp
-              src/core/libraries/fiber/fiber.h
-              src/core/libraries/fiber/fiber_error.h
-)
-
-set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+if (WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_GENERATOR MATCHES "Visual Studio")
+    # Visual Studio generator with ClangCL: assemble GAS .s file via custom command
+    # since the VS build system cannot handle .s files directly.
+    set(FIBER_ASM_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/core/libraries/fiber/fiber_context.s")
+    set(FIBER_ASM_OBJ "${CMAKE_CURRENT_BINARY_DIR}/fiber_context.obj")
+    add_custom_command(
+        OUTPUT ${FIBER_ASM_OBJ}
+        COMMAND ${CMAKE_C_COMPILER} -c -o ${FIBER_ASM_OBJ} ${FIBER_ASM_SRC}
+        DEPENDS ${FIBER_ASM_SRC}
+        COMMENT "Assembling fiber_context.s with Clang"
+    )
+    add_custom_target(fiber_asm DEPENDS ${FIBER_ASM_OBJ})
+    set(FIBER_LIB src/core/libraries/fiber/fiber.cpp
+                  src/core/libraries/fiber/fiber.h
+                  src/core/libraries/fiber/fiber_error.h
+    )
+    set(FIBER_ASM_LINK_OBJ ${FIBER_ASM_OBJ})
+else()
+    set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
+                  src/core/libraries/fiber/fiber.cpp
+                  src/core/libraries/fiber/fiber.h
+                  src/core/libraries/fiber/fiber_error.h
+    )
+    set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
+    set(FIBER_ASM_LINK_OBJ "")
+endif()
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
              src/core/libraries/videodec/videodec2_impl.h
@@ -1136,6 +1155,12 @@ add_executable(shadps4
 )
 
 create_target_directory_groups(shadps4)
+
+# Link fiber assembly object when built via custom command (VS ClangCL)
+if (FIBER_ASM_LINK_OBJ)
+    add_dependencies(shadps4 fiber_asm)
+    target_link_libraries(shadps4 PRIVATE ${FIBER_ASM_LINK_OBJ})
+endif()
 
 target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
 target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
