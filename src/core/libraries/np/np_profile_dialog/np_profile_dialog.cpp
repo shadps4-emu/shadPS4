@@ -13,8 +13,7 @@ namespace Libraries::Np::NpProfileDialog {
 
 static auto g_status = Libraries::CommonDialog::Status::NONE;
 static NpProfileDialogState g_state{};
-// static DialogResult g_result{};
-static int g_result = 0; // TODO use real result when implementing dialog
+static OrbisNpProfileDialogResult g_result{};
 static NpProfileDialogUi g_profile_dialog_ui;
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI
@@ -27,8 +26,11 @@ sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
     NpProfileDialogState state{};
     state.onlineId = std::string(param->targetOnlineId.data);
+    state.hasAccountId = false;
     state.userId = param->userId;
     g_state = state;
+    g_result = {};
+    g_result.userData = param->userData;
     g_status = Libraries::CommonDialog::Status::RUNNING;
     g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_status, &g_result);
     return Libraries::CommonDialog::Error::OK;
@@ -39,13 +41,18 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
     if (g_status != Libraries::CommonDialog::Status::RUNNING) {
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
-    g_profile_dialog_ui.Finish(0);
+    g_profile_dialog_ui.Finish(Libraries::CommonDialog::Result::OK);
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogGetResult() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
+    LOG_DEBUG(Lib_NpProfileDialog, "called");
+    if (result == nullptr) {
+        return Libraries::CommonDialog::Error::PARAM_INVALID;
+    }
+    *result = g_result;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
@@ -69,9 +76,24 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_NpProfileDialog, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    NpProfileDialogState state{};
+    state.accountId = param->targetAccountId;
+    state.hasAccountId = true;
+    state.userId = param->userId;
+    g_state = state;
+    g_result = {};
+    g_result.userData = param->userData;
+    g_status = Libraries::CommonDialog::Status::RUNNING;
+    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_status, &g_result);
+    return Libraries::CommonDialog::Error::OK;
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate() {

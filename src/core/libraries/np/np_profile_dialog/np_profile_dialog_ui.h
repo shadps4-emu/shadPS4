@@ -10,32 +10,36 @@
 #include "common/types.h"
 #include "core/libraries/system/commondialog.h"
 #include "imgui/imgui_layer.h"
+#include "np_profile_dialog.h"
 
 namespace Libraries::Np::NpProfileDialog {
 
 struct NpProfileDialogState {
     std::string onlineId;
+    OrbisNpAccountId accountId{};
+    bool hasAccountId{false};
     int userId{};
 };
 
 class NpProfileDialogUi : public ImGui::Layer {
 public:
     explicit NpProfileDialogUi(NpProfileDialogState* state = nullptr,
-                               CommonDialog::Status* status = nullptr, int* result = nullptr);
+                               CommonDialog::Status* status = nullptr,
+                               OrbisNpProfileDialogResult* result = nullptr);
     ~NpProfileDialogUi() override;
 
     NpProfileDialogUi(const NpProfileDialogUi& other) = delete;
     NpProfileDialogUi(NpProfileDialogUi&& other) noexcept;
     NpProfileDialogUi& operator=(NpProfileDialogUi other);
 
-    void Finish(int result_code);
+    void Finish(CommonDialog::Result user_action);
 
     void Draw() override;
 
 private:
     NpProfileDialogState* state{};
     CommonDialog::Status* status{};
-    int* result{};
+    OrbisNpProfileDialogResult* result{};
     bool first_render{false};
 };
 

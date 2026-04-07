@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cinttypes>
 #include <thread>
 #include <utility>
-
 #include <imgui.h>
 #include <imgui/imgui_std.h>
 #include "np_profile_dialog_ui.h"
@@ -15,7 +15,8 @@ namespace Libraries::Np::NpProfileDialog {
 
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
-NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogState* state, Status* status, int* result)
+NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogState* state, Status* status,
+                                     OrbisNpProfileDialogResult* result)
     : state(state), status(status), result(result) {
     if (status && *status == Status::RUNNING) {
         first_render = true;
@@ -24,7 +25,7 @@ NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogState* state, Status* status
 }
 
 NpProfileDialogUi::~NpProfileDialogUi() {
-    Finish(0);
+    Finish(Result::USER_CANCELED);
 }
 
 NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogUi&& other) noexcept
@@ -46,9 +47,10 @@ NpProfileDialogUi& NpProfileDialogUi::operator=(NpProfileDialogUi other) {
     return *this;
 }
 
-void NpProfileDialogUi::Finish(int result_code) {
+void NpProfileDialogUi::Finish(Result user_action) {
     if (result) {
-        *result = result_code;
+        result->result = 0; // ORBIS_OK for normal termination
+        result->userAction = user_action;
     }
     if (status) {
         *status = Status::FINISHED;
@@ -82,8 +84,13 @@ void NpProfileDialogUi::Draw() {
         Separator();
         Spacing();
 
-        Text("Online ID:");
-        Text("%s", state->onlineId.c_str());
+        if (state->hasAccountId) {
+            Text("Account ID:");
+            Text("%" PRIu64, state->accountId);
+        } else {
+            Text("Online ID:");
+            Text("%s", state->onlineId.c_str());
+        }
 
         Spacing();
         SetCursorPos({
@@ -92,7 +99,7 @@ void NpProfileDialogUi::Draw() {
         });
 
         if (Button("OK", BUTTON_SIZE)) {
-            Finish(0);
+            Finish(Result::USER_CANCELED);
         }
 
         if (first_render) {

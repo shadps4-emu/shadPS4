@@ -48,13 +48,22 @@ struct OrbisNpProfileDialogParamA {
     };
 };
 
+struct OrbisNpProfileDialogResult {
+    s32 result;
+    CommonDialog::Result userAction;
+    void* userData;
+    u8 reserved[32];
+};
+
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param);
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose();
-s32 PS4_SYSV_ABI sceNpProfileDialogGetResult();
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result);
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus();
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize();
-s32 PS4_SYSV_ABI sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param);
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param);
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate();
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus();
 
