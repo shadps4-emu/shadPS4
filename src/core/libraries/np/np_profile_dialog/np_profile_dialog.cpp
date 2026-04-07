@@ -7,19 +7,30 @@
 #include "core/libraries/libs.h"
 #include "magic_enum/magic_enum.hpp"
 #include "np_profile_dialog.h"
+#include "np_profile_dialog_ui.h"
 
 namespace Libraries::Np::NpProfileDialog {
 
 static auto g_status = Libraries::CommonDialog::Status::NONE;
+static NpProfileDialogState g_state{};
+// static DialogResult g_result{};
+static int g_result = 0; // TODO use real result when implementing dialog
+static NpProfileDialogUi g_profile_dialog_ui;
 
-Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogOpen(void* param) {
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_INFO(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called"); // TODO open ui dialog
+    NpProfileDialogState state{};
+    state.onlineId = std::string(param->targetOnlineId.data);
+    state.userId = param->userId;
+    g_state = state;
     g_status = Libraries::CommonDialog::Status::RUNNING;
+    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_result);
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -58,7 +69,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogOpenA() {
+s32 PS4_SYSV_ABI sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
     return ORBIS_OK;
 }
