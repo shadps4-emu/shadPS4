@@ -188,7 +188,7 @@ int PS4_SYSV_ABI scePadGetInfo(OrbisPadInfo* data) {
     data->unk1 = 0x1;
     data->pad_handle = 1;
     data->unk3 = 0x00000101;
-    data->colour = col.r + (col.r << 8) + (col.b << 16);
+    data->colour = col.r + (col.g << 8) + (col.b << 16);
     return ORBIS_OK;
 }
 
