@@ -1,16 +1,25 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <core/libraries/system/commondialog.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_profile_dialog.h"
+#include "magic_enum/magic_enum.hpp"
 
 namespace Libraries::Np::NpProfileDialog {
 
-s32 PS4_SYSV_ABI sceNpProfileDialogOpen() {
+static auto g_status = Libraries::CommonDialog::Status::NONE;
+
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogOpen() {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_MsgDlg, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceNpProfileDialogClose() {
@@ -23,14 +32,25 @@ s32 PS4_SYSV_ABI sceNpProfileDialogGetResult() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogInitialize() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
+    if (!CommonDialog::g_isInitialized) {
+        return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
+    }
+    if (g_status != Libraries::CommonDialog::Status::NONE) {
+        LOG_INFO(Lib_NpProfileDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Libraries::CommonDialog::Error::BUSY;
+    }
+    g_status = Libraries::CommonDialog::Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceNpProfileDialogOpenA() {
@@ -38,14 +58,21 @@ s32 PS4_SYSV_ABI sceNpProfileDialogOpenA() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogTerminate() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error sceNpProfileDialogTerminate() {
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        LOG_ERROR(Lib_NpProfileDialog, "CloseProfile Dialog unimplemented");
+    }
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    }
+    g_status = Libraries::CommonDialog::Status::NONE;
+    CommonDialog::g_isUsed = false;
+    return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
-    LOG_DEBUG(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
+    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    return g_status;
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {

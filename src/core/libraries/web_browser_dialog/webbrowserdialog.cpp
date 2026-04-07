@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -32,12 +32,18 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
-    if (CommonDialog::g_isInitialized) {
-        LOG_INFO(Lib_WebBrowserDialog, "already initialized");
-        return Libraries::CommonDialog::Error::ALREADY_SYSTEM_INITIALIZED;
+    if (!CommonDialog::g_isInitialized) {
+        return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
     }
-    LOG_DEBUG(Lib_WebBrowserDialog, "initialized");
-    CommonDialog::g_isInitialized = true;
+    if (g_status != Libraries::CommonDialog::Status::NONE) {
+        LOG_ERROR(Lib_WebBrowserDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Libraries::CommonDialog::Error::BUSY;
+    }
+    g_status = Libraries::CommonDialog::Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -46,9 +52,14 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogOpen() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogOpen() {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_MsgDlg, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
     LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogOpenForPredeterminedContent() {
