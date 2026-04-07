@@ -177,19 +177,18 @@ int PS4_SYSV_ABI scePadGetIdleCount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetInfo(u32* data) {
+int PS4_SYSV_ABI scePadGetInfo(OrbisPadInfo* data) {
     LOG_WARNING(Lib_Pad, "(DUMMY) called");
     if (!data) {
         return ORBIS_PAD_ERROR_INVALID_ARG;
     }
-    data[0] = 0x1;        // index but starting from one?
-    data[1] = 0x0;        // index?
-    data[2] = 1;          // pad handle
-    data[3] = 0x0101;     // ???
-    data[4] = 0x0;        // ?
-    data[5] = 0x0;        // ?
-    data[6] = 0x00ff0000; // colour(?)
-    data[7] = 0x0;        // ?
+    auto& controllers = *Common::Singleton<GameControllers>::Instance();
+    auto col = controllers[0]->GetLightBarRGB();
+    std::memset(data, 0, sizeof(OrbisPadInfo));
+    data->unk1 = 0x1;
+    data->pad_handle = 1;
+    data->unk3 = 0x00000101;
+    data->colour = col.r + (col.r << 8) + (col.b << 16);
     return ORBIS_OK;
 }
 
