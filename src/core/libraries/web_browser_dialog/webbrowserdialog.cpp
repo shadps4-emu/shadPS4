@@ -31,7 +31,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    LOG_TRACE(Lib_WebBrowserDialog, "called status={}", magic_enum::enum_name(g_status));
     return g_status;
 }
 
@@ -59,7 +59,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate() {
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogOpen() {
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
-        LOG_INFO(Lib_MsgDlg, "called without initialize");
+        LOG_INFO(Lib_WebBrowserDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
     LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called"); // TODO open ui dialog
@@ -100,7 +100,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    LOG_TRACE(Lib_WebBrowserDialog, "called status={}", magic_enum::enum_name(g_status));
     if (g_status == Libraries::CommonDialog::Status::RUNNING) {
         g_status = Libraries::CommonDialog::Status::FINISHED; // TODO removed it when implementing
                                                               // real dialog
