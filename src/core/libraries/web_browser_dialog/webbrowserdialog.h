@@ -12,7 +12,7 @@ class SymbolsResolver;
 
 namespace Libraries::WebBrowserDialog {
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogClose();
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogClose();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetEvent();
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult();
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus();

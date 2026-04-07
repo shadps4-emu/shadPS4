@@ -12,19 +12,24 @@ namespace Libraries::Np::NpProfileDialog {
 
 static auto g_status = Libraries::CommonDialog::Status::NONE;
 
-Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogOpen() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogOpen(void* param) {
     if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
         g_status != Libraries::CommonDialog::Status::FINISHED) {
-        LOG_INFO(Lib_MsgDlg, "called without initialize");
+        LOG_INFO(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
+    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called"); // TODO open ui dialog
+    g_status = Libraries::CommonDialog::Status::RUNNING;
     return Libraries::CommonDialog::Error::OK;
 }
 
-s32 PS4_SYSV_ABI sceNpProfileDialogClose() {
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
+    LOG_DEBUG(Lib_NpProfileDialog, "called");
+    if (g_status != Libraries::CommonDialog::Status::RUNNING) {
+        return Libraries::CommonDialog::Error::NOT_RUNNING;
+    }
+    LOG_INFO(Lib_NpProfileDialog, "TODO: close npprofile ui dialog"); // TODO close Ui dialog
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceNpProfileDialogGetResult() {
@@ -33,7 +38,7 @@ s32 PS4_SYSV_ABI sceNpProfileDialogGetResult() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    LOG_TRACE(Lib_NpProfileDialog, "called status={}", magic_enum::enum_name(g_status));
     return g_status;
 }
 
@@ -58,9 +63,9 @@ s32 PS4_SYSV_ABI sceNpProfileDialogOpenA() {
     return ORBIS_OK;
 }
 
-Libraries::CommonDialog::Error sceNpProfileDialogTerminate() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate() {
     if (g_status == Libraries::CommonDialog::Status::RUNNING) {
-        LOG_ERROR(Lib_NpProfileDialog, "CloseProfile Dialog unimplemented");
+        sceNpProfileDialogClose();
     }
     if (g_status == Libraries::CommonDialog::Status::NONE) {
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
@@ -71,7 +76,11 @@ Libraries::CommonDialog::Error sceNpProfileDialogTerminate() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        g_status = Libraries::CommonDialog::Status::FINISHED; // TODO removed it when implementing
+                                                              // real dialog
+    }
+    LOG_TRACE(Lib_NpProfileDialog, "called status={}", magic_enum::enum_name(g_status));
     return g_status;
 }
 
