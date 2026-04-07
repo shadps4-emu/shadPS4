@@ -5,8 +5,8 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_profile_dialog.h"
 #include "magic_enum/magic_enum.hpp"
+#include "np_profile_dialog.h"
 
 namespace Libraries::Np::NpProfileDialog {
 
