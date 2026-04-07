@@ -24,13 +24,13 @@ sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
         LOG_INFO(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called"); // TODO open ui dialog
+    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
     NpProfileDialogState state{};
     state.onlineId = std::string(param->targetOnlineId.data);
     state.userId = param->userId;
     g_state = state;
     g_status = Libraries::CommonDialog::Status::RUNNING;
-    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_result);
+    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_status, &g_result);
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -39,7 +39,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
     if (g_status != Libraries::CommonDialog::Status::RUNNING) {
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
-    LOG_INFO(Lib_NpProfileDialog, "TODO: close npprofile ui dialog"); // TODO close Ui dialog
+    g_profile_dialog_ui.Finish(0);
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -87,10 +87,6 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
-    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
-        g_status = Libraries::CommonDialog::Status::FINISHED; // TODO removed it when implementing
-                                                              // real dialog
-    }
     LOG_TRACE(Lib_NpProfileDialog, "called status={}", magic_enum::enum_name(g_status));
     return g_status;
 }

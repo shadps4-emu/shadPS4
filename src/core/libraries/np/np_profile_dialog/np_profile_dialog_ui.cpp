@@ -1,21 +1,25 @@
-#include "common/logging/log.h" // optional, for debug
-#include "np_profile_dialog_ui.h"
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #include <thread>
 #include <utility>
 
 #include <imgui.h>
 #include <imgui/imgui_std.h>
+#include "np_profile_dialog_ui.h"
+
 using namespace ImGui;
+using namespace Libraries::CommonDialog;
 
 namespace Libraries::Np::NpProfileDialog {
 
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
-NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogState* state, int* result)
-    : state(state), result(result) {
-    if (state) {
+NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogState* state, Status* status, int* result)
+    : state(state), status(status), result(result) {
+    if (status && *status == Status::RUNNING) {
         first_render = true;
-        AddLayer(this); // register in Layer system
+        AddLayer(this);
     }
 }
 
@@ -24,16 +28,18 @@ NpProfileDialogUi::~NpProfileDialogUi() {
 }
 
 NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogUi&& other) noexcept
-    : Layer(other), state(other.state), result(other.result) {
+    : Layer(other), state(other.state), status(other.status), result(other.result) {
     other.state = nullptr;
+    other.status = nullptr;
     other.result = nullptr;
 }
 
 NpProfileDialogUi& NpProfileDialogUi::operator=(NpProfileDialogUi other) {
     using std::swap;
     swap(state, other.state);
+    swap(status, other.status);
     swap(result, other.result);
-    if (state) {
+    if (status && *status == Status::RUNNING) {
         first_render = true;
         AddLayer(this);
     }
@@ -42,16 +48,21 @@ NpProfileDialogUi& NpProfileDialogUi::operator=(NpProfileDialogUi other) {
 
 void NpProfileDialogUi::Finish(int result_code) {
     if (result) {
-        *result = result_code; // 0 = OK
+        *result = result_code;
+    }
+    if (status) {
+        *status = Status::FINISHED;
     }
     state = nullptr;
+    status = nullptr;
     result = nullptr;
-    RemoveLayer(this); // unregister from Layer system
+    RemoveLayer(this);
 }
 
 void NpProfileDialogUi::Draw() {
-    if (!state)
+    if (status == nullptr || *status != Status::RUNNING) {
         return;
+    }
 
     const auto& io = GetIO();
     ImVec2 window_size{std::min(io.DisplaySize.x, 400.0f), std::min(io.DisplaySize.y, 200.0f)};

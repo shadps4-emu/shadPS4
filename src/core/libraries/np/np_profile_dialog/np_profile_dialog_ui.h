@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 #pragma once
 
 #include <string>
@@ -17,21 +20,23 @@ struct NpProfileDialogState {
 
 class NpProfileDialogUi : public ImGui::Layer {
 public:
-    explicit NpProfileDialogUi(NpProfileDialogState* state = nullptr, int* result = nullptr);
-    ~NpProfileDialogUi();
+    explicit NpProfileDialogUi(NpProfileDialogState* state = nullptr,
+                               CommonDialog::Status* status = nullptr, int* result = nullptr);
+    ~NpProfileDialogUi() override;
 
     NpProfileDialogUi(const NpProfileDialogUi& other) = delete;
     NpProfileDialogUi(NpProfileDialogUi&& other) noexcept;
     NpProfileDialogUi& operator=(NpProfileDialogUi other);
 
+    void Finish(int result_code);
+
     void Draw() override;
 
 private:
-    void Finish(int result_code);
-
     NpProfileDialogState* state{};
+    CommonDialog::Status* status{};
     int* result{};
-    bool first_render{true};
+    bool first_render{false};
 };
 
 } // namespace Libraries::Np::NpProfileDialog

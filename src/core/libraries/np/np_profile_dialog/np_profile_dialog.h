@@ -48,7 +48,6 @@ struct OrbisNpProfileDialogParamA {
     };
 };
 
-
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param);
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose();
