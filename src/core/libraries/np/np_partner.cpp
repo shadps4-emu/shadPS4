@@ -14,10 +14,7 @@ namespace Libraries::Np::NpPartner {
 static bool g_library_init = false;
 std::mutex g_library_mutex{};
 
-/**
- * Terminates the library
- */
-s32 PS4_SYSV_ABI Func_A4CC5784DA33517F() {
+s32 PS4_SYSV_ABI sceNpEAAccessTerminate() {
     LOG_ERROR(Lib_NpPartner, "(STUBBED) called");
     if (!g_library_init) {
         return ORBIS_NP_PARTNER_ERROR_NOT_INITIALIZED;
@@ -27,10 +24,7 @@ s32 PS4_SYSV_ABI Func_A4CC5784DA33517F() {
     return ORBIS_OK;
 }
 
-/**
- * Aborts requests started by Func_F8E9DB52CD425743
- */
-s32 PS4_SYSV_ABI Func_A507D84D91F39CC7() {
+s32 PS4_SYSV_ABI sceNpHasEAAccessSubscriptionAbortRequest() {
     LOG_ERROR(Lib_NpPartner, "(STUBBED) called");
     if (!g_library_init) {
         return ORBIS_NP_PARTNER_ERROR_NOT_INITIALIZED;
@@ -39,20 +33,15 @@ s32 PS4_SYSV_ABI Func_A507D84D91F39CC7() {
     return ORBIS_OK;
 }
 
-/**
- * Initializes the library
- */
-s32 PS4_SYSV_ABI Func_EC2C48E74FF19429() {
+s32 PS4_SYSV_ABI sceNpEAAccessInitialize() {
     LOG_ERROR(Lib_NpPartner, "(STUBBED) called");
     g_library_init = true;
     // Also retrieves and sends compiled SDK version to server.
     return ORBIS_OK;
 }
 
-/**
- * Creates an NP request to determine if the user has a subscription to EA's services.
- */
-s32 PS4_SYSV_ABI Func_F8E9DB52CD425743(UserService::OrbisUserServiceUserId user_id, bool* result) {
+s32 PS4_SYSV_ABI sceNpHasEAAccessSubscription(UserService::OrbisUserServiceUserId user_id,
+                                              bool* result) {
     LOG_ERROR(Lib_NpPartner, "(STUBBED) called");
     if (!g_library_init) {
         return ORBIS_NP_PARTNER_ERROR_NOT_INITIALIZED;
@@ -71,13 +60,13 @@ s32 PS4_SYSV_ABI Func_F8E9DB52CD425743(UserService::OrbisUserServiceUserId user_
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pMxXhNozUX8", "libSceNpPartner001", 1, "libSceNpPartner001",
-                 Func_A4CC5784DA33517F);
+                 sceNpEAAccessTerminate);
     LIB_FUNCTION("pQfYTZHznMc", "libSceNpPartner001", 1, "libSceNpPartner001",
-                 Func_A507D84D91F39CC7);
+                 sceNpHasEAAccessSubscriptionAbortRequest);
     LIB_FUNCTION("7CxI50-xlCk", "libSceNpPartner001", 1, "libSceNpPartner001",
-                 Func_EC2C48E74FF19429);
+                 sceNpEAAccessInitialize);
     LIB_FUNCTION("+OnbUs1CV0M", "libSceNpPartner001", 1, "libSceNpPartner001",
-                 Func_F8E9DB52CD425743);
+                 sceNpHasEAAccessSubscription);
 };
 
 } // namespace Libraries::Np::NpPartner
