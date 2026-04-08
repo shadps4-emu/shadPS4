@@ -8,12 +8,14 @@
 #include "SDL3/SDL_timer.h"
 #include "SDL3/SDL_video.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/system/userservice.h"
+#include "core/user_settings.h"
 #include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
@@ -26,9 +28,9 @@
 #endif
 #include <core/emulator_settings.h>
 
-namespace Input {
+namespace Frontend {
 
-using Libraries::Pad::OrbisPadButtonDataOffset;
+using namespace Libraries::Pad;
 
 static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     using OPBDO = OrbisPadButtonDataOffset;
@@ -69,220 +71,24 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     }
 }
 
-static SDL_GamepadAxis InputAxisToSDL(Axis axis) {
-    switch (axis) {
-    case Axis::LeftX:
-        return SDL_GAMEPAD_AXIS_LEFTX;
-    case Axis::LeftY:
-        return SDL_GAMEPAD_AXIS_LEFTY;
-    case Axis::RightX:
-        return SDL_GAMEPAD_AXIS_RIGHTX;
-    case Axis::RightY:
-        return SDL_GAMEPAD_AXIS_RIGHTY;
-    case Axis::TriggerLeft:
-        return SDL_GAMEPAD_AXIS_LEFT_TRIGGER;
-    case Axis::TriggerRight:
-        return SDL_GAMEPAD_AXIS_RIGHT_TRIGGER;
-    default:
-        UNREACHABLE();
-    }
-}
-
-SDLInputEngine::~SDLInputEngine() {
-    if (m_gamepad) {
-        SDL_CloseGamepad(m_gamepad);
-    }
-}
-
-void SDLInputEngine::Init() {
-    if (m_gamepad) {
-        SDL_CloseGamepad(m_gamepad);
-        m_gamepad = nullptr;
-    }
-
-    int gamepad_count;
-    SDL_JoystickID* gamepads = SDL_GetGamepads(&gamepad_count);
-    if (!gamepads) {
-        LOG_ERROR(Input, "Cannot get gamepad list: {}", SDL_GetError());
-        return;
-    }
-    if (gamepad_count == 0) {
-        LOG_INFO(Input, "No gamepad found!");
-        SDL_free(gamepads);
-        return;
-    }
-
-    int selectedIndex = GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count,
-                                                        GamepadSelect::GetSelectedGamepad());
-    int defaultIndex =
-        GamepadSelect::GetIndexfromGUID(gamepads, gamepad_count, Config::getDefaultControllerID());
-
-    // If user selects a gamepad in the GUI, use that, otherwise try the default
-    if (!m_gamepad) {
-        if (selectedIndex != -1) {
-            m_gamepad = SDL_OpenGamepad(gamepads[selectedIndex]);
-            LOG_INFO(Input, "Opening gamepad selected in GUI.");
-        } else if (defaultIndex != -1) {
-            m_gamepad = SDL_OpenGamepad(gamepads[defaultIndex]);
-            LOG_INFO(Input, "Opening default gamepad.");
-        } else {
-            m_gamepad = SDL_OpenGamepad(gamepads[0]);
-            LOG_INFO(Input, "Got {} gamepads. Opening the first one.", gamepad_count);
-        }
-    }
-
-    if (!m_gamepad) {
-        if (!m_gamepad) {
-            LOG_ERROR(Input, "Failed to open gamepad: {}", SDL_GetError());
-            SDL_free(gamepads);
-            return;
-        }
-    }
-
-    SDL_Joystick* joystick = SDL_GetGamepadJoystick(m_gamepad);
-    Uint16 vendor = SDL_GetJoystickVendor(joystick);
-    Uint16 product = SDL_GetJoystickProduct(joystick);
-
-    bool isDualSense = (vendor == 0x054C && product == 0x0CE6);
-
-    LOG_INFO(Input, "Gamepad Vendor: {:04X}, Product: {:04X}", vendor, product);
-    if (isDualSense) {
-        LOG_INFO(Input, "Detected DualSense Controller");
-    }
-
-    if (Config::getIsMotionControlsEnabled()) {
-        if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, true)) {
-            m_gyro_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_GYRO);
-            LOG_INFO(Input, "Gyro initialized, poll rate: {}", m_gyro_poll_rate);
-        } else {
-            LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad, error: {}",
-                      SDL_GetError());
-            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_GYRO, false);
-        }
-        if (SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, true)) {
-            m_accel_poll_rate = SDL_GetGamepadSensorDataRate(m_gamepad, SDL_SENSOR_ACCEL);
-            LOG_INFO(Input, "Accel initialized, poll rate: {}", m_accel_poll_rate);
-        } else {
-            LOG_ERROR(Input, "Failed to initialize accel controls for gamepad, error: {}",
-                      SDL_GetError());
-            SDL_SetGamepadSensorEnabled(m_gamepad, SDL_SENSOR_ACCEL, false);
-        }
-    }
-
-    SDL_free(gamepads);
-
-    int* rgb = Config::GetControllerCustomColor();
-
-    if (isDualSense) {
-        if (SDL_SetJoystickLED(joystick, rgb[0], rgb[1], rgb[2]) == 0) {
-            LOG_INFO(Input, "Set DualSense LED to R:{} G:{} B:{}", rgb[0], rgb[1], rgb[2]);
-        } else {
-            LOG_ERROR(Input, "Failed to set DualSense LED: {}", SDL_GetError());
-        }
-    } else {
-        SetLightBarRGB(rgb[0], rgb[1], rgb[2]);
-    }
-}
-
-void SDLInputEngine::SetLightBarRGB(u8 r, u8 g, u8 b) {
-    if (m_gamepad) {
-        SDL_SetGamepadLED(m_gamepad, r, g, b);
-    }
-}
-
-void SDLInputEngine::SetVibration(u8 smallMotor, u8 largeMotor) {
-    if (m_gamepad) {
-        const auto low_freq = (smallMotor / 255.0f) * 0xFFFF;
-        const auto high_freq = (largeMotor / 255.0f) * 0xFFFF;
-        SDL_RumbleGamepad(m_gamepad, low_freq, high_freq, -1);
-    }
-}
-
-State SDLInputEngine::ReadState() {
-    State state{};
-    state.time = Libraries::Kernel::sceKernelGetProcessTime();
-
-    // Buttons
-    for (u8 i = 0; i < SDL_GAMEPAD_BUTTON_COUNT; ++i) {
-        auto orbisButton = SDLGamepadToOrbisButton(i);
-        if (orbisButton == OrbisPadButtonDataOffset::None) {
-            continue;
-        }
-        state.OnButton(orbisButton, SDL_GetGamepadButton(m_gamepad, (SDL_GamepadButton)i));
-    }
-
-    // Axes
-    for (int i = 0; i < static_cast<int>(Axis::AxisMax); ++i) {
-        const auto axis = static_cast<Axis>(i);
-        const auto value = SDL_GetGamepadAxis(m_gamepad, InputAxisToSDL(axis));
-        switch (axis) {
-        case Axis::TriggerLeft:
-        case Axis::TriggerRight:
-            state.OnAxis(axis, GetAxis(0, 0x8000, value));
-            break;
-        default:
-            state.OnAxis(axis, GetAxis(-0x8000, 0x8000, value));
-            break;
-        }
-    }
-
-    // Touchpad
-    if (SDL_GetNumGamepadTouchpads(m_gamepad) > 0) {
-        for (int finger = 0; finger < 2; ++finger) {
-            bool down;
-            float x, y;
-            if (SDL_GetGamepadTouchpadFinger(m_gamepad, 0, finger, &down, &x, &y, NULL)) {
-                state.OnTouchpad(finger, down, x, y);
-            }
-        }
-    }
-
-    // Gyro
-    if (SDL_GamepadHasSensor(m_gamepad, SDL_SENSOR_GYRO)) {
-        float gyro[3];
-        if (SDL_GetGamepadSensorData(m_gamepad, SDL_SENSOR_GYRO, gyro, 3)) {
-            state.OnGyro(gyro);
-        }
-    }
-
-    // Accel
-    if (SDL_GamepadHasSensor(m_gamepad, SDL_SENSOR_ACCEL)) {
-        float accel[3];
-        if (SDL_GetGamepadSensorData(m_gamepad, SDL_SENSOR_ACCEL, accel, 3)) {
-            state.OnAccel(accel);
-        }
-    }
-
-    return state;
-}
-
-float SDLInputEngine::GetGyroPollRate() const {
-    return m_gyro_poll_rate;
-}
-
-float SDLInputEngine::GetAccelPollRate() const {
-    return m_accel_poll_rate;
-}
-
-} // namespace Input
-
-namespace Frontend {
-
-using namespace Libraries::Pad;
-
-std::mutex motion_control_mutex;
-float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
-static Uint32 SDLCALL PollGyroAndAccel(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
+static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
     auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    std::scoped_lock l{motion_control_mutex};
-    controller->Gyro(0, gyro_buf);
-    controller->Acceleration(0, accel_buf);
-    return 4;
+    controller->UpdateAxisSmoothing();
+    controller->Gyro(0);
+    controller->Acceleration(0);
+    return interval;
 }
 
-WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_,
+static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,
+                                                Uint32 interval) {
+    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
+    controller->PollLightColour();
+    return interval;
+}
+
+WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controllers_,
                      std::string_view window_title)
-    : width{width_}, height{height_}, controller{controller_} {
+    : width{width_}, height{height_}, controllers{*controllers_} {
     if (!SDL_SetHint(SDL_HINT_APP_NAME, "shadPS4")) {
         UNREACHABLE_MSG("Failed to set SDL window hint: {}", SDL_GetError());
     }
@@ -290,7 +96,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
         UNREACHABLE_MSG("Failed to initialize SDL video subsystem: {}", SDL_GetError());
     }
     if (!SDL_Init(SDL_INIT_CAMERA)) {
-        UNREACHABLE_MSG("Failed to initialize SDL camera subsystem: {}", SDL_GetError());
+        LOG_ERROR(Input, "Failed to initialize SDL camera subsystem: {}", SDL_GetError());
     }
     SDL_InitSubSystem(SDL_INIT_AUDIO);
 
@@ -330,13 +136,13 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     SDL_SyncWindow(window);
 
     SDL_InitSubSystem(SDL_INIT_GAMEPAD);
-    controller->SetEngine(std::make_unique<Input::SDLInputEngine>());
 
 #if defined(SDL_PLATFORM_WIN32)
     window_info.type = WindowSystemType::Windows;
     window_info.render_surface = SDL_GetPointerProperty(SDL_GetWindowProperties(window),
                                                         SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-#elif defined(SDL_PLATFORM_LINUX)
+#elif defined(SDL_PLATFORM_LINUX) || defined(__FreeBSD__)
+    // SDL doesn't have a platform define for FreeBSD AAAAAAAAAA
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
         window_info.type = WindowSystemType::X11;
         window_info.display_connection = SDL_GetPointerProperty(
@@ -355,11 +161,11 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameController* controller_
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
     // input handler init-s
-    Input::ControllerOutput::SetControllerOutputController(controller);
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+    controllers.TryOpenSDLControllers();
 
-    if (Config::getBackgroundControllerInput()) {
+    if (EmulatorSettings.IsBackgroundControllerInput()) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     }
 }
@@ -399,37 +205,16 @@ void WindowSDL::WaitEvent() {
         break;
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
-        controller->SetEngine(std::make_unique<Input::SDLInputEngine>());
-        break;
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
-        controller->SetTouchpadState(event.gtouchpad.finger,
-                                     event.type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP, event.gtouchpad.x,
-                                     event.gtouchpad.y);
+        controllers.TryOpenSDLControllers();
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        OnGamepadEvent(&event);
-        break;
-    // i really would have appreciated ANY KIND OF DOCUMENTATION ON THIS
-    // AND IT DOESN'T EVEN USE PROPER ENUMS
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
-        switch ((SDL_SensorType)event.gsensor.sensor) {
-        case SDL_SENSOR_GYRO: {
-            std::scoped_lock l{motion_control_mutex};
-            memcpy(gyro_buf, event.gsensor.data, sizeof(gyro_buf));
-            break;
-        }
-        case SDL_SENSOR_ACCEL: {
-            std::scoped_lock l{motion_control_mutex};
-            memcpy(accel_buf, event.gsensor.data, sizeof(accel_buf));
-            break;
-        }
-        default:
-            break;
-        }
+        OnGamepadEvent(&event);
         break;
     case SDL_EVENT_QUIT:
         is_open = false;
@@ -455,7 +240,7 @@ void WindowSDL::WaitEvent() {
         }
         break;
     case SDL_EVENT_CHANGE_CONTROLLER:
-        controller->GetEngine()->Init();
+        UNREACHABLE_MSG("todo");
         break;
     case SDL_EVENT_TOGGLE_SIMPLE_FPS:
         Overlay::ToggleSimpleFps();
@@ -476,6 +261,29 @@ void WindowSDL::WaitEvent() {
                                        Input::ToggleMouseModeTo(Input::MouseMode::Touchpad));
         SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(), false);
         break;
+    case SDL_EVENT_ADD_VIRTUAL_USER:
+        for (int i = 0; i < 4; i++) {
+            if (controllers[i]->user_id == -1) {
+                auto u = UserManagement.GetUserByPlayerIndex(i + 1);
+                if (!u) {
+                    break;
+                }
+                controllers[i]->user_id = u->user_id;
+                UserManagement.LoginUser(u, i + 1);
+                break;
+            }
+        }
+        break;
+    case SDL_EVENT_REMOVE_VIRTUAL_USER:
+        LOG_INFO(Input, "Remove user");
+        for (int i = 3; i >= 0; i--) {
+            if (controllers[i]->user_id != -1) {
+                UserManagement.LogoutUser(UserManagement.GetUserByID(controllers[i]->user_id));
+                controllers[i]->user_id = -1;
+                break;
+            }
+        }
+        break;
     case SDL_EVENT_RDOC_CAPTURE:
         VideoCore::TriggerCapture();
         break;
@@ -485,8 +293,10 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    SDL_AddTimer(4, &PollGyroAndAccel, controller);
-    SDL_AddTimer(33, Input::MousePolling, (void*)controller);
+    for (int i = 0; i < 4; ++i) {
+        SDL_AddTimer(4, &PollController, controllers[i]);
+    }
+    SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
 }
 
 void WindowSDL::RequestKeyboard() {
@@ -554,8 +364,42 @@ void WindowSDL::OnGamepadEvent(const SDL_Event* event) {
     // as it would break the entire touchpad handling
     // You can still bind other things to it though
     if (event->gbutton.button == SDL_GAMEPAD_BUTTON_TOUCHPAD) {
-        controller->Button(0, OrbisPadButtonDataOffset::TouchPad, input_down);
+        controllers[controllers.GetGamepadIndexFromJoystickId(event->gbutton.which)]->Button(
+            OrbisPadButtonDataOffset::TouchPad, input_down);
         return;
+    }
+
+    u8 gamepad;
+
+    switch (event->type) {
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
+        switch ((SDL_SensorType)event->gsensor.sensor) {
+        case SDL_SENSOR_GYRO:
+            gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
+            if (gamepad < 5) {
+                controllers[gamepad]->UpdateGyro(event->gsensor.data);
+            }
+            break;
+        case SDL_SENSOR_ACCEL:
+            gamepad = controllers.GetGamepadIndexFromJoystickId(event->gsensor.which);
+            if (gamepad < 5) {
+                controllers[gamepad]->UpdateAcceleration(event->gsensor.data);
+            }
+            break;
+        default:
+            break;
+        }
+        return;
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+        controllers[controllers.GetGamepadIndexFromJoystickId(event->gtouchpad.which)]
+            ->SetTouchpadState(event->gtouchpad.finger,
+                               event->type != SDL_EVENT_GAMEPAD_TOUCHPAD_UP, event->gtouchpad.x,
+                               event->gtouchpad.y);
+        return;
+    default:
+        break;
     }
 
     // add/remove it from the list

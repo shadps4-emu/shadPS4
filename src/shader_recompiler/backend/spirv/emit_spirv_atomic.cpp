@@ -351,6 +351,15 @@ Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
                                   &Sirit::Module::OpAtomicCompareExchange);
 }
 
+Id EmitBufferAtomicFCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                              Id cmp_value) {
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto u32_cmp = ctx.OpBitcast(ctx.U32[1], cmp_value);
+    const auto result = BufferAtomicU32CmpSwap(ctx, inst, handle, address, u32_value, u32_cmp,
+                                               &Sirit::Module::OpAtomicCompareExchange);
+    return ctx.OpBitcast(ctx.F32[1], result);
+}
+
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicIAdd);
 }
