@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include <core/libraries/system/commondialog.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
@@ -23,10 +24,14 @@ sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
         LOG_INFO(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
+    if (param == nullptr) {
+        return Libraries::CommonDialog::Error::ARG_NULL;
+    }
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
     NpProfileDialogState state{};
     state.onlineId = std::string(param->targetOnlineId.data);
     state.hasAccountId = false;
+    state.mode = param->mode;
     state.userId = param->userId;
     g_state = state;
     g_result = {};
@@ -38,6 +43,9 @@ sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    }
     if (g_status != Libraries::CommonDialog::Status::RUNNING) {
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
@@ -48,8 +56,14 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
+    if (g_status == Libraries::CommonDialog::Status::NONE) {
+        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    }
     if (result == nullptr) {
-        return Libraries::CommonDialog::Error::PARAM_INVALID;
+        return Libraries::CommonDialog::Error::ARG_NULL;
+    }
+    if (g_status != Libraries::CommonDialog::Status::FINISHED) {
+        return Libraries::CommonDialog::Error::NOT_FINISHED;
     }
     *result = g_result;
     return Libraries::CommonDialog::Error::OK;
@@ -83,10 +97,14 @@ sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
         LOG_INFO(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
+    if (param == nullptr) {
+        return Libraries::CommonDialog::Error::ARG_NULL;
+    }
     LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
     NpProfileDialogState state{};
     state.accountId = param->targetAccountId;
     state.hasAccountId = true;
+    state.mode = param->mode;
     state.userId = param->userId;
     g_state = state;
     g_result = {};

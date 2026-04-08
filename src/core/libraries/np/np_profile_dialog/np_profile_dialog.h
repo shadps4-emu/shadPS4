@@ -17,7 +17,22 @@ namespace Libraries::Np::NpProfileDialog {
 enum class OrbisNpProfileDialogMode : u32 {
     ORBIS_NP_PROFILE_DIALOG_MODE_INVALID = 0,
     ORBIS_NP_PROFILE_DIALOG_MODE_NORMAL = 1,
+    ORBIS_NP_PROFILE_DIALOG_MODE_FRIEND_REQUEST = 2,
+    ORBIS_NP_PROFILE_DIALOG_MODE_ADD_TO_BLOCK_LIST = 3,
+    ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT = 4,
 };
+
+using OrbisNpProfileGriefReportItem = s32;
+static constexpr OrbisNpProfileGriefReportItem
+    ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_INVALID = 0x00000000;
+static constexpr OrbisNpProfileGriefReportItem
+    ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ONLINE_ID = 0x00000001;
+static constexpr OrbisNpProfileGriefReportItem ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_NAME =
+    0x00000002;
+static constexpr OrbisNpProfileGriefReportItem
+    ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_PICTURE = 0x00000004;
+static constexpr OrbisNpProfileGriefReportItem
+    ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ABOUT_ME = 0x00000008;
 
 struct OrbisNpProfileDialogParam {
     CommonDialog::BaseParam baseParam;

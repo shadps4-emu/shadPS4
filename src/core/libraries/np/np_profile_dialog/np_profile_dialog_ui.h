@@ -5,7 +5,6 @@
 
 #include <string>
 #include <variant>
-
 #include "common/fixed_value.h"
 #include "common/types.h"
 #include "core/libraries/system/commondialog.h"
@@ -18,6 +17,7 @@ struct NpProfileDialogState {
     std::string onlineId;
     OrbisNpAccountId accountId{};
     bool hasAccountId{false};
+    OrbisNpProfileDialogMode mode{OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_INVALID};
     int userId{};
 };
 
@@ -41,6 +41,7 @@ private:
     CommonDialog::Status* status{};
     OrbisNpProfileDialogResult* result{};
     bool first_render{false};
+    float open_alpha{0.0f};
 };
 
 } // namespace Libraries::Np::NpProfileDialog
