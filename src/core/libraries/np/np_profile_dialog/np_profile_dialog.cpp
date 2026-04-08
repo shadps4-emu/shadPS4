@@ -69,16 +69,16 @@ sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
 
     if (g_status == Libraries::CommonDialog::Status::NONE) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: not initialized (g_status=NONE)");
+        LOG_ERROR(Lib_NpProfileDialog, "failed: not initialized (g_status=NONE)");
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
     }
     if (result == nullptr) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: result pointer is nullptr");
+        LOG_ERROR(Lib_NpProfileDialog, "failed: result pointer is nullptr");
         return Libraries::CommonDialog::Error::ARG_NULL;
     }
     if (g_status != Libraries::CommonDialog::Status::FINISHED) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: dialog not finished (g_status={})",
-                 static_cast<int>(g_status));
+        LOG_ERROR(Lib_NpProfileDialog, "failed: dialog not finished (g_status={})",
+                  static_cast<int>(g_status));
         return Libraries::CommonDialog::Error::NOT_FINISHED;
     }
 
@@ -96,16 +96,16 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
     if (!CommonDialog::g_isInitialized) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: system not initialized");
+        LOG_ERROR(Lib_NpProfileDialog, "failed: system not initialized");
         return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
     }
     if (g_status != Libraries::CommonDialog::Status::NONE) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: already initialized (g_status={})",
-                 static_cast<int>(g_status));
+        LOG_ERROR(Lib_NpProfileDialog, "failed: already initialized (g_status={})",
+                  static_cast<int>(g_status));
         return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
     }
     if (CommonDialog::g_isUsed) {
-        LOG_INFO(Lib_NpProfileDialog, "failed: dialog system busy (g_isUsed=true)");
+        LOG_ERROR(Lib_NpProfileDialog, "failed: dialog system busy (g_isUsed=true)");
         return Libraries::CommonDialog::Error::BUSY;
     }
 
