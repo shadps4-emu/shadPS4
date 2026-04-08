@@ -34,14 +34,6 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
 }
 
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
-    if (!npId) {
-        LOG_ERROR(Lib_NpScore, "npId is null");
-        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
-    }
-    if (serviceLabel == ORBIS_NP_INVALID_SERVICE_LABEL) {
-        LOG_ERROR(Lib_NpScore, "Invalid service label: {}", serviceLabel);
-        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
-    }
     LOG_ERROR(Lib_NpScore, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
     return ORBIS_OK;
 }
