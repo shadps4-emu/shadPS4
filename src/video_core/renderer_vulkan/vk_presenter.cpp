@@ -137,14 +137,20 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
 
 Presenter::~Presenter() {
     ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
+
     draw_scheduler.Finish();
+    present_scheduler.Finish();
+    flip_scheduler.Finish();
+    Check(draw_scheduler.CommandBuffer().reset());
+    Check(present_scheduler.CommandBuffer().reset());
+    Check(flip_scheduler.CommandBuffer().reset());
+
     const vk::Device device = instance.GetDevice();
     for (auto& frame : present_frames) {
         vmaDestroyImage(instance.GetAllocator(), frame.image, frame.allocation);
         device.destroyImageView(frame.image_view);
         device.destroyFence(frame.present_done);
     }
-    ImGui::Core::Shutdown(device);
 }
 
 bool Presenter::IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const {

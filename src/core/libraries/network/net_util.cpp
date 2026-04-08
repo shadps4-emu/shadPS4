@@ -25,7 +25,7 @@ typedef int net_socket;
 #include <net/if_dl.h>
 #include <net/route.h>
 #endif
-#if __linux__
+#if defined(__linux__) || defined(__FreeBSD__)
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -81,6 +81,8 @@ bool NetUtilInternal::RetrieveEthernetAddr() {
         }
         freeifaddrs(ifap);
     }
+#elif defined(__FreeBSD__)
+    // todo
 #else
     ifreq ifr;
     ifconf ifc;
@@ -226,7 +228,8 @@ bool NetUtilInternal::RetrieveDefaultGateway() {
     inet_ntop(AF_INET, gateAddr, str, sizeof(str));
     this->default_gateway = str;
     return true;
-
+#elif defined(__FreeBSD__)
+    return true;
 #else
     std::ifstream route{"/proc/net/route"};
     std::string line;

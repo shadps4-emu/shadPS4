@@ -109,7 +109,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     } else {
         game_folder = file.parent_path();
         if (const auto game_folder_name = game_folder.filename().string();
-            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch")) {
+            game_folder_name.ends_with("-UPDATE") || game_folder_name.ends_with("-patch") ||
+            game_folder_name.ends_with("-mods")) {
             // If an executable was launched from a separate update directory,
             // use the base game directory as the game folder.
             const std::string base_name = game_folder_name.substr(0, game_folder_name.rfind('-'));
@@ -292,6 +293,13 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
 
+    std::filesystem::path mods_folder = game_folder;
+    mods_folder += "-mods";
+
+    if (std::filesystem::exists(mods_folder) && !std::filesystem::is_empty(mods_folder)) {
+        LOG_INFO(Loader, "Files found in game mods folder");
+    }
+
     // Create stdin/stdout/stderr
     Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
 
@@ -318,10 +326,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                 }
             }
             for (User user : UserSettings.GetUserManager().GetValidUsers()) {
-                auto const user_trophy_file =
-                    Common::FS::GetUserPath(Common::FS::PathType::HomeDir) /
-                    std::to_string(user.user_id) / "trophy" / (npCommId + ".xml");
+                auto const user_trophy_file = EmulatorSettings.GetHomeDir() /
+                                              std::to_string(user.user_id) / "trophy" /
+                                              (npCommId + ".xml");
                 if (!std::filesystem::exists(user_trophy_file)) {
+                    auto temp = user_trophy_file.parent_path();
+                    std::filesystem::create_directories(temp);
                     std::error_code discard;
                     std::filesystem::copy_file(trophyDir / "Xml" / "TROPCONF.XML", user_trophy_file,
                                                discard);
@@ -533,7 +543,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
-#elif defined(__APPLE__) || defined(__linux__)
+#elif defined(__APPLE__) || defined(__linux__) || defined(__FreeBSD__)
     std::vector<char*> argv;
 
     // Emulator executable
