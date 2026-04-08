@@ -42,6 +42,8 @@ public:
     void SetControllerPort(u32 user_id, int port);
     std::vector<User> GetValidUsers() const;
     LoggedInUsers GetLoggedInUsers() const;
+    void LoginUser(User* u, s32 player_index);
+    void LogoutUser(User* u);
 
     Users& GetUsers() {
         return m_users;

@@ -17,7 +17,7 @@
 #include <windows.h>
 #include "common/ntapi.h"
 #else
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #include <date/tz.h>
 #endif
 #include <ctime>
@@ -501,7 +501,7 @@ s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
         *dst_sec = res == TIME_ZONE_ID_DAYLIGHT ? -_dstbias : 0;
     }
 #else
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     // std::chrono::current_zone() not available yet.
     const auto* time_zone = date::current_zone();
 #else

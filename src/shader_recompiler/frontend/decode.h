@@ -84,6 +84,7 @@ private:
     void decodeInstructionVINTRP(uint32_t hexInstruction);
     // 64 bits encodings
     void decodeInstructionVOP3(uint64_t hexInstruction);
+    void decodeInstructionVOP3P(uint64_t hexInstruction);
     void decodeInstructionMUBUF(uint64_t hexInstruction);
     void decodeInstructionMTBUF(uint64_t hexInstruction);
     void decodeInstructionMIMG(uint64_t hexInstruction);

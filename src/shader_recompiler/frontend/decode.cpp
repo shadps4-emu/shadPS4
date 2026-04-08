@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include "common/assert.h"
+#include "core/libraries/kernel/process.h"
 #include "shader_recompiler/frontend/decode.h"
 
 #include <magic_enum/magic_enum.hpp>
@@ -39,6 +40,7 @@ InstEncoding GetInstructionEncoding(u32 token) {
     encoding = static_cast<InstEncoding>(token & (u32)EncodingMask::MASK_6bit);
     switch (encoding) {
     case InstEncoding::VOP3:
+    case InstEncoding::VOP3P:
     case InstEncoding::EXP:
     case InstEncoding::VINTRP:
     case InstEncoding::DS:
@@ -82,7 +84,6 @@ InstEncoding GetInstructionEncoding(u32 token) {
         break;
     }
 
-    UNREACHABLE();
     return InstEncoding::ILLEGAL;
 }
 
@@ -111,7 +112,7 @@ GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
     const uint32_t token = code.at(0);
 
     InstEncoding encoding = GetInstructionEncoding(token);
-    ASSERT_MSG(encoding != InstEncoding::ILLEGAL, "illegal encoding");
+    ASSERT_MSG(encoding != InstEncoding::ILLEGAL, "illegal encoding: {:#x}", token);
     uint32_t encodingLen = getEncodingLength(encoding);
 
     // Clear the instruction
@@ -155,6 +156,7 @@ uint32_t GcnDecodeContext::getEncodingLength(InstEncoding encoding) {
         break;
 
     case InstEncoding::VOP3:
+    case InstEncoding::VOP3P:
     case InstEncoding::MUBUF:
     case InstEncoding::MTBUF:
     case InstEncoding::MIMG:
@@ -188,6 +190,9 @@ uint32_t GcnDecodeContext::getOpMapOffset(InstEncoding encoding) {
         break;
     case InstEncoding::VOP3:
         offset = (uint32_t)OpcodeMap::OP_MAP_VOP3;
+        break;
+    case InstEncoding::VOP3P:
+        offset = (uint32_t)OpcodeMap::OP_MAP_VOP3P;
         break;
     case InstEncoding::EXP:
         offset = (uint32_t)OpcodeMap::OP_MAP_EXP;
@@ -380,6 +385,9 @@ void GcnDecodeContext::decodeInstruction64(InstEncoding encoding, GcnCodeSlice& 
     switch (encoding) {
     case InstEncoding::VOP3:
         decodeInstructionVOP3(hexInstruction);
+        break;
+    case InstEncoding::VOP3P:
+        decodeInstructionVOP3P(hexInstruction);
         break;
     case InstEncoding::MUBUF:
         decodeInstructionMUBUF(hexInstruction);
@@ -710,6 +718,55 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
         outputMod.multiplier = 0.5f;
         break;
     }
+}
+
+void GcnDecodeContext::decodeInstructionVOP3P(uint64_t hexInstruction) {
+    u32 vdst = bit::extract(hexInstruction, 7, 0);
+    u32 op = bit::extract(hexInstruction, 22, 16);
+    u32 src0 = bit::extract(hexInstruction, 40, 32);
+    u32 src1 = bit::extract(hexInstruction, 49, 41);
+    u32 src2 = bit::extract(hexInstruction, 58, 50);
+
+    m_instruction.opcode = static_cast<Opcode>(op + static_cast<u32>(OpcodeMap::OP_MAP_VOP3P));
+
+    m_instruction.src[0].field = getOperandField(src0);
+    m_instruction.src[0].code =
+        m_instruction.src[0].field == OperandField::VectorGPR ? src0 - VectorGPRMin : src0;
+    m_instruction.src[1].field = getOperandField(src1);
+    m_instruction.src[1].code =
+        m_instruction.src[1].field == OperandField::VectorGPR ? src1 - VectorGPRMin : src1;
+    m_instruction.src[2].field = getOperandField(src2);
+    m_instruction.src[2].code =
+        m_instruction.src[2].field == OperandField::VectorGPR ? src2 - VectorGPRMin : src2;
+    m_instruction.dst[0].field = OperandField::VectorGPR;
+    m_instruction.dst[0].code = vdst;
+
+    m_instruction.control.vop3p = *reinterpret_cast<InstControlVOP3P*>(&hexInstruction);
+
+    // update input modifier
+    auto& control = m_instruction.control.vop3p;
+    for (u32 i = 0; i != 3; ++i) {
+        if (control.neg & (1u << i)) {
+            m_instruction.src[i].input_modifier.neg = true;
+        }
+
+        if (control.neg_hi & (1u << i)) {
+            m_instruction.src[i].input_modifier.neg_hi = true;
+        }
+
+        if (control.op_sel & (1u << i)) {
+            m_instruction.src[i].op_sel.op_sel = true;
+        }
+
+        if (control.get_op_sel_hi(i)) {
+            m_instruction.src[i].op_sel.op_sel_hi = true;
+        }
+    }
+
+    // update output modifier
+    auto& outputMod = m_instruction.dst[0].output_modifier;
+
+    outputMod.clamp = static_cast<bool>(control.clamp);
 }
 
 void GcnDecodeContext::decodeInstructionMUBUF(uint64_t hexInstruction) {

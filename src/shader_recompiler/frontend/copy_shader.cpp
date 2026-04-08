@@ -45,6 +45,14 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
             sources[inst.dst[0].code] += inst.control.sopk.simm;
             break;
         }
+        case Gcn::Opcode::S_BFM_B32: {
+            ASSERT(inst.src[0].field == Gcn::OperandField::SignedConstIntPos &&
+                   inst.src[1].field == Gcn::OperandField::SignedConstIntPos);
+            const auto src0 = inst.src[0].code - Gcn::OperandFieldRange::SignedConstIntPosMin + 1;
+            const auto src1 = inst.src[1].code - Gcn::OperandFieldRange::SignedConstIntPosMin + 1;
+            sources[inst.dst[0].code] = ((1 << src0) - 1) << src1;
+            break;
+        }
         case Gcn::Opcode::EXP: {
             const auto& exp = inst.control.exp;
             const IR::Attribute semantic = static_cast<IR::Attribute>(exp.target);
@@ -71,6 +79,7 @@ CopyShaderData ParseCopyShader(std::span<const u32> code) {
                 ASSERT(sources[index] != -1);
                 offsets[inst.src[1].code] += sources[index];
             }
+            data.num_comps++;
             break;
         }
         default:

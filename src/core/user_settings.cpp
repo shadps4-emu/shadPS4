@@ -44,13 +44,13 @@ bool UserSettingsImpl::Save() const {
 
         std::ofstream out(path);
         if (!out) {
-            LOG_ERROR(EmuSettings, "Failed to open user settings for writing: {}", path.string());
+            LOG_ERROR(Config, "Failed to open user settings for writing: {}", path.string());
             return false;
         }
         out << std::setw(2) << j;
         return !out.fail();
     } catch (const std::exception& e) {
-        LOG_ERROR(EmuSettings, "Error saving user settings: {}", e.what());
+        LOG_ERROR(Config, "Error saving user settings: {}", e.what());
         return false;
     }
 }
@@ -59,7 +59,7 @@ bool UserSettingsImpl::Load() {
     const auto path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "users.json";
     try {
         if (!std::filesystem::exists(path)) {
-            LOG_DEBUG(EmuSettings, "User settings file not found: {}", path.string());
+            LOG_DEBUG(Config, "User settings file not found: {}", path.string());
             // Create default user if no file exists
             if (m_userManager.GetUsers().user.empty()) {
                 m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
@@ -70,7 +70,7 @@ bool UserSettingsImpl::Load() {
 
         std::ifstream in(path);
         if (!in) {
-            LOG_ERROR(EmuSettings, "Failed to open user settings: {}", path.string());
+            LOG_ERROR(Config, "Failed to open user settings: {}", path.string());
             return false;
         }
 
@@ -97,10 +97,10 @@ bool UserSettingsImpl::Load() {
             Save();
         }
 
-        LOG_DEBUG(EmuSettings, "User settings loaded successfully");
+        LOG_DEBUG(Config, "User settings loaded successfully");
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR(EmuSettings, "Error loading user settings: {}", e.what());
+        LOG_ERROR(Config, "Error loading user settings: {}", e.what());
         // Fall back to defaults
         if (m_userManager.GetUsers().user.empty()) {
             m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();

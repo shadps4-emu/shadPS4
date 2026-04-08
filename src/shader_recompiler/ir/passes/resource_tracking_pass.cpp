@@ -39,6 +39,7 @@ bool IsBufferAtomic(const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicXor32:
     case IR::Opcode::BufferAtomicSwap32:
     case IR::Opcode::BufferAtomicCmpSwap32:
+    case IR::Opcode::BufferAtomicFCmpSwap32:
         return true;
     default:
         return false;
@@ -1088,7 +1089,8 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     const auto image_handle = inst.Arg(0);
-    const auto& image_res = info.images[image_handle.U32() & 0xFFFF];
+    const auto binding_index = image_handle.U32() & 0xFFFF;
+    const auto& image_res = info.images[binding_index];
     auto image = image_res.GetSharp(info);
 
     // Sample instructions must be handled separately using address register data.
@@ -1097,7 +1099,7 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     }
 
     IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-    const auto inst_info = inst.Flags<IR::TextureInstInfo>();
+    auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
     // Now that we know the image type, adjust texture coordinate vector.
@@ -1108,8 +1110,26 @@ void PatchImageArgs(IR::Block& block, IR::Inst& inst, Info& info) {
             return {body->Arg(0), body->Arg(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
         case AmdGpu::ImageType::Color2D:      // x, y, [lod]
-        case AmdGpu::ImageType::Color2DMsaa:  // x, y. (sample is passed on different argument)
             return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
+        case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
+        {
+            auto skip_lod = false;
+            if (inst_info.has_lod) {
+                const auto mipid = body->Arg(2);
+                if (mipid.IsImmediate() && mipid.U32() == 0) {
+                    // if image_x_mip refers to a MSAA image, and mipid is 0, it is safe to be
+                    // skipped and fragid is taken from the next arg
+                    LOG_WARNING(Render_Recompiler, "Encountered a _mip instruction with MSAA "
+                                                   "image, and mipid is 0, skipping LoD");
+                    inst_info.has_lod.Assign(false);
+                    skip_lod = true;
+                } else {
+                    UNREACHABLE_MSG(
+                        "Encountered a _mip instruction with MSAA image, and mipid is non-zero");
+                }
+            }
+            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(skip_lod ? 3 : 2)};
+        }
         case AmdGpu::ImageType::Color2DArray:     // x, y, slice, [lod]
         case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
                                                   // argument)
