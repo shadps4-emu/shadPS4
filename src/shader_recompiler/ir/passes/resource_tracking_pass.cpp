@@ -126,7 +126,8 @@ bool IsDataRingInstruction(const IR::Inst& inst) {
     }
 }
 
-IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile, AmdGpu::NumberFormat num_format) {
+IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile,
+                        AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
     case IR::Opcode::StoreBufferU8:
@@ -1208,8 +1209,7 @@ void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
             } else if (IsImageInstruction(inst)) {
                 PatchImageArgs(*block, inst, info);
             } else if (IsDataRingInstruction(inst)) {
-                PatchGlobalDataShareAccess(*block, inst, info, descriptors,
-                                           profile);
+                PatchGlobalDataShareAccess(*block, inst, info, descriptors, profile);
             }
         }
     }
