@@ -126,7 +126,7 @@ bool IsDataRingInstruction(const IR::Inst& inst) {
     }
 }
 
-IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
+IR::Type BufferDataType(const IR::Inst& inst, const Profile& profile, AmdGpu::NumberFormat num_format) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::LoadBufferU8:
     case IR::Opcode::StoreBufferU8:
@@ -144,7 +144,7 @@ IR::Type BufferDataType(const IR::Inst& inst, AmdGpu::NumberFormat num_format) {
         return IR::Type::U64;
     case IR::Opcode::BufferAtomicFMax32:
     case IR::Opcode::BufferAtomicFMin32:
-        return IR::Type::F32;
+        return profile.supports_buffer_fp32_atomic_min_max ? IR::Type::F32 : IR::Type::U32;
     case IR::Opcode::LoadBufferFormatF32:
     case IR::Opcode::StoreBufferFormatF32:
         // Formatted buffer loads can use a variety of types.
@@ -489,7 +489,8 @@ SharpLocation TrackSharp(const IR::Inst* inst, const IR::Block& current_parent, 
     return SharpLocationFromSource(sources[0]);
 }
 
-void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors) {
+void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
+                      const Profile& profile) {
     IR::Inst* handle = inst.Arg(0).InstRecursive();
     u32 buffer_binding = 0;
     if (handle->AreAllArgsImmediates()) {
@@ -509,7 +510,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         const auto buffer = std::bit_cast<AmdGpu::Buffer>(raw);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = std::numeric_limits<u32>::max(),
-            .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
+            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
             .inline_cbuf = buffer,
             .buffer_type = BufferType::Guest,
         });
@@ -520,7 +521,7 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
-            .used_types = BufferDataType(inst, buffer.GetNumberFmt()),
+            .used_types = BufferDataType(inst, profile, buffer.GetNumberFmt()),
             .buffer_type = BufferType::Guest,
             .is_written = IsBufferStore(inst),
             .is_formatted = inst.GetOpcode() == IR::Opcode::LoadBufferFormatF32 ||
@@ -1187,7 +1188,7 @@ void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (IsBufferInstruction(inst)) {
-                PatchBufferSharp(*block, inst, info, descriptors);
+                PatchBufferSharp(*block, inst, info, descriptors, profile);
             } else if (IsImageInstruction(inst)) {
                 PatchImageSharp(*block, inst, info, descriptors, profile);
             }
