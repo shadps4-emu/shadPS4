@@ -1813,6 +1813,10 @@ U1 IREmitter::LogicalXor(const U1& a, const U1& b) {
     return Inst<U1>(Opcode::LogicalXor, a, b);
 }
 
+U1 IREmitter::LogicalXNor(const U1& a, const U1& b) {
+    return Inst<U1>(Opcode::LogicalXNor, a, b);
+}
+
 U1 IREmitter::LogicalNot(const U1& value) {
     return Inst<U1>(Opcode::LogicalNot, value);
 }

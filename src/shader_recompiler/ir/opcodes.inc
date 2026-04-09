@@ -387,6 +387,7 @@ OPCODE(UGreaterThanEqual64,                                 U1,             U64,
 OPCODE(LogicalOr,                                           U1,             U1,             U1,                                                             )
 OPCODE(LogicalAnd,                                          U1,             U1,             U1,                                                             )
 OPCODE(LogicalXor,                                          U1,             U1,             U1,                                                             )
+OPCODE(LogicalXNor,                                         U1,             U1,             U1,                                                             )
 OPCODE(LogicalNot,                                          U1,             U1,                                                                             )
 
 // Conversion operations

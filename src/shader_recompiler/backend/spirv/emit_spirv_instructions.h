@@ -381,6 +381,7 @@ Id EmitUGreaterThanEqual64(EmitContext& ctx, Id lhs, Id rhs);
 Id EmitLogicalOr(EmitContext& ctx, Id a, Id b);
 Id EmitLogicalAnd(EmitContext& ctx, Id a, Id b);
 Id EmitLogicalXor(EmitContext& ctx, Id a, Id b);
+Id EmitLogicalXNor(EmitContext& ctx, Id a, Id b);
 Id EmitLogicalNot(EmitContext& ctx, Id value);
 Id EmitConvertS16F32(EmitContext& ctx, Id value);
 Id EmitConvertS16F64(EmitContext& ctx, Id value);

@@ -319,6 +319,7 @@ public:
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalAnd(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalXor(const U1& a, const U1& b);
+    [[nodiscard]] U1 LogicalXNor(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalNot(const U1& value);
 
     [[nodiscard]] U32U64 ConvertFToS(size_t bitsize, const F32F64& value);
