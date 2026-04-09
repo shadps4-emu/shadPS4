@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/kernel/kernel.h"
@@ -16,7 +16,8 @@ static std::mutex KeytableLock;
 
 int PS4_SYSV_ABI posix_pthread_key_create(PthreadKeyT* key, PthreadKeyDestructor destructor) {
     std::scoped_lock lk{KeytableLock};
-    const auto it = std::ranges::find(ThreadKeytable, 0, &PthreadKey::allocated);
+    const auto it = std::ranges::find_if(
+        ThreadKeytable, [](const PthreadKey& k) { return k.allocated.load() == 0; });
     if (it != ThreadKeytable.end()) {
         it->allocated = 1;
         it->destructor = destructor;
