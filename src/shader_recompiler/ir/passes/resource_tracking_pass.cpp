@@ -663,7 +663,7 @@ void PatchImageSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& 
 }
 
 void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
-                                Descriptors& descriptors) {
+                                Descriptors& descriptors, const Profile& profile) {
     const u32 binding = descriptors.Add(BufferResource{
         .used_types = IR::Type::U32,
         .inline_cbuf = AmdGpu::Buffer::Null(),
@@ -701,9 +701,13 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
             gds_addr = m0_val & 0xFFFF;
         }
 
-        // Patch instruction.
-        inst.SetArg(0, ir.Imm32(gds_addr >> 2));
-        inst.SetArg(1, ir.Imm32(binding));
+        // Patch instruction to GDS buffer atomic increment/decrement.
+        const IR::U32 handle = ir.Imm32(binding);
+        const IR::U32 index = ir.Imm32(gds_addr >> 2);
+        const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
+        const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
+                                         : ir.BufferAtomicDec(handle, index, {});
+        inst.ReplaceUsesWithAndRemove(prev);
     } else {
         // Convert shared memory opcode to storage buffer atomic to GDS buffer.
         auto& buffer = info.buffers[binding];
@@ -1203,7 +1207,8 @@ void ResourceTrackingPass(IR::Program& program, const Profile& profile) {
             } else if (IsImageInstruction(inst)) {
                 PatchImageArgs(*block, inst, info);
             } else if (IsDataRingInstruction(inst)) {
-                PatchGlobalDataShareAccess(*block, inst, info, descriptors);
+                PatchGlobalDataShareAccess(*block, inst, info, descriptors,
+                                           profile);
             }
         }
     }
