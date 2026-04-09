@@ -7,6 +7,7 @@
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
+#include "veh_stack.h"
 #else
 #include <csignal>
 #include <pthread.h>
@@ -89,6 +90,8 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
+    CleanupVehStackForCurrentThread();
+
     NtClose(native_handle);
     native_handle = nullptr;
 
@@ -130,6 +133,7 @@ void NativeThread::Initialize() {
     asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
 #if _WIN64
     tid = GetCurrentThreadId();
+    InitializeVehStackForCurrentThread();
 #else
     tid = (u64)pthread_self();
 
