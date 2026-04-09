@@ -30,8 +30,8 @@ static int CondInit(PthreadCondT* cond, const PthreadCondAttrT* cond_attr, const
     if (name) {
         cvp->name = name;
     } else {
-        static int CondId = 0;
-        cvp->name = fmt::format("Cond{}", CondId++);
+        static std::atomic<int> CondId{0};
+        cvp->name = fmt::format("Cond{}", CondId.fetch_add(1));
     }
 
     if (cond_attr == nullptr || *cond_attr == nullptr) {
