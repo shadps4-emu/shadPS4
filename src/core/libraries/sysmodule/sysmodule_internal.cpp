@@ -20,6 +20,7 @@
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/libraries/sysmodule/sysmodule_table.h"
+#include "core/libraries/system_gesture/system_gesture.h"
 #include "core/linker.h"
 #include "emulator.h"
 
@@ -223,7 +224,8 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceAudiodec.sprx", nullptr},
              {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
              {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr}});
+             {"libSceFreeTypeOt.sprx", nullptr},
+             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
