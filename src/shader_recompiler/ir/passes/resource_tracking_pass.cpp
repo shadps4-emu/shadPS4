@@ -517,7 +517,8 @@ void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors&
     } else {
         // Normal buffer resource.
         IR::Inst* buffer_handle = handle->Arg(0).InstRecursive();
-        const auto sharp_idx = TrackSharp(buffer_handle, block);
+        const auto inst_info = inst.Flags<IR::BufferInstInfo>();
+        const auto sharp_idx = TrackSharp(buffer_handle, block, inst_info.pc);
         const auto buffer = info.ReadUdSharp<AmdGpu::Buffer>(sharp_idx);
         buffer_binding = descriptors.Add(BufferResource{
             .sharp_idx = sharp_idx,
