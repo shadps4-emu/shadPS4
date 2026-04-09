@@ -445,13 +445,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();
 
-        std::thread([this, id]() {
-            while (true) {
-                std::this_thread::sleep_for(std::chrono::seconds(60));
+        play_time_thread = std::jthread([this, id](std::stop_token stop) {
+            while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
                 UpdatePlayTime(id);
                 start_time = std::chrono::steady_clock::now();
             }
-        }).detach();
+        });
     }
 
     args.insert(args.begin(), eboot_name.generic_string());

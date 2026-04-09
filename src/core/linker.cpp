@@ -140,8 +140,9 @@ void Linker::Execute(const std::vector<std::string>& args) {
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
-            params.argc = args.size();
-            for (int i = 0; i < args.size() && i < 33; i++) {
+            constexpr int MaxArgs = sizeof(params.argv) / sizeof(params.argv[0]);
+            params.argc = std::min<int>(args.size(), MaxArgs);
+            for (int i = 0; i < params.argc; i++) {
                 params.argv[i] = args[i].c_str();
             }
         }
