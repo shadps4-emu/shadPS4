@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
@@ -49,6 +49,10 @@ static void TimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) 
 
 // Events are uniquely identified by id and filter.
 bool EqueueInternal::AddEvent(EqueueEvent& event) {
+    // Save id and filter before event is moved into m_events.
+    const u64 id = event.event.ident;
+    const auto filter = event.event.filter;
+
     {
         std::scoped_lock lock{m_mutex};
 
@@ -71,8 +75,6 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
         }
 
         // First, check if there's already an event with the same id and filter.
-        u64 id = event.event.ident;
-        OrbisKernelEvent::Filter filter = event.event.filter;
         const auto& find_it = std::ranges::find_if(m_events, [id, filter](auto& ev) {
             return ev.event.ident == id && ev.event.filter == filter;
         });
@@ -106,12 +108,10 @@ bool EqueueInternal::AddEvent(EqueueEvent& event) {
     }
 
     // Schedule callbacks for timer events
-    if (event.event.filter == OrbisKernelEvent::Timer) {
-        return this->ScheduleEvent(event.event.ident, OrbisKernelEvent::Filter::Timer,
-                                   TimerCallback);
-    } else if (event.event.filter == OrbisKernelEvent::HrTimer) {
-        return this->ScheduleEvent(event.event.ident, OrbisKernelEvent::Filter::HrTimer,
-                                   HrTimerCallback);
+    if (filter == OrbisKernelEvent::Filter::Timer) {
+        return this->ScheduleEvent(id, OrbisKernelEvent::Filter::Timer, TimerCallback);
+    } else if (filter == OrbisKernelEvent::Filter::HrTimer) {
+        return this->ScheduleEvent(id, OrbisKernelEvent::Filter::HrTimer, HrTimerCallback);
     }
 
     return true;
@@ -454,6 +454,7 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
 
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     handles->DeleteHandle(eq);
+    delete kqueues[eq];
     kqueues.erase(eq);
     return ORBIS_OK;
 }

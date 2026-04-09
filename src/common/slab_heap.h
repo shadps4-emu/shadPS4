@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <atomic>
+#include <memory>
 #include "common/assert.h"
 #include "common/spin_lock.h"
 
@@ -152,6 +153,7 @@ public:
     }
 
     void Free(T* obj) {
+        std::destroy_at(obj);
         BaseHeap::Free(obj);
     }
 
