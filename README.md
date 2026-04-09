@@ -176,6 +176,10 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
+<a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=24">
+</a>
+
 # Contributing
 
 If you want to contribute, please read the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
