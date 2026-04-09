@@ -28,4 +28,3 @@ long RunOnVehStack(VehHandlerFn fn, _EXCEPTION_POINTERS* exp) noexcept;
 } // namespace Core
 
 #endif
-
