@@ -192,6 +192,22 @@ void FoldLogicalNot(IR::Inst& inst) {
     }
 }
 
+void FoldUnpack32x2(IR::Block& block, IR::Inst& inst, IR::Opcode reverse) {
+    const IR::Value value{inst.Arg(0)};
+    if (value.IsImmediate()) {
+        IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
+        const auto value_lo = ir.Imm32(value.U32());
+        const auto value_hi = ir.Imm32(static_cast<u32>(value.U64() >> 32));
+        inst.ReplaceUsesWithAndRemove(ir.CompositeConstruct(value_lo, value_hi));
+        return;
+    }
+    IR::Inst* const arg_inst{value.InstRecursive()};
+    if (arg_inst->GetOpcode() == reverse) {
+        inst.ReplaceUsesWithAndRemove(arg_inst->Arg(0));
+        return;
+    }
+}
+
 void FoldInverseFunc(IR::Inst& inst, IR::Opcode reverse) {
     const IR::Value value{inst.Arg(0)};
     if (value.IsImmediate()) {
@@ -342,6 +358,10 @@ void ConstantPropagation(IR::Block& block, IR::Inst& inst) {
         return FoldBitCast<IR::Opcode::BitCastF32U32, f32, u32>(inst, IR::Opcode::BitCastU32F32);
     case IR::Opcode::BitCastU32F32:
         return FoldBitCast<IR::Opcode::BitCastU32F32, u32, f32>(inst, IR::Opcode::BitCastF32U32);
+    case IR::Opcode::UnpackUint2x32:
+        return FoldUnpack32x2(block, inst, IR::Opcode::PackUint2x32);
+    case IR::Opcode::UnpackDouble2x32:
+        return FoldUnpack32x2(block, inst, IR::Opcode::PackDouble2x32);
     // 2x16
     case IR::Opcode::PackUnorm2x16:
         return FoldInverseFunc(inst, IR::Opcode::UnpackUnorm2x16);

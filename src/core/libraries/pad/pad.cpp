@@ -507,7 +507,8 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    s32 colour_index = UserManagement.GetUserByPlayerIndex(handle)->user_color - 1;
+    auto u = UserManagement.GetUserByPlayerIndex(handle);
+    s32 colour_index = u ? u->user_color - 1 : 0;
     Input::Colour colour{255, 0, 0};
     if (colour_index >= 0 && colour_index <= 3) {
         static constexpr Input::Colour colours[4]{
