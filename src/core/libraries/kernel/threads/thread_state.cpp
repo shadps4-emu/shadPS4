@@ -127,13 +127,20 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
     thread->tcb = nullptr;
     auto* sleepqueue = thread->sleepqueue;
     std::destroy_at(thread);
-    if (free_threads.size() >= MaxCachedThreads) {
+    bool should_free;
+    {
+        std::scoped_lock lk{free_thread_lock};
+        if (free_threads.size() >= MaxCachedThreads) {
+            should_free = true;
+        } else {
+            should_free = false;
+            free_threads.push_back(thread);
+        }
+    }
+    if (should_free) {
         delete sleepqueue;
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
-    } else {
-        std::scoped_lock lk{free_thread_lock};
-        free_threads.push_back(thread);
     }
 }
 
