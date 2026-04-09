@@ -303,6 +303,7 @@ File* HandleTable::GetResolver(int d) {
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
+    std::scoped_lock lock{m_mutex};
     for (auto* file : m_files) {
         if (file != nullptr && file->m_host_name == host_name) {
             return file;

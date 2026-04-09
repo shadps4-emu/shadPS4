@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <boost/container/small_vector.hpp>
@@ -78,8 +78,10 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         }
         if (!free_threads.empty()) {
             std::scoped_lock lk{free_thread_lock};
-            thread = free_threads.back();
-            free_threads.pop_back();
+            if (!free_threads.empty()) {
+                thread = free_threads.back();
+                free_threads.pop_back();
+            }
         }
     }
     if (thread == nullptr) {
@@ -123,9 +125,10 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
         TcbDtor(thread->tcb);
     }
     thread->tcb = nullptr;
+    auto* sleepqueue = thread->sleepqueue;
     std::destroy_at(thread);
     if (free_threads.size() >= MaxCachedThreads) {
-        delete thread->sleepqueue;
+        delete sleepqueue;
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
     } else {

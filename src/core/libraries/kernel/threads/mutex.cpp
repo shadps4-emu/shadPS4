@@ -60,8 +60,8 @@ static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
     if (name) {
         pmutex->name = name;
     } else {
-        static s32 MutexId = 0;
-        pmutex->name = fmt::format("Mutex{}", MutexId++);
+        static std::atomic<s32> MutexId{0};
+        pmutex->name = fmt::format("Mutex{}", MutexId.fetch_add(1));
     }
 
     pmutex->m_flags = PthreadMutexFlags(attr->m_type);
