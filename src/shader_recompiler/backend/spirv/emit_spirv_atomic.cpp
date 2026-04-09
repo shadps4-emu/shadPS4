@@ -444,12 +444,35 @@ Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coo
                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
-Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+static Id DataAppendConsume(EmitContext& ctx, auto&& atomic_op) {
+    const auto last_label = ctx.last_label;
+    const Id subgroup_scope{ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup))};
+    const Id exec{ctx.OpGroupNonUniformBallot(ctx.U32[4], subgroup_scope, ctx.true_value)};
+    const Id elect_cond{ctx.OpGroupNonUniformElect(ctx.U1[1], subgroup_scope)};
+    const Id append_label{ctx.OpLabel()};
+    const Id merge_label{ctx.OpLabel()};
+    ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(elect_cond, append_label, merge_label);
+    ctx.AddLabel(append_label);
+    const Id exec_bits{ctx.OpGroupNonUniformBallotBitCount(ctx.U32[1], subgroup_scope,
+                                                           spv::GroupOperation::Reduce, exec)};
+    const Id rtnval{atomic_op(exec_bits)};
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(merge_label);
+    Id base{ctx.OpPhi(ctx.U32[1], ctx.u32_zero_value, last_label, rtnval, append_label)};
+    return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], subgroup_scope, base);
 }
 
-Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 handle) {
+    return DataAppendConsume(ctx, [&](Id exec_bits) {
+        return EmitBufferAtomicIAdd32(ctx, nullptr, handle, ctx.ConstU32(gds_addr), exec_bits);
+    });
+}
+
+Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 handle) {
+    return DataAppendConsume(ctx, [&](Id exec_bits) {
+        return EmitBufferAtomicISub32(ctx, nullptr, handle, ctx.ConstU32(gds_addr), exec_bits);
+    });
 }
 
 } // namespace Shader::Backend::SPIRV

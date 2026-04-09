@@ -103,7 +103,7 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 
         // VOP1
     case Opcode::V_MOV_B32:
-        return V_MOV(inst);
+        return V_MOV_B32(inst);
     case Opcode::V_READFIRSTLANE_B32:
         return V_READFIRSTLANE_B32(inst);
     case Opcode::V_CVT_I32_F64:
@@ -456,10 +456,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
 // VOP2
 
 void Translator::V_CNDMASK_B32(const GcnInst& inst) {
-    const IR::ScalarReg flag_reg{inst.src[2].code};
-    const IR::U1 flag = inst.src[2].field == OperandField::ScalarGPR
-                            ? ir.GetThreadBitScalarReg(flag_reg)
-                            : ir.GetVcc();
+    const IR::U1 flag{inst.src[2].field == OperandField::Undefined ? ir.GetVcc()
+                                                                   : GetSrc1(inst.src[2])};
     const IR::Value result =
         ir.Select(flag, GetSrc<IR::F32>(inst.src[1]), GetSrc<IR::F32>(inst.src[0]));
     SetDst(inst.dst[0], IR::U32F32{result});
@@ -620,35 +618,9 @@ void Translator::V_BCNT_U32_B32(const GcnInst& inst) {
 }
 
 void Translator::V_MBCNT_U32_B32(bool is_low, const GcnInst& inst) {
-    if (!is_low) {
-        // v_mbcnt_hi_u32_b32 vX, -1, 0
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193 &&
-            inst.src[1].field == OperandField::ConstZero) {
-            return;
-        }
-        // v_mbcnt_hi_u32_b32 vX, exec_hi, 0/vZ
-        if ((inst.src[0].field == OperandField::ExecHi ||
-             inst.src[0].field == OperandField::VccHi ||
-             inst.src[0].field == OperandField::ScalarGPR) &&
-            (inst.src[1].field == OperandField::ConstZero ||
-             inst.src[1].field == OperandField::VectorGPR)) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
-    } else {
-        // v_mbcnt_lo_u32_b32 vY, -1, vX
-        // used combined with above to fetch lane id in non-compute stages
-        if (inst.src[0].field == OperandField::SignedConstIntNeg && inst.src[0].code == 193) {
-            return SetDst(inst.dst[0], ir.LaneId());
-        }
-        // v_mbcnt_lo_u32_b32 vY, exec_lo, vX
-        // used combined with above for append buffer indexing.
-        if (inst.src[0].field == OperandField::ExecLo || inst.src[0].field == OperandField::VccLo ||
-            inst.src[0].field == OperandField::ScalarGPR) {
-            return SetDst(inst.dst[0], GetSrc(inst.src[1]));
-        }
-        UNREACHABLE();
-    }
+    const IR::U32 thread_mask{ir.GetAttributeU32(IR::Attribute::SubgroupLtMask, is_low ? 0 : 1)};
+    SetDst(inst.dst[0], ir.IAdd(ir.BitCount(ir.BitwiseAnd(GetSrc(inst.src[0]), thread_mask)),
+                                GetSrc(inst.src[1])));
 }
 
 void Translator::V_ADD_I32(const GcnInst& inst) {
@@ -748,7 +720,7 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
 
 // VOP1
 
-void Translator::V_MOV(const GcnInst& inst) {
+void Translator::V_MOV_B32(const GcnInst& inst) {
     SetDst(inst.dst[0], GetSrc<IR::F32>(inst.src[0]));
 }
 
@@ -1122,38 +1094,18 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
-    const bool is_zero = inst.src[1].field == OperandField::ConstZero;
-    const bool is_neg_one = inst.src[1].field == OperandField::SignedConstIntNeg;
-    ASSERT(is_zero || is_neg_one);
-    if (is_neg_one) {
-        ASSERT_MSG(-s32(inst.src[1].code) + SignedConstIntNegMin - 1 == -1,
-                   "SignedConstIntNeg must be -1");
-    }
-
-    const IR::U1 src0 = [&] {
-        switch (inst.src[0].field) {
-        case OperandField::ScalarGPR:
-            return ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code));
-        case OperandField::VccLo:
-            return ir.GetVcc();
-        default:
-            UNREACHABLE_MSG("src0 = {}", u32(inst.src[0].field));
-        }
-    }();
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
     const IR::U1 result = [&] {
         switch (op) {
         case ConditionOp::EQ:
-            return is_zero ? ir.LogicalNot(src0) : src0;
-        case ConditionOp::LG: // NE
-            return is_zero ? src0 : ir.LogicalNot(src0);
-        case ConditionOp::GT:
-            ASSERT(is_zero);
-            return ir.GroupAny(ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[0].code)));
+            return ir.IEqual(src0, src1);
+        case ConditionOp::LG:
+            return ir.INotEqual(src0, src1);
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
     }();
-
     if (is_signed) {
         UNREACHABLE_MSG("V_CMP_U64 with signed integers is not supported");
     }

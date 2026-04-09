@@ -672,6 +672,10 @@ U32 IREmitter::BallotFindLsb(const Value& mask) {
     return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
+U1 IREmitter::InverseBallot(const Value& mask) {
+    return Inst<U1>(Opcode::InverseBallot, mask);
+}
+
 U1 IREmitter::GroupAny(const U1& bit) {
     return Inst<U1>(Opcode::GroupAny, bit);
 }
