@@ -306,11 +306,14 @@ s32 PS4_SYSV_ABI posix_sem_post(PthreadSem** sem) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-    if ((*sem)->value == ORBIS_KERNEL_SEM_VALUE_MAX) {
-        *__Error() = POSIX_EOVERFLOW;
-        return -1;
-    }
-    ++(*sem)->value;
+    // Atomically check for overflow and increment in one step.
+    s32 current = (*sem)->value.load();
+    do {
+        if (current == ORBIS_KERNEL_SEM_VALUE_MAX) {
+            *__Error() = POSIX_EOVERFLOW;
+            return -1;
+        }
+    } while (!(*sem)->value.compare_exchange_weak(current, current + 1));
     (*sem)->semaphore.release();
     return 0;
 }
