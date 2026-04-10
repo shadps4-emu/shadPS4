@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -12,6 +12,13 @@ namespace Common {
 #ifdef PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP
 class AdaptiveMutex {
 public:
+    AdaptiveMutex() = default;
+    ~AdaptiveMutex() {
+        pthread_mutex_destroy(&mutex);
+    }
+    AdaptiveMutex(const AdaptiveMutex&) = delete;
+    AdaptiveMutex& operator=(const AdaptiveMutex&) = delete;
+
     void lock() {
         pthread_mutex_lock(&mutex);
     }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
@@ -11,9 +11,13 @@ namespace Libraries::WebBrowserDialog {
 
 static auto g_status = Libraries::CommonDialog::Status::NONE;
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogClose() {
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogClose() {
     LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+    if (g_status != Libraries::CommonDialog::Status::RUNNING) {
+        return Libraries::CommonDialog::Error::NOT_RUNNING;
+    }
+    LOG_INFO(Lib_NpProfileDialog, "TODO: close npprofile ui dialog"); // TODO close Ui dialog
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogGetEvent() {
@@ -27,17 +31,23 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogGetResult() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogGetStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    LOG_TRACE(Lib_WebBrowserDialog, "called status={}", magic_enum::enum_name(g_status));
     return g_status;
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogInitialize() {
-    if (CommonDialog::g_isInitialized) {
-        LOG_INFO(Lib_WebBrowserDialog, "already initialized");
-        return Libraries::CommonDialog::Error::ALREADY_SYSTEM_INITIALIZED;
+    if (!CommonDialog::g_isInitialized) {
+        return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
     }
-    LOG_DEBUG(Lib_WebBrowserDialog, "initialized");
-    CommonDialog::g_isInitialized = true;
+    if (g_status != Libraries::CommonDialog::Status::NONE) {
+        LOG_ERROR(Lib_WebBrowserDialog, "already initialized");
+        return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
+    }
+    if (CommonDialog::g_isUsed) {
+        return Libraries::CommonDialog::Error::BUSY;
+    }
+    g_status = Libraries::CommonDialog::Status::INITIALIZED;
+    CommonDialog::g_isUsed = true;
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -46,9 +56,15 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogNavigate() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceWebBrowserDialogOpen() {
-    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called");
-    return ORBIS_OK;
+Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogOpen() {
+    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        g_status != Libraries::CommonDialog::Status::FINISHED) {
+        LOG_INFO(Lib_WebBrowserDialog, "called without initialize");
+        return Libraries::CommonDialog::Error::INVALID_STATE;
+    }
+    LOG_ERROR(Lib_WebBrowserDialog, "(STUBBED) called"); // TODO open ui dialog
+    g_status = Libraries::CommonDialog::Status::RUNNING;
+    return Libraries::CommonDialog::Error::OK;
 }
 
 s32 PS4_SYSV_ABI sceWebBrowserDialogOpenForPredeterminedContent() {
@@ -73,8 +89,7 @@ s32 PS4_SYSV_ABI sceWebBrowserDialogSetZoom() {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
     if (g_status == Libraries::CommonDialog::Status::RUNNING) {
-        LOG_ERROR(Lib_WebBrowserDialog,
-                  "CloseWebBrowser Dialog unimplemented"); // sceWebBrowserDialogClose();
+        sceWebBrowserDialogClose();
     }
     if (g_status == Libraries::CommonDialog::Status::NONE) {
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
@@ -85,7 +100,11 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceWebBrowserDialogTerminate() {
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
-    LOG_TRACE(Lib_MsgDlg, "called status={}", magic_enum::enum_name(g_status));
+    LOG_TRACE(Lib_WebBrowserDialog, "called status={}", magic_enum::enum_name(g_status));
+    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+        g_status = Libraries::CommonDialog::Status::FINISHED; // TODO removed it when implementing
+                                                              // real dialog
+    }
     return g_status;
 }
 
