@@ -18,6 +18,10 @@ Id EmitLogicalXor(EmitContext& ctx, Id a, Id b) {
     return ctx.OpLogicalNotEqual(ctx.U1[1], a, b);
 }
 
+Id EmitLogicalXNor(EmitContext& ctx, Id a, Id b) {
+    return ctx.OpLogicalEqual(ctx.U1[1], a, b);
+}
+
 Id EmitLogicalNot(EmitContext& ctx, Id value) {
     return ctx.OpLogicalNot(ctx.U1[1], value);
 }

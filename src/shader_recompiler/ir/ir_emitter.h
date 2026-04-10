@@ -180,6 +180,7 @@ public:
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
     [[nodiscard]] Value Ballot(const U1& bit);
     [[nodiscard]] U32 BallotFindLsb(const Value& mask);
+    [[nodiscard]] U1 InverseBallot(const Value& mask);
     [[nodiscard]] U1 GroupAny(const U1& bit);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
@@ -319,6 +320,7 @@ public:
     [[nodiscard]] U1 LogicalOr(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalAnd(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalXor(const U1& a, const U1& b);
+    [[nodiscard]] U1 LogicalXNor(const U1& a, const U1& b);
     [[nodiscard]] U1 LogicalNot(const U1& value);
 
     [[nodiscard]] U32U64 ConvertFToS(size_t bitsize, const F32F64& value);

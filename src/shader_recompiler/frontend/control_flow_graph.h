@@ -40,6 +40,7 @@ struct Block : Hook {
     IR::Condition cond{};
     GcnInst end_inst{};
     EndClass end_class{};
+    boost::container::small_vector<Block*, 2> pred;
     Block* branch_true{};
     Block* branch_false{};
     bool is_dummy{};
@@ -58,6 +59,7 @@ private:
     void EmitBlocks();
     void LinkBlocks();
     void SplitDivergenceScopes();
+    void ComputePredecessors();
 
     void AddLabel(Label address) {
         const auto it = std::ranges::find(labels, address);

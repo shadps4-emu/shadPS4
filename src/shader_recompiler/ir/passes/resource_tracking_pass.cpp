@@ -703,13 +703,9 @@ void PatchGlobalDataShareAccess(IR::Block& block, IR::Inst& inst, Info& info,
             gds_addr = m0_val & 0xFFFF;
         }
 
-        // Patch instruction to GDS buffer atomic increment/decrement.
-        const IR::U32 handle = ir.Imm32(binding);
-        const IR::U32 index = ir.Imm32(gds_addr >> 2);
-        const bool is_append = inst.GetOpcode() == IR::Opcode::DataAppend;
-        const IR::Value prev = is_append ? ir.BufferAtomicInc(handle, index, {})
-                                         : ir.BufferAtomicDec(handle, index, {});
-        inst.ReplaceUsesWithAndRemove(prev);
+        // Patch instruction.
+        inst.SetArg(0, ir.Imm32(gds_addr >> 2));
+        inst.SetArg(1, ir.Imm32(binding));
     } else {
         // Convert shared memory opcode to storage buffer atomic to GDS buffer.
         auto& buffer = info.buffers[binding];

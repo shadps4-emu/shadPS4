@@ -387,6 +387,7 @@ OPCODE(UGreaterThanEqual64,                                 U1,             U64,
 OPCODE(LogicalOr,                                           U1,             U1,             U1,                                                             )
 OPCODE(LogicalAnd,                                          U1,             U1,             U1,                                                             )
 OPCODE(LogicalXor,                                          U1,             U1,             U1,                                                             )
+OPCODE(LogicalXNor,                                         U1,             U1,             U1,                                                             )
 OPCODE(LogicalNot,                                          U1,             U1,                                                                             )
 
 // Conversion operations
@@ -451,6 +452,7 @@ OPCODE(ReadLane,                                            U32,            U32,
 OPCODE(WriteLane,                                           U32,            U32,            U32,            U32                                             )
 OPCODE(Ballot,                                              U32x4,          U1,                                                                             )
 OPCODE(BallotFindLsb,                                       U32,            U32x4,                                                                          )
+OPCODE(InverseBallot,                                       U1,             U32x4,                                                                          )
 OPCODE(DataAppend,                                          U32,            U32,            U32                                                             )
 OPCODE(DataConsume,                                         U32,            U32,            U32                                                             )
 OPCODE(GroupAny,                                            U1,             U1,                                                                             )
