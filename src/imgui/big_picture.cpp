@@ -2,6 +2,7 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <imgui.h>
 
 #include "common/logging/log.h"
@@ -53,8 +54,64 @@ void Layer::DrawBigPicture() {
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Hello, SDL3!");
-        ImGui::Text("This is an ImGui window running on SDL3.");
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImVec4* colors = style.Colors;
+
+        // Darker, high-contrast palette
+        colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+        colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);
+        colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);
+
+        // Large, rounded elements
+        style.WindowRounding = 0.0f;
+        style.FrameRounding = 5.0f;
+        style.ItemSpacing = ImVec2(10.0f, 10.0f);
+        style.FramePadding = ImVec2(10.0f, 10.0f);
+        style.WindowBorderSize = 0.0f;
+        style.WindowPadding = ImVec2(50.0f, 50.0f); // Default internal padding
+
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->WorkPos);
+        ImGui::SetNextWindowSize(viewport->WorkSize);
+        ImGuiWindowFlags window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+
+        ImGui::Begin("Game Window", nullptr, window_flags);
+        ImGui::SetWindowFontScale(2.0f);
+
+        Overlay::TextCentered("Select Game");
+
+        ImGui::BeginGroup();
+        SDL_Texture* my_texture = IMG_LoadTexture(
+            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
+        if (ImGui::ImageButton("Button1", (ImTextureID)my_texture, ImVec2(250, 250))) {
+            printf("to launch");
+        }
+        ImGui::TextWrapped("Bloodborne");
+        ImGui::EndGroup();
+
+        ImGui::SameLine(0.0f, 20.0f);
+
+        ImGui::BeginGroup();
+        SDL_Texture* my_texture2 = IMG_LoadTexture(
+            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
+        if (ImGui::ImageButton("Button2", (ImTextureID)my_texture2, ImVec2(250, 250))) {
+            printf("to launch");
+        }
+        ImGui::TextWrapped("Bloodborne");
+        ImGui::EndGroup();
+
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+        ImGui::BeginGroup();
+        SDL_Texture* my_texture3 = IMG_LoadTexture(
+            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
+        if (ImGui::ImageButton("Button3", (ImTextureID)my_texture3, ImVec2(250, 250))) {
+            printf("to launch");
+        }
+        ImGui::TextWrapped("Bloodborne");
+        ImGui::EndGroup();
+
         ImGui::End();
 
         ImGui::Render();

@@ -22,8 +22,6 @@ private:
     static void DrawMenuBar();
     static void DrawAdvanced();
     static void DrawSimple();
-
-    static void TextCentered(const std::string& text);
 };
 
 } // namespace Core::Devtools
@@ -34,5 +32,7 @@ void ToggleSimpleFps();
 void SetSimpleFps(bool enabled);
 void ToggleQuitWindow();
 void ShowVolume();
+
+void TextCentered(const std::string& text);
 
 } // namespace Overlay
