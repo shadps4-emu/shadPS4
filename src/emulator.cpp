@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <charconv>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -136,7 +137,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::string id;
     std::string title;
     std::string app_version;
-    u32 sdk_version;
+    u32 sdk_version{};
     u32 fw_version;
     Common::PSFAttributes psf_attributes{};
     if (param_sfo_exists) {
@@ -145,10 +146,17 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         const auto title_id = param_sfo->GetString("TITLE_ID");
-        if (content_id.has_value() && !content_id->empty()) {
-            id = std::string(*content_id, 7, 9);
-        } else if (title_id.has_value()) {
-            id = *title_id;
+        if (content_id.has_value() && content_id->size() >= 16) {
+            id = content_id->substr(7, 9);
+        } else {
+            if (content_id.has_value()) {
+                LOG_WARNING(Loader, "CONTENT_ID too short to derive game id: {}", *content_id);
+            } else {
+                LOG_WARNING(Loader, "CONTENT_ID is missing");
+            }
+            if (title_id.has_value() && !title_id->empty()) {
+                id = *title_id;
+            }
         }
         title = param_sfo->GetString("TITLE").value_or("Unknown title");
         fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
@@ -168,16 +176,28 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         } else {
             // Increment offset to account for sdk_ver= part of string.
             sdk_ver_offset += 8;
-            u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
-            if (sdk_ver_len == pubtool_info.npos) {
-                // If there's no more commas, this is likely the last entry of pubtool info.
-                // Use string length instead.
-                sdk_ver_len = pubtool_info.size();
+            if (sdk_ver_offset > pubtool_info.size()) {
+                LOG_WARNING(Loader, "PUBTOOLINFO sdk_ver is malformed");
+                sdk_version = fw_version;
+            } else {
+                u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
+                if (sdk_ver_len == pubtool_info.npos) {
+                    // If there's no more commas, this is likely the last entry of pubtool info.
+                    // Use string length instead.
+                    sdk_ver_len = pubtool_info.size();
+                }
+                sdk_ver_len -= sdk_ver_offset;
+                std::string_view sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len);
+                // Number is stored in base 16.
+                auto result =
+                    std::from_chars(sdk_ver_string.data(),
+                                    sdk_ver_string.data() + sdk_ver_string.size(), sdk_version, 16);
+                if (result.ec != std::errc()) {
+                    LOG_WARNING(Loader, "Failed to parse sdk_ver '{}' from PUBTOOLINFO",
+                                sdk_ver_string);
+                    sdk_version = fw_version;
+                }
             }
-            sdk_ver_len -= sdk_ver_offset;
-            std::string sdk_ver_string = pubtool_info.substr(sdk_ver_offset, sdk_ver_len).data();
-            // Number is stored in base 16.
-            sdk_version = std::stoi(sdk_ver_string, nullptr, 16);
         }
     }
 
