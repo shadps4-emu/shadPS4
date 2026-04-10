@@ -7,7 +7,6 @@
 #ifdef _WIN64
 #include <windows.h>
 #include "common/ntapi.h"
-#include "veh_stack.h"
 #else
 #include <csignal>
 #include <pthread.h>
@@ -26,6 +25,7 @@ static constexpr u32 ORBIS_FPUCW = 0x037f;
 #define KGDT64_R3_CMTEB (0x50)
 #define RPL_MASK (0x03)
 #define EFLAGS_INTERRUPT_MASK (0x200)
+static constexpr size_t ExceptionHandlerStackSize = 64_KB;
 
 void InitializeTeb(INITIAL_TEB* teb, const ::Libraries::Kernel::PthreadAttr* attr) {
     teb->StackBase = (void*)((u64)attr->stackaddr_attr + attr->stacksize_attr);
@@ -90,7 +90,16 @@ void NativeThread::Exit() {
     tid = 0;
 
 #ifdef _WIN64
-    CleanupVehStackForCurrentThread();
+    if (exception_stack_ptr) {
+        auto* teb = reinterpret_cast<TEB*>(NtCurrentTeb());
+        const auto stack_top =
+            static_cast<void*>(static_cast<u8*>(exception_stack_ptr) + ExceptionHandlerStackSize);
+        if (teb->Tib.ArbitraryUserPointer == stack_top) {
+            teb->Tib.ArbitraryUserPointer = nullptr;
+        }
+        VirtualFree(exception_stack_ptr, 0, MEM_RELEASE);
+        exception_stack_ptr = nullptr;
+    }
 
     NtClose(native_handle);
     native_handle = nullptr;
@@ -133,7 +142,15 @@ void NativeThread::Initialize() {
     asm volatile("fldcw %0" : : "m"(ORBIS_FPUCW));
 #if _WIN64
     tid = GetCurrentThreadId();
-    InitializeVehStackForCurrentThread();
+    if (!exception_stack_ptr) {
+        exception_stack_ptr = VirtualAlloc(nullptr, ExceptionHandlerStackSize,
+                                           MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        ASSERT_MSG(exception_stack_ptr, "Failed to allocate exception stack");
+
+        auto* teb = reinterpret_cast<TEB*>(NtCurrentTeb());
+        teb->Tib.ArbitraryUserPointer =
+            static_cast<u8*>(exception_stack_ptr) + ExceptionHandlerStackSize;
+    }
 #else
     tid = (u64)pthread_self();
 
