@@ -875,6 +875,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/platform.h
          src/core/signals.cpp
          src/core/signals.h
+         src/core/veh_stack.cpp
+         src/core/veh_stack.h
          src/core/thread.cpp
          src/core/thread.h
          src/core/tls.cpp
