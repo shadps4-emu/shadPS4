@@ -66,7 +66,7 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
-#include "imgui_impl_sdl3.h"
+#include "imgui_impl_sdl3_bpm.h"
 
 // Clang warnings with -Weverything
 #if defined(__clang__)
@@ -126,7 +126,7 @@ struct ImGui_ImplSDL3_Data
 
     // Gamepad handling
     ImVector<SDL_Gamepad*>  Gamepads;
-    ImGui::Sdl::GamepadMode GamepadMode;
+    ImGui_ImplSDL3_GamepadMode GamepadMode;
     bool                    WantUpdateGamepadsList;
 
     ImGui_ImplSDL3_Data()   { memset((void*)this, 0, sizeof(*this)); }
@@ -551,7 +551,7 @@ static bool ImGui_ImplSDL3_Init(SDL_Window* window, SDL_Renderer* renderer, void
     ImGui_ImplSDL3_UpdateMonitors();
 
     // Gamepad handling
-    bd->GamepadMode = ImGui::Sdl::ImGui_ImplSDL3_GamepadMode_AutoFirst;
+    bd->GamepadMode = ImGui_ImplSDL3_GamepadMode_AutoFirst;
     bd->WantUpdateGamepadsList = true;
 
     // Load mouse cursors
@@ -760,17 +760,17 @@ static void ImGui_ImplSDL3_UpdateMouseCursor()
 static void ImGui_ImplSDL3_CloseGamepads()
 {
     ImGui_ImplSDL3_Data* bd = ImGui_ImplSDL3_GetBackendData();
-    if (bd->GamepadMode != ImGui::Sdl::ImGui_ImplSDL3_GamepadMode_Manual)
+    if (bd->GamepadMode != ImGui_ImplSDL3_GamepadMode_Manual)
         for (SDL_Gamepad* gamepad : bd->Gamepads)
             SDL_CloseGamepad(gamepad);
     bd->Gamepads.resize(0);
 }
 
-void ImGui_ImplSDL3_SetGamepadMode(ImGui::Sdl::GamepadMode mode,
+void ImGui_ImplSDL3_SetGamepadMode(ImGui_ImplSDL3_GamepadMode mode,
                                    SDL_Gamepad** manual_gamepads_array, int manual_gamepads_count) {
     ImGui_ImplSDL3_Data* bd = ImGui_ImplSDL3_GetBackendData();
     ImGui_ImplSDL3_CloseGamepads();
-    if (mode == ImGui::Sdl::ImGui_ImplSDL3_GamepadMode_Manual) {
+    if (mode == ImGui_ImplSDL3_GamepadMode_Manual) {
         IM_ASSERT(manual_gamepads_array != nullptr || manual_gamepads_count <= 0);
         for (int n = 0; n < manual_gamepads_count; n++)
             bd->Gamepads.push_back(manual_gamepads_array[n]);
@@ -808,8 +808,7 @@ static void ImGui_ImplSDL3_UpdateGamepads()
     ImGui_ImplSDL3_Data* bd = ImGui_ImplSDL3_GetBackendData();
 
     // Update list of gamepads to use
-    if (bd->WantUpdateGamepadsList &&
-        bd->GamepadMode != ImGui::Sdl::ImGui_ImplSDL3_GamepadMode_Manual) {
+    if (bd->WantUpdateGamepadsList && bd->GamepadMode != ImGui_ImplSDL3_GamepadMode_Manual) {
         ImGui_ImplSDL3_CloseGamepads();
         int sdl_gamepads_count = 0;
         SDL_JoystickID* sdl_gamepads = SDL_GetGamepads(&sdl_gamepads_count);
@@ -817,7 +816,7 @@ static void ImGui_ImplSDL3_UpdateGamepads()
             if (SDL_Gamepad* gamepad = SDL_OpenGamepad(sdl_gamepads[n]))
             {
                 bd->Gamepads.push_back(gamepad);
-                if (bd->GamepadMode == ImGui::Sdl::ImGui_ImplSDL3_GamepadMode_AutoFirst)
+                if (bd->GamepadMode == ImGui_ImplSDL3_GamepadMode_AutoFirst)
                     break;
             }
         bd->WantUpdateGamepadsList = false;
