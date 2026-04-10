@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -111,6 +111,7 @@ struct VirtualMemoryArea {
     std::string name = "";
     s32 fd = 0;
     bool disallow_merge = false;
+    bool is_system_module = false;
 
     bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
@@ -149,6 +150,9 @@ struct VirtualMemoryArea {
         if (name.compare(next.name) != 0) {
             return false;
         }
+        if (is_system_module != next.is_system_module) {
+            return false;
+        }
 
         return true;
     }
@@ -157,9 +161,11 @@ struct VirtualMemoryArea {
 class MemoryManager {
     using PhysMap = std::map<PAddr, PhysicalMemoryArea>;
     using PhysHandle = PhysMap::iterator;
+    using PhysConstHandle = PhysMap::const_iterator;
 
     using VMAMap = std::map<VAddr, VirtualMemoryArea>;
     using VMAHandle = VMAMap::iterator;
+    using VMAConstHandle = VMAMap::const_iterator;
 
 public:
     explicit MemoryManager();
@@ -181,8 +187,17 @@ public:
         return total_flexible_size;
     }
 
+    u64 GetUsedFlexibleSize() const {
+        return flexible_mapped_usage;
+    }
+
     u64 GetAvailableFlexibleSize() const {
-        return total_flexible_size - flexible_usage;
+        const u64 used = GetUsedFlexibleSize();
+        return used < total_flexible_size ? total_flexible_size - used : 0;
+    }
+
+    bool IsFlexibleRegionConfigured() const {
+        return flexible_virtual_end > flexible_virtual_base;
     }
 
     VAddr SystemReservedVirtualBase() noexcept {
@@ -252,7 +267,8 @@ public:
 
     s32 MapMemory(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                   MemoryMapFlags flags, VMAType type, std::string_view name = "anon",
-                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0);
+                  bool validate_dmem = false, PAddr phys_addr = -1, u64 alignment = 0,
+                  bool is_system_module = false);
 
     s32 MapFile(void** out_addr, VAddr virtual_addr, u64 size, MemoryProt prot,
                 MemoryMapFlags flags, s32 fd, s64 phys_addr);
@@ -288,26 +304,37 @@ public:
 
     void InvalidateMemory(VAddr addr, u64 size) const;
 
+    void RecalculateFlexibleUsageForDebug();
+
 private:
     VMAHandle FindVMA(VAddr target) {
+        return std::prev(vma_map.upper_bound(target));
+    }
+    VMAConstHandle FindVMA(VAddr target) const {
         return std::prev(vma_map.upper_bound(target));
     }
 
     PhysHandle FindDmemArea(PAddr target) {
         return std::prev(dmem_map.upper_bound(target));
     }
+    PhysConstHandle FindDmemArea(PAddr target) const {
+        return std::prev(dmem_map.upper_bound(target));
+    }
 
     PhysHandle FindFmemArea(PAddr target) {
         return std::prev(fmem_map.upper_bound(target));
     }
+    PhysConstHandle FindFmemArea(PAddr target) const {
+        return std::prev(fmem_map.upper_bound(target));
+    }
 
-    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+    bool HasPhysicalBacking(const VirtualMemoryArea& vma) const {
         return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
                vma.type == VMAType::Pooled;
     }
 
     VMAHandle CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryMapFlags flags,
-                         VMAType type, std::string_view name, u64 alignment);
+                         VMAType type, std::string_view name, u64 alignment, bool is_system_module);
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
@@ -327,6 +354,20 @@ private:
 
     s32 UnmapMemoryImpl(VAddr virtual_addr, u64 size);
 
+    bool IsFlexibleCountedVmaType(VMAType type) const;
+
+    bool IsFlexibleCommittedVma(const VirtualMemoryArea& vma) const;
+
+    u64 GetFlexibleRangeOverlapBytesLocked(VAddr virtual_addr, u64 size) const;
+
+    u64 GetFlexibleMappedBytesInRangeLocked(VAddr virtual_addr, u64 size) const;
+
+    void InvalidateFlexibleMappedRangeCacheLocked();
+
+    void AdjustFlexibleMappedUsageLocked(u64 mapped_before, u64 mapped_after);
+
+    void RecalculateFlexibleMappedUsageLocked();
+
 private:
     AddressSpace impl;
     PhysMap dmem_map;
@@ -337,6 +378,18 @@ private:
     u64 total_direct_size{};
     u64 total_flexible_size{};
     u64 flexible_usage{};
+    VAddr flexible_virtual_base{};
+    VAddr flexible_virtual_end{};
+    u64 flexible_mapped_usage{};
+    struct FlexibleMappedRangeCache {
+        VAddr range_start{};
+        VAddr range_end{};
+        u64 mapped_bytes{};
+        u64 revision{};
+        bool valid{};
+    };
+    mutable FlexibleMappedRangeCache flexible_mapped_range_cache{};
+    u64 vma_revision{};
     u64 pool_budget{};
     s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
