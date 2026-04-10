@@ -306,11 +306,14 @@ s32 PS4_SYSV_ABI posix_sem_post(PthreadSem** sem) {
         *__Error() = POSIX_EINVAL;
         return -1;
     }
-    if ((*sem)->value == ORBIS_KERNEL_SEM_VALUE_MAX) {
-        *__Error() = POSIX_EOVERFLOW;
-        return -1;
-    }
-    ++(*sem)->value;
+    // Atomically check for overflow and increment in one step.
+    s32 current = (*sem)->value.load();
+    do {
+        if (current == ORBIS_KERNEL_SEM_VALUE_MAX) {
+            *__Error() = POSIX_EOVERFLOW;
+            return -1;
+        }
+    } while (!(*sem)->value.compare_exchange_weak(current, current + 1));
     (*sem)->semaphore.release();
     return 0;
 }
@@ -367,9 +370,13 @@ s32 PS4_SYSV_ABI scePthreadSemTrywait(PthreadSem** sem) {
 }
 
 s32 PS4_SYSV_ABI scePthreadSemTimedwait(PthreadSem** sem, u32 usec) {
+    OrbisKernelTimespec now{};
+    posix_clock_gettime(ORBIS_CLOCK_REALTIME, &now);
+    const u64 total_nsec = now.tv_nsec + (usec % 1000000) * 1000ULL;
+
     OrbisKernelTimespec time{};
-    time.tv_sec = usec / 1000000;
-    time.tv_nsec = (usec % 1000000) * 1000;
+    time.tv_sec = now.tv_sec + usec / 1000000 + total_nsec / 1000000000;
+    time.tv_nsec = total_nsec % 1000000000;
 
     s32 ret = posix_sem_timedwait(sem, &time);
     if (ret != 0) {
