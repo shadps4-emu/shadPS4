@@ -1102,6 +1102,14 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
             return ir.IEqual(src0, src1);
         case ConditionOp::LG:
             return ir.INotEqual(src0, src1);
+        case ConditionOp::GT:
+            return ir.IGreaterThan(src0, src1, is_signed);
+        case ConditionOp::LT:
+            return ir.ILessThan(src0, src1, is_signed);
+        case ConditionOp::LE:
+            return ir.ILessThanEqual(src0, src1, is_signed);
+        case ConditionOp::GE:
+            return ir.IGreaterThanEqual(src0, src1, is_signed);
         default:
             UNREACHABLE_MSG("Unsupported V_CMP_U64 condition operation: {}", u32(op));
         }
