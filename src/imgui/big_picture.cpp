@@ -7,6 +7,7 @@
 
 #include "common/logging/log.h"
 #include "core/devtools/layer.h"
+#include "emulator.h"
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 
@@ -106,7 +107,8 @@ void Layer::DrawBigPicture() {
             renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
         if (ImGui::ImageButton("Button1", (ImTextureID)my_texture,
                                ImVec2(200 * uiScale, 200 * uiScale))) {
-            printf("to launch");
+            runGame = true;
+            done = true;
         }
 
         if (ImGui::IsWindowAppearing()) {
@@ -220,7 +222,8 @@ void Layer::DrawBigPicture() {
     SDL_Quit();
 
     if (runGame) {
-        // todo
+        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+        emulator->Run("D:/Game Install/CUSA03173/eboot.bin");
     }
 }
 
