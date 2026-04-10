@@ -3,14 +3,13 @@
 
 #include <algorithm>
 #include <vector>
+#include "core/libraries/ime/ime_kb_layout.h"
 #include "ime_ui.h"
 #include "imgui/imgui_std.h"
 
 namespace Libraries::Ime {
 
 using namespace ImGui;
-
-static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 
 ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* extended) {
     if (!param) {
@@ -207,26 +206,44 @@ void ImeUi::Draw() {
     const auto& ctx = *GetCurrentContext();
     const auto& io = ctx.IO;
 
-    // TODO: Figure out how to properly translate the positions -
-    //       for example, if a game wants to center the IME panel,
-    //       we have to translate the panel position in a way that it
-    //       still becomes centered, as the game normally calculates
-    //       the position assuming a it's running on a 1920x1080 screen,
-    //       whereas we are running on a 1280x720 window size (by default).
-    //
-    //       e.g. Panel position calculation from a game:
-    //       param.posx = (1920 / 2) - (panelWidth  / 2);
-    //       param.posy = (1080 / 2) - (panelHeight / 2);
-    const auto size = GetIO().DisplaySize;
-    f32 pos_x = (ime_param->posx / 1920.0f * (float)size.x);
-    f32 pos_y = (ime_param->posy / 1080.0f * (float)size.y);
+    const bool use_over2k =
+        (ime_param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) != OrbisImeOption::DEFAULT;
+    const auto viewport = Libraries::Ime::ComputeImeViewportMetrics(use_over2k);
+    const float scale_x = viewport.scale_x;
+    const float scale_y = viewport.scale_y;
 
-    ImVec2 window_pos = {pos_x, pos_y};
-    ImVec2 window_size = {500.0f, 100.0f};
+    u32 panel_req_w = 0;
+    u32 panel_req_h = 0;
+    (void)sceImeGetPanelSize(ime_param, &panel_req_w, &panel_req_h);
 
-    // SetNextWindowPos(window_pos);
-    SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
-                     ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+    ImVec2 window_size{};
+    if (panel_req_w > 0 && panel_req_h > 0) {
+        window_size = {panel_req_w * scale_x, panel_req_h * scale_y};
+    } else {
+        window_size = {std::min(std::max(0.0f, viewport.size.x - 40.0f), 640.0f),
+                       std::min(std::max(0.0f, viewport.size.y - 40.0f), 420.0f)};
+        window_size.x = std::max(window_size.x, 320.0f);
+        window_size.y = std::max(window_size.y, 240.0f);
+    }
+
+    float pos_x = viewport.offset.x + ime_param->posx * scale_x;
+    float pos_y = viewport.offset.y + ime_param->posy * scale_y;
+    if (ime_param->horizontal_alignment == OrbisImeHorizontalAlignment::Center) {
+        pos_x -= window_size.x * 0.5f;
+    } else if (ime_param->horizontal_alignment == OrbisImeHorizontalAlignment::Right) {
+        pos_x -= window_size.x;
+    }
+    if (ime_param->vertical_alignment == OrbisImeVerticalAlignment::Center) {
+        pos_y -= window_size.y * 0.5f;
+    } else if (ime_param->vertical_alignment == OrbisImeVerticalAlignment::Bottom) {
+        pos_y -= window_size.y;
+    }
+    pos_x = std::clamp(pos_x, viewport.offset.x,
+                       viewport.offset.x + std::max(0.0f, viewport.size.x - window_size.x));
+    pos_y = std::clamp(pos_y, viewport.offset.y,
+                       viewport.offset.y + std::max(0.0f, viewport.size.y - window_size.y));
+
+    SetNextWindowPos({pos_x, pos_y});
     SetNextWindowSize(window_size);
     SetNextWindowCollapsed(false);
 
@@ -235,40 +252,94 @@ void ImeUi::Draw() {
     }
 
     if (Begin("IME##Ime", nullptr,
-              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                  ImGuiWindowFlags_NoSavedSettings)) {
+              ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
         DrawPrettyBackground();
+        const Libraries::Ime::ImePanelMetricsConfig metrics_cfg{
+            .panel_w = window_size.x,
+            .panel_h = window_size.y,
+            .multiline = True(ime_param->option & OrbisImeOption::MULTILINE),
+            .show_title = false,
+            .base_font_size = GetFontSize(),
+            .window_pos = GetWindowPos(),
+        };
+        const Libraries::Ime::ImePanelMetrics metrics =
+            Libraries::Ime::ComputeImePanelMetrics(metrics_cfg);
 
-        DrawInputText();
-        SetCursorPosY(GetCursorPosY() + 10.0f);
+        SetWindowFontScale(std::max(viewport.ui_scale, metrics.input_font_scale));
+        DrawInputText(metrics);
 
-        const char* button_text;
-        button_text = "Done##ImeDone";
+        auto* draw = GetWindowDrawList();
+        const ImU32 pane_bg = IM_COL32(18, 18, 18, 255);
+        const ImU32 pane_border = IM_COL32(70, 70, 70, 255);
+        draw->AddRectFilled(metrics.predict_pos,
+                            {metrics.predict_pos.x + metrics.predict_size.x,
+                             metrics.predict_pos.y + metrics.predict_size.y},
+                            pane_bg, metrics.corner_radius);
+        draw->AddRect(metrics.predict_pos,
+                      {metrics.predict_pos.x + metrics.predict_size.x,
+                       metrics.predict_pos.y + metrics.predict_size.y},
+                      pane_border, metrics.corner_radius);
+        PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.15f, 0.15f, 1.0f));
+        PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.25f, 0.25f, 1.0f));
+        PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.35f, 0.35f, 0.35f, 1.0f));
+        SetCursorScreenPos(metrics.close_pos);
+        const bool cancel_pressed =
+            Button("X##ImeClose", {metrics.close_size.x, metrics.close_size.y});
+        PopStyleColor(3);
 
-        float button_spacing = 10.0f;
-        float total_button_width = BUTTON_SIZE.x * 2 + button_spacing;
-        float button_start_pos = (window_size.x - total_button_width) / 2.0f;
+        SetCursorScreenPos(metrics.kb_pos);
 
-        SetCursorPosX(button_start_pos);
+        if (!accept_armed) {
+            if (!IsKeyDown(ImGuiKey_Enter) && !IsKeyDown(ImGuiKey_GamepadFaceDown)) {
+                accept_armed = true;
+            }
+        }
+        const bool allow_key_accept = accept_armed;
 
-        if (Button(button_text, BUTTON_SIZE) || (IsKeyPressed(ImGuiKey_Enter))) {
-            state->SendEnterEvent();
+        bool accept_pressed =
+            (allow_key_accept && !metrics_cfg.multiline && IsKeyPressed(ImGuiKey_Enter)) ||
+            (allow_key_accept && IsKeyPressed(ImGuiKey_GamepadFaceDown));
+
+        Libraries::Ime::ImeKbGridLayout kb_layout{};
+        kb_layout.pos = metrics.kb_pos;
+        kb_layout.size = metrics.kb_size;
+        kb_layout.key_gap_x = metrics.key_gap;
+        kb_layout.key_gap_y = metrics.key_gap;
+        kb_layout.key_h = metrics.key_h;
+        kb_layout.cols = 10;
+        kb_layout.rows = 6;
+        kb_layout.corner_radius = metrics.corner_radius;
+
+        Libraries::Ime::ImeKbDrawParams kb_params{};
+        kb_params.enter_label = ime_param->enter_label;
+        kb_params.key_bg_alt = IM_COL32(45, 45, 45, 255);
+
+        Libraries::Ime::ImeKbDrawState kb_state{};
+        SetWindowFontScale(metrics.key_font_scale);
+        Libraries::Ime::DrawImeKeyboardGrid(kb_layout, kb_params, kb_state);
+        SetWindowFontScale(metrics.input_font_scale);
+        if (kb_state.done_pressed) {
+            accept_pressed = true;
         }
 
-        SameLine(0.0f, button_spacing);
+        Dummy({metrics.kb_size.x, metrics.kb_size.y + metrics.padding_bottom});
 
-        if (Button("Close##ImeClose", BUTTON_SIZE)) {
+        if (accept_pressed) {
+            state->SendEnterEvent();
+        } else if (cancel_pressed) {
             state->SendCloseEvent();
         }
+
+        SetWindowFontScale(1.0f);
     }
     End();
 
     first_render = false;
 }
 
-void ImeUi::DrawInputText() {
-    ImVec2 input_size = {GetWindowWidth() - 40.0f, 0.0f};
-    SetCursorPosX(20.0f);
+void ImeUi::DrawInputText(const ImePanelMetrics& metrics) {
+    const ImVec2 input_size = metrics.input_size;
+    SetCursorPos(metrics.input_pos_local);
     if (first_render) {
         SetKeyboardFocusHere();
     }
