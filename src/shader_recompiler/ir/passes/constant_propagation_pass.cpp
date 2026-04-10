@@ -196,7 +196,7 @@ void FoldUnpack32x2(IR::Block& block, IR::Inst& inst, IR::Opcode reverse) {
     const IR::Value value{inst.Arg(0)};
     if (value.IsImmediate()) {
         IR::IREmitter ir{block, IR::Block::InstructionList::s_iterator_to(inst)};
-        const auto value_lo = ir.Imm32(value.U32());
+        const auto value_lo = ir.Imm32(static_cast<u32>(value.U64()));
         const auto value_hi = ir.Imm32(static_cast<u32>(value.U64() >> 32));
         inst.ReplaceUsesWithAndRemove(ir.CompositeConstruct(value_lo, value_hi));
         return;
