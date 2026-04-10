@@ -16,6 +16,7 @@ public:
 
     // Must be inside a window
     static void DrawNullGpuNotice();
+    static void DrawBigPicture();
 
 private:
     static void DrawMenuBar();

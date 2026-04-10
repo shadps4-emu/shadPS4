@@ -1097,10 +1097,15 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
           src/imgui/renderer/imgui_impl_sdl3.h
+          src/imgui/renderer/imgui_impl_sdl3_bpm.cpp
+          src/imgui/renderer/imgui_impl_sdl3_bpm.h
+          src/imgui/renderer/imgui_impl_sdlrenderer3.cpp
+          src/imgui/renderer/imgui_impl_sdlrenderer3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
           src/imgui/renderer/texture_manager.cpp
           src/imgui/renderer/texture_manager.h
+          src/imgui/big_picture.cpp
 )
 
 set(INPUT src/input/controller.cpp

@@ -17,9 +17,11 @@
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
+#include "core/devtools/layer.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -109,7 +111,10 @@ int main(int argc, char* argv[]) {
         }
     });
 
+    Core::Devtools::Layer::DrawBigPicture();
+
     // ---- No-args behavior ----
+    /*
     if (argc == 1) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
                                  "This is a CLI application. Please use the QTLauncher for a GUI:\n"
@@ -117,7 +122,7 @@ int main(int argc, char* argv[]) {
                                  nullptr);
         std::cout << app.help();
         return -1;
-    }
+    } */
 
     try {
         app.parse(argc, argv);
@@ -209,10 +214,13 @@ int main(int argc, char* argv[]) {
     if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);
 
+    /*
+
     auto* emulator = Common::Singleton<Core::Emulator>::Instance();
     emulator->executableName = argv[0];
     emulator->waitForDebuggerBeforeRun = waitForDebugger;
     emulator->Run(ebootPath, gameArgs, overrideRoot);
+    */
 
     return 0;
 }
