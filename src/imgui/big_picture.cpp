@@ -13,27 +13,23 @@
 
 static bool done = false;
 static bool runGame = false;
+
 static float uiScale = 1.0f;
 static int scaleSelected = 1;
 
-namespace Core::Devtools {
+static SDL_Window* window = nullptr;
+static SDL_Renderer* renderer = nullptr;
 
-void Layer::DrawBigPicture() {
-    SDL_Window* window = nullptr;
-    SDL_Renderer* renderer = nullptr;
+namespace BigPictureMode {
 
+void Launch() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
-        LOG_ERROR(Common, "SDL_Init Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
         return;
     }
 
     if (!SDL_Init(SDL_INIT_GAMEPAD)) {
-        LOG_ERROR(Common, "SDL_Init Error: {}", SDL_GetError());
-        return;
-    }
-
-    if (!SDL_Init(SDL_INIT_EVENTS)) {
-        LOG_ERROR(Common, "SDL_Init Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL_INIT_GAMEPAD Error: {}", SDL_GetError());
         return;
     }
 
@@ -42,7 +38,7 @@ void Layer::DrawBigPicture() {
 
     // Check if window creation failed
     if (window == nullptr) {
-        LOG_ERROR(Common, "SDL_Init Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL_Init Error: {}", SDL_GetError());
         SDL_Quit();
         return;
     }
@@ -72,12 +68,10 @@ void Layer::DrawBigPicture() {
         ImGuiStyle& style = ImGui::GetStyle();
         ImVec4* colors = style.Colors;
 
-        // Darker, high-contrast palette
         colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
         colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);
         colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);
 
-        // Large, rounded elements
         style.WindowRounding = 0.0f;
         style.FrameRounding = 5.0f;
         style.ItemSpacing = ImVec2(10.0f * uiScale, 10.0f * uiScale);
@@ -96,15 +90,23 @@ void Layer::DrawBigPicture() {
         ImGuiWindowFlags child_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 
+        if (ImGui::IsWindowAppearing())
+            ImGui::SetNextWindowFocus();
+
         ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
                           child_flags);
 
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
 
-        // ImGui::BeginGroup();
+        ImGui::BeginGroup();
         SDL_Texture* my_texture = IMG_LoadTexture(
             renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
+
+        if (ImGui::IsWindowAppearing()) {
+            ImGui::SetKeyboardFocusHere();
+        }
+
         if (ImGui::ImageButton("Button1", (ImTextureID)my_texture,
                                ImVec2(200 * uiScale, 200 * uiScale))) {
             runGame = true;
@@ -112,16 +114,14 @@ void Layer::DrawBigPicture() {
         }
 
         if (ImGui::IsWindowAppearing()) {
-            ImGui::SetKeyboardFocusHere();
-            ImGui::SetItemDefaultFocus();
+            ImGui::SetNavCursorVisible(true);
         }
 
         ImGui::TextWrapped("Bloodborne");
-        // ImGui::EndGroup();
+        ImGui::EndGroup();
 
         ImGui::SameLine(0.0f, 20.0f * uiScale);
 
-        /*
         ImGui::BeginGroup();
         SDL_Texture* my_texture2 = IMG_LoadTexture(
             renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
@@ -143,7 +143,6 @@ void Layer::DrawBigPicture() {
         }
         ImGui::TextWrapped("Bloodborne");
         ImGui::EndGroup();
-        */
 
         ImGui::EndChild();
 
@@ -227,4 +226,4 @@ void Layer::DrawBigPicture() {
     }
 }
 
-} // namespace Core::Devtools
+} // namespace BigPictureMode

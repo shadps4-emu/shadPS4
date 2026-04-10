@@ -17,10 +17,10 @@
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
-#include "core/devtools/layer.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
+#include "imgui/big_picture.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         }
     });
 
-    Core::Devtools::Layer::DrawBigPicture();
+    BigPictureMode::Launch();
 
     // ---- No-args behavior ----
     /*
