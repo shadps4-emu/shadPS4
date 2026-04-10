@@ -56,6 +56,16 @@ if (NOT TARGET ZLIB::ZLIB)
     set(ZLIB_INCLUDE_DIRS "${FETCHCONTENT_BASE_DIR}/zlib-build")
 endif()
 
+# FreeType
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/freetype/CMakeLists.txt" AND NOT TARGET freetype)
+    # Keep optional deps off to reduce build surface; zlib stays enabled for compressed fonts.
+    set(FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_BROTLI ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+    set(FT_DISABLE_PNG ON CACHE BOOL "" FORCE)
+    add_subdirectory(freetype)
+endif()
+
 # SDL3
 if (NOT TARGET SDL3::SDL3)
     set(SDL_TEST_LIBRARY OFF)
