@@ -132,6 +132,7 @@ GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
     // Note: Literal constant decode must be performed after meta info updated.
     if (encodingLen == sizeof(u32)) {
         decodeLiteralConstant(encoding, code);
+        decodeSubDwordAddressing(encoding, code);
     }
 
     repairOperandType();
@@ -428,6 +429,78 @@ void GcnDecodeContext::decodeLiteralConstant(InstEncoding encoding, GcnCodeSlice
     if (it != m_instruction.src.end()) {
         it->code = code.readu32();
         m_instruction.length += sizeof(u32);
+    }
+}
+
+void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSlice& code) {
+    // Find if the instruction contains SDWA (it's legal only as src0)
+    if (m_instruction.src[0].field == OperandField::Sdwa) {
+        ASSERT_MSG(Libraries::Kernel::sceKernelIsNeoMode(), "SDWA is not supported in Base mode");
+
+        m_instruction.src[0].code = code.readu32();
+        m_instruction.length += sizeof(u32);
+
+        if (encoding == InstEncoding::VOPC) {
+            SdwaVopc sdwa = *reinterpret_cast<SdwaVopc*>(&m_instruction.src[0].code);
+            m_instruction.src[0].field =
+                sdwa.s0 == 0 ? OperandField::VectorGPR : OperandField::ScalarGPR;
+            m_instruction.src[0].code = sdwa.src0;
+            m_instruction.src[0].sdwa_sel = SdwaSelector(sdwa.src0_sel);
+
+            m_instruction.src[0].input_modifier.neg = sdwa.src0_neg;
+            m_instruction.src[0].input_modifier.abs = sdwa.src0_abs;
+            m_instruction.src[0].input_modifier.sext = sdwa.src0_sext;
+
+            m_instruction.src[1].field =
+                sdwa.s1 == 0 ? OperandField::VectorGPR : OperandField::ScalarGPR;
+            m_instruction.src[1].sdwa_sel = SdwaSelector(sdwa.src1_sel);
+
+            m_instruction.src[1].input_modifier.neg = sdwa.src1_neg;
+            m_instruction.src[1].input_modifier.abs = sdwa.src1_abs;
+            m_instruction.src[1].input_modifier.sext = sdwa.src1_sext;
+
+            m_instruction.dst[0].sdwa_sel = SdwaSelector(sdwa.dst_sel);
+            m_instruction.dst[0].sdwa_dst = SdwaDstUnused(sdwa.dst_u);
+            m_instruction.dst[0].output_modifier.clamp = sdwa.clamp;
+
+            switch (sdwa.omod) {
+            case 0:
+                m_instruction.dst[0].output_modifier.multiplier = 0.f;
+                break;
+            case 1:
+                m_instruction.dst[0].output_modifier.multiplier = 2.0f;
+                break;
+            case 2:
+                m_instruction.dst[0].output_modifier.multiplier = 4.0f;
+                break;
+            case 3:
+                m_instruction.dst[0].output_modifier.multiplier = 0.5f;
+                break;
+            }
+        } else if (encoding == InstEncoding::VOP1 || encoding == InstEncoding::VOP2) {
+            SdwaVop12 sdwa = *reinterpret_cast<SdwaVop12*>(&m_instruction.src[0].code);
+            m_instruction.src[0].field =
+                sdwa.s0 == 0 ? OperandField::VectorGPR : OperandField::ScalarGPR;
+            m_instruction.src[0].code = sdwa.src0;
+            m_instruction.src[0].sdwa_sel = SdwaSelector(sdwa.src0_sel);
+
+            m_instruction.src[0].input_modifier.neg = sdwa.src0_neg;
+            m_instruction.src[0].input_modifier.abs = sdwa.src0_abs;
+            m_instruction.src[0].input_modifier.sext = sdwa.src0_sext;
+
+            m_instruction.src[1].field =
+                sdwa.s1 == 0 ? OperandField::VectorGPR : OperandField::ScalarGPR;
+            m_instruction.src[1].sdwa_sel = SdwaSelector(sdwa.src1_sel);
+
+            m_instruction.src[1].input_modifier.neg = sdwa.src1_neg;
+            m_instruction.src[1].input_modifier.abs = sdwa.src1_abs;
+            m_instruction.src[1].input_modifier.sext = sdwa.src1_sext;
+
+            m_instruction.dst[0].field = OperandField::ScalarGPR;
+            m_instruction.dst[0].code = sdwa.sdst;
+        } else {
+            UNREACHABLE_MSG("illegal instruction: SDWA used outside VOP1/VOP2/VOPC");
+        }
     }
 }
 
