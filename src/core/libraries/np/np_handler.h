@@ -73,8 +73,8 @@ private:
     NpHandler() = default;
     ~NpHandler() = default;
 
-    // Connect one user.  Blocks until connected+authenticated or failed.
-    void ConnectUser(s32 user_id, const std::string& host, u16 port, const std::string& npid,
+    /// Connect one user.  Blocks until connected+authenticated or failed.
+    bool ConnectUser(s32 user_id, const std::string& host, u16 port, const std::string& npid,
                      const std::string& password, const std::string& token);
 
     // Disconnect and remove one user's client.
