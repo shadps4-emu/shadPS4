@@ -328,22 +328,220 @@ void ShadNetClient::DoDisconnect() {
     }
 }
 
+// RecvN,blocking receive of exactly n bytes
 bool ShadNetClient::RecvN(u8* buf, u32 n) {
-    return false;
+    u32 received = 0;
+    while (received < n) {
+        if (m_terminate)
+            return false;
+        const int r = static_cast<int>(::recv(m_sock, reinterpret_cast<char*>(buf + received),
+                                              static_cast<int>(n - received), 0));
+        if (r <= 0)
+            return false; // disconnect or error
+        received += static_cast<u32>(r);
+    }
+    return true;
 }
 
+// SendAll,blocking send of all bytes
 bool ShadNetClient::SendAll(const std::vector<u8>& data) {
-    return false;
+    std::lock_guard lock(m_mutex_send_direct);
+    int sent = 0;
+    const int total = static_cast<int>(data.size());
+    while (sent < total) {
+        const int r = static_cast<int>(
+            ::send(m_sock, reinterpret_cast<const char*>(data.data() + sent), total - sent, 0));
+        if (r < 0) {
+            LOG_ERROR(ShadNet, "send() failed");
+            return false;
+        }
+        sent += r;
+    }
+    return true;
 }
 
 std::vector<u8> ShadNetClient::BuildPacket(CommandType cmd, u64 id,
                                            const std::vector<u8>& payload) const {
-    return {};
+    const u32 total = static_cast<u32>(SHAD_HEADER_SIZE + payload.size());
+    std::vector<u8> out(SHAD_HEADER_SIZE);
+    out[0] = static_cast<u8>(PacketType::Request);
+    PutLE16(out, 1, static_cast<u16>(cmd));
+    PutLE32(out, 3, total);
+    PutLE64(out, 7, id);
+    out.insert(out.end(), payload.begin(), payload.end());
+    return out;
 }
 
-void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, const std::vector<u8>& payload) {}
+void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, const std::vector<u8>& payload) {
+    switch (type) {
+    case PacketType::Reply:
+        switch (static_cast<CommandType>(cmd_raw)) {
+        case CommandType::Login:
+            HandleLoginReply(payload);
+            break;
+        default:
+            if (onAsyncReply)
+                onAsyncReply(static_cast<CommandType>(cmd_raw), payload);
+            else
+                LOG_DEBUG(ShadNet, "Unhandled reply cmd={}", cmd_raw);
+            break;
+        }
+        break;
 
-void ShadNetClient::HandleLoginReply(const std::vector<u8>& payload) {}
+    case PacketType::Notification:
+        HandleNotification(cmd_raw, payload);
+        break;
+
+    case PacketType::ServerInfo:
+        // Subsequent ServerInfo packets (keep-alive / IP updates)
+        LOG_DEBUG(ShadNet, "ServerInfo update received");
+        break;
+
+    case PacketType::Request:
+        LOG_WARNING(ShadNet, "Unexpected Request from server");
+        break;
+    }
+}
+
+void ShadNetClient::HandleLoginReply(const std::vector<u8>& payload) {
+    LoginResult res;
+
+    if (payload.empty()) {
+        res.error = ErrorType::Malformed;
+        LOG_ERROR(ShadNet, "Empty Login reply");
+    } else {
+        res.error = static_cast<ErrorType>(payload[0]);
+
+        if (res.error == ErrorType::NoError) {
+            int pos = 1;
+
+            res.onlineName = ReadStr(payload, pos);
+            res.avatarUrl = ReadStr(payload, pos);
+
+            if (pos + 8 <= static_cast<int>(payload.size())) {
+                res.userId = GetLE64(payload.data() + pos);
+                pos += 8;
+            }
+
+            // Friends
+            const u32 friend_count = ReadU32LE(payload, pos);
+            for (u32 i = 0; i < friend_count && pos < static_cast<int>(payload.size()); ++i) {
+                FriendEntry fe;
+                fe.npid = ReadStr(payload, pos);
+                fe.online = (pos < static_cast<int>(payload.size())) && (payload[pos++] != 0);
+                SkipPresence(payload, pos);
+                res.friends.push_back(std::move(fe));
+            }
+
+            // Friend requests sent
+            const u32 sent_count = ReadU32LE(payload, pos);
+            for (u32 i = 0; i < sent_count; ++i)
+                res.requestsSent.push_back(ReadStr(payload, pos));
+
+            // Friend requests received
+            const u32 recv_count = ReadU32LE(payload, pos);
+            for (u32 i = 0; i < recv_count; ++i)
+                res.requestsReceived.push_back(ReadStr(payload, pos));
+
+            // Blocked list
+            const u32 block_count = ReadU32LE(payload, pos);
+            for (u32 i = 0; i < block_count; ++i)
+                res.blocked.push_back(ReadStr(payload, pos));
+
+            // Store identity
+            m_online_name = res.onlineName;
+            m_avatar_url = res.avatarUrl;
+            m_user_id = res.userId;
+            {
+                std::lock_guard lock(m_mutex_friends);
+                m_friends = res.friends;
+            }
+
+            m_authenticated = true;
+            m_sem_authenticated.release();
+
+            LOG_INFO(ShadNet,
+                     "Logged in npid='{}' onlineName='{}' "
+                     "userId={} friends={}",
+                     m_npid, m_online_name, m_user_id, m_friends.size());
+
+        } else {
+            switch (res.error) {
+            case ErrorType::LoginAlreadyLoggedIn:
+                m_state = ShadNetState::FailureAlreadyIn;
+                break;
+            case ErrorType::LoginInvalidUsername:
+                m_state = ShadNetState::FailureUsername;
+                break;
+            case ErrorType::LoginInvalidPassword:
+                m_state = ShadNetState::FailurePassword;
+                break;
+            case ErrorType::LoginInvalidToken:
+                m_state = ShadNetState::FailureToken;
+                break;
+            default:
+                m_state = ShadNetState::FailureAuth;
+                break;
+            }
+            LOG_ERROR(ShadNet, "Login rejected error code {}", static_cast<u8>(res.error));
+            m_sem_authenticated.release();
+            DoDisconnect();
+        }
+    }
+
+    if (onLoginResult)
+        onLoginResult(res);
+}
+
+void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& p) {
+    int pos = 0;
+
+    switch (static_cast<NotificationType>(cmd_raw)) {
+
+    case NotificationType::FriendQuery: {
+        NotifyFriendQuery n;
+        n.fromNpid = ReadStr(p, pos);
+        LOG_DEBUG(ShadNet, "FriendQuery from '{}'", n.fromNpid);
+        if (onFriendQuery)
+            onFriendQuery(n);
+        break;
+    }
+
+    case NotificationType::FriendNew: {
+        NotifyFriendNew n;
+        n.online = (pos < static_cast<int>(p.size())) && (p[pos++] != 0);
+        n.npid = ReadStr(p, pos);
+        LOG_DEBUG(ShadNet, "FriendNew '{}' ({})", n.npid, n.online ? "online" : "offline");
+        if (onFriendNew)
+            onFriendNew(n);
+        break;
+    }
+
+    case NotificationType::FriendLost: {
+        NotifyFriendLost n;
+        n.npid = ReadStr(p, pos);
+        LOG_DEBUG(ShadNet, "FriendLost '{}'", n.npid);
+        if (onFriendLost)
+            onFriendLost(n);
+        break;
+    }
+
+    case NotificationType::FriendStatus: {
+        NotifyFriendStatus n;
+        n.online = (pos < static_cast<int>(p.size())) && (p[pos++] != 0);
+        n.timestamp = ReadU64LE(p, pos);
+        n.npid = ReadStr(p, pos);
+        LOG_DEBUG(ShadNet, "FriendStatus '{}' is {}", n.npid, n.online ? "online" : "offline");
+        if (onFriendStatus)
+            onFriendStatus(n);
+        break;
+    }
+
+    default:
+        LOG_DEBUG(ShadNet, "Unknown notification type {}", cmd_raw);
+        break;
+    }
+}
 
 // helper functions for little-endian encoding/decoding and string reading
 std::string ShadNetClient::ReadStr(const std::vector<u8>& p, int& pos) {
