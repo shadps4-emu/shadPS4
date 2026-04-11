@@ -699,6 +699,18 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         *new_param = (event.active ? event.axis_value : 0) + *new_param;
     }
 }
+
+static bool IsKeyboardKeyPressed(const u32 keycode) {
+    return std::ranges::find_if(pressed_keys, [keycode](const auto& entry) {
+               return entry.first.input.type == InputType::KeyboardMouse &&
+                      entry.first.input.sdl_id == keycode;
+           }) != pressed_keys.end();
+}
+
+static bool IsAltPressedForHotkey() {
+    return IsKeyboardKeyPressed(SDLK_LALT) || IsKeyboardKeyPressed(SDLK_RALT);
+}
+
 void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     auto PushSDLEvent = [&](u32 event_type) {
         if (new_button_state) {
@@ -761,7 +773,11 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             PushSDLEvent(SDL_EVENT_MOUSE_TO_TOUCHPAD);
             break;
         case HOTKEY_RENDERDOC:
-            PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            if (IsAltPressedForHotkey()) {
+                PushSDLEvent(SDL_EVENT_SCREENSHOT_WITH_OVERLAYS);
+            } else {
+                PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            }
             break;
         case HOTKEY_ADD_VIRTUAL_USER:
             PushSDLEvent(SDL_EVENT_ADD_VIRTUAL_USER);

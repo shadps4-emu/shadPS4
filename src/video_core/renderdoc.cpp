@@ -6,6 +6,7 @@
 #include "video_core/renderdoc.h"
 
 #include <renderdoc_app.h>
+#include <atomic>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -23,6 +24,8 @@ enum class CaptureState {
     InProgress,
 };
 static CaptureState capture_state{CaptureState::Idle};
+static std::atomic<u32> screenshot_game_only_count{0};
+static std::atomic<u32> screenshot_with_overlays_count{0};
 
 RENDERDOC_API_1_6_0* rdoc_api{};
 
@@ -123,6 +126,32 @@ void SetOutputDir(const std::filesystem::path& path, const std::string& prefix) 
     }
     LOG_WARNING(Common, "RenderDoc capture path: {}", (path / prefix).string());
     rdoc_api->SetCaptureFilePathTemplate(fmt::UTF((path / prefix).u8string()).data.data());
+}
+
+bool IsRenderDocLoaded() {
+    return rdoc_api != nullptr;
+}
+
+void RequestScreenshot(const ScreenshotRequest request) {
+    switch (request) {
+    case ScreenshotRequest::GameOnly:
+        screenshot_game_only_count.fetch_add(1, std::memory_order_relaxed);
+        break;
+    case ScreenshotRequest::WithOverlays:
+        screenshot_with_overlays_count.fetch_add(1, std::memory_order_relaxed);
+        break;
+    case ScreenshotRequest::None:
+    default:
+        break;
+    }
+}
+
+ScreenshotRequests ConsumeScreenshotRequests() {
+    return ScreenshotRequests{
+        .game_only_count = screenshot_game_only_count.exchange(0, std::memory_order_acq_rel),
+        .with_overlays_count =
+            screenshot_with_overlays_count.exchange(0, std::memory_order_acq_rel),
+    };
 }
 
 } // namespace VideoCore
