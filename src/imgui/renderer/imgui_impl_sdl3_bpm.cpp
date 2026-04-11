@@ -262,10 +262,12 @@ ImGuiKey ImGui_ImplSDL3_KeyEventToImGuiKey(SDL_Keycode keycode, SDL_Scancode sca
         case SDLK_7: return ImGuiKey_7;
         case SDLK_8: return ImGuiKey_8;
         case SDLK_9: return ImGuiKey_9;
-        case SDLK_A: return ImGuiKey_A;
+        case SDLK_A:
+            return ImGuiKey_LeftArrow;
         case SDLK_B: return ImGuiKey_B;
         case SDLK_C: return ImGuiKey_C;
-        case SDLK_D: return ImGuiKey_D;
+        case SDLK_D:
+            return ImGuiKey_RightArrow;
         case SDLK_E: return ImGuiKey_E;
         case SDLK_F: return ImGuiKey_F;
         case SDLK_G: return ImGuiKey_G;
@@ -280,11 +282,13 @@ ImGuiKey ImGui_ImplSDL3_KeyEventToImGuiKey(SDL_Keycode keycode, SDL_Scancode sca
         case SDLK_P: return ImGuiKey_P;
         case SDLK_Q: return ImGuiKey_Q;
         case SDLK_R: return ImGuiKey_R;
-        case SDLK_S: return ImGuiKey_S;
+        case SDLK_S:
+            return ImGuiKey_DownArrow;
         case SDLK_T: return ImGuiKey_T;
         case SDLK_U: return ImGuiKey_U;
         case SDLK_V: return ImGuiKey_V;
-        case SDLK_W: return ImGuiKey_W;
+        case SDLK_W:
+            return ImGuiKey_UpArrow;
         case SDLK_X: return ImGuiKey_X;
         case SDLK_Y: return ImGuiKey_Y;
         case SDLK_Z: return ImGuiKey_Z;

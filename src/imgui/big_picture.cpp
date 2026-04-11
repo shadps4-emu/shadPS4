@@ -15,6 +15,8 @@
 
 namespace BigPictureMode {
 
+const float gameImageSize = 200.f;
+
 static bool done = false;
 static bool runGame = false;
 static std::filesystem::path runEbootPath = "";
@@ -60,6 +62,7 @@ void Launch() {
 
     GetGameInfo();
 
+    float tempScale = uiScale;
     while (!done) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -111,18 +114,14 @@ void Launch() {
         ImGui::EndChild();
         ImGui::Separator();
 
-        if (ImGui::RadioButton("Small", &scaleSelected, 0)) {
-            uiScale = 0.75f;
+        ImGui::SetNextItemWidth(300.0f * uiScale);
+        if (ImGui::SliderFloat("UI Scale", &tempScale, 0.25f, 3.0f)) {
+            // Dynamically changes UI scale
         }
-        ImGui::SameLine();
 
-        if (ImGui::RadioButton("Medium", &scaleSelected, 1)) {
-            uiScale = 1.0f;
-        }
-        ImGui::SameLine();
-
-        if (ImGui::RadioButton("Large", &scaleSelected, 2)) {
-            uiScale = 1.25f;
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            uiScale = tempScale;
+            tempScale = uiScale;
         }
         ImGui::SameLine();
 
@@ -130,7 +129,6 @@ void Launch() {
             ImGui::CalcTextSize("Settings (Under Construction)").x + ImGui::CalcTextSize("Exit").x +
             ImGui::GetStyle().FramePadding.x * 4.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
-
         if (ImGui::Button("Settings (Under Construction)")) {
             // Todo
         }
@@ -185,7 +183,7 @@ void SetGameIcons() {
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
     const float padding = 20.0f * uiScale;
-    float rowContentWidth = 200 * uiScale + itemSpacing;
+    float rowContentWidth = gameImageSize * uiScale + itemSpacing;
 
     for (int i = 0; i < gameVec.size(); i++) {
         ImGui::BeginGroup();
@@ -195,22 +193,22 @@ void SetGameIcons() {
         const char* ButtonNameChar = ButtonName.c_str();
 
         if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)my_texture,
-                               ImVec2(200 * uiScale, 200 * uiScale))) {
+                               ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             runGame = true;
             done = true;
             runEbootPath = gameVec[i].ebootPath;
         }
 
-        ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 200 * uiScale);
+        ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("%s", gameVec[i].title.c_str());
         ImGui::PopTextWrapPos();
         ImGui::EndGroup();
 
-        rowContentWidth += (200 * uiScale + itemSpacing * 2 + padding);
+        rowContentWidth += (gameImageSize * uiScale + itemSpacing * 2 + padding);
         if (rowContentWidth < maxAvailableWidth) {
             ImGui::SameLine(0.0f, padding);
         } else {
-            rowContentWidth = 200 * uiScale + itemSpacing;
+            rowContentWidth = gameImageSize * uiScale + itemSpacing;
         }
     }
 }
