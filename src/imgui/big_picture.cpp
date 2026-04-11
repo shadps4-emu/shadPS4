@@ -21,6 +21,7 @@ static bool done = false;
 static bool runGame = false;
 static std::filesystem::path runEbootPath = "";
 static std::vector<Game> gameVec = {};
+static std::vector<bool> focusState = {};
 
 static float uiScale = 1.0f;
 static int scaleSelected = 1;
@@ -127,6 +128,7 @@ void Launch() {
             // Dynamically changes UI scale
         }
 
+        // Only update when user is not interacting with slider
         if (ImGui::IsItemDeactivatedAfterEdit()) {
             uiScale = tempScale;
             tempScale = uiScale;
@@ -191,6 +193,7 @@ void Launch() {
 
 void SetGameIcons() {
     ImGuiStyle& style = ImGui::GetStyle();
+    ImGuiIO& io = ImGui::GetIO();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
     const float padding = 20.0f * uiScale;
@@ -210,9 +213,11 @@ void SetGameIcons() {
             runEbootPath = gameVec[i].ebootPath;
         }
 
-        if (ImGui::IsItemFocused()) {
+        // Scroll to item only when newly-focused
+        if (ImGui::IsItemFocused() && !focusState[i]) {
             ImGui::SetScrollHereY(0.5f);
         }
+        focusState[i] = ImGui::IsItemFocused();
 
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("%s", gameVec[i].title.c_str());
@@ -276,6 +281,7 @@ void GetGameInfo() {
                 }
 
                 gameVec.push_back(game);
+                focusState.push_back(false);
             }
         }
     }
