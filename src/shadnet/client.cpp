@@ -20,6 +20,8 @@ static void PlatformInit() {
 static void PlatformInit() {}
 #endif
 
+namespace ShadNet {
+
 ShadNetClient::ShadNetClient() {
     PlatformInit();
 }
@@ -618,3 +620,4 @@ u64 ShadNetClient::ReadU64LE(const std::vector<u8>& p, int& pos) {
     pos += 8;
     return v;
 }
+} // namespace ShadNet

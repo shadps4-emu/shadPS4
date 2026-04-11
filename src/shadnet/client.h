@@ -34,6 +34,8 @@ static constexpr ShadSocketHandle SHAD_INVALID_SOCK = -1;
 #define SHAD_CLOSE(s) ::close(s)
 #endif
 
+namespace ShadNet {
+
 // Protocol constants
 static constexpr u32 SHAD_HEADER_SIZE = 15;
 static constexpr u32 SHAD_PROTOCOL_VERSION = 1;       // change this if the packet structure changes
@@ -261,3 +263,4 @@ private:
 
     std::atomic<u64> m_pkt_counter{1};
 };
+} // namespace ShadNet
