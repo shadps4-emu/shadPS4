@@ -160,9 +160,77 @@ void ShadNetClient::ConnectThread() {
     // ConnectThread exits here. ReaderThread receives the reply.
 }
 
-void ShadNetClient::ReaderThread() {}
+// ReaderThread for blocking RecvN loop
+void ShadNetClient::ReaderThread() {
+    while (!m_terminate) {
+        // Read header (15 bytes)
+        u8 hdr[SHAD_HEADER_SIZE];
+        if (!RecvN(hdr, SHAD_HEADER_SIZE)) {
+            if (!m_terminate)
+                LOG_WARNING(ShadNet, "ShadNet: Reader header recv failed, disconnecting");
+            break;
+        }
 
-void ShadNetClient::WriterThread() {}
+        const auto ptype = static_cast<PacketType>(hdr[0]);
+        const u16 cmd_raw = GetLE16(hdr + 1);
+        const u32 total_sz = GetLE32(hdr + 3);
+        // hdr[7..14] = packet ID (not needed by dispatcher but available)
+
+        if (total_sz < SHAD_HEADER_SIZE || total_sz > SHAD_MAX_PACKET_SIZE) {
+            LOG_ERROR(ShadNet, "ShadNet: Corrupt packet (total_sz={})", total_sz);
+            m_state = ShadNetState::FailureProtocol;
+            break;
+        }
+
+        std::vector<u8> payload;
+        const u32 payload_sz = total_sz - static_cast<u32>(SHAD_HEADER_SIZE);
+        if (payload_sz > 0) {
+            payload.resize(payload_sz);
+            if (!RecvN(payload.data(), payload_sz)) {
+                if (!m_terminate)
+                    LOG_WARNING(ShadNet, "ShadNet: Reader payload recv failed");
+                break;
+            }
+        }
+
+        DispatchPacket(ptype, cmd_raw, payload);
+    }
+
+    // Socket is gone,make sure NpHandler wakes up if still waiting
+    if (!m_authenticated) {
+        if (m_state == ShadNetState::Ok)
+            m_state = ShadNetState::FailureOther;
+        m_sem_authenticated.release();
+    }
+
+    m_connected = false;
+    m_authenticated = false;
+
+    LOG_INFO(ShadNet, "ShadNet: ReaderThread exiting");
+}
+
+// WriterThread it drains m_send_queue
+void ShadNetClient::WriterThread() {
+    while (!m_terminate) {
+        std::unique_lock lock(m_mutex_send_queue);
+        m_cv_send_queue.wait(lock, [&] { return m_terminate.load() || !m_send_queue.empty(); });
+        if (m_terminate)
+            break;
+
+        std::vector<std::vector<u8>> batch;
+        std::swap(batch, m_send_queue);
+        lock.unlock();
+
+        for (auto& pkt : batch) {
+            if (!m_connected)
+                break;
+            if (!SendAll(pkt)) {
+                LOG_ERROR(ShadNet, "ShadNet: WriterThread send failed");
+                return;
+            }
+        }
+    }
+}
 
 bool ShadNetClient::DoConnect() {
     return false;
