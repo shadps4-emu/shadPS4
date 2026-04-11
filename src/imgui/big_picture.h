@@ -4,12 +4,12 @@
 #pragma once
 
 #include <filesystem>
-#include <vector>
+#include <SDL3_image/SDL_image.h>
 
 namespace BigPictureMode {
 
 struct Game {
-    std::filesystem::path iconPath;
+    SDL_Texture* iconTexture;
     std::filesystem::path ebootPath;
     std::string title;
 };

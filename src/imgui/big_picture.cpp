@@ -2,7 +2,6 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
-#include <SDL3_image/SDL_image.h>
 #include <imgui.h>
 
 #include "big_picture.h"
@@ -197,7 +196,6 @@ void Launch() {
 
 void SetGameIcons() {
     ImGuiStyle& style = ImGui::GetStyle();
-    ImGuiIO& io = ImGui::GetIO();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
     const float padding = 20.0f * uiScale;
@@ -206,12 +204,11 @@ void SetGameIcons() {
     // Use same line if content fits horizontally, move to next line if not
     for (int i = 0; i < gameVec.size(); i++) {
         ImGui::BeginGroup();
-        SDL_Texture* my_texture = IMG_LoadTexture(renderer, gameVec[i].iconPath.string().c_str());
 
         std::string ButtonName = "Button" + std::to_string(i);
         const char* ButtonNameChar = ButtonName.c_str();
 
-        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)my_texture,
+        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)gameVec[i].iconTexture,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             runGame = true;
             done = true;
@@ -257,7 +254,6 @@ void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPa
 
 void GetGameInfo() {
     gameVec.clear();
-
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
@@ -270,7 +266,9 @@ void GetGameInfo() {
                 game.ebootPath = entry.path() / "eboot.bin";
 
                 const std::string iconFileName = "icon0.png";
-                SceUpdateChecker(iconFileName, game.iconPath, entry.path());
+                std::filesystem::path iconPath;
+                SceUpdateChecker(iconFileName, iconPath, entry.path());
+                game.iconTexture = IMG_LoadTexture(renderer, iconPath.string().c_str());
 
                 PSF psf;
                 const std::string sfoFileName = "param.sfo";
