@@ -5,22 +5,26 @@
 #include <SDL3_image/SDL_image.h>
 #include <imgui.h>
 
+#include "big_picture.h"
 #include "common/logging/log.h"
 #include "core/devtools/layer.h"
+#include "core/file_format/psf.h"
 #include "emulator.h"
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 
+namespace BigPictureMode {
+
 static bool done = false;
 static bool runGame = false;
+static std::filesystem::path runEbootPath = "";
+static std::vector<Game> gameVec = {};
 
 static float uiScale = 1.0f;
 static int scaleSelected = 1;
 
 static SDL_Window* window = nullptr;
 static SDL_Renderer* renderer = nullptr;
-
-namespace BigPictureMode {
 
 void Launch() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -49,9 +53,12 @@ void Launch() {
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigNavCursorVisibleAlways = true;
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
+
+    GetGameInfo();
 
     while (!done) {
         SDL_Event event;
@@ -89,63 +96,20 @@ void Launch() {
 
         ImGuiWindowFlags child_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
-
         if (ImGui::IsWindowAppearing())
             ImGui::SetNextWindowFocus();
-
         ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
                           child_flags);
 
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
 
-        ImGui::BeginGroup();
-        SDL_Texture* my_texture = IMG_LoadTexture(
-            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
-
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetKeyboardFocusHere();
         }
 
-        if (ImGui::ImageButton("Button1", (ImTextureID)my_texture,
-                               ImVec2(200 * uiScale, 200 * uiScale))) {
-            runGame = true;
-            done = true;
-        }
-
-        if (ImGui::IsWindowAppearing()) {
-            ImGui::SetNavCursorVisible(true);
-        }
-
-        ImGui::TextWrapped("Bloodborne");
-        ImGui::EndGroup();
-
-        ImGui::SameLine(0.0f, 20.0f * uiScale);
-
-        ImGui::BeginGroup();
-        SDL_Texture* my_texture2 = IMG_LoadTexture(
-            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
-        if (ImGui::ImageButton("Button2", (ImTextureID)my_texture2,
-                               ImVec2(200 * uiScale, 200 * uiScale))) {
-            printf("to launch");
-        }
-        ImGui::TextWrapped("Bloodborne");
-        ImGui::EndGroup();
-
-        ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
-
-        ImGui::BeginGroup();
-        SDL_Texture* my_texture3 = IMG_LoadTexture(
-            renderer, "D:/Github/shadPS4/Build/Desktop_Qt_6_10_1_MSVC2022_64bit-Release/icon0.png");
-        if (ImGui::ImageButton("Button3", (ImTextureID)my_texture3,
-                               ImVec2(200 * uiScale, 200 * uiScale))) {
-            printf("to launch");
-        }
-        ImGui::TextWrapped("Bloodborne");
-        ImGui::EndGroup();
-
+        SetGameIcons();
         ImGui::EndChild();
-
         ImGui::Separator();
 
         if (ImGui::RadioButton("Small", &scaleSelected, 0)) {
@@ -161,7 +125,6 @@ void Launch() {
         if (ImGui::RadioButton("Large", &scaleSelected, 2)) {
             uiScale = 1.25f;
         }
-
         ImGui::SameLine();
 
         float buttonsWidth =
@@ -172,17 +135,14 @@ void Launch() {
         if (ImGui::Button("Settings (Under Construction)")) {
             // Todo
         }
-
         ImGui::SameLine();
 
         if (ImGui::Button("Exit")) {
             ImGui::OpenPopup("Confirm Exit");
         }
 
-        // Ensure the popup is centered relative to the viewport
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
         if (ImGui::BeginPopupModal("Confirm Exit", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::Text("This will exit shadPS4!\nAre you sure?");
             ImGui::Separator();
@@ -200,12 +160,7 @@ void Launch() {
             ImGui::EndPopup();
         }
 
-        if (ImGui::IsKeyPressed(ImGuiKey_GamepadL1)) {
-            printf("pressed");
-        }
-
         ImGui::End();
-
         ImGui::Render();
         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
         SDL_RenderClear(renderer);
@@ -222,7 +177,99 @@ void Launch() {
 
     if (runGame) {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
-        emulator->Run("D:/Game Install/CUSA03173/eboot.bin");
+        emulator->Run(runEbootPath);
+    }
+}
+
+void SetGameIcons() {
+    ImGui::BeginGroup();
+    SDL_Texture* my_texture = IMG_LoadTexture(renderer, gameVec[0].iconPath.string().c_str());
+
+    if (ImGui::ImageButton("Button1", (ImTextureID)my_texture,
+                           ImVec2(200 * uiScale, 200 * uiScale))) {
+        runGame = true;
+        done = true;
+        runEbootPath = gameVec[0].ebootPath;
+    }
+
+    ImGui::TextWrapped("%s", gameVec[0].title.c_str());
+    ImGui::EndGroup();
+
+    ImGui::SameLine(0.0f, 20.0f * uiScale);
+
+    ImGui::BeginGroup();
+    SDL_Texture* my_texture2 = IMG_LoadTexture(renderer, gameVec[1].iconPath.string().c_str());
+    if (ImGui::ImageButton("Button2", (ImTextureID)my_texture2,
+                           ImVec2(200 * uiScale, 200 * uiScale))) {
+        runGame = true;
+        done = true;
+        runEbootPath = gameVec[1].ebootPath;
+    }
+    ImGui::TextWrapped("%s", gameVec[1].title.c_str());
+    ImGui::EndGroup();
+
+    ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
+
+    ImGui::BeginGroup();
+    SDL_Texture* my_texture3 =
+        IMG_LoadTexture(renderer, (std::filesystem::current_path() / "icon0.png").string().c_str());
+    if (ImGui::ImageButton("Button3", (ImTextureID)my_texture3,
+                           ImVec2(200 * uiScale, 200 * uiScale))) {
+        printf("to launch");
+    }
+    ImGui::TextWrapped("Bloodborne");
+    ImGui::EndGroup();
+}
+
+void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPath,
+                      std::filesystem::path game_folder) {
+
+    auto update_folder = game_folder;
+    update_folder += "-UPDATE";
+
+    auto patch_folder = game_folder;
+    patch_folder += "-patch";
+
+    if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
+        outputPath = update_folder / "sce_sys" / sceItem;
+    } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
+        outputPath = patch_folder / "sce_sys" / sceItem;
+    } else {
+        outputPath = game_folder / "sce_sys" / sceItem;
+    }
+}
+
+void GetGameInfo() {
+    gameVec.clear();
+
+    for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
+        if (installLoc.enabled) {
+            for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
+                if (entry.path().filename().string().ends_with("-UPDATE") ||
+                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
+                    continue;
+                }
+
+                Game game;
+                game.ebootPath = entry.path() / "eboot.bin";
+
+                const std::string iconFileName = "icon0.png";
+                SceUpdateChecker(iconFileName, game.iconPath, entry.path());
+
+                PSF psf;
+                const std::string sfoFileName = "param.sfo";
+                std::filesystem::path sfoPath;
+                SceUpdateChecker(sfoFileName, sfoPath, entry.path());
+
+                if (psf.Open(sfoPath)) {
+                    if (const auto title = psf.GetString("TITLE"); title.has_value()) {
+                        game.title = *title;
+                    }
+                }
+
+                gameVec.push_back(game);
+            }
+        }
     }
 }
 
