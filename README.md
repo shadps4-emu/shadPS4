@@ -176,6 +176,10 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 
 Logo is done by [**Xphalnos**](https://github.com/Xphalnos)
 
+<a href="https://github.com/shadps4-emu/shadPS4/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=shadps4-emu/shadPS4&max=24">
+</a>
+
 # Contributing
 
 If you want to contribute, please read the [**CONTRIBUTING.md**](https://github.com/shadps4-emu/shadPS4/blob/main/CONTRIBUTING.md) file.\
@@ -193,6 +197,8 @@ A few noteworthy teams/projects who've helped us along the way are:
 - **yuzu**: Our shader compiler has been designed with yuzu's Hades compiler as a blueprint. This allowed us to focus on the challenges of emulating a modern AMD GPU while having a high-quality optimizing shader compiler implementation as a base.
 
 - [**felix86**](https://github.com/OFFTKP/felix86): A new x86-64 → RISC-V Linux userspace emulator
+
+- [**emudev.org**](https://emudev.org/): A network of people interested in the documentation, emulation, simulation and re-implementation of hardware near extinction . Belongs to my friend skmp and me (shadow) also a member of it
 
 # License
 

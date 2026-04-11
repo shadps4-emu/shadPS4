@@ -177,8 +177,14 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
 
 void GameController::SetTouchpadState(int touchIndex, bool touchDown, float x, float y) {
     if (touchIndex < 2) {
+        bool was_pressed = m_state.touchpad[0].state || m_state.touchpad[1].state;
         m_state.OnTouchpad(touchIndex, touchDown, x, y);
         PushState();
+        if (!m_state.touchpad[0].state && !m_state.touchpad[1].state && was_pressed) {
+            last_touch_down_timestamp = 0;
+        } else if ((m_state.touchpad[0].state || m_state.touchpad[1].state) && !was_pressed) {
+            last_touch_down_timestamp = m_state.time;
+        }
     }
 }
 

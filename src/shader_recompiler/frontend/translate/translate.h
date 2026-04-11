@@ -307,10 +307,12 @@ public:
     void IMAGE_GET_LOD(const GcnInst& inst);
 
 private:
+    IR::U1 GetSrc1(const InstOperand& operand);
     template <typename T = IR::U32>
     [[nodiscard]] T GetSrc(const InstOperand& operand);
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
+    void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 

@@ -165,7 +165,7 @@ struct OrbisPadTouch {
 struct OrbisPadTouchData {
     u8 touchNum;
     u8 reserve[3];
-    u32 reserve1;
+    u32 time_since_touch_held_down;
     OrbisPadTouch touch[ORBIS_PAD_MAX_TOUCH_NUM];
 };
 
