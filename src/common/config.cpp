@@ -1436,7 +1436,8 @@ std::filesystem::path GetInputConfigFile(const string& game_id) {
     }
     if (game_id == "global") {
         std::map<string, string> default_bindings_to_add = {
-            {"hotkey_renderdoc_capture", "f12"},
+            {"hotkey_capture_frame", "f12"},
+            {"hotkey_screenshot_with_overlays", "lalt, f12"},
             {"hotkey_fullscreen", "f11"},
             {"hotkey_show_fps", "f10"},
             {"hotkey_pause", "f9"},
@@ -1459,6 +1460,9 @@ std::filesystem::path GetInputConfigFile(const string& game_id) {
                 continue;
             }
             std::string output_string = line.substr(0, equal_pos);
+            if (output_string == "hotkey_renderdoc_capture") {
+                default_bindings_to_add.erase("hotkey_capture_frame");
+            }
             default_bindings_to_add.erase(output_string);
         }
         global_in.close();

@@ -166,7 +166,8 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
     }
     if (game_id == "global") {
         std::map<std::string, std::string> default_bindings_to_add = {
-            {"hotkey_renderdoc_capture", "f12"},
+            {"hotkey_capture_frame", "f12"},
+            {"hotkey_screenshot_with_overlays", "lalt, f12"},
             {"hotkey_fullscreen", "f11"},
             {"hotkey_show_fps", "f10"},
             {"hotkey_pause", "f9"},
@@ -191,6 +192,9 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
                 continue;
             }
             std::string output_string = line.substr(0, equal_pos);
+            if (output_string == "hotkey_renderdoc_capture") {
+                default_bindings_to_add.erase("hotkey_capture_frame");
+            }
             default_bindings_to_add.erase(output_string);
         }
         global_in.close();
@@ -699,6 +703,7 @@ void ControllerOutput::AddUpdate(InputEvent event) {
         *new_param = (event.active ? event.axis_value : 0) + *new_param;
     }
 }
+
 void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     auto PushSDLEvent = [&](u32 event_type) {
         if (new_button_state) {
@@ -762,6 +767,9 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             break;
         case HOTKEY_RENDERDOC:
             PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            break;
+        case HOTKEY_SCREENSHOT_WITH_OVERLAYS:
+            PushSDLEvent(SDL_EVENT_SCREENSHOT_WITH_OVERLAYS);
             break;
         case HOTKEY_ADD_VIRTUAL_USER:
             PushSDLEvent(SDL_EVENT_ADD_VIRTUAL_USER);
