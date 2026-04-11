@@ -6,16 +6,19 @@
 #include "common/types.h"
 #include "core/libraries/network/net.h"
 
+#include <atomic>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <vector>
 
 #ifdef _WIN32
 #include <wepoll.h>
+#include <winsock2.h>
 #endif
 
+// TODO: FreeBSD requires libepoll-shim for epoll support
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
-// ADD libepoll-shim if using freebsd!
 #include <sys/epoll.h>
 #include <unistd.h>
 #endif
@@ -33,34 +36,28 @@ struct Epoll {
     std::string name;
     epoll_handle epoll_fd;
     std::deque<u32> async_resolutions{};
-
-    explicit Epoll(const char* name_) : name(name_), epoll_fd(epoll_create1(0)) {
+    std::atomic<bool> aborted{false};
 #ifdef _WIN32
-        ASSERT(epoll_fd != nullptr);
+    SOCKET abort_sock = INVALID_SOCKET; // loopback UDP socket for abort wake
+#elif defined(__linux__)
+    int abort_fd = -1; // eventfd for abort wake
 #else
-        ASSERT(epoll_fd != -1);
+    int abort_pipe[2] = {-1, -1}; // self-pipe for abort wake (macOS/BSD)
 #endif
-        if (name_ == nullptr) {
-            name = "anon";
-        }
-    }
+
+    explicit Epoll(const char* name_);
+
+    // Signal the epoll to abort any blocking wait
+    void Abort();
+
+    // Drain the abort fd after waking up, reset aborted flag
+    void ClearAbort();
 
     bool Destroyed() const noexcept {
         return destroyed;
     }
 
-    void Destroy() noexcept {
-        events.clear();
-#ifdef _WIN32
-        epoll_close(epoll_fd);
-        epoll_fd = nullptr;
-#else
-        close(epoll_fd);
-        epoll_fd = -1;
-#endif
-        name = "";
-        destroyed = true;
-    }
+    void Destroy() noexcept;
 
 private:
     bool destroyed{};
@@ -79,7 +76,7 @@ public:
     Epoll* GetEpoll(int d);
 
 private:
-    std::vector<Epoll> epolls;
+    std::vector<std::unique_ptr<Epoll>> epolls;
     std::mutex m_mutex;
 };
 
