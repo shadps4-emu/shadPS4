@@ -296,7 +296,7 @@ void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPa
 void GetGameInfo() {
     gameVec.clear();
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
-        if (installLoc.enabled) {
+        if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
                 if (entry.path().filename().string().ends_with("-UPDATE") ||
                     entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
