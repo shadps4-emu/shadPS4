@@ -102,7 +102,6 @@ void Launch() {
                           child_flags);
 
         Overlay::TextCentered("Select Game");
-        ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetKeyboardFocusHere();
@@ -182,43 +181,38 @@ void Launch() {
 }
 
 void SetGameIcons() {
-    ImGui::BeginGroup();
-    SDL_Texture* my_texture = IMG_LoadTexture(renderer, gameVec[0].iconPath.string().c_str());
+    ImGuiStyle& style = ImGui::GetStyle();
+    const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
+    const float itemSpacing = style.ItemSpacing.x; // already scaled
+    const float padding = 20.0f * uiScale;
+    float rowContentWidth = 200 * uiScale + itemSpacing;
 
-    if (ImGui::ImageButton("Button1", (ImTextureID)my_texture,
-                           ImVec2(200 * uiScale, 200 * uiScale))) {
-        runGame = true;
-        done = true;
-        runEbootPath = gameVec[0].ebootPath;
+    for (int i = 0; i < gameVec.size(); i++) {
+        ImGui::BeginGroup();
+        SDL_Texture* my_texture = IMG_LoadTexture(renderer, gameVec[i].iconPath.string().c_str());
+
+        std::string ButtonName = "Button" + std::to_string(i);
+        const char* ButtonNameChar = ButtonName.c_str();
+
+        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)my_texture,
+                               ImVec2(200 * uiScale, 200 * uiScale))) {
+            runGame = true;
+            done = true;
+            runEbootPath = gameVec[i].ebootPath;
+        }
+
+        ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + 200 * uiScale);
+        ImGui::TextWrapped("%s", gameVec[i].title.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndGroup();
+
+        rowContentWidth += (200 * uiScale + itemSpacing * 2 + padding);
+        if (rowContentWidth < maxAvailableWidth) {
+            ImGui::SameLine(0.0f, padding);
+        } else {
+            rowContentWidth = 200 * uiScale + itemSpacing;
+        }
     }
-
-    ImGui::TextWrapped("%s", gameVec[0].title.c_str());
-    ImGui::EndGroup();
-
-    ImGui::SameLine(0.0f, 20.0f * uiScale);
-
-    ImGui::BeginGroup();
-    SDL_Texture* my_texture2 = IMG_LoadTexture(renderer, gameVec[1].iconPath.string().c_str());
-    if (ImGui::ImageButton("Button2", (ImTextureID)my_texture2,
-                           ImVec2(200 * uiScale, 200 * uiScale))) {
-        runGame = true;
-        done = true;
-        runEbootPath = gameVec[1].ebootPath;
-    }
-    ImGui::TextWrapped("%s", gameVec[1].title.c_str());
-    ImGui::EndGroup();
-
-    ImGui::Dummy(ImVec2(0.0f, 20.0f * uiScale));
-
-    ImGui::BeginGroup();
-    SDL_Texture* my_texture3 =
-        IMG_LoadTexture(renderer, (std::filesystem::current_path() / "icon0.png").string().c_str());
-    if (ImGui::ImageButton("Button3", (ImTextureID)my_texture3,
-                           ImVec2(200 * uiScale, 200 * uiScale))) {
-        printf("to launch");
-    }
-    ImGui::TextWrapped("Bloodborne");
-    ImGui::EndGroup();
 }
 
 void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPath,
@@ -265,6 +259,8 @@ void GetGameInfo() {
                     if (const auto title = psf.GetString("TITLE"); title.has_value()) {
                         game.title = *title;
                     }
+                } else {
+                    continue;
                 }
 
                 gameVec.push_back(game);
