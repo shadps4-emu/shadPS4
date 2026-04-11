@@ -12,6 +12,7 @@
 #include "text_editor.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "common/types.h"
 #include "imgui.h" // for imGui::GetCurrentWindow()
 
 // TODO
