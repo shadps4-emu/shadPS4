@@ -1,3 +1,4 @@
+#include <common/logging/log.h>
 #include "client.h"
 // SPDX-FileCopyrightText: Copyright 2019-2026 rpcs3 Project
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
@@ -123,7 +124,41 @@ std::optional<std::string> ShadNetClient::GetFriendNpid(u32 index) const {
     return m_friends[index].npid;
 }
 
-void ShadNetClient::ConnectThread() {}
+// threading
+void ShadNetClient::ConnectThread() {
+    if (!DoConnect()) {
+        m_sem_connected.release();
+        m_sem_authenticated.release();
+        return;
+    }
+
+    // Start the reader and writer threads now that the socket is open
+    m_thread_reader = std::thread(&ShadNetClient::ReaderThread, this);
+    m_thread_writer = std::thread(&ShadNetClient::WriterThread, this);
+
+    m_sem_connected.release();
+
+    // Build and send Login payload: npid\0  password\0  token\0
+    std::vector<u8> payload;
+    auto addStr = [&](const std::string& s) {
+        payload.insert(payload.end(), s.begin(), s.end());
+        payload.push_back(0);
+    };
+    addStr(m_npid);
+    addStr(m_password);
+    addStr(m_token);
+
+    const u64 id = m_pkt_counter.fetch_add(1);
+    if (!SendAll(BuildPacket(CommandType::Login, id, payload))) {
+        LOG_ERROR(ShadNet, "ShadNet: Failed to send Login packet");
+        m_state = ShadNetState::FailureOther;
+        // ReaderThread will detect the dead socket and release sem_authenticated
+        return;
+    }
+
+    LOG_INFO(ShadNet, "ShadNet: Login packet sent for '{}'", m_npid);
+    // ConnectThread exits here. ReaderThread receives the reply.
+}
 
 void ShadNetClient::ReaderThread() {}
 
