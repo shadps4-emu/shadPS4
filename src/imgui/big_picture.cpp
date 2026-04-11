@@ -12,6 +12,9 @@
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 
+#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
+#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
+
 namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
@@ -65,6 +68,40 @@ void Launch() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigNavCursorVisibleAlways = true;
 
+    ImFontConfig config;
+    config.OversampleH = 3;
+    config.OversampleV = 3;
+    config.MergeMode = true;
+
+    ImFontConfig config2;
+    config.OversampleH = 3;
+    config.OversampleV = 3;
+
+    // tm symbol
+    static const ImWchar icon_ranges[] = {0x2122, 0x2122, 0x3000, 0x30FF, 0};
+
+    ImFontGlyphRangesBuilder rb{};
+    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
+    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
+    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
+    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+
+    ImVector<ImWchar> ranges{};
+    rb.BuildRanges(&ranges);
+
+    ImFont* myFont = io.Fonts->AddFontFromMemoryCompressedTTF(
+        imgui_font_notosansjp_regular_compressed_data,
+        imgui_font_notosansjp_regular_compressed_size, 32.0f, &config2, icon_ranges);
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
+                                             imgui_font_notosansjp_regular_compressed_size, 32.0f,
+                                             &config, ranges.Data);
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
+                                             imgui_font_proggyvector_regular_compressed_size, 32.0f,
+                                             &config, io.Fonts->GetGlyphRangesDefault());
+
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
@@ -104,8 +141,9 @@ void Launch() {
         ImGui::SetNextWindowSize(viewport->WorkSize);
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration;
 
+        ImGui::PushFont(myFont);
         ImGui::Begin("Game Window", &done, window_flags);
-        ImGui::SetWindowFontScale(1.5f * uiScale);
+        ImGui::SetWindowFontScale(uiScale);
 
         ImGuiWindowFlags child_flags =
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
@@ -115,6 +153,7 @@ void Launch() {
                           child_flags);
 
         Overlay::TextCentered("Select Game");
+        ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetKeyboardFocusHere();
@@ -170,6 +209,7 @@ void Launch() {
             ImGui::EndPopup();
         }
 
+        ImGui::PopFont();
         ImGui::End();
         ImGui::Render();
         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
@@ -198,7 +238,7 @@ void SetGameIcons() {
     ImGuiStyle& style = ImGui::GetStyle();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
-    const float padding = 20.0f * uiScale;
+    const float padding = 10.0f * uiScale;
     float rowContentWidth = gameImageSize * uiScale + itemSpacing;
 
     // Use same line if content fits horizontally, move to next line if not
@@ -230,6 +270,7 @@ void SetGameIcons() {
         if (rowContentWidth < maxAvailableWidth) {
             ImGui::SameLine(0.0f, padding);
         } else {
+            ImGui::Dummy(ImVec2(0.0f, padding));
             rowContentWidth = gameImageSize * uiScale + itemSpacing;
         }
     }
