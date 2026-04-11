@@ -632,6 +632,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_handler.cpp
+            src/core/libraries/np/np_handler.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
@@ -1119,6 +1121,10 @@ set(EMULATOR src/emulator.cpp
              src/sdl_window.cpp
 )
 
+set(SHADNET src/shadnet/client.cpp
+            src/shadnet/client.h
+)
+
 if(NOT ENABLE_TESTS)
 
 add_executable(shadps4
@@ -1130,6 +1136,7 @@ add_executable(shadps4
     ${SHADER_RECOMPILER}
     ${VIDEO_CORE}
     ${EMULATOR}
+    ${SHADNET}
     src/main.cpp
     src/emulator.cpp
     src/emulator.h
