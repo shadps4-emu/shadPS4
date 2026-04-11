@@ -101,13 +101,12 @@ void Launch() {
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size, 32.0f,
                                              &config, io.Fonts->GetGlyphRangesDefault());
-
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
-    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
-    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);
+    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);      // black
+    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);        // blue
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f); // lighter blue
 
     style.WindowRounding = 0.0f;
     style.FrameRounding = 5.0f;
@@ -118,7 +117,6 @@ void Launch() {
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
-
     GetGameInfo();
 
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
@@ -128,8 +126,9 @@ void Launch() {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL3_ProcessEvent(&event);
-            if (event.type == SDL_EVENT_QUIT)
+            if (event.type == SDL_EVENT_QUIT) {
                 done = true;
+            }
         }
 
         ImGui_ImplSDLRenderer3_NewFrame();
@@ -147,11 +146,13 @@ void Launch() {
 
         ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
-        if (ImGui::IsWindowAppearing())
+
+        if (ImGui::IsWindowAppearing()) {
             ImGui::SetNextWindowFocus();
+        }
+
         ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
                           child_flags);
-
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 
@@ -160,7 +161,6 @@ void Launch() {
         }
 
         SetGameIcons();
-
         ImGui::EndChild();
         ImGui::Separator();
 
@@ -181,6 +181,7 @@ void Launch() {
             ImGui::CalcTextSize("Settings (Under Construction)").x + ImGui::CalcTextSize("Exit").x +
             ImGui::GetStyle().FramePadding.x * 4.0f + ImGui::GetStyle().ItemSpacing.x;
         ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
+
         if (ImGui::Button("Settings (Under Construction)")) {
             // Todo
         }
@@ -201,11 +202,15 @@ void Launch() {
                 done = true;
             }
             ImGui::SameLine();
+
             if (ImGui::Button("Cancel", ImVec2(120 * uiScale, 0))) {
                 ImGui::CloseCurrentPopup();
             }
-            if (ImGui::IsWindowAppearing())
+
+            if (ImGui::IsWindowAppearing()) {
                 ImGui::SetItemDefaultFocus();
+            }
+
             ImGui::EndPopup();
         }
 
