@@ -38,11 +38,10 @@ public:
     // True if this specific user is authenticated to the shadNet server.
     bool IsPsnSignedIn(s32 user_id) const;
 
-    /// True if any user is currently signed in (for no-user-id API variants).
+    /// True if any user is currently signed in
     bool IsAnySignedIn() const;
 
     // Online name returned by the shadNet server for this user after login.
-    // Falls back to user.rpcn_npid if the server string is empty.
     std::string GetOnlineName(s32 user_id) const;
 
     // Avatar URL returned by the server.

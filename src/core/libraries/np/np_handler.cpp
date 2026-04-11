@@ -209,55 +209,107 @@ void NpHandler::WorkerThread() {
 }
 
 bool NpHandler::IsPsnSignedIn(s32 user_id) const {
-    return false;
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() && it->second->IsAuthenticated();
 }
 
 bool NpHandler::IsAnySignedIn() const {
+    std::lock_guard lock(m_mutex_clients);
+    for (auto& [_, client] : m_clients)
+        if (client->IsAuthenticated())
+            return true;
     return false;
 }
 
 std::string NpHandler::GetOnlineName(s32 user_id) const {
-    return {};
+    // Returns the display name set at account creation and returned by the
+    // server in the Login reply.
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? it->second->GetOnlineName() : std::string{};
 }
 
 std::string NpHandler::GetAvatarUrl(s32 user_id) const {
-    return {};
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? it->second->GetAvatarUrl() : std::string{};
 }
 
 OrbisNpAccountId NpHandler::GetAccountId(s32 user_id) const {
-    return 0;
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? static_cast<OrbisNpAccountId>(it->second->GetUserId()) : 0;
 }
 
 u32 NpHandler::GetLocalIpAddr(s32 user_id) const {
-    return u32();
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? it->second->GetAddrLocal() : 0;
 }
 
 s32 NpHandler::GetUserIdByAccountId(u64 account_id) const {
+    std::lock_guard lock(m_mutex_clients);
+    for (auto& [uid, client] : m_clients) {
+        if (static_cast<u64>(client->GetUserId()) == account_id)
+            return uid;
+    }
     return -1;
 }
 
+// friends calls
 u32 NpHandler::GetNumFriends(s32 user_id) const {
-    return u32();
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? it->second->GetNumFriends() : 0;
 }
 
 std::optional<std::string> NpHandler::GetFriendNpid(s32 user_id, u32 index) const {
-    return std::nullopt;
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_clients.find(user_id);
+    return it != m_clients.end() ? it->second->GetFriendNpid(index) : std::nullopt;
 }
 
+void NpHandler::OnFriendQuery(s32 user_id, const ShadNet::NotifyFriendQuery& n) {
+    LOG_INFO(NpHandler, "NpHandler: user_id={} FriendQuery from '{}'", user_id, n.fromNpid);
+    // TODO: enqueue for sceNpCheckCallback dispatch
+}
+
+void NpHandler::OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n) {
+    LOG_INFO(NpHandler, "NpHandler: user_id={} FriendNew '{}' ({})", user_id, n.npid,
+             n.online ? "online" : "offline");
+}
+
+void NpHandler::OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n) {
+    LOG_INFO(NpHandler, "NpHandler: user_id={} FriendLost '{}'", user_id, n.npid);
+}
+
+void NpHandler::OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n) {
+    LOG_DEBUG(NpHandler, "NpHandler: user_id={} FriendStatus '{}' is {}", user_id, n.npid,
+              n.online ? "online" : "offline");
+}
+
+// state callbacks
 s32 NpHandler::RegisterStateCallback(StateCallback cb, void* userdata) {
-    return -1;
+    std::lock_guard lock(m_mutex_cbs);
+    const s32 h = m_next_handle++;
+    m_state_cbs.push_back({h, std::move(cb), userdata});
+    return h;
 }
 
-void NpHandler::UnregisterStateCallback(s32 handle) {}
+void NpHandler::UnregisterStateCallback(s32 handle) {
+    std::lock_guard lock(m_mutex_cbs);
+    m_state_cbs.erase(std::remove_if(m_state_cbs.begin(), m_state_cbs.end(),
+                                     [handle](const CbEntry& e) { return e.handle == handle; }),
+                      m_state_cbs.end());
+}
 
-void NpHandler::FireStateCallback(s32 user_id, NpManager::OrbisNpState state) {}
-
-void NpHandler::OnFriendQuery(s32 user_id, const ShadNet::NotifyFriendQuery& n) {}
-
-void NpHandler::OnFriendNew(s32 user_id, const ShadNet::NotifyFriendNew& n) {}
-
-void NpHandler::OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n) {}
-
-void NpHandler::OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n) {}
+void NpHandler::FireStateCallback(s32 user_id, NpManager::OrbisNpState state) {
+    std::lock_guard lock(m_mutex_cbs);
+    for (const auto& e : m_state_cbs) {
+        if (e.cb)
+            e.cb(user_id, state);
+    }
+}
 
 } // namespace Libraries::Np
