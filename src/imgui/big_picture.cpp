@@ -145,11 +145,11 @@ void Launch() {
         ImGui::Begin("Game Window", &done, window_flags);
         ImGui::SetWindowFontScale(uiScale);
 
-        ImGuiWindowFlags child_flags =
-            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
         if (ImGui::IsWindowAppearing())
             ImGui::SetNextWindowFocus();
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
                           child_flags);
 
         Overlay::TextCentered("Select Game");
