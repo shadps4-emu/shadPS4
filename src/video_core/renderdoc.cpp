@@ -5,8 +5,8 @@
 #include "core/emulator_settings.h"
 #include "video_core/renderdoc.h"
 
-#include <renderdoc_app.h>
 #include <atomic>
+#include <renderdoc_app.h>
 
 #ifdef _WIN32
 #include <windows.h>

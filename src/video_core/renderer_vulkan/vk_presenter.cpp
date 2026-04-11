@@ -20,16 +20,13 @@
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
 
-#include <imgui.h>
-#include <png.h>
-#include <vk_mem_alloc.h>
 #include <algorithm>
-#include <atomic>
 #include <array>
-#include <chrono>
+#include <atomic>
 #include <cctype>
-#include <csetjmp>
+#include <chrono>
 #include <cmath>
+#include <csetjmp>
 #include <cstring>
 #include <ctime>
 #include <filesystem>
@@ -40,6 +37,9 @@
 #include <sstream>
 #include <system_error>
 #include <vector>
+#include <imgui.h>
+#include <png.h>
+#include <vk_mem_alloc.h>
 
 namespace Vulkan {
 
@@ -142,7 +142,10 @@ struct ScreenshotReadback {
                        std::vector<std::filesystem::path> paths_, const u32 width_,
                        const u32 height_, const vk::Format format_, const bool hdr_encoded_)
         : kind{kind_}, paths{std::move(paths_)},
-          buffer{instance, scheduler, VideoCore::MemoryUsage::Download, 0,
+          buffer{instance,
+                 scheduler,
+                 VideoCore::MemoryUsage::Download,
+                 0,
                  vk::BufferUsageFlagBits::eTransferDst,
                  static_cast<u64>(width_) * static_cast<u64>(height_) * 4},
           width{width_}, height{height_}, format{format_}, hdr_encoded{hdr_encoded_} {}
@@ -172,7 +175,8 @@ static std::vector<std::filesystem::path> BuildScreenshotPaths(const ScreenshotK
     const auto& screenshots_dir = Common::FS::GetUserPath(Common::FS::PathType::ScreenshotsDir);
     std::filesystem::create_directories(screenshots_dir);
 
-    const auto game_id = SanitizeFilenameComponent(std::string(Common::ElfInfo::Instance().GameSerial()));
+    const auto game_id =
+        SanitizeFilenameComponent(std::string(Common::ElfInfo::Instance().GameSerial()));
     const auto now = std::chrono::system_clock::now();
     const auto now_time = std::chrono::system_clock::to_time_t(now);
     const auto ms =
@@ -187,12 +191,11 @@ static std::vector<std::filesystem::path> BuildScreenshotPaths(const ScreenshotK
 #endif
 
     std::ostringstream stamp;
-    stamp << std::put_time(&local_tm, "%Y%m%d_%H%M%S") << '_' << std::setw(3)
-          << std::setfill('0') << ms;
+    stamp << std::put_time(&local_tm, "%Y%m%d_%H%M%S") << '_' << std::setw(3) << std::setfill('0')
+          << ms;
 
     const char* suffix = kind == ScreenshotKind::GameOnly ? "game" : "hud";
-    const auto first_sequence =
-        screenshot_sequence.fetch_add(count, std::memory_order_relaxed);
+    const auto first_sequence = screenshot_sequence.fetch_add(count, std::memory_order_relaxed);
 
     paths.reserve(count);
     const auto stamp_str = stamp.str();
@@ -285,8 +288,8 @@ static bool ConvertReadbackToRgba8(const ScreenshotReadback& readback, std::vect
         return false;
     }
 
-    const auto src = std::span<const u8>{readback.buffer.mapped_data.data(),
-                                         static_cast<size_t>(byte_size)};
+    const auto src =
+        std::span<const u8>{readback.buffer.mapped_data.data(), static_cast<size_t>(byte_size)};
     out_rgba.resize(static_cast<size_t>(byte_size));
 
     switch (readback.format) {
@@ -333,12 +336,9 @@ static bool ConvertReadbackToRgba8(const ScreenshotReadback& readback, std::vect
                 const float g_srgb = LinearToSrgb(ToneMapToSdrLinear(g709_nits));
                 const float b_srgb = LinearToSrgb(ToneMapToSdrLinear(b709_nits));
 
-                out_rgba[o + 0] =
-                    static_cast<u8>(std::clamp(r_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
-                out_rgba[o + 1] =
-                    static_cast<u8>(std::clamp(g_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
-                out_rgba[o + 2] =
-                    static_cast<u8>(std::clamp(b_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
+                out_rgba[o + 0] = static_cast<u8>(std::clamp(r_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
+                out_rgba[o + 1] = static_cast<u8>(std::clamp(g_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
+                out_rgba[o + 2] = static_cast<u8>(std::clamp(b_srgb, 0.0f, 1.0f) * 255.0f + 0.5f);
             } else {
                 out_rgba[o + 0] = unorm10_to_u8[r];
                 out_rgba[o + 1] = unorm10_to_u8[g];
@@ -349,7 +349,8 @@ static bool ConvertReadbackToRgba8(const ScreenshotReadback& readback, std::vect
         return true;
     }
     default:
-        LOG_WARNING(Render_Vulkan, "Unsupported screenshot format: {}", vk::to_string(readback.format));
+        LOG_WARNING(Render_Vulkan, "Unsupported screenshot format: {}",
+                    vk::to_string(readback.format));
         return false;
     }
 }
@@ -415,10 +416,10 @@ static void SavePendingScreenshots(const std::vector<ScreenshotReadback>& readba
         for (size_t i = 1; i < readback.paths.size(); ++i) {
             const auto& path = readback.paths[i];
             std::error_code ec{};
-            std::filesystem::copy_file(primary_path, path, std::filesystem::copy_options::none,
-                                       ec);
+            std::filesystem::copy_file(primary_path, path, std::filesystem::copy_options::none, ec);
             if (ec) {
-                // Fallback for platforms/filesystems where copy_file can fail for transient reasons.
+                // Fallback for platforms/filesystems where copy_file can fail for transient
+                // reasons.
                 if (!WritePng(path, rgba, readback.width, readback.height)) {
                     LOG_ERROR(Render_Vulkan, "Failed saving screenshot to {}", path.string());
                     continue;
@@ -877,11 +878,10 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                                vk::DependencyFlagBits::eByRegion, {}, {}, pre_barriers);
 
         if (capture_game_only_count > 0) {
-            pending_screenshots.emplace_back(instance, scheduler, ScreenshotKind::GameOnly,
-                                             BuildScreenshotPaths(ScreenshotKind::GameOnly,
-                                                                  capture_game_only_count),
-                                             frame->width, frame->height,
-                                             swapchain.GetSurfaceFormat().format, false);
+            pending_screenshots.emplace_back(
+                instance, scheduler, ScreenshotKind::GameOnly,
+                BuildScreenshotPaths(ScreenshotKind::GameOnly, capture_game_only_count),
+                frame->width, frame->height, swapchain.GetSurfaceFormat().format, false);
             auto& readback = pending_screenshots.back();
 
             const vk::ImageMemoryBarrier to_transfer{
@@ -982,13 +982,13 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
         ImGui::Core::Render(cmdbuf, swapchain_image_view, swapchain.GetExtent());
 
         if (capture_with_overlays_count > 0) {
-            pending_screenshots.emplace_back(instance, scheduler, ScreenshotKind::WithOverlays,
-                                             BuildScreenshotPaths(ScreenshotKind::WithOverlays,
-                                                                  capture_with_overlays_count),
-                                             extent.width, extent.height,
-                                             swapchain.GetHDR() ? vk::Format::eA2B10G10R10UnormPack32
-                                                                : swapchain.GetSurfaceFormat().format,
-                                             swapchain.GetHDR());
+            pending_screenshots.emplace_back(
+                instance, scheduler, ScreenshotKind::WithOverlays,
+                BuildScreenshotPaths(ScreenshotKind::WithOverlays, capture_with_overlays_count),
+                extent.width, extent.height,
+                swapchain.GetHDR() ? vk::Format::eA2B10G10R10UnormPack32
+                                   : swapchain.GetSurfaceFormat().format,
+                swapchain.GetHDR());
             auto& readback = pending_screenshots.back();
 
             const vk::ImageMemoryBarrier to_transfer{
