@@ -1,13 +1,101 @@
 // SPDX-FileCopyrightText: Copyright 2019-2026 rpcs3 Project
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <chrono>
+#include "common/logging/log.h"
+#include "core/emulator_settings.h"
+#include "core/libraries/np/np_manager.h"
+#include "core/user_settings.h"
 #include "np_handler.h"
 
 namespace Libraries::Np {
 
-void NpHandler::Initialize() {}
+NpHandler& NpHandler::GetInstance() {
+    static NpHandler s_instance;
+    return s_instance;
+}
 
-void NpHandler::Shutdown() {}
+void NpHandler::Initialize() {
+    if (m_initialized.exchange(true)) {
+        LOG_WARNING(NpHandler, "Initialize called more than once");
+        return;
+    }
+
+    if (!EmulatorSettings.IsShadNetEnabled()) {
+        LOG_INFO(NpHandler, "shadNet disabled globally we are in offline mode");
+        return;
+    }
+
+    // Parse server address from GeneralSettings
+    const std::string server_str = EmulatorSettings.GetShadNetServer();
+    std::string host = server_str;
+    u16 port = 31313; // default port
+    const auto colon = server_str.rfind(':');
+    if (colon != std::string::npos) {
+        host = server_str.substr(0, colon);
+        try {
+            port = static_cast<u16>(std::stoi(server_str.substr(colon + 1)));
+        } catch (...) {
+        }
+    }
+
+    const auto logged_in = UserManagement.GetLoggedInUsers(); // get all login users
+    int connected_count = 0;
+
+    for (int i = 0; i < Libraries::UserService::ORBIS_USER_SERVICE_MAX_LOGIN_USERS; ++i) {
+        const User* u = logged_in[i];
+        if (!u)
+            continue;
+        // skip users that has shadnet disabled
+        if (!u->shadnet_enabled) {
+            LOG_DEBUG(NpHandler, "user_id={} ('{}') shadNet disabled,skipping", u->user_id,
+                      u->user_name);
+            continue;
+        }
+        // skip also users that doesn't have npid or password empty
+        if (u->shadnet_npid.empty() || u->shadnet_password.empty()) {
+            LOG_WARNING(NpHandler,
+                        "user_id={} ('{}') shadNet enabled but credentials missing,skipping",
+                        u->user_id, u->user_name);
+            continue;
+        }
+
+        ConnectUser(u->user_id, host, port, u->shadnet_npid, u->shadnet_password, u->shadnet_token);
+        ++connected_count;
+    }
+
+    if (connected_count == 0) {
+        LOG_WARNING(NpHandler, "no users connected to shadNet");
+        return;
+    }
+
+    // Start the health-monitor worker
+    m_worker_running = true;
+    m_worker_thread = std::thread(&NpHandler::WorkerThread, this);
+}
+
+void NpHandler::Shutdown() {
+    if (!m_initialized.exchange(false))
+        return;
+
+    m_worker_running = false;
+
+    // Collect user IDs to disconnect (avoid holding m_mutex_clients during Stop)
+    std::vector<s32> ids;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        for (auto& [uid, _] : m_clients)
+            ids.push_back(uid);
+    }
+    for (s32 uid : ids)
+        DisconnectUser(uid);
+
+    if (m_worker_thread.joinable())
+        m_worker_thread.join();
+
+    LOG_INFO(NpHandler, "Shutdown complete");
+}
 
 bool NpHandler::IsPsnSignedIn(s32 user_id) const {
     return false;
