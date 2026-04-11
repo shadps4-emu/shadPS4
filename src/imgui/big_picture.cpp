@@ -32,15 +32,17 @@ static SDL_Renderer* renderer = nullptr;
 void Launch() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
+        SDL_Quit();
         return;
     }
 
     if (!SDL_Init(SDL_INIT_GAMEPAD)) {
         LOG_ERROR(ImGui, "SDL_INIT_GAMEPAD Error: {}", SDL_GetError());
+        SDL_Quit();
         return;
     }
 
-    window = SDL_CreateWindow("Big Picture", EmulatorSettings.GetWindowWidth(),
+    window = SDL_CreateWindow("shadPS4 Big Picture Mode", EmulatorSettings.GetWindowWidth(),
                               EmulatorSettings.GetWindowHeight(), SDL_WINDOW_RESIZABLE);
     renderer = SDL_CreateRenderer(window, nullptr);
 
@@ -50,7 +52,8 @@ void Launch() {
 
     // Check if window creation failed
     if (window == nullptr) {
-        LOG_ERROR(ImGui, "SDL_Init Error: {}", SDL_GetError());
+        LOG_ERROR(ImGui, "SDL Window Creation Error: {}", SDL_GetError());
+        SDL_DestroyRenderer(renderer);
         SDL_Quit();
         return;
     }
@@ -62,6 +65,20 @@ void Launch() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigNavCursorVisibleAlways = true;
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
+
+    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
+    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);
+
+    style.WindowRounding = 0.0f;
+    style.FrameRounding = 5.0f;
+    style.ItemSpacing = ImVec2(10.0f * uiScale, 10.0f * uiScale);
+    style.FramePadding = ImVec2(10.0f * uiScale, 10.0f * uiScale);
+    style.WindowBorderSize = 0.0f;
+    style.WindowPadding = ImVec2(20.0f * uiScale, 20.0f * uiScale);
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
@@ -82,20 +99,6 @@ void Launch() {
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
-
-        ImGuiStyle& style = ImGui::GetStyle();
-        ImVec4* colors = style.Colors;
-
-        colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);
-        colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);
-        colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);
-
-        style.WindowRounding = 0.0f;
-        style.FrameRounding = 5.0f;
-        style.ItemSpacing = ImVec2(10.0f * uiScale, 10.0f * uiScale);
-        style.FramePadding = ImVec2(10.0f * uiScale, 10.0f * uiScale);
-        style.WindowBorderSize = 0.0f;
-        style.WindowPadding = ImVec2(20.0f * uiScale, 20.0f * uiScale); // Default internal padding
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -135,6 +138,7 @@ void Launch() {
         }
         ImGui::SameLine();
 
+        // Align buttons right
         float buttonsWidth =
             ImGui::CalcTextSize("Settings (Under Construction)").x + ImGui::CalcTextSize("Exit").x +
             ImGui::GetStyle().FramePadding.x * 4.0f + ImGui::GetStyle().ItemSpacing.x;
@@ -199,6 +203,7 @@ void SetGameIcons() {
     const float padding = 20.0f * uiScale;
     float rowContentWidth = gameImageSize * uiScale + itemSpacing;
 
+    // Use same line if content fits horizontally, move to next line if not
     for (int i = 0; i < gameVec.size(); i++) {
         ImGui::BeginGroup();
         SDL_Texture* my_texture = IMG_LoadTexture(renderer, gameVec[i].iconPath.string().c_str());
