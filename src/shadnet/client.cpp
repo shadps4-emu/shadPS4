@@ -3,59 +3,124 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-ShadNetClient::ShadNetClient() {}
+#ifdef _WIN32
+#pragma comment(lib, "Ws2_32.lib")
+static void PlatformInit() {
+    static bool done = false;
+    if (!done) {
+        WSADATA wd;
+        WSAStartup(
+            MAKEWORD(2, 2),
+            &wd); // might already be called from somwewhere else in shadps4 but make it sure...
+        done = true;
+    }
+}
+#else
+static void PlatformInit() {}
+#endif
 
-ShadNetClient::~ShadNetClient() {}
+ShadNetClient::ShadNetClient() {
+    PlatformInit();
+}
+
+ShadNetClient::~ShadNetClient() {
+    Stop();
+}
 
 void ShadNetClient::Start(const std::string& host, u16 port, const std::string& npid,
-                          const std::string& password, const std::string& token) {}
+                          const std::string& password, const std::string& token) {
+    m_host = host;
+    m_port = port;
+    m_npid = npid;
+    m_password = password;
+    m_token = token;
+    m_terminate = false;
 
-void ShadNetClient::Stop() {}
+    m_thread_connect = std::thread(&ShadNetClient::ConnectThread, this);
+}
 
+void ShadNetClient::Stop() {
+    m_terminate = true;
+
+    // Unblock any WaitFor* callers that haven't fired yet
+    try {
+        m_sem_connected.release();
+    } catch (...) {
+    }
+    try {
+        m_sem_authenticated.release();
+    } catch (...) {
+    }
+
+    // Wake the writer thread
+    {
+        std::lock_guard lock(m_mutex_send_queue);
+        m_cv_send_queue.notify_all();
+    }
+
+    // Closing the socket causes any blocking RecvN() to return immediately
+    DoDisconnect();
+
+    if (m_thread_connect.joinable())
+        m_thread_connect.join();
+    if (m_thread_reader.joinable())
+        m_thread_reader.join();
+    if (m_thread_writer.joinable())
+        m_thread_writer.join();
+}
+// blocking calls
 ShadNetState ShadNetClient::WaitForConnection() {
-    return ShadNetState::Ok;
+    {
+        std::lock_guard lock(m_mutex_connected);
+        if (m_connected)
+            return ShadNetState::Ok;
+    }
+    m_sem_connected.acquire();
+    return m_connected ? ShadNetState::Ok : m_state.load();
 }
 
 ShadNetState ShadNetClient::WaitForAuthenticated() {
-    return ShadNetState::Ok;
+    {
+        std::lock_guard lock(m_mutex_authenticated);
+        if (m_authenticated)
+            return ShadNetState::Ok;
+    }
+    m_sem_authenticated.acquire();
+    return m_authenticated ? ShadNetState::Ok : m_state.load();
 }
-
+// getters/setters
 bool ShadNetClient::IsConnected() const {
-    return false;
+    return m_connected.load();
 }
-
 bool ShadNetClient::IsAuthenticated() const {
-    return false;
+    return m_authenticated.load();
 }
-
 ShadNetState ShadNetClient::GetState() const {
-    return ShadNetState::Ok;
+    return m_state.load();
 }
 
 const std::string& ShadNetClient::GetOnlineName() const {
-    static std::string empty;
-    return empty;
+    return m_online_name;
 }
-
 const std::string& ShadNetClient::GetAvatarUrl() const {
-    static std::string empty;
-    return empty;
+    return m_avatar_url;
 }
-
 u64 ShadNetClient::GetUserId() const {
-    return 0;
+    return m_user_id;
 }
-
 u32 ShadNetClient::GetAddrLocal() const {
-    return 0;
+    return m_addr_local.load();
 }
 
 u32 ShadNetClient::GetNumFriends() const {
-    return 0;
+    std::lock_guard lock(m_mutex_friends);
+    return static_cast<u32>(m_friends.size());
 }
-
 std::optional<std::string> ShadNetClient::GetFriendNpid(u32 index) const {
-    return std::nullopt;
+    std::lock_guard lock(m_mutex_friends);
+    if (index >= m_friends.size())
+        return std::nullopt;
+    return m_friends[index].npid;
 }
 
 void ShadNetClient::ConnectThread() {}
