@@ -146,11 +146,18 @@ void RequestScreenshot(const ScreenshotRequest request) {
     }
 }
 
+u32 ConsumeGameOnlyScreenshotRequests() {
+    return screenshot_game_only_count.exchange(0, std::memory_order_acq_rel);
+}
+
+u32 ConsumeWithOverlaysScreenshotRequests() {
+    return screenshot_with_overlays_count.exchange(0, std::memory_order_acq_rel);
+}
+
 ScreenshotRequests ConsumeScreenshotRequests() {
     return ScreenshotRequests{
-        .game_only_count = screenshot_game_only_count.exchange(0, std::memory_order_acq_rel),
-        .with_overlays_count =
-            screenshot_with_overlays_count.exchange(0, std::memory_order_acq_rel),
+        .game_only_count = ConsumeGameOnlyScreenshotRequests(),
+        .with_overlays_count = ConsumeWithOverlaysScreenshotRequests(),
     };
 }
 

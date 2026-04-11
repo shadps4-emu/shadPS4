@@ -166,7 +166,8 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
     }
     if (game_id == "global") {
         std::map<std::string, std::string> default_bindings_to_add = {
-            {"hotkey_renderdoc_capture", "f12"},
+            {"hotkey_capture_frame", "f12"},
+            {"hotkey_screenshot_with_overlays", "lalt, f12"},
             {"hotkey_fullscreen", "f11"},
             {"hotkey_show_fps", "f10"},
             {"hotkey_pause", "f9"},
@@ -191,6 +192,9 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
                 continue;
             }
             std::string output_string = line.substr(0, equal_pos);
+            if (output_string == "hotkey_renderdoc_capture") {
+                default_bindings_to_add.erase("hotkey_capture_frame");
+            }
             default_bindings_to_add.erase(output_string);
         }
         global_in.close();
@@ -700,17 +704,6 @@ void ControllerOutput::AddUpdate(InputEvent event) {
     }
 }
 
-static bool IsKeyboardKeyPressed(const u32 keycode) {
-    return std::ranges::find_if(pressed_keys, [keycode](const auto& entry) {
-               return entry.first.input.type == InputType::KeyboardMouse &&
-                      entry.first.input.sdl_id == keycode;
-           }) != pressed_keys.end();
-}
-
-static bool IsAltPressedForHotkey() {
-    return IsKeyboardKeyPressed(SDLK_LALT) || IsKeyboardKeyPressed(SDLK_RALT);
-}
-
 void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     auto PushSDLEvent = [&](u32 event_type) {
         if (new_button_state) {
@@ -773,11 +766,10 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             PushSDLEvent(SDL_EVENT_MOUSE_TO_TOUCHPAD);
             break;
         case HOTKEY_RENDERDOC:
-            if (IsAltPressedForHotkey()) {
-                PushSDLEvent(SDL_EVENT_SCREENSHOT_WITH_OVERLAYS);
-            } else {
-                PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
-            }
+            PushSDLEvent(SDL_EVENT_RDOC_CAPTURE);
+            break;
+        case HOTKEY_SCREENSHOT_WITH_OVERLAYS:
+            PushSDLEvent(SDL_EVENT_SCREENSHOT_WITH_OVERLAYS);
             break;
         case HOTKEY_ADD_VIRTUAL_USER:
             PushSDLEvent(SDL_EVENT_ADD_VIRTUAL_USER);
