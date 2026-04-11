@@ -39,8 +39,13 @@ void Launch() {
         return;
     }
 
-    window = SDL_CreateWindow("Big Picture", 1280, 720, SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Big Picture", EmulatorSettings.GetWindowWidth(),
+                              EmulatorSettings.GetWindowHeight(), SDL_WINDOW_RESIZABLE);
     renderer = SDL_CreateRenderer(window, nullptr);
+
+    if (EmulatorSettings.IsFullScreen()) {
+        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+    }
 
     // Check if window creation failed
     if (window == nullptr) {
@@ -62,7 +67,9 @@ void Launch() {
 
     GetGameInfo();
 
+    uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
     float tempScale = uiScale;
+
     while (!done) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
@@ -171,6 +178,9 @@ void Launch() {
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_Quit();
+
+    EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
+    EmulatorSettings.Save();
 
     if (runGame) {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
