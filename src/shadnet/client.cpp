@@ -156,7 +156,7 @@ void ShadNetClient::ConnectThread() {
         return;
     }
 
-    LOG_INFO(ShadNet, "ShadNet: Login packet sent for '{}'", m_npid);
+    LOG_INFO(ShadNet, "Login packet sent for '{}'", m_npid);
     // ConnectThread exits here. ReaderThread receives the reply.
 }
 
@@ -167,7 +167,7 @@ void ShadNetClient::ReaderThread() {
         u8 hdr[SHAD_HEADER_SIZE];
         if (!RecvN(hdr, SHAD_HEADER_SIZE)) {
             if (!m_terminate)
-                LOG_WARNING(ShadNet, "ShadNet: Reader header recv failed, disconnecting");
+                LOG_WARNING(ShadNet, "Reader header recv failed, disconnecting");
             break;
         }
 
@@ -177,7 +177,7 @@ void ShadNetClient::ReaderThread() {
         // hdr[7..14] = packet ID (not needed by dispatcher but available)
 
         if (total_sz < SHAD_HEADER_SIZE || total_sz > SHAD_MAX_PACKET_SIZE) {
-            LOG_ERROR(ShadNet, "ShadNet: Corrupt packet (total_sz={})", total_sz);
+            LOG_ERROR(ShadNet, "Corrupt packet (total_sz={})", total_sz);
             m_state = ShadNetState::FailureProtocol;
             break;
         }
@@ -188,7 +188,7 @@ void ShadNetClient::ReaderThread() {
             payload.resize(payload_sz);
             if (!RecvN(payload.data(), payload_sz)) {
                 if (!m_terminate)
-                    LOG_WARNING(ShadNet, "ShadNet: Reader payload recv failed");
+                    LOG_WARNING(ShadNet, "Reader payload recv failed");
                 break;
             }
         }
@@ -206,7 +206,7 @@ void ShadNetClient::ReaderThread() {
     m_connected = false;
     m_authenticated = false;
 
-    LOG_INFO(ShadNet, "ShadNet: ReaderThread exiting");
+    LOG_INFO(ShadNet, "ReaderThread exiting");
 }
 
 // WriterThread it drains m_send_queue
@@ -225,18 +225,108 @@ void ShadNetClient::WriterThread() {
             if (!m_connected)
                 break;
             if (!SendAll(pkt)) {
-                LOG_ERROR(ShadNet, "ShadNet: WriterThread send failed");
+                LOG_ERROR(ShadNet, "WriterThread send failed");
                 return;
             }
         }
     }
 }
 
+// connected / disconnected methods
 bool ShadNetClient::DoConnect() {
-    return false;
+    struct addrinfo hints{}, *res_list = nullptr;
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (::getaddrinfo(m_host.c_str(), std::to_string(m_port).c_str(), &hints, &res_list) != 0 ||
+        !res_list) {
+        LOG_ERROR(ShadNet, "DNS resolution failed for '{}'", m_host);
+        m_state = ShadNetState::FailureResolve;
+        return false;
+    }
+
+    m_sock = ::socket(res_list->ai_family, SOCK_STREAM, IPPROTO_TCP);
+    if (m_sock == SHAD_INVALID_SOCK) {
+        ::freeaddrinfo(res_list);
+        m_state = ShadNetState::FailureConnect;
+        return false;
+    }
+
+    if (::connect(m_sock, res_list->ai_addr, static_cast<int>(res_list->ai_addrlen)) < 0) {
+        LOG_ERROR(ShadNet, "connect() failed for {}:{}", m_host, m_port);
+        ::freeaddrinfo(res_list);
+        SHAD_CLOSE(m_sock);
+        m_sock = SHAD_INVALID_SOCK;
+        m_state = ShadNetState::FailureConnect;
+        return false;
+    }
+    ::freeaddrinfo(res_list);
+
+    // Record local IP (NBO)
+    struct sockaddr_in local{};
+    socklen_t alen = sizeof(local);
+    if (::getsockname(m_sock, reinterpret_cast<struct sockaddr*>(&local), &alen) == 0)
+        m_addr_local.store(local.sin_addr.s_addr);
+
+    LOG_INFO(ShadNet, "TCP connected to {}:{}", m_host, m_port);
+
+    // ServerInfo handshake (blocking; socket is still blocking here)
+    // The server sends a ServerInfo packet immediately on accept.
+    u8 hdr[SHAD_HEADER_SIZE];
+    if (!RecvN(hdr, SHAD_HEADER_SIZE)) {
+        LOG_ERROR(ShadNet, "Timeout reading ServerInfo header");
+        DoDisconnect();
+        m_state = ShadNetState::FailureServerInfo;
+        return false;
+    }
+
+    if (static_cast<PacketType>(hdr[0]) != PacketType::ServerInfo) {
+        LOG_ERROR(ShadNet, "Expected ServerInfo, got packet type {:02x}", hdr[0]);
+        DoDisconnect();
+        m_state = ShadNetState::FailureServerInfo;
+        return false;
+    }
+
+    const u32 total_sz = GetLE32(hdr + 3);
+    const u32 payload_sz = (total_sz > SHAD_HEADER_SIZE) ? total_sz - SHAD_HEADER_SIZE : 0;
+
+    std::vector<u8> si_payload(payload_sz);
+    if (payload_sz > 0 && !RecvN(si_payload.data(), payload_sz)) {
+        LOG_ERROR(ShadNet, "Timeout reading ServerInfo payload");
+        DoDisconnect();
+        m_state = ShadNetState::FailureServerInfo;
+        return false;
+    }
+
+    if (payload_sz >= 4) {
+        const u32 server_ver = GetLE32(si_payload.data());
+        if (server_ver != SHAD_PROTOCOL_VERSION) {
+            LOG_ERROR(ShadNet, "Protocol version mismatch server={} client={}", server_ver,
+                      SHAD_PROTOCOL_VERSION);
+            DoDisconnect();
+            m_state = ShadNetState::FailureServerInfo;
+            return false;
+        }
+    }
+
+    LOG_INFO(ShadNet, "ServerInfo OK (protocol v{})", SHAD_PROTOCOL_VERSION);
+
+    // Socket stays BLOCKING,ReaderThread uses RecvN(), no fcntl needed.
+    m_connected = true;
+    return true;
 }
 
-void ShadNetClient::DoDisconnect() {}
+void ShadNetClient::DoDisconnect() {
+    if (m_sock != SHAD_INVALID_SOCK) {
+#ifdef _WIN32
+        ::shutdown(m_sock, SD_BOTH);
+#else
+        ::shutdown(m_sock, SHUT_RDWR);
+#endif
+        SHAD_CLOSE(m_sock);
+        m_sock = SHAD_INVALID_SOCK;
+    }
+}
 
 bool ShadNetClient::RecvN(u8* buf, u32 n) {
     return false;
