@@ -118,6 +118,7 @@ void Launch() {
         }
 
         SetGameIcons();
+
         ImGui::EndChild();
         ImGui::Separator();
 
@@ -209,6 +210,10 @@ void SetGameIcons() {
             runEbootPath = gameVec[i].ebootPath;
         }
 
+        if (ImGui::IsItemFocused()) {
+            ImGui::SetScrollHereY(0.5f);
+        }
+
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("%s", gameVec[i].title.c_str());
         ImGui::PopTextWrapPos();
@@ -225,7 +230,6 @@ void SetGameIcons() {
 
 void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPath,
                       std::filesystem::path game_folder) {
-
     auto update_folder = game_folder;
     update_folder += "-UPDATE";
 
