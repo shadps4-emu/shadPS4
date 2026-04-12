@@ -108,7 +108,8 @@ For more information on how to test, debug and report issues with the emulator o
 F10 | FPS Counter
 Ctrl+F10 | Video Debug Info
 F11 | Fullscreen
-F12 | Trigger RenderDoc Capture
+F12 | Trigger RenderDoc Capture (or game-only screenshot if RenderDoc is unavailable)
+Alt+F12 | Capture screenshot including HUD/dialog overlays
 
 > [!NOTE]
 > Xbox and DualShock controllers work out of the box.

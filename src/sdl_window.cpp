@@ -285,7 +285,14 @@ void WindowSDL::WaitEvent() {
         }
         break;
     case SDL_EVENT_RDOC_CAPTURE:
-        VideoCore::TriggerCapture();
+        if (VideoCore::IsRenderDocLoaded()) {
+            VideoCore::TriggerCapture();
+        } else {
+            VideoCore::RequestScreenshot(VideoCore::ScreenshotRequest::GameOnly);
+        }
+        break;
+    case SDL_EVENT_SCREENSHOT_WITH_OVERLAYS:
+        VideoCore::RequestScreenshot(VideoCore::ScreenshotRequest::WithOverlays);
         break;
     default:
         break;
