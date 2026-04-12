@@ -60,6 +60,11 @@ public:
     // Returns -1 if no connected user owns that account_id.
     s32 GetUserIdByAccountId(u64 account_id) const;
 
+    // Reverse lookup: OrbisNpOnlineId to local user_id.
+    // Scans m_np_ids for a matching handle.data string.
+    // Returns -1 if no connected user has that Online ID.
+    s32 GetUserIdByOnlineId(const OrbisNpOnlineId& online_id) const;
+
     // Friend list
     u32 GetNumFriends(s32 user_id) const;
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
