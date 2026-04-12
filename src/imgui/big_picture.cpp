@@ -281,8 +281,8 @@ void SetGameIcons() {
     }
 }
 
-void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPath,
-                      std::filesystem::path game_folder) {
+std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
+    std::filesystem::path outputPath;
     auto update_folder = game_folder;
     update_folder += "-UPDATE";
 
@@ -296,6 +296,8 @@ void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPa
     } else {
         outputPath = game_folder / "sce_sys" / sceItem;
     }
+
+    return outputPath;
 }
 
 void GetGameInfo() {
@@ -312,14 +314,12 @@ void GetGameInfo() {
                 game.ebootPath = entry.path() / "eboot.bin";
 
                 const std::string iconFileName = "icon0.png";
-                std::filesystem::path iconPath;
-                SceUpdateChecker(iconFileName, iconPath, entry.path());
+                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
                 game.iconTexture = IMG_LoadTexture(renderer, iconPath.string().c_str());
 
                 PSF psf;
                 const std::string sfoFileName = "param.sfo";
-                std::filesystem::path sfoPath;
-                SceUpdateChecker(sfoFileName, sfoPath, entry.path());
+                std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
 
                 if (psf.Open(sfoPath)) {
                     if (const auto title = psf.GetString("TITLE"); title.has_value()) {

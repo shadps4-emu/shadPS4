@@ -17,7 +17,6 @@ struct Game {
 void Launch();
 void SetGameIcons();
 void GetGameInfo();
-void SceUpdateChecker(const std::string sceItem, std::filesystem::path& outputPath,
-                      std::filesystem::path game_folder);
+std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder);
 
 } // namespace BigPictureMode
