@@ -216,7 +216,7 @@ if (NOT TARGET libusb::usb)
         # no you cant vendor this libusb, its builtin on freebsd
         find_package(libusb)
     else()
-        add_subdirectory(ext-libusb)
+        add_subdirectory(libusb)
         add_library(libusb::usb ALIAS usb-1.0)
     endif()
 endif()
