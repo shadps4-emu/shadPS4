@@ -201,7 +201,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
     std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
-    std::filesystem::path trophyPath = game_folder / "sce_sys/trophy";
+    std::filesystem::path trophyDir = game_folder / "sce_sys/trophy";
     NPBindFile npbind;
     if (!npbind.Load(npbindPath.string())) {
         LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
