@@ -41,6 +41,7 @@
 #define SDL_EVENT_ADD_VIRTUAL_USER SDL_EVENT_USER + 11
 #define SDL_EVENT_REMOVE_VIRTUAL_USER SDL_EVENT_USER + 12
 #define SDL_EVENT_RDOC_CAPTURE SDL_EVENT_USER + 13
+#define SDL_EVENT_SCREENSHOT_WITH_OVERLAYS SDL_EVENT_USER + 14
 
 #define LEFTJOYSTICK_HALFMODE 0x00010000
 #define RIGHTJOYSTICK_HALFMODE 0x00020000
@@ -62,6 +63,7 @@
 #define HOTKEY_VOLUME_DOWN 0xf000000b
 #define HOTKEY_ADD_VIRTUAL_USER 0xf000000c
 #define HOTKEY_REMOVE_VIRTUAL_USER 0xf000000d
+#define HOTKEY_SCREENSHOT_WITH_OVERLAYS 0xf000000e
 
 #define SDL_UNMAPPED UINT32_MAX - 1
 
@@ -156,6 +158,8 @@ const std::map<std::string, u32> string_to_hotkey_map = {
     {"hotkey_toggle_mouse_to_joystick", HOTKEY_TOGGLE_MOUSE_TO_JOYSTICK},
     {"hotkey_toggle_mouse_to_gyro", HOTKEY_TOGGLE_MOUSE_TO_GYRO},
     {"hotkey_toggle_mouse_to_touchpad", HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD},
+    {"hotkey_capture_frame", HOTKEY_RENDERDOC},
+    {"hotkey_screenshot_with_overlays", HOTKEY_SCREENSHOT_WITH_OVERLAYS},
     {"hotkey_renderdoc_capture", HOTKEY_RENDERDOC},
     {"hotkey_add_virtual_user", HOTKEY_ADD_VIRTUAL_USER},
     {"hotkey_remove_virtual_user", HOTKEY_REMOVE_VIRTUAL_USER},
@@ -526,7 +530,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 40;
+    static constexpr u64 output_count = 41;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -574,6 +578,7 @@ public:
         ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_GYRO),
         ControllerOutput(HOTKEY_TOGGLE_MOUSE_TO_TOUCHPAD),
         ControllerOutput(HOTKEY_RENDERDOC),
+        ControllerOutput(HOTKEY_SCREENSHOT_WITH_OVERLAYS),
         ControllerOutput(HOTKEY_ADD_VIRTUAL_USER),
         ControllerOutput(HOTKEY_REMOVE_VIRTUAL_USER),
         ControllerOutput(HOTKEY_VOLUME_UP),
