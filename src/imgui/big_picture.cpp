@@ -18,6 +18,7 @@
 namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
+const float settingsIconSize = 100.f;
 
 static bool done = false;
 static bool runGame = false;
@@ -30,6 +31,8 @@ static int scaleSelected = 1;
 
 static SDL_Window* window = nullptr;
 static SDL_Renderer* renderer = nullptr;
+
+static SDL_Texture* settingsTexture;
 
 void Launch() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -121,6 +124,9 @@ void Launch() {
 
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
     float tempScale = uiScale;
+
+    std::filesystem::path texPath = "D:/Github/shadPS4/build/Clang_x64_Release/settings.png";
+    settingsTexture = IMG_LoadTexture(renderer, texPath.string().c_str());
 
     while (!done) {
         SDL_Event event;
@@ -334,6 +340,100 @@ void GetGameInfo() {
             }
         }
     }
+}
+
+void DrawSettings() {
+    if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoDecoration)) {
+        ImGui::SetWindowFontScale(uiScale);
+        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
+                          child_flags);
+        Overlay::TextCentered("shadPS4 Settings");
+
+        ImVec4 settingsColor = ImVec4(0.1f, 0.1f, 0.12f, 0.8f); // Darker gray
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, settingsColor);
+        ImGui::BeginChild("Categories", ImVec2(200 * uiScale, 0), true, child_flags);
+
+        float button_width = settingsIconSize * uiScale;
+        float window_width = ImGui::GetContentRegionAvail().x;
+        float centerX = (window_width - button_width) * 0.5f;
+        ImGui::SetCursorPosX(centerX);
+        if (ImGui::ImageButton("General", (ImTextureID)settingsTexture,
+                               ImVec2(button_width, button_width))) {
+            printf("test");
+        }
+        Overlay::TextCentered("General");
+
+        ImGui::EndChild(); // Categories
+        ImGui::SameLine();
+
+        ImGui::BeginChild("SettingArea", ImVec2(0, 0), true, child_flags);
+        ImGui::PopStyleColor();
+
+        // To do, separate functions
+
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 300.0f * uiScale);
+            ImGui::TableSetupColumn("Setting");
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            ImGui::Text("Setting 1");
+            ImGui::TableNextColumn();
+            bool example;
+            ImGui::Checkbox("##Checkbox Label", &example);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("Setting 2");
+
+            ImGui::TableNextColumn();
+            static const char* items[] = {"Apple", "Banana", "Cherry"};
+            static int selected_item = 0;
+            ImGui::Combo("##Fruits", &selected_item, items, IM_ARRAYSIZE(items));
+            ImGui::EndTable();
+        }
+        ImGui::PopStyleVar();
+
+        ImGui::EndChild(); // setting area
+        ImGui::EndChild(); // content area
+        ImGui::Separator();
+
+        ImGui::SetNextItemWidth(300.0f * uiScale);
+        if (ImGui::SliderFloat("UI Scale", &sliderScale2, 0.25f, 3.0f)) {
+            // Dynamically changes UI scale
+        }
+
+        // Only update when user is not interacting with slider
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            uiScale = sliderScale2;
+        }
+        ImGui::SameLine();
+
+        // Align buttons right
+        float buttonsWidth = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Cancel").x +
+                             ImGui::GetStyle().FramePadding.x * 4.0f +
+                             ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
+
+        if (ImGui::Button("Save")) {
+            sliderScale = sliderScale2;
+            showSettings = false;
+            // Emulator Settings Save
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel")) {
+            sliderScale = sliderScale2;
+            showSettings = false;
+        }
+    }
+
+    ImGui::End();
 }
 
 } // namespace BigPictureMode
