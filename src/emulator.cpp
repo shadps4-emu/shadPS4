@@ -202,6 +202,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     game_info.game_folder = game_folder;
     std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
+    std::filesystem::path trophyDir = game_folder / "sce_sys/trophy";
     NPBindFile npbind;
     if (!npbind.Load(npbindPath.string())) {
         LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
@@ -210,6 +211,34 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         if (npCommIds.empty()) {
             LOG_WARNING(Common_Filesystem, "No NPComm IDs found in npbind.dat");
         } else {
+            std::vector<std::pair<int, std::string>> trophyFiles; // (trophy_index, filename)
+            std::string pattern = "trophy";
+            for (const auto& entry : std::filesystem::directory_iterator(trophyDir)) {
+                if (entry.is_regular_file() && entry.path().extension() == ".trp") {
+                    std::string filename =
+                        entry.path().stem().string(); // "trophy00", "trophy01", etc.
+
+                    // Check if filename starts with "trophy"
+                    if (filename.find(pattern) == 0) {
+                        // Extract the number part
+                        std::string numStr = filename.substr(pattern.length());
+                        int trophy_index = std::stoi(numStr);
+                        trophyFiles.emplace_back(trophy_index, filename);
+                    }
+                }
+            }
+            // Sort by trophy index
+            std::sort(trophyFiles.begin(), trophyFiles.end());
+            std::map<int, std::string> trophyIndexMap{};
+            // Map trophy indices to npCommIds (assuming npCommIds are in the same order as sorted
+            // trophy files)
+            for (size_t i = 0; i < trophyFiles.size() && i < npCommIds.size(); i++) {
+                int trophy_index = trophyFiles[i].first;
+                const std::string& npCommId = npCommIds[i];
+                trophyIndexMap[trophy_index] = npCommId;
+                LOG_DEBUG(Loader, "Mapped trophy index {} to npCommId: {}", trophy_index, npCommId);
+            }
+            game_info.trophyIndexMap = std::move(trophyIndexMap);
             game_info.npCommIds = std::move(npCommIds);
         }
     }

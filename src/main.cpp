@@ -20,6 +20,8 @@
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
+#include "imgui/big_picture.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -73,6 +75,7 @@ int main(int argc, char* argv[]) {
     bool configClean = false;
     bool configGlobal = false;
     bool logAppend = false;
+    bool bigPicture = false;
 
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
@@ -83,6 +86,8 @@ int main(int argc, char* argv[]) {
     app.add_option("-p,--patch", patchFile, "Patch file to apply");
     app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
                  "Disable automatic loading of game patches");
+
+    app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
 
     // FULLSCREEN: behavior-identical
     app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
@@ -140,7 +145,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (!gamePath.has_value()) {
+    if (!gamePath.has_value() && !bigPicture) {
         if (!gameArgs.empty()) {
             gamePath = gameArgs.front();
             gameArgs.erase(gameArgs.begin());
@@ -200,7 +205,7 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        if (!found) {
+        if (!found && !bigPicture) {
             std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
             return 1;
         }
@@ -209,10 +214,14 @@ int main(int argc, char* argv[]) {
     if (waitPid)
         Core::Debugger::WaitForPid(*waitPid);
 
-    auto* emulator = Common::Singleton<Core::Emulator>::Instance();
-    emulator->executableName = argv[0];
-    emulator->waitForDebuggerBeforeRun = waitForDebugger;
-    emulator->Run(ebootPath, gameArgs, overrideRoot);
+    if (bigPicture) {
+        BigPictureMode::Launch();
+    } else {
+        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+        emulator->executableName = argv[0];
+        emulator->waitForDebuggerBeforeRun = waitForDebugger;
+        emulator->Run(ebootPath, gameArgs, overrideRoot);
+    }
 
     return 0;
 }
