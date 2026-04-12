@@ -18,7 +18,7 @@
 namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
-const float settingsIconSize = 100.f;
+const float settingsIconSize = 75.f;
 
 static bool done = false;
 static bool runGame = false;
@@ -348,31 +348,49 @@ void DrawSettings() {
         ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
 
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
-                          child_flags);
-        Overlay::TextCentered("shadPS4 Settings");
-
         ImVec4 settingsColor = ImVec4(0.1f, 0.1f, 0.12f, 0.8f); // Darker gray
         ImGui::PushStyleColor(ImGuiCol_ChildBg, settingsColor);
-        ImGui::BeginChild("Categories", ImVec2(200 * uiScale, 0), true, child_flags);
+        ImGui::BeginChild("Categories", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY,
+                          child_flags | ImGuiWindowFlags_HorizontalScrollbar);
 
-        float button_width = settingsIconSize * uiScale;
-        float window_width = ImGui::GetContentRegionAvail().x;
-        float centerX = (window_width - button_width) * 0.5f;
-        ImGui::SetCursorPosX(centerX);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
+        ImGui::BeginGroup();
         if (ImGui::ImageButton("General", (ImTextureID)settingsTexture,
-                               ImVec2(button_width, button_width))) {
+                               ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
             printf("test");
         }
-        Overlay::TextCentered("General");
 
-        ImGui::EndChild(); // Categories
+        ImGui::SetCursorPosX(
+            (ImGui::GetCursorPosX() +
+             (settingsIconSize * uiScale - ImGui::CalcTextSize("General").x) * 0.5f) +
+            ImGui::GetStyle().FramePadding.x);
+        ImGui::Text("General");
+        ImGui::EndGroup();
+
         ImGui::SameLine();
+        ImGui::BeginGroup();
+        if (ImGui::ImageButton("Graphics", (ImTextureID)settingsTexture,
+                               ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
+            printf("test");
+        }
 
-        ImGui::BeginChild("SettingArea", ImVec2(0, 0), true, child_flags);
+        ImGui::SetCursorPosX(
+            (ImGui::GetCursorPosX() +
+             (settingsIconSize * uiScale - ImGui::CalcTextSize("Graphics").x) * 0.5f) +
+            ImGui::GetStyle().FramePadding.x);
+        ImGui::Text("Graphics");
+        ImGui::EndGroup();
+
+        ImGui::PopStyleVar();
+        ImGui::EndChild(); // Categories
+
+        if (ImGui::IsWindowAppearing()) {
+            ImGui::SetKeyboardFocusHere();
+        }
+
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
+                          child_flags);
         ImGui::PopStyleColor();
-
-        // To do, separate functions
 
         ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
         if (ImGui::BeginTable("SettingsTable", 2)) {
@@ -399,8 +417,7 @@ void DrawSettings() {
         }
         ImGui::PopStyleVar();
 
-        ImGui::EndChild(); // setting area
-        ImGui::EndChild(); // content area
+        ImGui::EndChild();
         ImGui::Separator();
 
         ImGui::SetNextItemWidth(300.0f * uiScale);
@@ -432,7 +449,6 @@ void DrawSettings() {
             showSettings = false;
         }
     }
-
     ImGui::End();
 }
 
