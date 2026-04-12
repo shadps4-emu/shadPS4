@@ -13,6 +13,7 @@
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include "np_handler.h"
 
 namespace Libraries::Np::NpManager {
 
@@ -788,6 +789,7 @@ void DeregisterNpCallback(std::string key) {
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
+    Libraries::Np::NpHandler::GetInstance().Initialize();
 
     LIB_FUNCTION("GpLQDNKICac", "libSceNpManager", 1, "libSceNpManager", sceNpCreateRequest);
     LIB_FUNCTION("eiqMCt9UshI", "libSceNpManager", 1, "libSceNpManager", sceNpCreateAsyncRequest);

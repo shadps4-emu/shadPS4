@@ -41,6 +41,12 @@ public:
     /// True if any user is currently signed in
     bool IsAnySignedIn() const;
 
+    /// Full NP ID for this user, built once from shadnet_npid after login.
+    const OrbisNpId& GetNpId(s32 user_id) const;
+
+    /// The Online ID embedded in the NP ID (npid.handle).
+    const OrbisNpOnlineId& GetOnlineId(s32 user_id) const;
+
     // Online name returned by the shadNet server for this user after login.
     std::string GetOnlineName(s32 user_id) const;
 
@@ -91,6 +97,10 @@ private:
     // Per-user client map
     mutable std::mutex m_mutex_clients;
     std::map<s32, std::shared_ptr<ShadNet::ShadNetClient>> m_clients;
+    // Per-user NP ID built once from shadnet_npid after login.
+    std::map<s32, OrbisNpId> m_np_ids;
+    // Returned by GetNpId/GetOnlineId when user_id is not connected.
+    static const OrbisNpId s_empty_np_id;
 
     // Worker thread
     std::atomic<bool> m_initialized{false};

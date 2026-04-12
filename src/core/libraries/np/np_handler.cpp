@@ -11,6 +11,9 @@
 
 namespace Libraries::Np {
 
+// Static empty NpId returned when user_id is not connected.
+const OrbisNpId NpHandler::s_empty_np_id{};
+
 NpHandler& NpHandler::GetInstance() {
     static NpHandler s_instance;
     return s_instance;
@@ -161,8 +164,15 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
             UserSettings.Save();
     }
 
+    // Build the OrbisNpId once from shadnet_npid
     {
+        OrbisNpId np_id{};
+        const User* u = UserManagement.GetUserByID(user_id);
+        if (u && !u->shadnet_npid.empty()) {
+            strncpy(np_id.handle.data, u->shadnet_npid.c_str(), sizeof(np_id.handle.data) - 1);
+        }
         std::lock_guard lock(m_mutex_clients);
+        m_np_ids[user_id] = np_id;
         m_clients[user_id] = std::move(client);
     }
 
@@ -220,6 +230,16 @@ bool NpHandler::IsAnySignedIn() const {
         if (client->IsAuthenticated())
             return true;
     return false;
+}
+
+const OrbisNpId& NpHandler::GetNpId(s32 user_id) const {
+    std::lock_guard lock(m_mutex_clients);
+    auto it = m_np_ids.find(user_id);
+    return it != m_np_ids.end() ? it->second : s_empty_np_id;
+}
+
+const OrbisNpOnlineId& NpHandler::GetOnlineId(s32 user_id) const {
+    return GetNpId(user_id).handle;
 }
 
 std::string NpHandler::GetOnlineName(s32 user_id) const {
