@@ -17,13 +17,11 @@ struct User {
     bool logged_in = false;
 
     // ShadNet settings
-    std::string shadnet_npid;        // account identifier
-    std::string shadnet_password;    // account password
-    std::string shadnet_token;       // 2FA/validation token (future use)
-    std::string shadnet_online_name; // display name
-    std::string shadnet_avatar_url;  // avatar URL
-    std::string shadnet_email;       // email address (furute use)
-    bool shadnet_enabled = false;    // enable shadnet for user
+    std::string shadnet_npid;     // account identifier
+    std::string shadnet_password; // account password
+    std::string shadnet_token;    // 2FA/validation token (future use)
+    std::string shadnet_email;    // email address (furute use)
+    bool shadnet_enabled = false; // enable shadnet for user
 };
 
 struct Users {
@@ -31,8 +29,7 @@ struct Users {
     std::string commit_hash{};
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, user_id, user_color, user_name, player_index, shadnet_npid,
-                                   shadnet_password, shadnet_token, shadnet_online_name,
-                                   shadnet_avatar_url, shadnet_email, shadnet_enabled)
+                                   shadnet_password, shadnet_token, shadnet_email, shadnet_enabled)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Users, user, commit_hash)
 
 using LoggedInUsers = std::array<User*, 4>;

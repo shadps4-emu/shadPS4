@@ -139,38 +139,13 @@ bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, cons
         return false;
     }
 
-    LOG_INFO(NpHandler, "user_id={} signed in onlineName='{}' accountId={}", user_id,
-             client->GetOnlineName(), client->GetUserId());
+    LOG_INFO(NpHandler, "user_id={} signed in npid='{}' accountId={}", user_id, npid,
+             client->GetUserId());
 
-    // Write server-authoritative onlineName and avatarUrl back into the User
-    // record so they survive restarts and stay in sync with the server.
-    // The local shadnet_online_name/shadnet_avatar_url are what the client sent at
-    // account creation; the server may normalise them, so we update from the
-    // reply and persist immediately.
-    // p.s i am not sure if we need to do this TODO check if it is needed
-    if (User* u = UserManagement.GetUserByID(user_id)) {
-        bool dirty = false;
-        const std::string server_name = client->GetOnlineName();
-        const std::string server_avatar = client->GetAvatarUrl();
-        if (!server_name.empty() && u->shadnet_online_name != server_name) {
-            u->shadnet_online_name = server_name;
-            dirty = true;
-        }
-        if (!server_avatar.empty() && u->shadnet_avatar_url != server_avatar) {
-            u->shadnet_avatar_url = server_avatar;
-            dirty = true;
-        }
-        if (dirty)
-            UserSettings.Save();
-    }
-
-    // Build the OrbisNpId once from shadnet_npid
+    // Build OrbisNpId
     {
         OrbisNpId np_id{};
-        const User* u = UserManagement.GetUserByID(user_id);
-        if (u && !u->shadnet_npid.empty()) {
-            strncpy(np_id.handle.data, u->shadnet_npid.c_str(), sizeof(np_id.handle.data) - 1);
-        }
+        strncpy(np_id.handle.data, npid.c_str(), sizeof(np_id.handle.data) - 1);
         std::lock_guard lock(m_mutex_clients);
         m_np_ids[user_id] = np_id;
         m_clients[user_id] = std::move(client);
@@ -240,14 +215,6 @@ const OrbisNpId& NpHandler::GetNpId(s32 user_id) const {
 
 const OrbisNpOnlineId& NpHandler::GetOnlineId(s32 user_id) const {
     return GetNpId(user_id).handle;
-}
-
-std::string NpHandler::GetOnlineName(s32 user_id) const {
-    // Returns the display name set at account creation and returned by the
-    // server in the Login reply.
-    std::lock_guard lock(m_mutex_clients);
-    auto it = m_clients.find(user_id);
-    return it != m_clients.end() ? it->second->GetOnlineName() : std::string{};
 }
 
 std::string NpHandler::GetAvatarUrl(s32 user_id) const {

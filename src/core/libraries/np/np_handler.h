@@ -47,9 +47,6 @@ public:
     /// The Online ID embedded in the NP ID (npid.handle).
     const OrbisNpOnlineId& GetOnlineId(s32 user_id) const;
 
-    // Online name returned by the shadNet server for this user after login.
-    std::string GetOnlineName(s32 user_id) const;
-
     // Avatar URL returned by the server.
     std::string GetAvatarUrl(s32 user_id) const;
 
