@@ -87,9 +87,6 @@
 	path = externals/libpng
 	url = https://github.com/pnggroup/libpng
 	shallow = true
-[submodule "externals/ext-libusb"]
-	path = externals/ext-libusb
-	url = https://github.com/shadps4-emu/ext-libusb.git
 [submodule "externals/epoll-shim"]
 	path = externals/epoll-shim
 	url = https://github.com/jiixyj/epoll-shim.git
@@ -125,7 +122,6 @@
 [submodule "externals/sdl3"]
 	path = externals/sdl3
 	url = https://github.com/shadexternals/sdl3.git
-
 	branch = main
 [submodule "externals/cpp-httplib"]
 	path = externals/cpp-httplib
@@ -133,3 +129,7 @@
 [submodule "externals/openal-soft"]
 	path = externals/openal-soft
 	url = https://github.com/shadexternals/openal-soft.git
+[submodule "externals/libusb"]
+	path = externals/libusb
+	url = https://github.com/shadexternals/libusb.git
+	branch = shadps4

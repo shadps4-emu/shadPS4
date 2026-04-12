@@ -207,6 +207,17 @@ void EmulatorSettingsImpl::SetFontsDir(const std::filesystem::path& dir) {
     m_general.font_dir.value = dir;
 }
 
+std::filesystem::path EmulatorSettingsImpl::GetAddonInstallDir() {
+    if (m_general.addon_install_dir.value.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
+    }
+    return m_general.addon_install_dir.value;
+}
+
+void EmulatorSettingsImpl::SetAddonInstallDir(const std::filesystem::path& dir) {
+    m_general.addon_install_dir.value = dir;
+}
+
 // ── Game-specific override management ────────────────────────────────
 void EmulatorSettingsImpl::ClearGameSpecificOverrides() {
     ClearGroupOverrides(m_general);

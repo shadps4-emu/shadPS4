@@ -456,6 +456,8 @@ public:
     void SetSysModulesDir(const std::filesystem::path& dir);
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
+    std::filesystem::path GetAddonInstallDir();
+    void SetAddonInstallDir(const std::filesystem::path& dir);
 
 private:
     GeneralSettings m_general{};
@@ -550,7 +552,6 @@ public:
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
     SETTING_FORWARD_BOOL(m_general, IdenticalLogGrouped, identical_log_grouped)
-    SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
     SETTING_FORWARD(m_general, LogFilter, log_filter)
     SETTING_FORWARD(m_general, LogType, log_type)
     SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)

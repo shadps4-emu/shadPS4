@@ -1436,7 +1436,8 @@ std::filesystem::path GetInputConfigFile(const string& game_id) {
     }
     if (game_id == "global") {
         std::map<string, string> default_bindings_to_add = {
-            {"hotkey_renderdoc_capture", "f12"},
+            {"hotkey_capture_frame", "f12"},
+            {"hotkey_screenshot_with_overlays", "lalt, f12"},
             {"hotkey_fullscreen", "f11"},
             {"hotkey_show_fps", "f10"},
             {"hotkey_pause", "f9"},
@@ -1448,6 +1449,8 @@ std::filesystem::path GetInputConfigFile(const string& game_id) {
             {"hotkey_volume_up", "kpplus"},
             {"hotkey_volume_down", "kpminus"},
         };
+        string legacy_capture_binding;
+        bool legacy_capture_binding_found = false;
         std::ifstream global_in(config_file);
         string line;
         while (std::getline(global_in, line)) {
@@ -1459,9 +1462,19 @@ std::filesystem::path GetInputConfigFile(const string& game_id) {
                 continue;
             }
             std::string output_string = line.substr(0, equal_pos);
+            if (output_string == "hotkey_renderdoc_capture") {
+                legacy_capture_binding = line.substr(equal_pos + 1);
+                legacy_capture_binding_found = true;
+            }
             default_bindings_to_add.erase(output_string);
         }
         global_in.close();
+        if (legacy_capture_binding_found) {
+            if (auto it = default_bindings_to_add.find("hotkey_capture_frame");
+                it != default_bindings_to_add.end()) {
+                it->second = legacy_capture_binding;
+            }
+        }
         std::ofstream global_out(config_file, std::ios::app);
         for (auto const& b : default_bindings_to_add) {
             global_out << b.first << " = " << b.second << "\n";
