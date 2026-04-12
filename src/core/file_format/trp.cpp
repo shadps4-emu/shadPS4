@@ -44,12 +44,34 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, int index, std::string npCommId,
                   const std::filesystem::path& outputPath) {
-    std::filesystem::path gameSysDir =
-        trophyPath / "sce_sys/trophy/" / std::format("trophy{:02d}.trp", index);
-    if (!std::filesystem::exists(gameSysDir)) {
-        LOG_WARNING(Common_Filesystem, "Game trophy directory doesn't exist");
+
+    std::filesystem::path trophyDir = trophyPath / "sce_sys/trophy";
+
+    if (!std::filesystem::exists(trophyDir)) {
+        LOG_WARNING(Common_Filesystem, "Trophy directory doesn't exist: {}", trophyDir.string());
         return false;
     }
+
+    // Collect all .trp files in the directory
+    std::vector<std::filesystem::path> trpFiles;
+    for (const auto& entry : std::filesystem::directory_iterator(trophyDir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".trp") {
+            trpFiles.push_back(entry.path());
+        }
+    }
+
+    // Sort files to ensure consistent ordering
+    std::sort(trpFiles.begin(), trpFiles.end());
+
+    if (index >= trpFiles.size()) {
+        LOG_WARNING(Common_Filesystem, "Trophy index {} out of range (only {} .trp files found)",
+                    index, trpFiles.size());
+        return false;
+    }
+
+    // Select the file at the given index
+    std::filesystem::path gameSysDir = trpFiles[index];
+    LOG_INFO(Common_Filesystem, "Using trophy file: {}", gameSysDir.filename().string());
 
     const auto& user_key_vec =
         KeyManager::GetInstance()->GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
