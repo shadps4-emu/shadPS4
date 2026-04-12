@@ -72,7 +72,6 @@ struct Setting {
     }
 
     /// Write v to the base layer.
-    /// Game-specific overrides are applied exclusively via Load(serial)
     /// Set proper value as base or game_specific
     void set(const T& v, bool game_specific = false) {
         if (game_specific) {
