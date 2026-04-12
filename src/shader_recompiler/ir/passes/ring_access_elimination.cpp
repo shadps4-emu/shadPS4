@@ -73,7 +73,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 const auto attrib =
                     IR::Value{offset < 16 ? IR::Attribute::Position0
                                           : IR::Attribute::Param0 + (offset / 16 - 1)};
-                const auto comp = (offset / 4) % 4;
+                const u32 comp = (offset / 4) % 4;
 
                 inst.ReplaceOpcode(IR::Opcode::SetAttribute);
                 inst.ClearArgs();

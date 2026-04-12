@@ -49,15 +49,16 @@ union TextureInstInfo {
 };
 
 union BufferInstInfo {
-    u32 raw;
-    BitField<0, 1, u32> index_enable;
-    BitField<1, 1, u32> voffset_enable;
-    BitField<2, 12, u32> inst_offset;
-    BitField<14, 1, u32> system_coherent;
-    BitField<15, 1, u32> globally_coherent;
-    BitField<16, 1, u32> typed;
+    u64 raw;
+    BitField<0, 1, u64> index_enable;
+    BitField<1, 1, u64> voffset_enable;
+    BitField<2, 12, u64> inst_offset;
+    BitField<14, 1, u64> system_coherent;
+    BitField<15, 1, u64> globally_coherent;
+    BitField<16, 1, u64> typed;
     BitField<17, 4, AmdGpu::DataFormat> inst_data_fmt;
     BitField<21, 3, AmdGpu::NumberFormat> inst_num_fmt;
+    BitField<32, 16, u64> pc;
 };
 
 enum class ScalarReg : u32 {
