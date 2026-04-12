@@ -44,6 +44,9 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, int index, std::string npCommId,
                   const std::filesystem::path& outputPath) {
+
+    std::filesystem::path trophyDir = trophyPath / "sce_sys/trophy";
+
     if (!std::filesystem::exists(trophyDir)) {
         LOG_WARNING(Common_Filesystem, "Trophy directory doesn't exist: {}", trophyDir.string());
         return false;
