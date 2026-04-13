@@ -18,7 +18,7 @@
 namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
-const float settingsIconSize = 75.f;
+const float settingsIconSize = 125.f;
 
 static bool done = false;
 static bool runGame = false;
@@ -29,16 +29,14 @@ static std::vector<Game> gameVec = {};
 static std::vector<bool> focusState = {};
 
 static float uiScale = 1.0f;
-static float sliderScale = 1.0f;
-static float sliderScale2 = 1.0f;
+static CurrentSettings currentSettings;
 
 static SDL_Window* window = nullptr;
 static SDL_Renderer* renderer = nullptr;
-static SDL_Texture* settingsTexture;
+static SDL_Texture* settingsTexture; // temporary
 
 static SettingsType currentType = SettingsType::Profiles;
 static std::string currentProfile = "Global";
-static CurrentSettings currentSettings;
 
 void Launch() {
     LoadSettings("Global");
@@ -131,7 +129,6 @@ void Launch() {
     GetGameInfo();
 
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
-    sliderScale = uiScale;
 
     std::filesystem::path texPath = "D:/Github/shadPS4/build/Clang_x64_Release/settings.png";
     settingsTexture = IMG_LoadTexture(renderer, texPath.string().c_str());
@@ -179,6 +176,11 @@ void Launch() {
         ImGui::Separator();
 
         ImGui::SetNextItemWidth(300.0f * uiScale);
+
+        static float sliderScale = 1.0f;
+        if (ImGui::IsWindowAppearing()) {
+            sliderScale = uiScale;
+        }
         ImGui::SliderFloat("UI Scale", &sliderScale, 0.25f, 3.0f);
 
         // Only update when user is not interacting with slider
@@ -196,8 +198,6 @@ void Launch() {
 
         if (ImGui::Button("Settings")) {
             showSettings = true;
-            sliderScale2 = uiScale;
-
             currentType = SettingsType::Profiles;
             currentProfile = "Global";
             LoadSettings(currentProfile);
@@ -236,6 +236,11 @@ void Launch() {
             ImGui::SetNextWindowPos(viewport->WorkPos);
             ImGui::SetNextWindowSize(viewport->WorkSize);
             DrawSettings();
+
+            // update when settings dialog closed
+            if (!showSettings) {
+                sliderScale = uiScale;
+            }
         }
 
         ImGui::PopFont();
@@ -415,32 +420,12 @@ void DrawSettings() {
                           child_flags | ImGuiWindowFlags_HorizontalScrollbar);
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
-        ImGui::BeginGroup();
-        if (ImGui::ImageButton("Profiles", (ImTextureID)settingsTexture,
-                               ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
-            currentType = SettingsType::Profiles;
-        }
 
-        ImGui::SetCursorPosX(
-            (ImGui::GetCursorPosX() +
-             (settingsIconSize * uiScale - ImGui::CalcTextSize("General").x) * 0.5f) +
-            ImGui::GetStyle().FramePadding.x);
-        ImGui::Text("Profiles");
-        ImGui::EndGroup();
+        AddCategory("Profiles", settingsTexture, SettingsType::Profiles);
+        AddCategory("General", settingsTexture, SettingsType::General);
 
-        ImGui::SameLine();
-        ImGui::BeginGroup();
-        if (ImGui::ImageButton("General", (ImTextureID)settingsTexture,
-                               ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
-            currentType = SettingsType::General;
-        }
-
-        ImGui::SetCursorPosX(
-            (ImGui::GetCursorPosX() +
-             (settingsIconSize * uiScale - ImGui::CalcTextSize("General").x) * 0.5f) +
-            ImGui::GetStyle().FramePadding.x);
-        ImGui::Text("General");
-        ImGui::EndGroup();
+        if (currentProfile != "Global")
+            AddCategory("Experimental", settingsTexture, SettingsType::General);
 
         ImGui::PopStyleVar();
         ImGui::EndChild(); // Categories
@@ -459,8 +444,12 @@ void DrawSettings() {
         ImGui::Separator();
 
         ImGui::SetNextItemWidth(300.0f * uiScale);
-        ImGui::SliderFloat("UI Scale", &sliderScale2, 0.25f, 3.0f);
+        static float sliderScale2 = 1.0f;
+        if (ImGui::IsWindowAppearing()) {
+            sliderScale2 = uiScale;
+        }
 
+        ImGui::SliderFloat("UI Scale", &sliderScale2, 0.25f, 3.0f);
         // Only update when user is not interacting with slider
         if (ImGui::IsItemDeactivatedAfterEdit()) {
             uiScale = sliderScale2;
@@ -474,7 +463,6 @@ void DrawSettings() {
         ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
 
         if (ImGui::Button("Save")) {
-            sliderScale = sliderScale2;
             showSettings = false;
 
             std::string profile = currentProfile;
@@ -488,7 +476,6 @@ void DrawSettings() {
 
         ImGui::SameLine();
         if (ImGui::Button("Cancel")) {
-            sliderScale = sliderScale2;
             showSettings = false;
             EmulatorSettings.Load();
         }
@@ -498,40 +485,25 @@ void DrawSettings() {
 
 void LoadCategory(SettingsType type) {
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
+
     if (type == SettingsType::Profiles) {
         ImGui::Text("%s", ("Selected Profile: " + currentProfile).c_str());
         ImGui::Dummy(ImVec2(0, 20.f * uiScale));
     } else if (type == SettingsType::General) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 300.0f * uiScale);
-            ImGui::TableSetupColumn("Setting");
+            ImGui::TableSetupColumn("Value");
 
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
+            AddSettingBool("Log Enabled", currentSettings.logEnabled);
+            AddSettingCombo("Log Type", currentSettings.logType);
+            AddSettingSliderInt("Volume", currentSettings.volume, 0, 500);
 
-            ImGui::Text("Enable Log");
-            ImGui::TableNextColumn();
-            ImGui::Checkbox("##Label1", &currentSettings.logSetting);
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::Text("Setting 2");
-
-            ImGui::TableNextColumn();
-            static const char* items[] = {"Apple", "Banana", "Cherry"};
-            static int selected_item = 0;
-            ImGui::Combo("##Label2", &selected_item, items, IM_ARRAYSIZE(items));
-
-            ImGui::TableNextRow();
-            ImGui::TableNextColumn();
-            ImGui::Text("Setting 3");
-
-            ImGui::TableNextColumn();
-            static float slider = 1.0f;
-            ImGui::SliderFloat("##Label3", &slider, 0.25f, 3.0f);
             ImGui::EndTable();
         }
+    } else if (type == SettingsType::Experimental) {
+        ImGui::Text("placeholder");
     }
+
     ImGui::PopStyleVar();
 
     // Child Window if Needed
@@ -548,7 +520,9 @@ void LoadCategory(SettingsType type) {
 void SaveSettings(std::string profile) {
     bool isSpecific = currentProfile != "Global";
 
-    EmulatorSettings.SetLogEnabled(currentSettings.logSetting, isSpecific);
+    EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
+    EmulatorSettings.SetVolumeSlider(currentSettings.volume, isSpecific);
+    EmulatorSettings.SetLogType(optionsLogType.at(currentSettings.logType), isSpecific);
 
     if (currentProfile == "Global") {
         EmulatorSettings.Save();
@@ -564,7 +538,77 @@ void LoadSettings(std::string profile) {
         EmulatorSettings.Load(profile);
     }
 
-    currentSettings.logSetting = EmulatorSettings.IsLogEnabled();
+    currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
+    currentSettings.volume = EmulatorSettings.GetVolumeSlider();
+    currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
+}
+
+void AddCategory(std::string name, SDL_Texture* texture, SettingsType type) {
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    if (ImGui::ImageButton(name.c_str(), (ImTextureID)texture,
+                           ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
+        currentType = type;
+    }
+
+    ImGui::SetCursorPosX(
+        (ImGui::GetCursorPosX() +
+         (settingsIconSize * uiScale - ImGui::CalcTextSize(name.c_str()).x) * 0.5f) +
+        ImGui::GetStyle().FramePadding.x);
+    ImGui::Text("%s", name.c_str());
+    ImGui::EndGroup();
+}
+
+void AddSettingBool(std::string name, bool& value) {
+    std::string label = "##" + name;
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+
+    ImGui::Text("%s", name.c_str());
+    ImGui::TableNextColumn();
+    ImGui::Checkbox(label.c_str(), &value);
+}
+
+void AddSettingSliderInt(std::string name, int& value, int min, int max) {
+    std::string label = "##" + name;
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Text("%s", name.c_str());
+
+    ImGui::TableNextColumn();
+    ImGui::SliderInt(label.c_str(), &value, min, max);
+}
+
+void AddSettingCombo(std::string name, int& value) {
+    std::string label = "##" + name;
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Text("%s", name.c_str());
+
+    std::vector<std::string> options = optionsMap.at(name);
+    ImGui::TableNextColumn();
+
+    if (ImGui::BeginCombo(label.c_str(), options[value].c_str())) {
+        for (int i = 0; i < options.size(); i++) {
+            const bool selected = (i == value);
+            if (ImGui::Selectable(options[i].c_str(), selected))
+                value = i;
+
+            // Set the initial focus when opening the combo
+            if (selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
+}
+
+int GetComboIndex(std::string selection, std::vector<std::string> options) {
+    for (int i = 0; i < options.size(); i++) {
+        if (selection == options[i])
+            return i;
+    }
+
+    return 0;
 }
 
 } // namespace BigPictureMode
