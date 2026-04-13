@@ -562,18 +562,22 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
 
 s32 PS4_SYSV_ABI
 sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServiceUserId* user_id) {
-    if (user_id == nullptr) {
+    if (user_id == nullptr)
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
-    }
-    if (!g_shadnet_enabled) {
+    if (!g_shadnet_enabled)
         return ORBIS_NP_ERROR_SIGNED_OUT;
-    }
+
     const s32 found = Libraries::Np::NpHandler::GetInstance().GetUserIdByAccountId(account_id);
-    if (found == -1) {
+    if (found == -1)
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+
+    // Verify the resolved user_id is actually a logged-in local user
+    const User* u = UserManagement.GetUserByID(found);
+    if (!u || !u->logged_in)
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
-    }
+
     *user_id = found;
-    LOG_DEBUG(Lib_NpManager, "account_id={} → user_id={}", account_id, *user_id);
+    LOG_DEBUG(Lib_NpManager, "account_id={} returns user_id={}", account_id, *user_id);
     return ORBIS_OK;
 }
 
