@@ -636,6 +636,15 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallback(OrbisNpStateCallback callback, void*
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackA(OrbisNpStateCallbackA callback, void* userdata) {
     LOG_DEBUG(Lib_NpManager, "called");
+    if (callback == nullptr) {
+        LOG_ERROR(Lib_NpManager, "callback is nullptr");
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (std::holds_alternative<OrbisNpStateCallbackA>(NpStateCb.func) &&
+        std::get<OrbisNpStateCallbackA>(NpStateCb.func) != nullptr) {
+        LOG_ERROR(Lib_NpManager, "Callback already registered, cannot register multiple");
+        return ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED;
+    }
     NpStateCb.func = callback;
     NpStateCb.userdata = userdata;
     // Register with NpHandler so the callback fires on live connection state changes.
@@ -649,20 +658,26 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallbackA(OrbisNpStateCallbackA callback, voi
 
 s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilityStateCallback callback,
                                                           void* userdata) {
-    static s32 id = 0;
+    if (callback == nullptr) {
+        LOG_ERROR(Lib_NpManager, "callback is nullptr");
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (NpReachabilityCb.func != nullptr) {
+        LOG_ERROR(Lib_NpManager, "callback already registered, cannot register multiple");
+        return ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED;
+    }
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpReachabilityCb.func = callback;
     NpReachabilityCb.userdata = userdata;
-    return ++id; // TODO recheck?
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
                                                       void* userdata) {
-    static s32 id = 0;
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpStateCbForNp.func = callback;
     NpStateCbForNp.userdata = userdata;
-    return ++id; // TODO recheck?
+    return ORBIS_OK;
 }
 
 void RegisterNpCallback(std::string key, std::function<void()> cb) {

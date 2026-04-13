@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -9,6 +9,8 @@
 constexpr int ORBIS_NP_ERROR_INVALID_ARGUMENT = 0x80550003;
 constexpr int ORBIS_NP_ERROR_SIGNED_OUT = 0x80550006;
 constexpr int ORBIS_NP_ERROR_USER_NOT_FOUND = 0x80550007;
+constexpr int ORBIS_NP_ERROR_CALLBACK_ALREADY_REGISTERED = 0x80550008;
+constexpr int ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED = 0x80550009;
 constexpr int ORBIS_NP_ERROR_INVALID_SIZE = 0x80550011;
 constexpr int ORBIS_NP_ERROR_ABORTED = 0x80550012;
 constexpr int ORBIS_NP_ERROR_REQUEST_MAX = 0x80550013;
