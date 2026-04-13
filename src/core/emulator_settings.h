@@ -187,6 +187,7 @@ struct GeneralSettings {
     Setting<bool> discord_rpc_enabled{false};
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
+    Setting<int> big_picture_scale{1000};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -218,7 +219,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, log_filter, log_type, show_splash,
                                    identical_log_grouped, trophy_notification_side,
                                    connected_to_network, discord_rpc_enabled, show_fps_counter,
-                                   console_language)
+                                   console_language, big_picture_scale)
 
 // -------------------------------
 // Debug settings
@@ -557,6 +558,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
     SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
+    SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
 
     // Audio settings
     SETTING_FORWARD(m_audio, AudioBackend, audio_backend)
