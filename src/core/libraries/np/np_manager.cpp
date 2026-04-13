@@ -656,6 +656,24 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallbackA(OrbisNpStateCallbackA callback, voi
         userdata);
 }
 
+s32 PS4_SYSV_ABI sceNpUnregisterStateCallbackA(s32 callback_id) {
+    if (callback_id <= 0) {
+        LOG_ERROR(Lib_NpManager, "invalid callback_id {}", callback_id);
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Check if this handle was actually registered before unregistering
+    if (!std::holds_alternative<OrbisNpStateCallbackA>(NpStateCb.func) ||
+        std::get<OrbisNpStateCallbackA>(NpStateCb.func) == nullptr) {
+        LOG_ERROR(Lib_NpManager, "callback with id {} not registered", callback_id);
+        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
+    }
+    Libraries::Np::NpHandler::GetInstance().UnregisterStateCallback(callback_id);
+    NpStateCb.func = OrbisNpStateCallbackA{};
+    NpStateCb.userdata = nullptr;
+    return ORBIS_OK;
+}
+
 s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilityStateCallback callback,
                                                           void* userdata) {
     if (callback == nullptr) {
@@ -669,6 +687,16 @@ s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilitySta
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpReachabilityCb.func = callback;
     NpReachabilityCb.userdata = userdata;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpUnregisterNpReachabilityStateCallback() {
+    if (NpReachabilityCb.func == nullptr) {
+        LOG_ERROR(Lib_NpManager, "callback not registered");
+        return ORBIS_NP_ERROR_CALLBACK_NOT_REGISTERED;
+    }
+    NpReachabilityCb.func = nullptr;
+    NpReachabilityCb.userdata = nullptr;
     return ORBIS_OK;
 }
 
@@ -739,8 +767,12 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceNpRegisterStateCallback);
     LIB_FUNCTION("qQJfO8HAiaY", "libSceNpManager", 1, "libSceNpManager",
                  sceNpRegisterStateCallbackA);
+    LIB_FUNCTION("M3wFXbYQtAA", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpUnregisterStateCallbackA);
     LIB_FUNCTION("hw5KNqAAels", "libSceNpManager", 1, "libSceNpManager",
                  sceNpRegisterNpReachabilityStateCallback);
+    LIB_FUNCTION("cRILAEvn+9M", "libSceNpManager", 1, "libSceNpManager",
+                 sceNpUnregisterNpReachabilityStateCallback);
     LIB_FUNCTION("JELHf4xPufo", "libSceNpManagerForToolkit", 1, "libSceNpManager",
                  sceNpCheckCallbackForLib);
     LIB_FUNCTION("0c7HbXRKUt4", "libSceNpManagerForToolkit", 1, "libSceNpManager",
