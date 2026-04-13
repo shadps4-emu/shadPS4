@@ -60,7 +60,7 @@ struct NpRequest {
 
 static std::vector<NpRequest> g_requests;
 
-s32 CreateNpRequest(bool async) {
+static s32 CreateNpRequest(bool async) {
     if (g_active_requests == ORBIS_NP_MANAGER_REQUEST_LIMIT) {
         return ORBIS_NP_ERROR_REQUEST_MAX;
     }
@@ -149,7 +149,8 @@ s32 PS4_SYSV_ABI sceNpAbortRequest(s32 req_id) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -171,7 +172,8 @@ s32 PS4_SYSV_ABI sceNpPollAsync(s32 req_id, s32* result) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -196,7 +198,8 @@ s32 PS4_SYSV_ABI sceNpWaitAsync(s32 req_id, s32* result) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -219,7 +222,8 @@ s32 PS4_SYSV_ABI sceNpDeleteRequest(s32 req_id) {
     std::scoped_lock lk{g_request_mutex};
 
     s32 req_index = req_id - ORBIS_NP_MANAGER_REQUEST_ID_OFFSET - 1;
-    if (g_active_requests == 0 || g_requests.size() <= req_index ||
+    if (g_active_requests == 0 || req_index < 0 ||
+        req_index >= static_cast<s32>(g_requests.size()) ||
         g_requests[req_index].state == NpRequestState::None) {
         return ORBIS_NP_ERROR_REQUEST_NOT_FOUND;
     }
@@ -322,7 +326,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
     std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    std::memcpy(language->code, "en", 2); // return "us" for now, TODO make it configurable
+    std::memcpy(language->code, "en", 2); // return "en" for now, TODO make it configurable
     return CompleteRequest(*req, ORBIS_OK);
 }
 
@@ -342,7 +346,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
     std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    std::memcpy(language->code, "en", 2); // return "us" for now, TODO make it configurable
+    std::memcpy(language->code, "en", 2); // return "en" for now, TODO make it configurable
     return CompleteRequest(*req, ORBIS_OK);
 }
 
@@ -575,16 +579,17 @@ sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServi
 
 s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   bool* has_signed_up) {
-    if (has_signed_up == nullptr) {
+    if (has_signed_up == nullptr ||
+        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
-    if (!g_shadnet_enabled) {
-        *has_signed_up = false;
-        return ORBIS_OK;
-    }
-    // A user has signed up if they have a shadNet account configured in their profile.
     const User* u = UserManagement.GetUserByID(user_id);
-    *has_signed_up = u != nullptr && !u->shadnet_npid.empty();
+    if (!u) {
+        return ORBIS_NP_ERROR_USER_NOT_FOUND;
+    }
+    // A user has signed up if they have a shadNet npid configured.
+    // This is independent of shadnet_enabled and current connection state.
+    *has_signed_up = !u->shadnet_npid.empty();
     return ORBIS_OK;
 }
 
@@ -644,7 +649,7 @@ s32 PS4_SYSV_ABI sceNpRegisterNpReachabilityStateCallback(OrbisNpReachabilitySta
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpReachabilityCb.func = callback;
     NpReachabilityCb.userdata = userdata;
-    return id;
+    return ++id; // TODO recheck?
 }
 
 s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpToolkit callback,
@@ -653,7 +658,7 @@ s32 PS4_SYSV_ABI sceNpRegisterStateCallbackForToolkit(OrbisNpStateCallbackForNpT
     LOG_ERROR(Lib_NpManager, "(STUBBED) called");
     NpStateCbForNp.func = callback;
     NpStateCbForNp.userdata = userdata;
-    return id;
+    return ++id; // TODO recheck?
 }
 
 void RegisterNpCallback(std::string key, std::function<void()> cb) {
