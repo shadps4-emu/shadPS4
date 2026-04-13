@@ -1267,6 +1267,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+        src/images/big_picture/settings.png
 	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png

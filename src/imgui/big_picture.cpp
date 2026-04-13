@@ -2,6 +2,7 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <SDL3/SDL.h>
+#include <cmrc/cmrc.hpp>
 #include <imgui.h>
 
 #include "big_picture.h"
@@ -15,13 +16,14 @@
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
+CMRC_DECLARE(res);
+
 namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
 const float settingsIconSize = 125.f;
 
 static bool done = false;
-static bool runGame = false;
 static bool showSettings = false;
 
 static std::filesystem::path runEbootPath = "";
@@ -30,12 +32,10 @@ static std::vector<bool> focusState = {};
 
 static float uiScale = 1.0f;
 static CurrentSettings currentSettings;
+static Textures textures;
+static SDL_Renderer* renderer;
 
-static SDL_Window* window = nullptr;
-static SDL_Renderer* renderer = nullptr;
-static SDL_Texture* settingsTexture; // temporary
-
-static SettingsType currentType = SettingsType::Profiles;
+static SettingsCategory currentCategory = SettingsCategory::Profiles;
 static std::string currentProfile = "Global";
 
 void Launch() {
@@ -53,8 +53,9 @@ void Launch() {
         return;
     }
 
-    window = SDL_CreateWindow("shadPS4 Big Picture Mode", EmulatorSettings.GetWindowWidth(),
-                              EmulatorSettings.GetWindowHeight(), SDL_WINDOW_RESIZABLE);
+    SDL_Window* window =
+        SDL_CreateWindow("shadPS4 Big Picture Mode", EmulatorSettings.GetWindowWidth(),
+                         EmulatorSettings.GetWindowHeight(), SDL_WINDOW_RESIZABLE);
     renderer = SDL_CreateRenderer(window, nullptr);
 
     if (EmulatorSettings.IsFullScreen()) {
@@ -68,6 +69,8 @@ void Launch() {
         SDL_Quit();
         return;
     }
+
+    LoadDataToTexture("src/images/big_picture/settings.png", textures.general);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -123,15 +126,15 @@ void Launch() {
     style.FramePadding = ImVec2(10.0f * uiScale, 10.0f * uiScale);
     style.WindowBorderSize = 0.0f;
     style.WindowPadding = ImVec2(20.0f * uiScale, 20.0f * uiScale);
+    style.GrabMinSize = 20.0f * uiScale;
+    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+    style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
     GetGameInfo();
 
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
-
-    std::filesystem::path texPath = "D:/Github/shadPS4/build/Clang_x64_Release/settings.png";
-    settingsTexture = IMG_LoadTexture(renderer, texPath.string().c_str());
 
     while (!done) {
         SDL_Event event;
@@ -198,7 +201,7 @@ void Launch() {
 
         if (ImGui::Button("Settings")) {
             showSettings = true;
-            currentType = SettingsType::Profiles;
+            currentCategory = SettingsCategory::Profiles;
             currentProfile = "Global";
             LoadSettings(currentProfile);
         }
@@ -262,7 +265,7 @@ void Launch() {
     EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
     EmulatorSettings.Save();
 
-    if (runGame) {
+    if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
         emulator->Run(runEbootPath);
     }
@@ -278,7 +281,7 @@ void SetGameIcons(bool ForSettings) {
     // Add global settings icon if For Settings
     if (ForSettings) {
         ImGui::BeginGroup();
-        if (ImGui::ImageButton("Global", (ImTextureID)settingsTexture,
+        if (ImGui::ImageButton("Global", (ImTextureID)textures.general,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             currentProfile = "Global";
             LoadSettings(currentProfile);
@@ -320,7 +323,6 @@ void SetGameIcons(bool ForSettings) {
                 currentProfile = gameVec[i].serial + " - " + gameVec[i].title;
                 LoadSettings(gameVec[i].serial);
             } else {
-                runGame = true;
                 done = true;
                 runEbootPath = gameVec[i].ebootPath;
             }
@@ -426,11 +428,11 @@ void DrawSettings() {
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
 
-        AddCategory("Profiles", settingsTexture, SettingsType::Profiles);
-        AddCategory("General", settingsTexture, SettingsType::General);
+        AddCategory("Profiles", textures.general, SettingsCategory::Profiles);
+        AddCategory("General", textures.general, SettingsCategory::General);
 
         if (currentProfile != "Global")
-            AddCategory("Experimental", settingsTexture, SettingsType::General);
+            AddCategory("Experimental", textures.general, SettingsCategory::Experimental);
 
         ImGui::PopStyleVar();
         ImGui::EndChild(); // Categories
@@ -443,7 +445,7 @@ void DrawSettings() {
                           child_flags);
         ImGui::PopStyleColor();
 
-        LoadCategory(currentType);
+        LoadCategory(currentCategory);
 
         ImGui::EndChild();
         ImGui::Separator();
@@ -488,13 +490,13 @@ void DrawSettings() {
     ImGui::End();
 }
 
-void LoadCategory(SettingsType type) {
+void LoadCategory(SettingsCategory category) {
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
 
-    if (type == SettingsType::Profiles) {
+    if (category == SettingsCategory::Profiles) {
         ImGui::Text("%s", ("Selected Profile: " + currentProfile).c_str());
         ImGui::Dummy(ImVec2(0, 20.f * uiScale));
-    } else if (type == SettingsType::General) {
+    } else if (category == SettingsCategory::General) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 300.0f * uiScale);
             ImGui::TableSetupColumn("Value");
@@ -505,14 +507,14 @@ void LoadCategory(SettingsType type) {
 
             ImGui::EndTable();
         }
-    } else if (type == SettingsType::Experimental) {
+    } else if (category == SettingsCategory::Experimental) {
         ImGui::Text("placeholder");
     }
 
     ImGui::PopStyleVar();
 
     // Child Window if Needed
-    if (type == SettingsType::Profiles) {
+    if (category == SettingsCategory::Profiles) {
         ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
         ImGui::BeginChild("ProfileSelect", ImVec2(0, 0), true, child_flags);
@@ -548,12 +550,12 @@ void LoadSettings(std::string profile) {
     currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
 }
 
-void AddCategory(std::string name, SDL_Texture* texture, SettingsType type) {
+void AddCategory(std::string name, SDL_Texture* texture, SettingsCategory category) {
     ImGui::SameLine();
     ImGui::BeginGroup();
     if (ImGui::ImageButton(name.c_str(), (ImTextureID)texture,
                            ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
-        currentType = type;
+        currentCategory = category;
     }
 
     ImGui::SetCursorPosX(
@@ -614,6 +616,15 @@ int GetComboIndex(std::string selection, std::vector<std::string> options) {
     }
 
     return 0;
+}
+
+void LoadDataToTexture(std::string resourcePath, SDL_Texture*& texture) {
+    auto resource = cmrc::res::get_filesystem();
+    auto file = resource.open(resourcePath);
+
+    std::vector<u8> texData = std::vector<u8>(file.begin(), file.end());
+    SDL_IOStream* ioMem = SDL_IOFromMem(texData.data(), texData.size());
+    texture = IMG_LoadTexture_IO(renderer, ioMem, true);
 }
 
 } // namespace BigPictureMode
