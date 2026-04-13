@@ -290,7 +290,9 @@ void SetGameIcons(bool ForSettings) {
         if (ImGui::IsItemFocused() && !focusState.back()) {
             ImGui::SetScrollHereY(0.5f);
         }
-        focusState.back() = ImGui::IsItemFocused();
+
+        if (ImGui::IsWindowFocused())
+            focusState.back() = ImGui::IsItemFocused();
 
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("Global Profile");
@@ -328,7 +330,9 @@ void SetGameIcons(bool ForSettings) {
         if (ImGui::IsItemFocused() && !focusState[i]) {
             ImGui::SetScrollHereY(0.5f);
         }
-        focusState[i] = ImGui::IsItemFocused();
+
+        if (ImGui::IsWindowFocused())
+            focusState[i] = ImGui::IsItemFocused();
 
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("%s", gameVec[i].title.c_str());
@@ -367,6 +371,7 @@ std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::
 
 void GetGameInfo() {
     gameVec.clear();
+    focusState.clear();
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
