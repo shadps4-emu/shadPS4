@@ -73,7 +73,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 const auto attrib =
                     IR::Value{offset < 16 ? IR::Attribute::Position0
                                           : IR::Attribute::Param0 + (offset / 16 - 1)};
-                const auto comp = (offset / 4) % 4;
+                const u32 comp = (offset / 4) % 4;
 
                 inst.ReplaceOpcode(IR::Opcode::SetAttribute);
                 inst.ClearArgs();
@@ -105,7 +105,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
             output_vertices = info.gs_copy_data.output_vertices;
         }
         u32 dwords_per_vertex = gs_info.out_vertex_data_size;
-        if (info.gs_copy_data.num_comps && info.gs_copy_data.num_comps != dwords_per_vertex) {
+        if (info.gs_copy_data.num_comps && info.gs_copy_data.num_comps > dwords_per_vertex) {
             LOG_WARNING(Render_Vulkan,
                         "VERT_ITEMSIZE {} is different than actual number of dwords per vertex {}",
                         dwords_per_vertex, info.gs_copy_data.num_comps);

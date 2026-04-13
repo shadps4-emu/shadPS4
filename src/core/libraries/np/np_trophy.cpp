@@ -219,7 +219,16 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     ctx.context_id = *context;
 
     // Resolve and cache all paths once so callers never recompute them.
-    const std::string np_comm_id = Common::ElfInfo::Instance().GetNpCommIds()[service_label];
+    std::string np_comm_id;
+    const auto& trophyMap = Common::ElfInfo::Instance().GetTrophyIndexMap();
+    auto it = trophyMap.find(service_label);
+    if (it != trophyMap.end()) {
+        np_comm_id = it->second;
+    } else {
+        LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
+                  service_label);
+        return ORBIS_NP_TROPHY_ERROR_UNKNOWN;
+    }
     const auto trophy_base =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
     ctx.xml_save_file =

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
@@ -177,19 +178,18 @@ int PS4_SYSV_ABI scePadGetIdleCount() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadGetInfo(u32* data) {
+int PS4_SYSV_ABI scePadGetInfo(OrbisPadInfo* data) {
     LOG_WARNING(Lib_Pad, "(DUMMY) called");
     if (!data) {
         return ORBIS_PAD_ERROR_INVALID_ARG;
     }
-    data[0] = 0x1;        // index but starting from one?
-    data[1] = 0x0;        // index?
-    data[2] = 1;          // pad handle
-    data[3] = 0x0101;     // ???
-    data[4] = 0x0;        // ?
-    data[5] = 0x0;        // ?
-    data[6] = 0x00ff0000; // colour(?)
-    data[7] = 0x0;        // ?
+    auto& controllers = *Common::Singleton<GameControllers>::Instance();
+    auto col = controllers[0]->GetLightBarRGB();
+    std::memset(data, 0, sizeof(OrbisPadInfo));
+    data->unk1 = 0x1;
+    data->pad_handle = 1;
+    data->unk3 = 0x00000101;
+    data->colour = col.r + (col.g << 8) + (col.b << 16);
     return ORBIS_OK;
 }
 
@@ -435,6 +435,12 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
             pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
         }
+        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_35) {
+            pData[i].touchData.time_since_touch_held_down =
+                controller.last_touch_down_timestamp == 0
+                    ? 0
+                    : states[i].time - controller.last_touch_down_timestamp;
+        }
         pData[i].connected = connected;
         pData[i].timestamp = states[i].time;
         pData[i].connectedCount = connected_count;
@@ -508,7 +514,8 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    s32 colour_index = UserManagement.GetUserByPlayerIndex(handle)->user_color - 1;
+    auto u = UserManagement.GetUserByPlayerIndex(handle);
+    s32 colour_index = u ? u->user_color - 1 : 0;
     Input::Colour colour{255, 0, 0};
     if (colour_index >= 0 && colour_index <= 3) {
         static constexpr Input::Colour colours[4]{

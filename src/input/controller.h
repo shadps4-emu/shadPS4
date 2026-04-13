@@ -126,6 +126,7 @@ public:
     void UpdateAcceleration(const float acceleration[3]);
     void UpdateAxisSmoothing();
     void SetLightBarRGB(u8 r, u8 g, u8 b);
+    Colour GetLightBarRGB();
     void PollLightColour();
     bool SetVibration(u8 smallMotor, u8 largeMotor);
     void SetTouchpadState(int touchIndex, bool touchDown, float x, float y);
@@ -149,6 +150,7 @@ public:
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     s32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     SDL_Gamepad* m_sdl_gamepad = nullptr;
+    u64 last_touch_down_timestamp = 0;
 
 private:
     void PushState();

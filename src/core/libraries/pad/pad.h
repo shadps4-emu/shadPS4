@@ -165,7 +165,7 @@ struct OrbisPadTouch {
 struct OrbisPadTouchData {
     u8 touchNum;
     u8 reserve[3];
-    u32 reserve1;
+    u32 time_since_touch_held_down;
     OrbisPadTouch touch[ORBIS_PAD_MAX_TOUCH_NUM];
 };
 
@@ -253,6 +253,18 @@ struct OrbisPadVibrationParam {
     u8 smallMotor;
 };
 
+struct OrbisPadInfo {
+    u32 unk1;
+    u32 unk2;
+    u32 pad_handle;
+    u32 unk3;
+    u32 unk4;
+    u32 unk5;
+    u32 colour;
+    u32 unk6;
+    u32 unk[30];
+};
+
 int PS4_SYSV_ABI scePadClose(s32 handle);
 int PS4_SYSV_ABI scePadConnectPort();
 int PS4_SYSV_ABI scePadDeviceClassGetExtendedInformation(
@@ -280,7 +292,7 @@ int PS4_SYSV_ABI scePadGetFeatureReport();
 int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                  s32 index);
 int PS4_SYSV_ABI scePadGetIdleCount();
-int PS4_SYSV_ABI scePadGetInfo(u32* data);
+int PS4_SYSV_ABI scePadGetInfo(OrbisPadInfo* data);
 int PS4_SYSV_ABI scePadGetInfoByPortType();
 int PS4_SYSV_ABI scePadGetLicenseControllerInformation();
 int PS4_SYSV_ABI scePadGetMotionSensorPosition();

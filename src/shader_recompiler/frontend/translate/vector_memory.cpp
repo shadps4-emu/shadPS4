@@ -229,6 +229,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -296,6 +297,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -355,6 +357,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.pc.Assign(pc);
 
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
