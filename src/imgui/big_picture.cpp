@@ -272,8 +272,8 @@ void SetGameIcons() {
 
         if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)gameVec[i].iconTexture,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
-                done = true;
-                runEbootPath = gameVec[i].ebootPath;
+            done = true;
+            runEbootPath = gameVec[i].ebootPath;
         }
 
         // Scroll to item only when newly-focused
