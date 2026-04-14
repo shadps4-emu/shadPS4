@@ -162,12 +162,11 @@ void DrawSettings(bool* open) {
 }
 
 void LoadCategory(SettingsCategory category) {
+    ImGui::Text("%s", ("Selected Profile: " + currentProfile).c_str());
+    ImGui::Dummy(ImVec2(0, 20.f * uiScale));
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
 
-    if (category == SettingsCategory::Profiles) {
-        ImGui::Text("%s", ("Selected Profile: " + currentProfile).c_str());
-        ImGui::Dummy(ImVec2(0, 20.f * uiScale));
-    } else if (category == SettingsCategory::General) {
+    if (category == SettingsCategory::General) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
