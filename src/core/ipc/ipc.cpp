@@ -153,7 +153,7 @@ void IPC::InputLoop() {
         } else if (cmd == "ADJUST_VOLUME") {
             int value = static_cast<int>(next_u64());
             bool is_game_specific = next_u64() != 0;
-            EmulatorSettings.SetVolumeSlider(value);
+            EmulatorSettings.SetVolumeSlider(value, is_game_specific);
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
             bool use_fsr = next_u64() != 0;
