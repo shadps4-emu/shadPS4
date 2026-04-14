@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2019-2026 rpcs3 Project
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
-
 #pragma once
-
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -13,9 +11,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-
 #include "common/types.h"
-
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -38,10 +34,10 @@ namespace ShadNet {
 
 // Protocol constants
 static constexpr u32 SHAD_HEADER_SIZE = 15;
-static constexpr u32 SHAD_PROTOCOL_VERSION = 1;       // change this if the packet structure changes
+static constexpr u32 SHAD_PROTOCOL_VERSION = 1;
 static constexpr u32 SHAD_MAX_PACKET_SIZE = 0x800000; // 8 MiB
 
-// Protocol enumerations (copied from shadnet , shoudld be the same)
+// Protocol enumerations (must match shadnet server protocol.h)
 enum class PacketType : u8 {
     Request = 0,
     Reply = 1,
@@ -62,7 +58,7 @@ enum class CommandType : u16 {
     RemoveFriend = 9,
     AddBlock = 10,
     RemoveBlock = 11,
-    // 12–29: room/lobby/ticket — NOT implemented in shadNet
+    // 12â€“29: room/lobby/ticket NOT implemented in shadNet
     GetBoardInfos = 30,
     RecordScore = 31,
     RecordScoreData = 32,
@@ -72,17 +68,13 @@ enum class CommandType : u16 {
     GetScoreNpid = 36,
 };
 
-// Notification type IDs (u16 LE in Notification packet header).
-// These are pushed by the server with no corresponding reply.
 enum class NotificationType : u16 {
-    // (0-4: room notifications, not used in auth-only mode)
-    FriendQuery = 5,  // Someone sent you a friend request
-    FriendNew = 6,    // Mutual friendship formed (request accepted)
-    FriendLost = 7,   // Someone removed you from their friend list
-    FriendStatus = 8, // A friend came online or went offline
+    FriendQuery = 5,
+    FriendNew = 6,
+    FriendLost = 7,
+    FriendStatus = 8,
 };
 
-// Error codes for Reply packets
 enum class ErrorType : uint8_t {
     NoError = 0,
     Malformed = 1,
@@ -120,23 +112,23 @@ enum class ErrorType : uint8_t {
     Unsupported = 33,
 };
 
-// Client connection state
 enum class ShadNetState {
     Ok,
-    FailureInput,      // Empty username or password
-    FailureResolve,    // DNS resolution failed
-    FailureConnect,    // TCP connect() failed
-    FailureServerInfo, // ServerInfo handshake failed or version mismatch
-    FailureAuth,       // Server rejected credentials (generic)
-    FailureAlreadyIn,  // Already logged in on server
-    FailureUsername,   // Invalid username
-    FailurePassword,   // Invalid password
-    FailureToken,      // Invalid 2FA token
-    FailureProtocol,   // Malformed packet received
+    FailureInput,
+    FailureResolve,
+    FailureConnect,
+    FailureServerInfo,
+    FailureAuth,
+    FailureAlreadyIn,
+    FailureUsername,
+    FailurePassword,
+    FailureToken,
+    FailureProtocol,
     FailureOther,
 };
 
 // Callback data structures
+
 struct FriendEntry {
     std::string npid;
     bool online = false;
@@ -144,7 +136,6 @@ struct FriendEntry {
 
 struct LoginResult {
     ErrorType error = ErrorType::Malformed;
-    std::string onlineName;
     std::string avatarUrl;
     u64 userId = 0;
     std::vector<FriendEntry> friends;
@@ -170,11 +161,11 @@ struct NotifyFriendStatus {
 };
 
 // ShadNetClient
+
 class ShadNetClient {
 public:
     ShadNetClient();
     ~ShadNetClient();
-
     ShadNetClient(const ShadNetClient&) = delete;
     ShadNetClient& operator=(const ShadNetClient&) = delete;
 
@@ -184,15 +175,17 @@ public:
 
     ShadNetState WaitForConnection();
     ShadNetState WaitForAuthenticated();
+
     bool IsConnected() const;
     bool IsAuthenticated() const;
     ShadNetState GetState() const;
-    const std::string& GetOnlineName() const;
+
     const std::string& GetAvatarUrl() const;
     u64 GetUserId() const;
     u32 GetAddrLocal() const;
     u32 GetNumFriends() const;
     std::optional<std::string> GetFriendNpid(u32 index) const;
+
     // Callbacks
     std::function<void(const LoginResult&)> onLoginResult;
     std::function<void(const NotifyFriendQuery&)> onFriendQuery;
@@ -213,10 +206,10 @@ private:
     void DispatchPacket(PacketType type, u16 cmd_raw, const std::vector<u8>& payload);
     void HandleLoginReply(const std::vector<u8>& payload);
     void HandleNotification(u16 cmd_raw, const std::vector<u8>& payload);
-    static std::string ReadStr(const std::vector<u8>& p, int& pos);
-    static bool SkipPresence(const std::vector<u8>& p, int& pos);
-    static u32 ReadU32LE(const std::vector<u8>& p, int& pos);
-    static u64 ReadU64LE(const std::vector<u8>& p, int& pos);
+
+    // Helper: read a u32-LE-prefixed proto blob from a byte vector at pos.
+    static std::string ExtractBlob(const std::vector<u8>& p, int pos);
+
     static void PutLE16(std::vector<u8>& b, size_t off, u16 v);
     static void PutLE32(std::vector<u8>& b, size_t off, u32 v);
     static void PutLE64(std::vector<u8>& b, size_t off, u64 v);
@@ -225,7 +218,6 @@ private:
     static u64 GetLE64(const u8* p);
 
     ShadSocketHandle m_sock = SHAD_INVALID_SOCK;
-
     std::string m_host;
     u16 m_port = 31313;
     std::string m_npid;
@@ -237,7 +229,6 @@ private:
     std::atomic<bool> m_authenticated{false};
     std::atomic<ShadNetState> m_state{ShadNetState::Ok};
 
-    // Semaphores for WaitFor* blocking calls
     std::binary_semaphore m_sem_connected{0};
     std::binary_semaphore m_sem_authenticated{0};
     std::mutex m_mutex_connected;
@@ -248,12 +239,10 @@ private:
     std::thread m_thread_writer;
 
     std::mutex m_mutex_send_direct;
-
     std::mutex m_mutex_send_queue;
     std::condition_variable m_cv_send_queue;
     std::vector<std::vector<u8>> m_send_queue;
 
-    std::string m_online_name;
     std::string m_avatar_url;
     u64 m_user_id = 0;
     std::atomic<u32> m_addr_local{0};
@@ -263,4 +252,5 @@ private:
 
     std::atomic<u64> m_pkt_counter{1};
 };
+
 } // namespace ShadNet

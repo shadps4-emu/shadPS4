@@ -136,3 +136,6 @@
 	path = externals/libusb
 	url = https://github.com/shadexternals/libusb.git
 	branch = shadps4
+[submodule "externals/protobuf"]
+	path = externals/protobuf
+	url = https://github.com/shadexternals/protobuf.git
