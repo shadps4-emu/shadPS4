@@ -1107,6 +1107,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/texture_manager.h
           src/imgui/big_picture.cpp
           src/imgui/big_picture.h
+          src/imgui/settings_dialog_imgui.cpp
+          src/imgui/settings_dialog_imgui.h
 )
 
 set(INPUT src/input/controller.cpp
