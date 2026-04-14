@@ -1,12 +1,12 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL3/SDL.h>
 #include <cmrc/cmrc.hpp>
+#include <stb_image.h>
 
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
-#include "core/file_format/psf.h"
+#include "imgui/imgui_std.h"
 #include "settings_dialog_imgui.h"
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
@@ -14,12 +14,12 @@
 
 CMRC_DECLARE(res);
 
-namespace SettingsImGui {
+namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
 const float settingsIconSize = 125.f;
 
-static std::vector<Game> gameVec = {};
+static std::vector<Game> settingsProfileVec = {};
 
 static float uiScale = 1.0f;
 static CurrentSettings currentSettings;
@@ -32,20 +32,23 @@ static std::string currentProfile = "Global";
 void Init() {
     currentProfile = "Global";
     currentCategory = SettingsCategory::Profiles;
-
     LoadSettings("Global");
 
     SDL_Window* window = SDL_GetKeyboardFocus();
     renderer = SDL_GetRenderer(window);
 
-    LoadTextureData("src/images/big_picture/settings.png", textures.general);
+    LoadEmbeddedTexture("src/images/big_picture/settings.png", textures.general);
+    LoadEmbeddedTexture("src/images/big_picture/folder.png", textures.profiles);
+    LoadEmbeddedTexture("src/images/big_picture/global-settings.png", textures.globalSettings);
+    LoadEmbeddedTexture("src/images/big_picture/experimental.png", textures.experimental);
+    LoadEmbeddedTexture("src/images/big_picture/graphics.png", textures.graphics);
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigNavCursorVisibleAlways = true;
 
-    GetGameInfo();
+    GetGameInfo(settingsProfileVec, true, textures.globalSettings);
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
 }
 
@@ -53,121 +56,6 @@ void DeInit() {
     EmulatorSettings.Load();
     EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
     EmulatorSettings.Save();
-}
-
-std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder) {
-    std::filesystem::path outputPath;
-    auto update_folder = game_folder;
-    update_folder += "-UPDATE";
-
-    auto patch_folder = game_folder;
-    patch_folder += "-patch";
-
-    if (std::filesystem::exists(update_folder / "sce_sys" / sceItem)) {
-        outputPath = update_folder / "sce_sys" / sceItem;
-    } else if (std::filesystem::exists(patch_folder / "sce_sys" / sceItem)) {
-        outputPath = patch_folder / "sce_sys" / sceItem;
-    } else {
-        outputPath = game_folder / "sce_sys" / sceItem;
-    }
-
-    return outputPath;
-}
-
-void SetGameIcons() {
-    ImGuiStyle& style = ImGui::GetStyle();
-    const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
-    const float itemSpacing = style.ItemSpacing.x; // already scaled
-    const float padding = 10.0f * uiScale;
-    float rowContentWidth = gameImageSize * uiScale + itemSpacing;
-
-    for (int i = 0; i < gameVec.size(); i++) {
-        ImGui::BeginGroup();
-        std::string ButtonName = "Button" + std::to_string(i);
-        const char* ButtonNameChar = ButtonName.c_str();
-
-        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)gameVec[i].iconTexture,
-                               ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
-            currentProfile = i == 0 ? "Global" : gameVec[i].serial + " - " + gameVec[i].title;
-            LoadSettings(gameVec[i].serial);
-        }
-
-        if (i == 0) {
-            ImGui::SetItemDefaultFocus();
-        }
-
-        // Scroll to item only when newly-focused
-        if (ImGui::IsItemFocused() && !gameVec[i].focusState) {
-            ImGui::SetScrollHereY(0.5f);
-        }
-
-        if (ImGui::IsWindowFocused())
-            gameVec[i].focusState = ImGui::IsItemFocused();
-
-        ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
-        ImGui::TextWrapped("%s", gameVec[i].title.c_str());
-        ImGui::PopTextWrapPos();
-        ImGui::EndGroup();
-
-        // Use same line if content fits horizontally, move to next line if not
-        rowContentWidth += (gameImageSize * uiScale + itemSpacing * 2 + padding);
-        if (rowContentWidth < maxAvailableWidth) {
-            ImGui::SameLine(0.0f, padding);
-        } else {
-            ImGui::Dummy(ImVec2(0.0f, padding));
-            rowContentWidth = gameImageSize * uiScale + itemSpacing;
-        }
-    }
-}
-
-void GetGameInfo() {
-    gameVec.clear();
-
-    Game global;
-    global.title = "Global";
-    global.iconTexture = textures.general;
-    gameVec.push_back(global);
-
-    for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
-        if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
-            for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-                if (entry.path().filename().string().ends_with("-UPDATE") ||
-                    entry.path().filename().string().ends_with("-patch") || !entry.is_directory()) {
-                    continue;
-                }
-
-                Game game;
-                game.ebootPath = entry.path() / "eboot.bin";
-
-                const std::string iconFileName = "icon0.png";
-                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
-                game.iconTexture = IMG_LoadTexture(renderer, iconPath.string().c_str());
-
-                PSF psf;
-                const std::string sfoFileName = "param.sfo";
-                std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
-
-                if (psf.Open(sfoPath)) {
-                    if (const auto title = psf.GetString("TITLE"); title.has_value()) {
-                        game.title = *title;
-                    }
-
-                    if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
-                        game.serial = *title_id;
-                    }
-                } else {
-                    continue;
-                }
-
-                game.focusState = false;
-                gameVec.push_back(game);
-            }
-        }
-    }
-
-    std::sort(gameVec.begin() + 1, gameVec.end(), [](const Game& a, const Game& b) {
-        return a.title < b.title; // Alphabetical order
-    });
 }
 
 void DrawSettings(bool* open) {
@@ -183,6 +71,7 @@ void DrawSettings(bool* open) {
             Init();
         }
 
+        ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
         ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
                                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
@@ -194,11 +83,12 @@ void DrawSettings(bool* open) {
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
 
-        AddCategory("Profiles", textures.general, SettingsCategory::Profiles);
+        AddCategory("Profiles", textures.profiles, SettingsCategory::Profiles);
         AddCategory("General", textures.general, SettingsCategory::General);
+        AddCategory("Graphics", textures.graphics, SettingsCategory::Graphics);
 
         if (currentProfile != "Global")
-            AddCategory("Experimental", textures.general, SettingsCategory::Experimental);
+            AddCategory("Experimental", textures.experimental, SettingsCategory::Experimental);
 
         ImGui::PopStyleVar();
         ImGui::EndChild(); // Categories
@@ -279,12 +169,22 @@ void LoadCategory(SettingsCategory category) {
         ImGui::Dummy(ImVec2(0, 20.f * uiScale));
     } else if (category == SettingsCategory::General) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
-            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 300.0f * uiScale);
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingBool("Log Enabled", currentSettings.logEnabled);
-            AddSettingCombo("Log Type", currentSettings.logType);
+            AddSettingCombo("Console Language", currentSettings.consoleLanguage);
             AddSettingSliderInt("Volume", currentSettings.volume, 0, 500);
+            AddSettingBool("Show Splash Screen When Launching Game", currentSettings.showSplash);
+            AddSettingCombo("Audio Backend", currentSettings.audioBackend);
+
+            ImGui::EndTable();
+        }
+    } else if (category == SettingsCategory::Graphics) {
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
+            ImGui::TableSetupColumn("Value");
+
+            AddSettingCombo("Display Mode", currentSettings.fullscreenMode);
 
             ImGui::EndTable();
         }
@@ -300,7 +200,7 @@ void LoadCategory(SettingsCategory category) {
                                        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
         ImGui::BeginChild("ProfileSelect", ImVec2(0, 0), true, child_flags);
         Overlay::TextCentered("Select Global or Game-Specific Settings Profile");
-        SetGameIcons();
+        SetProfileIcons(settingsProfileVec);
         ImGui::EndChild();
     }
 }
@@ -308,8 +208,20 @@ void LoadCategory(SettingsCategory category) {
 void SaveSettings(std::string profile) {
     bool isSpecific = currentProfile != "Global";
 
-    EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
+    /////////// General Tab
+    EmulatorSettings.SetConsoleLanguage(
+        languageMap.at(optionsLanguage.at(currentSettings.consoleLanguage)), isSpecific);
     EmulatorSettings.SetVolumeSlider(currentSettings.volume, isSpecific);
+    EmulatorSettings.SetShowSplash(currentSettings.showSplash, isSpecific);
+    EmulatorSettings.SetAudioBackend(currentSettings.audioBackend, isSpecific);
+
+    /////////// Graphics Tab
+    bool isFullscreen = currentSettings.fullscreenMode != 0;
+    EmulatorSettings.SetFullScreen(isFullscreen);
+    EmulatorSettings.SetFullScreenMode(optionsFullscreenMode.at(currentSettings.fullscreenMode),
+                                       isSpecific);
+
+    EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
     EmulatorSettings.SetLogType(optionsLogType.at(currentSettings.logType), isSpecific);
 
     if (currentProfile == "Global") {
@@ -326,8 +238,24 @@ void LoadSettings(std::string profile) {
         EmulatorSettings.Load(profile);
     }
 
-    currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
+    /////////// General Tab
+    int languageIndex = EmulatorSettings.GetConsoleLanguage();
+    std::string language;
+    for (const auto& [key, value] : languageMap) {
+        if (value == languageIndex) {
+            language = key;
+        }
+    }
+    currentSettings.consoleLanguage = GetComboIndex(language, optionsLanguage);
     currentSettings.volume = EmulatorSettings.GetVolumeSlider();
+    currentSettings.showSplash = EmulatorSettings.IsShowSplash();
+    currentSettings.audioBackend = EmulatorSettings.GetAudioBackend();
+
+    /////////// Graphics Tab
+    currentSettings.fullscreenMode =
+        GetComboIndex(EmulatorSettings.GetFullScreenMode(), optionsFullscreenMode);
+
+    currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
     currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
 }
 
@@ -352,7 +280,7 @@ void AddSettingBool(std::string name, bool& value) {
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
 
-    ImGui::Text("%s", name.c_str());
+    ImGui::TextWrapped("%s", name.c_str());
     ImGui::TableNextColumn();
     ImGui::Checkbox(label.c_str(), &value);
 }
@@ -361,7 +289,7 @@ void AddSettingSliderInt(std::string name, int& value, int min, int max) {
     std::string label = "##" + name;
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text("%s", name.c_str());
+    ImGui::TextWrapped("%s", name.c_str());
 
     ImGui::TableNextColumn();
     ImGui::SliderInt(label.c_str(), &value, min, max);
@@ -371,12 +299,13 @@ void AddSettingCombo(std::string name, int& value) {
     std::string label = "##" + name;
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
-    ImGui::Text("%s", name.c_str());
+    ImGui::TextWrapped("%s", name.c_str());
 
     std::vector<std::string> options = optionsMap.at(name);
     ImGui::TableNextColumn();
 
-    if (ImGui::BeginCombo(label.c_str(), options[value].c_str())) {
+    const char* combo_value = options[value].c_str();
+    if (ImGui::BeginCombo(label.c_str(), combo_value)) {
         for (int i = 0; i < options.size(); i++) {
             const bool selected = (i == value);
             if (ImGui::Selectable(options[i].c_str(), selected))
@@ -399,12 +328,54 @@ int GetComboIndex(std::string selection, std::vector<std::string> options) {
     return 0;
 }
 
-void LoadTextureData(std::string resourcePath, SDL_Texture*& texture) {
+void LoadEmbeddedTexture(std::string resourcePath, SDL_Texture*& texture) {
     auto resource = cmrc::res::get_filesystem();
     auto file = resource.open(resourcePath);
-    std::vector<u8> texData = std::vector<u8>(file.begin(), file.end());
-    SDL_IOStream* ioMem = SDL_IOFromMem(texData.data(), texData.size());
-    texture = IMG_LoadTexture_IO(renderer, ioMem, true);
+    std::vector<char> texData = std::vector<char>(file.begin(), file.end());
+
+    BigPictureMode::LoadTextureData(texData, texture, renderer);
 }
 
-} // namespace SettingsImGui
+void SetProfileIcons(std::vector<Game> games) {
+    ImGuiStyle& style = ImGui::GetStyle();
+    const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
+    const float itemSpacing = style.ItemSpacing.x; // already scaled
+    const float padding = 10.0f * uiScale;
+    float rowContentWidth = gameImageSize * uiScale + itemSpacing;
+
+    for (int i = 0; i < games.size(); i++) {
+        ImGui::BeginGroup();
+        std::string ButtonName = "Button" + std::to_string(i);
+        const char* ButtonNameChar = ButtonName.c_str();
+
+        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)games[i].iconTexture,
+                               ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
+            currentProfile = i == 0 ? "Global" : games[i].serial + " - " + games[i].title;
+            LoadSettings(games[i].serial);
+        }
+
+        // Scroll to item only when newly-focused
+        if (ImGui::IsItemFocused() && !games[i].focusState) {
+            ImGui::SetScrollHereY(0.5f);
+        }
+
+        if (ImGui::IsWindowFocused())
+            games[i].focusState = ImGui::IsItemFocused();
+
+        ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
+        ImGui::TextWrapped("%s", games[i].title.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndGroup();
+
+        // Use same line if content fits horizontally, move to next line if not
+        rowContentWidth += (gameImageSize * uiScale + itemSpacing * 2 + padding);
+        if (rowContentWidth < maxAvailableWidth) {
+            ImGui::SameLine(0.0f, padding);
+        } else {
+            ImGui::Dummy(ImVec2(0.0f, padding));
+            rowContentWidth = gameImageSize * uiScale + itemSpacing;
+        }
+    }
+}
+
+} // namespace BigPictureMode

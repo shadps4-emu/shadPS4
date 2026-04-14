@@ -1,15 +1,17 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL3/SDL.h>
+#include <fstream>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
+#include <stb_image.h>
 
 #include "big_picture.h"
 #include "common/logging/log.h"
 #include "core/devtools/layer.h"
 #include "core/file_format/psf.h"
 #include "emulator.h"
+#include "imgui/imgui_std.h"
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 #include "settings_dialog_imgui.h"
@@ -28,7 +30,6 @@ static bool showSettings = false;
 
 static std::filesystem::path runEbootPath = "";
 static std::vector<Game> gameVec = {};
-static std::vector<bool> focusState = {};
 
 static float uiScale = 1.0f;
 static SDL_Renderer* renderer;
@@ -123,7 +124,7 @@ void Launch() {
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
-    GetGameInfo();
+    GetGameInfo(gameVec, false);
 
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
 
@@ -147,6 +148,7 @@ void Launch() {
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration;
 
         ImGui::Begin("Game Window", &done, window_flags);
+        ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
 
         ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -165,7 +167,7 @@ void Launch() {
             ImGui::SetKeyboardFocusHere();
         }
 
-        SetGameIcons();
+        SetGameIcons(gameVec);
         ImGui::EndChild();
         ImGui::Separator();
 
@@ -224,7 +226,9 @@ void Launch() {
         }
 
         if (showSettings) {
-            SettingsImGui::DrawSettings(&showSettings);
+            EmulatorSettings.SetBigPictureScale(static_cast<int>(uiScale * 1000));
+            EmulatorSettings.Save();
+            DrawSettings(&showSettings);
 
             // update when settings dialog closed
             if (!showSettings) {
@@ -258,34 +262,34 @@ void Launch() {
     }
 }
 
-void SetGameIcons() {
+void SetGameIcons(std::vector<Game> games) {
     ImGuiStyle& style = ImGui::GetStyle();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
     const float padding = 10.0f * uiScale;
     float rowContentWidth = gameImageSize * uiScale + itemSpacing;
 
-    for (int i = 0; i < gameVec.size(); i++) {
+    for (int i = 0; i < games.size(); i++) {
         ImGui::BeginGroup();
         std::string ButtonName = "Button" + std::to_string(i);
         const char* ButtonNameChar = ButtonName.c_str();
 
-        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)gameVec[i].iconTexture,
+        if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)games[i].iconTexture,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             done = true;
-            runEbootPath = gameVec[i].ebootPath;
+            runEbootPath = games[i].ebootPath;
         }
 
         // Scroll to item only when newly-focused
-        if (ImGui::IsItemFocused() && !focusState[i]) {
+        if (ImGui::IsItemFocused() && !games[i].focusState) {
             ImGui::SetScrollHereY(0.5f);
         }
 
         if (ImGui::IsWindowFocused())
-            focusState[i] = ImGui::IsItemFocused();
+            games[i].focusState = ImGui::IsItemFocused();
 
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
-        ImGui::TextWrapped("%s", gameVec[i].title.c_str());
+        ImGui::TextWrapped("%s", games[i].title.c_str());
         ImGui::PopTextWrapPos();
         ImGui::EndGroup();
 
@@ -319,9 +323,15 @@ std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::
     return outputPath;
 }
 
-void GetGameInfo() {
-    gameVec.clear();
-    focusState.clear();
+void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* texture) {
+    games.clear();
+    if (AddGlobalSettings) {
+        Game global;
+        global.title = "Global";
+        global.iconTexture = texture;
+        games.push_back(global);
+    }
+
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
             for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
@@ -335,7 +345,7 @@ void GetGameInfo() {
 
                 const std::string iconFileName = "icon0.png";
                 std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
-                game.iconTexture = IMG_LoadTexture(renderer, iconPath.string().c_str());
+                LoadTextureDataFromFile(iconPath, game.iconTexture, renderer);
 
                 PSF psf;
                 const std::string sfoFileName = "param.sfo";
@@ -353,15 +363,50 @@ void GetGameInfo() {
                     continue;
                 }
 
-                gameVec.push_back(game);
-                focusState.push_back(false);
+                games.push_back(game);
             }
         }
     }
 
-    std::sort(gameVec.begin(), gameVec.end(), [](const Game& a, const Game& b) {
+    // Keep global settings at the start if it's added
+    auto start = AddGlobalSettings ? games.begin() + 1 : (games.begin());
+    std::sort(start, games.end(), [](const Game& a, const Game& b) {
         return a.title < b.title; // Alphabetical order
     });
+}
+
+void LoadTextureDataFromFile(std::filesystem::path filePath, SDL_Texture*& texture,
+                             SDL_Renderer* m_renderer) {
+    std::ifstream file(filePath, std::ios::binary);
+    std::vector<char> data =
+        std::vector<char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    LoadTextureData(data, texture, m_renderer);
+}
+
+void LoadTextureData(std::vector<char> data, SDL_Texture*& texture, SDL_Renderer* m_renderer) {
+    int image_width = 0;
+    int image_height = 0;
+    int channels = 4;
+    unsigned char* image_data = stbi_load_from_memory(
+        (const unsigned char*)data.data(), (int)data.size(), &image_width, &image_height, NULL, 4);
+    if (image_data == nullptr) {
+        fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
+        // log
+    }
+
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(image_width, image_height, SDL_PIXELFORMAT_RGBA32,
+                                                 (void*)image_data, channels * image_width);
+    if (surface == nullptr) {
+        fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
+        // log
+    }
+
+    texture = SDL_CreateTextureFromSurface(m_renderer, surface);
+    if (texture == nullptr)
+        fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
+
+    SDL_DestroySurface(surface);
+    stbi_image_free(image_data);
 }
 
 } // namespace BigPictureMode
