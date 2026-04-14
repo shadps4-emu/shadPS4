@@ -175,24 +175,19 @@ Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp) {
         ASSERT(ctx.info.l_stage == LogicalStage::Geometry ||
                ctx.info.l_stage == LogicalStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+    case IR::Attribute::SubgroupLtMask:
+        return ctx.OpLoad(
+            ctx.U32[1], ctx.OpAccessChain(ctx.input_u32, ctx.subgroup_lt_mask, ctx.ConstU32(comp)));
     case IR::Attribute::PatchVertices:
         ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
         return ctx.OpLoad(ctx.U32[1], ctx.patch_vertices);
     case IR::Attribute::PackedHullInvocationInfo: {
         ASSERT(ctx.info.l_stage == LogicalStage::TessellationControl);
-        // [0:8]: patch id within VGT
-        // [8:12]: output control point id
-        // But 0:8 should be treated as 0 for attribute addressing purposes
         if (ctx.runtime_info.hs_info.IsPassthrough()) {
-            // Gcn shader would run with 1 thread, but we need to run a thread for
-            // each output control point.
-            // If Gcn shader uses this value, we should make sure all threads in the
-            // Vulkan shader use 0
-            return ctx.ConstU32(0u);
-        } else {
-            const Id invocation_id = ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
-            return ctx.OpShiftLeftLogical(ctx.U32[1], invocation_id, ctx.ConstU32(8u));
+            return ctx.u32_zero_value;
         }
+        const Id invocation_id = ctx.OpLoad(ctx.U32[1], ctx.invocation_id);
+        return ctx.OpShiftLeftLogical(ctx.U32[1], invocation_id, ctx.ConstU32(8u));
     }
     default:
         UNREACHABLE_MSG("Read U32 attribute {}", attr);

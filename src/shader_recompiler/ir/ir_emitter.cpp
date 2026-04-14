@@ -672,6 +672,10 @@ U32 IREmitter::BallotFindLsb(const Value& mask) {
     return Inst<U32>(Opcode::BallotFindLsb, mask);
 }
 
+U1 IREmitter::InverseBallot(const Value& mask) {
+    return Inst<U1>(Opcode::InverseBallot, mask);
+}
+
 U1 IREmitter::GroupAny(const U1& bit) {
     return Inst<U1>(Opcode::GroupAny, bit);
 }
@@ -1811,6 +1815,10 @@ U1 IREmitter::LogicalAnd(const U1& a, const U1& b) {
 
 U1 IREmitter::LogicalXor(const U1& a, const U1& b) {
     return Inst<U1>(Opcode::LogicalXor, a, b);
+}
+
+U1 IREmitter::LogicalXNor(const U1& a, const U1& b) {
+    return Inst<U1>(Opcode::LogicalXNor, a, b);
 }
 
 U1 IREmitter::LogicalNot(const U1& value) {

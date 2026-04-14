@@ -4,6 +4,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -249,11 +250,39 @@ IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
     const auto [it, is_new] = vgpr_map.try_emplace(offset);
     if (is_new) {
         ASSERT_MSG(next_vgpr_num < 256, "Out of VGPRs");
-        const auto new_vgpr = static_cast<IR::VectorReg>(next_vgpr_num++);
-        it->second = new_vgpr;
+        it->second = static_cast<IR::VectorReg>(next_vgpr_num++);
     }
     return it->second;
 };
+
+Translator::RegType Translator::GetRegType(const InstOperand& operand) const {
+    if (operand.field == OperandField::ScalarGPR) {
+        return type->scalar[operand.code];
+    }
+    if (operand.field == OperandField::VccLo || operand.field == OperandField::VccHi) {
+        return type->vcc;
+    }
+    if (operand.field == OperandField::ExecLo) {
+        return RegType::ThreadBitLo;
+    }
+    if (operand.field == OperandField::ExecHi) {
+        return RegType::ThreadBitHi;
+    }
+    // These are literals used for thread bit operations so force caller to check another argument
+    // to confirm
+    if (operand.field == OperandField::ConstZero) {
+        return RegType::Undefined;
+    }
+    if (operand.field == OperandField::SignedConstIntNeg &&
+        (-s32(operand.code) + SignedConstIntNegMin - 1) == -1) {
+        return RegType::Undefined;
+    }
+    if (operand.field == OperandField::LiteralConst &&
+        (operand.code == 0 || operand.code == std::numeric_limits<u32>::max())) {
+        return RegType::Undefined;
+    }
+    return RegType::Scalar;
+}
 
 IR::U1 Translator::GetSrc1(const InstOperand& operand) {
     switch (operand.field) {
@@ -293,7 +322,21 @@ T Translator::GetSrc(const InstOperand& operand) {
     T value{};
     switch (operand.field) {
     case OperandField::ScalarGPR:
-        value = ir.GetScalarReg<T>(IR::ScalarReg(operand.code));
+        if (type->scalar[operand.code] == RegType::Scalar) {
+            value = ir.GetScalarReg<T>(IR::ScalarReg(operand.code));
+        } else if (type->scalar[operand.code] == RegType::ThreadBitLo ||
+                   type->scalar[operand.code] == RegType::ThreadBitHi) {
+            const auto reg = ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+            const auto bits = IR::U32{ir.CompositeExtract(
+                ir.Ballot(reg), type->scalar[operand.code] == RegType::ThreadBitHi)};
+            if constexpr (is_float) {
+                value = ir.BitCast<T, IR::U32>(bits);
+            } else {
+                value = bits;
+            }
+        } else {
+            UNREACHABLE();
+        }
         break;
     case OperandField::VectorGPR:
         value = ir.GetVectorReg<T>(IR::VectorReg(operand.code));
@@ -334,20 +377,28 @@ T Translator::GetSrc(const InstOperand& operand) {
     case OperandField::ConstFloatNeg_4_0:
         value = get_imm(-4.0f);
         break;
-    case OperandField::VccLo:
+    case OperandField::VccLo: {
+        const IR::U32 vcc_lo = type->vcc == RegType::ThreadBitLo
+                                   ? IR::U32{ir.CompositeExtract(ir.Ballot(ir.GetVcc()), 0)}
+                                   : ir.GetVccLo();
         if constexpr (is_float) {
-            value = ir.BitCast<IR::F32>(ir.GetVccLo());
+            value = ir.BitCast<IR::F32>(vcc_lo);
         } else {
-            value = ir.GetVccLo();
+            value = vcc_lo;
         }
         break;
-    case OperandField::VccHi:
+    }
+    case OperandField::VccHi: {
+        const IR::U32 vcc_hi = type->vcc == RegType::ThreadBitLo
+                                   ? IR::U32{ir.CompositeExtract(ir.Ballot(ir.GetVcc()), 1)}
+                                   : ir.GetVccHi();
         if constexpr (is_float) {
-            value = ir.BitCast<IR::F32>(ir.GetVccHi());
+            value = ir.BitCast<IR::F32>(vcc_hi);
         } else {
-            value = ir.GetVccHi();
+            value = vcc_hi;
         }
         break;
+    }
     case OperandField::M0:
         if constexpr (is_float) {
             value = ir.BitCast<IR::F32>(ir.GetM0());
@@ -360,6 +411,22 @@ T Translator::GetSrc(const InstOperand& operand) {
             UNREACHABLE();
         } else {
             value = ir.BitCast<IR::U32>(ir.GetScc());
+        }
+        break;
+    case OperandField::ExecLo:
+        if constexpr (is_float) {
+            UNREACHABLE();
+        } else {
+            LOG_WARNING(Render_Recompiler, "ExecLo source used");
+            value = IR::U32{ir.CompositeExtract(ir.Ballot(ir.GetExec()), 0)};
+        }
+        break;
+    case OperandField::ExecHi:
+        if constexpr (is_float) {
+            UNREACHABLE();
+        } else {
+            LOG_WARNING(Render_Recompiler, "ExecHi source used");
+            value = IR::U32{ir.CompositeExtract(ir.Ballot(ir.GetExec()), 1)};
         }
         break;
     default:
@@ -402,8 +469,19 @@ T Translator::GetSrc64(const InstOperand& operand) {
     T value{};
     switch (operand.field) {
     case OperandField::ScalarGPR: {
-        const auto value_lo = ir.GetScalarReg(IR::ScalarReg(operand.code));
-        const auto value_hi = ir.GetScalarReg(IR::ScalarReg(operand.code + 1));
+        IR::U32 value_lo, value_hi;
+        if (type->scalar[operand.code] == RegType::Scalar) {
+            value_lo = ir.GetScalarReg(IR::ScalarReg(operand.code));
+            value_hi = ir.GetScalarReg(IR::ScalarReg(operand.code + 1));
+        } else if (type->scalar[operand.code] == RegType::ThreadBitLo &&
+                   type->scalar[operand.code + 1] == RegType::ThreadBitHi) {
+            const auto value_bits =
+                ir.Ballot(ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code)));
+            value_lo = IR::U32{ir.CompositeExtract(value_bits, 0)};
+            value_hi = IR::U32{ir.CompositeExtract(value_bits, 1)};
+        } else {
+            UNREACHABLE_MSG("Undefined scalar type");
+        }
         if constexpr (is_float) {
             value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
         } else {
@@ -457,14 +535,25 @@ T Translator::GetSrc64(const InstOperand& operand) {
     case OperandField::ConstFloatNeg_4_0:
         value = get_imm(-4.0);
         break;
-    case OperandField::VccLo:
-        if constexpr (is_float) {
-            value = ir.PackDouble2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
+    case OperandField::VccLo: {
+        IR::U32 value_lo, value_hi;
+        if (type->vcc == RegType::Scalar) {
+            value_lo = ir.GetVccLo();
+            value_hi = ir.GetVccHi();
+        } else if (type->vcc == RegType::ThreadBitLo) {
+            const auto value_bits = ir.Ballot(ir.GetVcc());
+            value_lo = IR::U32{ir.CompositeExtract(value_bits, 0)};
+            value_hi = IR::U32{ir.CompositeExtract(value_bits, 1)};
         } else {
-            value = ir.PackUint2x32(ir.CompositeConstruct(ir.GetVccLo(), ir.GetVccHi()));
+            UNREACHABLE();
+        }
+        if constexpr (is_float) {
+            value = ir.PackDouble2x32(ir.CompositeConstruct(value_lo, value_hi));
+        } else {
+            value = ir.PackUint2x32(ir.CompositeConstruct(value_lo, value_hi));
         }
         break;
-    case OperandField::VccHi:
+    }
     default:
         UNREACHABLE();
     }
@@ -503,9 +592,12 @@ template IR::F64 Translator::GetSrc64<IR::F64>(const InstOperand&);
 void Translator::SetDst1(const InstOperand& operand, const IR::U1& value) {
     switch (operand.field) {
     case OperandField::VccLo:
+        type->vcc = RegType::ThreadBitLo;
         ir.SetVcc(value);
         break;
     case OperandField::ScalarGPR:
+        type->scalar[operand.code] = RegType::ThreadBitLo;
+        type->scalar[operand.code + 1] = RegType::ThreadBitHi;
         ir.SetThreadBitScalarReg(IR::ScalarReg(operand.code), value);
         break;
     case OperandField::ExecLo:
@@ -529,12 +621,15 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
 
     switch (operand.field) {
     case OperandField::ScalarGPR:
+        type->scalar[operand.code] = RegType::Scalar;
         return ir.SetScalarReg(IR::ScalarReg(operand.code), result);
     case OperandField::VectorGPR:
         return ir.SetVectorReg(IR::VectorReg(operand.code), result);
     case OperandField::VccLo:
+        type->vcc = RegType::Scalar;
         return ir.SetVccLo(result);
     case OperandField::VccHi:
+        type->vcc = RegType::Scalar;
         return ir.SetVccHi(result);
     case OperandField::M0:
         return ir.SetM0(result);
@@ -563,20 +658,25 @@ void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_ra
     const IR::U32 hi{ir.CompositeExtract(unpacked, 1U)};
     switch (operand.field) {
     case OperandField::ScalarGPR:
+        type->scalar[operand.code] = RegType::Scalar;
+        type->scalar[operand.code + 1] = RegType::Scalar;
         ir.SetScalarReg(IR::ScalarReg(operand.code + 1), hi);
         return ir.SetScalarReg(IR::ScalarReg(operand.code), lo);
     case OperandField::VectorGPR:
         ir.SetVectorReg(IR::VectorReg(operand.code + 1), hi);
         return ir.SetVectorReg(IR::VectorReg(operand.code), lo);
     case OperandField::VccLo:
+        type->vcc = RegType::Scalar;
         ir.SetVccLo(lo);
         return ir.SetVccHi(hi);
-    case OperandField::VccHi:
-        UNREACHABLE();
     case OperandField::M0:
         break;
+    case OperandField::ExecLo:
+        ir.SetExec(ir.InverseBallot(
+            ir.CompositeConstruct(unpacked, ir.CompositeConstruct(ir.Imm32(0u), ir.Imm32(0u)))));
+        break;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
     }
 }
 
@@ -650,6 +750,31 @@ void Translator::Translate(IR::Block* block, u32 start_pc, std::span<const GcnIn
         return;
     }
     ir = IR::IREmitter{*block, block->begin()};
+    const auto* cfg_block = block->cfg_block;
+    type = &block_types[cfg_block];
+    // Find a predecessor that has been processed and has type information
+    for (auto* pred_block : block->cfg_block->pred) {
+        const auto it = block_types.find(pred_block);
+        if (it != block_types.end()) {
+            *type = it->second;
+            break;
+        }
+    }
+    // Match types with other predecessors. If the type mismatches set it to undefined
+    for (auto* pred_block : block->cfg_block->pred) {
+        const auto it = block_types.find(pred_block);
+        if (it == block_types.end()) {
+            continue;
+        }
+        for (u32 i = 0; i < it->second.scalar.size(); i++) {
+            if (type->scalar[i] != it->second.scalar[i]) {
+                type->scalar[i] = RegType::Undefined;
+            }
+        }
+        if (type->vcc != it->second.vcc) {
+            type->vcc = RegType::Undefined;
+        }
+    }
     pc = start_pc;
     for (const auto& inst : inst_list) {
         pc += inst.length;

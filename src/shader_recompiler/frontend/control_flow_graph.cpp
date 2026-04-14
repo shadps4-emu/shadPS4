@@ -110,6 +110,7 @@ CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_l
     EmitBlocks();
     LinkBlocks();
     SplitDivergenceScopes();
+    ComputePredecessors();
 }
 
 void CFG::EmitLabels() {
@@ -352,6 +353,18 @@ void CFG::LinkBlocks() {
             block.end_class = EndClass::Exit;
         } else {
             UNREACHABLE();
+        }
+    }
+}
+
+void CFG::ComputePredecessors() {
+    // For each block, register it as a predecessor of its successors.
+    for (auto& block : blocks) {
+        if (block.branch_true) {
+            block.branch_true->pred.push_back(&block);
+        }
+        if (block.branch_false && block.branch_false != block.branch_true) {
+            block.branch_false->pred.push_back(&block);
         }
     }
 }

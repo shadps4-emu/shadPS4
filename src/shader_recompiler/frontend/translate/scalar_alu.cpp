@@ -95,7 +95,7 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
 
             // SOP1
         case Opcode::S_MOV_B32:
-            return S_MOV(inst);
+            return S_MOV_B32(inst);
         case Opcode::S_MOV_B64:
             return S_MOV_B64(inst);
         case Opcode::S_NOT_B64:
@@ -503,7 +503,7 @@ void Translator::S_MULK_I32(const GcnInst& inst) {
 
 // SOP1
 
-void Translator::S_MOV(const GcnInst& inst) {
+void Translator::S_MOV_B32(const GcnInst& inst) {
     if (inst.dst[0].field == OperandField::ScalarGPR) {
         if (inst.src[0].field == OperandField::ExecLo) {
             ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), ir.GetExec());
@@ -516,16 +516,16 @@ void Translator::S_MOV(const GcnInst& inst) {
 }
 
 void Translator::S_MOV_B64(const GcnInst& inst) {
-    // Moving SGPR to SGPR is used for thread masks, like most operations, but it can also be used
-    // for moving sharps.
-    if (inst.dst[0].field == OperandField::ScalarGPR &&
-        inst.src[0].field == OperandField::ScalarGPR) {
-        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code),
-                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code)));
-        ir.SetScalarReg(IR::ScalarReg(inst.dst[0].code + 1),
-                        ir.GetScalarReg(IR::ScalarReg(inst.src[0].code + 1)));
+    auto mov_type = GetRegType(inst.src[0]);
+    if (mov_type == RegType::Undefined) {
+        mov_type = GetRegType(inst.dst[0]);
+        ASSERT_MSG(mov_type != RegType::Undefined, "Cannot deduce reg space of MOV instruction");
     }
-    SetDst1(inst.dst[0], GetSrc1(inst.src[0]));
+    if (mov_type == RegType::Scalar) {
+        SetDst64(inst.dst[0], GetSrc64(inst.src[0]));
+    } else {
+        SetDst1(inst.dst[0], GetSrc1(inst.src[0]));
+    }
 }
 
 void Translator::S_NOT_B64(const GcnInst& inst) {
@@ -591,9 +591,6 @@ void Translator::S_BITSET_B32(const GcnInst& inst, u32 bit_value) {
 }
 
 void Translator::S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst) {
-    // This instruction normally operates on 64-bit data (EXEC, VCC, SGPRs)
-    // However here we flatten it to 1-bit EXEC and 1-bit VCC. For the destination
-    // SGPR we have a special IR opcode for SPGRs that act as thread masks.
     IR::U1 exec{ir.GetExec()};
     const IR::U1 src{GetSrc1(inst.src[0])};
     SetDst1(inst.dst[0], exec);
