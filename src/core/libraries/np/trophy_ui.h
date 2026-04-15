@@ -12,11 +12,6 @@
 namespace Libraries::Np::NpTrophy {
 
 class TrophyUI final : public ImGui::Layer {
-    struct AudioData {
-        std::vector<signed char> pcm_data;
-        size_t pos;
-    };
-
 public:
     TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
              const std::string_view& rarity);
