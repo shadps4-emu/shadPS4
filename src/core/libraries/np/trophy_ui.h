@@ -22,8 +22,8 @@ public:
     void Draw() override;
 
 private:
-    void playMp3(std::vector<unsigned char> mp3Data);
-    void playWav(std::vector<unsigned char> wavData);
+    void PlayMp3(std::vector<unsigned char> mp3Data);
+    void PlayWav(std::vector<unsigned char> wavData);
 
     std::string trophy_name;
     std::string_view trophy_type;

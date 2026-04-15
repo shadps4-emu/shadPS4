@@ -142,17 +142,17 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         sound_data = std::vector<unsigned char>((std::istreambuf_iterator<char>(file)),
                                                 std::istreambuf_iterator<char>());
         file.close();
-        playMp3(sound_data);
+        PlayMp3(sound_data);
     } else if (std::filesystem::exists(musicPathWav)) {
         std::ifstream file(musicPathWav, std::ios::binary);
         sound_data = std::vector<unsigned char>((std::istreambuf_iterator<char>(file)),
                                                 std::istreambuf_iterator<char>());
         file.close();
-        playWav(sound_data);
+        PlayWav(sound_data);
     } else {
         auto soundFile = resource.open("src/images/trophy.wav");
         sound_data = std::vector<unsigned char>(soundFile.begin(), soundFile.end());
-        playWav(sound_data);
+        PlayWav(sound_data);
     }
 }
 
@@ -317,7 +317,7 @@ void TrophyUI::Draw() {
     }
 }
 
-void TrophyUI::playMp3(std::vector<unsigned char> mp3Data) {
+void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
     mp3dec_t mp3d;
     mp3dec_frame_info_t info;
     short pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
@@ -354,7 +354,7 @@ void TrophyUI::playMp3(std::vector<unsigned char> mp3Data) {
     }
 }
 
-void TrophyUI::playWav(std::vector<unsigned char> wavData) {
+void TrophyUI::PlayWav(std::vector<unsigned char> wavData) {
     SDL_AudioSpec spec;
     Uint8* audioBuf = nullptr;
     Uint32 audioLen = 0;
