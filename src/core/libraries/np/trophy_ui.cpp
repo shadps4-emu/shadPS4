@@ -9,13 +9,13 @@
 #include <imgui.h>
 #include <queue>
 
+#define MINIMP3_IMPLEMENTATION
+#include <minimp3.h>
+
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "imgui/imgui_std.h"
-
-#define MINIMP3_IMPLEMENTATION
-#include "common/minimp3.h"
 
 CMRC_DECLARE(res);
 namespace fs = std::filesystem;

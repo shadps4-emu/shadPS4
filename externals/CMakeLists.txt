@@ -299,6 +299,9 @@ if (NOT TARGET CLI11::CLI11)
     add_subdirectory(CLI11)
 endif()
 
+# minimp3
+add_library(minimp3 INTERFACE)
+target_include_directories(minimp3 INTERFACE minimp3)
 
 #openal
 if (NOT TARGET OpenAL::OpenAL)

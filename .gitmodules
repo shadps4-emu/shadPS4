@@ -132,3 +132,7 @@
 	path = externals/libusb
 	url = https://github.com/shadexternals/libusb.git
 	branch = shadps4
+[submodule "externals/minimp3"]
+	path = externals/minimp3
+	url = https://github.com/lieff/minimp3
+	shallow = true
