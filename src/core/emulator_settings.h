@@ -73,8 +73,13 @@ struct Setting {
 
     /// Write v to the base layer.
     /// Game-specific overrides are applied exclusively via Load(serial)
-    void set(const T& v) {
-        value = v;
+    /// Set proper value as base or game_specific
+    void set(const T& v, bool game_specific = false) {
+        if (game_specific) {
+            game_specific_value = v;
+        } else {
+            value = v;
+        }
     }
 
     /// Discard the game-specific override; subsequent get(Default) will
@@ -527,15 +532,15 @@ public:
     auto Get##Name() const {                                                                       \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(const decltype((group).field.value)& v) {                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(const decltype((group).field.value)& v, bool specific = false) {                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL(group, Name, field)                                                   \
     bool Is##Name() const {                                                                        \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(bool v) {                                                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(bool v, bool specific = false) {                                                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
     bool Is##Name() const {                                                                        \
