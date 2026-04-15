@@ -289,12 +289,11 @@ void TrophyUI::playMp3(std::vector<unsigned char> mp3Data) {
         return;
     }
 
-    SDL_AudioSpec src_spec = {SDL_AUDIO_S16, 2, 44100};
-    SDL_AudioSpec dst_spec;
-    SDL_GetAudioDeviceFormat(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &dst_spec, nullptr);
+    // always s16 when decoded by minimp3, channels/frequency changed later on as necessary
+    SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
     bool specInfoSet = false;
 
-    stream = SDL_CreateAudioStream(&src_spec, &dst_spec);
+    stream = SDL_CreateAudioStream(&spec, &spec);
     SDL_BindAudioStream(dev, stream);
 
     // make this louder than game stream
@@ -306,15 +305,15 @@ void TrophyUI::playMp3(std::vector<unsigned char> mp3Data) {
     while (remaining_size > 0) {
         int samples = mp3dec_decode_frame(&mp3d, buffer_ptr, remaining_size, pcm, &info);
         if (samples > 0) {
+            if (!specInfoSet && info.hz > 0 && info.channels > 0) {
+                spec = {SDL_AUDIO_S16, info.channels, info.hz};
+                SDL_SetAudioStreamFormat(stream, &spec, &spec);
+                specInfoSet = true;
+            }
+
             SDL_PutAudioStreamData(stream, pcm, samples * 2 * sizeof(short));
             buffer_ptr += info.frame_bytes;
             remaining_size -= info.frame_bytes;
-
-            if (!specInfoSet && info.hz > 0 && info.channels > 0) {
-                src_spec = {SDL_AUDIO_S16, info.channels, info.hz};
-                SDL_SetAudioStreamFormat(stream, &src_spec, &dst_spec);
-                specInfoSet = true;
-            }
         } else {
             break;
         }
