@@ -94,6 +94,45 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
         }
     }
 
+    audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+
+    // user selected Sdl Backend, use same device as Sdl main Device
+    if (EmulatorSettings.GetAudioBackend() == 0) {
+        if (EmulatorSettings.GetSDLMainOutputDevice() != "Default Device") {
+            int count;
+            SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&count);
+
+            for (int i = 0; i < count; i++) {
+                std::string name = SDL_GetAudioDeviceName(devices[i]);
+                if (name == EmulatorSettings.GetSDLMainOutputDevice()) {
+                    audioDevice = SDL_OpenAudioDevice(devices[i], NULL);
+                }
+            }
+        }
+
+        // user selected OpenAl Backend, use same device as OpenAl main Device
+    } else if (EmulatorSettings.GetAudioBackend() == 1) {
+        if (EmulatorSettings.GetOpenALMainOutputDevice() != "Default Device") {
+            int count;
+            SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&count);
+
+            for (int i = 0; i < count; i++) {
+                std::string name = SDL_GetAudioDeviceName(devices[i]);
+                // Normally device names are the same for openAl/Sdl, just with an added prefix
+                // So this should be good enough
+                if (name.contains(EmulatorSettings.GetOpenALMainOutputDevice())) {
+                    audioDevice = SDL_OpenAudioDevice(devices[i], NULL);
+                }
+            }
+        }
+    }
+
+    if (audioDevice == 0) {
+        LOG_ERROR(Lib_NpTrophy, "Unable to open audio device for trophy sound playback: {}",
+                  SDL_GetError());
+        return;
+    }
+
     const auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
     const auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
     std::vector<unsigned char> sound_data;
@@ -122,8 +161,10 @@ TrophyUI::~TrophyUI() {
         SDL_DestroyAudioStream(stream);
     }
 
+    // if emulator is not using sdl audio backend
     if (EmulatorSettings.GetAudioBackend() != 0) {
         SDL_QuitSubSystem(SDL_INIT_AUDIO);
+        SDL_CloseAudioDevice(audioDevice);
     }
 
     Finish();
@@ -282,19 +323,12 @@ void TrophyUI::playMp3(std::vector<unsigned char> mp3Data) {
     short pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
     mp3dec_init(&mp3d);
 
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
-    if (dev == 0) {
-        LOG_ERROR(Lib_NpTrophy, "Unable to open audio device for trophy sound playback: {}",
-                  SDL_GetError());
-        return;
-    }
-
     // always s16 when decoded by minimp3, channels/frequency changed later on as necessary
     SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
     bool specInfoSet = false;
 
     stream = SDL_CreateAudioStream(&spec, &spec);
-    SDL_BindAudioStream(dev, stream);
+    SDL_BindAudioStream(audioDevice, stream);
 
     // make this louder than game stream
     SDL_SetAudioStreamGain(stream,
@@ -331,16 +365,8 @@ void TrophyUI::playWav(std::vector<unsigned char> wavData) {
         return;
     }
 
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
-    if (dev == 0) {
-        LOG_ERROR(Lib_NpTrophy, "Unable to open audio device for trophy sound playback: {}",
-                  SDL_GetError());
-        SDL_free(audioBuf);
-        return;
-    }
-
     SDL_AudioStream* stream = SDL_CreateAudioStream(&spec, &spec);
-    SDL_BindAudioStream(dev, stream);
+    SDL_BindAudioStream(audioDevice, stream);
 
     // make this louder than game stream
     SDL_SetAudioStreamGain(stream,

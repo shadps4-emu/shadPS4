@@ -35,6 +35,7 @@ private:
     ImGui::RefCountedTexture trophy_icon;
     ImGui::RefCountedTexture trophy_type_icon;
     SDL_AudioStream* stream;
+    SDL_AudioDeviceID audioDevice;
 };
 
 struct TrophyInfo {
