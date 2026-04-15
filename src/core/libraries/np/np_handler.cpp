@@ -103,7 +103,8 @@ void NpHandler::Shutdown() {
 
 bool NpHandler::ConnectUser(s32 user_id, const std::string& host, u16 port, const std::string& npid,
                             const std::string& password, const std::string& token) {
-    LOG_INFO(NpHandler, "Connecting user_id={} npid='{}' to {}:{}", user_id, npid, host, port);
+    LOG_INFO(NpHandler, "Connecting user_id={} npid='{}' to {}:{} (timeout {}s)", user_id, npid,
+             host, port, ShadNet::SHAD_CONNECT_TIMEOUT_MS / 1000);
 
     auto client = std::make_shared<ShadNet::ShadNetClient>();
 

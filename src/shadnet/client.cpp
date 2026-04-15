@@ -250,15 +250,62 @@ bool ShadNetClient::DoConnect() {
         return false;
     }
 
-    if (::connect(m_sock, res_list->ai_addr, static_cast<int>(res_list->ai_addrlen)) < 0) {
-        LOG_ERROR(ShadNet, "connect() failed for {}:{}", m_host, m_port);
-        ::freeaddrinfo(res_list);
+    // Use non-blocking connect + select() so we time out instead of hanging
+    // for the OS default TCP timeout (75 s on Linux, >20 s on Windows).
+#ifdef _WIN32
+    {
+        u_long nb = 1;
+        ::ioctlsocket(m_sock, FIONBIO, &nb);
+    }
+#else
+    {
+        int fl = ::fcntl(m_sock, F_GETFL, 0);
+        ::fcntl(m_sock, F_SETFL, fl | O_NONBLOCK);
+    }
+#endif
+
+    const int cr = ::connect(m_sock, res_list->ai_addr, static_cast<int>(res_list->ai_addrlen));
+    ::freeaddrinfo(res_list);
+
+    bool connected = false;
+#ifdef _WIN32
+    const bool in_progress = (cr < 0 && WSAGetLastError() == WSAEWOULDBLOCK);
+#else
+    const bool in_progress = (cr < 0 && errno == EINPROGRESS);
+#endif
+    if (cr == 0 || in_progress) {
+        fd_set wfds;
+        FD_ZERO(&wfds);
+        FD_SET(m_sock, &wfds);
+        struct timeval tv{static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
+                          static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)};
+        if (::select(static_cast<int>(m_sock) + 1, nullptr, &wfds, nullptr, &tv) > 0) {
+            int err = 0;
+            socklen_t len = sizeof(err);
+            ::getsockopt(m_sock, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&err), &len);
+            connected = (err == 0);
+        }
+    }
+    if (!connected) {
+        LOG_ERROR(ShadNet, "connect() timed out or failed for {}:{}", m_host, m_port);
         SHAD_CLOSE(m_sock);
         m_sock = SHAD_INVALID_SOCK;
         m_state = ShadNetState::FailureConnect;
         return false;
     }
-    ::freeaddrinfo(res_list);
+
+    // Restore blocking mode for RecvN / SendAll
+#ifdef _WIN32
+    {
+        u_long nb = 0;
+        ::ioctlsocket(m_sock, FIONBIO, &nb);
+    }
+#else
+    {
+        int fl = ::fcntl(m_sock, F_GETFL, 0);
+        ::fcntl(m_sock, F_SETFL, fl & ~O_NONBLOCK);
+    }
+#endif
 
     struct sockaddr_in local{};
     socklen_t alen = sizeof(local);
@@ -266,6 +313,17 @@ bool ShadNetClient::DoConnect() {
         m_addr_local.store(local.sin_addr.s_addr);
 
     LOG_INFO(ShadNet, "TCP connected to {}:{}", m_host, m_port);
+
+    // Apply receive timeout for the ServerInfo handshake.
+    // Cleared after success so ReaderThread's RecvN blocks indefinitely as intended.
+#ifdef _WIN32
+    DWORD so_rcv = static_cast<DWORD>(SHAD_CONNECT_TIMEOUT_MS);
+#else
+    struct timeval so_rcv{static_cast<long>(SHAD_CONNECT_TIMEOUT_MS / 1000),
+                          static_cast<long>((SHAD_CONNECT_TIMEOUT_MS % 1000) * 1000)};
+#endif
+    ::setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&so_rcv),
+                 sizeof(so_rcv));
 
     // ServerInfo handshake
     u8 hdr[SHAD_HEADER_SIZE];
@@ -301,6 +359,16 @@ bool ShadNetClient::DoConnect() {
         }
     }
     LOG_INFO(ShadNet, "ServerInfo OK (protocol v{})", SHAD_PROTOCOL_VERSION);
+
+    // Clear the receive timeout ReaderThread handles the socket from here.
+#ifdef _WIN32
+    DWORD no_timeout = 0;
+#else
+    struct timeval no_timeout{0, 0};
+#endif
+    ::setsockopt(m_sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&no_timeout),
+                 sizeof(no_timeout));
+
     m_connected = true;
     return true;
 }
@@ -536,8 +604,6 @@ void ShadNetClient::HandleNotification(u16 cmd_raw, const std::vector<u8>& paylo
         break;
     }
 }
-
-// encode / decode
 
 void ShadNetClient::PutLE16(std::vector<u8>& b, size_t off, u16 v) {
     b[off] = static_cast<u8>(v);
