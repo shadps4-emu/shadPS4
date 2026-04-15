@@ -203,20 +203,85 @@ void LoadCategory(SettingsCategory category) {
             AddSettingSliderInt("Window Height", currentSettings.windowHeight, 0, 7000);
             AddSettingBool("Enable HDR", currentSettings.hdrAllowed);
             AddSettingBool("Enable FSR", currentSettings.fsrEnabled);
-            AddSettingBool("Enable RCAS", currentSettings.rcasEnabled);
-            AddSettingSliderFloat("RCAS Attenuation", currentSettings.rcasAttenuation, 0.0f, 3.0f,
-                                  3);
+
+            if (currentSettings.fsrEnabled) {
+                AddSettingBool("Enable RCAS", currentSettings.rcasEnabled);
+            }
+
+            if (currentSettings.rcasEnabled && currentSettings.fsrEnabled) {
+                AddSettingSliderFloat("RCAS Attenuation", currentSettings.rcasAttenuation, 0.0f,
+                                      3.0f, 3);
+            }
 
             ImGui::EndTable();
         }
     } else if (category == SettingsCategory::Input) {
-        ImGui::Text("placeholder");
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
+            ImGui::TableSetupColumn("Value");
+
+            AddSettingBool("Enable Motion Controls", currentSettings.motionControls);
+            AddSettingBool("Enable Background Controller Input",
+                           currentSettings.backgroundController);
+            AddSettingCombo("Hide Cursor", currentSettings.cursorState);
+
+            if (currentSettings.cursorState == 1) {
+                AddSettingSliderInt("Hide Cursor Idle Timeout", currentSettings.cursorTimeout, 1,
+                                    10);
+            }
+
+            ImGui::EndTable();
+        }
     } else if (category == SettingsCategory::Trophy) {
-        ImGui::Text("placeholder");
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
+            ImGui::TableSetupColumn("Value");
+
+            AddSettingBool("Disable Trophy Notification", currentSettings.trophyPopupDisabled);
+            if (!currentSettings.trophyPopupDisabled) {
+                AddSettingCombo("Trophy Notification Position", currentSettings.trophySide);
+                AddSettingSliderFloat("Trophy Notification Duration",
+                                      currentSettings.trophyDuration, 0.f, 10.f, 1);
+            }
+
+            ImGui::EndTable();
+        }
     } else if (category == SettingsCategory::Log) {
-        ImGui::Text("placeholder");
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
+            ImGui::TableSetupColumn("Value");
+
+            AddSettingBool("Enable Logging", currentSettings.logEnabled);
+            if (currentSettings.logEnabled) {
+                AddSettingBool("Separate Log Files", currentSettings.separateLog);
+                AddSettingCombo("Log Type", currentSettings.logType);
+            }
+
+            ImGui::EndTable();
+        }
     } else if (category == SettingsCategory::Experimental) {
-        ImGui::Text("placeholder");
+        if (ImGui::BeginTable("SettingsTable", 2)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
+            ImGui::TableSetupColumn("Value");
+
+            AddSettingSliderInt("Additional DMem Allocation", currentSettings.extraDmem, 0, 20000);
+            AddSettingSliderInt("Vblank Frequency", currentSettings.vblankFrequency, 30, 360);
+            AddSettingCombo("Readbacks Mode", currentSettings.readbacksMode);
+            AddSettingBool("Enable Readback Linear Images", currentSettings.readbackLinearImages);
+            AddSettingBool("Enable Direct Memory Access", currentSettings.directMemoryAccess);
+            AddSettingBool("Enable Devkit Console Mode", currentSettings.devkitConsole);
+            AddSettingBool("Enable PS4 Neo Mode", currentSettings.neoMode);
+            AddSettingBool("Set PSN Sign-in to True", currentSettings.psnSignedIn);
+            AddSettingBool("Set Network Connected to True", currentSettings.connectedNetwork);
+            AddSettingBool("Enable Shader Cache", currentSettings.pipelineCacheEnabled);
+
+            if (currentSettings.pipelineCacheEnabled) {
+                AddSettingBool("Compress Shader Cache to Zip File",
+                               currentSettings.pipelineCacheArchive);
+            }
+
+            ImGui::EndTable();
+        }
     }
 
     ImGui::PopStyleVar();
@@ -233,7 +298,7 @@ void LoadCategory(SettingsCategory category) {
 }
 
 void SaveSettings(std::string profile) {
-    bool isSpecific = currentProfile != "Global";
+    const bool isSpecific = currentProfile != "Global";
 
     /////////// General Tab
     EmulatorSettings.SetConsoleLanguage(
@@ -256,11 +321,40 @@ void SaveSettings(std::string profile) {
     EmulatorSettings.SetRcasAttenuation(static_cast<int>(currentSettings.rcasAttenuation * 1000),
                                         isSpecific);
 
+    /////////// Input Tab
+    EmulatorSettings.SetMotionControlsEnabled(currentSettings.motionControls, isSpecific);
+    EmulatorSettings.SetBackgroundControllerInput(currentSettings.backgroundController, isSpecific);
+    EmulatorSettings.SetCursorState(currentSettings.cursorState, isSpecific);
+    EmulatorSettings.SetCursorHideTimeout(currentSettings.cursorTimeout, isSpecific);
+
+    /////////// Trophy Tab
+    EmulatorSettings.SetTrophyPopupDisabled(currentSettings.trophyPopupDisabled, isSpecific);
+    EmulatorSettings.SetTrophyNotificationSide(optionsTrophySide.at(currentSettings.trophySide),
+                                               isSpecific);
+    EmulatorSettings.SetTrophyNotificationDuration(
+        static_cast<double>(currentSettings.trophyDuration));
+
     /////////// Log Tab
     EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
     EmulatorSettings.SetLogType(optionsLogType.at(currentSettings.logType), isSpecific);
+    EmulatorSettings.SetSeparateLoggingEnabled(currentSettings.separateLog, isSpecific);
 
-    if (currentProfile == "Global") {
+    /////////// Experimental Tab
+    if (isSpecific) {
+        EmulatorSettings.SetReadbacksMode(currentSettings.readbacksMode, true);
+        EmulatorSettings.SetReadbackLinearImagesEnabled(currentSettings.readbackLinearImages, true);
+        EmulatorSettings.SetDirectMemoryAccessEnabled(currentSettings.directMemoryAccess, true);
+        EmulatorSettings.SetDevKit(currentSettings.devkitConsole, true);
+        EmulatorSettings.SetNeo(currentSettings.neoMode, true);
+        EmulatorSettings.SetPSNSignedIn(currentSettings.psnSignedIn, true);
+        EmulatorSettings.SetConnectedToNetwork(currentSettings.connectedNetwork, true);
+        EmulatorSettings.SetPipelineCacheEnabled(currentSettings.pipelineCacheEnabled, true);
+        EmulatorSettings.SetPipelineCacheArchived(currentSettings.pipelineCacheArchive, true);
+        EmulatorSettings.SetExtraDmemInMBytes(currentSettings.extraDmem, true);
+        EmulatorSettings.SetVblankFrequency(currentSettings.vblankFrequency, true);
+    }
+
+    if (!isSpecific) {
         EmulatorSettings.Save();
     } else {
         EmulatorSettings.Save(profile);
@@ -268,7 +362,8 @@ void SaveSettings(std::string profile) {
 }
 
 void LoadSettings(std::string profile) {
-    if (currentProfile == "Global") {
+    const bool isSpecific = currentProfile != "Global";
+    if (!isSpecific) {
         EmulatorSettings.Load();
     } else {
         EmulatorSettings.Load(profile);
@@ -300,9 +395,38 @@ void LoadSettings(std::string profile) {
     currentSettings.rcasAttenuation =
         static_cast<float>(EmulatorSettings.GetRcasAttenuation() * 0.001f);
 
+    /////////// Input Tab
+    currentSettings.motionControls = EmulatorSettings.IsMotionControlsEnabled();
+    currentSettings.backgroundController = EmulatorSettings.IsBackgroundControllerInput();
+    currentSettings.cursorState = EmulatorSettings.GetCursorState();
+    currentSettings.cursorTimeout = EmulatorSettings.GetCursorHideTimeout();
+
+    /////////// Trophy Tab
+    currentSettings.trophyPopupDisabled = EmulatorSettings.IsTrophyPopupDisabled();
+    currentSettings.trophySide =
+        GetComboIndex(EmulatorSettings.GetTrophyNotificationSide(), optionsTrophySide);
+    currentSettings.trophyDuration =
+        static_cast<float>(EmulatorSettings.GetTrophyNotificationDuration());
+
     /////////// Log Tab
     currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
     currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
+    currentSettings.separateLog = EmulatorSettings.IsSeparateLoggingEnabled();
+
+    /////////// Experimental Tab
+    if (isSpecific) {
+        currentSettings.readbacksMode = EmulatorSettings.GetReadbacksMode();
+        currentSettings.readbackLinearImages = EmulatorSettings.IsReadbackLinearImagesEnabled();
+        currentSettings.directMemoryAccess = EmulatorSettings.IsDirectMemoryAccessEnabled();
+        currentSettings.devkitConsole = EmulatorSettings.IsDevKit();
+        currentSettings.neoMode = EmulatorSettings.IsNeo();
+        currentSettings.psnSignedIn = EmulatorSettings.IsPSNSignedIn();
+        currentSettings.connectedNetwork = EmulatorSettings.IsConnectedToNetwork();
+        currentSettings.pipelineCacheEnabled = EmulatorSettings.IsPipelineCacheEnabled();
+        currentSettings.pipelineCacheArchive = EmulatorSettings.IsPipelineCacheArchived();
+        currentSettings.extraDmem = EmulatorSettings.GetExtraDmemInMBytes();
+        currentSettings.vblankFrequency = EmulatorSettings.GetVblankFrequency();
+    }
 }
 
 void AddCategory(std::string name, SDL_Texture* texture, SettingsCategory category) {

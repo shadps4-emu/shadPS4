@@ -73,9 +73,34 @@ struct CurrentSettings {
     bool rcasEnabled;
     float rcasAttenuation;
 
+    // Input tab
+    bool motionControls;
+    bool backgroundController;
+    int cursorState;
+    int cursorTimeout;
+
+    // Trophy tab
+    bool trophyPopupDisabled;
+    int trophySide;
+    float trophyDuration;
+
     // Log tab
     bool logEnabled;
+    bool separateLog;
     int logType;
+
+    // Experimental tab
+    int readbacksMode;
+    bool readbackLinearImages;
+    bool directMemoryAccess;
+    bool devkitConsole;
+    bool neoMode;
+    bool psnSignedIn;
+    bool connectedNetwork;
+    bool pipelineCacheEnabled;
+    bool pipelineCacheArchive;
+    int extraDmem;
+    int vblankFrequency;
 };
 
 //////////////////// option maps for comboboxes and other needed constants
@@ -148,11 +173,19 @@ const std::vector<std::string> optionsFullscreenMode = {"Windowed", "Fullscreen"
                                                         "Fullscreen (Borderless)"};
 const std::vector<std::string> optionsAudioBackend = {"SDL", "OpenAL"};
 const std::vector<std::string> optionsPresentMode = {"Mailbox", "Fifo", "Immediate"};
+const std::vector<std::string> optionsHideCursor = {"Never", "Idle", "Always"};
+const std::vector<std::string> optionsTrophySide = {"left", "right", "top", "bottom"};
+const std::vector<std::string> optionsReadbacksMode = {"Disabled", "Relaxed", "Precise"};
 
 const std::map<std::string, std::vector<std::string>> optionsMap = {
-    {"Log Type", optionsLogType},           {"Console Language", optionsLanguage},
-    {"Audio Backend", optionsAudioBackend}, {"Display Mode", optionsFullscreenMode},
+    {"Log Type", optionsLogType},
+    {"Console Language", optionsLanguage},
+    {"Audio Backend", optionsAudioBackend},
+    {"Display Mode", optionsFullscreenMode},
     {"Present Mode", optionsPresentMode},
+    {"Hide Cursor", optionsHideCursor},
+    {"Trophy Notification Position", optionsTrophySide},
+    {"Readbacks Mode", optionsReadbacksMode},
 };
 
 } // namespace BigPictureMode
