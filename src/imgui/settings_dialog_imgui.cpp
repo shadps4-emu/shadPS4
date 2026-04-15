@@ -82,6 +82,7 @@ void DrawSettings(bool* open) {
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
 
+        // Must add categories in enum order for L1/R1 to work correctly, with experimental last
         AddCategory("Profiles", textures.profiles, SettingsCategory::Profiles);
         AddCategory("General", textures.general, SettingsCategory::General);
         AddCategory("Graphics", textures.graphics, SettingsCategory::Graphics);
@@ -168,6 +169,23 @@ void DrawSettings(bool* open) {
         if (ImGui::Button("Cancel")) {
             DeInit();
             *open = false;
+        }
+
+        SettingsCategory lastCategory =
+            currentProfile != "Global" ? SettingsCategory::Experimental : SettingsCategory::Log;
+        // choose next category with R1
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadR1)) {
+            int currentIndex = static_cast<int>(currentCategory);
+            currentCategory == lastCategory
+                ? currentCategory = static_cast<SettingsCategory>(0)
+                : currentCategory = static_cast<SettingsCategory>(currentIndex + 1);
+        }
+
+        // choose previous category with R1
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadL1)) {
+            int currentIndex = static_cast<int>(currentCategory);
+            currentIndex == 0 ? currentCategory = lastCategory
+                              : currentCategory = static_cast<SettingsCategory>(currentIndex - 1);
         }
     }
 
