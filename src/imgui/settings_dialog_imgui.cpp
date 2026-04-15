@@ -27,6 +27,7 @@ static SDL_Renderer* renderer;
 
 static SettingsCategory currentCategory = SettingsCategory::Profiles;
 static std::string currentProfile = "Global";
+static bool closeOnSave = false;
 
 void Init() {
     currentProfile = "Global";
@@ -41,11 +42,9 @@ void Init() {
     LoadEmbeddedTexture("src/images/big_picture/global-settings.png", textures.globalSettings);
     LoadEmbeddedTexture("src/images/big_picture/experimental.png", textures.experimental);
     LoadEmbeddedTexture("src/images/big_picture/graphics.png", textures.graphics);
-
-    ImGuiIO& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigNavCursorVisibleAlways = true;
+    LoadEmbeddedTexture("src/images/big_picture/controller.png", textures.input);
+    LoadEmbeddedTexture("src/images/big_picture/trophy.png", textures.trophy);
+    LoadEmbeddedTexture("src/images/big_picture/log.png", textures.log);
 
     GetGameInfo(settingsProfileVec, true, textures.globalSettings);
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
@@ -68,6 +67,7 @@ void DrawSettings(bool* open) {
     if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoDecoration)) {
         if (ImGui::IsWindowAppearing()) {
             Init();
+            closeOnSave = false;
         }
 
         ImGui::DrawPrettyBackground();
@@ -85,6 +85,9 @@ void DrawSettings(bool* open) {
         AddCategory("Profiles", textures.profiles, SettingsCategory::Profiles);
         AddCategory("General", textures.general, SettingsCategory::General);
         AddCategory("Graphics", textures.graphics, SettingsCategory::Graphics);
+        AddCategory("Input", textures.input, SettingsCategory::Input);
+        AddCategory("Trophy", textures.trophy, SettingsCategory::Trophy);
+        AddCategory("Log", textures.log, SettingsCategory::Log);
 
         if (currentProfile != "Global")
             AddCategory("Experimental", textures.experimental, SettingsCategory::Experimental);
@@ -120,11 +123,18 @@ void DrawSettings(bool* open) {
 
         // Align buttons right
         float buttonsWidth = ImGui::CalcTextSize("Save").x + ImGui::CalcTextSize("Cancel").x +
-                             ImGui::GetStyle().FramePadding.x * 4.0f +
-                             ImGui::GetStyle().ItemSpacing.x;
+                             ImGui::CalcTextSize("Apply").x +
+                             ImGui::GetStyle().FramePadding.x * 6.0f +
+                             ImGui::GetStyle().ItemSpacing.x * 2;
         ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - buttonsWidth);
 
         if (ImGui::Button("Save")) {
+            closeOnSave = true;
+            ImGui::OpenPopup("Save Confirmation");
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Apply")) {
             ImGui::OpenPopup("Save Confirmation");
         }
 
@@ -142,9 +152,13 @@ void DrawSettings(bool* open) {
                 }
 
                 SaveSettings(profile);
-                DeInit();
-                *open = false;
-                ImGui::CloseCurrentPopup();
+                if (closeOnSave) {
+                    DeInit();
+                    *open = false;
+                    ImGui::CloseCurrentPopup();
+                } else {
+                    ImGui::CloseCurrentPopup();
+                }
             }
 
             ImGui::EndPopup();
@@ -184,9 +198,23 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Value");
 
             AddSettingCombo("Display Mode", currentSettings.fullscreenMode);
+            AddSettingCombo("Present Mode", currentSettings.presentMode);
+            AddSettingSliderInt("Window Width", currentSettings.windowWidth, 0, 8000);
+            AddSettingSliderInt("Window Height", currentSettings.windowHeight, 0, 7000);
+            AddSettingBool("Enable HDR", currentSettings.hdrAllowed);
+            AddSettingBool("Enable FSR", currentSettings.fsrEnabled);
+            AddSettingBool("Enable RCAS", currentSettings.rcasEnabled);
+            AddSettingSliderFloat("RCAS Attenuation", currentSettings.rcasAttenuation, 0.0f, 3.0f,
+                                  3);
 
             ImGui::EndTable();
         }
+    } else if (category == SettingsCategory::Input) {
+        ImGui::Text("placeholder");
+    } else if (category == SettingsCategory::Trophy) {
+        ImGui::Text("placeholder");
+    } else if (category == SettingsCategory::Log) {
+        ImGui::Text("placeholder");
     } else if (category == SettingsCategory::Experimental) {
         ImGui::Text("placeholder");
     }
@@ -219,7 +247,16 @@ void SaveSettings(std::string profile) {
     EmulatorSettings.SetFullScreen(isFullscreen);
     EmulatorSettings.SetFullScreenMode(optionsFullscreenMode.at(currentSettings.fullscreenMode),
                                        isSpecific);
+    EmulatorSettings.SetPresentMode(optionsPresentMode.at(currentSettings.presentMode), isSpecific);
+    EmulatorSettings.SetWindowHeight(currentSettings.windowHeight, isSpecific);
+    EmulatorSettings.SetWindowWidth(currentSettings.windowWidth, isSpecific);
+    EmulatorSettings.SetHdrAllowed(currentSettings.hdrAllowed, isSpecific);
+    EmulatorSettings.SetFsrEnabled(currentSettings.fsrEnabled, isSpecific);
+    EmulatorSettings.SetRcasEnabled(currentSettings.rcasEnabled, isSpecific);
+    EmulatorSettings.SetRcasAttenuation(static_cast<int>(currentSettings.rcasAttenuation * 1000),
+                                        isSpecific);
 
+    /////////// Log Tab
     EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
     EmulatorSettings.SetLogType(optionsLogType.at(currentSettings.logType), isSpecific);
 
@@ -253,7 +290,17 @@ void LoadSettings(std::string profile) {
     /////////// Graphics Tab
     currentSettings.fullscreenMode =
         GetComboIndex(EmulatorSettings.GetFullScreenMode(), optionsFullscreenMode);
+    currentSettings.presentMode =
+        GetComboIndex(EmulatorSettings.GetPresentMode(), optionsPresentMode);
+    currentSettings.windowHeight = EmulatorSettings.GetWindowHeight();
+    currentSettings.windowWidth = EmulatorSettings.GetWindowWidth();
+    currentSettings.hdrAllowed = EmulatorSettings.IsHdrAllowed();
+    currentSettings.fsrEnabled = EmulatorSettings.IsFsrEnabled();
+    currentSettings.rcasEnabled = EmulatorSettings.IsRcasEnabled();
+    currentSettings.rcasAttenuation =
+        static_cast<float>(EmulatorSettings.GetRcasAttenuation() * 0.001f);
 
+    /////////// Log Tab
     currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
     currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
 }
@@ -261,10 +308,18 @@ void LoadSettings(std::string profile) {
 void AddCategory(std::string name, SDL_Texture* texture, SettingsCategory category) {
     ImGui::SameLine();
     ImGui::BeginGroup();
+
+    // make button appear hovered as long as category is selected, otherwise dull it's hovered color
+    currentCategory == category
+        ? ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered])
+        : ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.235f, 0.392f, 0.624f, 1.00f));
+
     if (ImGui::ImageButton(name.c_str(), ImTextureID(texture),
                            ImVec2(settingsIconSize * uiScale, settingsIconSize * uiScale))) {
         currentCategory = category;
     }
+
+    ImGui::PopStyleColor();
 
     ImGui::SetCursorPosX(
         (ImGui::GetCursorPosX() +
@@ -292,6 +347,18 @@ void AddSettingSliderInt(std::string name, int& value, int min, int max) {
 
     ImGui::TableNextColumn();
     ImGui::SliderInt(label.c_str(), &value, min, max);
+}
+
+void AddSettingSliderFloat(std::string name, float& value, int min, int max, int precision) {
+    std::string label = "##" + name;
+    std::string precisionString = "%." + std::to_string(precision) + "f";
+
+    ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::TextWrapped("%s", name.c_str());
+
+    ImGui::TableNextColumn();
+    ImGui::SliderFloat(label.c_str(), &value, min, max, precisionString.c_str());
 }
 
 void AddSettingCombo(std::string name, int& value) {
@@ -347,10 +414,22 @@ void SetProfileIcons(std::vector<Game>& games) {
         std::string ButtonName = "Button" + std::to_string(i);
         const char* ButtonNameChar = ButtonName.c_str();
 
+        bool isNextItemFocused = (ImGui::GetID(ButtonNameChar) == ImGui::GetFocusID());
+        bool popColor = false;
+        if (isNextItemFocused) {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+            popColor = true;
+        }
+
         if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)games[i].iconTexture,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             currentProfile = i == 0 ? "Global" : games[i].serial + " - " + games[i].title;
             LoadSettings(games[i].serial);
+        }
+
+        if (popColor) {
+            ImGui::PopStyleColor();
         }
 
         // Scroll to item only when newly-focused

@@ -1273,6 +1273,9 @@ cmrc_add_resource_library(embedded-resources
         src/images/big_picture/global-settings.png
         src/images/big_picture/experimental.png
         src/images/big_picture/graphics.png
+        src/images/big_picture/controller.png
+        src/images/big_picture/trophy.png
+        src/images/big_picture/log.png
 	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png

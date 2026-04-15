@@ -113,9 +113,10 @@ void Launch() {
     colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f); // lighter blue
 
     style.WindowRounding = 0.0f;
-    style.FrameRounding = 5.0f;
+    style.FrameRounding = 5.0f * uiScale;
     style.ItemSpacing = ImVec2(10.0f * uiScale, 10.0f * uiScale);
     style.FramePadding = ImVec2(10.0f * uiScale, 10.0f * uiScale);
+    style.FrameBorderSize = 2.5f * uiScale;
     style.WindowBorderSize = 0.0f;
     style.WindowPadding = ImVec2(20.0f * uiScale, 20.0f * uiScale);
     style.GrabMinSize = 20.0f * uiScale;
@@ -274,10 +275,22 @@ void SetGameIcons(std::vector<Game>& games) {
         std::string ButtonName = "Button" + std::to_string(i);
         const char* ButtonNameChar = ButtonName.c_str();
 
+        bool isNextItemFocused = (ImGui::GetID(ButtonNameChar) == ImGui::GetFocusID());
+        bool popColor = false;
+        if (isNextItemFocused) {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImGui::GetStyle().Colors[ImGuiCol_ButtonHovered]);
+            popColor = true;
+        }
+
         if (ImGui::ImageButton(ButtonNameChar, (ImTextureID)games[i].iconTexture,
                                ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
             done = true;
             runEbootPath = games[i].ebootPath;
+        }
+
+        if (popColor) {
+            ImGui::PopStyleColor();
         }
 
         // Scroll to item only when newly-focused
