@@ -233,10 +233,7 @@ find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(OpenAL CONFIG)
 find_package(RenderDoc 1.6.0 MODULE)
-find_package(SDL3_mixer 2.8.1 CONFIG)
-if (SDL3_mixer_FOUND)
-    find_package(SDL3 3.1.2 CONFIG)
-endif()
+find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
 find_package(toml11 4.2.0 CONFIG)
 find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -1099,10 +1096,18 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/imgui_core.h
           src/imgui/renderer/imgui_impl_sdl3.cpp
           src/imgui/renderer/imgui_impl_sdl3.h
+          src/imgui/renderer/imgui_impl_sdl3_bpm.cpp
+          src/imgui/renderer/imgui_impl_sdl3_bpm.h
+          src/imgui/renderer/imgui_impl_sdlrenderer3.cpp
+          src/imgui/renderer/imgui_impl_sdlrenderer3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
           src/imgui/renderer/texture_manager.cpp
           src/imgui/renderer/texture_manager.h
+          src/imgui/big_picture.cpp
+          src/imgui/big_picture.h
+          src/imgui/settings_dialog_imgui.cpp
+          src/imgui/settings_dialog_imgui.h
 )
 
 set(INPUT src/input/controller.cpp
@@ -1139,8 +1144,8 @@ add_executable(shadps4
 
 create_target_directory_groups(shadps4)
 
-target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG)
-target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 SDL3_mixer::SDL3_mixer pugixml::pugixml)
+target_link_libraries(shadps4 PRIVATE magic_enum::magic_enum fmt::fmt toml11::toml11 tsl::robin_map xbyak::xbyak Tracy::TracyClient RenderDoc::API FFmpeg::ffmpeg Dear_ImGui gcn half::half ZLIB::ZLIB PNG::PNG minimp3)
+target_link_libraries(shadps4 PRIVATE Boost::headers GPUOpen::VulkanMemoryAllocator LibAtrac9 sirit Vulkan::Headers xxHash::xxhash Zydis::Zydis glslang::glslang SDL3::SDL3 pugixml::pugixml)
 target_link_libraries(shadps4 PRIVATE stb::headers lfreist-hwinfo::hwinfo nlohmann_json::nlohmann_json miniz::miniz fdk-aac CLI11::CLI11 OpenAL::OpenAL Cpp_Httplib)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
@@ -1263,6 +1268,14 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CMakeRC.cmake")
 cmrc_add_resource_library(embedded-resources
         ALIAS res::embedded
         NAMESPACE res
+        src/images/big_picture/folder.png
+        src/images/big_picture/settings.png
+        src/images/big_picture/global-settings.png
+        src/images/big_picture/experimental.png
+        src/images/big_picture/graphics.png
+        src/images/big_picture/controller.png
+        src/images/big_picture/trophy.png
+        src/images/big_picture/log.png
 	src/images/trophy.wav
         src/images/bronze.png
         src/images/gold.png

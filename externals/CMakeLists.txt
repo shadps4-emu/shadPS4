@@ -63,18 +63,6 @@ if (NOT TARGET SDL3::SDL3)
     add_subdirectory(sdl3)
 endif()
 
-# SDL3_mixer
-if (NOT TARGET SDL3_mixer::SDL3_mixer)
-    set(SDLMIXER_FLAC OFF)
-    set(SDLMIXER_OGG OFF)
-    set(SDLMIXER_MOD OFF)
-    set(SDLMIXER_MIDI OFF)
-    set(SDLMIXER_OPUS OFF)
-    set(SDLMIXER_WAVPACK OFF)
-    set(BUILD_SHARED_LIBS OFF)
-    add_subdirectory(sdl3_mixer)
-endif()
-
 # vulkan-headers
 if (NOT TARGET Vulkan::Headers)
     set(VULKAN_HEADERS_ENABLE_MODULE OFF)
@@ -216,7 +204,7 @@ if (NOT TARGET libusb::usb)
         # no you cant vendor this libusb, its builtin on freebsd
         find_package(libusb)
     else()
-        add_subdirectory(ext-libusb)
+        add_subdirectory(libusb)
         add_library(libusb::usb ALIAS usb-1.0)
     endif()
 endif()
@@ -288,6 +276,9 @@ if (NOT TARGET CLI11::CLI11)
     add_subdirectory(CLI11)
 endif()
 
+# minimp3
+add_library(minimp3 INTERFACE)
+target_include_directories(minimp3 INTERFACE minimp3)
 
 #openal
 if (NOT TARGET OpenAL::OpenAL)

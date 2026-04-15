@@ -72,9 +72,13 @@ struct Setting {
     }
 
     /// Write v to the base layer.
-    /// Game-specific overrides are applied exclusively via Load(serial)
-    void set(const T& v) {
-        value = v;
+    /// Set proper value as base or game_specific
+    void set(const T& v, bool game_specific = false) {
+        if (game_specific) {
+            game_specific_value = v;
+        } else {
+            value = v;
+        }
     }
 
     /// Discard the game-specific override; subsequent get(Default) will
@@ -187,6 +191,7 @@ struct GeneralSettings {
     Setting<bool> discord_rpc_enabled{false};
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
+    Setting<int> big_picture_scale{1000};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -218,7 +223,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_
                                    trophy_notification_duration, log_filter, log_type, show_splash,
                                    identical_log_grouped, trophy_notification_side,
                                    connected_to_network, discord_rpc_enabled, show_fps_counter,
-                                   console_language)
+                                   console_language, big_picture_scale)
 
 // -------------------------------
 // Debug settings
@@ -455,6 +460,8 @@ public:
     void SetSysModulesDir(const std::filesystem::path& dir);
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
+    std::filesystem::path GetAddonInstallDir();
+    void SetAddonInstallDir(const std::filesystem::path& dir);
 
 private:
     GeneralSettings m_general{};
@@ -523,15 +530,15 @@ public:
     auto Get##Name() const {                                                                       \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(const decltype((group).field.value)& v) {                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(const decltype((group).field.value)& v, bool specific = false) {                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL(group, Name, field)                                                   \
     bool Is##Name() const {                                                                        \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(bool v) {                                                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(bool v, bool specific = false) {                                                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
     bool Is##Name() const {                                                                        \
@@ -549,13 +556,13 @@ public:
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
     SETTING_FORWARD_BOOL(m_general, IdenticalLogGrouped, identical_log_grouped)
-    SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
     SETTING_FORWARD(m_general, LogFilter, log_filter)
     SETTING_FORWARD(m_general, LogType, log_type)
     SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
     SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
+    SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
 
     // Audio settings
     SETTING_FORWARD(m_audio, AudioBackend, audio_backend)
