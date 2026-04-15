@@ -320,7 +320,7 @@ void TrophyUI::Draw() {
 void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
     mp3dec_t mp3d;
     mp3dec_frame_info_t info;
-    short* pcm = new short[MINIMP3_MAX_SAMPLES_PER_FRAME];
+    std::vector<short> pcm(MINIMP3_MAX_SAMPLES_PER_FRAME);
     mp3dec_init(&mp3d);
 
     // always s16 when decoded by minimp3, channels/frequency changed later on as necessary
@@ -337,7 +337,7 @@ void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
     size_t remaining_size = mp3Data.size();
 
     while (remaining_size > 0) {
-        int samples = mp3dec_decode_frame(&mp3d, buffer_ptr, remaining_size, pcm, &info);
+        int samples = mp3dec_decode_frame(&mp3d, buffer_ptr, remaining_size, pcm.data(), &info);
         if (samples > 0) {
             if (!specInfoSet && info.hz > 0 && info.channels > 0) {
                 spec = {SDL_AUDIO_S16, info.channels, info.hz};
@@ -345,15 +345,13 @@ void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
                 specInfoSet = true;
             }
 
-            SDL_PutAudioStreamData(stream, pcm, samples * 2 * sizeof(short));
+            SDL_PutAudioStreamData(stream, pcm.data(), samples * 2 * sizeof(short));
             buffer_ptr += info.frame_bytes;
             remaining_size -= info.frame_bytes;
         } else {
             break;
         }
     }
-
-    delete[] pcm;
 }
 
 void TrophyUI::PlayWav(std::vector<unsigned char> wavData) {
