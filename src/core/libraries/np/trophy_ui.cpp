@@ -118,9 +118,9 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
             for (int i = 0; i < count; i++) {
                 std::string name = SDL_GetAudioDeviceName(devices[i]);
-                // Normally device names are the same for openAl/Sdl, just with an added prefix
-                // So this should be good enough
-                if (name.contains(EmulatorSettings.GetOpenALMainOutputDevice())) {
+                // Device names are the same for openAl/Sdl, just with an added prefix
+                name.erase(0, 15);
+                if (name == EmulatorSettings.GetOpenALMainOutputDevice()) {
                     audioDevice = SDL_OpenAudioDevice(devices[i], NULL);
                 }
             }
@@ -163,8 +163,8 @@ TrophyUI::~TrophyUI() {
 
     // if emulator is not using sdl audio backend
     if (EmulatorSettings.GetAudioBackend() != 0) {
-        SDL_QuitSubSystem(SDL_INIT_AUDIO);
         SDL_CloseAudioDevice(audioDevice);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
     }
 
     Finish();
