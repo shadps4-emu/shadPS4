@@ -484,11 +484,11 @@ void L::Draw() {
 namespace Overlay {
 
 void TextCentered(const std::string& text) {
-    float window_width = GetWindowSize().x;
+    float window_width = GetContentRegionAvail().x;
     float text_width = CalcTextSize(text.c_str()).x;
     float text_indentation = (window_width - text_width) * 0.5f;
 
-    SameLine(text_indentation);
+    SetCursorPosX(text_indentation);
     Text("%s", text.c_str());
 }
 
