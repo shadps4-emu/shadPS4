@@ -320,7 +320,7 @@ void TrophyUI::Draw() {
 void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
     mp3dec_t mp3d;
     mp3dec_frame_info_t info;
-    short pcm[MINIMP3_MAX_SAMPLES_PER_FRAME];
+    short* pcm = new short[MINIMP3_MAX_SAMPLES_PER_FRAME];
     mp3dec_init(&mp3d);
 
     // always s16 when decoded by minimp3, channels/frequency changed later on as necessary
@@ -352,6 +352,8 @@ void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
             break;
         }
     }
+
+    delete[] pcm;
 }
 
 void TrophyUI::PlayWav(std::vector<unsigned char> wavData) {
