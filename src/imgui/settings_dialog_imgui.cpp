@@ -18,7 +18,6 @@ namespace BigPictureMode {
 
 const float gameImageSize = 200.f;
 const float settingsIconSize = 125.f;
-
 static std::vector<Game> settingsProfileVec = {};
 
 static float uiScale = 1.0f;
@@ -162,7 +161,8 @@ void DrawSettings(bool* open) {
 }
 
 void LoadCategory(SettingsCategory category) {
-    ImGui::Text("%s", ("Selected Profile: " + currentProfile).c_str());
+    ImGui::TextColored(ImVec4(0.00f, 1.00f, 1.00f, 1.00f), "%s",
+                       ("Selected Profile: " + currentProfile).c_str()); // Dark Blue
     ImGui::Dummy(ImVec2(0, 20.f * uiScale));
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
 
@@ -335,7 +335,7 @@ void LoadEmbeddedTexture(std::string resourcePath, SDL_Texture*& texture) {
     BigPictureMode::LoadTextureData(texData, texture, renderer);
 }
 
-void SetProfileIcons(std::vector<Game> games) {
+void SetProfileIcons(std::vector<Game>& games) {
     ImGuiStyle& style = ImGui::GetStyle();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
@@ -358,8 +358,9 @@ void SetProfileIcons(std::vector<Game> games) {
             ImGui::SetScrollHereY(0.5f);
         }
 
-        if (ImGui::IsWindowFocused())
+        if (ImGui::IsWindowFocused()) {
             games[i].focusState = ImGui::IsItemFocused();
+        }
 
         ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + gameImageSize * uiScale);
         ImGui::TextWrapped("%s", games[i].title.c_str());

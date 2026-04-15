@@ -31,7 +31,7 @@ struct Textures {
 void Init();
 void DeInit();
 
-void SetProfileIcons(std::vector<Game> games);
+void SetProfileIcons(std::vector<Game>& games);
 void LoadEmbeddedTexture(std::string resourcePath, SDL_Texture*& texture);
 void AddCategory(std::string name, SDL_Texture* texture, SettingsCategory category);
 

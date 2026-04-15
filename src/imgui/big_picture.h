@@ -17,7 +17,7 @@ struct Game {
 };
 
 void Launch();
-void SetGameIcons(std::vector<Game> games);
+void SetGameIcons(std::vector<Game>& games);
 void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* texture = {});
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder);
 

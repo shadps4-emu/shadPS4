@@ -262,7 +262,7 @@ void Launch() {
     }
 }
 
-void SetGameIcons(std::vector<Game> games) {
+void SetGameIcons(std::vector<Game>& games) {
     ImGuiStyle& style = ImGui::GetStyle();
     const float maxAvailableWidth = ImGui::GetContentRegionAvail().x;
     const float itemSpacing = style.ItemSpacing.x; // already scaled
@@ -329,6 +329,7 @@ void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* 
         Game global;
         global.title = "Global";
         global.iconTexture = texture;
+        global.focusState = false;
         games.push_back(global);
     }
 
@@ -341,12 +342,6 @@ void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* 
                 }
 
                 Game game;
-                game.ebootPath = entry.path() / "eboot.bin";
-
-                const std::string iconFileName = "icon0.png";
-                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
-                LoadTextureDataFromFile(iconPath, game.iconTexture, renderer);
-
                 PSF psf;
                 const std::string sfoFileName = "param.sfo";
                 std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
@@ -363,6 +358,12 @@ void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* 
                     continue;
                 }
 
+                const std::string iconFileName = "icon0.png";
+                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
+                LoadTextureDataFromFile(iconPath, game.iconTexture, renderer);
+
+                game.ebootPath = entry.path() / "eboot.bin";
+                game.focusState = false;
                 games.push_back(game);
             }
         }
@@ -390,20 +391,19 @@ void LoadTextureData(std::vector<char> data, SDL_Texture*& texture, SDL_Renderer
     unsigned char* image_data = stbi_load_from_memory(
         (const unsigned char*)data.data(), (int)data.size(), &image_width, &image_height, NULL, 4);
     if (image_data == nullptr) {
-        fprintf(stderr, "Failed to load image: %s\n", stbi_failure_reason());
-        // log
+        LOG_ERROR(ImGui, "Failed to load image: {}", stbi_failure_reason());
     }
 
     SDL_Surface* surface = SDL_CreateSurfaceFrom(image_width, image_height, SDL_PIXELFORMAT_RGBA32,
                                                  (void*)image_data, channels * image_width);
     if (surface == nullptr) {
-        fprintf(stderr, "Failed to create SDL surface: %s\n", SDL_GetError());
-        // log
+        LOG_ERROR(ImGui, "Unable to create SDL surface: {}", SDL_GetError());
     }
 
     texture = SDL_CreateTextureFromSurface(m_renderer, surface);
-    if (texture == nullptr)
-        fprintf(stderr, "Failed to create SDL texture: %s\n", SDL_GetError());
+    if (texture == nullptr) {
+        LOG_ERROR(ImGui, "Unable to create SDL texture: {}", SDL_GetError());
+    }
 
     SDL_DestroySurface(surface);
     stbi_image_free(image_data);
