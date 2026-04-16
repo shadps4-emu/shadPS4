@@ -20,7 +20,8 @@ std::mutex UserSettingsImpl::s_mutex;
 UserSettingsImpl::UserSettingsImpl() = default;
 
 UserSettingsImpl::~UserSettingsImpl() {
-    Save();
+    if (m_loaded)
+        Save();
 }
 
 std::shared_ptr<UserSettingsImpl> UserSettingsImpl::GetInstance() {
@@ -42,12 +43,26 @@ bool UserSettingsImpl::Save() const {
         j["Users"] = m_userManager.GetUsers();
         j["Users"]["commit_hash"] = std::string(Common::g_scm_rev);
 
+        json existing = json::object();
+        if (std::ifstream existingIn{path}; existingIn.good()) {
+            try {
+                existingIn >> existing;
+            } catch (...) {
+                existing = json::object();
+            }
+        }
+
+        if (existing.contains("Users") && existing["Users"].is_object())
+            existing["Users"].update(j["Users"]);
+        else
+            existing["Users"] = j["Users"];
+
         std::ofstream out(path);
         if (!out) {
             LOG_ERROR(Config, "Failed to open user settings for writing: {}", path.string());
             return false;
         }
-        out << std::setw(2) << j;
+        out << std::setw(2) << existing;
         return !out.fail();
     } catch (const std::exception& e) {
         LOG_ERROR(Config, "Error saving user settings: {}", e.what());
@@ -60,11 +75,10 @@ bool UserSettingsImpl::Load() {
     try {
         if (!std::filesystem::exists(path)) {
             LOG_DEBUG(Config, "User settings file not found: {}", path.string());
-            // Create default user if no file exists
-            if (m_userManager.GetUsers().user.empty()) {
+            if (m_userManager.GetUsers().user.empty())
                 m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
-            }
-            Save(); // Save default users
+            m_loaded = true;
+            Save();
             return false;
         }
 
@@ -77,14 +91,10 @@ bool UserSettingsImpl::Load() {
         json j;
         in >> j;
 
-        // Create a default Users object
         auto default_users = m_userManager.CreateDefaultUsers();
-
-        // Convert default_users to json for merging
         json default_json;
         default_json["Users"] = default_users;
 
-        // Merge the loaded json with defaults (preserves existing data, adds missing fields)
         if (j.contains("Users")) {
             json current = default_json["Users"];
             current.update(j["Users"]);
@@ -93,18 +103,17 @@ bool UserSettingsImpl::Load() {
             m_userManager.GetUsers() = default_users;
         }
 
-        if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev) {
-            Save();
-        }
-
         LOG_DEBUG(Config, "User settings loaded successfully");
+
+        m_loaded = true;
+        if (m_userManager.GetUsers().commit_hash != Common::g_scm_rev)
+            Save();
+
         return true;
     } catch (const std::exception& e) {
         LOG_ERROR(Config, "Error loading user settings: {}", e.what());
-        // Fall back to defaults
-        if (m_userManager.GetUsers().user.empty()) {
+        if (m_userManager.GetUsers().user.empty())
             m_userManager.GetUsers() = m_userManager.CreateDefaultUsers();
-        }
         return false;
     }
 }
