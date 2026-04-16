@@ -100,7 +100,7 @@ bool readbackLinearImagesSetting;
 bool directMemoryAccessSetting;
 bool devkitConsoleSetting;
 bool neoModeSetting;
-bool psnSignedInSetting;
+bool shadnetEnabledSetting;
 bool connectedNetworkSetting;
 bool pipelineCacheEnabledSetting;
 bool pipelineCacheArchiveSetting;
@@ -389,7 +389,7 @@ void LoadCategory(SettingsCategory category) {
             AddSettingBool("Enable Direct Memory Access", directMemoryAccessSetting);
             AddSettingBool("Enable Devkit Console Mode", devkitConsoleSetting);
             AddSettingBool("Enable PS4 Neo Mode", neoModeSetting);
-            AddSettingBool("Set PSN Sign-in to True", psnSignedInSetting);
+            AddSettingBool("Enable ShadNet", shadnetEnabledSetting);
             AddSettingBool("Set Network Connected to True", connectedNetworkSetting);
             AddSettingBool("Enable Shader Cache", pipelineCacheEnabledSetting);
 
@@ -460,7 +460,7 @@ void SaveSettings(std::string profile) {
         EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
         EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
         EmulatorSettings.SetNeo(neoModeSetting, true);
-        EmulatorSettings.SetPSNSignedIn(psnSignedInSetting, true);
+        EmulatorSettings.SetShadNetEnabled(shadnetEnabledSetting, true);
         EmulatorSettings.SetConnectedToNetwork(connectedNetworkSetting, true);
         EmulatorSettings.SetPipelineCacheEnabled(pipelineCacheEnabledSetting, true);
         EmulatorSettings.SetPipelineCacheArchived(pipelineCacheArchiveSetting, true);
@@ -531,7 +531,7 @@ void LoadSettings(std::string profile) {
         directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
         devkitConsoleSetting = EmulatorSettings.IsDevKit();
         neoModeSetting = EmulatorSettings.IsNeo();
-        psnSignedInSetting = EmulatorSettings.IsPSNSignedIn();
+        shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabled();
         connectedNetworkSetting = EmulatorSettings.IsConnectedToNetwork();
         pipelineCacheEnabledSetting = EmulatorSettings.IsPipelineCacheEnabled();
         pipelineCacheArchiveSetting = EmulatorSettings.IsPipelineCacheArchived();

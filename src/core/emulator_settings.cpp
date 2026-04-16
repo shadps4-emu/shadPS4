@@ -499,7 +499,6 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.volume_slider, general, "volumeSlider");
         setFromToml(s.neo_mode, general, "isPS4Pro");
         setFromToml(s.dev_kit_mode, general, "isDevKit");
-        setFromToml(s.psn_signed_in, general, "isPSNSignedIn");
         setFromToml(s.trophy_popup_disabled, general, "isTrophyPopupDisabled");
         setFromToml(s.trophy_notification_duration, general, "trophyNotificationDuration");
         setFromToml(s.discord_rpc_enabled, general, "enableDiscordRPC");

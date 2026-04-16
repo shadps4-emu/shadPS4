@@ -179,7 +179,7 @@ struct GeneralSettings {
     Setting<bool> neo_mode{false};
     Setting<bool> dev_kit_mode{false};
     Setting<int> extra_dmem_in_mbytes{0};
-    Setting<bool> psn_signed_in{false};
+    Setting<bool> shad_net_enabled{false};
     Setting<bool> trophy_popup_disabled{false};
     Setting<double> trophy_notification_duration{6.0};
     Setting<std::string> trophy_notification_side{"right"};
@@ -192,6 +192,7 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
+    Setting<std::string> shadnet_server{""};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -201,7 +202,7 @@ struct GeneralSettings {
             make_override<GeneralSettings>("dev_kit_mode", &GeneralSettings::dev_kit_mode),
             make_override<GeneralSettings>("extra_dmem_in_mbytes",
                                            &GeneralSettings::extra_dmem_in_mbytes),
-            make_override<GeneralSettings>("psn_signed_in", &GeneralSettings::psn_signed_in),
+            make_override<GeneralSettings>("shad_net_enabled", &GeneralSettings::shad_net_enabled),
             make_override<GeneralSettings>("trophy_popup_disabled",
                                            &GeneralSettings::trophy_popup_disabled),
             make_override<GeneralSettings>("trophy_notification_duration",
@@ -219,11 +220,11 @@ struct GeneralSettings {
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
                                    sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
-                                   extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
+                                   extra_dmem_in_mbytes, shad_net_enabled, trophy_popup_disabled,
                                    trophy_notification_duration, log_filter, log_type, show_splash,
                                    identical_log_grouped, trophy_notification_side,
                                    connected_to_network, discord_rpc_enabled, show_fps_counter,
-                                   console_language, big_picture_scale)
+                                   console_language, big_picture_scale, shadnet_server)
 
 // -------------------------------
 // Debug settings
@@ -550,7 +551,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
-    SETTING_FORWARD_BOOL(m_general, PSNSignedIn, psn_signed_in)
+    SETTING_FORWARD_BOOL(m_general, ShadNetEnabled, shad_net_enabled)
     SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
     SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
@@ -563,6 +564,7 @@ public:
     SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
     SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
+    SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
 
     // Audio settings
     SETTING_FORWARD(m_audio, AudioBackend, audio_backend)
