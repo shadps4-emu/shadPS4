@@ -21,6 +21,7 @@ static constexpr ShadSocketHandle SHAD_INVALID_SOCK = INVALID_SOCKET;
 #else
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
