@@ -56,8 +56,6 @@ static void ExitThread() {
     curthread->tid.notify_all();
 
     curthread->native_thr.Exit();
-    UNREACHABLE();
-    /* Never reach! */
 }
 
 void PS4_SYSV_ABI posix_pthread_exit(void* status) {
