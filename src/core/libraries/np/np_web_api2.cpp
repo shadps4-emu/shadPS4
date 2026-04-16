@@ -208,8 +208,7 @@ s32 PS4_SYSV_ABI sceNpWebApi2SendMultipartRequest() {
 
 s32 PS4_SYSV_ABI sceNpWebApi2SendRequest() {
     if (!EmulatorSettings.IsShadNetEnabled()) {
-        LOG_INFO(Lib_NpWebApi2,
-                 "called, returning but shadnet is disabled simulate PSN signed out.");
+        LOG_INFO(Lib_NpWebApi2, "called, returning shadNet signed out.");
         return ORBIS_NP_WEBAPI2_ERROR_NOT_SIGNED_IN;
     }
     LOG_ERROR(Lib_NpWebApi2, "(STUBBED) called");

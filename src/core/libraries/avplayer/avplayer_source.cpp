@@ -551,22 +551,18 @@ static void CopyNV12Data(u8* dst, const AVFrame& src, bool use_vdec2) {
         height = Common::AlignUp(height, 16);
     }
 
-    // Copy Y plane: source stride is linesize[0], destination stride is width.
-    if (u32(src.linesize[0]) == width) {
-        std::memcpy(dst, src.data[0], width * src.height);
+    if (src.width == width) {
+        std::memcpy(dst, src.data[0], src.width * src.height);
+        std::memcpy(dst + src.width * height, src.data[1], (src.width * src.height) / 2);
     } else {
-        for (u32 y = 0; y < u32(src.height); ++y) {
-            std::memcpy(dst + y * width, src.data[0] + y * src.linesize[0], src.width);
+        const auto luma_dst = dst;
+        for (u32 y = 0; y < src.height; ++y) {
+            std::memcpy(luma_dst + y * width, src.data[0] + y * src.width, src.width);
         }
-    }
-
-    // Copy interleaved UV plane: source stride is linesize[1], destination stride is width.
-    const auto chroma_dst = dst + width * height;
-    if (u32(src.linesize[1]) == width) {
-        std::memcpy(chroma_dst, src.data[1], width * (src.height / 2));
-    } else {
-        for (u32 y = 0; y < u32(src.height) / 2; ++y) {
-            std::memcpy(chroma_dst + y * width, src.data[1] + y * src.linesize[1], src.width);
+        const auto chroma_dst = dst + width * height;
+        for (u32 y = 0; y < src.height / 2; ++y) {
+            std::memcpy(chroma_dst + y * (width / 2), src.data[0] + y * (src.width / 2),
+                        src.width / 2);
         }
     }
 }
@@ -609,7 +605,7 @@ Frame AvPlayerSource::PrepareVideoFrame(GuestBuffer buffer, const AVFrame& frame
                                 .crop_top_offset = u32(frame.crop_top),
                                 .crop_bottom_offset =
                                     u32(frame.crop_bottom + (height - frame.height)),
-                                .pitch = width,
+                                .pitch = u32(frame.linesize[0]),
                                 .luma_bit_depth = 8,
                                 .chroma_bit_depth = 8,
                             },
