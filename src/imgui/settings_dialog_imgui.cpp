@@ -1,6 +1,8 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <map>
+#include <ranges>
 #include <cmrc/cmrc.hpp>
 #include <stb_image.h>
 
@@ -13,23 +15,124 @@
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 CMRC_DECLARE(res);
-
 namespace BigPictureMode {
 
+//////////////////// options for comboboxes
+const std::map<std::string, int> languageMap = {{"Arabic", 21},
+                                                {"Czech", 23},
+                                                {"Danish", 14},
+                                                {"Dutch", 6},
+                                                {"English (United Kingdom)", 18},
+                                                {"English (United States)", 1},
+                                                {"Finnish", 12},
+                                                {"French (Canada)", 22},
+                                                {"French (France)", 2},
+                                                {"German", 4},
+                                                {"Greek", 25},
+                                                {"Hungarian", 24},
+                                                {"Indonesian", 29},
+                                                {"Italian", 5},
+                                                {"Japanese", 0},
+                                                {"Korean", 9},
+                                                {"Norwegian (Bokmaal)", 15},
+                                                {"Polish", 16},
+                                                {"Portuguese (Brazil)", 17},
+                                                {"Portuguese (Portugal)", 7},
+                                                {"Romanian", 26},
+                                                {"Russian", 8},
+                                                {"Simplified Chinese", 11},
+                                                {"Spanish (Latin America)", 20},
+                                                {"Spanish (Spain)", 3},
+                                                {"Swedish", 13},
+                                                {"Thai", 27},
+                                                {"Traditional Chinese", 10},
+                                                {"Turkish", 19},
+                                                {"Ukrainian", 30},
+                                                {"Vietnamese", 28}};
+std::vector<std::string> languageOptions; // assigned from keys above
+const std::vector<std::string> logTypeOptions = {"sync", "async"};
+const std::vector<std::string> fullscreenModeOptions = {"Windowed", "Fullscreen",
+                                                        "Fullscreen (Borderless)"};
+const std::vector<std::string> audioBackendOptions = {"SDL", "OpenAL"};
+const std::vector<std::string> presentModeOptions = {"Mailbox", "Fifo", "Immediate"};
+const std::vector<std::string> hideCursorOptions = {"Never", "Idle", "Always"};
+const std::vector<std::string> trophySideOptions = {"left", "right", "top", "bottom"};
+const std::vector<std::string> readbacksModeOptions = {"Disabled", "Relaxed", "Precise"};
+
+//////////////// Setting Variables
+//////////////// Note:: Use int for all comboboxes as needed by ImGui
+
+// General tab
+int consoleLanguageSetting;
+int volumeSetting;
+bool showSplashSetting;
+int audioBackendSetting;
+
+// Graphics tab
+int fullscreenModeSetting;
+int presentModeSetting;
+int windowWidthSetting;
+int windowHeightSetting;
+bool hdrAllowedSetting;
+bool fsrEnabledSetting;
+bool rcasEnabledSetting;
+float rcasAttenuationSetting;
+
+// Input tab
+bool motionControlsSetting;
+bool backgroundControllerSetting;
+int cursorStateSetting;
+int cursorTimeoutSetting;
+
+// Trophy tab
+bool trophyPopupDisabledSetting;
+int trophySideSetting;
+float trophyDurationSetting;
+
+// Log tab
+bool logEnabledSetting;
+bool separateLogSetting;
+int logTypeSetting;
+
+// Experimental tab
+int readbacksModeSetting;
+bool readbackLinearImagesSetting;
+bool directMemoryAccessSetting;
+bool devkitConsoleSetting;
+bool neoModeSetting;
+bool psnSignedInSetting;
+bool connectedNetworkSetting;
+bool pipelineCacheEnabledSetting;
+bool pipelineCacheArchiveSetting;
+int extraDmemSetting;
+int vblankFrequencySetting;
+
+//////////////// Texture data
+SDL_Texture* profilesTexture;
+SDL_Texture* generalTexture;
+SDL_Texture* globalSettingsTexture;
+SDL_Texture* experimentalTexture;
+SDL_Texture* graphicsTexture;
+SDL_Texture* inputTexture;
+SDL_Texture* trophyTexture;
+SDL_Texture* logTexture;
+
+//////////////// Gui variable
 const float gameImageSize = 200.f;
 const float settingsIconSize = 125.f;
-static std::vector<Game> settingsProfileVec = {};
+std::vector<Game> settingsProfileVec = {};
 
-static float uiScale = 1.0f;
-static CurrentSettings currentSettings;
-static Textures textures;
-static SDL_Renderer* renderer;
+float uiScale = 1.0f;
+SDL_Renderer* renderer;
 
-static SettingsCategory currentCategory = SettingsCategory::Profiles;
-static std::string currentProfile = "Global";
-static bool closeOnSave = false;
+SettingsCategory currentCategory = SettingsCategory::Profiles;
+std::string currentProfile = "Global";
+bool closeOnSave = false;
 
 void Init() {
+    auto languageKeys = std::views::keys(languageMap);
+    languageOptions.assign(languageKeys.begin(), languageKeys.end());
+
     currentProfile = "Global";
     currentCategory = SettingsCategory::Profiles;
     LoadSettings("Global");
@@ -37,16 +140,16 @@ void Init() {
     SDL_Window* window = SDL_GetKeyboardFocus();
     renderer = SDL_GetRenderer(window);
 
-    LoadEmbeddedTexture("src/images/big_picture/settings.png", textures.general);
-    LoadEmbeddedTexture("src/images/big_picture/folder.png", textures.profiles);
-    LoadEmbeddedTexture("src/images/big_picture/global-settings.png", textures.globalSettings);
-    LoadEmbeddedTexture("src/images/big_picture/experimental.png", textures.experimental);
-    LoadEmbeddedTexture("src/images/big_picture/graphics.png", textures.graphics);
-    LoadEmbeddedTexture("src/images/big_picture/controller.png", textures.input);
-    LoadEmbeddedTexture("src/images/big_picture/trophy.png", textures.trophy);
-    LoadEmbeddedTexture("src/images/big_picture/log.png", textures.log);
+    LoadEmbeddedTexture("src/images/big_picture/settings.png", generalTexture);
+    LoadEmbeddedTexture("src/images/big_picture/folder.png", profilesTexture);
+    LoadEmbeddedTexture("src/images/big_picture/global-settings.png", globalSettingsTexture);
+    LoadEmbeddedTexture("src/images/big_picture/experimental.png", experimentalTexture);
+    LoadEmbeddedTexture("src/images/big_picture/graphics.png", graphicsTexture);
+    LoadEmbeddedTexture("src/images/big_picture/controller.png", inputTexture);
+    LoadEmbeddedTexture("src/images/big_picture/trophy.png", trophyTexture);
+    LoadEmbeddedTexture("src/images/big_picture/log.png", logTexture);
 
-    GetGameInfo(settingsProfileVec, true, textures.globalSettings);
+    GetGameInfo(settingsProfileVec, true, globalSettingsTexture);
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
 }
 
@@ -83,15 +186,15 @@ void DrawSettings(bool* open) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
 
         // Must add categories in enum order for L1/R1 to work correctly, with experimental last
-        AddCategory("Profiles", textures.profiles, SettingsCategory::Profiles);
-        AddCategory("General", textures.general, SettingsCategory::General);
-        AddCategory("Graphics", textures.graphics, SettingsCategory::Graphics);
-        AddCategory("Input", textures.input, SettingsCategory::Input);
-        AddCategory("Trophy", textures.trophy, SettingsCategory::Trophy);
-        AddCategory("Log", textures.log, SettingsCategory::Log);
+        AddCategory("Profiles", profilesTexture, SettingsCategory::Profiles);
+        AddCategory("General", generalTexture, SettingsCategory::General);
+        AddCategory("Graphics", graphicsTexture, SettingsCategory::Graphics);
+        AddCategory("Input", inputTexture, SettingsCategory::Input);
+        AddCategory("Trophy", trophyTexture, SettingsCategory::Trophy);
+        AddCategory("Log", logTexture, SettingsCategory::Log);
 
         if (currentProfile != "Global")
-            AddCategory("Experimental", textures.experimental, SettingsCategory::Experimental);
+            AddCategory("Experimental", experimentalTexture, SettingsCategory::Experimental);
 
         ImGui::PopStyleVar();
         ImGui::EndChild(); // Categories
@@ -203,10 +306,10 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingCombo("Console Language", currentSettings.consoleLanguage);
-            AddSettingSliderInt("Volume", currentSettings.volume, 0, 500);
-            AddSettingBool("Show Splash Screen When Launching Game", currentSettings.showSplash);
-            AddSettingCombo("Audio Backend", currentSettings.audioBackend);
+            AddSettingCombo("Console Language", consoleLanguageSetting, languageOptions);
+            AddSettingSliderInt("Volume", volumeSetting, 0, 500);
+            AddSettingBool("Show Splash Screen When Launching Game", showSplashSetting);
+            AddSettingCombo("Audio Backend", audioBackendSetting, audioBackendOptions);
 
             ImGui::EndTable();
         }
@@ -215,20 +318,19 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingCombo("Display Mode", currentSettings.fullscreenMode);
-            AddSettingCombo("Present Mode", currentSettings.presentMode);
-            AddSettingSliderInt("Window Width", currentSettings.windowWidth, 0, 8000);
-            AddSettingSliderInt("Window Height", currentSettings.windowHeight, 0, 7000);
-            AddSettingBool("Enable HDR", currentSettings.hdrAllowed);
-            AddSettingBool("Enable FSR", currentSettings.fsrEnabled);
+            AddSettingCombo("Display Mode", fullscreenModeSetting, fullscreenModeOptions);
+            AddSettingCombo("Present Mode", presentModeSetting, presentModeOptions);
+            AddSettingSliderInt("Window Width", windowWidthSetting, 0, 8000);
+            AddSettingSliderInt("Window Height", windowHeightSetting, 0, 7000);
+            AddSettingBool("Enable HDR", hdrAllowedSetting);
+            AddSettingBool("Enable FSR", fsrEnabledSetting);
 
-            if (currentSettings.fsrEnabled) {
-                AddSettingBool("Enable RCAS", currentSettings.rcasEnabled);
+            if (fsrEnabledSetting) {
+                AddSettingBool("Enable RCAS", rcasEnabledSetting);
             }
 
-            if (currentSettings.rcasEnabled && currentSettings.fsrEnabled) {
-                AddSettingSliderFloat("RCAS Attenuation", currentSettings.rcasAttenuation, 0.0f,
-                                      3.0f, 3);
+            if (rcasEnabledSetting && fsrEnabledSetting) {
+                AddSettingSliderFloat("RCAS Attenuation", rcasAttenuationSetting, 0.0f, 3.0f, 3);
             }
 
             ImGui::EndTable();
@@ -238,14 +340,12 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingBool("Enable Motion Controls", currentSettings.motionControls);
-            AddSettingBool("Enable Background Controller Input",
-                           currentSettings.backgroundController);
-            AddSettingCombo("Hide Cursor", currentSettings.cursorState);
+            AddSettingBool("Enable Motion Controls", motionControlsSetting);
+            AddSettingBool("Enable Background Controller Input", backgroundControllerSetting);
+            AddSettingCombo("Hide Cursor", cursorStateSetting, hideCursorOptions);
 
-            if (currentSettings.cursorState == 1) {
-                AddSettingSliderInt("Hide Cursor Idle Timeout", currentSettings.cursorTimeout, 1,
-                                    10);
+            if (cursorStateSetting == 1) {
+                AddSettingSliderInt("Hide Cursor Idle Timeout", cursorTimeoutSetting, 1, 10);
             }
 
             ImGui::EndTable();
@@ -255,11 +355,12 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingBool("Disable Trophy Notification", currentSettings.trophyPopupDisabled);
-            if (!currentSettings.trophyPopupDisabled) {
-                AddSettingCombo("Trophy Notification Position", currentSettings.trophySide);
-                AddSettingSliderFloat("Trophy Notification Duration",
-                                      currentSettings.trophyDuration, 0.f, 10.f, 1);
+            AddSettingBool("Disable Trophy Notification", trophyPopupDisabledSetting);
+            if (!trophyPopupDisabledSetting) {
+                AddSettingCombo("Trophy Notification Position", trophySideSetting,
+                                trophySideOptions);
+                AddSettingSliderFloat("Trophy Notification Duration", trophyDurationSetting, 0.f,
+                                      10.f, 1);
             }
 
             ImGui::EndTable();
@@ -269,10 +370,10 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingBool("Enable Logging", currentSettings.logEnabled);
-            if (currentSettings.logEnabled) {
-                AddSettingBool("Separate Log Files", currentSettings.separateLog);
-                AddSettingCombo("Log Type", currentSettings.logType);
+            AddSettingBool("Enable Logging", logEnabledSetting);
+            if (logEnabledSetting) {
+                AddSettingBool("Separate Log Files", separateLogSetting);
+                AddSettingCombo("Log Type", logTypeSetting, logTypeOptions);
             }
 
             ImGui::EndTable();
@@ -282,20 +383,19 @@ void LoadCategory(SettingsCategory category) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
             ImGui::TableSetupColumn("Value");
 
-            AddSettingSliderInt("Additional DMem Allocation", currentSettings.extraDmem, 0, 20000);
-            AddSettingSliderInt("Vblank Frequency", currentSettings.vblankFrequency, 30, 360);
-            AddSettingCombo("Readbacks Mode", currentSettings.readbacksMode);
-            AddSettingBool("Enable Readback Linear Images", currentSettings.readbackLinearImages);
-            AddSettingBool("Enable Direct Memory Access", currentSettings.directMemoryAccess);
-            AddSettingBool("Enable Devkit Console Mode", currentSettings.devkitConsole);
-            AddSettingBool("Enable PS4 Neo Mode", currentSettings.neoMode);
-            AddSettingBool("Set PSN Sign-in to True", currentSettings.psnSignedIn);
-            AddSettingBool("Set Network Connected to True", currentSettings.connectedNetwork);
-            AddSettingBool("Enable Shader Cache", currentSettings.pipelineCacheEnabled);
+            AddSettingSliderInt("Additional DMem Allocation", extraDmemSetting, 0, 20000);
+            AddSettingSliderInt("Vblank Frequency", vblankFrequencySetting, 30, 360);
+            AddSettingCombo("Readbacks Mode", readbacksModeSetting, readbacksModeOptions);
+            AddSettingBool("Enable Readback Linear Images", readbackLinearImagesSetting);
+            AddSettingBool("Enable Direct Memory Access", directMemoryAccessSetting);
+            AddSettingBool("Enable Devkit Console Mode", devkitConsoleSetting);
+            AddSettingBool("Enable PS4 Neo Mode", neoModeSetting);
+            AddSettingBool("Set PSN Sign-in to True", psnSignedInSetting);
+            AddSettingBool("Set Network Connected to True", connectedNetworkSetting);
+            AddSettingBool("Enable Shader Cache", pipelineCacheEnabledSetting);
 
-            if (currentSettings.pipelineCacheEnabled) {
-                AddSettingBool("Compress Shader Cache to Zip File",
-                               currentSettings.pipelineCacheArchive);
+            if (pipelineCacheEnabledSetting) {
+                AddSettingBool("Compress Shader Cache to Zip File", pipelineCacheArchiveSetting);
             }
 
             ImGui::EndTable();
@@ -319,57 +419,54 @@ void SaveSettings(std::string profile) {
     const bool isSpecific = currentProfile != "Global";
 
     /////////// General Tab
-    EmulatorSettings.SetConsoleLanguage(
-        languageMap.at(optionsLanguage.at(currentSettings.consoleLanguage)), isSpecific);
-    EmulatorSettings.SetVolumeSlider(currentSettings.volume, isSpecific);
-    EmulatorSettings.SetShowSplash(currentSettings.showSplash, isSpecific);
-    EmulatorSettings.SetAudioBackend(currentSettings.audioBackend, isSpecific);
+    EmulatorSettings.SetConsoleLanguage(languageMap.at(languageOptions.at(consoleLanguageSetting)),
+                                        isSpecific);
+    EmulatorSettings.SetVolumeSlider(volumeSetting, isSpecific);
+    EmulatorSettings.SetShowSplash(showSplashSetting, isSpecific);
+    EmulatorSettings.SetAudioBackend(audioBackendSetting, isSpecific);
 
     /////////// Graphics Tab
-    bool isFullscreen = currentSettings.fullscreenMode != 0;
+    bool isFullscreen = fullscreenModeSetting != 0;
     EmulatorSettings.SetFullScreen(isFullscreen);
-    EmulatorSettings.SetFullScreenMode(optionsFullscreenMode.at(currentSettings.fullscreenMode),
-                                       isSpecific);
-    EmulatorSettings.SetPresentMode(optionsPresentMode.at(currentSettings.presentMode), isSpecific);
-    EmulatorSettings.SetWindowHeight(currentSettings.windowHeight, isSpecific);
-    EmulatorSettings.SetWindowWidth(currentSettings.windowWidth, isSpecific);
-    EmulatorSettings.SetHdrAllowed(currentSettings.hdrAllowed, isSpecific);
-    EmulatorSettings.SetFsrEnabled(currentSettings.fsrEnabled, isSpecific);
-    EmulatorSettings.SetRcasEnabled(currentSettings.rcasEnabled, isSpecific);
-    EmulatorSettings.SetRcasAttenuation(static_cast<int>(currentSettings.rcasAttenuation * 1000),
+    EmulatorSettings.SetFullScreenMode(fullscreenModeOptions.at(fullscreenModeSetting), isSpecific);
+    EmulatorSettings.SetPresentMode(presentModeOptions.at(presentModeSetting), isSpecific);
+    EmulatorSettings.SetWindowHeight(windowHeightSetting, isSpecific);
+    EmulatorSettings.SetWindowWidth(windowWidthSetting, isSpecific);
+    EmulatorSettings.SetHdrAllowed(hdrAllowedSetting, isSpecific);
+    EmulatorSettings.SetFsrEnabled(fsrEnabledSetting, isSpecific);
+    EmulatorSettings.SetRcasEnabled(rcasEnabledSetting, isSpecific);
+    EmulatorSettings.SetRcasAttenuation(static_cast<int>(rcasAttenuationSetting * 1000),
                                         isSpecific);
 
     /////////// Input Tab
-    EmulatorSettings.SetMotionControlsEnabled(currentSettings.motionControls, isSpecific);
-    EmulatorSettings.SetBackgroundControllerInput(currentSettings.backgroundController, isSpecific);
-    EmulatorSettings.SetCursorState(currentSettings.cursorState, isSpecific);
-    EmulatorSettings.SetCursorHideTimeout(currentSettings.cursorTimeout, isSpecific);
+    EmulatorSettings.SetMotionControlsEnabled(motionControlsSetting, isSpecific);
+    EmulatorSettings.SetBackgroundControllerInput(backgroundControllerSetting, isSpecific);
+    EmulatorSettings.SetCursorState(cursorStateSetting, isSpecific);
+    EmulatorSettings.SetCursorHideTimeout(cursorTimeoutSetting, isSpecific);
 
     /////////// Trophy Tab
-    EmulatorSettings.SetTrophyPopupDisabled(currentSettings.trophyPopupDisabled, isSpecific);
-    EmulatorSettings.SetTrophyNotificationSide(optionsTrophySide.at(currentSettings.trophySide),
-                                               isSpecific);
-    EmulatorSettings.SetTrophyNotificationDuration(
-        static_cast<double>(currentSettings.trophyDuration));
+    EmulatorSettings.SetTrophyPopupDisabled(trophyPopupDisabledSetting, isSpecific);
+    EmulatorSettings.SetTrophyNotificationSide(trophySideOptions.at(trophySideSetting), isSpecific);
+    EmulatorSettings.SetTrophyNotificationDuration(static_cast<double>(trophyDurationSetting));
 
     /////////// Log Tab
-    EmulatorSettings.SetLogEnabled(currentSettings.logEnabled, isSpecific);
-    EmulatorSettings.SetLogType(optionsLogType.at(currentSettings.logType), isSpecific);
-    EmulatorSettings.SetSeparateLoggingEnabled(currentSettings.separateLog, isSpecific);
+    EmulatorSettings.SetLogEnabled(logEnabledSetting, isSpecific);
+    EmulatorSettings.SetLogType(logTypeOptions.at(logTypeSetting), isSpecific);
+    EmulatorSettings.SetSeparateLoggingEnabled(separateLogSetting, isSpecific);
 
     /////////// Experimental Tab
     if (isSpecific) {
-        EmulatorSettings.SetReadbacksMode(currentSettings.readbacksMode, true);
-        EmulatorSettings.SetReadbackLinearImagesEnabled(currentSettings.readbackLinearImages, true);
-        EmulatorSettings.SetDirectMemoryAccessEnabled(currentSettings.directMemoryAccess, true);
-        EmulatorSettings.SetDevKit(currentSettings.devkitConsole, true);
-        EmulatorSettings.SetNeo(currentSettings.neoMode, true);
-        EmulatorSettings.SetPSNSignedIn(currentSettings.psnSignedIn, true);
-        EmulatorSettings.SetConnectedToNetwork(currentSettings.connectedNetwork, true);
-        EmulatorSettings.SetPipelineCacheEnabled(currentSettings.pipelineCacheEnabled, true);
-        EmulatorSettings.SetPipelineCacheArchived(currentSettings.pipelineCacheArchive, true);
-        EmulatorSettings.SetExtraDmemInMBytes(currentSettings.extraDmem, true);
-        EmulatorSettings.SetVblankFrequency(currentSettings.vblankFrequency, true);
+        EmulatorSettings.SetReadbacksMode(readbacksModeSetting, true);
+        EmulatorSettings.SetReadbackLinearImagesEnabled(readbackLinearImagesSetting, true);
+        EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
+        EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
+        EmulatorSettings.SetNeo(neoModeSetting, true);
+        EmulatorSettings.SetPSNSignedIn(psnSignedInSetting, true);
+        EmulatorSettings.SetConnectedToNetwork(connectedNetworkSetting, true);
+        EmulatorSettings.SetPipelineCacheEnabled(pipelineCacheEnabledSetting, true);
+        EmulatorSettings.SetPipelineCacheArchived(pipelineCacheArchiveSetting, true);
+        EmulatorSettings.SetExtraDmemInMBytes(extraDmemSetting, true);
+        EmulatorSettings.SetVblankFrequency(vblankFrequencySetting, true);
     }
 
     if (!isSpecific) {
@@ -395,55 +492,52 @@ void LoadSettings(std::string profile) {
             language = key;
         }
     }
-    currentSettings.consoleLanguage = GetComboIndex(language, optionsLanguage);
-    currentSettings.volume = EmulatorSettings.GetVolumeSlider();
-    currentSettings.showSplash = EmulatorSettings.IsShowSplash();
-    currentSettings.audioBackend = EmulatorSettings.GetAudioBackend();
+    consoleLanguageSetting = GetComboIndex(language, languageOptions);
+    volumeSetting = EmulatorSettings.GetVolumeSlider();
+    showSplashSetting = EmulatorSettings.IsShowSplash();
+    audioBackendSetting = EmulatorSettings.GetAudioBackend();
 
     /////////// Graphics Tab
-    currentSettings.fullscreenMode =
-        GetComboIndex(EmulatorSettings.GetFullScreenMode(), optionsFullscreenMode);
-    currentSettings.presentMode =
-        GetComboIndex(EmulatorSettings.GetPresentMode(), optionsPresentMode);
-    currentSettings.windowHeight = EmulatorSettings.GetWindowHeight();
-    currentSettings.windowWidth = EmulatorSettings.GetWindowWidth();
-    currentSettings.hdrAllowed = EmulatorSettings.IsHdrAllowed();
-    currentSettings.fsrEnabled = EmulatorSettings.IsFsrEnabled();
-    currentSettings.rcasEnabled = EmulatorSettings.IsRcasEnabled();
-    currentSettings.rcasAttenuation =
-        static_cast<float>(EmulatorSettings.GetRcasAttenuation() * 0.001f);
+    fullscreenModeSetting =
+        GetComboIndex(EmulatorSettings.GetFullScreenMode(), fullscreenModeOptions);
+    presentModeSetting = GetComboIndex(EmulatorSettings.GetPresentMode(), presentModeOptions);
+    windowHeightSetting = EmulatorSettings.GetWindowHeight();
+    windowWidthSetting = EmulatorSettings.GetWindowWidth();
+    hdrAllowedSetting = EmulatorSettings.IsHdrAllowed();
+    fsrEnabledSetting = EmulatorSettings.IsFsrEnabled();
+    rcasEnabledSetting = EmulatorSettings.IsRcasEnabled();
+    rcasAttenuationSetting = static_cast<float>(EmulatorSettings.GetRcasAttenuation() * 0.001f);
 
     /////////// Input Tab
-    currentSettings.motionControls = EmulatorSettings.IsMotionControlsEnabled();
-    currentSettings.backgroundController = EmulatorSettings.IsBackgroundControllerInput();
-    currentSettings.cursorState = EmulatorSettings.GetCursorState();
-    currentSettings.cursorTimeout = EmulatorSettings.GetCursorHideTimeout();
+    motionControlsSetting = EmulatorSettings.IsMotionControlsEnabled();
+    backgroundControllerSetting = EmulatorSettings.IsBackgroundControllerInput();
+    cursorStateSetting = EmulatorSettings.GetCursorState();
+    cursorTimeoutSetting = EmulatorSettings.GetCursorHideTimeout();
 
     /////////// Trophy Tab
-    currentSettings.trophyPopupDisabled = EmulatorSettings.IsTrophyPopupDisabled();
-    currentSettings.trophySide =
-        GetComboIndex(EmulatorSettings.GetTrophyNotificationSide(), optionsTrophySide);
-    currentSettings.trophyDuration =
-        static_cast<float>(EmulatorSettings.GetTrophyNotificationDuration());
+    trophyPopupDisabledSetting = EmulatorSettings.IsTrophyPopupDisabled();
+    trophySideSetting =
+        GetComboIndex(EmulatorSettings.GetTrophyNotificationSide(), trophySideOptions);
+    trophyDurationSetting = static_cast<float>(EmulatorSettings.GetTrophyNotificationDuration());
 
     /////////// Log Tab
-    currentSettings.logEnabled = EmulatorSettings.IsLogEnabled();
-    currentSettings.logType = GetComboIndex(EmulatorSettings.GetLogType(), optionsLogType);
-    currentSettings.separateLog = EmulatorSettings.IsSeparateLoggingEnabled();
+    logEnabledSetting = EmulatorSettings.IsLogEnabled();
+    logTypeSetting = GetComboIndex(EmulatorSettings.GetLogType(), logTypeOptions);
+    separateLogSetting = EmulatorSettings.IsSeparateLoggingEnabled();
 
     /////////// Experimental Tab
     if (isSpecific) {
-        currentSettings.readbacksMode = EmulatorSettings.GetReadbacksMode();
-        currentSettings.readbackLinearImages = EmulatorSettings.IsReadbackLinearImagesEnabled();
-        currentSettings.directMemoryAccess = EmulatorSettings.IsDirectMemoryAccessEnabled();
-        currentSettings.devkitConsole = EmulatorSettings.IsDevKit();
-        currentSettings.neoMode = EmulatorSettings.IsNeo();
-        currentSettings.psnSignedIn = EmulatorSettings.IsPSNSignedIn();
-        currentSettings.connectedNetwork = EmulatorSettings.IsConnectedToNetwork();
-        currentSettings.pipelineCacheEnabled = EmulatorSettings.IsPipelineCacheEnabled();
-        currentSettings.pipelineCacheArchive = EmulatorSettings.IsPipelineCacheArchived();
-        currentSettings.extraDmem = EmulatorSettings.GetExtraDmemInMBytes();
-        currentSettings.vblankFrequency = EmulatorSettings.GetVblankFrequency();
+        readbacksModeSetting = EmulatorSettings.GetReadbacksMode();
+        readbackLinearImagesSetting = EmulatorSettings.IsReadbackLinearImagesEnabled();
+        directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
+        devkitConsoleSetting = EmulatorSettings.IsDevKit();
+        neoModeSetting = EmulatorSettings.IsNeo();
+        psnSignedInSetting = EmulatorSettings.IsPSNSignedIn();
+        connectedNetworkSetting = EmulatorSettings.IsConnectedToNetwork();
+        pipelineCacheEnabledSetting = EmulatorSettings.IsPipelineCacheEnabled();
+        pipelineCacheArchiveSetting = EmulatorSettings.IsPipelineCacheArchived();
+        extraDmemSetting = EmulatorSettings.GetExtraDmemInMBytes();
+        vblankFrequencySetting = EmulatorSettings.GetVblankFrequency();
     }
 }
 
@@ -503,15 +597,13 @@ void AddSettingSliderFloat(std::string name, float& value, int min, int max, int
     ImGui::SliderFloat(label.c_str(), &value, min, max, precisionString.c_str());
 }
 
-void AddSettingCombo(std::string name, int& value) {
+void AddSettingCombo(std::string name, int& value, std::vector<std::string> options) {
     std::string label = "##" + name;
     ImGui::TableNextRow();
     ImGui::TableNextColumn();
     ImGui::TextWrapped("%s", name.c_str());
 
-    std::vector<std::string> options = optionsMap.at(name);
     ImGui::TableNextColumn();
-
     const char* combo_value = options[value].c_str();
     if (ImGui::BeginCombo(label.c_str(), combo_value)) {
         for (int i = 0; i < options.size(); i++) {
