@@ -124,12 +124,13 @@ struct OrbisNpScorePlayerRankDataForCrossSave {
 //***********************************
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
                                             const OrbisNpId* selfNpId);
+int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
+                                             UserService::OrbisUserServiceUserId selfId);
+
 int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId);
 int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners();
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
-                                             UserService::OrbisUserServiceUserId selfId);
 int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId);
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx();
 int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId);
