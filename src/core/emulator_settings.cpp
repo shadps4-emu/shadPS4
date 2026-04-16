@@ -71,6 +71,10 @@ std::optional<T> get_optional(const toml::value& v, const std::string& key) {
         if (it->second.is_boolean()) {
             return toml::get<bool>(it->second);
         }
+    } else if constexpr (std::is_same_v<T, u64>) {
+        if (it->second.is_integer()) {
+            return static_cast<u64>(toml::get<u64>(it->second));
+        }
     } else {
         static_assert([] { return false; }(), "Unsupported type in get_optional<T>");
     }
