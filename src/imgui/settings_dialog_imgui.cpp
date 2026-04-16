@@ -277,7 +277,7 @@ void DrawSettings(bool* open) {
         SettingsCategory lastCategory =
             currentProfile != "Global" ? SettingsCategory::Experimental : SettingsCategory::Log;
         // choose next category with R1
-        if (ImGui::IsKeyPressed(ImGuiKey_GamepadR1)) {
+        if (ImGui::IsKeyPressed(ImGuiKey_GamepadR1) || ImGui::IsKeyPressed(ImGuiKey_Tab)) {
             int currentIndex = static_cast<int>(currentCategory);
             currentCategory == lastCategory
                 ? currentCategory = static_cast<SettingsCategory>(0)
