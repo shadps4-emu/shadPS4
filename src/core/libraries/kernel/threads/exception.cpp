@@ -420,7 +420,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
 
     u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(thread->native_thr.GetHandle()), option,
                                  ExceptionHandler, (void*)thread->name.c_str(),
-                                 (void*)(s64)native_signum, nullptr);
+                                 (void*)native_signum, nullptr);
     ASSERT(res == 0);
 #endif
     return ORBIS_OK;
