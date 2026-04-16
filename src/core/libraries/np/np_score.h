@@ -14,6 +14,8 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpScore {
 
+using OrbisNpScoreTitleCtxId = s32;
+using OrbisNpScoreRequestId = s32;
 using OrbisNpScoreBoardId = u32;
 using OrbisNpScorePcId = s32;
 using OrbisNpScoreRankNumber = u32;
@@ -116,8 +118,12 @@ struct OrbisNpScorePlayerRankDataForCrossSave {
     u8 pad0[4];
     OrbisNpScoreRankDataForCrossSave rankData;
 };
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId);
-// stubbed
+
+//***********************************
+// Title context management functions
+//***********************************
+int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
+                                            const OrbisNpId* selfNpId);
 int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId);
 int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);

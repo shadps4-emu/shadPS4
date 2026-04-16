@@ -4,12 +4,73 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_score.h"
+#include "np_handler.h"
 
 namespace Libraries::Np::NpScore {
 
 // Helper macro to format pointer safely
 #define PTR(ptr) static_cast<const void*>(ptr)
+
+struct ScoreTitleCtx {
+    OrbisNpServiceLabel serviceLabel = 0;
+    s32 userId = -1;
+};
+
+static std::mutex g_mutex;
+static std::map<OrbisNpScoreTitleCtxId, ScoreTitleCtx> g_title_ctxs;
+static OrbisNpScoreTitleCtxId g_next_ctx_id = 1;
+static OrbisNpScoreRequestId g_next_req_id = 1;
+
+static constexpr s32 MAX_TITLE_CTXS = 32;
+static constexpr s32 MAX_REQUESTS = 32;
+
+//***********************************
+// Title context management functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
+                                            const OrbisNpId* selfNpId) {
+    if (!selfNpId) {
+        LOG_ERROR(Lib_NpScore, "selfNpId is null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    std::lock_guard lock(g_mutex);
+    if (static_cast<s32>(g_title_ctxs.size()) >= MAX_TITLE_CTXS) {
+        LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+
+    // Reverse-lookup userId from the logging-in user's npId
+    const s32 userId =
+        Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
+    if (userId < 0) {
+        LOG_ERROR(Lib_NpScore, "No logged-in user has npId handle '{}'", selfNpId->handle.data);
+        return ORBIS_NP_ERROR_USER_NOT_FOUND; // TODO check if it is the correct error code
+    }
+
+    const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
+    g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = serviceLabel, .userId = userId};
+    LOG_INFO(Lib_NpScore, "CreateNpTitleCtx id={} serviceLabel={} userId={}", id, serviceLabel,
+             userId);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(
+    OrbisNpServiceLabel npServiceLabel, Libraries::UserService::OrbisUserServiceUserId selfId) {
+    std::lock_guard lock(g_mutex);
+    if (static_cast<s32>(g_title_ctxs.size()) >= MAX_TITLE_CTXS) {
+        LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+
+    const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
+    g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = npServiceLabel, .userId = selfId};
+    LOG_INFO(Lib_NpScore, "CreateNpTitleCtxA id={} serviceLabel={} userId={}", id, npServiceLabel,
+             selfId);
+    return id;
+}
 
 int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}", reqId);
@@ -33,11 +94,6 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
-    LOG_ERROR(Lib_NpScore, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
     LOG_ERROR(Lib_NpScore, "libCtxId = {}", titleCtxId);
     return ORBIS_OK;
@@ -45,13 +101,6 @@ int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
 
 int PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId) {
     LOG_ERROR(Lib_NpScore, "requestId = {:#x}", reqId);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
-                                             UserService::OrbisUserServiceUserId selfId) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called npServiceLabel={}, selfId={}",
-              static_cast<u32>(npServiceLabel), selfId);
     return ORBIS_OK;
 }
 
