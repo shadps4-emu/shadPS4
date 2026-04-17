@@ -41,8 +41,6 @@ int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
 
 void RegisterThreads(Core::Loader::SymbolsResolver* sym);
 
-void PS4_SYSV_ABI ClearStack();
-
 class Thread {
 public:
     explicit Thread() = default;

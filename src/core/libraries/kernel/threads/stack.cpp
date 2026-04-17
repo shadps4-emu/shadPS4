@@ -70,6 +70,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
 
     /* A cached stack was found.  Release the lock. */
     if (attr->stackaddr_attr != nullptr) {
+        std::memset(attr->stackaddr_attr, 0, stacksize);
         thread_list_lock.unlock();
         return 0;
     }
@@ -112,6 +113,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     attr->stackaddr_attr = (void*)stackaddr;
 
     if (attr->stackaddr_attr != nullptr) {
+        std::memset(attr->stackaddr_attr, 0, stacksize);
         return 0;
     }
     return -1;

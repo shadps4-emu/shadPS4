@@ -55,6 +55,7 @@ struct OrbisFiberData {
     u16 fpucw;
     s8 pad[2];
     u32 mxcsr;
+    void* stack_base;
 };
 
 struct OrbisFiber {

@@ -19,7 +19,7 @@ public:
     NativeThread();
     ~NativeThread();
 
-    int Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr);
+    int Create(ThreadFunc func, void* arg);
     void Exit();
 
     void Initialize();
@@ -37,8 +37,9 @@ private:
     void* native_handle;
 #else
     uintptr_t native_handle;
-    void* sig_stack_ptr;
+    void* sig_stack_ptr = nullptr;
 #endif
+    void* init_stack_ptr = nullptr;
     u64 tid;
 };
 

@@ -100,6 +100,7 @@ void PS4_SYSV_ABI _sceFiberSwitchToFiber(OrbisFiber* fiber, u64 arg_on_run_to,
     data.arg_on_initialize = fiber->arg_on_initialize;
     data.arg_on_run_to = arg_on_run_to;
     data.stack_addr = reinterpret_cast<u8*>(fiber->addr_context) + fiber->size_context;
+    data.stack_base = fiber->addr_context;
     if (fiber->flags & FiberFlags::SetFpuRegs) {
         data.fpucw = 0x037f;
         data.mxcsr = 0x9fc0;
