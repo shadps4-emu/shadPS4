@@ -178,8 +178,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             const auto segment_mode = elf.ElfPheaderFlagsStr(elf_pheader[i].p_flags);
             LOG_INFO(Core_Linker, "program header = [{}] type = {}", i, header_type);
             LOG_INFO(Core_Linker, "segment_addr ..........: {:#018x}", segment_addr);
-            LOG_INFO(Core_Linker, "segment_file_size .....: {}", segment_file_size);
-            LOG_INFO(Core_Linker, "segment_memory_size ...: {}", segment_memory_size);
+            LOG_INFO(Core_Linker, "segment_file_size .....: {:#018x}", segment_file_size);
+            LOG_INFO(Core_Linker, "segment_memory_size ...: {:#018x}", segment_memory_size);
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
             add_segment(elf_pheader[i]);
