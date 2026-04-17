@@ -148,8 +148,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                 segment_prot |= MemoryProt::CpuExec;
             }
             // Map module segments
+            const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
             memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
-                              MemoryMapFlags::Fixed, VMAType::Flexible, name);
+                              MemoryMapFlags::Fixed, memory_type, name);
             elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
         }
         if (info.num_segments < 4) {
