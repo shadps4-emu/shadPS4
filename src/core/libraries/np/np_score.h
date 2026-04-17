@@ -120,6 +120,14 @@ struct OrbisNpScoreRankDataA {
 };
 static_assert(sizeof(OrbisNpScoreRankDataA) == 0x90, "OrbisNpScoreRankDataA must be 144 bytes");
 
+struct OrbisNpScorePlayerRankData {
+    s32 hasData;
+    u8 pad0[4];
+    OrbisNpScoreRankData rankData;
+};
+static_assert(sizeof(OrbisNpScorePlayerRankData) == 0x88,
+              "OrbisNpScorePlayerRankData must be 136 bytes");
+
 struct OrbisNpScorePlayerRankDataA {
     s32 hasData;
     u8 pad0[4];
@@ -271,22 +279,22 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
     OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
-    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
-    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
-    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
-    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
