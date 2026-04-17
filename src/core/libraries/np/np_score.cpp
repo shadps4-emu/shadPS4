@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <map>
+#include <mutex>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -23,9 +25,6 @@ static std::map<OrbisNpScoreTitleCtxId, ScoreTitleCtx> g_title_ctxs;
 static OrbisNpScoreTitleCtxId g_next_ctx_id = 1;
 static OrbisNpScoreRequestId g_next_req_id = 1;
 
-static constexpr s32 MAX_TITLE_CTXS = 32;
-static constexpr s32 MAX_REQUESTS = 32;
-
 //***********************************
 // Title context management functions
 //***********************************
@@ -37,17 +36,17 @@ s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
     }
 
     std::lock_guard lock(g_mutex);
-    if (static_cast<s32>(g_title_ctxs.size()) >= MAX_TITLE_CTXS) {
+    if (static_cast<s32>(g_title_ctxs.size()) >= ORBIS_NP_SCORE_MAX_CTX_NUM) {
         LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
     }
 
-    // Reverse-lookup userId from the logging-in user's npId
     const s32 userId =
         Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
     if (userId < 0) {
-        LOG_ERROR(Lib_NpScore, "No logged-in user has npId handle '{}'", selfNpId->handle.data);
-        return ORBIS_NP_ERROR_USER_NOT_FOUND; // TODO check if it is the correct error code
+        LOG_ERROR(Lib_NpScore, "selfNpId handle '{}' is not a signed-in user",
+                  selfNpId->handle.data);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
     }
 
     const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
@@ -57,12 +56,17 @@ s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
     return id;
 }
 
-s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(
-    OrbisNpServiceLabel npServiceLabel, Libraries::UserService::OrbisUserServiceUserId selfId) {
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
+                                             UserService::OrbisUserServiceUserId selfId) {
     std::lock_guard lock(g_mutex);
-    if (static_cast<s32>(g_title_ctxs.size()) >= MAX_TITLE_CTXS) {
+    if (static_cast<s32>(g_title_ctxs.size()) >= ORBIS_NP_SCORE_MAX_CTX_NUM) {
         LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+
+    if (!Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(selfId)) {
+        LOG_ERROR(Lib_NpScore, "userId {} is not signed in to NP", selfId);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
     }
 
     const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
@@ -233,13 +237,23 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameData() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                       void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npId={}, "
+              "totalSize={}, recvSize={}, data={}, option={}",
+              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameDataAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                            void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npId={}, "
+              "totalSize={}, recvSize={}, data={}, option={}",
+              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
@@ -399,23 +413,51 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npIdArray={}, npIdArraySize={}, "
+              "rankArray={}, rankArraySize={}, commentArray={}, commentArraySize={}, "
+              "infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, totalRecord={}, "
+              "option={}",
+              reqId, boardId, PTR(npIdArray), npIdArraySize, PTR(rankArray), rankArraySize,
+              PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
+              PTR(lastSortDate), PTR(totalRecord), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
+              arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, idArray={}, idArraySize={}, "
+              "rankArray={}, rankArraySize={}, arrayNum={}",
+              reqId, boardId, PTR(idArray), idArraySize, PTR(rankArray), rankArraySize, arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankDataA* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
+              arrayNum);
     return ORBIS_OK;
 }
 
