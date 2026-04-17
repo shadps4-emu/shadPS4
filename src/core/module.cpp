@@ -110,16 +110,19 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     const u64 base_size = CalculateBaseSize(elf_header, elf_pheader);
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
-    // Map module segments (and possible TLS trampolines)
+    // Reserve memory area for module
     void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
     memory->MapMemory(out_addr, ModuleLoadBase, aligned_base_size + TrampolineSize,
-                      MemoryProt::CpuReadWrite | MemoryProt::CpuExec, MemoryMapFlags::NoFlags,
-                      VMAType::Code, name);
+                      MemoryProt::NoAccess, MemoryMapFlags::NoFlags, VMAType::Reserved, name);
     LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
 
 #ifdef ARCH_X86_64
     // Initialize trampoline generator.
-    void* trampoline_addr = std::bit_cast<void*>(base_virtual_addr + aligned_base_size);
+    VAddr trampoline_vaddr = base_virtual_addr + aligned_base_size;
+    void* trampoline_addr = std::bit_cast<void*>(trampoline_vaddr);
+    memory->MapMemory(&trampoline_addr, trampoline_vaddr, TrampolineSize,
+                      MemoryProt::CpuReadWrite | MemoryProt::CpuExec, MemoryMapFlags::Fixed,
+                      VMAType::Code, name);
     RegisterPatchModule(*out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
 #endif
 
@@ -129,15 +132,31 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", aligned_base_size);
 
     const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
-        const VAddr segment_addr = base_virtual_addr + phdr.p_vaddr;
+        const VAddr segment_vaddr = base_virtual_addr + phdr.p_vaddr;
+        void* segment_addr = std::bit_cast<void*>(segment_vaddr);
+        const u64 segment_size = GetAlignedSize(phdr);
         if (do_map) {
-            elf.LoadSegment(segment_addr, phdr.p_offset, phdr.p_filesz);
+            // Convert ELF flags to memory prot.
+            auto segment_prot = MemoryProt::NoAccess;
+            if ((phdr.p_flags & PF_READ) != 0) {
+                segment_prot |= MemoryProt::CpuRead;
+            }
+            if ((phdr.p_flags & PF_WRITE) != 0) {
+                segment_prot |= MemoryProt::CpuWrite;
+            }
+            if ((phdr.p_flags & PF_EXEC) != 0) {
+                segment_prot |= MemoryProt::CpuExec;
+            }
+            // Map module segments
+            memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
+                              MemoryMapFlags::Fixed, VMAType::Flexible, name);
+            elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
         }
         if (info.num_segments < 4) {
             auto& segment = info.segments[info.num_segments++];
-            segment.address = segment_addr;
+            segment.address = segment_vaddr;
             segment.prot = phdr.p_flags;
-            segment.size = GetAlignedSize(phdr);
+            segment.size = segment_size;
         } else {
             LOG_ERROR(Core_Linker, "Attempting to add too many segments!");
         }
