@@ -128,6 +128,7 @@ void InitializeMemoryRegions(const std::filesystem::path& file) {
         Core::OrbisKernelMemParam* mem_param = new Core::OrbisKernelMemParam();
         if (param.mem_param) {
             u64 offset = get_offset(elf_pheader, param.mem_param);
+            ASSERT_MSG(offset != 0, "Failed to determine proper offset for memory parameters");
             u64 vaddr = std::bit_cast<u64>(mem_param);
             elf.LoadSegment(vaddr, offset, sizeof(*mem_param));
         } else {
@@ -139,6 +140,7 @@ void InitializeMemoryRegions(const std::filesystem::path& file) {
         u64* flexible_memory_size = new u64();
         if (mem_param && mem_param->flexible_memory_size) {
             u64 offset = get_offset(elf_pheader, mem_param->flexible_memory_size);
+            ASSERT_MSG(offset != 0, "Failed to determine proper offset for memory parameters");
             u64 vaddr = std::bit_cast<u64>(flexible_memory_size);
             elf.LoadSegment(vaddr, offset, sizeof(*flexible_memory_size));
         } else {
@@ -150,6 +152,7 @@ void InitializeMemoryRegions(const std::filesystem::path& file) {
         u8* extended_memory_1 = new u8();
         if (mem_param && mem_param->extended_memory_1) {
             u64 offset = get_offset(elf_pheader, mem_param->extended_memory_1);
+            ASSERT_MSG(offset != 0, "Failed to determine proper offset for memory parameters");
             u64 vaddr = std::bit_cast<u64>(extended_memory_1);
             elf.LoadSegment(vaddr, offset, sizeof(*extended_memory_1));
         } else {
@@ -159,6 +162,7 @@ void InitializeMemoryRegions(const std::filesystem::path& file) {
         u8* extended_memory_2 = new u8();
         if (mem_param && mem_param->extended_memory_2) {
             u64 offset = get_offset(elf_pheader, mem_param->extended_memory_2);
+            ASSERT_MSG(offset != 0, "Failed to determine proper offset for memory parameters");
             u64 vaddr = std::bit_cast<u64>(extended_memory_2);
             elf.LoadSegment(vaddr, offset, sizeof(*extended_memory_2));
         } else {
