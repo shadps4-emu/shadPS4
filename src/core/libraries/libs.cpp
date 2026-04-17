@@ -73,6 +73,7 @@
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
 #include "fiber/fiber.h"
+#include "core/libraries/ult/ult.h"
 
 namespace Libraries {
 
@@ -137,6 +138,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     Libraries::RazorCpu::RegisterLib(sym);
     Libraries::Move::RegisterLib(sym);
     Libraries::Fiber::RegisterLib(sym);
+    Libraries::Ult::RegisterlibSceUlt(sym);
     Libraries::Mouse::RegisterLib(sym);
     Libraries::WebBrowserDialog::RegisterLib(sym);
     Libraries::Zlib::RegisterLib(sym);
