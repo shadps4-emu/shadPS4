@@ -293,8 +293,8 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
     }
     s32 pad_handle = u->player_index;
-    LOG_INFO(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
-             index, pad_handle);
+    LOG_DEBUG(Lib_Pad, "called user_id = {} type = {} index = {}, pad_handle = {}", userId, type,
+              index, pad_handle);
     scePadResetLightBar(pad_handle);
     scePadResetOrientation(pad_handle);
     user_id_pad_handle_map[userId] = pad_handle;
@@ -533,7 +533,7 @@ int PS4_SYSV_ABI scePadResetLightBarAllByPortType() {
 }
 
 int PS4_SYSV_ABI scePadResetOrientation(s32 handle) {
-    LOG_INFO(Lib_Pad, "scePadResetOrientation called handle = {}", handle);
+    LOG_DEBUG(Lib_Pad, "scePadResetOrientation called handle = {}", handle);
 
     auto controller_id = GameControllers::GetControllerIndexFromControllerID(handle);
     if (!controller_id) {
