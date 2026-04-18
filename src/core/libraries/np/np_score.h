@@ -165,15 +165,20 @@ int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
                                             const OrbisNpId* selfNpId);
 int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
                                              UserService::OrbisUserServiceUserId selfId);
-
-int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId);
+s32 PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId);
+//***********************************
+// Request management functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId);
+s32 PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId);
+s32 PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId);
+//***********************************
+// Stubbed functions
+//***********************************
 int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners();
-int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId);
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx();
-int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId);
-int PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId);
 int PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
                                         OrbisNpScoreBoardInfo* boardInfo, void* option);
 int PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
