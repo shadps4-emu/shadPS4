@@ -13,7 +13,7 @@
 #include <core/emulator_state.h>
 #include "common/config.h"
 #include "common/key_manager.h"
-#include "common/logging/backend.h"
+#include "common/logging/log.h"
 #include "common/memory_patcher.h"
 #include "common/path_util.h"
 #include "core/debugger.h"
@@ -31,6 +31,81 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    CLI::App app{"shadPS4 Emulator CLI"};
+
+    // ---- CLI state ----
+    std::optional<std::string> gamePath;
+    std::vector<std::string> gameArgs;
+    std::optional<std::filesystem::path> overrideRoot;
+    std::optional<int> waitPid;
+    bool waitForDebugger = false;
+
+    std::optional<std::string> fullscreenStr;
+    bool ignoreGamePatch = false;
+    bool showFps = false;
+    bool configClean = false;
+    bool configGlobal = false;
+    bool bigPicture = false;
+
+    std::optional<std::filesystem::path> addGameFolder;
+    std::optional<std::filesystem::path> setAddonFolder;
+    std::optional<std::string> patchFile;
+
+    // ---- Options ----
+    app.add_option("-g,--game", gamePath, "Game path or ID");
+    app.add_option("-p,--patch", patchFile, "Patch file to apply");
+    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
+                 "Disable automatic loading of game patches");
+
+    app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
+
+    // FULLSCREEN: behavior-identical
+    app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
+
+    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
+
+    app.add_flag("--wait-for-debugger", waitForDebugger);
+    app.add_option("--wait-for-pid", waitPid);
+
+    app.add_flag("--show-fps", showFps);
+    app.add_flag("--config-clean", configClean);
+    app.add_flag("--config-global", configGlobal);
+    app.add_flag("--log-append", Common::Log::g_should_append);
+
+    app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
+    app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+
+    // ---- Capture args after `--` verbatim ----
+    app.allow_extras();
+    app.parse_complete_callback([&]() {
+        const auto& extras = app.remaining();
+        if (!extras.empty()) {
+            gameArgs = extras;
+        }
+    });
+
+    // ---- No-args behavior ----
+    if (argc == 1) {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
+                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
+                                 "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
+                                 nullptr);
+        std::cout << app.help();
+        return -1;
+    }
+
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError& e) {
+        return app.exit(e);
+    }
+
+    if (waitPid)
+        Core::Debugger::WaitForPid(*waitPid);
+
+    // Start default log
+    Common::Log::Setup("shad_log.txt");
 
     IPC::Instance().Init();
 
@@ -60,75 +135,10 @@ int main(int argc, char* argv[]) {
     EmulatorSettingsImpl::SetInstance(emu_settings);
     emu_settings->Load();
 
-    CLI::App app{"shadPS4 Emulator CLI"};
-
-    // ---- CLI state ----
-    std::optional<std::string> gamePath;
-    std::vector<std::string> gameArgs;
-    std::optional<std::filesystem::path> overrideRoot;
-    std::optional<int> waitPid;
-    bool waitForDebugger = false;
-
-    std::optional<std::string> fullscreenStr;
-    bool ignoreGamePatch = false;
-    bool showFps = false;
-    bool configClean = false;
-    bool configGlobal = false;
-    bool logAppend = false;
-    bool bigPicture = false;
-
-    std::optional<std::filesystem::path> addGameFolder;
-    std::optional<std::filesystem::path> setAddonFolder;
-    std::optional<std::string> patchFile;
-
-    // ---- Options ----
-    app.add_option("-g,--game", gamePath, "Game path or ID");
-    app.add_option("-p,--patch", patchFile, "Patch file to apply");
-    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
-                 "Disable automatic loading of game patches");
-
-    app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
-
-    // FULLSCREEN: behavior-identical
-    app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
-
-    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
-
-    app.add_flag("--wait-for-debugger", waitForDebugger);
-    app.add_option("--wait-for-pid", waitPid);
-
-    app.add_flag("--show-fps", showFps);
-    app.add_flag("--config-clean", configClean);
-    app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
-
-    app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
-    app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
-
-    // ---- Capture args after `--` verbatim ----
-    app.allow_extras();
-    app.parse_complete_callback([&]() {
-        const auto& extras = app.remaining();
-        if (!extras.empty()) {
-            gameArgs = extras;
-        }
-    });
-
-    // ---- No-args behavior ----
-    if (argc == 1) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
-                                 "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
-                                 nullptr);
-        std::cout << app.help();
-        return -1;
-    }
-
-    try {
-        app.parse(argc, argv);
-    } catch (const CLI::ParseError& e) {
-        return app.exit(e);
-    }
+    Common::Log::Shutdown();
+    // Start configured log
+    Common::Log::g_should_append |= EmulatorSettings.IsLogAppend();
+    Common::Log::Setup("shad_log.txt");
 
     // ---- Utility commands ----
     if (addGameFolder) {
@@ -190,9 +200,6 @@ int main(int argc, char* argv[]) {
     if (configGlobal)
         EmulatorSettings.SetConfigMode(ConfigMode::Global);
 
-    if (logAppend)
-        Common::Log::SetAppend();
-
     // ---- Resolve game path or ID ----
     std::filesystem::path ebootPath(*gamePath);
     if (!std::filesystem::exists(ebootPath)) {
@@ -210,9 +217,6 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-
-    if (waitPid)
-        Core::Debugger::WaitForPid(*waitPid);
 
     if (bigPicture) {
         BigPictureMode::Launch();

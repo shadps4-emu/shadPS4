@@ -21,6 +21,11 @@ if (NOT TARGET Boost::headers)
     add_subdirectory(ext-boost)
 endif()
 
+# spdlog
+set(SPDLOG_NO_EXCEPTIONS ON)
+set(SPDLOG_DISABLE_GLOBAL_LOGGER ON)
+add_subdirectory(spdlog)
+
 # fmtlib
 if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)

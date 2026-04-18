@@ -1,70 +1,58 @@
-// SPDX-FileCopyrightText: Copyright 2014 Citra Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <algorithm>
-#include <array>
-#include <string_view>
+#include <unordered_map>
+#include <vector>
+#include <spdlog/details/fmt_helper.h>
+#include <spdlog/sinks/async_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/dup_filter_sink.h>
+#include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
-#include "common/logging/formatter.h"
-#include "common/logging/types.h"
+#ifdef _WIN32
+#include <spdlog/sinks/msvc_sink.h>
+#include <spdlog/sinks/wincolor_sink.h>
+using spdlog_stdout = spdlog::sinks::sink;
+#else
+using spdlog_stdout = spdlog::sinks::stdout_color_sink_mt;
+#endif
+#include <spdlog/spdlog.h>
+
+#include "common/logging/classes.h"
+#include "common/path_util.h"
 
 namespace Common::Log {
+extern bool g_should_append;
+extern std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGERS;
 
-constexpr const char* TrimSourcePath(std::string_view source) {
-    const auto rfind = [source](const std::string_view match) {
-        return source.rfind(match) == source.npos ? 0 : (source.rfind(match) + match.size());
-    };
-    auto idx = std::max({rfind("/"), rfind("\\")});
-    return source.data() + idx;
-}
+void Setup(std::string_view log_filename);
 
-/// Logs a message to the global logger, using fmt
-void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename,
-                       unsigned int line_num, const char* function, const char* format,
-                       const fmt::format_args& args);
+void Shutdown();
 
-template <typename... Args>
-void FmtLogMessage(Class log_class, Level log_level, const char* filename, unsigned int line_num,
-                   const char* function, const char* format, const Args&... args) {
-    FmtLogMessageImpl(log_class, log_level, filename, line_num, function, format,
-                      fmt::make_format_args(args...));
-}
-
+void Redirect(const std::string& name);
 } // namespace Common::Log
 
 // Define the fmt lib macros
 #define LOG_GENERIC(log_class, log_level, ...)                                                     \
-    Common::Log::FmtLogMessage(log_class, log_level, Common::Log::TrimSourcePath(__FILE__),        \
-                               __LINE__, __func__, __VA_ARGS__)
+    SPDLOG_LOGGER_CALL(Common::Log::ALL_LOGGERS[log_class], log_level, __VA_ARGS__)
 
 #ifdef _DEBUG
 #define LOG_TRACE(log_class, ...)                                                                  \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Trace,           \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::trace, __VA_ARGS__)
 #else
-#define LOG_TRACE(log_class, fmt, ...) (void(0))
+#define LOG_TRACE(log_class, ...) (void(0))
 #endif
 
 #define LOG_DEBUG(log_class, ...)                                                                  \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Debug,           \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::debug, __VA_ARGS__)
 #define LOG_INFO(log_class, ...)                                                                   \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Info,            \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::info, __VA_ARGS__)
 #define LOG_WARNING(log_class, ...)                                                                \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Warning,         \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::warn, __VA_ARGS__)
 #define LOG_ERROR(log_class, ...)                                                                  \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Error,           \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::err, __VA_ARGS__)
 #define LOG_CRITICAL(log_class, ...)                                                               \
-    Common::Log::FmtLogMessage(Common::Log::Class::log_class, Common::Log::Level::Critical,        \
-                               Common::Log::TrimSourcePath(__FILE__), __LINE__, __func__,          \
-                               __VA_ARGS__)
+    LOG_GENERIC(Common::Log::Class::log_class, spdlog::level::critical, __VA_ARGS__)
