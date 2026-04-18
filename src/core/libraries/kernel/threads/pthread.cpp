@@ -12,8 +12,8 @@
 #include "core/libraries/libs.h"
 #include "core/memory.h"
 
-extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func, void* stackb,
-                                                 void* stackt) asm("_runOnAnotherStack");
+extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,
+                                                 void* stackb) asm("_runOnAnotherStack");
 
 namespace Libraries::Kernel {
 
@@ -209,8 +209,7 @@ static void RunThread(void* arg) {
     /* Run the current thread's start routine with argument: */
     auto* const stack =
         (void*)((size_t)curthread->attr.stackaddr_attr + curthread->attr.stacksize_attr);
-    void* ret = _runOnAnotherStack(curthread->arg, (void*)curthread->start_routine, stack,
-                                   curthread->attr.stackaddr_attr);
+    void* ret = _runOnAnotherStack(curthread->arg, (void*)curthread->start_routine, stack);
 
     /* Remove thread from tracking */
     DebugState.RemoveCurrentThreadFromGuestList();

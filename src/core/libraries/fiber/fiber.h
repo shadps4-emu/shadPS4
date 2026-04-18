@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -55,7 +55,6 @@ struct OrbisFiberData {
     u16 fpucw;
     s8 pad[2];
     u32 mxcsr;
-    void* stack_base;
 };
 
 struct OrbisFiber {
