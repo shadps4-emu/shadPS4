@@ -71,13 +71,6 @@ _sceFiberSwitchEntry:
     movq 0x18(%r11), %rsp   # data->stack_addr
     xorl %ebp, %ebp
 
-#ifdef WIN32
-    movq 0x18(%r11), %r10   # data->stack_addr
-    movq %r10, %gs:0x08
-    movq 0x30(%r11), %r10   # data->stack_base
-    movq %r10, %gs:0x10
-#endif
-
     movq 0x20(%r11), %r10 # data->state
 
     # Set previous fiber state to Idle
