@@ -81,147 +81,27 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
 
-    // ---- Options ----
-    app.add_option("-g,--game", gamePath, "Game path or ID");
-    app.add_option("-p,--patch", patchFile, "Patch file to apply");
-    app.add_flag("-i,--ignore-game-patch", ignoreGamePatch,
-                 "Disable automatic loading of game patches");
+    // const char* const ebootPath = "M:/PS4/dumpedgames/CUSA00207/eboot.bin"; // bloodborne
+    // const char* const ebootPath = "D:/ps4/shadps4games/CUSA07010/eboot.bin"; // sonic mania
+    //  const char* const ebootPath = "C:/ps4tests/CUSA03318/eboot.bin";//carmageddon
+    // const char* const ebootPath = "C:/ps4tests/CUSA04518/eboot.bin"; // project diva x
+    // const char* const ebootPath = "D:/ps4sdk/rain.elf";
+    // const char* const ebootPath = "C:/ps4tests/CUSA05344/eboot.bin";//here we lie
+    // const char* const ebootPath = "C:/ps4tests/CUSA01499/eboot.bin"; // mirror's edge catalyst
+    // const char* const ebootPath = "D:/ps4/shadps4games/CUSA30582/eboot.bin";//SpongeBob
+    // SquarePants: The Cosmic Shake
+    // const char* const ebootPath = "D:/ps4/shadps4games/CUSA36843/eboot.bin"; // red dead
+    // const char* const ebootPath = "C:/ps4tests/CUSA00375/eboot.bin"; // the evil within
+    // const char* const ebootPath = "C:/ps4tests/CUSA51536/eboot.bin";//formula legends
+    // const char* const ebootPath = "D:/ps4/shadps4games/CUSA11616/eboot.bin"; // Reverie
+    // const char* const ebootPath = "C:/ps4tests/CUSA00093/eboot.bin";//driveclub
+    // const char* const ebootPath = "D:/ps4games/playable/CUSA05635/eboot.bin";//puyo tetris
+    const char* const ebootPath = "D:/ps4/shadps4games/CUSA02394/eboot.bin"; // we are doomed
 
-    app.add_flag("-b,--big-picture", bigPicture, "Start in Big Picture Mode");
-
-    // FULLSCREEN: behavior-identical
-    app.add_option("-f,--fullscreen", fullscreenStr, "Fullscreen mode (true|false)");
-
-    app.add_option("--override-root", overrideRoot)->check(CLI::ExistingDirectory);
-
-    app.add_flag("--wait-for-debugger", waitForDebugger);
-    app.add_option("--wait-for-pid", waitPid);
-
-    app.add_flag("--show-fps", showFps);
-    app.add_flag("--config-clean", configClean);
-    app.add_flag("--config-global", configGlobal);
-    app.add_flag("--log-append", logAppend);
-
-    app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
-    app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
-
-    // ---- Capture args after `--` verbatim ----
-    app.allow_extras();
-    app.parse_complete_callback([&]() {
-        const auto& extras = app.remaining();
-        if (!extras.empty()) {
-            gameArgs = extras;
-        }
-    });
-
-    // ---- No-args behavior ----
-    if (argc == 1) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "shadPS4",
-                                 "This is a CLI application. Please use the QTLauncher for a GUI:\n"
-                                 "https://github.com/shadps4-emu/shadps4-qtlauncher/releases",
-                                 nullptr);
-        std::cout << app.help();
-        return -1;
-    }
-
-    try {
-        app.parse(argc, argv);
-    } catch (const CLI::ParseError& e) {
-        return app.exit(e);
-    }
-
-    // ---- Utility commands ----
-    if (addGameFolder) {
-        EmulatorSettings.AddGameInstallDir(*addGameFolder);
-        EmulatorSettings.Save();
-        std::cout << "Game folder successfully saved.\n";
-        return 0;
-    }
-
-    if (setAddonFolder) {
-        EmulatorSettings.SetAddonInstallDir(*setAddonFolder);
-        EmulatorSettings.Save();
-        std::cout << "Addon folder successfully saved.\n";
-        return 0;
-    }
-
-    if (!gamePath.has_value() && !bigPicture) {
-        if (!gameArgs.empty()) {
-            gamePath = gameArgs.front();
-            gameArgs.erase(gameArgs.begin());
-        } else {
-            std::cerr << "Error: Please provide a game path or ID.\n";
-            return 1;
-        }
-    }
-    if (!gameArgs.empty()) {
-        if (gameArgs.front() == "--") {
-            gameArgs.erase(gameArgs.begin());
-        } else {
-            std::cerr << "Error: unhandled flags\n";
-            return 1;
-        }
-    }
-
-    // ---- Apply flags ----
-    if (patchFile)
-        MemoryPatcher::patch_file = *patchFile;
-
-    if (ignoreGamePatch)
-        Core::FileSys::MntPoints::ignore_game_patches = true;
-
-    if (fullscreenStr) {
-        if (*fullscreenStr == "true") {
-            EmulatorSettings.SetFullScreen(true);
-        } else if (*fullscreenStr == "false") {
-            EmulatorSettings.SetFullScreen(false);
-        } else {
-            std::cerr << "Error: Invalid argument for --fullscreen (use true|false)\n";
-            return 1;
-        }
-    }
-
-    if (showFps)
-        EmulatorSettings.SetShowFpsCounter(true);
-
-    if (configClean)
-        EmulatorSettings.SetConfigMode(ConfigMode::Clean);
-
-    if (configGlobal)
-        EmulatorSettings.SetConfigMode(ConfigMode::Global);
-
-    if (logAppend)
-        Common::Log::SetAppend();
-
-    // ---- Resolve game path or ID ----
-    std::filesystem::path ebootPath(*gamePath);
-    if (!std::filesystem::exists(ebootPath)) {
-        bool found = false;
-        constexpr int maxDepth = 5;
-        for (const auto& installDir : EmulatorSettings.GetGameInstallDirs()) {
-            if (auto foundPath = Common::FS::FindGameByID(installDir, *gamePath, maxDepth)) {
-                ebootPath = *foundPath;
-                found = true;
-                break;
-            }
-        }
-        if (!found && !bigPicture) {
-            std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
-            return 1;
-        }
-    }
-
-    if (waitPid)
-        Core::Debugger::WaitForPid(*waitPid);
-
-    if (bigPicture) {
-        BigPictureMode::Launch();
-    } else {
-        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
-        emulator->executableName = argv[0];
-        emulator->waitForDebuggerBeforeRun = waitForDebugger;
-        emulator->Run(ebootPath, gameArgs, overrideRoot);
-    }
+    auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+    emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
+    emulator->Run(ebootPath, gameArgs, overrideRoot);
 
     return 0;
 }
