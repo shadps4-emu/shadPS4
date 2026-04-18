@@ -147,7 +147,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
             }
         }
         params.entry_addr = module->GetEntryAddress();
-        Libraries::Kernel::ClearStack();
         RunMainEntry(&params);
     });
 }
