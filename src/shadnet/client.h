@@ -194,7 +194,18 @@ public:
     std::function<void(const NotifyFriendNew&)> onFriendNew;
     std::function<void(const NotifyFriendLost&)> onFriendLost;
     std::function<void(const NotifyFriendStatus&)> onFriendStatus;
-    std::function<void(CommandType, const std::vector<u8>&)> onAsyncReply;
+    // Async reply callback.
+    //   cmd    —command this reply is for (matches the request's cmd)
+    //   pkt_id —packet id echoed back from the original request header
+    //   error  —ErrorType byte that prefixes every reply body
+    //   body   —reply payload AFTER the error byte (may be empty)
+    std::function<void(CommandType cmd, u64 pkt_id, ErrorType error, const std::vector<u8>& body)>
+        onAsyncReply;
+
+    // Submit a Request packet for async processing.
+    // Allocates a packet id, builds the packet, pushes it to the writer queue.
+    // Returns the packet id so callers can correlate the eventual reply.
+    u64 SubmitRequest(CommandType cmd, const std::vector<u8>& payload);
 
 private:
     void ConnectThread();
@@ -205,7 +216,7 @@ private:
     bool RecvN(u8* buf, u32 n);
     bool SendAll(const std::vector<u8>& data);
     std::vector<u8> BuildPacket(CommandType cmd, u64 id, const std::vector<u8>& payload) const;
-    void DispatchPacket(PacketType type, u16 cmd_raw, const std::vector<u8>& payload);
+    void DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id, const std::vector<u8>& payload);
     void HandleLoginReply(const std::vector<u8>& payload);
     void HandleNotification(u16 cmd_raw, const std::vector<u8>& payload);
 

@@ -180,6 +180,7 @@ void ShadNetClient::ReaderThread() {
         const auto ptype = static_cast<PacketType>(hdr[0]);
         const u16 cmd_raw = GetLE16(hdr + 1);
         const u32 total_sz = GetLE32(hdr + 3);
+        const u64 pkt_id = GetLE64(hdr + 7);
 
         if (total_sz < SHAD_HEADER_SIZE || total_sz > SHAD_MAX_PACKET_SIZE) {
             LOG_ERROR(ShadNet, "Corrupt packet (total_sz={})", total_sz);
@@ -196,7 +197,7 @@ void ShadNetClient::ReaderThread() {
                 break;
             }
         }
-        DispatchPacket(ptype, cmd_raw, payload);
+        DispatchPacket(ptype, cmd_raw, pkt_id, payload);
     }
 
     if (!m_authenticated) {
@@ -427,9 +428,21 @@ std::vector<u8> ShadNetClient::BuildPacket(CommandType cmd, u64 id,
     return out;
 }
 
+u64 ShadNetClient::SubmitRequest(CommandType cmd, const std::vector<u8>& payload) {
+    const u64 pkt_id = m_pkt_counter.fetch_add(1);
+    auto pkt = BuildPacket(cmd, pkt_id, payload);
+    {
+        std::lock_guard lock(m_mutex_send_queue);
+        m_send_queue.push_back(std::move(pkt));
+    }
+    m_cv_send_queue.notify_all();
+    return pkt_id;
+}
+
 // Packet dispatch
 
-void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, const std::vector<u8>& payload) {
+void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, u64 pkt_id,
+                                   const std::vector<u8>& payload) {
     switch (type) {
     case PacketType::Reply:
         switch (static_cast<CommandType>(cmd_raw)) {
@@ -437,10 +450,18 @@ void ShadNetClient::DispatchPacket(PacketType type, u16 cmd_raw, const std::vect
             HandleLoginReply(payload);
             break;
         default:
-            if (onAsyncReply)
-                onAsyncReply(static_cast<CommandType>(cmd_raw), payload);
-            else
-                LOG_DEBUG(ShadNet, "Unhandled reply cmd={}", cmd_raw);
+            if (onAsyncReply) {
+                // Every reply body starts with an ErrorType byte.
+                ErrorType err =
+                    payload.empty() ? ErrorType::Malformed : static_cast<ErrorType>(payload[0]);
+                std::vector<u8> body;
+                if (payload.size() > 1) {
+                    body.assign(payload.begin() + 1, payload.end());
+                }
+                onAsyncReply(static_cast<CommandType>(cmd_raw), pkt_id, err, body);
+            } else {
+                LOG_DEBUG(ShadNet, "Unhandled reply cmd={} pkt_id={}", cmd_raw, pkt_id);
+            }
             break;
         }
         break;
