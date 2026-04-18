@@ -5,8 +5,8 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api.h"
-#include "core/libraries/np/np_web_api_error.h"
 #include "core/libraries/np/np_web_api_internal.h"
 
 #include <magic_enum/magic_enum.hpp>

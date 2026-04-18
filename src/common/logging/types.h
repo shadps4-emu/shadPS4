@@ -130,6 +130,8 @@ enum class Class : u8 {
     Loader,                  ///< ROM loader
     Input,                   ///< Input emulation
     Tty,                     ///< Debug output from emu
+    NpHandler,               ///< NpHandler shadNet manager
+    ShadNet,                 ///< shadNet binary protocol client
     Count                    ///< Total number of logging classes
 };
 

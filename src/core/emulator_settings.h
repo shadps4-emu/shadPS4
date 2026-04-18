@@ -192,7 +192,7 @@ struct GeneralSettings {
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
     Setting<int> big_picture_scale{1000};
-    Setting<std::string> shadnet_server{""};
+    Setting<std::string> shadnet_server{"127.0.0.1:31313"};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {

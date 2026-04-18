@@ -1,0 +1,155 @@
+// SPDX-FileCopyrightText: Copyright 2019-2026 rpcsn Project
+// SPDX-FileCopyrightText: Copyright 2026 shadNet Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+syntax = "proto3";
+
+package shadnet;
+
+option optimize_for = LITE_RUNTIME;
+
+// Account
+
+message LoginRequest {
+    string npid     = 1;
+    string password = 2;
+    string token    = 3;  
+}
+
+message FriendEntry {
+    string npid     = 1;
+    bool   online   = 2;
+    bytes  presence = 3;
+}
+
+message LoginReply {
+    string               avatar_url               = 1;
+    uint64               user_id                  = 2;
+    repeated FriendEntry friends                  = 4;
+    repeated string      friend_requests_sent     = 5;
+    repeated string      friend_requests_received = 6;
+    repeated string      blocked                  = 7;
+}
+
+message RegistrationRequest {
+    string npid       = 1;
+    string password   = 2;
+    string avatar_url = 3;  // optional; server uses default if empty
+    string email      = 4;
+    string secret_key = 5;  // optional; must match server config if set
+}
+
+// Friend / block commands
+// Shared by AddFriend, RemoveFriend, AddBlock, RemoveBlock.
+
+message FriendCommandRequest {
+    string npid = 1;  // target Online ID
+}
+
+// Notifications
+
+// NotificationType::FriendQuery (5)
+message NotifyFriendQuery {
+    string from_npid = 1;
+}
+
+// NotificationType::FriendNew (6)
+message NotifyFriendNew {
+    string npid   = 1;
+    bool   online = 2;
+}
+
+// NotificationType::FriendLost (7)
+message NotifyFriendLost {
+    string npid = 1;
+}
+
+// NotificationType::FriendStatus (8)
+message NotifyFriendStatus {
+    string npid      = 1;
+    bool   online    = 2;
+    uint64 timestamp = 3;  // nanoseconds since Unix epoch
+}
+
+// Score: board configuration
+
+message BoardInfo {
+    uint32 rankLimit       = 1;
+    uint32 updateMode      = 2;   // 0=NORMAL_UPDATE, 1=FORCE_UPDATE
+    uint32 sortMode        = 3;   // 0=DESCENDING, 1=ASCENDING
+    uint32 uploadNumLimit  = 4;
+    uint32 uploadSizeLimit = 5;
+}
+
+// Score: requests
+
+message RecordScoreRequest {
+    uint32 boardId  = 1;
+    int32  pcId     = 2;
+    int64  score    = 3;
+    string comment  = 4;
+    bytes  data     = 5;   // optional inline game-info blob
+}
+
+message RecordScoreGameDataRequest {
+    uint32 boardId = 1;
+    int32  pcId    = 2;
+    int64  score   = 3;
+}
+
+message GetScoreGameDataRequest {
+    uint32 boardId = 1;
+    string npId    = 2;
+    int32  pcId    = 3;
+}
+
+message GetScoreRangeRequest {
+    uint32 boardId      = 1;
+    uint32 startRank    = 2;
+    uint32 numRanks     = 3;
+    bool   withComment  = 4;
+    bool   withGameInfo = 5;
+}
+
+message ScoreNpIdPcId {
+    string npid = 1;
+    int32  pcId = 2;
+}
+
+message GetScoreNpIdRequest {
+    uint32                  boardId      = 1;
+    repeated ScoreNpIdPcId  npids        = 2;
+    bool                    withComment  = 3;
+    bool                    withGameInfo = 4;
+}
+
+message GetScoreFriendsRequest {
+    uint32 boardId      = 1;
+    bool   includeSelf  = 2;
+    uint32 max          = 3;
+    bool   withComment  = 4;
+    bool   withGameInfo = 5;
+}
+
+// Score: responses
+
+message ScoreRankData {
+    string npId        = 1;
+    int32  pcId        = 2;
+    uint32 rank        = 3;
+    int64  score       = 4;
+    bool   hasGameData = 5;
+    uint64 recordDate  = 6;
+}
+
+message ScoreInfo {
+    bytes data = 1;
+}
+
+message GetScoreResponse {
+    repeated ScoreRankData rankArray    = 1;
+    repeated string        commentArray = 2;
+    repeated ScoreInfo     infoArray    = 3;
+    uint64                 lastSortDate = 4;
+    uint32                 totalRecord  = 5;
+}
