@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 .global _sceFiberSetJmp
@@ -68,7 +68,7 @@ _sceFiberSwitchEntry:
     mov %rdi, %r11
 
     # Set stack address to provided stack
-    movq 0x18(%r11), %rsp   # data->stack_addr
+    movq 0x18(%r11), %rsp
     xorl %ebp, %ebp
 
     movq 0x20(%r11), %r10 # data->state
