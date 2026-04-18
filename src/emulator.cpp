@@ -92,106 +92,6 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
     return 0;
 }
 
-void InitializeMemoryRegions(const std::filesystem::path& file) {
-    Core::Loader::Elf elf;
-    elf.Open(file);
-    if (!elf.IsElfFile()) {
-        return;
-    }
-    const auto elf_pheader = elf.GetProgramHeader();
-    auto i_procparam = std::find_if(elf_pheader.begin(), elf_pheader.end(), [](const auto& entry) {
-        return entry.p_type == PT_SCE_PROCPARAM;
-    });
-
-    if (i_procparam != elf_pheader.end()) {
-        Core::OrbisProcParam param{};
-        elf.LoadSegment(std::bit_cast<u64>(&param), i_procparam->p_offset, i_procparam->p_filesz);
-
-        // We need to convert virtual addresses to their physical file offset.
-        // To do this, search through program headers and calculate the offset for
-        // the block the address is in.
-        const auto get_offset = [](std::span<const elf_program_header> phdr, void* offset) {
-            s64 virtual_offset = std::bit_cast<u64>(offset);
-            auto block =
-                std::find_if(phdr.begin(), phdr.end(), [virtual_offset](const auto& entry) {
-                    return (entry.p_type == PT_SCE_RELRO || entry.p_type == PT_LOAD) &&
-                           entry.p_vaddr <= virtual_offset &&
-                           entry.p_vaddr + entry.p_memsz > virtual_offset;
-                });
-            if (block != phdr.end()) {
-                return virtual_offset + block->p_offset - block->p_vaddr;
-            }
-            return static_cast<u64>(0);
-        };
-
-        // Read raw memory parameter data
-        Core::OrbisKernelMemParam* mem_param = new Core::OrbisKernelMemParam();
-        if (param.mem_param) {
-            u64 offset = get_offset(elf_pheader, param.mem_param);
-            u64 vaddr = std::bit_cast<u64>(mem_param);
-            elf.LoadSegment(vaddr, offset, sizeof(*mem_param));
-        } else {
-            delete (mem_param);
-            mem_param = nullptr;
-        }
-
-        // Read flexible memory size
-        u64* flexible_memory_size = new u64();
-        if (mem_param && mem_param->flexible_memory_size) {
-            u64 offset = get_offset(elf_pheader, mem_param->flexible_memory_size);
-            u64 vaddr = std::bit_cast<u64>(flexible_memory_size);
-            elf.LoadSegment(vaddr, offset, sizeof(*flexible_memory_size));
-        } else {
-            delete (flexible_memory_size);
-            flexible_memory_size = nullptr;
-        }
-
-        // Read the extended memory parameters
-        u8* extended_memory_1 = new u8();
-        if (mem_param && mem_param->extended_memory_1) {
-            u64 offset = get_offset(elf_pheader, mem_param->extended_memory_1);
-            u64 vaddr = std::bit_cast<u64>(extended_memory_1);
-            elf.LoadSegment(vaddr, offset, sizeof(*extended_memory_1));
-        } else {
-            delete (extended_memory_1);
-            extended_memory_1 = nullptr;
-        }
-        u8* extended_memory_2 = new u8();
-        if (mem_param && mem_param->extended_memory_2) {
-            u64 offset = get_offset(elf_pheader, mem_param->extended_memory_2);
-            u64 vaddr = std::bit_cast<u64>(extended_memory_2);
-            elf.LoadSegment(vaddr, offset, sizeof(*extended_memory_2));
-        } else {
-            delete (extended_memory_2);
-            extended_memory_2 = nullptr;
-        }
-
-        // Run memory initialization with these parameters.
-        auto* memory = Core::Memory::Instance();
-        memory->SetupMemoryRegions(flexible_memory_size, extended_memory_1, extended_memory_2);
-
-        // Clean up
-        if (mem_param) {
-            delete (mem_param);
-            mem_param = nullptr;
-        }
-        if (flexible_memory_size) {
-            delete (flexible_memory_size);
-            flexible_memory_size = nullptr;
-        }
-        if (extended_memory_1) {
-            delete (extended_memory_1);
-            extended_memory_1 = nullptr;
-        }
-        if (extended_memory_2) {
-            delete (extended_memory_2);
-            extended_memory_2 = nullptr;
-        }
-        return;
-    }
-    return;
-}
-
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                    std::optional<std::filesystem::path> p_game_folder) {
     Common::SetCurrentThreadName("shadPS4:Main");
@@ -549,9 +449,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
     }
-
-    // Initialize memory regions
-    InitializeMemoryRegions(eboot_path);
 
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());

@@ -33,23 +33,8 @@ MemoryManager::MemoryManager() {
 
 MemoryManager::~MemoryManager() = default;
 
-void MemoryManager::SetupMemoryRegions(u64* flexible_size, u8* extended_memory_1,
-                                       u8* extended_memory_2) {
-    u64 fmem_size = ORBIS_FLEXIBLE_MEMORY_SIZE;
-    bool use_extended_mem1 = true, use_extended_mem2 = true;
-
-    if (flexible_size) {
-        fmem_size = *flexible_size + ORBIS_FLEXIBLE_MEMORY_BASE;
-    }
-
-    s32 sdk_ver;
-    ASSERT_MSG(::Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_ver) == ORBIS_OK,
-               "Failed to get SDK version");
-    if (sdk_ver < Common::ElfInfo::FW_50) {
-        use_extended_mem1 = extended_memory_1 ? *extended_memory_1 : false;
-        use_extended_mem2 = extended_memory_2 ? *extended_memory_2 : false;
-    }
-
+void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1,
+                                       bool use_extended_mem2) {
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
     if (EmulatorSettings.IsDevKit()) {
@@ -68,8 +53,8 @@ void MemoryManager::SetupMemoryRegions(u64* flexible_size, u8* extended_memory_1
     if (!use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
-    total_flexible_size = fmem_size - ORBIS_FLEXIBLE_MEMORY_BASE;
-    total_direct_size = total_size - fmem_size;
+    total_flexible_size = flexible_size - ORBIS_FLEXIBLE_MEMORY_BASE;
+    total_direct_size = total_size - flexible_size;
 
     // Insert an area that covers the direct memory physical address block.
     // Note that this should never be called after direct memory allocations have been made.
