@@ -27,8 +27,21 @@ int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr
                                       PthreadEntryFunc start_routine, void* arg);
 
 int PS4_SYSV_ABI posix_pthread_join(PthreadT pthread, void** thread_return);
+int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread);
+
+int PS4_SYSV_ABI posix_pthread_mutexattr_init(PthreadMutexAttrT* attr);
+int PS4_SYSV_ABI posix_pthread_mutexattr_settype(PthreadMutexAttrT* attr, PthreadMutexType type);
+int PS4_SYSV_ABI posix_pthread_mutexattr_destroy(PthreadMutexAttrT* attr);
+
+int PS4_SYSV_ABI scePthreadMutexInit(PthreadMutexT* mutex, const PthreadMutexAttrT* mutex_attr,
+                                     const char* name);
+int PS4_SYSV_ABI posix_pthread_mutex_lock(PthreadMutexT* mutex);
+int PS4_SYSV_ABI posix_pthread_mutex_unlock(PthreadMutexT* mutex);
+int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
 
 void RegisterThreads(Core::Loader::SymbolsResolver* sym);
+
+void PS4_SYSV_ABI ClearStack();
 
 class Thread {
 public:

@@ -108,6 +108,8 @@ Id EmitBufferAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
 Id EmitBufferAtomicSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value);
 Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                              Id cmp_value);
+Id EmitBufferAtomicFCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                              Id cmp_value);
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index);
 Id EmitGetAttributeU32(EmitContext& ctx, IR::Attribute attr, u32 comp);
 void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 comp);
@@ -456,6 +458,8 @@ Id EmitImageAtomicAnd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords,
 Id EmitImageAtomicOr32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicXor32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
 Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value);
+Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                            Id cmp_value);
 Id EmitCubeFaceIndex(EmitContext& ctx, IR::Inst* inst, Id cube_coords);
 Id EmitLaneId(EmitContext& ctx);
 Id EmitWarpId(EmitContext& ctx);

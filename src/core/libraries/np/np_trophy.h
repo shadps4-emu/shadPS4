@@ -13,8 +13,6 @@ class SymbolsResolver;
 
 namespace Libraries::Np::NpTrophy {
 
-extern std::string game_serial;
-
 constexpr int ORBIS_NP_TROPHY_FLAG_SETSIZE = 128;
 constexpr int ORBIS_NP_TROPHY_FLAG_BITS_SHIFT = 5;
 

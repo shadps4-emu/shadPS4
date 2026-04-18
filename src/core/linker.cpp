@@ -4,7 +4,6 @@
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
@@ -13,13 +12,19 @@
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
 #include "core/devtools/widget/module_list.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
+#include "core/libraries/sysmodule/sysmodule.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+
+#ifndef _WIN32
+#include <signal.h>
+#endif
 
 namespace Core {
 
@@ -56,7 +61,7 @@ Linker::Linker() : memory{Memory::Instance()} {}
 Linker::~Linker() = default;
 
 void Linker::Execute(const std::vector<std::string>& args) {
-    if (Config::debugDump()) {
+    if (EmulatorSettings.IsDebugDump()) {
         DebugDump();
     }
 
@@ -106,11 +111,17 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
+#ifndef _WIN32 // Clear any existing signal mask for game threads.
+        sigset_t emptyset;
+        sigemptyset(&emptyset);
+        pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
+#endif
         if (auto& ipc = IPC::Instance()) {
             ipc.WaitForStart();
         }
 
-        LoadSharedLibraries();
+        // Have libSceSysmodule preload our libraries.
+        Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
 
         // Simulate libSceGnmDriver initialization, which maps a chunk of direct memory.
         // Some games fail without accurately emulating this behavior.
@@ -129,13 +140,15 @@ void Linker::Execute(const std::vector<std::string>& args) {
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
-            params.argc = args.size();
-            for (int i = 0; i < args.size() && i < 33; i++) {
+            constexpr int MaxArgs = sizeof(params.argv) / sizeof(params.argv[0]);
+            params.argc = std::min<int>(args.size(), MaxArgs);
+            for (int i = 0; i < params.argc; i++) {
                 params.argv[i] = args[i].c_str();
             }
         }
         params.entry_addr = module->GetEntryAddress();
-        ExecuteGuest(RunMainEntry, &params);
+        Libraries::Kernel::ClearStack();
+        RunMainEntry(&params);
     });
 }
 
@@ -349,8 +362,10 @@ bool Linker::Resolve(const std::string& name, Loader::SymbolType sym_type, Modul
         return_info->virtual_address = AeroLib::GetStub(sr.name.c_str());
         return_info->name = "Unknown !!!";
     }
-    LOG_ERROR(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
-              return_info->name, library->name, module->name);
+    if (library->name != "libc" && library->name != "libSceFios2") {
+        LOG_WARNING(Core_Linker, "Linker: Stub resolved {} as {} (lib: {}, mod: {})", sr.name,
+                    return_info->name, library->name, module->name);
+    }
     return false;
 }
 
@@ -379,8 +394,7 @@ void* Linker::TlsGetAddr(u64 module_index, u64 offset) {
     if (!addr) {
         // Module was just loaded by above code. Allocate TLS block for it.
         const u32 init_image_size = module->tls.init_image_size;
-        u8* dest = reinterpret_cast<u8*>(
-            Core::ExecuteGuest(heap_api->heap_malloc, module->tls.image_size));
+        u8* dest = reinterpret_cast<u8*>(heap_api->heap_malloc(module->tls.image_size));
         const u8* src = reinterpret_cast<const u8*>(module->tls.image_virtual_addr);
         std::memcpy(dest, src, init_image_size);
         std::memset(dest + init_image_size, 0, module->tls.image_size - init_image_size);
@@ -412,7 +426,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
         ASSERT_MSG(ret == 0, "Unable to allocate TLS+TCB for the primary thread");
     } else {
         if (heap_api) {
-            addr_out = Core::ExecuteGuest(heap_api->heap_malloc, total_tls_size);
+            addr_out = heap_api->heap_malloc(total_tls_size);
         } else {
             addr_out = std::malloc(total_tls_size);
         }
@@ -422,7 +436,7 @@ void* Linker::AllocateTlsForThread(bool is_primary) {
 
 void Linker::FreeTlsForNonPrimaryThread(void* pointer) {
     if (heap_api) {
-        Core::ExecuteGuest(heap_api->heap_free, pointer);
+        heap_api->heap_free(pointer);
     } else {
         std::free(pointer);
     }

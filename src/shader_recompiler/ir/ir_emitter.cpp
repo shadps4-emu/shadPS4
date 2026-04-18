@@ -427,8 +427,8 @@ U32 IREmitter::ReadConst(const Value& base, const U32& offset) {
     return Inst<U32>(Opcode::ReadConst, base, offset);
 }
 
-U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index) {
-    return Inst<U32>(Opcode::ReadConstBuffer, handle, index);
+U32 IREmitter::ReadConstBuffer(const Value& handle, const U32& index, BufferInstInfo info) {
+    return Inst<U32>(Opcode::ReadConstBuffer, Flags{info}, handle, index);
 }
 
 U8 IREmitter::LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info) {
@@ -625,6 +625,11 @@ Value IREmitter::BufferAtomicSwap(const Value& handle, const Value& address, con
 Value IREmitter::BufferAtomicCmpSwap(const Value& handle, const Value& address, const Value& vdata,
                                      const Value& cmp_value, BufferInstInfo info) {
     return Inst(Opcode::BufferAtomicCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
+}
+
+Value IREmitter::BufferAtomicFCmpSwap(const Value& handle, const Value& address, const Value& vdata,
+                                      const Value& cmp_value, BufferInstInfo info) {
+    return Inst(Opcode::BufferAtomicFCmpSwap32, Flags{info}, handle, address, vdata, cmp_value);
 }
 
 U32 IREmitter::DataAppend(const U32& counter) {
@@ -2053,6 +2058,11 @@ Value IREmitter::ImageAtomicXor(const Value& handle, const Value& coords, const 
 Value IREmitter::ImageAtomicExchange(const Value& handle, const Value& coords, const Value& value,
                                      TextureInstInfo info) {
     return Inst(Opcode::ImageAtomicExchange32, Flags{info}, handle, coords, value);
+}
+
+Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, const Value& value,
+                                    const Value& cmp_value, TextureInstInfo info) {
+    return Inst(Opcode::ImageAtomicCmpSwap32, Flags{info}, handle, coords, value, cmp_value);
 }
 
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,

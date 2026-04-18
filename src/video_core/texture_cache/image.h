@@ -61,6 +61,8 @@ struct UniqueImage {
 
     void Create(const vk::ImageCreateInfo& image_ci);
 
+    void Destroy();
+
     operator vk::Image() const {
         return image;
     }

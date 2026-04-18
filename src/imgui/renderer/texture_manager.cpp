@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <deque>
@@ -6,11 +6,11 @@
 
 #include <imgui.h>
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/io_file.h"
 #include "common/polyfill_thread.h"
 #include "common/stb.h"
 #include "common/thread.h"
+#include "core/emulator_settings.h"
 #include "imgui_impl_vulkan.h"
 #include "texture_manager.h"
 
@@ -152,7 +152,7 @@ void WorkerLoop() {
             g_job_list.pop_front();
             g_job_list_mtx.unlock();
 
-            if (Config::getVkCrashDiagnosticEnabled()) {
+            if (EmulatorSettings.IsVkCrashDiagnosticEnabled()) {
                 // FIXME: Crash diagnostic hangs when building the command buffer here
                 continue;
             }

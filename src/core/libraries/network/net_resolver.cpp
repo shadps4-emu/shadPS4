@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/singleton.h"
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "net_error.h"
 #include "net_resolver.h"
@@ -26,11 +27,19 @@ int Resolver::ResolveAsync(const char* hostname, OrbisNetInAddr* addr, int timeo
 }
 
 void Resolver::Resolve() {
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
+        resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
+        return;
+    }
+
     if (async_resolution) {
         auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
         auto ret = netinfo->ResolveHostname(async_resolution->hostname, async_resolution->addr);
-
         resolution_error = ret;
+        if (ret != ORBIS_OK) {
+            // Resolver errors are stored as ORBIS_NET_ERROR values.
+            resolution_error = -ret | ORBIS_NET_ERROR_BASE;
+        }
     } else {
         LOG_ERROR(Lib_Net, "async resolution has not been set-up");
     }

@@ -140,6 +140,15 @@ Id ImageAtomicF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.F32[1], pointer, scope, semantics, value);
 }
+
+Id ImageAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
+                         Id cmp_value,
+                         Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, semantics, value, cmp_value);
+}
 } // Anonymous namespace
 
 Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value) {
@@ -342,6 +351,15 @@ Id EmitBufferAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id ad
                                   &Sirit::Module::OpAtomicCompareExchange);
 }
 
+Id EmitBufferAtomicFCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
+                              Id cmp_value) {
+    const auto u32_value = ctx.OpBitcast(ctx.U32[1], value);
+    const auto u32_cmp = ctx.OpBitcast(ctx.U32[1], cmp_value);
+    const auto result = BufferAtomicU32CmpSwap(ctx, inst, handle, address, u32_value, u32_cmp,
+                                               &Sirit::Module::OpAtomicCompareExchange);
+    return ctx.OpBitcast(ctx.F32[1], result);
+}
+
 Id EmitImageAtomicIAdd32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value) {
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicIAdd);
 }
@@ -420,20 +438,18 @@ Id EmitImageAtomicExchange32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id co
     return ImageAtomicU32(ctx, inst, handle, coords, value, &Sirit::Module::OpAtomicExchange);
 }
 
+Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
+                            Id cmp_value) {
+    return ImageAtomicU32CmpSwap(ctx, inst, handle, coords, value, cmp_value,
+                                 &Sirit::Module::OpAtomicCompareExchange);
+}
+
 Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    const auto& buffer = ctx.buffers[binding];
-    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return ctx.OpAtomicIIncrement(ctx.U32[1], ptr, scope, semantics);
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
-    const auto& buffer = ctx.buffers[binding];
-    const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
-    const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, ctx.ConstU32(gds_addr));
-    const auto [scope, semantics]{AtomicArgs(ctx)};
-    return ctx.OpAtomicIDecrement(ctx.U32[1], ptr, scope, semantics);
+    UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
 } // namespace Shader::Backend::SPIRV

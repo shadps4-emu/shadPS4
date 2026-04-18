@@ -1219,6 +1219,10 @@ void ImGuiImplVulkanDestroyDeviceObjects() {
         v.device.destroyDescriptorSetLayout(bd->descriptor_set_layout, v.allocator);
         bd->descriptor_set_layout = VK_NULL_HANDLE;
     }
+    if (bd->descriptor_pool) {
+        v.device.destroyDescriptorPool(bd->descriptor_pool, v.allocator);
+        bd->descriptor_pool = VK_NULL_HANDLE;
+    }
     if (bd->pipeline_layout) {
         v.device.destroyPipelineLayout(bd->pipeline_layout, v.allocator);
         bd->pipeline_layout = VK_NULL_HANDLE;

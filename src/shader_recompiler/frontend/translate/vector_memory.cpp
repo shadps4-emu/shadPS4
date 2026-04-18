@@ -116,6 +116,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
+    case Opcode::BUFFER_ATOMIC_FCMPSWAP:
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::FCmpSwap, inst);
 
         // MIMG
         // Image load operations
@@ -137,6 +139,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         // Image atomic operations
     case Opcode::IMAGE_ATOMIC_SWAP:
         return IMAGE_ATOMIC(AtomicOp::Swap, inst);
+    case Opcode::IMAGE_ATOMIC_CMPSWAP:
+        return IMAGE_ATOMIC(AtomicOp::CmpSwap, inst);
     case Opcode::IMAGE_ATOMIC_ADD:
         return IMAGE_ATOMIC(AtomicOp::Add, inst);
     case Opcode::IMAGE_ATOMIC_SMIN:
@@ -225,6 +229,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -292,6 +297,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -351,6 +357,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.pc.Assign(pc);
 
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
@@ -376,6 +383,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::CmpSwap: {
             const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
             return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
+        }
+        case AtomicOp::FCmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            return ir.BufferAtomicFCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
         }
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, buffer_info);
@@ -458,6 +469,7 @@ void Translator::IMAGE_STORE(bool has_mip, const GcnInst& inst) {
     IR::TextureInstInfo info{};
     info.has_lod.Assign(has_mip);
     info.is_array.Assign(mimg.da);
+    info.is_r128.Assign(mimg.r128);
 
     boost::container::static_vector<IR::F32, 4> comps;
     for (u32 i = 0; i < 4; i++) {
@@ -519,6 +531,10 @@ void Translator::IMAGE_ATOMIC(AtomicOp op, const GcnInst& inst) {
         switch (op) {
         case AtomicOp::Swap:
             return ir.ImageAtomicExchange(handle, body, value, {});
+        case AtomicOp::CmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(val_reg + 1);
+            return ir.ImageAtomicCmpSwap(handle, body, value, cmp_val, info);
+        }
         case AtomicOp::Add:
             return ir.ImageAtomicIAdd(handle, body, value, info);
         case AtomicOp::Smin:

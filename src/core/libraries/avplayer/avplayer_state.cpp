@@ -92,7 +92,7 @@ void AvPlayerState::DefaultEventCallback(void* opaque, AvPlayerEvents event_id, 
     const auto callback = self->m_event_replacement.event_callback;
     const auto ptr = self->m_event_replacement.object_ptr;
     if (callback != nullptr) {
-        Core::ExecuteGuest(callback, ptr, event_id, 0, event_data);
+        callback(ptr, event_id, 0, event_data);
     }
 }
 

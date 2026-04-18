@@ -1,15 +1,87 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fstream>
+#include <future>
+
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_tus.h"
+#include "core/libraries/np/np_types.h"
+#include "core/libraries/np/object_manager.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Libraries::Np::NpTus {
 
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+int PackReqId(int libCtxId, int reqId) {
+    return ((libCtxId & 0xFFFF) << 16) | (reqId & 0xFFFF);
+}
+
+std::pair<int, int> UnpackReqId(int reqId) {
+    return {reqId >> 16, reqId & 0xFFFF};
+}
+
+bool IsReqId(int id) {
+    return id > (1 << 16);
+}
+
+struct NpTusRequest {
+    std::future<int> task;
+
+    void Start(auto lambda) {
+        this->task = std::async(std::launch::async, lambda);
+    }
+};
+
+using NpTusRequestsManager =
+    ObjectManager<NpTusRequest, 32, ORBIS_NP_COMMUNITY_ERROR_INVALID_ID,
+                  ORBIS_NP_COMMUNITY_ERROR_INVALID_ID, ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS>;
+
+struct NpTusTitleContext {
+    u32 serviceLabel;
+    OrbisNpId npId;
+    NpTusRequestsManager requestsManager;
+
+    s32 GetRequest(int reqId, NpTusRequest** out) {
+        NpTusRequest* req = nullptr;
+        if (auto ret = requestsManager.GetObject(reqId, &req); ret < 0) {
+            return ret;
+        }
+
+        *out = req;
+
+        return ORBIS_OK;
+    }
+
+    s32 DeleteRequest(int reqId) {
+        return requestsManager.DeleteObject(reqId);
+    }
+};
+
+using NpTusContextManager =
+    ObjectManager<NpTusTitleContext, 32, ORBIS_NP_COMMUNITY_ERROR_INVALID_ID,
+                  ORBIS_NP_COMMUNITY_ERROR_INVALID_ID, ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS>;
+
+static NpTusContextManager ctxManager;
+
+s32 GetRequest(int requestId, NpTusRequest** out) {
+    auto [ctxId, reqId] = UnpackReqId(requestId);
+
+    NpTusTitleContext* ctx = nullptr;
+    if (auto ret = ctxManager.GetObject(ctxId, &ctx); ret < 0) {
+        return ret;
+    }
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = ctx->GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    *out = req;
+
     return ORBIS_OK;
 }
 
@@ -33,9 +105,34 @@ s32 PS4_SYSV_ABI sceNpTusAddAndGetVariableVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
+    if (!npId) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (serviceLabel == ORBIS_NP_INVALID_SERVICE_LABEL) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    LOG_ERROR(Lib_NpTus, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
+
+    return ctxManager.CreateObject(serviceLabel, *npId);
+}
+
+s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
+                                           Libraries::UserService::OrbisUserServiceUserId userId) {
+    LOG_ERROR(Lib_NpTus, "serviceLabel = {}, userId = {}", serviceLabel, userId);
+    OrbisNpId npId;
+    auto ret = NpManager::sceNpGetNpId(userId, &npId);
+
+    if (ret < 0) {
+        return ret;
+    }
+
+    return sceNpTusCreateNpTitleCtx(serviceLabel, &npId);
+}
+
+s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
+    LOG_INFO(Lib_NpTus, "redirecting");
+    return sceNpTusCreateNpTitleCtx(serviceLabel, npId);
 }
 
 s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotData() {
@@ -58,14 +155,33 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetData() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetDataAsync(int reqId, OrbisNpId* npId, OrbisNpTusSlotId slotId,
+                                      OrbisNpTusDataStatus* dataStatus, u64 dataStatusSize,
+                                      void* data, u64 dataSize, void* option) {
+    LOG_INFO(
+        Lib_NpTus,
+        "reqId = {:#x}, slotId = {}, dataStatusSize = {}, data = {}, dataSize = {}, option = {}",
+        reqId, slotId, dataStatusSize, data, dataSize, fmt::ptr(option));
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+s32 PS4_SYSV_ABI sceNpTusGetData(int reqId, OrbisNpId* npId, OrbisNpTusSlotId slotId,
+                                 OrbisNpTusDataStatus* dataStatus, u64 dataStatusSize, void* data,
+                                 u64 dataSize, void* option) {
+    LOG_ERROR(
+        Lib_NpTus,
+        "reqId = {:#x}, slotId = {}, dataStatusSize = {}, data = {}, dataSize = {}, option = {}",
+        reqId, slotId, dataStatusSize, data, dataSize, fmt::ptr(option));
+
+    auto ret = sceNpTusGetDataAsync(reqId, npId, slotId, dataStatus, dataStatusSize, data, dataSize,
+                                    option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataVUser() {
@@ -118,13 +234,45 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync(int reqId, OrbisNpId* npId,
+                                                   OrbisNpTusSlotId* slotIds, s64* variables,
+                                                   u64 variablesSize, int arrayLen, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
+             "{}, option = {}",
+             reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
+             variablesSize, arrayLen, fmt::ptr(option));
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotVariable(int reqId, OrbisNpId* npId, OrbisNpTusSlotId* slotIds,
+                                              s64* variables, u64 variablesSize, int arrayLen,
+                                              void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, npId = {}, slotIds = {}, variables = {}, variablesSize = {}, arrayLen = "
+             "{}, option = {}",
+             reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables),
+             variablesSize, arrayLen, fmt::ptr(option));
+
+    auto ret = sceNpTusGetMultiSlotVariableAsync(reqId, npId, slotIds, variables, variablesSize,
+                                                 arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
     return ORBIS_OK;
 }
 
@@ -143,8 +291,24 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatus() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetMultiUserDataStatusAsync(int reqId, OrbisNpId* npIds,
+                                                     OrbisNpTusSlotId slotId,
+                                                     OrbisNpTusDataStatus* statuses,
+                                                     u64 statusesBytes, int arrayLen,
+                                                     void* option) {
+    LOG_ERROR(Lib_NpTus, "(STUBBED) reqId = {:#x}, slotId = {}, arrayLen = {}, option = {}", reqId,
+              slotId, arrayLen, fmt::ptr(option));
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
@@ -178,13 +342,49 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetData() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusSetDataAsync(int reqId, OrbisNpId* npId, OrbisNpTusSlotId slotId,
+                                      u64 totalSize, u64 sendSize, const void* data,
+                                      const OrbisNpTusDataInfo* info, u64 infoSize,
+                                      const OrbisNpId* lastChangedAuthor,
+                                      Libraries::Rtc::OrbisRtcTick lastChanged, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, npId = {}, slotId = {}, totalSize = {}, sendSize = {}, "
+             "info->size = {}, infoSize = {}, lastChangedAuthor = {}",
+             reqId, npId ? npId->handle.data : "", slotId, totalSize, sendSize,
+             info ? info->size : 0, infoSize,
+             lastChangedAuthor ? lastChangedAuthor->handle.data : "");
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusSetData(int reqId, OrbisNpId* npId, OrbisNpTusSlotId slotId, u64 totalSize,
+                                 u64 sendSize, const void* data, const OrbisNpTusDataInfo* info,
+                                 u64 infoSize, const OrbisNpId* lastChangedAuthor,
+                                 Libraries::Rtc::OrbisRtcTick lastChanged, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, npId = {}, slotId = {}, totalSize = {}, sendSize = {}, "
+             "info->size = {}, infoSize = {}, lastChangedAuthor = {}",
+             reqId, npId ? npId->handle.data : "", slotId, totalSize, sendSize,
+             info ? info->size : 0, infoSize,
+             lastChangedAuthor ? lastChangedAuthor->handle.data : "");
+
+    auto ret = sceNpTusSetDataAsync(reqId, npId, slotId, totalSize, sendSize, data, info, infoSize,
+                                    lastChangedAuthor, lastChanged, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
     return ORBIS_OK;
 }
 
@@ -203,8 +403,39 @@ s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariable() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusSetMultiSlotVariableAsync(int reqId, OrbisNpId* npId,
+                                                   OrbisNpTusSlotId* slotIds, s64* variables,
+                                                   int arrayLen, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {}, npId = {}, slotIds = {}, variables = {}, arrayLen = {}, option = {}",
+             reqId, npId ? npId->handle.data : "", fmt::ptr(slotIds), fmt::ptr(variables), arrayLen,
+             fmt::ptr(option));
+
+    if (!slotIds || !variables) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen > 64) {
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::ranges::any_of(
+            std::vector<std::reference_wrapper<OrbisNpTusSlotId>>(slotIds, slotIds + arrayLen),
+            [](auto id) { return id < 0; })) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
@@ -228,19 +459,59 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
+                                           Libraries::UserService::OrbisUserServiceUserId userId) {
+    LOG_DEBUG(Lib_NpTus, "redirecting");
+    return sceNpTusCreateNpTitleCtxA(serviceLabel, userId);
+}
+
+s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, OrbisNpTssSlotId slotId,
+                                      OrbisNpTssDataStatus* dataStatus, u64 dataStatusSize,
+                                      void* data, u64 dataSize, OrbisNpTssGetDataOptParam* option) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}, slotId = {}, dataStatusSize = {}, dataSize = {}", reqId,
+             slotId, dataStatusSize, dataSize);
+
+    if (option && option->size != 0x20) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    if (dataStatus && dataStatusSize != 0x18) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    if (slotId < 0 || slotId > 15) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        if (dataStatus) {
+            dataStatus->status = OrbisNpTssStatus::Ok;
+            dataStatus->contentLength = 0;
+        }
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTssGetData() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
+s32 PS4_SYSV_ABI sceNpTssGetData(int reqId, OrbisNpTssSlotId slotId,
+                                 OrbisNpTssDataStatus* dataStatus, u64 dataStatusSize, void* data,
+                                 u64 dataSize, OrbisNpTssGetDataOptParam* option) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}, slotId = {}, dataStatusSize = {}, dataSize = {}", reqId,
+             slotId, dataStatusSize, dataSize);
 
-s32 PS4_SYSV_ABI sceNpTssGetDataAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+    auto ret =
+        sceNpTssGetDataAsync(reqId, slotId, dataStatus, dataStatusSize, data, dataSize, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTssGetSmallStorage() {
@@ -313,14 +584,20 @@ s32 PS4_SYSV_ABI sceNpTusChangeModeForOtherSaveDataOwners() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusCreateNpTitleCtxA() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
+s32 PS4_SYSV_ABI sceNpTusCreateRequest(int libCtxId) {
+    LOG_INFO(Lib_NpTus, "libCtxId = {}", libCtxId);
 
-s32 PS4_SYSV_ABI sceNpTusCreateRequest() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+    NpTusTitleContext* ctx = nullptr;
+    if (auto ret = ctxManager.GetObject(libCtxId, &ctx); ret < 0) {
+        return ret;
+    }
+
+    auto req = ctx->requestsManager.CreateObject();
+    if (req < 0) {
+        return req;
+    }
+
+    return PackReqId(libCtxId, req);
 }
 
 s32 PS4_SYSV_ABI sceNpTusCreateTitleCtx() {
@@ -368,24 +645,70 @@ s32 PS4_SYSV_ABI sceNpTusDeleteMultiSlotVariableVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusDeleteNpTitleCtx(int ctxId) {
+    LOG_INFO(Lib_NpTus, "ctxId = {}", ctxId);
+
+    return ctxManager.DeleteObject(ctxId);
+}
+
+s32 PS4_SYSV_ABI sceNpTusDeleteRequest(int requestId) {
+    LOG_INFO(Lib_NpTus, "requestId = {:#x}", requestId);
+
+    auto [ctxId, reqId] = UnpackReqId(requestId);
+
+    NpTusTitleContext* ctx = nullptr;
+    if (auto ret = ctxManager.GetObject(ctxId, &ctx); ret < 0) {
+        return ret;
+    }
+
+    return ctx->DeleteRequest(reqId);
+}
+
+s32 PS4_SYSV_ABI sceNpTusGetDataAAsync(int reqId, OrbisNpAccountId accountId,
+                                       OrbisNpTusSlotId slotId, OrbisNpTusDataStatusA* dataStatus,
+                                       u64 dataStatusSize, void* data, u64 dataSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, accountId = {:#x}, slotId = {}, dataStatus = {}, dataStatusSize = {}, "
+             "dataSize = {}",
+             reqId, accountId, slotId, fmt::ptr(dataStatus), dataStatusSize, dataSize);
+
+    if (slotId < 0 || option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (dataStatusSize != sizeof(OrbisNpTusDataStatusA)) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusDeleteRequest() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
+s32 PS4_SYSV_ABI sceNpTusGetDataA(int reqId, OrbisNpAccountId accountId, OrbisNpTusSlotId slotId,
+                                  OrbisNpTusDataStatusA* dataStatus, u64 dataStatusSize, void* data,
+                                  u64 dataSize, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, accountId = {:#x}, slotId = {}, dataStatus = {}, dataStatusSize = {}, "
+             "dataSize = {}",
+             reqId, accountId, slotId, fmt::ptr(dataStatus), dataStatusSize, dataSize);
 
-s32 PS4_SYSV_ABI sceNpTusGetDataA() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
+    auto ret = sceNpTusGetDataAAsync(reqId, accountId, slotId, dataStatus, dataStatusSize, data,
+                                     dataSize, option);
+    if (ret < 0) {
+        return ret;
+    }
 
-s32 PS4_SYSV_ABI sceNpTusGetDataAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
+    sceNpTusWaitAsync(reqId, &ret);
+
+    return ret;
 }
 
 s32 PS4_SYSV_ABI sceNpTusGetDataAVUser() {
@@ -458,13 +781,62 @@ s32 PS4_SYSV_ABI sceNpTusGetFriendsVariableForCrossSaveAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusA() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync(int reqId, OrbisNpAccountId accountId,
+                                                      OrbisNpTusSlotId* slotIds,
+                                                      OrbisNpTusDataStatusA* statuses,
+                                                      u64 statusesSize, int arrayLen,
+                                                      void* option) {
+    LOG_ERROR(Lib_NpTus, "reqId = {:#x}, accountId = {}, arrayLen = {}, option = {}", reqId,
+              accountId, arrayLen, fmt::ptr(option));
+
+    if (!slotIds || !statuses) {
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (arrayLen < 1 || option) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayLen * sizeof(OrbisNpTusDataStatusA) != statusesSize) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    if (arrayLen > 64) {
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_SLOTID;
+    }
+    if (std::ranges::any_of(
+            std::vector<std::reference_wrapper<OrbisNpTusSlotId>>(slotIds, slotIds + arrayLen),
+            [](auto id) { return id < 0; })) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    // if sdk_ver >= 5.50 clear the statuses array
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusGetMultiSlotDataStatusA(int reqId, OrbisNpAccountId accountId,
+                                                 OrbisNpTusSlotId* slotIds,
+                                                 OrbisNpTusDataStatusA* statuses, u64 statusesSize,
+                                                 int arrayLen, void* option) {
+    LOG_ERROR(Lib_NpTus, "reqId = {:#x}, accountId = {}, arrayLen = {}, option = {}", reqId,
+              accountId, arrayLen, fmt::ptr(option));
+
+    auto ret = sceNpTusGetMultiSlotDataStatusAAsync(reqId, accountId, slotIds, statuses,
+                                                    statusesSize, arrayLen, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
     return ORBIS_OK;
 }
 
@@ -618,18 +990,72 @@ s32 PS4_SYSV_ABI sceNpTusGetMultiUserVariableForCrossSaveVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusPollAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusPollAsync(int reqId, int* result) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    if (!req->task.valid()) {
+        LOG_ERROR(Lib_NpTus, "request not started");
+        return 1;
+    }
+    if (req->task.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        LOG_DEBUG(Lib_NpTus, "request finished");
+        if (result) {
+            *result = req->task.get();
+        }
+        return 0;
+    }
+
+    return 1;
+}
+
+s32 PS4_SYSV_ABI sceNpTusSetDataAAsync(int reqId, OrbisNpAccountId accountId,
+                                       OrbisNpTusSlotId slotId, u64 totalSize, u64 sendSize,
+                                       const void* data, const OrbisNpTusDataInfo* info,
+                                       u64 infoSize, const OrbisNpAccountId* lastChangedAuthor,
+                                       Libraries::Rtc::OrbisRtcTick* lastChanged, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, accountId = {}, slotId = {}, totalSize = {}, sendSize = {}, "
+             "info->size = {}, infoSize = {}, lastChangedAuthor = {}",
+             reqId, accountId, slotId, totalSize, sendSize, info ? info->size : 0, infoSize,
+             lastChangedAuthor ? *lastChangedAuthor : 0);
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    req->Start([=]() {
+        //
+        return 0;
+    });
+
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusSetDataA() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
-    return ORBIS_OK;
-}
+s32 PS4_SYSV_ABI sceNpTusSetDataA(int reqId, OrbisNpAccountId accountId, OrbisNpTusSlotId slotId,
+                                  u64 totalSize, u64 sendSize, const void* data,
+                                  const OrbisNpTusDataInfo* info, u64 infoSize,
+                                  const OrbisNpAccountId* lastChangedAuthor,
+                                  Libraries::Rtc::OrbisRtcTick* lastChanged, void* option) {
+    LOG_INFO(Lib_NpTus,
+             "reqId = {:#x}, accountId = {}, slotId = {}, totalSize = {}, sendSize = {}, "
+             "info->size = {}, infoSize = {}, lastChangedAuthor = {}",
+             reqId, accountId, slotId, totalSize, sendSize, info ? info->size : 0, infoSize,
+             lastChangedAuthor ? *lastChangedAuthor : 0);
 
-s32 PS4_SYSV_ABI sceNpTusSetDataAAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+    auto ret = sceNpTusSetDataAAsync(reqId, accountId, slotId, totalSize, sendSize, data, info,
+                                     infoSize, lastChangedAuthor, lastChanged, option);
+    if (ret < 0) {
+        return ret;
+    }
+
+    sceNpTusWaitAsync(reqId, &ret);
+
     return ORBIS_OK;
 }
 
@@ -713,8 +1139,25 @@ s32 PS4_SYSV_ABI sceNpTusTryAndSetVariableForCrossSaveVUserAsync() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceNpTusWaitAsync() {
-    LOG_ERROR(Lib_NpTus, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result) {
+    LOG_INFO(Lib_NpTus, "reqId = {:#x}", reqId);
+
+    NpTusRequest* req = nullptr;
+    if (auto ret = GetRequest(reqId, &req); ret < 0) {
+        return ret;
+    }
+
+    if (!req->task.valid()) {
+        LOG_ERROR(Lib_NpTus, "request not started");
+        return 1;
+    }
+
+    req->task.wait();
+
+    LOG_DEBUG(Lib_NpTus, "request finished");
+    if (result) {
+        *result = req->task.get();
+    }
     return ORBIS_OK;
 }
 

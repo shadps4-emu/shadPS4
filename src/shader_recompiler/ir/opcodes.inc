@@ -150,6 +150,7 @@ OPCODE(BufferAtomicOr32,                                    U32,            Opaq
 OPCODE(BufferAtomicXor32,                                   U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(BufferAtomicSwap32,                                  U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(BufferAtomicCmpSwap32,                               U32,            Opaque,         Opaque,         U32,            U32,                            )
+OPCODE(BufferAtomicFCmpSwap32,                              F32,            Opaque,         Opaque,         F32,            F32,                            )
 
 // Vector utility
 OPCODE(CompositeConstructU32x2,                             U32x2,          U32,            U32,                                                            )
@@ -436,6 +437,7 @@ OPCODE(ImageAtomicAnd32,                                    U32,            Opaq
 OPCODE(ImageAtomicOr32,                                     U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicXor32,                                    U32,            Opaque,         Opaque,         U32,                                            )
 OPCODE(ImageAtomicExchange32,                               U32,            Opaque,         Opaque,         U32,                                            )
+OPCODE(ImageAtomicCmpSwap32,                                U32,            Opaque,         Opaque,         U32,            U32,                            )
 
 // Cube operations - optional, usable if profile.supports_native_cube_calc
 OPCODE(CubeFaceIndex,                                       F32,            F32x3,                                                                          )

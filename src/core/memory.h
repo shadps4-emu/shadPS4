@@ -117,7 +117,7 @@ struct VirtualMemoryArea {
     }
 
     bool Overlaps(VAddr addr, u64 size) const {
-        return addr <= (base + this->size) && (addr + size) >= base;
+        return addr < (base + this->size) && (addr + size) > base;
     }
 
     bool IsFree() const noexcept {

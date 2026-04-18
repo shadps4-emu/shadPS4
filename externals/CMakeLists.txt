@@ -63,18 +63,6 @@ if (NOT TARGET SDL3::SDL3)
     add_subdirectory(sdl3)
 endif()
 
-# SDL3_mixer
-if (NOT TARGET SDL3_mixer::SDL3_mixer)
-    set(SDLMIXER_FLAC OFF)
-    set(SDLMIXER_OGG OFF)
-    set(SDLMIXER_MOD OFF)
-    set(SDLMIXER_MIDI OFF)
-    set(SDLMIXER_OPUS OFF)
-    set(SDLMIXER_WAVPACK OFF)
-    set(BUILD_SHARED_LIBS OFF)
-    add_subdirectory(sdl3_mixer)
-endif()
-
 # vulkan-headers
 if (NOT TARGET Vulkan::Headers)
     set(VULKAN_HEADERS_ENABLE_MODULE OFF)
@@ -210,8 +198,15 @@ endif()
 
 # libusb
 if (NOT TARGET libusb::usb)
-    add_subdirectory(ext-libusb)
-    add_library(libusb::usb ALIAS usb-1.0)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+        # YOU MUST USE NATIVE LIBUSB
+        # using anything else will crash instantly, also freebsd will NOT like it
+        # no you cant vendor this libusb, its builtin on freebsd
+        find_package(libusb)
+    else()
+        add_subdirectory(libusb)
+        add_library(libusb::usb ALIAS usb-1.0)
+    endif()
 endif()
 
 # Discord RPC
@@ -233,24 +228,25 @@ endif()
 set(HWINFO_STATIC ON)
 add_subdirectory(hwinfo)
 
-# Apple-only dependencies
-if (APPLE)
+if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     # date
     if (NOT TARGET date::date-tz)
         option(BUILD_TZ_LIB "" ON)
         option(USE_SYSTEM_TZ_DB "" ON)
         add_subdirectory(date)
     endif()
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
+    endif()
+endif()
 
+# Apple-only dependencies
+if (APPLE)
     # MoltenVK
     if (NOT TARGET MoltenVK)
         set(MVK_EXCLUDE_SPIRV_TOOLS ON)
         set(MVK_USE_METAL_PRIVATE_API ON)
         add_subdirectory(MoltenVK)
-    endif()
-
-    if (NOT TARGET epoll-shim)
-        add_subdirectory(epoll-shim)
     endif()
 endif()
 
@@ -259,19 +255,70 @@ if (WIN32)
 add_subdirectory(ext-wepoll)
 endif()
 
-if (NOT TARGET fdk-aac)
 add_subdirectory(aacdec)
-endif()
 
 #nlohmann json 
+if (NOT TARGET nlohmann_json::nlohmann_json)
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
+endif()
 
 # miniz
+if (NOT TARGET miniz::miniz)
 add_subdirectory(miniz)
+add_library(miniz::miniz ALIAS miniz)
+endif()
 
 # cli11
-set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+if (NOT TARGET CLI11::CLI11)
+    set(CLI11_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(CLI11_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory(CLI11)
+endif()
 
-add_subdirectory(CLI11)
+# minimp3
+add_library(minimp3 INTERFACE)
+target_include_directories(minimp3 INTERFACE minimp3)
+
+# ImGuiFileDialog
+add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
+target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)
+target_include_directories(ImGuiFileDialog INTERFACE ImGuiFileDialog/)
+target_link_libraries(ImGuiFileDialog PRIVATE Dear_ImGui)
+
+#openal
+if (NOT TARGET OpenAL::OpenAL)
+set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
+set(LIBTYPE "STATIC" CACHE STRING "" FORCE)
+# Disable everything we don't need
+set(ALSOFT_UTILS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ALSOFT_TESTS OFF CACHE BOOL "" FORCE)
+set(ALSOFT_INSTALL OFF CACHE BOOL "" FORCE)
+set(ALSOFT_CONFIG OFF CACHE BOOL "" FORCE)
+
+# Backends (platform-specific)
+if (WIN32)
+    set(ALSOFT_BACKEND_WASAPI ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_DSOUND OFF CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_WINMM OFF CACHE BOOL "" FORCE)
+elseif (APPLE)
+    set(ALSOFT_BACKEND_COREAUDIO ON CACHE BOOL "" FORCE)
+else()
+    set(ALSOFT_BACKEND_ALSA ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_PULSEAUDIO ON CACHE BOOL "" FORCE)
+    set(ALSOFT_BACKEND_PIPEWIRE OFF CACHE BOOL "" FORCE)
+endif()
+# Headless-safe
+set(ALSOFT_BACKEND_NULL ON CACHE BOOL "" FORCE)
+
+# Static build
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
+endif()
+
+# cpp-httplib
+add_library(Cpp_Httplib INTERFACE)
+target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
+

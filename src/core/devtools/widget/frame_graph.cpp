@@ -1,11 +1,11 @@
-//  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "frame_graph.h"
 
-#include "common/config.h"
 #include "common/singleton.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -29,7 +29,7 @@ void FrameGraph::DrawFrameGraph() {
         return;
     }
 
-    float target_dt = 1.0f / (float)Config::vblankFreq();
+    float target_dt = 1.0f / (float)EmulatorSettings.GetVblankFrequency();
     float cur_pos_x = pos.x + full_width;
     pos.y += FRAME_GRAPH_PADDING_Y;
     const float final_pos_y = pos.y + FRAME_GRAPH_HEIGHT;

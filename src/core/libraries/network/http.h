@@ -91,7 +91,7 @@ int PS4_SYSV_ABI sceHttpParseResponseHeader(const char* header, u64 headerLen, c
 int PS4_SYSV_ABI sceHttpParseStatusLine(const char* statusLine, u64 lineLen, int32_t* httpMajorVer,
                                         int32_t* httpMinorVer, int32_t* responseCode,
                                         const char** reasonPhrase, u64* phraseLen);
-int PS4_SYSV_ABI sceHttpReadData();
+int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size);
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush();
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader();
 int PS4_SYSV_ABI sceHttpRequestGetAllHeaders();

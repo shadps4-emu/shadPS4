@@ -70,6 +70,7 @@ private:
     void decodeInstruction32(InstEncoding encoding, GcnCodeSlice& code);
     void decodeInstruction64(InstEncoding encoding, GcnCodeSlice& code);
     void decodeLiteralConstant(InstEncoding encoding, GcnCodeSlice& code);
+    void decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSlice& code);
 
     // 32 bits encodings
     void decodeInstructionSOP1(uint32_t hexInstruction);
@@ -84,6 +85,7 @@ private:
     void decodeInstructionVINTRP(uint32_t hexInstruction);
     // 64 bits encodings
     void decodeInstructionVOP3(uint64_t hexInstruction);
+    void decodeInstructionVOP3P(uint64_t hexInstruction);
     void decodeInstructionMUBUF(uint64_t hexInstruction);
     void decodeInstructionMTBUF(uint64_t hexInstruction);
     void decodeInstructionMIMG(uint64_t hexInstruction);

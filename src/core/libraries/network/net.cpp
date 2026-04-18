@@ -663,10 +663,12 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+#ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_ADD, *native_handle, &native_event) == 0);
             epoll->events.emplace_back(id, *event);
+#endif
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -711,10 +713,12 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
                 return ORBIS_NET_ERROR_EBADF;
             }
 
+#ifndef __FreeBSD__
             epoll_event native_event = {.events = ConvertEpollEventsIn(event->events),
                                         .data = {.fd = id}};
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_MOD, *native_handle, &native_event) == 0);
             *it = {id, *event};
+#endif
             break;
         }
         default:
@@ -752,9 +756,10 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
                 *sceNetErrnoLoc() = ORBIS_NET_EBADF;
                 return ORBIS_NET_ERROR_EBADF;
             }
-
+#ifndef __FreeBSD__
             ASSERT(epoll_ctl(epoll->epoll_fd, EPOLL_CTL_DEL, *native_handle, nullptr) == 0);
             epoll->events.erase(it);
+#endif
             break;
         }
         case Core::FileSys::FileType::Resolver: {
@@ -810,6 +815,9 @@ int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
 
 int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events, int maxevents,
                                  int timeout) {
+#ifdef __FreeBSD__
+    return 0;
+#else
     auto file = FDTable::Instance()->GetEpoll(epollid);
     if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
@@ -836,7 +844,6 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
     }
 
     int i = 0;
-
     if (result < 0) {
         LOG_ERROR(Lib_Net, "epoll_wait failed with {}", Common::GetLastErrorMsg());
         switch (errno) {
@@ -887,6 +894,10 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             }
 
             file->resolver->Resolve();
+            if (file->resolver->resolution_error != ORBIS_OK) {
+                // Resolution failed, shouldn't appear.
+                continue;
+            }
 
             const auto it =
                 std::ranges::find_if(epoll->events, [&](auto& el) { return el.first == rid; });
@@ -901,8 +912,8 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             ++i;
         }
     }
-
     return i;
+#endif
 }
 
 int* PS4_SYSV_ABI sceNetErrnoLoc() {
@@ -1402,8 +1413,21 @@ int PS4_SYSV_ABI sceNetResolverDestroy(OrbisNetId resolverid) {
 }
 
 int PS4_SYSV_ABI sceNetResolverGetError(OrbisNetId resolverid, s32* status) {
-    LOG_ERROR(Lib_Net, "(STUBBED) called rid = {}", resolverid);
-    *status = 0;
+    if (!status) {
+        LOG_ERROR(Lib_Net, "status == nullptr");
+        *sceNetErrnoLoc() = ORBIS_NET_EINVAL;
+        return ORBIS_NET_ERROR_EINVAL;
+    }
+
+    auto file = FDTable::Instance()->GetResolver(resolverid);
+    if (!file) {
+        LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
+        *sceNetErrnoLoc() = ORBIS_NET_EBADF;
+        return ORBIS_NET_ERROR_EBADF;
+    }
+
+    *status = file->resolver->resolution_error;
+    LOG_INFO(Lib_Net, "called rid = {}, error = {:#x}", resolverid, static_cast<u32>(*status));
     return ORBIS_OK;
 }
 
@@ -1425,8 +1449,15 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
 
     auto file = FDTable::Instance()->GetResolver(resolverid);
     if (!file) {
+        LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
+    }
+
+    if (!EmulatorSettings.IsConnectedToNetwork()) {
+        *sceNetErrnoLoc() = ORBIS_NET_RESOLVER_ENODNS;
+        file->resolver->resolution_error = ORBIS_NET_ERROR_RESOLVER_ENODNS;
+        return ORBIS_NET_ERROR_RESOLVER_ENODNS;
     }
 
     if ((flags & ORBIS_NET_RESOLVER_ASYNC) != 0) {
