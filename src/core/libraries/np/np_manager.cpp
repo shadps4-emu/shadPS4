@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include <map>
 #include <mutex>
 #include <variant>
@@ -512,9 +513,15 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
+        LOG_WARNING(Lib_NpManager,
+                    "sceNpGetNpId: SIGNED_OUT (user_id={} shadnet_enabled={} signed_in={})",
+                    user_id, g_shadnet_enabled,
+                    Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id));
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
     *np_id = Libraries::Np::NpHandler::GetInstance().GetNpId(user_id);
+    LOG_INFO(Lib_NpManager, "sceNpGetNpId: user_id={} handle.data='{}' (strnlen={})", user_id,
+             np_id->handle.data, strnlen(np_id->handle.data, sizeof(np_id->handle.data)));
     return ORBIS_OK;
 }
 
