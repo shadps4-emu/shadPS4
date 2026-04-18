@@ -173,6 +173,26 @@ s32 PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId);
 s32 PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId);
 s32 PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId);
 //***********************************
+// Async functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result);
+s32 PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result);
+//***********************************
+// Record Score functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       OrbisNpScoreValue score,
+                                       const OrbisNpScoreComment* scoreComment,
+                                       const OrbisNpScoreGameInfo* gameInfo,
+                                       OrbisNpScoreRankNumber* tmpRank,
+                                       const Rtc::OrbisRtcTick* compareDate, void* option);
+s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            OrbisNpScoreValue score,
+                                            const OrbisNpScoreComment* scoreComment,
+                                            const OrbisNpScoreGameInfo* gameInfo,
+                                            OrbisNpScoreRankNumber* tmpRank,
+                                            const Rtc::OrbisRtcTick* compareDate, void* option);
+//***********************************
 // Stubbed functions
 //***********************************
 int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
@@ -334,25 +354,12 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
     u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
     OrbisNpScoreRankNumber* totalRecord, void* option);
-int PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result);
 int PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
                                           OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                           const void* data, void* option);
 int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                                OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                                const void* data, void* option);
-int PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
-                                       OrbisNpScoreValue score,
-                                       const OrbisNpScoreComment* scoreComment,
-                                       const OrbisNpScoreGameInfo* gameInfo,
-                                       OrbisNpScoreRankNumber* tmpRank,
-                                       const Rtc::OrbisRtcTick* compareDate, void* option);
-int PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                            OrbisNpScoreValue score,
-                                            const OrbisNpScoreComment* scoreComment,
-                                            const OrbisNpScoreGameInfo* gameInfo,
-                                            OrbisNpScoreRankNumber* tmpRank,
-                                            const Rtc::OrbisRtcTick* compareDate, void* option);
 int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
                                            void* option);
 int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
@@ -361,7 +368,6 @@ int PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId
 int PS4_SYSV_ABI sceNpScoreSetThreadParam(s32 threadPriority, u64 cpuAffinityMask);
 int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeout, s32 connTimeout,
                                       s32 sendTimeout, s32 recvTimeout);
-int PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpScore
