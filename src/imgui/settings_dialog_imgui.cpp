@@ -3,6 +3,7 @@
 
 #include <map>
 #include <ranges>
+#include <ImGuiFileDialog.h>
 #include <cmrc/cmrc.hpp>
 #include <stb_image.h>
 
@@ -10,9 +11,6 @@
 #include "core/emulator_settings.h"
 #include "imgui/imgui_std.h"
 #include "settings_dialog_imgui.h"
-
-#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
-#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 CMRC_DECLARE(res);
 namespace BigPictureMode {
@@ -116,11 +114,13 @@ SDL_Texture* graphicsTexture;
 SDL_Texture* inputTexture;
 SDL_Texture* trophyTexture;
 SDL_Texture* logTexture;
+SDL_Texture* foldersTexture;
 
 //////////////// Gui variable
 const float gameImageSize = 200.f;
 const float settingsIconSize = 125.f;
 std::vector<Game> settingsProfileVec = {};
+std::vector<GameInstallDir> m_GameInstallDirs = {};
 
 float uiScale = 1.0f;
 SDL_Renderer* renderer;
@@ -128,6 +128,7 @@ SDL_Renderer* renderer;
 SettingsCategory currentCategory = SettingsCategory::Profiles;
 std::string currentProfile = "Global";
 bool closeOnSave = false;
+bool showFileDialog = false;
 
 void Init() {
     auto languageKeys = std::views::keys(languageMap);
@@ -136,18 +137,20 @@ void Init() {
     currentProfile = "Global";
     currentCategory = SettingsCategory::Profiles;
     LoadSettings("Global");
+    m_GameInstallDirs = EmulatorSettings.GetAllGameInstallDirs();
 
     SDL_Window* window = SDL_GetKeyboardFocus();
     renderer = SDL_GetRenderer(window);
 
     LoadEmbeddedTexture("src/images/big_picture/settings.png", generalTexture);
-    LoadEmbeddedTexture("src/images/big_picture/folder.png", profilesTexture);
+    LoadEmbeddedTexture("src/images/big_picture/profiles.png", profilesTexture);
     LoadEmbeddedTexture("src/images/big_picture/global-settings.png", globalSettingsTexture);
     LoadEmbeddedTexture("src/images/big_picture/experimental.png", experimentalTexture);
     LoadEmbeddedTexture("src/images/big_picture/graphics.png", graphicsTexture);
     LoadEmbeddedTexture("src/images/big_picture/controller.png", inputTexture);
     LoadEmbeddedTexture("src/images/big_picture/trophy.png", trophyTexture);
     LoadEmbeddedTexture("src/images/big_picture/log.png", logTexture);
+    LoadEmbeddedTexture("src/images/big_picture/folder.png", foldersTexture);
 
     GetGameInfo(settingsProfileVec, true, globalSettingsTexture);
     uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
@@ -167,7 +170,8 @@ void DrawSettings(bool* open) {
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
 
-    if (ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoDecoration)) {
+    if (ImGui::Begin("Settings", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse)) {
         if (ImGui::IsWindowAppearing()) {
             Init();
             closeOnSave = false;
@@ -180,7 +184,10 @@ void DrawSettings(bool* open) {
 
         ImVec4 settingsColor = ImVec4(0.1f, 0.1f, 0.12f, 0.8f); // Darker gray
         ImGui::PushStyleColor(ImGuiCol_ChildBg, settingsColor);
-        ImGui::BeginChild("Categories", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY,
+        float vertSize = (settingsIconSize * uiScale + ImGui::CalcTextSize("Profiles").y) +
+                         ImGui::GetStyle().FramePadding.x * 2.f * uiScale + 20.0 * uiScale;
+
+        ImGui::BeginChild("Categories", ImVec2(0, vertSize), true,
                           child_flags | ImGuiWindowFlags_HorizontalScrollbar);
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(30.0f * uiScale, 0.0f));
@@ -191,6 +198,7 @@ void DrawSettings(bool* open) {
         AddCategory("Graphics", graphicsTexture, SettingsCategory::Graphics);
         AddCategory("Input", inputTexture, SettingsCategory::Input);
         AddCategory("Trophy", trophyTexture, SettingsCategory::Trophy);
+        AddCategory("Game Folders", foldersTexture, SettingsCategory::Folders);
         AddCategory("Log", logTexture, SettingsCategory::Log);
 
         if (currentProfile != "Global")
@@ -295,10 +303,15 @@ void DrawSettings(bool* open) {
 }
 
 void LoadCategory(SettingsCategory category) {
-    ImGui::TextColored(ImVec4(0.00f, 1.00f, 1.00f, 1.00f), "%s",
-                       ("Selected Profile: " + currentProfile).c_str()); // Dark Blue
+    if (category != SettingsCategory::Folders) {
+        ImGui::TextColored(ImVec4(0.00f, 1.00f, 1.00f, 1.00f), "%s",
+                           ("Selected Profile: " + currentProfile).c_str()); // Dark Blue
+    }
     ImGui::Dummy(ImVec2(0, 20.f * uiScale));
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(4.0f * uiScale, 10.0f * uiScale));
+
+    ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                   ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
 
     if (category == SettingsCategory::General) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
@@ -364,6 +377,44 @@ void LoadCategory(SettingsCategory category) {
 
             ImGui::EndTable();
         }
+    } else if (category == SettingsCategory::Folders) {
+        if (ImGui::Button("Add Folder", ImVec2(400.f * uiScale, 0))) {
+            ImGuiFileDialog::Instance()->OpenDialog(
+                "OpenFolder", "Add shadPS4 game folder", nullptr, ".", 1, nullptr,
+                ImGuiFileDialogFlags_DisableCreateDirectoryButton |
+                    ImGuiFileDialogFlags_DontShowHiddenFiles);
+
+            ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+        }
+
+        if (ImGuiFileDialog::Instance()->Display("OpenFolder",
+                                                 child_flags | ImGuiWindowFlags_NoMove)) {
+            if (ImGuiFileDialog::Instance()->IsOk()) {
+                GameInstallDir dir;
+                dir.path = ImGuiFileDialog::Instance()->GetCurrentPath();
+                dir.enabled = true;
+
+#ifdef WIN32
+                // replace \ with / on windows
+                std::string pathString = dir.path.string();
+                size_t pos = 0;
+                while ((pos = pathString.find("\\", pos)) != std::string::npos) {
+                    pathString.replace(pos, 1, "/");
+                    pos += 2;
+                }
+
+                dir.path = pathString;
+#endif
+
+                m_GameInstallDirs.push_back(dir);
+                SaveInstallDirs();
+            }
+
+            ImGuiFileDialog::Instance()->Close();
+        }
+
     } else if (category == SettingsCategory::Log) {
         if (ImGui::BeginTable("SettingsTable", 2)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthFixed, 500.0f * uiScale);
@@ -405,11 +456,49 @@ void LoadCategory(SettingsCategory category) {
 
     // Child Window if Needed
     if (category == SettingsCategory::Profiles) {
-        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+
         ImGui::BeginChild("ProfileSelect", ImVec2(0, 0), true, child_flags);
         Overlay::TextCentered("Select Global or Game-Specific Settings Profile");
         SetProfileIcons(settingsProfileVec);
+        ImGui::EndChild();
+    } else if (category == SettingsCategory::Folders) {
+        ImGui::BeginChild("Game Folder List", ImVec2(0, 0), true, child_flags);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 5.0f * uiScale));
+        if (ImGui::BeginTable("FoldersTable", 3)) {
+            ImGui::TableSetupColumn("FolderButton", ImGuiTableColumnFlags_WidthFixed,
+                                    300.0f * uiScale);
+            ImGui::TableSetupColumn("FolderEnabled", ImGuiTableColumnFlags_WidthFixed, 0.0f);
+            ImGui::TableSetupColumn("FolderPath");
+
+            for (int i = 0; i < m_GameInstallDirs.size(); i++) {
+                std::string buttonLabel = "Remove Folder##" + std::to_string(i);
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (ImGui::Button(buttonLabel.c_str(), ImVec2(280 * uiScale, 0))) {
+                    m_GameInstallDirs.erase(m_GameInstallDirs.begin() + i);
+                    SaveInstallDirs();
+                }
+
+                ImGui::TableNextColumn();
+                std::string checkboxLabel = "##EnableFolder" + std::to_string(i);
+                bool previousState = m_GameInstallDirs[i].enabled;
+                ImGui::Checkbox(checkboxLabel.c_str(), &m_GameInstallDirs[i].enabled);
+                ImGui::SameLine();
+                ImGui::Dummy(ImVec2(5.0 * uiScale, 0));
+
+                if (m_GameInstallDirs[i].enabled != previousState) {
+                    SaveInstallDirs();
+                }
+
+                ImGui::TableNextColumn();
+                ImGui::TextWrapped("%s", m_GameInstallDirs[i].path.string().c_str());
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::PopStyleVar();
+
         ImGui::EndChild();
     }
 }
@@ -688,6 +777,27 @@ void SetProfileIcons(std::vector<Game>& games) {
             rowContentWidth = gameImageSize * uiScale + itemSpacing;
         }
     }
+}
+
+void SaveInstallDirs() {
+    std::string profile;
+    const bool isGlobal = currentProfile == "Global";
+    if (!isGlobal) {
+        profile = currentProfile.substr(0, 9);
+    }
+
+    if (!isGlobal) {
+        EmulatorSettings.Load();
+    }
+
+    EmulatorSettings.SetAllGameInstallDirs(m_GameInstallDirs);
+    EmulatorSettings.Save();
+
+    if (!isGlobal) {
+        EmulatorSettings.Load(profile);
+    }
+
+    GetGameInfo(settingsProfileVec, true, globalSettingsTexture);
 }
 
 } // namespace BigPictureMode

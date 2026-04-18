@@ -48,13 +48,8 @@ void Launch() {
     }
 
     SDL_Window* window =
-        SDL_CreateWindow("shadPS4 Big Picture Mode", EmulatorSettings.GetWindowWidth(),
-                         EmulatorSettings.GetWindowHeight(), SDL_WINDOW_RESIZABLE);
+        SDL_CreateWindow("shadPS4 Big Picture Mode", 1280, 720, SDL_WINDOW_FULLSCREEN);
     renderer = SDL_CreateRenderer(window, nullptr);
-
-    if (EmulatorSettings.IsFullScreen()) {
-        SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
-    }
 
     // Check if window creation failed
     if (window == nullptr) {
@@ -146,7 +141,8 @@ void Launch() {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration;
+        ImGuiWindowFlags window_flags =
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse;
 
         ImGui::Begin("Game Window", &done, window_flags);
         ImGui::DrawPrettyBackground();
@@ -235,6 +231,7 @@ void Launch() {
             if (!showSettings) {
                 uiScale = static_cast<float>(EmulatorSettings.GetBigPictureScale() / 1000.f);
                 sliderScale = uiScale;
+                GetGameInfo(gameVec, false);
             }
         }
 

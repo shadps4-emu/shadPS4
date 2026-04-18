@@ -18,6 +18,7 @@ enum class SettingsCategory {
     Graphics,
     Input,
     Trophy,
+    Folders,
     Log,
     Experimental,
 };
@@ -33,6 +34,7 @@ void DrawSettings(bool* open);
 void SaveSettings(std::string profile);
 void LoadSettings(std::string profile);
 void LoadCategory(SettingsCategory);
+void SaveInstallDirs();
 
 void AddSettingBool(std::string name, bool& value);
 void AddSettingSliderInt(std::string name, int& value, int min, int max);

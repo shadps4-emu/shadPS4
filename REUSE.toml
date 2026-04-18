@@ -84,6 +84,7 @@ path = [
     "src/images/big_picture/log.png",
     "src/images/big_picture/settings.png",
     "src/images/big_picture/trophy.png",
+    "src/images/big_picture/profiles.png",
     "src/shadps4.rc",
 ]
 precedence = "aggregate"

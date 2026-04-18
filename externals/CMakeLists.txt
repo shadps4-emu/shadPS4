@@ -280,6 +280,12 @@ endif()
 add_library(minimp3 INTERFACE)
 target_include_directories(minimp3 INTERFACE minimp3)
 
+# ImGuiFileDialog
+add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
+target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)
+target_include_directories(ImGuiFileDialog INTERFACE ImGuiFileDialog/)
+target_link_libraries(ImGuiFileDialog PRIVATE Dear_ImGui)
+
 #openal
 if (NOT TARGET OpenAL::OpenAL)
 set(ALSOFT_ENABLE_MODULES OFF CACHE BOOL "" FORCE)
