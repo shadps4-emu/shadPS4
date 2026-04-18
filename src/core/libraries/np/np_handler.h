@@ -16,8 +16,11 @@
 
 #include "common/types.h"
 #include "core/libraries/np/np_manager.h"
+#include "core/libraries/np/np_score_ctx.h"
 #include "core/libraries/np/np_types.h"
+#include "core/libraries/rtc/rtc.h"
 #include "core/libraries/system/userservice.h"
+#include "np_score.h"
 #include "shadnet/client.h"
 
 namespace Libraries::Np {
@@ -69,6 +72,35 @@ public:
     u32 GetNumFriends(s32 user_id) const;
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
 
+    // Submit a RecordScore request to the shadNet server.
+    s32 RecordScore(s32 user_id, u32 boardId, s32 pcId, s64 score, const char* comment,
+                    size_t commentLen, const u8* gameInfoData, size_t gameInfoSize,
+                    std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
+    // Submit a GetRankingByNpId request to the shadNet server.
+    s32 GetRankingByNpId(s32 user_id, u32 boardId, const std::vector<std::string>& npIds,
+                         NpScore::OrbisNpScorePlayerRankData* rankArray,
+                         NpScore::OrbisNpScoreComment* commentArray,
+                         NpScore::OrbisNpScoreGameInfo* infoArray,
+                         Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                         std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
+    // Submit a GetRankingByRange request to the shadNet server.
+    s32 GetRankingByRange(s32 user_id, u32 boardId, u32 startSerialRank, u32 arrayNum,
+                          NpScore::OrbisNpScoreRankData* rankArray,
+                          NpScore::OrbisNpScoreComment* commentArray,
+                          NpScore::OrbisNpScoreGameInfo* infoArray,
+                          Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                          std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
+    // Submit a GetFriendsRanking request to the shadNet server.
+    s32 GetFriendsRanking(s32 user_id, u32 boardId, bool includeSelf, u32 arrayNum,
+                          NpScore::OrbisNpScoreRankData* rankArray,
+                          NpScore::OrbisNpScoreComment* commentArray,
+                          NpScore::OrbisNpScoreGameInfo* infoArray,
+                          Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                          std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     // State callbacks
     using StateCallback = std::function<void(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              NpManager::OrbisNpState state)>;
@@ -96,6 +128,14 @@ private:
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
 
+    // Async reply dispatch for score commands. Called from the per-user
+    // ShadNetClient on the reader thread.
+    void OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                      const std::vector<u8>& body);
+
+    // 12-byte NP Communication ID
+    std::string GetNpCommId() const;
+
     // Per-user client map
     mutable std::mutex m_mutex_clients;
     std::map<s32, std::shared_ptr<ShadNet::ShadNetClient>> m_clients;
@@ -103,6 +143,22 @@ private:
     std::map<s32, OrbisNpId> m_np_ids;
     // Returned by GetNpId/GetOnlineId when user_id is not connected.
     static const OrbisNpId s_empty_np_id;
+
+    // Score requests awaiting a reply, keyed by the submit packet id.
+    struct PendingScoreRequest {
+        std::shared_ptr<NpScore::ScoreRequestCtx> req;
+        ShadNet::CommandType cmd;
+        std::vector<std::string> requestedNpIds;
+        NpScore::OrbisNpScorePlayerRankData* rankArray = nullptr;
+        NpScore::OrbisNpScoreRankData* plainRankArray = nullptr;
+        NpScore::OrbisNpScoreComment* commentArray = nullptr;
+        NpScore::OrbisNpScoreGameInfo* infoArray = nullptr;
+        Libraries::Rtc::OrbisRtcTick* lastSortDate = nullptr;
+        u32* totalRecord = nullptr;
+        u64 arrayNum = 0;
+    };
+    mutable std::mutex m_mutex_pending_score;
+    std::map<u64, PendingScoreRequest> m_pending_score;
 
     // Worker thread
     std::atomic<bool> m_initialized{false};
