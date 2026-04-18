@@ -108,11 +108,11 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/common/error.cpp
     ${CMAKE_SOURCE_DIR}/src/common/io_file.cpp
     ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/logging/filter.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/logging/text_formatter.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/ntapi.cpp
 
     # Stubs that replace dependencies
-    stubs/log_stub.cpp
+    stubs/common_stub.cpp
     stubs/resource_tracking_pass_stub.cpp
     stubs/scm_rev_stub.cpp
 
@@ -151,8 +151,11 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     nlohmann_json::nlohmann_json
     magic_enum::magic_enum
     toml11::toml11
+    Boost::headers
+    Vulkan::Headers
     sirit
     SDL3::SDL3
+    spdlog::spdlog
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
@@ -168,6 +171,7 @@ endif()
 
 foreach(t ${TEST_TARGETS})
     if (WIN32)
+        target_link_libraries(${t} PRIVATE onecore)
         target_compile_definitions(${t} PRIVATE
             NOMINMAX
             WIN32_LEAN_AND_MEAN
