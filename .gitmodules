@@ -136,5 +136,5 @@
 [submodule "externals/ImGuiFileDialog"]
 	path = externals/ImGuiFileDialog
 	url = https://github.com/shadexternals/ImGuiFileDialog.git
-    branch = shadps4
+	branch = shadps4
 	shallow = true
