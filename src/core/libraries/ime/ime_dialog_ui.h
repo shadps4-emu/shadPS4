@@ -14,11 +14,26 @@
 namespace Libraries::ImeDialog {
 
 class ImeDialogUi;
+} // namespace Libraries::ImeDialog
+
+namespace Libraries::Ime {
+struct ImePanelMetrics;
+}
+
+namespace Libraries::ImeDialog {
 
 class ImeDialogState final {
     friend ImeDialogUi;
 
     bool input_changed = false;
+    int caret_index = 0;
+    int caret_byte_index = 0;
+    bool caret_dirty = false;
+    bool use_over2k = false;
+    OrbisImePositionAndForm panel_layout{};
+    bool panel_layout_valid = false;
+    u32 panel_req_width = 0;
+    u32 panel_req_height = 0;
 
     s32 user_id{};
     bool is_multi_line{};
@@ -29,6 +44,7 @@ class ImeDialogState final {
     OrbisImeExtKeyboardFilter keyboard_filter{};
     u32 max_text_length{};
     char16_t* text_buffer{};
+    std::vector<char16_t> original_text;
     std::vector<char> title;
     std::vector<char> placeholder;
 
@@ -48,8 +64,10 @@ public:
     ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
-    bool CopyTextToOrbisBuffer();
+    bool CopyTextToOrbisBuffer(bool use_original);
     bool CallTextFilter();
+    bool NormalizeNewlines();
+    bool ClampCurrentTextToMaxLen();
 
 private:
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
@@ -66,6 +84,7 @@ class ImeDialogUi final : public ImGui::Layer {
     OrbisImeDialogResult* result{};
 
     bool first_render = true;
+    bool accept_armed = false;
     std::mutex draw_mutex;
 
 public:
@@ -79,10 +98,11 @@ public:
     void Draw() override;
 
 private:
+    void FinishDialog(OrbisImeDialogEndStatus endstatus, bool restore_original, const char* reason);
     void Free();
 
-    void DrawInputText();
-    void DrawMultiLineInputText();
+    void DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics);
+    void DrawMultiLineInputText(const Libraries::Ime::ImePanelMetrics& metrics);
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };

@@ -4,6 +4,7 @@
 #include <queue>
 #include "common/logging/log.h"
 #include "core/libraries/ime/ime.h"
+#include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_error.h"
 #include "core/libraries/ime/ime_ui.h"
 #include "core/libraries/libs.h"
@@ -202,7 +203,8 @@ int PS4_SYSV_ABI sceImeConfigSet() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeConfirmCandidate() {
+int PS4_SYSV_ABI sceImeConfirmCandidate(s32 index) {
+    (void)index;
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -252,7 +254,10 @@ int PS4_SYSV_ABI sceImeForTestFunction() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeGetPanelPositionAndForm() {
+int PS4_SYSV_ABI sceImeGetPanelPositionAndForm(OrbisImePositionAndForm* posForm) {
+    if (!posForm) {
+        return ORBIS_OK;
+    }
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -274,45 +279,26 @@ Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u3
         return Error::INVALID_ADDRESS;
     }
 
-    if (static_cast<u32>(param->option) & ~0x7BFF) { // Basic check for invalid options
-        LOG_ERROR(Lib_Ime, "Invalid option: {:032b}", static_cast<u32>(param->option));
-        return Error::INVALID_OPTION;
-    }
+    OrbisImeDialogParam dialog_param{};
+    dialog_param.user_id = param->user_id;
+    dialog_param.type = param->type;
+    dialog_param.supported_languages = param->supported_languages;
+    dialog_param.enter_label = param->enter_label;
+    dialog_param.input_method = param->input_method;
+    dialog_param.filter = param->filter;
+    dialog_param.option = param->option;
+    dialog_param.max_text_length = param->maxTextLength;
+    dialog_param.input_text_buffer = param->inputTextBuffer;
+    dialog_param.posx = param->posx;
+    dialog_param.posy = param->posy;
+    dialog_param.horizontal_alignment = param->horizontal_alignment;
+    dialog_param.vertical_alignment = param->vertical_alignment;
+    dialog_param.placeholder = nullptr;
+    dialog_param.title = nullptr;
 
-    switch (param->type) {
-    case OrbisImeType::Default:
-        *width = 500;  // dummy value
-        *height = 100; // dummy value
-        LOG_DEBUG(Lib_Ime, "param->type: Default ({})", static_cast<u32>(param->type));
-        break;
-    case OrbisImeType::BasicLatin:
-        *width = 500;  // dummy value
-        *height = 100; // dummy value
-        LOG_DEBUG(Lib_Ime, "param->type: BasicLatin ({})", static_cast<u32>(param->type));
-        break;
-    case OrbisImeType::Url:
-        *width = 500;  // dummy value
-        *height = 100; // dummy value
-        LOG_DEBUG(Lib_Ime, "param->type: Url ({})", static_cast<u32>(param->type));
-        break;
-    case OrbisImeType::Mail:
-        // We set our custom sizes, commented sizes are the original ones
-        *width = 500;  // 793
-        *height = 100; // 408
-        LOG_DEBUG(Lib_Ime, "param->type: Mail ({})", static_cast<u32>(param->type));
-        break;
-    case OrbisImeType::Number:
-        *width = 370;
-        *height = 402;
-        LOG_DEBUG(Lib_Ime, "param->type: Number ({})", static_cast<u32>(param->type));
-        break;
-    default:
-        LOG_ERROR(Lib_Ime, "Invalid param->type: ({})", static_cast<u32>(param->type));
-        return Error::INVALID_TYPE;
-    }
-
+    const Error ret = Libraries::ImeDialog::sceImeDialogGetPanelSize(&dialog_param, width, height);
     LOG_DEBUG(Lib_Ime, "IME panel size: width={}, height={}", *width, *height);
-    return Error::OK;
+    return ret;
 }
 
 Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId) {
@@ -339,7 +325,11 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
     return Error::OK;
 }
 
-int PS4_SYSV_ABI sceImeKeyboardGetInfo() {
+int PS4_SYSV_ABI sceImeKeyboardGetInfo(u32 resourceId, OrbisImeKeyboardInfo* info) {
+    (void)resourceId;
+    if (info) {
+        *info = {};
+    }
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -463,7 +453,10 @@ int PS4_SYSV_ABI sceImeKeyboardOpenInternal() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeKeyboardSetMode() {
+int PS4_SYSV_ABI sceImeKeyboardSetMode(Libraries::UserService::OrbisUserServiceUserId userId,
+                                       u32 mode) {
+    (void)userId;
+    (void)mode;
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -681,7 +674,8 @@ void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
     param->user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
 }
 
-int PS4_SYSV_ABI sceImeSetCandidateIndex() {
+int PS4_SYSV_ABI sceImeSetCandidateIndex(s32 index) {
+    (void)index;
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
@@ -714,7 +708,10 @@ Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
     return g_ime_handler->SetText(text, length);
 }
 
-int PS4_SYSV_ABI sceImeSetTextGeometry() {
+int PS4_SYSV_ABI sceImeSetTextGeometry(OrbisImeTextAreaMode mode,
+                                       const OrbisImeTextGeometry* geometry) {
+    (void)mode;
+    (void)geometry;
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
     return ORBIS_OK;
 }
