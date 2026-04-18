@@ -151,6 +151,8 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     nlohmann_json::nlohmann_json
     magic_enum::magic_enum
     toml11::toml11
+    Boost::headers
+    Vulkan::Headers
     sirit
     SDL3::SDL3
 )
