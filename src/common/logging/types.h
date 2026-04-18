@@ -104,6 +104,7 @@ enum class Class : u8 {
     Lib_Remoteplay,          ///< The LibSceRemotePlay implementation
     Lib_SharePlay,           ///< The LibSceSharePlay implemenation
     Lib_Fiber,               ///< The LibSceFiber implementation.
+    Lib_Ult,                 ///< The LibUlt implementation.
     Lib_Vdec2,               ///< The LibSceVideodec2 implementation.
     Lib_Videodec,            ///< The LibSceVideodec implementation.
     Lib_Voice,               ///< The LibSceVoice implementation.

@@ -578,6 +578,11 @@ set(FIBER_LIB src/core/libraries/fiber/fiber_context.s
               src/core/libraries/fiber/fiber_error.h
 )
 
+set(ULT_LIB src/core/libraries/ult/ult.cpp
+             src/core/libraries/ult/ult.h
+             src/core/libraries/ult/ult_error.h
+)
+
 set_source_files_properties(src/core/libraries/fiber/fiber_context.s PROPERTIES COMPILE_OPTIONS -Wno-unused-command-line-argument)
 
 set(VDEC_LIB src/core/libraries/videodec/videodec2_impl.cpp
@@ -854,6 +859,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${MISC_LIBS}
          ${IME_LIB}
          ${FIBER_LIB}
+         ${ULT_LIB}
          ${VDEC_LIB}
          ${VR_LIBS}
          ${CAMERA_LIBS}
