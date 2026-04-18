@@ -468,8 +468,7 @@ void LoadCategory(SettingsCategory category) {
         if (ImGui::BeginTable("FoldersTable", 3)) {
             ImGui::TableSetupColumn("FolderButton", ImGuiTableColumnFlags_WidthFixed,
                                     300.0f * uiScale);
-            ImGui::TableSetupColumn("FolderEnabled", ImGuiTableColumnFlags_WidthFixed,
-                                    50.0f * uiScale);
+            ImGui::TableSetupColumn("FolderEnabled", ImGuiTableColumnFlags_WidthFixed, 0.0f);
             ImGui::TableSetupColumn("FolderPath");
 
             for (int i = 0; i < m_GameInstallDirs.size(); i++) {
@@ -485,6 +484,8 @@ void LoadCategory(SettingsCategory category) {
                 std::string checkboxLabel = "##EnableFolder" + std::to_string(i);
                 bool previousState = m_GameInstallDirs[i].enabled;
                 ImGui::Checkbox(checkboxLabel.c_str(), &m_GameInstallDirs[i].enabled);
+                ImGui::SameLine();
+                ImGui::Dummy(ImVec2(5.0 * uiScale, 0));
 
                 if (m_GameInstallDirs[i].enabled != previousState) {
                     SaveInstallDirs();
