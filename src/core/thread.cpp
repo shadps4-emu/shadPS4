@@ -65,7 +65,7 @@ int NativeThread::Create(ThreadFunc func, void* arg) {
     pthread_t* pthr = reinterpret_cast<pthread_t*>(&native_handle);
     pthread_attr_t pattr;
     pthread_attr_init(&pattr);
-    pthread_attr_setstack(&pattr, attr->stackaddr_attr, attr->stacksize_attr);
+    pthread_attr_setstack(&pattr, init_stack_ptr, stacksize);
     return pthread_create(pthr, &pattr, (PthreadFunc)func, arg);
 #else
     CLIENT_ID clientId{};
