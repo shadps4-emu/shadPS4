@@ -20,6 +20,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/save_data/savedata.h"
 #include "core/libraries/save_data/savedata_error.h"
 #include "core/libraries/system/msgdialog.h"
@@ -1732,7 +1733,7 @@ int PS4_SYSV_ABI Func_02E4C4D201716422() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("dQ2GohUHXzk", "libSceSaveData", 1, "libSceSaveData", sceSaveDataAbort);
     LIB_FUNCTION("z1JA8-iJt3k", "libSceSaveData", 1, "libSceSaveData", sceSaveDataBackup);
     LIB_FUNCTION("kLJQ3XioYiU", "libSceSaveData", 1, "libSceSaveData", sceSaveDataBindPsnAccount);

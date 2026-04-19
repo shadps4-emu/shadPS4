@@ -58,7 +58,9 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 
 Linker::Linker() : memory{Memory::Instance()} {}
 
-Linker::~Linker() = default;
+Linker::~Linker() {
+    main_thread.Stop();
+}
 
 void Linker::Execute(const std::vector<std::string>& args) {
     if (EmulatorSettings.IsDebugDump()) {

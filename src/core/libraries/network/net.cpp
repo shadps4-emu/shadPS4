@@ -19,6 +19,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/network/net.h"
 #include "net_epoll.h"
 #include "net_error.h"
@@ -1739,7 +1740,7 @@ int PS4_SYSV_ABI sceNetEmulationSet() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ZRAJo-A-ukc", "libSceNet", 1, "libSceNet", in6addr_any);
     LIB_FUNCTION("XCuA-GqjA-k", "libSceNet", 1, "libSceNet", in6addr_loopback);
     LIB_FUNCTION("VZgoeBxPXUQ", "libSceNet", 1, "libSceNet", sce_net_dummy);

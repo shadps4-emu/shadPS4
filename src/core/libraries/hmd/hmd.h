@@ -263,5 +263,7 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231();
 
 void RegisterDistortion(Core::Loader::SymbolsResolver* sym);
 void RegisterReprojection(Core::Loader::SymbolsResolver* sym);
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Hmd

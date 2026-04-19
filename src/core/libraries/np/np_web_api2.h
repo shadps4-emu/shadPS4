@@ -36,5 +36,7 @@ struct OrbisNpWebApi2MemoryPoolStats {
     s32 reserved;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Np::NpWebApi2

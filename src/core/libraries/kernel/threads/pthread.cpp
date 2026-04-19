@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/memory.h"
 
 extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,

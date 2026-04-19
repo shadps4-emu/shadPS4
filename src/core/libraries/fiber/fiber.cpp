@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/tls.h"
 
 namespace Libraries::Fiber {
@@ -545,7 +546,7 @@ s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_o
     return sceFiberSwitchImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_run);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", sceFiberInitialize);
     LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber",
                  sceFiberInitializeImpl); // _sceFiberInitializeWithInternalOptionImpl

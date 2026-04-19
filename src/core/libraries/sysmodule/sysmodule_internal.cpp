@@ -212,21 +212,21 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // First, check if this is a module we allow LLE for.
         static s32 stub_handle = 100;
         constexpr auto ModulesToLoad = std::to_array<Core::SysModules>(
-            {{"libSceNgs2.sprx", &Libraries::Ngs2::RegisterLib},
-             {"libSceUlt.sprx", nullptr},
-             {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
-             {"libSceJpegDec.sprx", nullptr},
-             {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
-             {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
-             {"libSceJson.sprx", nullptr},
-             {"libSceJson2.sprx", nullptr},
-             {"libSceLibcInternal.sprx", &Libraries::LibcInternal::RegisterLib},
-             {"libSceCesCs.sprx", nullptr},
-             {"libSceAudiodec.sprx", nullptr},
-             {"libSceFont.sprx", &Libraries::Font::RegisterlibSceFont},
-             {"libSceFontFt.sprx", &Libraries::FontFt::RegisterlibSceFontFt},
-             {"libSceFreeTypeOt.sprx", nullptr},
-             {"libSceSystemGesture.sprx", &Libraries::SystemGesture::RegisterLib}});
+            {{"libSceNgs2.sprx", true},
+             {"libSceUlt.sprx", false},
+             {"libSceRtc.sprx", true},
+             {"libSceJpegDec.sprx", false},
+             {"libSceJpegEnc.sprx", true},
+             {"libScePngEnc.sprx", true},
+             {"libSceJson.sprx", false},
+             {"libSceJson2.sprx", false},
+             {"libSceLibcInternal.sprx", true},
+             {"libSceCesCs.sprx", false},
+             {"libSceAudiodec.sprx", false},
+             {"libSceFont.sprx", true},
+             {"libSceFontFt.sprx", true},
+             {"libSceFreeTypeOt.sprx", false},
+             {"libSceSystemGesture.sprx", true}});
 
         // Iterate through the allowed array
         const auto it = std::ranges::find_if(
@@ -254,7 +254,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
             auto& [name, init_func] = *it;
             if (init_func) {
                 LOG_INFO(Loader, "Can't Load {} switching to HLE", mod_name);
-                init_func(&linker->GetHLESymbols());
+                ShadPs4App::GetInstance()->m_emulator.m_hle_layer->load(name, &linker->GetHLESymbols());
 
                 // When loading HLEs, we need to relocate imports
                 // This ensures later module loads can see our HLE functions.

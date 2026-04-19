@@ -13,12 +13,12 @@
 #include "core/debug_state.h"
 #include "core/devtools/options.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/libs.h"
 #include "imgui/imgui_std.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 
@@ -31,12 +31,16 @@ ShaderList::Selection::Selection(int index)
     isa_editor->SetReadOnly(true);
     glsl_editor->SetPalette(TextEditor::GetDarkPalette());
     glsl_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-    presenter->GetWindow().RequestKeyboard();
+    ShadPs4App::GetInstance()
+        ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetWindow()
+        .RequestKeyboard();
 }
 
 ShaderList::Selection::~Selection() {
     if (index >= 0) {
-        presenter->GetWindow().ReleaseKeyboard();
+        ShadPs4App::GetInstance()
+            ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetWindow()
+            .ReleaseKeyboard();
     }
 }
 
@@ -58,7 +62,9 @@ void ShaderList::Selection::ReloadShader(DebugStateType::ShaderDump& value) {
     if (spv.empty()) {
         return;
     }
-    auto& cache = presenter->GetRasterizer().GetPipelineCache();
+    auto& cache = ShadPs4App::GetInstance()
+                      ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetRasterizer()
+                      .GetPipelineCache();
     if (const auto m = cache.ReplaceShader(value.module, spv); m) {
         value.module = *m;
     }

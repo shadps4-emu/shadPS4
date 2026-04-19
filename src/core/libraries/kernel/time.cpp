@@ -12,6 +12,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 #ifdef _WIN64
 #include <windows.h>

@@ -16,7 +16,7 @@
 
 namespace Libraries::LibcInternal {
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     RegisterlibSceLibcInternalMath(sym);
     RegisterlibSceLibcInternalStr(sym);
     RegisterlibSceLibcInternalMemory(sym);

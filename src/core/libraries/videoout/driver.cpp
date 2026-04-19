@@ -7,14 +7,13 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/libs.h"
 #include "core/libraries/videoout/driver.h"
 #include "core/libraries/videoout/videoout_error.h"
 #include "imgui/renderer/imgui_core.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
-extern std::unique_ptr<AmdGpu::Liverpool> liverpool;
 
 namespace Libraries::VideoOut {
 
@@ -55,7 +54,8 @@ int VideoOutDriver::Open(const ServiceThreadParams* params) {
         return ORBIS_VIDEO_OUT_ERROR_RESOURCE_BUSY;
     }
     main_port.is_open = true;
-    liverpool->SetVoPort(&main_port);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->SetVoPort(
+        &main_port);
     return 1;
 }
 
@@ -139,7 +139,9 @@ int VideoOutDriver::RegisterBuffers(VideoOutPort* port, s32 startIndex, void* co
         port->buffer_labels[startIndex + i] = 0;
         port->SignalVoLabel();
 
-        presenter->RegisterVideoOutSurface(group, address);
+        ShadPs4App::GetInstance()
+            ->m_emulator.m_hle_layer->m_gnm_driver.presenter->RegisterVideoOutSurface(group,
+                                                                                      address);
         LOG_INFO(Lib_VideoOut, "buffers[{}] = {:#x}", i + startIndex, address);
     }
 
@@ -167,10 +169,11 @@ int VideoOutDriver::UnregisterBuffers(VideoOutPort* port, s32 attributeIndex) {
 
 void VideoOutDriver::Flip(const Request& req) {
     // Update HDR status before presenting.
-    presenter->SetHDR(req.port->is_hdr);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->SetHDR(
+        req.port->is_hdr);
 
     // Present the frame.
-    presenter->Present(req.frame);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->Present(req.frame);
 
     // Update flip status.
     auto* port = req.port;
@@ -209,14 +212,18 @@ void VideoOutDriver::Flip(const Request& req) {
 }
 
 void VideoOutDriver::DrawBlankFrame() {
-    const auto empty_frame = presenter->PrepareBlankFrame(false);
-    presenter->Present(empty_frame);
+    const auto empty_frame =
+        ShadPs4App::GetInstance()
+            ->m_emulator.m_hle_layer->m_gnm_driver.presenter->PrepareBlankFrame(false);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->Present(empty_frame);
 }
 
 void VideoOutDriver::DrawLastFrame() {
-    const auto frame = presenter->PrepareLastFrame();
+    const auto frame = ShadPs4App::GetInstance()
+                           ->m_emulator.m_hle_layer->m_gnm_driver.presenter->PrepareLastFrame();
     if (frame != nullptr) {
-        presenter->Present(frame, true);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->Present(frame,
+                                                                                           true);
     }
 }
 
@@ -238,7 +245,8 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 
     if (!is_eop) {
         // Non EOP flips can arrive from any thread so ask GPU thread to perform them
-        liverpool->SendCommand([=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->SendCommand(
+            [=, this]() { SubmitFlipInternal(port, index, flip_arg, is_eop); });
     } else {
         SubmitFlipInternal(port, index, flip_arg, is_eop);
     }
@@ -249,12 +257,15 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
     Vulkan::Frame* frame;
     if (index == -1) {
-        frame = presenter->PrepareBlankFrame(false);
+        frame = ShadPs4App::GetInstance()
+                    ->m_emulator.m_hle_layer->m_gnm_driver.presenter->PrepareBlankFrame(false);
     } else {
         const auto& buffer = port->buffer_slots[index];
         ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left);
+        frame =
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->PrepareFrame(
+                group, buffer.address_left);
     }
 
     std::scoped_lock lock{mutex};

@@ -14,6 +14,8 @@ namespace Libraries::LibcInternal {
 // I won't manage definitons of 3000+ functions, and they don't need to be accessed externally,
 // so everything is just in the .cpp file
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 void ForceRegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal

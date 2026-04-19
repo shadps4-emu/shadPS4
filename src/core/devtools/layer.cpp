@@ -12,17 +12,17 @@
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
+#include "core/libraries/libs.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
 #include "widget/module_list.h"
 #include "widget/shader_list.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 using namespace ::Core::Devtools;
@@ -52,6 +52,9 @@ static Widget::ModuleList module_list;
 // clang-format off
 static std::string help_text =
 #include "help.txt"
+
+
+
     ;
 // clang-format on
 
@@ -90,13 +93,17 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
-            auto& pp_settings = presenter->GetPPSettingsRef();
+            auto& pp_settings =
+                ShadPs4App::GetInstance()
+                    ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetPPSettingsRef();
             if (BeginMenu("Brightness")) {
                 SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
                 ImGui::EndMenu();
             }
             if (BeginMenu("FSR")) {
-                auto& fsr = presenter->GetFsrSettingsRef();
+                auto& fsr =
+                    ShadPs4App::GetInstance()
+                        ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetFsrSettingsRef();
                 Checkbox("FSR Enabled", &fsr.enable);
                 BeginDisabled(!fsr.enable);
                 {

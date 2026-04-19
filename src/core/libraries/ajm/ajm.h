@@ -227,5 +227,7 @@ int PS4_SYSV_ABI sceAjmModuleRegister(u32 context, AjmCodecType codec_type, s64 
 int PS4_SYSV_ABI sceAjmModuleUnregister();
 int PS4_SYSV_ABI sceAjmStrError();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Ajm

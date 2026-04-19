@@ -78,7 +78,9 @@ struct OrbisKernelAppInfo {
     OrbisKernelTitleWorkaround title_workaround;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 
 constexpr u32 POSIX_SC_ARG_MAX = 1;
 constexpr u32 POSIX_SC_CHILD_MAX = 2;

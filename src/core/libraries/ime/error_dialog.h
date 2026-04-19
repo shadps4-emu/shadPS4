@@ -24,5 +24,7 @@ int PS4_SYSV_ABI sceErrorDialogOpenWithReport();
 CommonDialog::Error PS4_SYSV_ABI sceErrorDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceErrorDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::ErrorDialog

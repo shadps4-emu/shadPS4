@@ -7,10 +7,13 @@
 #include <optional>
 #include <thread>
 
-#include "common/singleton.h"
 #include "core/linker.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+
+namespace Libraries {
+struct HleLayer;
+}
 
 namespace Core {
 
@@ -18,7 +21,7 @@ using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
 
 struct SysModules {
     std::string_view module_name;
-    HLEInitDef callback;
+    bool should_init;
 };
 
 class Emulator {
@@ -47,6 +50,7 @@ public:
     std::unique_ptr<Frontend::WindowSDL> window;
     std::chrono::steady_clock::time_point start_time;
     std::jthread play_time_thread;
+    std::unique_ptr<Libraries::HleLayer> m_hle_layer;
 };
 
 } // namespace Core

@@ -217,5 +217,7 @@ s32 PS4_SYSV_ABI sceAudioOutSparkControlSetEqCoef();
 s32 PS4_SYSV_ABI sceAudioOutSetSystemDebugState();
 
 void AdjustVol();
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::AudioOut

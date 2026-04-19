@@ -12,6 +12,7 @@
 #include "common/thread.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/zlib/zlib_error.h"
 #include "core/libraries/zlib/zlib_sce.h"
 
@@ -172,7 +173,7 @@ s32 PS4_SYSV_ABI sceZlibFinalize() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("m1YErdIXCp4", "libSceZlib", 1, "libSceZlib", sceZlibInitialize);
     LIB_FUNCTION("6na+Sa-B83w", "libSceZlib", 1, "libSceZlib", sceZlibFinalize);
     LIB_FUNCTION("TLar1HULv1Q", "libSceZlib", 1, "libSceZlib", sceZlibInflate);

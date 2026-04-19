@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "file_system.h"
 
 namespace Libraries::Kernel {

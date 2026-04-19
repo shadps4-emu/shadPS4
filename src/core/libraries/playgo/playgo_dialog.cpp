@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/playgo/playgo_dialog.h"
 #include "core/libraries/system/commondialog.h"
 
@@ -58,7 +59,7 @@ Status PS4_SYSV_ABI scePlayGoDialogUpdateStatus() {
     return Status::NONE;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fbigNQiZpm0", "libScePlayGoDialog", 1, "libScePlayGoDialog",
                  scePlayGoDialogClose);
     LIB_FUNCTION("wx9TDplJKB4", "libScePlayGoDialog", 1, "libScePlayGoDialog",

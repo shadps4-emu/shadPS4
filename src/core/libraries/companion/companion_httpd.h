@@ -87,5 +87,7 @@ s32 PS4_SYSV_ABI sceCompanionHttpdTerminate();
 s32 PS4_SYSV_ABI sceCompanionHttpdUnregisterRequestBodyReceptionCallback();
 s32 PS4_SYSV_ABI sceCompanionHttpdUnregisterRequestCallback();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::CompanionHttpd

@@ -4,6 +4,7 @@
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal_threads.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::LibcInternal {
 

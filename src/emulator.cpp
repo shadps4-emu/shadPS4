@@ -451,7 +451,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     // Initialize kernel and library facilities.
-    Libraries::InitHLELibs(&linker->GetHLESymbols());
+    m_hle_layer = std::make_unique<Libraries::HleLayer>(&linker->GetHLESymbols());
 
     // Load the module with the linker
     if (linker->LoadModule(eboot_path) == -1) {

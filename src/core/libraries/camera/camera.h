@@ -455,5 +455,7 @@ s32 PS4_SYSV_ABI sceCameraStartByHandle(s32 handle, OrbisCameraStartParameter* p
 s32 PS4_SYSV_ABI sceCameraStop(s32 handle);
 s32 PS4_SYSV_ABI sceCameraStopByHandle(s32 handle);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Camera

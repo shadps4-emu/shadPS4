@@ -7,6 +7,7 @@
 #include "core/libraries/ime/ime_error.h"
 #include "core/libraries/ime/ime_ui.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/tls.h"
 
 namespace Libraries::Ime {
@@ -831,7 +832,7 @@ int PS4_SYSV_ABI sceImeVshUpdateContext2() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mN+ZoSN-8hQ", "libSceIme", 1, "libSceIme", FinalizeImeModule);
     LIB_FUNCTION("uTW+63goeJs", "libSceIme", 1, "libSceIme", InitializeImeModule);
     LIB_FUNCTION("Lf3DeGWC6xg", "libSceIme", 1, "libSceIme", sceImeCheckFilterText);

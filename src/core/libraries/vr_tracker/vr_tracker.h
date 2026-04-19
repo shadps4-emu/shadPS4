@@ -403,5 +403,7 @@ s32 PS4_SYSV_ABI sceVrTrackerStopLiveCapture();
 s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle);
 s32 PS4_SYSV_ABI sceVrTrackerTerm();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::VrTracker

@@ -29,5 +29,7 @@ CommonDialog::Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogP
 CommonDialog::Error PS4_SYSV_ABI sceMsgDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceMsgDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::MsgDialog

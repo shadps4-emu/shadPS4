@@ -8,6 +8,7 @@
 #include "core/libraries/ajm/ajm_mp3.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -218,7 +219,7 @@ int PS4_SYSV_ABI sceAjmStrError() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("NVDXiUesSbA", "libSceAjm", 1, "libSceAjm", sceAjmBatchCancel);
     LIB_FUNCTION("WfAiBW8Wcek", "libSceAjm", 1, "libSceAjm", sceAjmBatchErrorDump);
     LIB_FUNCTION("dmDybN--Fn8", "libSceAjm", 1, "libSceAjm", sceAjmBatchJobControlBufferRa);

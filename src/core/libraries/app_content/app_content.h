@@ -120,5 +120,7 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoByEntitlementId();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoListByIroTag();
 int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::AppContent

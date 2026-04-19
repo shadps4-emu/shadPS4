@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/signals.h"
 
 #ifdef _WIN64

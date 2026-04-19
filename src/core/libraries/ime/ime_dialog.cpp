@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "ime_dialog.h"
 #include "ime_dialog_ui.h"
 
@@ -533,7 +534,7 @@ Error PS4_SYSV_ABI sceImeDialogTerm() {
     return Error::OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("oBmw4xrmfKs", "libSceImeDialog", 1, "libSceImeDialog", sceImeDialogAbort);
     LIB_FUNCTION("bX4H+sxPI-o", "libSceImeDialog", 1, "libSceImeDialog", sceImeDialogForceClose);
     LIB_FUNCTION("UFcyYDf+e88", "libSceImeDialog", 1, "libSceImeDialog",

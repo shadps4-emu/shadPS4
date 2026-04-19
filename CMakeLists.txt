@@ -833,6 +833,7 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/loader/symbols_resolver.cpp
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
+         src/core/libraries/macro.h
          ${AJM_LIB}
          ${AVPLAYER_LIB}
          ${AUDIO_LIB}

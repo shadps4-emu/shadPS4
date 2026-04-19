@@ -8,8 +8,6 @@
 
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
-extern std::unique_ptr<Vulkan::Presenter> presenter;
-
 namespace Core::Devtools {
 
 TOptions Options;

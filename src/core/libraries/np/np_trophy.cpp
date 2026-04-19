@@ -10,6 +10,7 @@
 #include "common/slot_vector.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_trophy_error.h"
@@ -1378,7 +1379,7 @@ int PS4_SYSV_ABI Func_FA7A2DD770447552() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("aTnHs7W-9Uk", "libSceNpTrophy", 1, "libSceNpTrophy", sceNpTrophyAbortHandle);
     LIB_FUNCTION("cqGkYAN-gRw", "libSceNpTrophy", 1, "libSceNpTrophy",
                  sceNpTrophyCaptureScreenshot);

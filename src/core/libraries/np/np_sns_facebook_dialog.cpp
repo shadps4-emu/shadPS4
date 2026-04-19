@@ -4,6 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/system/commondialog.h"
 
@@ -14,7 +15,7 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpSnsFacebookDialogUpdateStatus(
     return Libraries::CommonDialog::Status::NONE;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fjV7C8H0Y8k", "libSceNpSnsFacebookDialog", 1, "libSceNpSnsFacebookDialog",
                  sceNpSnsFacebookDialogUpdateStatus);
 };

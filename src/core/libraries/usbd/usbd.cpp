@@ -4,6 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "usbd.h"
 
 #include <fmt/format.h>
@@ -456,7 +457,7 @@ int PS4_SYSV_ABI Func_D56B43060720B1E0() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     switch (EmulatorSettings.GetUsbDeviceBackend()) {
     case UsbBackendType::SkylandersPortal:
         usb_backend = std::make_shared<SkylandersPortalBackend>();

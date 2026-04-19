@@ -26,6 +26,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/network/sys_net.h"
 
 #ifdef _WIN64
@@ -418,7 +419,7 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     }
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     service_thread = std::jthread{KernelServiceThread};
 
     Libraries::Kernel::RegisterFileSystem(sym);

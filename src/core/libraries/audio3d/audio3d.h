@@ -179,5 +179,7 @@ s32 PS4_SYSV_ABI sceAudio3dSetGpuRenderer();
 s32 PS4_SYSV_ABI sceAudio3dStrError();
 s32 PS4_SYSV_ABI sceAudio3dTerminate();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Audio3d

@@ -292,5 +292,7 @@ int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeo
                                       s32 sendTimeout, s32 recvTimeout);
 int PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Np::NpScore
