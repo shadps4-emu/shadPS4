@@ -55,7 +55,7 @@ static constexpr u64 SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_
 static constexpr u64 UserSize = USER_MAX - USER_MIN + 1;
 
 // Required backing file size for mapping physical address space.
-static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO + ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
 
 #ifdef _WIN32
 
