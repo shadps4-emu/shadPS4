@@ -824,7 +824,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
     RenderState state;
     state.width = instance.GetMaxFramebufferWidth();
     state.height = instance.GetMaxFramebufferHeight();
-    state.num_layers = std::numeric_limits<u8>::max();
+    state.num_layers = std::numeric_limits<u16>::max();
     state.num_color_attachments = std::bit_width(key.mrt_mask);
     for (auto cb = 0u; cb < state.num_color_attachments; ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
@@ -927,7 +927,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         state.depth_stencil_attachment = {};
     }
 
-    if (state.num_layers == std::numeric_limits<u8>::max()) {
+    if (state.num_layers == std::numeric_limits<u16>::max()) {
         state.num_layers = 1;
     }
 
