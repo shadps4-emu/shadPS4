@@ -16,6 +16,7 @@
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
@@ -394,7 +395,7 @@ s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(u64* out_size) {
 }
 
 void PS4_SYSV_ABI _sceKernelRtldSetApplicationHeapAPI(void* func[]) {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     linker->SetHeapAPI(func);
 }
 

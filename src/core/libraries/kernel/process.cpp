@@ -9,6 +9,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/linker.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
@@ -67,7 +68,7 @@ s32 PS4_SYSV_ABI sceKernelGetCurrentCpu() {
 }
 
 void* PS4_SYSV_ABI sceKernelGetProcParam() {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     return linker->GetProcParam();
 }
 
@@ -77,7 +78,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
     ASSERT(flags == 0);
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
 
     std::filesystem::path path;
     std::string guest_path(moduleFileName);
@@ -112,7 +113,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
 }
 
 s32 PS4_SYSV_ABI sceKernelDlsym(s32 handle, const char* symbol, void** addrp) {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -139,7 +140,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoForUnwind(VAddr addr, s32 flags,
 
     // Find module that contains specified address.
     LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->FindByAddress(addr);
     if (!module) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -168,7 +169,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, s32 flags,
     }
 
     LOG_INFO(Lib_Kernel, "called addr = {:#x}, flags = {:#x}", addr, flags);
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->FindByAddress(addr);
     if (!module) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -186,7 +187,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfo(s32 handle, Core::OrbisKernelModuleInfo*
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -203,7 +204,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfo2(s32 handle, Core::OrbisKernelModuleInfo
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -223,7 +224,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoInternal(s32 handle, Core::OrbisKernelMod
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* module = linker->GetModule(handle);
     if (module == nullptr) {
         return ORBIS_KERNEL_ERROR_ESRCH;
@@ -237,7 +238,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleList(s32* handles, u64 num_array, u64* out_co
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     u64 count = 0;
     auto* module = linker->GetModule(count);
     while (module != nullptr && count < num_array) {
@@ -259,7 +260,7 @@ s32 PS4_SYSV_ABI sceKernelGetModuleList2(s32* handles, u64 num_array, u64* out_c
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     u64 id = 0;
     u64 index = 0;
     auto* module = linker->GetModule(id);

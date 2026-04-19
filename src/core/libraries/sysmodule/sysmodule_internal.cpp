@@ -23,6 +23,7 @@
 #include "core/libraries/system_gesture/system_gesture.h"
 #include "core/linker.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 
 namespace Libraries::SysModule {
 
@@ -118,7 +119,7 @@ bool validateModuleId(s32 id) {
 
 s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
 
     // If the module is already loaded, increment is_loaded and return ORBIS_OK.

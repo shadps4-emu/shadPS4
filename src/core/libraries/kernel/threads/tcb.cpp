@@ -7,6 +7,7 @@
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
@@ -18,7 +19,7 @@ static std::shared_mutex RtldLock;
 Core::Tcb* TcbCtor(Pthread* thread, int initial) {
     std::scoped_lock lk{RtldLock};
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* addr_out = linker->AllocateTlsForThread(initial);
     ASSERT_MSG(addr_out, "Unable to allocate guest TCB");
 
@@ -62,7 +63,7 @@ void TcbDtor(Core::Tcb* oldtls) {
     std::scoped_lock lk{RtldLock};
     auto* dtv_table = oldtls->tcb_dtv;
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     const u32 max_tls_index = linker->MaxTlsIndex();
     const u32 num_dtvs = dtv_table[1].counter;
     ASSERT_MSG(num_dtvs <= max_tls_index, "Out of bounds DTV access");
@@ -86,7 +87,7 @@ struct TlsIndex {
 };
 
 void* PS4_SYSV_ABI __tls_get_addr(TlsIndex* index) {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     return linker->TlsGetAddr(index->ti_module, index->ti_offset);
 }
 

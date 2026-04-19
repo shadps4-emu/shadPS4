@@ -9,6 +9,7 @@
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 
 namespace Libraries::SystemService {
 
@@ -1871,7 +1872,7 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser() {
 
 int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) {
     LOG_DEBUG(Lib_SystemService, "called");
-    auto emu = Common::Singleton<Core::Emulator>::Instance();
+    auto& emu = ShadPs4App::GetInstance()->m_emulator;
     auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     auto hostPath = mnt->GetHostPath(std::string_view(path));
     if (hostPath.empty()) {
@@ -1884,7 +1885,7 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
             args.push_back(std::string(*ptr));
         }
     }
-    emu->Restart(hostPath, args);
+    emu.Restart(hostPath, args);
     return ORBIS_OK;
 }
 

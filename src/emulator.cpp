@@ -335,7 +335,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize components
     memory = Core::Memory::Instance();
     controllers = Common::Singleton<Input::GameControllers>::Instance();
-    linker = Common::Singleton<Core::Linker>::Instance();
+    linker = std::make_unique<Core::Linker>();
 
     // Load renderdoc module
     VideoCore::LoadRenderDoc();
@@ -492,8 +492,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     UpdatePlayTime(id);
     Storage::DataBase::Instance().Close();
-
-    std::quick_exit(0);
 }
 
 void Emulator::Restart(std::filesystem::path eboot_path,

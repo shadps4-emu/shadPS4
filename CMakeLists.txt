@@ -1126,6 +1126,8 @@ set(EMULATOR src/emulator.cpp
              src/emulator.h
              src/sdl_window.h
              src/sdl_window.cpp
+             src/shadps4_app.cpp
+             src/shadps4_app.h
 )
 
 if(NOT ENABLE_TESTS)
