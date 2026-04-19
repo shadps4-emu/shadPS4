@@ -32,6 +32,12 @@ SPDX-License-Identifier: GPL-2.0-or-later
 | :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
 | ![Yakuza screenshot](./documents/Screenshots/3.png) | ![DRIVECLUB screenshot](./documents/Screenshots/4.png) |
 
+|                  live is strenge by Square Enix.                        |                 life is strenge 1 by Square Enix.                    |
+:-----------------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![life is strenge 1](<img width="1118" height="628" alt="image" src="https://github.com/user-attachments/assets/763a20ee-93ad-47b3-8d2d-df5ee632cd90" />
+) | !life is strenge 2](<img width="903" height="626" alt="image" src="https://github.com/user-attachments/assets/b2d9de20-163a-4a22-b2c9-253f135d3f74" />
+) |
+
 # General information
 
 **shadPS4** is an early **PlayStation 4** emulator for **Windows**, **Linux** and **macOS** written in C++.
