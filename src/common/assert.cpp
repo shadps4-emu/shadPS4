@@ -13,12 +13,12 @@
 #endif
 
 void assert_fail_impl() {
-    Common::Log::Shutdown();
+    Common::Log::Flush();
     Crash();
 }
 
 [[noreturn]] void unreachable_impl() {
-    Common::Log::Shutdown();
+    Common::Log::Flush();
     Crash();
     throw std::runtime_error("Unreachable code");
 }

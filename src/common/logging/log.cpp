@@ -126,7 +126,7 @@ void Setup(std::string_view log_filename) {
     if (!already_registered) {
         already_registered = true;
         std::atexit(Shutdown);
-        std::at_quick_exit(Shutdown);
+        std::at_quick_exit(Flush);
     }
 
 #ifdef _WIN32
@@ -199,5 +199,10 @@ void Shutdown() {
 
     g_shad_file_sink.reset();
     g_console_sink.reset();
+}
+
+void Flush() {
+    g_shad_file_sink->flush();
+    g_console_sink->flush();
 }
 } // namespace Common::Log
