@@ -120,6 +120,42 @@ std::unordered_map<std::string_view, std::shared_ptr<spdlog::logger>> ALL_LOGGER
     {Class::Tty, nullptr},
 };
 
+template <typename T>
+static auto UpdateColorLevels(T sink) {
+#ifdef _WIN32
+    using LogColor = std::uint16_t;
+
+    const auto Grey = FOREGROUND_INTENSITY;
+    const auto Cyan = FOREGROUND_GREEN | FOREGROUND_BLUE;
+    const auto Bright_gray = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+    const auto Bright_yellow = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+    const auto Bright_red = FOREGROUND_RED | FOREGROUND_INTENSITY;
+    const auto Bright_magenta = FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+#else
+    using LogColor = std::string_view;
+
+#define ESC "\x1b"
+    const auto Grey = ESC "[1;30m";
+    const auto Cyan = ESC "[0;36m";
+    const auto Bright_gray = ESC "[0;37m";
+    const auto Bright_yellow = ESC "[1;33m";
+    const auto Bright_red = ESC "[1;31m";
+    const auto Bright_magenta = ESC "[1;35m";
+#undef ESC
+#endif
+
+    const std::unordered_map<spdlog::level, LogColor> colors{
+        {spdlog::level::trace, Grey},       {spdlog::level::debug, Cyan},
+        {spdlog::level::info, Bright_gray}, {spdlog::level::warn, Bright_yellow},
+        {spdlog::level::err, Bright_red},   {spdlog::level::critical, Bright_magenta}};
+
+    for (const auto& [level, color] : colors) {
+        sink->set_color(level, color);
+    }
+
+    return sink;
+}
+
 void Setup(std::string_view log_filename) {
     static bool already_registered = false;
 
@@ -131,12 +167,14 @@ void Setup(std::string_view log_filename) {
 
 #ifdef _WIN32
     if (EmulatorSettings.GetLogType() == "wincolor") {
-        g_console_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
+        g_console_sink =
+            UpdateColorLevels(std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>());
     } else {
         g_console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
     }
+
 #else
-    g_console_sink = std::make_shared<spdlog_stdout>();
+    g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>());
 #endif
 
     g_console_sink->set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
