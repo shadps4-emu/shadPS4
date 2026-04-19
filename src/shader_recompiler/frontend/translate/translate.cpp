@@ -4,6 +4,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/process.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -15,6 +16,7 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/resource.h"
 
+#include <numbers>
 #define MAGIC_ENUM_RANGE_MIN 0
 #define MAGIC_ENUM_RANGE_MAX 1515
 #include <magic_enum/magic_enum.hpp>
@@ -255,6 +257,29 @@ IR::VectorReg Translator::GetScratchVgpr(u32 offset) {
     return it->second;
 };
 
+IR::U1 Translator::GetSrc1(const InstOperand& operand) {
+    switch (operand.field) {
+    case OperandField::VccLo:
+        return ir.GetVcc();
+    case OperandField::ExecLo:
+        return ir.GetExec();
+    case OperandField::ScalarGPR:
+        return ir.GetThreadBitScalarReg(IR::ScalarReg(operand.code));
+    case OperandField::ConstZero:
+        return ir.Imm1(false);
+    case OperandField::SignedConstIntNeg:
+        ASSERT_MSG(-s32(operand.code) + SignedConstIntNegMin - 1 == -1,
+                   "SignedConstIntNeg must be -1");
+        return ir.Imm1(true);
+    case OperandField::LiteralConst:
+        ASSERT_MSG(operand.code == 0 || operand.code == std::numeric_limits<u32>::max(),
+                   "Unsupported literal {:#x}", operand.code);
+        return ir.Imm1(operand.code & 1);
+    default:
+        UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
+    }
+}
+
 template <typename T>
 T Translator::GetSrc(const InstOperand& operand) {
     constexpr bool is_float = std::is_same_v<T, IR::F32>;
@@ -311,6 +336,13 @@ T Translator::GetSrc(const InstOperand& operand) {
     case OperandField::ConstFloatNeg_4_0:
         value = get_imm(-4.0f);
         break;
+    case OperandField::Inv2Pi:
+        value = get_imm(static_cast<float>(1.0f / (2.0f * std::numbers::pi)));
+        break;
+    case OperandField::Sdwa:
+        UNREACHABLE_MSG("unhandled SDWA");
+    case OperandField::Dpp:
+        UNREACHABLE_MSG("unhandled DPP");
     case OperandField::VccLo:
         if constexpr (is_float) {
             value = ir.BitCast<IR::F32>(ir.GetVccLo());
@@ -340,7 +372,7 @@ T Translator::GetSrc(const InstOperand& operand) {
         }
         break;
     default:
-        UNREACHABLE();
+        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
     }
 
     if constexpr (is_float) {
@@ -476,6 +508,22 @@ T Translator::GetSrc64(const InstOperand& operand) {
 
 template IR::U64 Translator::GetSrc64<IR::U64>(const InstOperand&);
 template IR::F64 Translator::GetSrc64<IR::F64>(const InstOperand&);
+
+void Translator::SetDst1(const InstOperand& operand, const IR::U1& value) {
+    switch (operand.field) {
+    case OperandField::VccLo:
+        ir.SetVcc(value);
+        break;
+    case OperandField::ScalarGPR:
+        ir.SetThreadBitScalarReg(IR::ScalarReg(operand.code), value);
+        break;
+    case OperandField::ExecLo:
+        ir.SetExec(value);
+        break;
+    default:
+        UNREACHABLE_MSG("Unknown field {}", u32(operand.field));
+    }
+}
 
 void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
     IR::U32F32 result = value;

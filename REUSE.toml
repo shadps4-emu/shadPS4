@@ -76,6 +76,15 @@ path = [
     "src/images/trophy.wav",
     "src/images/hotkey.png",
     "src/images/game_settings.png",
+    "src/images/big_picture/controller.png",
+    "src/images/big_picture/experimental.png",
+    "src/images/big_picture/folder.png",
+    "src/images/big_picture/global-settings.png",
+    "src/images/big_picture/graphics.png",
+    "src/images/big_picture/log.png",
+    "src/images/big_picture/settings.png",
+    "src/images/big_picture/trophy.png",
+    "src/images/big_picture/profiles.png",
     "src/shadps4.rc",
 ]
 precedence = "aggregate"

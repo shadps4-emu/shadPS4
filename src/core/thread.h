@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -10,16 +10,18 @@ struct PthreadAttr;
 } // namespace Libraries::Kernel
 
 namespace Core {
-
-using ThreadFunc = void (*)(void*);
-using PthreadFunc = void* (*)(void*);
+#ifdef WIN32
+using ThreadFunc = DWORD (*)(void*);
+#else
+using ThreadFunc = void* (*)(void*);
+#endif
 
 class NativeThread {
 public:
     NativeThread();
     ~NativeThread();
 
-    int Create(ThreadFunc func, void* arg, const ::Libraries::Kernel::PthreadAttr* attr);
+    int Create(ThreadFunc func, void* arg);
     void Exit();
 
     void Initialize();
@@ -37,7 +39,7 @@ private:
     void* native_handle;
 #else
     uintptr_t native_handle;
-    void* sig_stack_ptr;
+    void* sig_stack_ptr = nullptr;
 #endif
     u64 tid;
 };

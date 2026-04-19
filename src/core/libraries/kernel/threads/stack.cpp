@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
@@ -70,6 +70,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
 
     /* A cached stack was found.  Release the lock. */
     if (attr->stackaddr_attr != nullptr) {
+        std::memset(attr->stackaddr_attr, 0, stacksize);
         thread_list_lock.unlock();
         return 0;
     }
@@ -112,6 +113,7 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     attr->stackaddr_attr = (void*)stackaddr;
 
     if (attr->stackaddr_attr != nullptr) {
+        std::memset(attr->stackaddr_attr, 0, stacksize);
         return 0;
     }
     return -1;

@@ -72,9 +72,13 @@ struct Setting {
     }
 
     /// Write v to the base layer.
-    /// Game-specific overrides are applied exclusively via Load(serial)
-    void set(const T& v) {
-        value = v;
+    /// Set proper value as base or game_specific
+    void set(const T& v, bool game_specific = false) {
+        if (game_specific) {
+            game_specific_value = v;
+        } else {
+            value = v;
+        }
     }
 
     /// Discard the game-specific override; subsequent get(Default) will
@@ -175,18 +179,17 @@ struct GeneralSettings {
     Setting<bool> neo_mode{false};
     Setting<bool> dev_kit_mode{false};
     Setting<int> extra_dmem_in_mbytes{0};
-    Setting<bool> psn_signed_in{false};
+    Setting<bool> shad_net_enabled{false};
     Setting<bool> trophy_popup_disabled{false};
     Setting<double> trophy_notification_duration{6.0};
     Setting<std::string> trophy_notification_side{"right"};
-    Setting<std::string> log_filter{""};
-    Setting<std::string> log_type{"sync"};
     Setting<bool> show_splash{false};
-    Setting<bool> identical_log_grouped{true};
     Setting<bool> connected_to_network{false};
     Setting<bool> discord_rpc_enabled{false};
     Setting<bool> show_fps_counter{false};
     Setting<int> console_language{1};
+    Setting<int> big_picture_scale{1000};
+    Setting<std::string> shadnet_server{""};
 
     // return a vector of override descriptors (runtime, but tiny)
     std::vector<OverrideItem> GetOverrideableFields() const {
@@ -196,15 +199,11 @@ struct GeneralSettings {
             make_override<GeneralSettings>("dev_kit_mode", &GeneralSettings::dev_kit_mode),
             make_override<GeneralSettings>("extra_dmem_in_mbytes",
                                            &GeneralSettings::extra_dmem_in_mbytes),
-            make_override<GeneralSettings>("psn_signed_in", &GeneralSettings::psn_signed_in),
+            make_override<GeneralSettings>("shad_net_enabled", &GeneralSettings::shad_net_enabled),
             make_override<GeneralSettings>("trophy_popup_disabled",
                                            &GeneralSettings::trophy_popup_disabled),
             make_override<GeneralSettings>("trophy_notification_duration",
                                            &GeneralSettings::trophy_notification_duration),
-            make_override<GeneralSettings>("log_filter", &GeneralSettings::log_filter),
-            make_override<GeneralSettings>("log_type", &GeneralSettings::log_type),
-            make_override<GeneralSettings>("identical_log_grouped",
-                                           &GeneralSettings::identical_log_grouped),
             make_override<GeneralSettings>("show_splash", &GeneralSettings::show_splash),
             make_override<GeneralSettings>("trophy_notification_side",
                                            &GeneralSettings::trophy_notification_side),
@@ -212,35 +211,71 @@ struct GeneralSettings {
                                            &GeneralSettings::connected_to_network)};
     }
 };
+
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
                                    sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
-                                   extra_dmem_in_mbytes, psn_signed_in, trophy_popup_disabled,
-                                   trophy_notification_duration, log_filter, log_type, show_splash,
-                                   identical_log_grouped, trophy_notification_side,
-                                   connected_to_network, discord_rpc_enabled, show_fps_counter,
-                                   console_language)
+                                   extra_dmem_in_mbytes, shad_net_enabled, trophy_popup_disabled,
+                                   trophy_notification_duration, show_splash,
+                                   trophy_notification_side, connected_to_network,
+                                   discord_rpc_enabled, show_fps_counter, console_language,
+                                   big_picture_scale, shadnet_server)
+
+// -------------------------------
+// Log settings
+// -------------------------------
+struct LogSettings {
+    Setting<bool> append{false}; // specific
+    Setting<bool> enable{true};  // specific
+    Setting<std::string> filter{""};
+    Setting<u32> max_skip_duration{5'000};
+    Setting<bool> separate{false}; // specific
+    Setting<unsigned long long> size_limit{100_MB};
+    Setting<bool> skip_duplicate{true};
+    Setting<bool> sync{true};
+#ifdef _WIN32
+    Setting<std::string> type{"wincolor"};
+#endif
+
+    // return a vector of override descriptors (runtime, but tiny)
+    std::vector<OverrideItem> GetOverrideableFields() const {
+        return std::vector<OverrideItem>{
+            make_override<LogSettings>("append", &LogSettings::append),
+            make_override<LogSettings>("enable", &LogSettings::enable),
+            make_override<LogSettings>("filter", &LogSettings::filter),
+            make_override<LogSettings>("max_skip_duration", &LogSettings::max_skip_duration),
+            make_override<LogSettings>("separate", &LogSettings::separate),
+            make_override<LogSettings>("size_limit", &LogSettings::size_limit),
+            make_override<LogSettings>("skip_duplicate", &LogSettings::skip_duplicate),
+            make_override<LogSettings>("sync", &LogSettings::sync),
+#ifdef _WIN32
+            make_override<LogSettings>("type", &LogSettings::type),
+#endif
+        };
+    }
+};
+#ifdef _WIN32
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LogSettings, append, enable, filter, max_skip_duration, separate,
+                                   size_limit, skip_duplicate, sync, type)
+#else
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LogSettings, append, enable, filter, max_skip_duration, separate,
+                                   size_limit, skip_duplicate, sync)
+#endif
 
 // -------------------------------
 // Debug settings
 // -------------------------------
 struct DebugSettings {
-    Setting<bool> separate_logging_enabled{false}; // specific
-    Setting<bool> debug_dump{false};               // specific
-    Setting<bool> shader_collect{false};           // specific
-    Setting<bool> log_enabled{true};               // specific
-    Setting<std::string> config_version{""};       // specific
+    Setting<bool> debug_dump{false};         // specific
+    Setting<bool> shader_collect{false};     // specific
+    Setting<std::string> config_version{""}; // specific
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
             make_override<DebugSettings>("debug_dump", &DebugSettings::debug_dump),
-            make_override<DebugSettings>("shader_collect", &DebugSettings::shader_collect),
-            make_override<DebugSettings>("separate_logging_enabled",
-                                         &DebugSettings::separate_logging_enabled),
-            make_override<DebugSettings>("log_enabled", &DebugSettings::log_enabled)};
+            make_override<DebugSettings>("shader_collect", &DebugSettings::shader_collect)};
     }
 };
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, separate_logging_enabled, debug_dump,
-                                   shader_collect, log_enabled, config_version)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DebugSettings, debug_dump, shader_collect, config_version)
 
 // -------------------------------
 // Input settings
@@ -455,9 +490,12 @@ public:
     void SetSysModulesDir(const std::filesystem::path& dir);
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
+    std::filesystem::path GetAddonInstallDir();
+    void SetAddonInstallDir(const std::filesystem::path& dir);
 
 private:
     GeneralSettings m_general{};
+    LogSettings m_log{};
     DebugSettings m_debug{};
     InputSettings m_input{};
     AudioSettings m_audio{};
@@ -523,15 +561,15 @@ public:
     auto Get##Name() const {                                                                       \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(const decltype((group).field.value)& v) {                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(const decltype((group).field.value)& v, bool specific = false) {                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL(group, Name, field)                                                   \
     bool Is##Name() const {                                                                        \
         return (group).field.get(m_configMode);                                                    \
     }                                                                                              \
-    void Set##Name(bool v) {                                                                       \
-        (group).field.value = v;                                                                   \
+    void Set##Name(bool v, bool specific = false) {                                                \
+        (group).field.set(v, specific);                                                            \
     }
 #define SETTING_FORWARD_BOOL_READONLY(group, Name, field)                                          \
     bool Is##Name() const {                                                                        \
@@ -543,19 +581,30 @@ public:
     SETTING_FORWARD_BOOL(m_general, Neo, neo_mode)
     SETTING_FORWARD_BOOL(m_general, DevKit, dev_kit_mode)
     SETTING_FORWARD(m_general, ExtraDmemInMBytes, extra_dmem_in_mbytes)
-    SETTING_FORWARD_BOOL(m_general, PSNSignedIn, psn_signed_in)
+    SETTING_FORWARD_BOOL(m_general, ShadNetEnabled, shad_net_enabled)
     SETTING_FORWARD_BOOL(m_general, TrophyPopupDisabled, trophy_popup_disabled)
     SETTING_FORWARD(m_general, TrophyNotificationDuration, trophy_notification_duration)
     SETTING_FORWARD(m_general, TrophyNotificationSide, trophy_notification_side)
     SETTING_FORWARD_BOOL(m_general, ShowSplash, show_splash)
-    SETTING_FORWARD_BOOL(m_general, IdenticalLogGrouped, identical_log_grouped)
-    SETTING_FORWARD(m_general, AddonInstallDir, addon_install_dir)
-    SETTING_FORWARD(m_general, LogFilter, log_filter)
-    SETTING_FORWARD(m_general, LogType, log_type)
     SETTING_FORWARD_BOOL(m_general, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD_BOOL(m_general, DiscordRPCEnabled, discord_rpc_enabled)
     SETTING_FORWARD_BOOL(m_general, ShowFpsCounter, show_fps_counter)
     SETTING_FORWARD(m_general, ConsoleLanguage, console_language)
+    SETTING_FORWARD(m_general, BigPictureScale, big_picture_scale)
+    SETTING_FORWARD(m_general, ShadNetServer, shadnet_server)
+
+    // Log settings
+    SETTING_FORWARD_BOOL(m_log, LogAppend, append)
+    SETTING_FORWARD_BOOL(m_log, LogEnable, enable)
+    SETTING_FORWARD(m_log, LogFilter, filter)
+    SETTING_FORWARD(m_log, LogMaxSkipDuration, max_skip_duration)
+    SETTING_FORWARD_BOOL(m_log, LogSeparate, separate)
+    SETTING_FORWARD(m_log, LogSizeLimit, size_limit)
+    SETTING_FORWARD_BOOL(m_log, LogSkipDuplicate, skip_duplicate)
+    SETTING_FORWARD_BOOL(m_log, LogSync, sync)
+#ifdef _WIN32
+    SETTING_FORWARD(m_log, LogType, type)
+#endif
 
     // Audio settings
     SETTING_FORWARD(m_audio, AudioBackend, audio_backend)
@@ -567,10 +616,8 @@ public:
     SETTING_FORWARD(m_audio, OpenALPadSpkOutputDevice, openal_padSpk_output_device)
 
     // Debug settings
-    SETTING_FORWARD_BOOL(m_debug, SeparateLoggingEnabled, separate_logging_enabled)
     SETTING_FORWARD_BOOL(m_debug, DebugDump, debug_dump)
     SETTING_FORWARD_BOOL(m_debug, ShaderCollect, shader_collect)
-    SETTING_FORWARD_BOOL(m_debug, LogEnabled, log_enabled)
     SETTING_FORWARD(m_debug, ConfigVersion, config_version)
 
     // GPU Settings

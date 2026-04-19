@@ -376,7 +376,7 @@ int PS4_SYSV_ABI sceNpMatching2ContextStart(OrbisNpMatching2ContextId ctxId, u64
     }
 
     std::scoped_lock lk{g_events_mutex};
-    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsPSNSignedIn()) {
+    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsShadNetEnabled()) {
         g_ctx_events.emplace_back(ctxId, ORBIS_NP_MATCHING2_CONTEXT_EVENT_STARTED,
                                   ORBIS_NP_MATCHING2_EVENT_CAUSE_CONTEXT_ACTION, 0);
     } else {

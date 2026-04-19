@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
@@ -142,6 +143,9 @@ int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
     pInfo->capability = 0;
 
     auto res = scePadGetControllerInformation(handle, &pInfo->base);
+    if (!EmulatorSettings.IsUsingSpecialPad()) {
+        pInfo->base.connected = false;
+    }
     return res;
 }
 
@@ -287,13 +291,6 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
         return ORBIS_PAD_ERROR_INVALID_ARG;
     }
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
     auto u = UserManagement.GetUserByID(userId);
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
@@ -310,13 +307,6 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
     auto u = UserManagement.GetUserByID(userId);
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
@@ -434,6 +424,12 @@ int ProcessStates(s32 handle, OrbisPadData* pData, Input::GameController& contro
             pData[i].touchData.touch[1].y = states[i].touchpad[1].y;
             pData[i].touchData.touch[1].id = states[i].touchpad[1].ID;
         }
+        if (Common::ElfInfo::Instance().FirmwareVer() > Common::ElfInfo::FW_35) {
+            pData[i].touchData.time_since_touch_held_down =
+                controller.last_touch_down_timestamp == 0
+                    ? 0
+                    : states[i].time - controller.last_touch_down_timestamp;
+        }
         pData[i].connected = connected;
         pData[i].timestamp = states[i].time;
         pData[i].connectedCount = connected_count;
@@ -507,7 +503,8 @@ int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {
         return ORBIS_PAD_ERROR_INVALID_HANDLE;
     }
     auto& controllers = *Common::Singleton<GameControllers>::Instance();
-    s32 colour_index = UserManagement.GetUserByPlayerIndex(handle)->user_color - 1;
+    auto u = UserManagement.GetUserByPlayerIndex(handle);
+    s32 colour_index = u ? u->user_color - 1 : 0;
     Input::Colour colour{255, 0, 0};
     if (colour_index >= 0 && colour_index <= 3) {
         static constexpr Input::Colour colours[4]{
