@@ -10,8 +10,8 @@
 #include "save_backup.h"
 #include "save_instance.h"
 
+#include "common/logging/formatter.h"
 #include "common/logging/log.h"
-#include "common/logging/log_entry.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 

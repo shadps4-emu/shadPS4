@@ -4,13 +4,8 @@
 #pragma once
 
 #include <string>
-#include <variant>
-#include <SDL3_mixer/SDL_mixer.h>
-#include <queue>
+#include <SDL3/SDL_audio.h>
 
-#include "common/fixed_value.h"
-#include "common/types.h"
-#include "core/libraries/np/np_trophy.h"
 #include "imgui/imgui_layer.h"
 #include "imgui/imgui_texture.h"
 
@@ -27,13 +22,15 @@ public:
     void Draw() override;
 
 private:
+    void PlayMp3(std::vector<unsigned char> mp3Data);
+    void PlayWav(std::vector<unsigned char> wavData);
+
     std::string trophy_name;
     std::string_view trophy_type;
     ImGui::RefCountedTexture trophy_icon;
     ImGui::RefCountedTexture trophy_type_icon;
-
-    MIX_Mixer* mixer;
-    MIX_Audio* audio;
+    SDL_AudioStream* stream;
+    SDL_AudioDeviceID audioDevice;
 };
 
 struct TrophyInfo {

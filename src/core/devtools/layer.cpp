@@ -436,7 +436,7 @@ void L::Draw() {
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
             SetWindowFontScale(1.5f);
-            TextCentered("Are you sure you want to quit?");
+            Overlay::TextCentered("Are you sure you want to quit?");
             NewLine();
             Text("Press Escape or Circle/B button to cancel");
             Text("Press Enter or Cross/A button to quit");
@@ -481,16 +481,16 @@ void L::Draw() {
     PopID();
 }
 
-void L::TextCentered(const std::string& text) {
-    float window_width = GetWindowSize().x;
+namespace Overlay {
+
+void TextCentered(const std::string& text) {
+    float window_width = GetContentRegionAvail().x;
     float text_width = CalcTextSize(text.c_str()).x;
     float text_indentation = (window_width - text_width) * 0.5f;
 
-    SameLine(text_indentation);
+    SetCursorPosX(text_indentation);
     Text("%s", text.c_str());
 }
-
-namespace Overlay {
 
 void ToggleSimpleFps() {
     show_simple_fps = !show_simple_fps;

@@ -13,8 +13,8 @@
 namespace Libraries::Ime {
 
 static std::queue<OrbisImeEvent> g_ime_events;
-static ImeState g_ime_state{};
-static ImeUi g_ime_ui;
+static std::unique_ptr<ImeState> g_ime_state;
+static std::unique_ptr<ImeUi> g_ime_ui;
 
 class ImeHandler {
 public:
@@ -68,14 +68,14 @@ public:
         }*/
 
         if (ime_mode) {
-            g_ime_state = ImeState(&m_param.ime, &m_param.ime_ext);
-            g_ime_ui = ImeUi(&g_ime_state, &m_param.ime, &m_param.ime_ext);
+            g_ime_state = std::make_unique<ImeState>(&m_param.ime, &m_param.ime_ext);
+            g_ime_ui = std::make_unique<ImeUi>(g_ime_state.get(), &m_param.ime, &m_param.ime_ext);
 
             // Queue the Open event so it is delivered on next sceImeUpdate
             LOG_DEBUG(Lib_Ime, "IME Event queued: Open rect x={}, y={}, w={}, h={}",
                       openEvent.param.rect.x, openEvent.param.rect.y, openEvent.param.rect.width,
                       openEvent.param.rect.height);
-            g_ime_state.SendEvent(&openEvent);
+            g_ime_state->SendEvent(&openEvent);
         }
     }
 
@@ -85,11 +85,11 @@ public:
             return Error::OK;
         }
 
-        std::unique_lock<std::mutex> lock{g_ime_state.queue_mutex};
+        std::unique_lock<std::mutex> lock{g_ime_state->queue_mutex};
 
-        while (!g_ime_state.event_queue.empty()) {
-            OrbisImeEvent event = g_ime_state.event_queue.front();
-            g_ime_state.event_queue.pop();
+        while (!g_ime_state->event_queue.empty()) {
+            OrbisImeEvent event = g_ime_state->event_queue.front();
+            g_ime_state->event_queue.pop();
             Execute(handler, &event, false);
         }
 
@@ -119,7 +119,7 @@ public:
             LOG_WARNING(Lib_Ime, "ImeHandler::SetText received null text pointer");
             return Error::INVALID_ADDRESS;
         }
-        g_ime_state.SetText(text, length);
+        g_ime_state->SetText(text, length);
         return Error::OK;
     }
 
@@ -128,7 +128,7 @@ public:
             LOG_WARNING(Lib_Ime, "ImeHandler::SetCaret received null caret pointer");
             return Error::INVALID_ADDRESS;
         }
-        g_ime_state.SetCaret(caret->index);
+        g_ime_state->SetCaret(caret->index);
         return Error::OK;
     }
 
@@ -186,8 +186,8 @@ Error PS4_SYSV_ABI sceImeClose() {
         LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
         return Error::INTERNAL;
     }
-    g_ime_ui = ImeUi();
-    g_ime_state = ImeState();
+    g_ime_ui = std::make_unique<ImeUi>();
+    g_ime_state = std::make_unique<ImeState>();
 
     LOG_DEBUG(Lib_Ime, "IME closed successfully");
     return Error::OK;

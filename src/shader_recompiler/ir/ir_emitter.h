@@ -115,7 +115,7 @@ public:
     [[nodiscard]] T SharedAtomicDec(const U32& address, bool is_gds);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
-    [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index);
+    [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index, BufferInstInfo info);
 
     [[nodiscard]] U8 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
     [[nodiscard]] U16 LoadBufferU16(const Value& handle, const Value& address, BufferInstInfo info);
@@ -422,7 +422,7 @@ private:
     }
 
     template <typename T>
-        requires(sizeof(T) <= sizeof(u32) && std::is_trivially_copyable_v<T>)
+        requires(sizeof(T) <= sizeof(u64) && std::is_trivially_copyable_v<T>)
     struct Flags {
         Flags() = default;
         Flags(T proxy_) : proxy{proxy_} {}
@@ -432,7 +432,7 @@ private:
 
     template <typename T = Value, typename FlagType, typename... Args>
     T Inst(Opcode op, Flags<FlagType> flags, Args... args) {
-        u32 raw_flags{};
+        u64 raw_flags{};
         std::memcpy(&raw_flags, &flags.proxy, sizeof(flags.proxy));
         auto it{block->PrependNewInst(insertion_point, op, {Value{args}...}, raw_flags)};
         it->SetParent(block);

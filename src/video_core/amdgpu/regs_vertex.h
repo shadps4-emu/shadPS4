@@ -136,6 +136,17 @@ enum class GsOutputPrimitiveType : u32 {
     TriangleStrip = 2,
 };
 
+union RingOffset {
+    u32 raw;
+    struct {
+        u32 offset : 15;
+    };
+
+    u32 GetOffset() const {
+        return offset;
+    }
+};
+
 union GsOutPrimitiveType {
     u32 raw;
     struct {
@@ -177,9 +188,25 @@ enum class GsScenario : u32 {
 
 struct GsMode {
     GsScenario mode : 3;
+    u32 : 1;
     u32 cut_mode : 2;
-    u32 : 17;
+    u32 : 5;
+    u32 gs_c_pack_en : 1;
+    u32 : 1;
+    u32 es_passthru : 1;
+    u32 compute_mode : 1;
+    u32 fast_compute_mode : 1;
+    u32 element_info_en : 1;
+    u32 partial_thd_at_eoi : 1;
+    u32 suppress_cuts : 1;
+    u32 es_write_optimize : 1;
+    u32 gs_write_optimize : 1;
     u32 onchip : 2;
+};
+
+struct GsOnchip {
+    u32 es_verts_per_subgroup : 11;
+    u32 gs_prims_per_subgroup : 11;
 };
 
 struct StreamOutControl {

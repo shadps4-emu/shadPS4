@@ -75,7 +75,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
     }
 
     // Configure the direct and flexible memory regions.
-    u64 fmem_size = ORBIS_FLEXIBLE_MEMORY_SIZE;
+    u64 fmem_size = ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
     bool use_extended_mem1 = true, use_extended_mem2 = true;
 
     const auto* proc_param = GetProcParam();
@@ -88,7 +88,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
             if (mem_param.size >=
                 offsetof(OrbisKernelMemParam, flexible_memory_size) + sizeof(u64*)) {
                 if (const auto* flexible_size = mem_param.flexible_memory_size) {
-                    fmem_size = *flexible_size + ORBIS_FLEXIBLE_MEMORY_BASE;
+                    fmem_size = *flexible_size + ORBIS_KERNEL_FLEXIBLE_MEMORY_BASE;
                 }
             }
         }
@@ -140,13 +140,13 @@ void Linker::Execute(const std::vector<std::string>& args) {
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
-            params.argc = args.size();
-            for (int i = 0; i < args.size() && i < 33; i++) {
+            constexpr int MaxArgs = sizeof(params.argv) / sizeof(params.argv[0]);
+            params.argc = std::min<int>(args.size(), MaxArgs);
+            for (int i = 0; i < params.argc; i++) {
                 params.argv[i] = args[i].c_str();
             }
         }
         params.entry_addr = module->GetEntryAddress();
-        Libraries::Kernel::ClearStack();
         RunMainEntry(&params);
     });
 }
