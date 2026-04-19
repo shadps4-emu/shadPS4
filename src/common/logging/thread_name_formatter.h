@@ -44,9 +44,7 @@ struct thread_name_formatter : spdlog::formatter {
         spdlog::details::fmt_helper::append_int(msg.source.line, dest);
         dest.push_back(' ');
         spdlog::details::fmt_helper::append_string_view(
-            std::string_view(msg.source.funcname).contains("(anonymous class)::operator()")
-                ? "lambda"
-                : msg.source.funcname,
+            std::string_view(msg.source.funcname) == "operator()" ? "lambda" : msg.source.funcname,
             dest);
         dest.push_back(':');
         dest.push_back(' ');

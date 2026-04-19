@@ -28,6 +28,7 @@ if (TARGET fmt::fmt)
     set(SPDLOG_FMT_EXTERNAL ON)
 endif()
 add_subdirectory(spdlog EXCLUDE_FROM_ALL SYSTEM)
+target_compile_definitions(spdlog PUBLIC SPDLOG_FUNCTION=__func__)
 
 # fmtlib
 if (NOT TARGET fmt::fmt)
