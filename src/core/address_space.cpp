@@ -718,6 +718,7 @@ struct AddressSpace::Impl {
         m_free_regions.subtract({virtual_addr, virtual_addr + size});
 #ifdef __APPLE__
         if (prot & PROT_EXEC != 0) {
+            ASSERT_MSG(fd == -1, "Requested execute permissions for file mapping");
             phys_addr = -1;
         }
 #endif
