@@ -36,6 +36,37 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
     is_rendering = true;
     render_state = new_state;
 
+    std::array<vk::RenderingAttachmentInfo, 8> color_attachments;
+    for (u32 i = 0; i < render_state.num_color_attachments; ++i) {
+        const auto& cb = render_state.color_attachments[i];
+        color_attachments[i] = vk::RenderingAttachmentInfo{
+            .imageView = cb.image_view,
+            .imageLayout = cb.image_layout,
+            .loadOp = cb.is_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .clearValue = vk::ClearValue{.color = vk::ClearColorValue{.uint32 = cb.clear_value}},
+        };
+    }
+
+    const auto& db = render_state.depth_stencil_attachment;
+    const vk::RenderingAttachmentInfo depth_attachment = {
+        .imageView = db.image_view,
+        .imageLayout = db.image_layout,
+        .loadOp = db.depth_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .clearValue =
+            vk::ClearValue{.depthStencil = vk::ClearDepthStencilValue{.depth = std::bit_cast<float>(
+                                                                          db.clear_value[0])}},
+    };
+    const vk::RenderingAttachmentInfo stencil_attachment = {
+        .imageView = db.image_view,
+        .imageLayout = db.image_layout,
+        .loadOp = db.stencil_clear ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eLoad,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .clearValue = vk::ClearValue{.depthStencil =
+                                         vk::ClearDepthStencilValue{.stencil = db.clear_value[1]}},
+    };
+
     const vk::RenderingInfo rendering_info = {
         .renderArea =
             {
@@ -44,11 +75,9 @@ void Scheduler::BeginRendering(const RenderState& new_state) {
             },
         .layerCount = render_state.num_layers,
         .colorAttachmentCount = render_state.num_color_attachments,
-        .pColorAttachments = render_state.num_color_attachments > 0
-                                 ? render_state.color_attachments.data()
-                                 : nullptr,
-        .pDepthAttachment = render_state.has_depth ? &render_state.depth_attachment : nullptr,
-        .pStencilAttachment = render_state.has_stencil ? &render_state.stencil_attachment : nullptr,
+        .pColorAttachments = color_attachments.data(),
+        .pDepthAttachment = db.has_depth ? &depth_attachment : nullptr,
+        .pStencilAttachment = db.has_stencil ? &stencil_attachment : nullptr,
     };
 
     current_cmdbuf.beginRendering(rendering_info);
