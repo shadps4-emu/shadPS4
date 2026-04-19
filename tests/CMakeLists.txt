@@ -19,11 +19,10 @@ set(SETTINGS_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
     ${CMAKE_SOURCE_DIR}/src/common/error.cpp
     ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/logging/filter.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/logging/text_formatter.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
 
     # Stubs that replace dependencies
-    stubs/log_stub.cpp     
+    stubs/common_stub.cpp
     stubs/scm_rev_stub.cpp
     stubs/sdl_stub.cpp
 
@@ -43,7 +42,8 @@ target_link_libraries(shadps4_settings_test PRIVATE
     fmt::fmt
     nlohmann_json::nlohmann_json
     toml11::toml11
-    SDL3::SDL3 
+    SDL3::SDL3
+    spdlog::spdlog
 )
 
 target_compile_features(shadps4_settings_test PRIVATE cxx_std_23)

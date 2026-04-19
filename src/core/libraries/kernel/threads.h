@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -40,8 +40,6 @@ int PS4_SYSV_ABI posix_pthread_mutex_unlock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
 
 void RegisterThreads(Core::Loader::SymbolsResolver* sym);
-
-void PS4_SYSV_ABI ClearStack();
 
 class Thread {
 public:
