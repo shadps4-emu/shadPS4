@@ -10,9 +10,11 @@ struct PthreadAttr;
 } // namespace Libraries::Kernel
 
 namespace Core {
-
-using ThreadFunc = void (*)(void*);
-using PthreadFunc = void* (*)(void*);
+#ifdef WIN32
+using ThreadFunc = DWORD (*)(void*);
+#else
+using ThreadFunc = void* (*)(void*);
+#endif
 
 class NativeThread {
 public:
@@ -39,7 +41,6 @@ private:
     uintptr_t native_handle;
     void* sig_stack_ptr = nullptr;
 #endif
-    void* init_stack_ptr = nullptr;
     u64 tid;
 };
 
