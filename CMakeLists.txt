@@ -329,7 +329,7 @@ set(KERNEL_LIB src/core/libraries/kernel/sync/mutex.cpp
                src/core/libraries/kernel/threads/sleepq.cpp
                src/core/libraries/kernel/threads/sleepq.h
                src/core/libraries/kernel/threads/stack.cpp
-               src/core/libraries/kernel/threads/stack.s
+               src/core/libraries/kernel/threads/stack.S
                src/core/libraries/kernel/threads/tcb.cpp
                src/core/libraries/kernel/threads/pthread.h
                src/core/libraries/kernel/threads/thread_state.cpp
