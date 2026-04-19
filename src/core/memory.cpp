@@ -951,7 +951,11 @@ s32 MemoryManager::UnmapMemoryImpl(VAddr virtual_addr, u64 size) {
 
 s32 MemoryManager::QueryProtection(VAddr addr, void** start, void** end, u32* prot) {
     std::shared_lock lk{mutex};
-    ASSERT_MSG(IsValidMapping(addr), "Attempted to access invalid address {:#x}", addr);
+    VAddr min_query_addr = impl.SystemManagedVirtualBase();
+    if (addr < min_query_addr) {
+        LOG_ERROR(Kernel_Vmm, "Address {:#x} is not mapped", addr);
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
 
     const auto it = FindVMA(addr);
     const auto& vma = it->second;
