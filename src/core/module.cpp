@@ -140,10 +140,21 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         void* segment_addr = std::bit_cast<void*>(segment_vaddr);
         const u64 segment_size = GetAlignedSize(phdr);
         if (do_map) {
+            // Convert ELF flags to memory prot.
+            auto segment_prot = MemoryProt::NoAccess;
+            if ((phdr.p_flags & PF_READ) != 0) {
+                segment_prot |= MemoryProt::CpuRead;
+            }
+            if ((phdr.p_flags & PF_WRITE) != 0) {
+                segment_prot |= MemoryProt::CpuWrite;
+            }
+            if ((phdr.p_flags & PF_EXEC) != 0) {
+                segment_prot |= MemoryProt::CpuExec;
+            }
+
             // Map module segments
             const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
-            s32 result = memory->MapMemory(&segment_addr, segment_vaddr, segment_size,
-                                           MemoryProt::CpuReadWrite | MemoryProt::CpuExec,
+            s32 result = memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
                                            MemoryMapFlags::Fixed, memory_type, name);
             ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",
                        segment_vaddr, name);
