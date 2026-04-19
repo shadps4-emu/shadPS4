@@ -67,45 +67,35 @@ void Launch() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigNavCursorVisibleAlways = true;
 
-    ImFontConfig config;
-    config.OversampleH = 3;
-    config.OversampleV = 3;
-    config.MergeMode = true;
+    ImFontConfig configBase;
+    configBase.OversampleH = 3;
+    configBase.OversampleV = 3;
 
-    ImFontConfig config2;
-    config.OversampleH = 3;
-    config.OversampleV = 3;
+    ImFontConfig configMerge;
+    configMerge.OversampleH = 3;
+    configMerge.OversampleV = 3;
+    configMerge.MergeMode = true;
 
     // tm symbol
-    static const ImWchar icon_ranges[] = {0x2122, 0x2122, 0x3000, 0x30FF, 0};
-
-    ImFontGlyphRangesBuilder rb{};
-    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
-    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
-    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
-    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-
-    ImVector<ImWchar> ranges{};
-    rb.BuildRanges(&ranges);
-
+    const ImWchar icon_ranges[] = {0x2122, 0x2122, 0};
     ImFont* myFont = io.Fonts->AddFontFromMemoryCompressedTTF(
         imgui_font_notosansjp_regular_compressed_data,
-        imgui_font_notosansjp_regular_compressed_size, 32.0f, &config2, icon_ranges);
+        imgui_font_notosansjp_regular_compressed_size, 32.0f, &configBase, icon_ranges);
 
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
                                              imgui_font_notosansjp_regular_compressed_size, 32.0f,
-                                             &config, ranges.Data);
+                                             &configMerge, io.Fonts->GetGlyphRangesDefault());
 
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
-                                             imgui_font_proggyvector_regular_compressed_size, 32.0f,
-                                             &config, io.Fonts->GetGlyphRangesDefault());
+    io.Fonts->Build();
+
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* colors = style.Colors;
 
-    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);      // black
-    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);        // blue
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f); // lighter blue
+    colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.00f);         // black
+    colors[ImGuiCol_Header] = ImVec4(0.20f, 0.40f, 0.70f, 1.00f);           // blue
+    colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.50f, 0.85f, 1.00f);    // lighter blue
+    colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f); // another light  blue
+    colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);       // another light  blue
 
     style.WindowRounding = 0.0f;
     style.FrameRounding = 5.0f * uiScale;
@@ -115,8 +105,6 @@ void Launch() {
     style.WindowBorderSize = 0.0f;
     style.WindowPadding = ImVec2(20.0f * uiScale, 20.0f * uiScale);
     style.GrabMinSize = 20.0f * uiScale;
-    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
-    style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
