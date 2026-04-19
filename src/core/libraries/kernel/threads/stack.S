@@ -5,7 +5,7 @@
 _runOnAnotherStack:
   pushq %r12
   pushq %r13
-#ifdef WIN32
+#ifdef _WIN32
   pushq %r14
   pushq %r15
 
@@ -25,7 +25,7 @@ _runOnAnotherStack:
   callq *%rsi
   movq %r13, %rbp
   movq %r12, %rsp
-#ifdef WIN32
+#ifdef _WIN32
   # restore stack check registers
   movq %r14, %gs:0x08 # teb->stack_bottom
   movq %r15, %gs:0x10 # teb->stack_top
