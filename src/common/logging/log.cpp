@@ -170,8 +170,7 @@ void Setup(std::string_view log_filename) {
 
 #ifdef _WIN32
     if (EmulatorSettings.GetLogType() == "wincolor") {
-        g_console_sink =
-            UpdateColorLevels(std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>());
+        g_console_sink = std::make_shared<spdlog::sinks::wincolor_stdout_sink_mt>();
     } else {
         g_console_sink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
     }
