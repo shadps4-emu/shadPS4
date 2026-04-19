@@ -7,10 +7,10 @@
 #include <imgui.h>
 
 #include "SDL3/SDL_log.h"
-#include "common/config.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
@@ -110,11 +110,11 @@ void L::DrawMenuBar() {
                 EndDisabled();
 
                 if (Button("Save")) {
-                    Config::setFsrEnabled(fsr.enable);
-                    Config::setRcasEnabled(fsr.use_rcas);
-                    Config::setRcasAttenuation(static_cast<int>(fsr.rcas_attenuation * 1000));
-                    Config::save(Common::FS::GetUserPath(Common::FS::PathType::UserDir) /
-                                 "config.toml");
+                    EmulatorSettings.SetFsrEnabled(fsr.enable);
+                    EmulatorSettings.SetRcasEnabled(fsr.use_rcas);
+                    EmulatorSettings.SetRcasAttenuation(
+                        static_cast<int>(fsr.rcas_attenuation * 1000));
+                    EmulatorSettings.Save();
                     CloseCurrentPopup();
                 }
 
@@ -311,7 +311,7 @@ static void LoadSettings(const char* line) {
 
 void L::SetupSettings() {
     frame_graph.is_open = true;
-    show_simple_fps = Config::getShowFpsCounter();
+    show_simple_fps = EmulatorSettings.IsShowFpsCounter();
 
     using SettingLoader = void (*)(const char*);
 
@@ -436,7 +436,7 @@ void L::Draw() {
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
             SetWindowFontScale(1.5f);
-            TextCentered("Are you sure you want to quit?");
+            Overlay::TextCentered("Are you sure you want to quit?");
             NewLine();
             Text("Press Escape or Circle/B button to cancel");
             Text("Press Enter or Cross/A button to quit");
@@ -472,7 +472,7 @@ void L::Draw() {
             if (ImGui::Begin("Volume Window", &show_volume,
                              ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-                Text("Volume: %d", Config::getVolumeSlider());
+                Text("Volume: %d", EmulatorSettings.GetVolumeSlider());
             }
             End();
         }
@@ -481,16 +481,16 @@ void L::Draw() {
     PopID();
 }
 
-void L::TextCentered(const std::string& text) {
-    float window_width = GetWindowSize().x;
+namespace Overlay {
+
+void TextCentered(const std::string& text) {
+    float window_width = GetContentRegionAvail().x;
     float text_width = CalcTextSize(text.c_str()).x;
     float text_indentation = (window_width - text_width) * 0.5f;
 
-    SameLine(text_indentation);
+    SetCursorPosX(text_indentation);
     Text("%s", text.c_str());
 }
-
-namespace Overlay {
 
 void ToggleSimpleFps() {
     show_simple_fps = !show_simple_fps;

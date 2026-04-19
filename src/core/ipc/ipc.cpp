@@ -8,12 +8,12 @@
 
 #include <SDL3/SDL.h>
 
-#include "common/config.h"
 #include "common/memory_patcher.h"
 #include "common/thread.h"
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "core/debugger.h"
+#include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "core/libraries/audio/audioout.h"
 #include "input/input_handler.h"
@@ -153,7 +153,7 @@ void IPC::InputLoop() {
         } else if (cmd == "ADJUST_VOLUME") {
             int value = static_cast<int>(next_u64());
             bool is_game_specific = next_u64() != 0;
-            Config::setVolumeSlider(value, is_game_specific);
+            EmulatorSettings.SetVolumeSlider(value, is_game_specific);
             Libraries::AudioOut::AdjustVol();
         } else if (cmd == "SET_FSR") {
             bool use_fsr = next_u64() != 0;
@@ -211,13 +211,6 @@ void IPC::InputLoop() {
         } else if (cmd == "RELOAD_INPUTS") {
             std::string config = next_str();
             Input::ParseInputConfig(config);
-        } else if (cmd == "SET_ACTIVE_CONTROLLER") {
-            std::string active_controller = next_str();
-            GamepadSelect::SetSelectedGamepad(active_controller);
-            SDL_Event checkGamepad;
-            SDL_memset(&checkGamepad, 0, sizeof(checkGamepad));
-            checkGamepad.type = SDL_EVENT_CHANGE_CONTROLLER;
-            SDL_PushEvent(&checkGamepad);
         } else {
             std::cerr << ";UNKNOWN CMD: " << cmd << std::endl;
         }

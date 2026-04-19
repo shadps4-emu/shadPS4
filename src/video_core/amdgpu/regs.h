@@ -111,9 +111,12 @@ union Regs {
         TessFactorClamp hs_clamp;
         INSERT_PADDING_WORDS(7);
         GsMode vgt_gs_mode;
-        INSERT_PADDING_WORDS(1);
+        GsOnchip vgt_gs_onchip_control;
         ModeControl mode_control;
-        INSERT_PADDING_WORDS(8);
+        INSERT_PADDING_WORDS(5);
+        RingOffset vgt_gsvs_ring_offset_1;
+        RingOffset vgt_gsvs_ring_offset_2;
+        RingOffset vgt_gsvs_ring_offset_3;
         GsOutPrimitiveType vgt_gs_out_prim_type;
         INSERT_PADDING_WORDS(1);
         u32 index_size;
@@ -147,7 +150,9 @@ union Regs {
         ColorBuffer color_buffers[NUM_COLOR_BUFFERS];
         INSERT_PADDING_WORDS(7343);
         StreamOutControl cp_strmout_cntl;
-        INSERT_PADDING_WORDS(514);
+        INSERT_PADDING_WORDS(512);
+        u32 vgt_esgs_ring_size;
+        u32 vgt_gsvs_ring_size;
         PrimitiveType primitive_type;
         INSERT_PADDING_WORDS(9);
         u32 num_indices;

@@ -21,6 +21,15 @@ if (NOT TARGET Boost::headers)
     add_subdirectory(ext-boost)
 endif()
 
+# spdlog
+set(SPDLOG_NO_EXCEPTIONS ON)
+set(SPDLOG_DISABLE_GLOBAL_LOGGER ON)
+if (TARGET fmt::fmt)
+    set(SPDLOG_FMT_EXTERNAL ON)
+endif()
+add_subdirectory(spdlog EXCLUDE_FROM_ALL SYSTEM)
+target_compile_definitions(spdlog PUBLIC SPDLOG_FUNCTION=__func__)
+
 # fmtlib
 if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
@@ -61,18 +70,6 @@ if (NOT TARGET SDL3::SDL3)
     set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
     add_subdirectory(sdl3)
-endif()
-
-# SDL3_mixer
-if (NOT TARGET SDL3_mixer::SDL3_mixer)
-    set(SDLMIXER_FLAC OFF)
-    set(SDLMIXER_OGG OFF)
-    set(SDLMIXER_MOD OFF)
-    set(SDLMIXER_MIDI OFF)
-    set(SDLMIXER_OPUS OFF)
-    set(SDLMIXER_WAVPACK OFF)
-    set(BUILD_SHARED_LIBS OFF)
-    add_subdirectory(sdl3_mixer)
 endif()
 
 # vulkan-headers
@@ -210,8 +207,15 @@ endif()
 
 # libusb
 if (NOT TARGET libusb::usb)
-    add_subdirectory(ext-libusb)
-    add_library(libusb::usb ALIAS usb-1.0)
+    if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
+        # YOU MUST USE NATIVE LIBUSB
+        # using anything else will crash instantly, also freebsd will NOT like it
+        # no you cant vendor this libusb, its builtin on freebsd
+        find_package(libusb)
+    else()
+        add_subdirectory(libusb)
+        add_library(libusb::usb ALIAS usb-1.0)
+    endif()
 endif()
 
 # Discord RPC
@@ -233,24 +237,25 @@ endif()
 set(HWINFO_STATIC ON)
 add_subdirectory(hwinfo)
 
-# Apple-only dependencies
-if (APPLE)
+if (APPLE OR ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
     # date
     if (NOT TARGET date::date-tz)
         option(BUILD_TZ_LIB "" ON)
         option(USE_SYSTEM_TZ_DB "" ON)
         add_subdirectory(date)
     endif()
+    if (NOT TARGET epoll-shim)
+        add_subdirectory(epoll-shim)
+    endif()
+endif()
 
+# Apple-only dependencies
+if (APPLE)
     # MoltenVK
     if (NOT TARGET MoltenVK)
         set(MVK_EXCLUDE_SPIRV_TOOLS ON)
         set(MVK_USE_METAL_PRIVATE_API ON)
         add_subdirectory(MoltenVK)
-    endif()
-
-    if (NOT TARGET epoll-shim)
-        add_subdirectory(epoll-shim)
     endif()
 endif()
 
@@ -280,6 +285,15 @@ if (NOT TARGET CLI11::CLI11)
     add_subdirectory(CLI11)
 endif()
 
+# minimp3
+add_library(minimp3 INTERFACE)
+target_include_directories(minimp3 INTERFACE minimp3)
+
+# ImGuiFileDialog
+add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
+target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)
+target_include_directories(ImGuiFileDialog INTERFACE ImGuiFileDialog/)
+target_link_libraries(ImGuiFileDialog PRIVATE Dear_ImGui)
 
 #openal
 if (NOT TARGET OpenAL::OpenAL)

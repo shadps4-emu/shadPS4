@@ -6,7 +6,9 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <vector>
 
+#include <map>
 #include "assert.h"
 #include "bit_field.h"
 #include "singleton.h"
@@ -73,6 +75,8 @@ class ElfInfo {
 
     std::filesystem::path splash_path{};
     std::filesystem::path game_folder{};
+    std::vector<std::string> npCommIds{};
+    std::map<int, std::string> trophyIndexMap{};
 
 public:
     static constexpr u32 FW_10 = 0x1000000;
@@ -138,6 +142,14 @@ public:
 
     [[nodiscard]] const std::filesystem::path& GetGameFolder() const {
         return game_folder;
+    }
+
+    [[nodiscard]] const std::vector<std::string> GetNpCommIds() const {
+        return npCommIds;
+    }
+
+    [[nodiscard]] const std::map<int, std::string>& GetTrophyIndexMap() const {
+        return trophyIndexMap;
     }
 };
 

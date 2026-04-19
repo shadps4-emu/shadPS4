@@ -1056,17 +1056,7 @@ void Translator::V_CMP_F32(ConditionOp op, bool set_exec, const GcnInst& inst) {
     if (set_exec) {
         ir.SetExec(result);
     }
-
-    switch (inst.dst[1].field) {
-    case OperandField::VccLo:
-        ir.SetVcc(result);
-        break;
-    case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
-        break;
-    default:
-        UNREACHABLE();
-    }
+    SetDst1(inst.dst[1], result);
 }
 
 void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
@@ -1097,17 +1087,7 @@ void Translator::V_CMP_F64(ConditionOp op, bool set_exec, const GcnInst& inst) {
     if (set_exec) {
         ir.SetExec(result);
     }
-
-    switch (inst.dst[1].field) {
-    case OperandField::VccLo:
-        ir.SetVcc(result);
-        break;
-    case OperandField::ScalarGPR:
-        ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
-        break;
-    default:
-        UNREACHABLE();
-    }
+    SetDst1(inst.dst[1], result);
 }
 
 void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
@@ -1138,14 +1118,7 @@ void Translator::V_CMP_U32(ConditionOp op, bool is_signed, bool set_exec, const 
     if (set_exec) {
         ir.SetExec(result);
     }
-    switch (inst.dst[1].field) {
-    case OperandField::VccLo:
-        return ir.SetVcc(result);
-    case OperandField::ScalarGPR:
-        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[0].code), result);
-    default:
-        UNREACHABLE();
-    }
+    SetDst1(inst.dst[1], result);
 }
 
 void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const GcnInst& inst) {
@@ -1187,15 +1160,7 @@ void Translator::V_CMP_U64(ConditionOp op, bool is_signed, bool set_exec, const 
     if (set_exec) {
         UNREACHABLE_MSG("Exec setting for V_CMP_U64 is not supported");
     }
-
-    switch (inst.dst[1].field) {
-    case OperandField::VccLo:
-        return ir.SetVcc(result);
-    case OperandField::ScalarGPR:
-        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), result);
-    default:
-        UNREACHABLE();
-    }
+    SetDst1(inst.dst[1], result);
 }
 
 void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
@@ -1217,15 +1182,7 @@ void Translator::V_CMP_CLASS_F32(const GcnInst& inst) {
         // We don't know the type yet, delay its resolution.
         value = ir.FPCmpClass32(src0, src1);
     }
-
-    switch (inst.dst[1].field) {
-    case OperandField::VccLo:
-        return ir.SetVcc(value);
-    case OperandField::ScalarGPR:
-        return ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), value);
-    default:
-        UNREACHABLE();
-    }
+    SetDst1(inst.dst[1], value);
 }
 
 // VOP3a
@@ -1527,13 +1484,7 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
     IR::U1 carry;
     if (inst.src_count == 3) { // VOP3
-        if (inst.src[2].field == OperandField::VccLo) {
-            carry = ir.GetVcc();
-        } else if (inst.src[2].field == OperandField::ScalarGPR) {
-            carry = ir.GetThreadBitScalarReg(IR::ScalarReg(inst.src[2].code));
-        } else {
-            UNREACHABLE();
-        }
+        carry = GetSrc1(inst.src[2]);
     } else { // VOP2
         carry = ir.GetVcc();
     }
@@ -1543,13 +1494,7 @@ IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
 
 void Translator::SetCarryOut(const GcnInst& inst, const IR::U1& carry) {
     if (inst.dst_count == 2) { // VOP3
-        if (inst.dst[1].field == OperandField::VccLo) {
-            ir.SetVcc(carry);
-        } else if (inst.dst[1].field == OperandField::ScalarGPR) {
-            ir.SetThreadBitScalarReg(IR::ScalarReg(inst.dst[1].code), carry);
-        } else {
-            UNREACHABLE();
-        }
+        SetDst1(inst.dst[1], carry);
     } else { // VOP2
         ir.SetVcc(carry);
     }

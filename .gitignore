@@ -418,3 +418,6 @@ FodyWeavers.xsd
 # JetBrains
 .idea
 cmake-build-*
+
+# Nix Result symlink
+result

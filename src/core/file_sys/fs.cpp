@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include "common/config.h"
 #include "common/string_util.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
@@ -43,7 +42,7 @@ void MntPoints::UnmountAll() {
 }
 
 std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_read_only,
-                                             bool force_base_path) {
+                                             HostPathType path_type) {
     // Evil games like Turok2 pass double slashes e.g /app0//game.kpf
     std::string corrected_path(path);
     size_t pos = corrected_path.find("//");
@@ -81,8 +80,24 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     }
     patch_path /= rel_path;
 
+    std::filesystem::path mods_path = mount->host_path;
+    mods_path += "-mods";
+    mods_path /= rel_path;
+
+    if (path_type == HostPathType::Mod) {
+        return mods_path;
+    } else if (path_type == HostPathType::Patch) {
+        return patch_path;
+    }
+
     if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
-        !force_base_path && !ignore_game_patches && std::filesystem::exists(patch_path)) {
+        path_type != HostPathType::Base && std::filesystem::exists(mods_path)) {
+        return mods_path;
+    }
+
+    if ((corrected_path.starts_with("/app0") || corrected_path.starts_with("/hostapp")) &&
+        path_type != HostPathType::Base && !ignore_game_patches &&
+        std::filesystem::exists(patch_path)) {
         return patch_path;
     }
 
@@ -96,7 +111,7 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
         std::scoped_lock lk{m_mutex};
         path_parts.clear();
         auto current_path = host_path;
-        while (!std::filesystem::exists(current_path)) {
+        while (!current_path.empty() && !std::filesystem::exists(current_path)) {
             // We have probably cached this if it's a folder.
             if (auto it = path_cache.find(current_path); it != path_cache.end()) {
                 current_path = it->second;
@@ -105,44 +120,46 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
             path_parts.emplace_back(current_path.filename());
             current_path = current_path.parent_path();
         }
-        // We have found an anchor. Traverse parts we recoded and see if they
-        // exist in filesystem but in different case.
-        auto guest_path = current_path;
-        while (!path_parts.empty()) {
-            const auto part = path_parts.back();
-            const auto add_match = [&](const auto& host_part) {
-                current_path /= host_part;
-                guest_path /= part;
-                path_cache[guest_path] = current_path;
-                path_parts.pop_back();
-            };
-            // Can happen when the mismatch is in upper folder.
-            if (std::filesystem::exists(current_path / part)) {
-                add_match(part);
-                continue;
-            }
-            const auto part_low = Common::ToLower(part.string());
-            bool found_match = false;
-            for (const auto& path : std::filesystem::directory_iterator(current_path)) {
-                const auto candidate = path.path().filename();
-                const auto filename = Common::ToLower(candidate.string());
-                // Check if a filename matches in case insensitive manner.
-                if (filename != part_low) {
+        if (!current_path.empty()) {
+            // We have found an anchor. Traverse parts we recoded and see if they
+            // exist in filesystem but in different case.
+            auto guest_path = current_path;
+            while (!path_parts.empty()) {
+                const auto part = path_parts.back();
+                const auto add_match = [&](const auto& host_part) {
+                    current_path /= host_part;
+                    guest_path /= part;
+                    path_cache[guest_path] = current_path;
+                    path_parts.pop_back();
+                };
+                // Can happen when the mismatch is in upper folder.
+                if (std::filesystem::exists(current_path / part)) {
+                    add_match(part);
                     continue;
                 }
-                // We found a match, record the actual path in the cache.
-                add_match(candidate);
-                found_match = true;
-                break;
-            }
-            if (!found_match) {
-                return std::optional<std::filesystem::path>({});
+                const auto part_low = Common::ToLower(part.string());
+                bool found_match = false;
+                for (const auto& path : std::filesystem::directory_iterator(current_path)) {
+                    const auto candidate = path.path().filename();
+                    const auto filename = Common::ToLower(candidate.string());
+                    // Check if a filename matches in case insensitive manner.
+                    if (filename != part_low) {
+                        continue;
+                    }
+                    // We found a match, record the actual path in the cache.
+                    add_match(candidate);
+                    found_match = true;
+                    break;
+                }
+                if (!found_match) {
+                    return std::optional<std::filesystem::path>({});
+                }
             }
         }
         return std::optional<std::filesystem::path>(current_path);
     };
 
-    if (!force_base_path && !ignore_game_patches) {
+    if (path_type != HostPathType::Base && !ignore_game_patches) {
         if (const auto path = search(patch_path)) {
             return *path;
         }
@@ -159,34 +176,54 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
 // TODO: Does not handle mount points inside mount points.
 void MntPoints::IterateDirectory(std::string_view guest_directory,
                                  const IterateDirectoryCallback& callback) {
-    const auto base_path = GetHostPath(guest_directory, nullptr, true);
-    const auto patch_path = GetHostPath(guest_directory, nullptr, false);
-    // Only need to consider patch path if it exists and does not resolve to the same as base.
-    const auto apply_patch = base_path != patch_path && std::filesystem::exists(patch_path);
+    const auto base_path = GetHostPath(guest_directory, nullptr, HostPathType::Base);
+
+    // Forces path types so as not to resolve to base path
+    const auto patch_path = GetHostPath(guest_directory, nullptr, HostPathType::Patch);
+    const auto mod_path = GetHostPath(guest_directory, nullptr, HostPathType::Mod);
 
     // Prepend entries for . and .., as both are treated as files on PS4.
     callback(base_path / ".", false);
     callback(base_path / "..", false);
 
-    // Pass 1: Any files that existed in the base directory, using patch directory if needed.
+    // Pass 1: Any files that existed in the base directory, using mod/patch directory if needed.
     if (std::filesystem::exists(base_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(base_path)) {
-            if (apply_patch) {
-                const auto patch_entry_path = patch_path / entry.path().filename();
-                if (std::filesystem::exists(patch_entry_path)) {
-                    callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
-                    continue;
-                }
+            const auto mod_entry_path = mod_path / entry.path().filename();
+            const auto patch_entry_path = patch_path / entry.path().filename();
+            if (std::filesystem::exists(mod_entry_path)) {
+                callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
+                continue;
+            } else if (std::filesystem::exists(patch_entry_path)) {
+                callback(patch_entry_path, !std::filesystem::is_directory(patch_entry_path));
+                continue;
             }
             callback(entry.path(), !entry.is_directory());
         }
     }
 
     // Pass 2: Any files that exist only in the patch directory.
-    if (apply_patch) {
+    if (std::filesystem::exists(patch_path)) {
         for (const auto& entry : std::filesystem::directory_iterator(patch_path)) {
             const auto base_entry_path = base_path / entry.path().filename();
             if (!std::filesystem::exists(base_entry_path)) {
+                const auto mod_entry_path = mod_path / entry.path().filename();
+                if (std::filesystem::exists(mod_entry_path)) {
+                    callback(mod_entry_path, !std::filesystem::is_directory(mod_entry_path));
+                    continue;
+                }
+                callback(entry.path(), !entry.is_directory());
+            }
+        }
+    }
+
+    // Pass 3: Any files that exist only in the mod directory (confirmed this can be valid)
+    if (std::filesystem::exists(mod_path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(mod_path)) {
+            const auto base_entry_path = base_path / entry.path().filename();
+            const auto patch_entry_path = patch_path / entry.path().filename();
+            if (!std::filesystem::exists(base_entry_path) &&
+                !std::filesystem::exists(patch_entry_path)) {
                 callback(entry.path(), !entry.is_directory());
             }
         }
@@ -266,6 +303,7 @@ File* HandleTable::GetResolver(int d) {
 }
 
 File* HandleTable::GetFile(const std::filesystem::path& host_name) {
+    std::scoped_lock lock{m_mutex};
     for (auto* file : m_files) {
         if (file != nullptr && file->m_host_name == host_name) {
             return file;

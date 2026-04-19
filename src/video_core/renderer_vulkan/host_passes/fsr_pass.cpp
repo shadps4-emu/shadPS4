@@ -1,8 +1,8 @@
-//  SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+//  SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/config.h"
+#include "core/emulator_settings.h"
 #include "video_core/host_shaders/fsr_comp.h"
 #include "video_core/renderer_vulkan/host_passes/fsr_pass.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
@@ -164,7 +164,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         CreateImages(img);
     }
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Host/FSR",
         });
@@ -387,7 +387,7 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
         .pImageMemoryBarriers = return_barrier.data(),
     });
 
-    if (Config::getVkHostMarkersEnabled()) {
+    if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.endDebugUtilsLabelEXT();
     }
 
@@ -406,6 +406,13 @@ void FsrPass::ResizeAndInvalidate(u32 width, u32 height) {
 
 void FsrPass::CreateImages(Img& img) const {
     img.dirty = false;
+
+    // Destroy previous resources before re-creating at new size.
+    // Views first, then images (views reference the images).
+    img.intermediary_image_view.reset();
+    img.output_image_view.reset();
+    img.intermediary_image.Destroy();
+    img.output_image.Destroy();
 
     vk::ImageCreateInfo image_create_info{
         .imageType = vk::ImageType::e2D,

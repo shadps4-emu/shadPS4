@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "common/scope_exit.h"
+#include "common/types.h"
 
 #ifdef __APPLE__
 #include <CoreFoundation/CFBundle.h>
@@ -129,6 +130,7 @@ static auto UserPaths = [] {
     create_path(PathType::CustomConfigs, user_dir / CUSTOM_CONFIGS);
     create_path(PathType::CacheDir, user_dir / CACHE_DIR);
     create_path(PathType::FontsDir, user_dir / FONTS_DIR);
+    create_path(PathType::HomeDir, user_dir / HOME_DIR);
 
     std::ofstream notice_file(user_dir / CUSTOM_TROPHY / "Notice.txt");
     if (notice_file.is_open()) {

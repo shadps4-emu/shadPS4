@@ -73,7 +73,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 const auto attrib =
                     IR::Value{offset < 16 ? IR::Attribute::Position0
                                           : IR::Attribute::Param0 + (offset / 16 - 1)};
-                const auto comp = (offset / 4) % 4;
+                const u32 comp = (offset / 4) % 4;
 
                 inst.ReplaceOpcode(IR::Opcode::SetAttribute);
                 inst.ClearArgs();
@@ -103,6 +103,13 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
             LOG_WARNING(Render_Vulkan, "MAX_VERT_OUT {} is larger than actual output vertices {}",
                         output_vertices, info.gs_copy_data.output_vertices);
             output_vertices = info.gs_copy_data.output_vertices;
+        }
+        u32 dwords_per_vertex = gs_info.out_vertex_data_size;
+        if (info.gs_copy_data.num_comps && info.gs_copy_data.num_comps > dwords_per_vertex) {
+            LOG_WARNING(Render_Vulkan,
+                        "VERT_ITEMSIZE {} is different than actual number of dwords per vertex {}",
+                        dwords_per_vertex, info.gs_copy_data.num_comps);
+            dwords_per_vertex = info.gs_copy_data.num_comps;
         }
 
         ForEachInstruction([&](IR::IREmitter& ir, IR::Inst& inst) {
@@ -139,7 +146,7 @@ void RingAccessElimination(const IR::Program& program, const RuntimeInfo& runtim
                 const auto offset = inst.Flags<IR::BufferInstInfo>().inst_offset.Value();
                 const auto data = ir.BitCast<IR::F32>(IR::U32{inst.Arg(2)});
                 const auto comp_ofs = output_vertices * 4u;
-                const auto output_size = comp_ofs * gs_info.out_vertex_data_size;
+                const auto output_size = comp_ofs * dwords_per_vertex;
 
                 const auto vc_read_ofs = (((offset / comp_ofs) * comp_ofs) % output_size) * 16u;
                 const auto& it = info.gs_copy_data.attr_map.find(vc_read_ofs);

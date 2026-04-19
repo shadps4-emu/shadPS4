@@ -1,12 +1,12 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <xxhash.h>
 
 #include "common/assert.h"
-#include "common/config.h"
 #include "common/debug.h"
 #include "common/scope_exit.h"
+#include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
@@ -415,7 +415,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   cache_image.info.size.height, cache_image.info.size.depth, cache_image.info.pitch,
                   cache_image.info.resources.levels, cache_image.info.resources.layers,
                   cache_image.info.num_samples, static_cast<u32>(cache_image.info.tile_mode),
-                  cache_image.info.num_bits, cache_image.info.props.is_block,
+                  cache_image.info.num_bits, +cache_image.info.props.is_block,
                   cache_image.info.guest_size, cache_image.tick_accessed_last, safe_to_delete,
 
                   // New image details
@@ -641,7 +641,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (Config::readbackLinearImages() && !image.info.props.is_tiled &&
+        if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled &&
             image.info.guest_address != 0) {
             download_images.emplace(image_id);
         }
@@ -653,7 +653,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (Config::readbackLinearImages() && !image.info.props.is_tiled) {
+    if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled) {
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;

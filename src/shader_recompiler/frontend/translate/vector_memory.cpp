@@ -116,6 +116,8 @@ void Translator::EmitVectorMemory(const GcnInst& inst) {
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmin, inst);
     case Opcode::BUFFER_ATOMIC_FMAX:
         return BUFFER_ATOMIC<IR::F32>(AtomicOp::Fmax, inst);
+    case Opcode::BUFFER_ATOMIC_FCMPSWAP:
+        return BUFFER_ATOMIC<IR::F32>(AtomicOp::FCmpSwap, inst);
 
         // MIMG
         // Image load operations
@@ -227,6 +229,7 @@ void Translator::BUFFER_LOAD(u32 num_dwords, bool is_inst_typed, bool is_buffer_
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -294,6 +297,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     } else {
         buffer_info.inst_data_fmt.Assign(AmdGpu::DataFormat::FormatInvalid);
     }
+    buffer_info.pc.Assign(pc);
 
     const IR::Value handle =
         ir.CompositeConstruct(ir.GetScalarReg(sharp), ir.GetScalarReg(sharp + 1),
@@ -353,6 +357,7 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
     buffer_info.inst_offset.Assign(mubuf.offset);
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
+    buffer_info.pc.Assign(pc);
 
     IR::Value vdata_val = [&] {
         if constexpr (std::is_same_v<T, IR::U32>) {
@@ -378,6 +383,10 @@ void Translator::BUFFER_ATOMIC(AtomicOp op, const GcnInst& inst) {
         case AtomicOp::CmpSwap: {
             const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
             return ir.BufferAtomicCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
+        }
+        case AtomicOp::FCmpSwap: {
+            const IR::Value cmp_val = ir.GetVectorReg(vdata + 1);
+            return ir.BufferAtomicFCmpSwap(handle, address, vdata_val, cmp_val, buffer_info);
         }
         case AtomicOp::Add:
             return ir.BufferAtomicIAdd(handle, address, vdata_val, buffer_info);
