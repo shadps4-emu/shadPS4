@@ -164,7 +164,7 @@ The following firmware modules are supported and must be placed in shadPS4's `sy
 
 
 
-# Main team
+# Main teams
 
 - [**georgemoralis**](https://github.com/georgemoralis)
 - [**psucien**](https://github.com/psucien)
