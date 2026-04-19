@@ -10,6 +10,9 @@
 #include "common/logging/thread_name_formatter.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace Common::Log {
 bool g_should_append = false;
