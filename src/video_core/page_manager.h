@@ -54,7 +54,7 @@ public:
     }
 
     static constexpr size_t GetPageSize() {
-        return PAGE_SIZE;
+        return PM_PAGE_SIZE;
     }
 
 private:
