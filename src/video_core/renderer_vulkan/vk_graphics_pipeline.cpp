@@ -193,8 +193,9 @@ GraphicsPipeline::GraphicsPipeline(
     } else if (is_rect_list || is_quad_list) {
         const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
         if (!preloading) {
+            const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
-            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
+            sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, vs_info, fs_info);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,
@@ -211,9 +212,10 @@ GraphicsPipeline::GraphicsPipeline(
         });
     } else if (is_rect_list || is_quad_list) {
         if (!preloading) {
+            const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
             const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
             sdata.tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(
-                AuxShaderType::PassthroughTES, fs_info);
+                AuxShaderType::PassthroughTES, vs_info, fs_info);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,

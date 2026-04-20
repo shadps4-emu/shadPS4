@@ -81,6 +81,7 @@ using OutputMap = std::array<Output, 4>;
 
 struct VertexRuntimeInfo {
     u32 num_outputs;
+    u32 num_exports;
     std::array<OutputMap, 3> outputs;
     bool tess_emulated_primitive{};
     bool emulate_depth_negative_one_to_one{};
