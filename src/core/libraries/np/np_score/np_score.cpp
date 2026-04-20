@@ -1,20 +1,173 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
+#include <map>
+#include <memory>
+#include <mutex>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_score.h"
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_score/np_score.h"
+#include "core/libraries/np/np_score/np_score_ctx.h"
 
 namespace Libraries::Np::NpScore {
 
 // Helper macro to format pointer safely
 #define PTR(ptr) static_cast<const void*>(ptr)
 
-int PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}", reqId);
+struct ScoreTitleCtx {
+    OrbisNpServiceLabel serviceLabel = 0;
+    s32 userId = -1;
+};
+
+static std::mutex g_mutex;
+static std::map<OrbisNpScoreTitleCtxId, ScoreTitleCtx> g_title_ctxs;
+static std::map<OrbisNpScoreRequestId, std::shared_ptr<ScoreRequestCtx>> g_requests;
+static OrbisNpScoreTitleCtxId g_next_ctx_id = 1;
+static OrbisNpScoreRequestId g_next_req_id = 1;
+
+// Internal helpers
+static ScoreTitleCtx* LookupTitleCtxUnlocked(OrbisNpScoreTitleCtxId id) {
+    auto it = g_title_ctxs.find(id);
+    return it == g_title_ctxs.end() ? nullptr : &it->second;
+}
+
+static std::shared_ptr<ScoreRequestCtx> LookupRequestUnlocked(OrbisNpScoreRequestId id) {
+    auto it = g_requests.find(id);
+    return it == g_requests.end() ? nullptr : it->second;
+}
+
+static bool IsRequestAborted(const std::shared_ptr<ScoreRequestCtx>& req) {
+    std::lock_guard lock(req->mutex);
+    return req->result.has_value() && *req->result == ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+}
+
+//***********************************
+// Title context management functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
+                                            const OrbisNpId* selfNpId) {
+    if (serviceLabel == static_cast<OrbisNpServiceLabel>(ORBIS_NP_INVALID_SERVICE_LABEL)) {
+        LOG_ERROR(Lib_NpScore, "invalid serviceLabel");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (!selfNpId) {
+        LOG_ERROR(Lib_NpScore, "selfNpId is null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    std::lock_guard lock(g_mutex);
+    if (static_cast<s32>(g_title_ctxs.size()) >= ORBIS_NP_SCORE_MAX_CTX_NUM) {
+        LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const s32 userId = 1; // just return 1 for now when shadnet attached it will return real id
+    /*TODO*/ // Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
+    const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
+    g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = serviceLabel, .userId = userId};
+    LOG_INFO(Lib_NpScore, "CreateNpTitleCtx id={} serviceLabel={} userId={}", id, serviceLabel,
+             userId);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
+                                             UserService::OrbisUserServiceUserId selfId) {
+
+    /* if (!Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(selfId)) {
+        LOG_ERROR(Lib_NpScore, "userId {} is not signed in to NP", selfId);
+        return ORBIS_NP_ERROR_SIGNED_OUT;
+    }*/ //TODO!
+    if (npServiceLabel == static_cast<OrbisNpServiceLabel>(ORBIS_NP_INVALID_SERVICE_LABEL)) {
+        LOG_ERROR(Lib_NpScore, "invalid serviceLabel");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    std::lock_guard lock(g_mutex);
+    if (static_cast<s32>(g_title_ctxs.size()) >= ORBIS_NP_SCORE_MAX_CTX_NUM) {
+        LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
+    g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = npServiceLabel, .userId = selfId};
+    LOG_INFO(Lib_NpScore, "CreateNpTitleCtxA id={} serviceLabel={} userId={}", id, npServiceLabel,
+             selfId);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId) {
+    std::lock_guard lock(g_mutex);
+    if (!g_title_ctxs.contains(titleCtxId)) {
+        LOG_ERROR(Lib_NpScore, "invalid titleCtxId {}", titleCtxId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+
+    for (auto it = g_requests.begin(); it != g_requests.end();) {
+        if (it->second->titleCtxId == titleCtxId) {
+            it->second->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+            it = g_requests.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    g_title_ctxs.erase(titleCtxId);
+    LOG_INFO(Lib_NpScore, "DeleteNpTitleCtx id={}", titleCtxId);
     return ORBIS_OK;
 }
+
+//***********************************
+// Request management functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
+    std::lock_guard lock(g_mutex);
+    auto* tc = LookupTitleCtxUnlocked(titleCtxId);
+    if (!tc) {
+        LOG_ERROR(Lib_NpScore, "invalid titleCtxId {}", titleCtxId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    if (static_cast<s32>(g_requests.size()) >= ORBIS_NP_SCORE_MAX_CTX_NUM) {
+        LOG_ERROR(Lib_NpScore, "too many requests ({})", g_requests.size());
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
+    }
+    const OrbisNpScoreRequestId id = g_next_req_id++;
+    auto req = std::make_shared<ScoreRequestCtx>();
+    req->titleCtxId = titleCtxId;
+    req->userId = tc->userId;
+    g_requests[id] = std::move(req);
+    LOG_INFO(Lib_NpScore, "CreateRequest id={} titleCtxId={}", id, titleCtxId);
+    return id;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId) {
+    LOG_INFO(Lib_NpScore, "DeleteRequest reqId={}", reqId);
+    std::lock_guard lock(g_mutex);
+    auto req = LookupRequestUnlocked(reqId);
+    if (!req) {
+        LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    req->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    g_requests.erase(reqId);
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
+    LOG_INFO(Lib_NpScore, "AbortRequest reqId={}", reqId);
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+    }
+    if (!req) {
+        LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    req->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    return ORBIS_OK;
+}
+
+//***********************************
+// Stubbed functions
+//***********************************
 
 int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option) {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, option={}", reqId,
@@ -33,35 +186,8 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId) {
-    LOG_ERROR(Lib_NpScore, "serviceLabel = {}, npId->data = {}", serviceLabel, npId->handle.data);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
-    LOG_ERROR(Lib_NpScore, "libCtxId = {}", titleCtxId);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreDeleteRequest(s32 reqId) {
-    LOG_ERROR(Lib_NpScore, "requestId = {:#x}", reqId);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
-                                             UserService::OrbisUserServiceUserId selfId) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called npServiceLabel={}, selfId={}",
-              static_cast<u32>(npServiceLabel), selfId);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreDeleteNpTitleCtx(s32 titleCtxId) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called titleCtxId={}", titleCtxId);
     return ORBIS_OK;
 }
 
@@ -184,13 +310,23 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameData() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                       void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npId={}, "
+              "totalSize={}, recvSize={}, data={}, option={}",
+              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetGameDataAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                            void* data, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npId={}, "
+              "totalSize={}, recvSize={}, data={}, option={}",
+              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
@@ -350,23 +486,51 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npIdArray={}, npIdArraySize={}, "
+              "rankArray={}, rankArraySize={}, commentArray={}, commentArraySize={}, "
+              "infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, totalRecord={}, "
+              "option={}",
+              reqId, boardId, PTR(npIdArray), npIdArraySize, PTR(rankArray), rankArraySize,
+              PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
+              PTR(lastSortDate), PTR(totalRecord), PTR(option));
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
+              arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, idArray={}, idArraySize={}, "
+              "rankArray={}, rankArraySize={}, arrayNum={}",
+              reqId, boardId, PTR(idArray), idArraySize, PTR(rankArray), rankArraySize, arrayNum);
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync() {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called");
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdPcIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpScoreNpIdPcId* idArray, u64 idArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
+              arrayNum);
     return ORBIS_OK;
 }
 

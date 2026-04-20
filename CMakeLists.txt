@@ -606,8 +606,6 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_manager.h
             src/core/libraries/np/np_matching2.cpp
             src/core/libraries/np/np_matching2.h
-            src/core/libraries/np/np_score.cpp
-            src/core/libraries/np/np_score.h
             src/core/libraries/np/np_trophy.cpp
             src/core/libraries/np/np_trophy.h
             src/core/libraries/np/np_tus.cpp
@@ -633,6 +631,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_score/np_score.cpp
+            src/core/libraries/np/np_score/np_score.h
+            src/core/libraries/np/np_score/np_score_ctx.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
