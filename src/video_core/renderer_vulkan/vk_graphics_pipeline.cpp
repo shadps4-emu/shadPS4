@@ -26,15 +26,6 @@ static constexpr std::array LogicalStageToStageBit = {
     vk::ShaderStageFlagBits::eCompute,
 };
 
-static bool IsPrimitiveTopologyList(const vk::PrimitiveTopology topology) {
-    return topology == vk::PrimitiveTopology::ePointList ||
-           topology == vk::PrimitiveTopology::eLineList ||
-           topology == vk::PrimitiveTopology::eTriangleList ||
-           topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
-           topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
-           topology == vk::PrimitiveTopology::ePatchList;
-}
-
 GraphicsPipeline::GraphicsPipeline(
     const Instance& instance, Scheduler& scheduler, DescriptorHeap& desc_heap,
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
