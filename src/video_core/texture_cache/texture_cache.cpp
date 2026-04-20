@@ -125,8 +125,11 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
 
     scheduler.DeferPriorityOperation(
         [this, device_addr = image.info.guest_address, download, download_size] {
-            Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
-                                                      download_size);
+            auto* memory = Core::Memory::Instance();
+            memory->ForEachBackingRegion(device_addr, download_size,
+                                         [&](u64 offset, u64 size, u8* backing) {
+                                             memcpy(backing, download + offset, size);
+                                         });
         });
 }
 
