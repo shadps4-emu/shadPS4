@@ -115,7 +115,8 @@ struct InstControlVOP3 {
     u64 : 8;
     u64 abs : 3;
     u64 clmp : 1;
-    u64 : 47;
+    u64 op_sel : 4;
+    u64 : 43;
     u64 omod : 2;
     u64 neg : 3;
 };
@@ -130,7 +131,7 @@ struct InstControlVOP3P {
     u64 op_sel_hi_01 : 2;
     u64 neg : 3;
 
-    bool get_op_sel_hi(int idx) {
+    bool get_op_sel_hi(int idx) const {
         switch (idx) {
         case 0:
             return (op_sel_hi_01 & 1) == 1;
@@ -240,7 +241,7 @@ union InstControl {
     InstControlEXP exp;
 };
 
-struct SdwaVopc {
+struct SdwaVop12 {
     u32 src0 : 8;
     u32 dst_sel : 3;
     u32 dst_u : 2;
@@ -261,7 +262,7 @@ struct SdwaVopc {
     u32 s1 : 1;
 };
 
-struct SdwaVop12 {
+struct SdwaVopc {
     u32 src0 : 8;
     u32 sdst : 7;
     u32 sd : 1;
