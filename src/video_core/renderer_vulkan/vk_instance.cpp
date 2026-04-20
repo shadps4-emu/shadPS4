@@ -158,29 +158,8 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
 
     CreateDevice();
     CollectPhysicalMemoryInfo();
+    CollectImageFormatInfo();
     CollectToolingInfo();
-
-    // Check and log format support details.
-    for (const auto& format : LiverpoolToVK::SurfaceFormats()) {
-        if (!IsFormatSupported(format.vk_format, format.flags)) {
-            LOG_WARNING(Render_Vulkan,
-                        "Surface format data_format={}, number_format={} is not fully supported "
-                        "(vk_format={}, missing features={})",
-                        static_cast<u32>(format.data_format),
-                        static_cast<u32>(format.number_format), vk::to_string(format.vk_format),
-                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
-        }
-    }
-    for (const auto& format : LiverpoolToVK::DepthFormats()) {
-        if (!IsFormatSupported(format.vk_format, format.flags)) {
-            LOG_WARNING(Render_Vulkan,
-                        "Depth format z_format={}, stencil_format={} is not fully supported "
-                        "(vk_format={}, missing features={})",
-                        static_cast<u32>(format.z_format), static_cast<u32>(format.stencil_format),
-                        vk::to_string(format.vk_format),
-                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
-        }
-    }
 }
 
 Instance::~Instance() {
@@ -331,10 +310,12 @@ bool Instance::CreateDevice() {
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
 #ifdef __APPLE__
-    // Required by Vulkan spec if supported.
-    portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-    if (portability_subset) {
-        portability_features = feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+    if (driver_id == vk::DriverId::eMoltenvk) {
+        portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        if (portability_subset) {
+            portability_features =
+                feature_chain.get<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
+        }
     }
 #endif
 
@@ -703,6 +684,44 @@ void Instance::CollectPhysicalMemoryInfo() {
     const s64 available_memory = static_cast<s64>(total_memory_budget - device_initial_usage);
     total_memory_budget =
         static_cast<u64>(std::max<s64>(available_memory - 8_GB, static_cast<s64>(local_memory)));
+}
+
+void Instance::CollectImageFormatInfo() {
+    // Check for block texel view support using basic image format info.
+    const vk::PhysicalDeviceImageFormatInfo2 block_texel_view_info{
+        .format = vk::Format::eBc1RgbaUnormBlock,
+        .type = vk::ImageType::e2D,
+        .tiling = vk::ImageTiling::eOptimal,
+        .usage = vk::ImageUsageFlagBits::eSampled,
+        .flags = vk::ImageCreateFlagBits::eBlockTexelViewCompatible,
+    };
+    const auto block_texel_view_props =
+        physical_device.getImageFormatProperties2(block_texel_view_info);
+    supports_block_texel_view = block_texel_view_props.result == vk::Result::eSuccess;
+    LOG_INFO(Render_Vulkan, "Block Texel View support: {}",
+             supports_block_texel_view ? "Yes" : "No");
+
+    // Check and log format support details.
+    for (const auto& format : LiverpoolToVK::SurfaceFormats()) {
+        if (!IsFormatSupported(format.vk_format, format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Surface format data_format={}, number_format={} is not fully supported "
+                        "(vk_format={}, missing features={})",
+                        static_cast<u32>(format.data_format),
+                        static_cast<u32>(format.number_format), vk::to_string(format.vk_format),
+                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
+        }
+    }
+    for (const auto& format : LiverpoolToVK::DepthFormats()) {
+        if (!IsFormatSupported(format.vk_format, format.flags)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Depth format z_format={}, stencil_format={} is not fully supported "
+                        "(vk_format={}, missing features={})",
+                        static_cast<u32>(format.z_format), static_cast<u32>(format.stencil_format),
+                        vk::to_string(format.vk_format),
+                        vk::to_string(format.flags & ~GetFormatFeatureFlags(format.vk_format)));
+        }
+    }
 }
 
 void Instance::CollectToolingInfo() const {
