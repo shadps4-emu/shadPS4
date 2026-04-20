@@ -1058,7 +1058,7 @@ void PatchImageSampleArgs(IR::Block& block, IR::Inst& inst, Info& info,
 
     auto texel = [&] -> IR::Value {
         if (is_msaa) {
-            return ir.ImageRead(handle, coords, ir.Imm32(0U), ir.Imm32(0U), inst_info);
+            return ir.ImageRead(handle, coords, {}, ir.Imm32(0U), inst_info);
         }
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {

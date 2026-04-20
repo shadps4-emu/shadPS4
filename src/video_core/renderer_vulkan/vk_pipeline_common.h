@@ -57,7 +57,7 @@ public:
         return is_compute;
     }
 
-    using DescriptorWrites = boost::container::small_vector<vk::WriteDescriptorSet, 16>;
+    using DescriptorWrites = std::vector<vk::WriteDescriptorSet>;
     using BufferBarriers = boost::container::small_vector<vk::BufferMemoryBarrier2, 16>;
 
     void BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
