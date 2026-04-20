@@ -26,7 +26,8 @@ TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler&
                            PageManager& page_manager_)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
       buffer_cache{buffer_cache_}, page_manager{page_manager_}, blit_helper{instance, scheduler},
-      tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream)} {
+      tile_manager{instance, scheduler, buffer_cache.GetUtilityBuffer(MemoryUsage::Stream),
+      readback_linear_images{EmulatorSettings.IsReadbackLinearImagesEnabled()} {
     // Create basic null image at fixed image ID.
     const auto null_id = GetNullImage(vk::Format::eR8G8B8A8Unorm);
     ASSERT(null_id.index == NULL_IMAGE_ID.index);
@@ -674,8 +675,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
         image.flags |= ImageFlagBits::GpuModified;
-        if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled &&
-            image.info.guest_address != 0) {
+        if (readback_linear_images && !image.info.props.is_tiled && image.info.guest_address != 0) {
             download_images.emplace(image_id);
         }
     }
@@ -686,7 +686,7 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     image.flags |= ImageFlagBits::GpuModified;
-    if (EmulatorSettings.IsReadbackLinearImagesEnabled() && !image.info.props.is_tiled) {
+    if (readback_linear_images && !image.info.props.is_tiled) {
         download_images.emplace(image_id);
     }
     image.usage.render_target = 1u;
