@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <core/user_settings.h>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -62,7 +63,9 @@ s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
         LOG_ERROR(Lib_NpScore, "Too many title contexts already exist ({})", g_title_ctxs.size());
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
     }
-    const s32 userId = 1; // just return 1 for now when shadnet attached it will return real id
+    const s32 userId =
+        UserManagement.GetDefaultUser().user_id; // just return default userID for now when shadnet
+                                                 // attached it will return real id
     /*TODO*/ // Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
     const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
     g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = serviceLabel, .userId = userId};
