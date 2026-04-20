@@ -829,6 +829,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
     for (auto cb = 0u; cb < state.num_color_attachments; ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         if (!image_id) {
+            state.color_attachments[cb] = {};
             continue;
         }
         auto* image = &texture_cache.GetImage(image_id);
@@ -1286,7 +1287,19 @@ void Rasterizer::UpdatePrimitiveState(const bool is_indexed) const {
     const auto& regs = liverpool->regs;
     auto& dynamic_state = scheduler.GetDynamicState();
 
-    const auto prim_restart = (regs.enable_primitive_restart & 1) != 0;
+    const auto is_list_topology = [](const AmdGpu::PrimitiveType type) {
+        const auto topology = LiverpoolToVK::PrimitiveType(type);
+        return topology == vk::PrimitiveTopology::ePointList ||
+               topology == vk::PrimitiveTopology::eLineList ||
+               topology == vk::PrimitiveTopology::eTriangleList ||
+               topology == vk::PrimitiveTopology::eLineListWithAdjacency ||
+               topology == vk::PrimitiveTopology::eTriangleListWithAdjacency ||
+               topology == vk::PrimitiveTopology::ePatchList;
+    };
+
+    const auto prim_restart =
+        (regs.enable_primitive_restart & 1) != 0 &&
+        (instance.IsListRestartSupported() || !is_list_topology(regs.primitive_type));
     ASSERT_MSG(!is_indexed || !prim_restart || regs.primitive_restart_index == 0xFFFF ||
                    regs.primitive_restart_index == 0xFFFFFFFF,
                "Primitive restart index other than -1 is not supported yet");
