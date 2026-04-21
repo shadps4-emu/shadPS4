@@ -45,6 +45,14 @@ static bool IsRequestAborted(const std::shared_ptr<ScoreRequestCtx>& req) {
     return req->result.has_value() && *req->result == ORBIS_NP_COMMUNITY_ERROR_ABORTED;
 }
 
+static s32 ServiceLabelForRequest(const std::shared_ptr<ScoreRequestCtx>& req) {
+    if (!req)
+        return 0;
+    std::lock_guard lock(g_mutex);
+    auto* tc = LookupTitleCtxUnlocked(req->titleCtxId);
+    return tc != nullptr ? tc->serviceLabel : 0;
+}
+
 //***********************************
 // Title context management functions
 //***********************************

@@ -319,13 +319,22 @@ void NpHandler::FireStateCallback(s32 user_id, NpManager::OrbisNpState state) {
 
 // Score
 
-// TODO fix me this will not work for games with multiple npcommids
-std::string NpHandler::GetNpCommId() const {
+std::string NpHandler::GetNpCommId(s32 service_label) const {
+    // TODO complete guess of how commid is mapping to service_label.
     constexpr size_t COM_ID_LEN = 12;
     const auto& ids = Common::ElfInfo::Instance().GetNpCommIds();
     std::string com_id;
     if (!ids.empty()) {
-        com_id = ids.front();
+        const size_t idx = (service_label >= 0 && static_cast<size_t>(service_label) < ids.size())
+                               ? static_cast<size_t>(service_label)
+                               : 0;
+        com_id = ids[idx];
+        if (static_cast<size_t>(service_label) >= ids.size()) {
+            LOG_WARNING(NpHandler,
+                        "GetNpCommId: service_label={} >= npbind entry count {} — falling back "
+                        "to index 0",
+                        service_label, ids.size());
+        }
     }
     if (com_id.size() < COM_ID_LEN) {
         com_id.resize(COM_ID_LEN, '\0');
@@ -335,9 +344,9 @@ std::string NpHandler::GetNpCommId() const {
     return com_id;
 }
 
-s32 NpHandler::RecordScore(s32 user_id, u32 boardId, s32 pcId, s64 score, const char* comment,
-                           size_t commentLen, const u8* gameInfoData, size_t gameInfoSize,
-                           std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
+                           const char* comment, size_t commentLen, const u8* gameInfoData,
+                           size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req) {
     // Look up the user's shadNet session.
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
@@ -367,7 +376,7 @@ s32 NpHandler::RecordScore(s32 user_id, u32 boardId, s32 pcId, s64 score, const 
     }
 
     const std::string proto_bytes = proto.SerializeAsString();
-    const std::string com_id = GetNpCommId();
+    const std::string com_id = GetNpCommId(service_label);
 
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());
@@ -388,13 +397,15 @@ s32 NpHandler::RecordScore(s32 user_id, u32 boardId, s32 pcId, s64 score, const 
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
-             "RecordScore: user_id={} board={} pcId={} score={} commentLen={} "
+             "RecordScore: user_id={} service_label={} board={} pcId={} score={} commentLen={} "
              "gameInfoSize={} pkt_id={} com_id='{}'",
-             user_id, boardId, pcId, score, commentLen, gameInfoSize, pkt_id, com_id);
+             user_id, service_label, boardId, pcId, score, commentLen, gameInfoSize, pkt_id,
+             com_id);
     return ORBIS_OK;
 }
 
-s32 NpHandler::GetRankingByNpId(s32 user_id, u32 boardId, const std::vector<std::string>& npIds,
+s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
+                                const std::vector<std::string>& npIds,
                                 NpScore::OrbisNpScorePlayerRankData* rankArray,
                                 NpScore::OrbisNpScoreComment* commentArray,
                                 NpScore::OrbisNpScoreGameInfo* infoArray,
@@ -427,7 +438,7 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, u32 boardId, const std::vector<std:
     }
 
     const std::string proto_bytes = proto.SerializeAsString();
-    const std::string com_id = GetNpCommId();
+    const std::string com_id = GetNpCommId(service_label);
 
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());
@@ -455,15 +466,15 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, u32 boardId, const std::vector<std:
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
-             "GetRankingByNpId: user_id={} board={} npIdCount={} withComment={} "
-             "withGameInfo={} pkt_id={} com_id='{}'",
-             user_id, boardId, npIds.size(), commentArray != nullptr, infoArray != nullptr, pkt_id,
-             com_id);
+             "GetRankingByNpId: user_id={} service_label={} board={} npIdCount={} "
+             "withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, npIds.size(), commentArray != nullptr,
+             infoArray != nullptr, pkt_id, com_id);
     return ORBIS_OK;
 }
 
-s32 NpHandler::GetRankingByRange(s32 user_id, u32 boardId, u32 startSerialRank, u32 arrayNum,
-                                 NpScore::OrbisNpScoreRankData* rankArray,
+s32 NpHandler::GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u32 startSerialRank,
+                                 u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
                                  NpScore::OrbisNpScoreComment* commentArray,
                                  NpScore::OrbisNpScoreGameInfo* infoArray,
                                  Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -491,7 +502,7 @@ s32 NpHandler::GetRankingByRange(s32 user_id, u32 boardId, u32 startSerialRank, 
     proto.set_withgameinfo(infoArray != nullptr);
 
     const std::string proto_bytes = proto.SerializeAsString();
-    const std::string com_id = GetNpCommId();
+    const std::string com_id = GetNpCommId(service_label);
 
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());
@@ -518,15 +529,15 @@ s32 NpHandler::GetRankingByRange(s32 user_id, u32 boardId, u32 startSerialRank, 
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
-             "GetRankingByRange: user_id={} board={} startRank={} numRanks={} withComment={} "
-             "withGameInfo={} pkt_id={} com_id='{}'",
-             user_id, boardId, startSerialRank, arrayNum, commentArray != nullptr,
+             "GetRankingByRange: user_id={} service_label={} board={} startRank={} numRanks={} "
+             "withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, startSerialRank, arrayNum, commentArray != nullptr,
              infoArray != nullptr, pkt_id, com_id);
     return ORBIS_OK;
 }
 
-s32 NpHandler::GetFriendsRanking(s32 user_id, u32 boardId, bool includeSelf, u32 arrayNum,
-                                 NpScore::OrbisNpScoreRankData* rankArray,
+s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
+                                 u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
                                  NpScore::OrbisNpScoreComment* commentArray,
                                  NpScore::OrbisNpScoreGameInfo* infoArray,
                                  Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -554,7 +565,7 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, u32 boardId, bool includeSelf, u32
     proto.set_withgameinfo(infoArray != nullptr);
 
     const std::string proto_bytes = proto.SerializeAsString();
-    const std::string com_id = GetNpCommId();
+    const std::string com_id = GetNpCommId(service_label);
 
     std::vector<u8> payload;
     payload.reserve(12 + 4 + proto_bytes.size());
@@ -581,10 +592,10 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, u32 boardId, bool includeSelf, u32
         m_pending_score.emplace(pkt_id, std::move(pending));
     }
     LOG_INFO(NpHandler,
-             "GetFriendsRanking: user_id={} board={} includeSelf={} arrayNum={} withComment={} "
-             "withGameInfo={} pkt_id={} com_id='{}'",
-             user_id, boardId, includeSelf, arrayNum, commentArray != nullptr, infoArray != nullptr,
-             pkt_id, com_id);
+             "GetFriendsRanking: user_id={} service_label={} board={} includeSelf={} "
+             "arrayNum={} withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, includeSelf, arrayNum, commentArray != nullptr,
+             infoArray != nullptr, pkt_id, com_id);
     return ORBIS_OK;
 }
 

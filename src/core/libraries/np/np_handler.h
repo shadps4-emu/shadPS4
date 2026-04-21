@@ -73,12 +73,13 @@ public:
     std::optional<std::string> GetFriendNpid(s32 user_id, u32 index) const;
 
     // Submit a RecordScore request to the shadNet server.
-    s32 RecordScore(s32 user_id, u32 boardId, s32 pcId, s64 score, const char* comment,
-                    size_t commentLen, const u8* gameInfoData, size_t gameInfoSize,
-                    std::shared_ptr<NpScore::ScoreRequestCtx> req);
+    s32 RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
+                    const char* comment, size_t commentLen, const u8* gameInfoData,
+                    size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
     // Submit a GetRankingByNpId request to the shadNet server.
-    s32 GetRankingByNpId(s32 user_id, u32 boardId, const std::vector<std::string>& npIds,
+    s32 GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
+                         const std::vector<std::string>& npIds,
                          NpScore::OrbisNpScorePlayerRankData* rankArray,
                          NpScore::OrbisNpScoreComment* commentArray,
                          NpScore::OrbisNpScoreGameInfo* infoArray,
@@ -86,16 +87,16 @@ public:
                          std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
     // Submit a GetRankingByRange request to the shadNet server.
-    s32 GetRankingByRange(s32 user_id, u32 boardId, u32 startSerialRank, u32 arrayNum,
-                          NpScore::OrbisNpScoreRankData* rankArray,
+    s32 GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u32 startSerialRank,
+                          u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
                           NpScore::OrbisNpScoreComment* commentArray,
                           NpScore::OrbisNpScoreGameInfo* infoArray,
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
     // Submit a GetFriendsRanking request to the shadNet server.
-    s32 GetFriendsRanking(s32 user_id, u32 boardId, bool includeSelf, u32 arrayNum,
-                          NpScore::OrbisNpScoreRankData* rankArray,
+    s32 GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
+                          u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
                           NpScore::OrbisNpScoreComment* commentArray,
                           NpScore::OrbisNpScoreGameInfo* infoArray,
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -134,7 +135,7 @@ private:
                       const std::vector<u8>& body);
 
     // 12-byte NP Communication ID
-    std::string GetNpCommId() const;
+    std::string GetNpCommId(s32 service_label) const;
 
     // Per-user client map
     mutable std::mutex m_mutex_clients;
