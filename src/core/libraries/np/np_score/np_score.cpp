@@ -10,6 +10,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler.h"
 #include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_score/np_score_ctx.h"
 
@@ -72,9 +73,7 @@ s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
         return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_OBJECTS;
     }
     const s32 userId =
-        UserManagement.GetDefaultUser().user_id; // just return default userID for now when shadnet
-                                                 // attached it will return real id
-    /*TODO*/ // Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
+        Libraries::Np::NpHandler::GetInstance().GetUserIdByOnlineId(selfNpId->handle);
     const OrbisNpScoreTitleCtxId id = g_next_ctx_id++;
     g_title_ctxs[id] = ScoreTitleCtx{.serviceLabel = serviceLabel, .userId = userId};
     LOG_INFO(Lib_NpScore, "CreateNpTitleCtx id={} serviceLabel={} userId={}", id, serviceLabel,
@@ -85,10 +84,10 @@ s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel,
 s32 PS4_SYSV_ABI sceNpScoreCreateNpTitleCtxA(OrbisNpServiceLabel npServiceLabel,
                                              UserService::OrbisUserServiceUserId selfId) {
 
-    /* if (!Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(selfId)) {
+    if (!Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(selfId)) {
         LOG_ERROR(Lib_NpScore, "userId {} is not signed in to NP", selfId);
         return ORBIS_NP_ERROR_SIGNED_OUT;
-    }*/ //TODO!
+    }
     if (npServiceLabel == static_cast<OrbisNpServiceLabel>(ORBIS_NP_INVALID_SERVICE_LABEL)) {
         LOG_ERROR(Lib_NpScore, "invalid serviceLabel");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
@@ -173,6 +172,166 @@ s32 PS4_SYSV_ABI sceNpScoreAbortRequest(s32 reqId) {
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
     }
     req->SetResult(ORBIS_NP_COMMUNITY_ERROR_ABORTED);
+    return ORBIS_OK;
+}
+
+//***********************************
+// Async functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result) {
+    //   return 0 = async op completed; *result holds its final return value
+    //   return 1  = async op still in flight
+    //   return <0 = this poll call itself failed (e.g. invalid reqId)
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+    }
+    if (!req) {
+        LOG_ERROR(Lib_NpScore, "PollAsync invalid reqId {}", reqId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    std::lock_guard rlock(req->mutex);
+    if (!req->result.has_value()) {
+        return 1; // still running
+    }
+    if (result != nullptr) {
+        *result = *req->result;
+    }
+    LOG_INFO(Lib_NpScore, "PollAsync reqId={} completed (result={:#x})", reqId, *req->result);
+    return 0;
+}
+
+s32 PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result) {
+    // Block until the async op finishes. Shape mirrors PollAsync but waits on
+    // the request's cv instead of bailing out if result isn't set yet.
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+    }
+    if (!req) {
+        LOG_ERROR(Lib_NpScore, "WaitAsync invalid reqId {}", reqId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+    }
+    std::unique_lock rlock(req->mutex);
+    req->cv.wait(rlock, [&] { return req->result.has_value(); });
+    if (result != nullptr) {
+        *result = *req->result;
+    }
+    LOG_INFO(Lib_NpScore, "WaitAsync reqId={} completed (result={:#x})", reqId, *req->result);
+    return 0;
+}
+
+//***********************************
+// Record Score functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       OrbisNpScoreValue score,
+                                       const OrbisNpScoreComment* scoreComment,
+                                       const OrbisNpScoreGameInfo* gameInfo,
+                                       OrbisNpScoreRankNumber* tmpRank,
+                                       const Rtc::OrbisRtcTick* compareDate, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "reqId={} boardId={} score={} scoreComment={} gameInfo={} tmpRank={} "
+             "compareDate={} option={}",
+             reqId, boardId, score, PTR(scoreComment), PTR(gameInfo), PTR(tmpRank),
+             PTR(compareDate), PTR(option));
+
+    if (option != nullptr) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (gameInfo != nullptr && gameInfo->infoSize > ORBIS_NP_SCORE_GAMEINFO_MAXSIZE) {
+        LOG_ERROR(Lib_NpScore, "gameInfo->infoSize {} exceeds max {}", gameInfo->infoSize,
+                  ORBIS_NP_SCORE_GAMEINFO_MAXSIZE);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    // Stash the caller's tmpRank pointer so the reply handler can write to it.
+    req->tmpRankOut = tmpRank;
+
+    const char* commentBytes = (scoreComment != nullptr) ? scoreComment->utf8Comment : nullptr;
+    const size_t commentLen = (scoreComment != nullptr) ? strnlen(scoreComment->utf8Comment,
+                                                                  ORBIS_NP_SCORE_COMMENT_MAXLEN)
+                                                        : 0;
+    const u8* gameInfoBytes = (gameInfo != nullptr) ? gameInfo->data : nullptr;
+    const size_t gameInfoLen = (gameInfo != nullptr) ? gameInfo->infoSize : 0;
+
+    const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
+        req->userId, ServiceLabelForRequest(req), boardId, /*pcId=*/0, score, commentBytes,
+        commentLen, gameInfoBytes, gameInfoLen, req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            OrbisNpScoreValue score,
+                                            const OrbisNpScoreComment* scoreComment,
+                                            const OrbisNpScoreGameInfo* gameInfo,
+                                            OrbisNpScoreRankNumber* tmpRank,
+                                            const Rtc::OrbisRtcTick* compareDate, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, score={}, "
+              "scoreComment={}, gameInfo={}, tmpRank={}, compareDate={}, option={}",
+              reqId, boardId, score, PTR(scoreComment), PTR(gameInfo), PTR(tmpRank),
+              PTR(compareDate), PTR(option));
+    if (option != nullptr) {
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (gameInfo != nullptr && gameInfo->infoSize > ORBIS_NP_SCORE_GAMEINFO_MAXSIZE) {
+        LOG_ERROR(Lib_NpScore, "gameInfo->infoSize {} exceeds max {}", gameInfo->infoSize,
+                  ORBIS_NP_SCORE_GAMEINFO_MAXSIZE);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    // Stash the caller's tmpRank pointer so the reply handler can write to it.
+    req->tmpRankOut = tmpRank;
+
+    const char* commentBytes = (scoreComment != nullptr) ? scoreComment->utf8Comment : nullptr;
+    const size_t commentLen = (scoreComment != nullptr) ? strnlen(scoreComment->utf8Comment,
+                                                                  ORBIS_NP_SCORE_COMMENT_MAXLEN)
+                                                        : 0;
+    const u8* gameInfoBytes = (gameInfo != nullptr) ? gameInfo->data : nullptr;
+    const size_t gameInfoLen = (gameInfo != nullptr) ? gameInfo->infoSize : 0;
+
+    const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
+        req->userId, ServiceLabelForRequest(req), boardId, /*pcId=*/0, score, commentBytes,
+        commentLen, gameInfoBytes, gameInfoLen, req);
+    if (dispatch_err != ORBIS_OK) {
+        // Dispatch failed synchronously (user signed out, not authed, etc.).
+        // Complete the request with the error so PollAsync/WaitAsync observe it.
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
     return ORBIS_OK;
 }
 
@@ -624,11 +783,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceNpScorePollAsync(s32 reqId, s32* result) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, result={}", reqId, PTR(result));
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
                                           OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                           const void* data, void* option) {
@@ -646,34 +800,6 @@ int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId bo
               "(STUBBED) called reqId={}, boardId={}, score={}, "
               "totalSize={}, sendSize={}, data={}, option={}",
               reqId, boardId, score, totalSize, sendSize, PTR(data), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
-                                       OrbisNpScoreValue score,
-                                       const OrbisNpScoreComment* scoreComment,
-                                       const OrbisNpScoreGameInfo* gameInfo,
-                                       OrbisNpScoreRankNumber* tmpRank,
-                                       const Rtc::OrbisRtcTick* compareDate, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, score={}, scoreComment={}, "
-              "gameInfo={}, tmpRank={}, compareDate={}, option={}",
-              reqId, boardId, score, PTR(scoreComment), PTR(gameInfo), PTR(tmpRank),
-              PTR(compareDate), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                            OrbisNpScoreValue score,
-                                            const OrbisNpScoreComment* scoreComment,
-                                            const OrbisNpScoreGameInfo* gameInfo,
-                                            OrbisNpScoreRankNumber* tmpRank,
-                                            const Rtc::OrbisRtcTick* compareDate, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, score={}, "
-              "scoreComment={}, gameInfo={}, tmpRank={}, compareDate={}, option={}",
-              reqId, boardId, score, PTR(scoreComment), PTR(gameInfo), PTR(tmpRank),
-              PTR(compareDate), PTR(option));
     return ORBIS_OK;
 }
 
@@ -710,12 +836,6 @@ int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeo
               "(STUBBED) called id={}, resolveRetry={}, resolveTimeout={}, "
               "connTimeout={}, sendTimeout={}, recvTimeout={}",
               id, resolveRetry, resolveTimeout, connTimeout, sendTimeout, recvTimeout);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreWaitAsync(s32 reqId, s32* result) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) sceNpScoreWaitAsync(reqId={}, result={})", reqId,
-              PTR(result));
     return ORBIS_OK;
 }
 
