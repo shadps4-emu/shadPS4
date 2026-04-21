@@ -46,7 +46,7 @@ constexpr VAddr USER_MIN = 0x1000000000ULL;
 // Linux maps the shadPS4 executable around here, so limit the user maximum
 constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
 #else
-constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
+constexpr VAddr USER_MAX = 0x2FFFFFFFFFFFULL;
 #endif
 
 // Constants for the sizes of the ranges in address space.
@@ -644,18 +644,19 @@ struct AddressSpace::Impl {
         // Map memory wherever possible and instruction translation can handle offsetting to the
         // base.
         map_flags &= ~MAP_FIXED;
-        const auto virtual_base =
-            reinterpret_cast<u8*>(mmap(nullptr, virtual_size, protection_flags, map_flags, -1, 0));
-        system_managed_base = virtual_base;
-        system_reserved_base = virtual_base + SYSTEM_RESERVED_MIN - SYSTEM_MANAGED_MIN;
-        user_base = virtual_base + USER_MIN - SYSTEM_MANAGED_MIN;
+        system_managed_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_MANAGED_MIN),
+                                    system_managed_size, protection_flags, map_flags, -1, 0));
+        system_reserved_base =
+            reinterpret_cast<u8*>(mmap(reinterpret_cast<void*>(SYSTEM_RESERVED_MIN),
+                                    system_reserved_size, protection_flags, map_flags, -1, 0));
+        user_base = reinterpret_cast<u8*>(
+            mmap(reinterpret_cast<void*>(USER_MIN), user_size, protection_flags, map_flags, -1, 0));
 #endif
 #endif
-        if (system_managed_base == MAP_FAILED || system_reserved_base == MAP_FAILED ||
-            user_base == MAP_FAILED) {
-            LOG_CRITICAL(Kernel_Vmm, "mmap failed: {}", strerror(errno));
-            throw std::bad_alloc{};
-        }
+        ASSERT(system_managed_base != MAP_FAILED);
+        ASSERT(system_reserved_base != MAP_FAILED);
+        ASSERT(user_base != MAP_FAILED);
 
         LOG_INFO(Kernel_Vmm, "System managed virtual memory region: {} - {}",
                  fmt::ptr(system_managed_base),
