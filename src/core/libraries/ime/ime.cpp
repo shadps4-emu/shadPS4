@@ -745,8 +745,8 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
 
     const u32 option = static_cast<u32>(param->option);
     if (HasInvalidImeOption(option)) {
-        LOG_ERROR(Lib_Ime, "option has invalid bits set (0x{:X}), mask=(0x{:X})",
-                  option, GetImeOptionMask());
+        LOG_ERROR(Lib_Ime, "option has invalid bits set (0x{:X}), mask=(0x{:X})", option,
+                  GetImeOptionMask());
         return Error::INVALID_OPTION;
     }
 
@@ -809,8 +809,10 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
     }
 
     if (extended) {
-        if (static_cast<u32>(extended->priority) > static_cast<u32>(OrbisImePanelPriority::Accent)) {
-            LOG_ERROR(Lib_Ime, "Invalid extended->priority: {}", static_cast<u32>(extended->priority));
+        if (static_cast<u32>(extended->priority) >
+            static_cast<u32>(OrbisImePanelPriority::Accent)) {
+            LOG_ERROR(Lib_Ime, "Invalid extended->priority: {}",
+                      static_cast<u32>(extended->priority));
             return Error::INVALID_EXTENDED;
         }
 

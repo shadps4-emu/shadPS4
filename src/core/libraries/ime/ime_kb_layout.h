@@ -94,8 +94,7 @@ struct ImeSelectionGridIndex {
         }
         const float t = std::clamp((x - left) / width, 0.0f, 0.9999f);
         const int span = max_col - min_col + 1;
-        const int offset =
-            std::clamp(static_cast<int>(t * static_cast<float>(span)), 0, span - 1);
+        const int offset = std::clamp(static_cast<int>(t * static_cast<float>(span)), 0, span - 1);
         return min_col + offset;
     }
 };

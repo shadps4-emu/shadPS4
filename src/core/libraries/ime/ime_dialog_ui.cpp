@@ -25,9 +25,9 @@
 #include "core/libraries/pad/pad.h"
 #include "core/memory.h"
 #include "core/tls.h"
-#include "input/controller.h"
-#include "imgui/renderer/imgui_core.h"
 #include "imgui/imgui_std.h"
+#include "imgui/renderer/imgui_core.h"
+#include "input/controller.h"
 
 using namespace ImGui;
 
@@ -249,10 +249,12 @@ ImVec2 ReadRightStickPanelDelta(Libraries::UserService::OrbisUserServiceUserId u
         return std::copysign(std::clamp(scaled, 0.0f, 1.0f), v);
     };
 
-    const float imgui_rx = apply_deadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickRight)->AnalogValue -
-                                          ImGui::GetKeyData(ImGuiKey_GamepadRStickLeft)->AnalogValue);
-    const float imgui_ry = apply_deadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickDown)->AnalogValue -
-                                          ImGui::GetKeyData(ImGuiKey_GamepadRStickUp)->AnalogValue);
+    const float imgui_rx =
+        apply_deadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickRight)->AnalogValue -
+                       ImGui::GetKeyData(ImGuiKey_GamepadRStickLeft)->AnalogValue);
+    const float imgui_ry =
+        apply_deadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickDown)->AnalogValue -
+                       ImGui::GetKeyData(ImGuiKey_GamepadRStickUp)->AnalogValue);
 
     float virtual_rx = 0.0f;
     float virtual_ry = 0.0f;
@@ -418,12 +420,11 @@ ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
       panel_priority(other.panel_priority), user_id(other.user_id),
       is_multi_line(other.is_multi_line), is_numeric(other.is_numeric),
       fixed_position(other.fixed_position), type(other.type),
-      supported_languages(other.supported_languages),
-      enter_label(other.enter_label), text_filter(other.text_filter),
-      keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
-      text_buffer(other.text_buffer), original_text(std::move(other.original_text)),
-      title(std::move(other.title)), placeholder(std::move(other.placeholder)),
-      current_text(other.current_text) {
+      supported_languages(other.supported_languages), enter_label(other.enter_label),
+      text_filter(other.text_filter), keyboard_filter(other.keyboard_filter),
+      max_text_length(other.max_text_length), text_buffer(other.text_buffer),
+      original_text(std::move(other.original_text)), title(std::move(other.title)),
+      placeholder(std::move(other.placeholder)), current_text(other.current_text) {
 
     other.text_buffer = nullptr;
 }
@@ -647,7 +648,8 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
       text_select_anchor_utf16(other.text_select_anchor_utf16),
       text_select_focus_utf16(other.text_select_focus_utf16),
       top_virtual_col(other.top_virtual_col), panel_selection(other.panel_selection),
-      pending_keyboard_row(other.pending_keyboard_row), pending_keyboard_col(other.pending_keyboard_col),
+      pending_keyboard_row(other.pending_keyboard_row),
+      pending_keyboard_col(other.pending_keyboard_col),
       last_keyboard_selected_row(other.last_keyboard_selected_row),
       last_keyboard_selected_col(other.last_keyboard_selected_col),
       edit_menu_index(other.edit_menu_index), kb_layout_selection(other.kb_layout_selection),
@@ -823,11 +825,11 @@ void ImeDialogUi::Draw() {
         panel_drag_active = false;
     } else {
         const ImVec2 mouse_pos = io.MousePos;
-        const bool mouse_over_panel = mouse_pos.x >= panel_position.x &&
-                                      mouse_pos.x <= (panel_position.x + window_size.x) &&
-                                      mouse_pos.y >= panel_position.y &&
-                                      mouse_pos.y <= (panel_position.y + window_size.y);
-        if (!panel_drag_active && IsMouseClicked(ImGuiMouseButton_Left, false) && mouse_over_panel) {
+        const bool mouse_over_panel =
+            mouse_pos.x >= panel_position.x && mouse_pos.x <= (panel_position.x + window_size.x) &&
+            mouse_pos.y >= panel_position.y && mouse_pos.y <= (panel_position.y + window_size.y);
+        if (!panel_drag_active && IsMouseClicked(ImGuiMouseButton_Left, false) &&
+            mouse_over_panel) {
             panel_drag_active = true;
         }
         if (panel_drag_active) {
@@ -967,14 +969,16 @@ void ImeDialogUi::Draw() {
         const bool panel_activate_pressed = accept_armed && panel_activate_pressed_raw;
 
         using SelectionIndex = Libraries::Ime::ImeSelectionGridIndex;
-        constexpr int kMaxTopCols = SelectionIndex::TopRowCloseCol - SelectionIndex::TopRowMinCol + 1;
+        constexpr int kMaxTopCols =
+            SelectionIndex::TopRowCloseCol - SelectionIndex::TopRowMinCol + 1;
         struct TopNavElement {
             PanelSelectionTarget target = PanelSelectionTarget::Prediction;
             int min_col = SelectionIndex::TopRowMinCol;
             int max_col = SelectionIndex::TopRowMinCol;
         };
 
-        const auto& top_layout_cfg = Libraries::Ime::GetImeTopPanelLayoutConfig(kb_layout_selection);
+        const auto& top_layout_cfg =
+            Libraries::Ime::GetImeTopPanelLayoutConfig(kb_layout_selection);
         const int top_col_min = SelectionIndex::TopRowMinCol;
         const int top_cols_cfg = std::max(1, static_cast<int>(top_layout_cfg.cols));
         const int top_col_max =
@@ -1073,9 +1077,9 @@ void ImeDialogUi::Draw() {
         bool entered_top_from_keyboard = false;
         if (!menu_modal && !text_select_mode && !pointer_navigation_active &&
             panel_selection == PanelSelectionTarget::Keyboard) {
-            const bool wrap_to_top = (nav_up && last_keyboard_selected_row == SelectionIndex::KeyboardMinRow) ||
-                                     (nav_down && last_keyboard_selected_row ==
-                                                      SelectionIndex::KeyboardMaxRow);
+            const bool wrap_to_top =
+                (nav_up && last_keyboard_selected_row == SelectionIndex::KeyboardMinRow) ||
+                (nav_down && last_keyboard_selected_row == SelectionIndex::KeyboardMaxRow);
             if (wrap_to_top) {
                 const int top_col =
                     std::clamp(SelectionIndex::KeyboardToTopCol(last_keyboard_selected_col),
@@ -1125,7 +1129,8 @@ void ImeDialogUi::Draw() {
         } else {
             input_hovered = DrawInputText(metrics, pointer_navigation_active);
         }
-        const bool input_selected = pointer_navigation_active && (input_hovered || native_input_active);
+        const bool input_selected =
+            pointer_navigation_active && (input_hovered || native_input_active);
         auto draw_selector = [&](ImVec2 pos, ImVec2 size, bool selected) {
             if (!selected) {
                 return;
@@ -1163,15 +1168,15 @@ void ImeDialogUi::Draw() {
         PopItemFlag();
         const bool prediction_clicked =
             IsMouseClicked(ImGuiMouseButton_Left, false) && IsItemHovered();
-        const int prediction_element_idx = element_index_for_target(PanelSelectionTarget::Prediction);
+        const int prediction_element_idx =
+            element_index_for_target(PanelSelectionTarget::Prediction);
         if (pointer_navigation_active && prediction_clicked && prediction_element_idx >= 0) {
             const auto& prediction_element =
                 top_elements[static_cast<std::size_t>(prediction_element_idx)];
             set_top_selection(PanelSelectionTarget::Prediction,
-                              SelectionIndex::GridColumnFromX(io.MousePos.x, metrics.predict_pos.x,
-                                                              metrics.predict_size.x,
-                                                              prediction_element.min_col,
-                                                              prediction_element.max_col));
+                              SelectionIndex::GridColumnFromX(
+                                  io.MousePos.x, metrics.predict_pos.x, metrics.predict_size.x,
+                                  prediction_element.min_col, prediction_element.max_col));
         }
         PopID();
         draw_selector(metrics.predict_pos, metrics.predict_size,
@@ -1246,8 +1251,7 @@ void ImeDialogUi::Draw() {
             }
         };
         if (!menu_modal && !text_select_mode && !pointer_navigation_active &&
-            !entered_top_from_keyboard &&
-            panel_selection != PanelSelectionTarget::Keyboard) {
+            !entered_top_from_keyboard && panel_selection != PanelSelectionTarget::Keyboard) {
             if (nav_left) {
                 move_top_navigation(-1, 0);
             } else if (nav_right) {
@@ -1302,8 +1306,8 @@ void ImeDialogUi::Draw() {
                                          const char* insert_utf8) -> bool {
             const std::string current = state->current_text.to_string();
             const char* current_text = current.c_str();
-            const int len_utf16 =
-                Utf16CountFromUtf8Range(current_text, current_text + static_cast<int>(current.size()));
+            const int len_utf16 = Utf16CountFromUtf8Range(
+                current_text, current_text + static_cast<int>(current.size()));
             const int start = std::clamp(start_utf16, 0, len_utf16);
             const int end = std::clamp(end_utf16, start, len_utf16);
             const int removed_utf16 = end - start;
@@ -1388,7 +1392,8 @@ void ImeDialogUi::Draw() {
             int prev_byte = caret_byte;
             do {
                 --prev_byte;
-            } while (prev_byte > 0 && (static_cast<unsigned char>(text[prev_byte]) & 0xC0u) == 0x80u);
+            } while (prev_byte > 0 &&
+                     (static_cast<unsigned char>(text[prev_byte]) & 0xC0u) == 0x80u);
             const int prev_utf16 = Utf16CountFromUtf8Range(text, text + prev_byte);
             return apply_text_edit(prev_utf16, sel_end, "");
         };
@@ -1408,9 +1413,9 @@ void ImeDialogUi::Draw() {
         kb_params.supported_languages = state->supported_languages;
         kb_params.enter_label = state->enter_label;
         kb_params.show_selection_highlight = (panel_selection == PanelSelectionTarget::Keyboard);
-        kb_params.allow_nav_input =
-            !menu_modal && !text_select_mode && (panel_selection == PanelSelectionTarget::Keyboard) &&
-            !entered_keyboard_from_top;
+        kb_params.allow_nav_input = !menu_modal && !text_select_mode &&
+                                    (panel_selection == PanelSelectionTarget::Keyboard) &&
+                                    !entered_keyboard_from_top;
         kb_params.allow_activate_input =
             !menu_modal && !text_select_mode && (panel_selection == PanelSelectionTarget::Keyboard);
         kb_params.external_activate_pressed = panel_activate_pressed;
@@ -1585,8 +1590,8 @@ void ImeDialogUi::Draw() {
             switch (action_index) {
             case 0: // Copy
                 copy_selected_text();
-                collapse_selection_to_caret(
-                    text_select_focus_utf16 >= 0 ? text_select_focus_utf16 : input_cursor_utf16);
+                collapse_selection_to_caret(text_select_focus_utf16 >= 0 ? text_select_focus_utf16
+                                                                         : input_cursor_utf16);
                 edit_menu_popup = EditMenuPopup::None;
                 break;
             case 1: // Paste
@@ -1601,17 +1606,13 @@ void ImeDialogUi::Draw() {
         };
 
         bool opened_menu_this_frame = false;
-        if (!menu_modal &&
-            kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None) {
-            const bool l2_down =
-                IsKeyDown(ImGuiKey_GamepadL2) ||
-                virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::L2);
-            const bool l2_pressed =
-                IsKeyPressed(ImGuiKey_GamepadL2, false) ||
-                virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2);
-            const bool tri_down =
-                IsKeyDown(ImGuiKey_GamepadFaceUp) ||
-                virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::Triangle);
+        if (!menu_modal && kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None) {
+            const bool l2_down = IsKeyDown(ImGuiKey_GamepadL2) ||
+                                 virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::L2);
+            const bool l2_pressed = IsKeyPressed(ImGuiKey_GamepadL2, false) ||
+                                    virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2);
+            const bool tri_down = IsKeyDown(ImGuiKey_GamepadFaceUp) ||
+                                  virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::Triangle);
             const bool tri_pressed =
                 IsKeyPressed(ImGuiKey_GamepadFaceUp, false) ||
                 virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle);
@@ -1619,10 +1620,9 @@ void ImeDialogUi::Draw() {
                 (l2_down && tri_pressed) || (tri_down && l2_pressed);
             if (symbols_shortcut_pressed) {
                 kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::SymbolsMode;
-            } else if (
-                kb_layout_selection.family != Libraries::Ime::ImeKbLayoutFamily::Symbols &&
-                (IsKeyPressed(ImGuiKey_GamepadL3, false) ||
-                 virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3))) {
+            } else if (kb_layout_selection.family != Libraries::Ime::ImeKbLayoutFamily::Symbols &&
+                       (IsKeyPressed(ImGuiKey_GamepadL3, false) ||
+                        virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3))) {
                 kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::SpecialsMode;
             } else if (IsKeyPressed(ImGuiKey_GamepadR2, false) ||
                        virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2)) {
@@ -1711,7 +1711,8 @@ void ImeDialogUi::Draw() {
             accept_pressed = true;
         }
 
-        if (text_select_mode && edit_menu_popup == EditMenuPopup::None && !pointer_navigation_active) {
+        if (text_select_mode && edit_menu_popup == EditMenuPopup::None &&
+            !pointer_navigation_active) {
             int delta = 0;
             if (nav_left || nav_up) {
                 delta = -1;
@@ -1751,9 +1752,8 @@ void ImeDialogUi::Draw() {
             constexpr std::array<const char*, 3> kMainMenuItems = {"Select", "Select All", "Paste"};
             constexpr std::array<const char*, 2> kActionMenuItems = {"Copy", "Paste"};
             const bool is_main_menu = (edit_menu_popup == EditMenuPopup::Main);
-            const int item_count =
-                is_main_menu ? static_cast<int>(kMainMenuItems.size())
-                             : static_cast<int>(kActionMenuItems.size());
+            const int item_count = is_main_menu ? static_cast<int>(kMainMenuItems.size())
+                                                : static_cast<int>(kActionMenuItems.size());
             const bool clipboard_ready = has_clipboard_text();
             const auto item_label = [&](int index) -> const char* {
                 return is_main_menu ? kMainMenuItems[static_cast<std::size_t>(index)]
@@ -1782,15 +1782,15 @@ void ImeDialogUi::Draw() {
             const float menu_inner_pad = std::max(6.0f, metrics.key_gap * 0.7f);
             const float item_gap = std::max(3.0f, metrics.key_gap * 0.35f);
             const float item_h = std::max(28.0f, metrics.key_h * 0.70f);
-            const float menu_h = menu_inner_pad * 2.0f +
-                                 item_h * static_cast<float>(item_count) +
+            const float menu_h = menu_inner_pad * 2.0f + item_h * static_cast<float>(item_count) +
                                  item_gap * static_cast<float>(item_count - 1);
             const ImVec2 menu_pos{
                 metrics.kb_pos.x + (metrics.kb_size.x - menu_w) * 0.5f,
                 metrics.kb_pos.y + (metrics.kb_size.y - menu_h) * 0.5f,
             };
             const ImVec2 menu_max{menu_pos.x + menu_w, menu_pos.y + menu_h};
-            draw->AddRectFilled(menu_pos, menu_max, IM_COL32(16, 16, 16, 245), metrics.corner_radius);
+            draw->AddRectFilled(menu_pos, menu_max, IM_COL32(16, 16, 16, 245),
+                                metrics.corner_radius);
             draw->AddRect(menu_pos, menu_max, IM_COL32(100, 100, 100, 255), metrics.corner_radius);
 
             const bool menu_activate = !opened_menu_this_frame && panel_activate_pressed;
@@ -1801,10 +1801,9 @@ void ImeDialogUi::Draw() {
                 const ImVec2 item_size{menu_w - menu_inner_pad * 2.0f, item_h};
                 const bool selected = (i == edit_menu_index);
                 const bool enabled = item_enabled(i);
-                const ImU32 item_bg =
-                    !enabled   ? IM_COL32(30, 30, 30, 255)
-                    : selected ? IM_COL32(60, 96, 146, 255)
-                               : IM_COL32(45, 45, 45, 255);
+                const ImU32 item_bg = !enabled   ? IM_COL32(30, 30, 30, 255)
+                                      : selected ? IM_COL32(60, 96, 146, 255)
+                                                 : IM_COL32(45, 45, 45, 255);
                 draw->AddRectFilled(item_pos, {item_pos.x + item_size.x, item_pos.y + item_size.y},
                                     item_bg, metrics.corner_radius * 0.6f);
                 draw->AddRect(item_pos, {item_pos.x + item_size.x, item_pos.y + item_size.y},
@@ -1830,8 +1829,8 @@ void ImeDialogUi::Draw() {
                     item_pos.x + (item_size.x - text_size.x) * 0.5f,
                     item_pos.y + (item_size.y - text_size.y) * 0.5f,
                 };
-                const ImU32 text_col = enabled ? IM_COL32(232, 232, 232, 255)
-                                               : IM_COL32(128, 128, 128, 255);
+                const ImU32 text_col =
+                    enabled ? IM_COL32(232, 232, 232, 255) : IM_COL32(128, 128, 128, 255);
                 draw->AddText(text_pos, text_col, label);
             }
 

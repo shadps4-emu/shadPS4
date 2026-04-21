@@ -11,8 +11,8 @@
 #include "common/cstring.h"
 #include "common/types.h"
 
-#include "ime.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "ime.h"
 
 namespace Libraries::Ime {
 

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <SDL3/SDL_events.h>
 #include <atomic>
 #include <cstdint>
+#include <SDL3/SDL_events.h>
 #include <imgui.h>
 
 #include "common/path_util.h"
