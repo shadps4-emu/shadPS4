@@ -121,7 +121,8 @@ enum class OrbisImeExtOption : u32 {
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeExtOption);
 
 constexpr u32 kValidImeExtOptionMask = static_cast<u32>(
-    OrbisImeExtOption::SET_PRIORITY | OrbisImeExtOption::PRIORITY_FULL_WIDTH |
+    OrbisImeExtOption::SET_COLOR | OrbisImeExtOption::SET_PRIORITY |
+    OrbisImeExtOption::PRIORITY_SHIFT | OrbisImeExtOption::PRIORITY_FULL_WIDTH |
     OrbisImeExtOption::PRIORITY_FIXED_PANEL | OrbisImeExtOption::DISABLE_POINTER |
     OrbisImeExtOption::ENABLE_ADDITIONAL_DICTIONARY | OrbisImeExtOption::DISABLE_STARTUP_SE |
     OrbisImeExtOption::DISABLE_LIST_FOR_EXT_KEYBOARD |

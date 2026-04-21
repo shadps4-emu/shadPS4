@@ -553,6 +553,11 @@ Error PS4_SYSV_ABI sceImeDialogAbort() {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
     }
+    if (g_ime_dlg_status != OrbisImeDialogStatus::Running) {
+        LOG_INFO(Lib_ImeDialog, "Abort rejected: status is not Running ({})",
+                 static_cast<u32>(g_ime_dlg_status));
+        return Error::DIALOG_NOT_RUNNING;
+    }
 
     g_ime_dlg_status = OrbisImeDialogStatus::Finished;
     g_ime_dlg_result.endstatus = OrbisImeDialogEndStatus::Aborted;
@@ -1321,6 +1326,11 @@ Error PS4_SYSV_ABI sceImeDialogTerm() {
     if (!g_ime_dlg_client) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
+    }
+    if (g_ime_dlg_status != OrbisImeDialogStatus::Finished) {
+        LOG_INFO(Lib_ImeDialog, "Term rejected: status is not Finished ({})",
+                 static_cast<u32>(g_ime_dlg_status));
+        return Error::DIALOG_NOT_FINISHED;
     }
 
     LOG_DEBUG(Lib_ImeDialog, "Term: status={}, endstatus={}", static_cast<u32>(g_ime_dlg_status),
