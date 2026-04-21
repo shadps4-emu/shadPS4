@@ -634,6 +634,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_score/np_score.cpp
             src/core/libraries/np/np_score/np_score.h
             src/core/libraries/np/np_score/np_score_ctx.h
+            src/core/libraries/np/np_handler.cpp
+            src/core/libraries/np/np_handler.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp
