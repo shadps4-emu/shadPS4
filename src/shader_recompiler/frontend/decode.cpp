@@ -239,11 +239,11 @@ uint32_t GcnDecodeContext::mapEncodingOp(InstEncoding encoding, Opcode opcode) {
             uint32_t op =
                 static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOPC);
             encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOPC);
-        } else if (opcode >= Opcode::V_CNDMASK_B32 && opcode <= Opcode::V_CVT_PK_I16_I32) {
+        } else if (opcode >= Opcode::V_CNDMASK_B32 && opcode <= Opcode::V_LDEXP_F16) {
             uint32_t op =
                 static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP2);
             encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP2);
-        } else if (opcode >= Opcode::V_NOP && opcode <= Opcode::V_MOVRELSD_B32) {
+        } else if (opcode >= Opcode::V_NOP && opcode <= Opcode::V_SQRT_F16) {
             uint32_t op =
                 static_cast<uint32_t>(opcode) - static_cast<uint32_t>(OpcodeMap::OP_MAP_VOP1);
             encodingOp = op + static_cast<uint32_t>(OpMapVOP3VOPX::VOP3_TO_VOP1);
@@ -440,6 +440,30 @@ void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSl
 
         if (encoding == InstEncoding::VOPC) {
             SdwaVopc sdwa = *reinterpret_cast<SdwaVopc*>(&m_instruction.src[0].code);
+
+            m_instruction.src[0].field =
+                sdwa.s0 == 0 ? OperandField::VectorGPR : getOperandField(sdwa.src0);
+            m_instruction.src[0].code = sdwa.src0;
+            m_instruction.src[0].sdwa_sel = SdwaSelector(sdwa.src0_sel);
+
+            m_instruction.src[0].input_modifier.neg = sdwa.src0_neg;
+            m_instruction.src[0].input_modifier.abs = sdwa.src0_abs;
+            m_instruction.src[0].input_modifier.sext = sdwa.src0_sext;
+
+            m_instruction.src[1].field =
+                sdwa.s1 == 0 ? OperandField::VectorGPR : getOperandField(m_instruction.src[1].code);
+            m_instruction.src[1].sdwa_sel = SdwaSelector(sdwa.src1_sel);
+
+            m_instruction.src[1].input_modifier.neg = sdwa.src1_neg;
+            m_instruction.src[1].input_modifier.abs = sdwa.src1_abs;
+            m_instruction.src[1].input_modifier.sext = sdwa.src1_sext;
+
+            m_instruction.dst[0].field = sdwa.sd ? OperandField::ScalarGPR : OperandField::VccLo;
+            m_instruction.dst[0].code = sdwa.sdst;
+
+        } else if (encoding == InstEncoding::VOP1 || encoding == InstEncoding::VOP2) {
+            SdwaVop12 sdwa = *reinterpret_cast<SdwaVop12*>(&m_instruction.src[0].code);
+
             m_instruction.src[0].field =
                 sdwa.s0 == 0 ? OperandField::VectorGPR : getOperandField(sdwa.src0);
             m_instruction.src[0].code = sdwa.src0;
@@ -475,27 +499,6 @@ void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSl
                 m_instruction.dst[0].output_modifier.multiplier = 0.5f;
                 break;
             }
-        } else if (encoding == InstEncoding::VOP1 || encoding == InstEncoding::VOP2) {
-            SdwaVop12 sdwa = *reinterpret_cast<SdwaVop12*>(&m_instruction.src[0].code);
-            m_instruction.src[0].field =
-                sdwa.s0 == 0 ? OperandField::VectorGPR : getOperandField(sdwa.src0);
-            m_instruction.src[0].code = sdwa.src0;
-            m_instruction.src[0].sdwa_sel = SdwaSelector(sdwa.src0_sel);
-
-            m_instruction.src[0].input_modifier.neg = sdwa.src0_neg;
-            m_instruction.src[0].input_modifier.abs = sdwa.src0_abs;
-            m_instruction.src[0].input_modifier.sext = sdwa.src0_sext;
-
-            m_instruction.src[1].field =
-                sdwa.s1 == 0 ? OperandField::VectorGPR : getOperandField(m_instruction.src[1].code);
-            m_instruction.src[1].sdwa_sel = SdwaSelector(sdwa.src1_sel);
-
-            m_instruction.src[1].input_modifier.neg = sdwa.src1_neg;
-            m_instruction.src[1].input_modifier.abs = sdwa.src1_abs;
-            m_instruction.src[1].input_modifier.sext = sdwa.src1_sext;
-
-            m_instruction.dst[0].field = sdwa.sd ? OperandField::ScalarGPR : OperandField::VccLo;
-            m_instruction.dst[0].code = sdwa.sdst;
         } else {
             LOG_WARNING(Render_Recompiler, "illegal instruction: SDWA used outside VOP1/VOP2/VOPC");
         }
@@ -692,6 +695,8 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
     u32 vdst = bit::extract(hexInstruction, 7, 0);
     u32 sdst = bit::extract(hexInstruction, 14, 8); // For VOP3B
     u32 op = bit::extract(hexInstruction, 25, 17);
+    u32 op_msb = bit::extract(hexInstruction, 16, 16);
+    op = op + op_msb * (1 << 9);
     u32 src0 = bit::extract(hexInstruction, 40, 32);
     u32 src1 = bit::extract(hexInstruction, 49, 41);
     u32 src2 = bit::extract(hexInstruction, 58, 50);
@@ -703,13 +708,13 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
         m_instruction.opcode =
             static_cast<Opcode>(vopcOp + static_cast<u32>(OpcodeMap::OP_MAP_VOPC));
     } else if (op >= static_cast<u32>(OpcodeVOP3::V_CNDMASK_B32) &&
-               op <= static_cast<u32>(OpcodeVOP3::V_CVT_PK_I16_I32)) {
+               op <= static_cast<u32>(OpcodeVOP3::V_LDEXP_F16)) {
         // Map from VOP3 to VOP2
         u32 vop2Op = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP2);
         m_instruction.opcode =
             static_cast<Opcode>(vop2Op + static_cast<u32>(OpcodeMap::OP_MAP_VOP2));
     } else if (op >= static_cast<u32>(OpcodeVOP3::V_NOP) &&
-               op <= static_cast<u32>(OpcodeVOP3::V_MOVRELSD_B32)) {
+               op <= static_cast<u32>(OpcodeVOP3::V_SQRT_F16)) {
         // Map from VOP3 to VOP1
         u32 vop1Op = op - static_cast<u32>(OpMapVOP3VOPX::VOP3_TO_VOP1);
         m_instruction.opcode =
@@ -769,7 +774,13 @@ void GcnDecodeContext::decodeInstructionVOP3(uint64_t hexInstruction) {
         if (control.neg & (1u << i)) {
             m_instruction.src[i].input_modifier.neg = true;
         }
+
+        if (control.op_sel & (1u << i)) {
+            m_instruction.src[i].op_sel.op_sel = true;
+        }
     }
+
+    m_instruction.dst[0].op_sel.op_sel = control.op_sel & (1u << 3);
 
     // update output modifier
     auto& outputMod = m_instruction.dst[0].output_modifier;
