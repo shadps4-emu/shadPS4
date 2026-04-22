@@ -346,37 +346,38 @@ static int GetRankingByRangeImpl(s32 reqId, OrbisNpScoreBoardId boardId,
                                  Rtc::OrbisRtcTick* lastSortDate,
                                  OrbisNpScoreRankNumber* totalRecord, void* option, bool is_async) {
     if (option != nullptr) {
-        LOG_ERROR(Lib_NpScore, "Invalid argument");
+        LOG_ERROR(Lib_NpScore, "option argument is not supported");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (arrayNum > ORBIS_NP_SCORE_MAX_RANGE_NUM_PER_REQUEST) {
-        LOG_ERROR(Lib_NpScore, "Invalid argument");
+        LOG_ERROR(Lib_NpScore, "arrayNum {} exceeds max {}", arrayNum,
+                  ORBIS_NP_SCORE_MAX_RANGE_NUM_PER_REQUEST);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (startSerialRank == 0) {
-        LOG_ERROR(Lib_NpScore, "Invalid argument");
+        LOG_ERROR(Lib_NpScore, "startSerialRank must be 1 or higher");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
     }
     if (arrayNum == 0 || rankArray == nullptr) {
-        LOG_ERROR(Lib_NpScore, "insufficient argument");
+        LOG_ERROR(Lib_NpScore, "rankArray is required and arrayNum must be > 0");
         return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
     }
     const bool is_a = (rankArraySize == arrayNum * sizeof(OrbisNpScoreRankDataA));
     if (!is_a && rankArraySize != arrayNum * sizeof(OrbisNpScoreRankData)) {
-        LOG_ERROR(Lib_NpScore, "Invalid alignment");
+        LOG_ERROR(Lib_NpScore, "Invalid alignment for rankArray");
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
     }
     std::memset(rankArray, 0, rankArraySize);
     if (commentArray != nullptr) {
         if (commentArraySize != arrayNum * sizeof(OrbisNpScoreComment)) {
-            LOG_ERROR(Lib_NpScore, "Invalid alignment");
+            LOG_ERROR(Lib_NpScore, "Invalid alignment for commentArray");
             return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
         }
         std::memset(commentArray, 0, commentArraySize);
     }
     if (infoArray != nullptr) {
         if (infoArraySize != arrayNum * sizeof(OrbisNpScoreGameInfo)) {
-            LOG_ERROR(Lib_NpScore, "Invalid alignment");
+            LOG_ERROR(Lib_NpScore, "Invalid alignment for infoArray");
             return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
         }
         std::memset(infoArray, 0, infoArraySize);
@@ -446,6 +447,114 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
                                  commentArray, commentArraySize, infoArray, infoArraySize, arrayNum,
                                  lastSortDate, totalRecord, option, true);
 }
+//***********************************
+// Ranking by NpId functions
+//***********************************
+static int GetRankingByNpIdImpl(s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray,
+                                u64 npIdArraySize, OrbisNpScorePlayerRankData* rankArray,
+                                u64 rankArraySize, OrbisNpScoreComment* commentArray,
+                                u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
+                                u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
+                                OrbisNpScoreRankNumber* totalRecord, void* option, bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "Invalid argument");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (arrayNum > ORBIS_NP_SCORE_MAX_NPID_NUM_PER_REQUEST) {
+        LOG_ERROR(Lib_NpScore, "Too many npIds requested: {}", arrayNum);
+        return ORBIS_NP_COMMUNITY_ERROR_TOO_MANY_NPID;
+    }
+    if (npIdArray == nullptr || rankArray == nullptr) {
+        LOG_ERROR(Lib_NpScore, "insufficient argument: npIdArray={}, rankArray={}", PTR(npIdArray),
+                  PTR(rankArray));
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (npIdArraySize != arrayNum * sizeof(OrbisNpId) ||
+        rankArraySize != arrayNum * sizeof(OrbisNpScorePlayerRankData)) {
+        LOG_ERROR(Lib_NpScore, "Invalid alignment: npIdArraySize={}, rankArraySize={}",
+                  npIdArraySize, rankArraySize);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+    }
+    std::memset(rankArray, 0, rankArraySize);
+    if (commentArray != nullptr) {
+        if (commentArraySize != arrayNum * sizeof(OrbisNpScoreComment)) {
+            LOG_ERROR(Lib_NpScore, "Invalid alignment: commentArraySize={}", commentArraySize);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+        }
+        std::memset(commentArray, 0, commentArraySize);
+    }
+    if (infoArray != nullptr) {
+        if (infoArraySize != arrayNum * sizeof(OrbisNpScoreGameInfo)) {
+            LOG_ERROR(Lib_NpScore, "Invalid alignment: infoArraySize={}", infoArraySize);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ALIGNMENT;
+        }
+        std::memset(infoArray, 0, infoArraySize);
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    std::vector<std::string> npIds;
+    npIds.reserve(arrayNum);
+    for (u64 i = 0; i < arrayNum; ++i) {
+        const char* data = npIdArray[i].handle.data;
+        const size_t len = strnlen(data, sizeof(npIdArray[i].handle.data));
+        npIds.emplace_back(data, len);
+    }
+
+    const s32 dispatch_err = NpHandler::GetInstance().GetRankingByNpId(
+        req->userId, ServiceLabelForRequest(req), boardId, npIds, rankArray, commentArray,
+        infoArray, lastSortDate, totalRecord, req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore,
+              "(STUBBED) called reqId={}, boardId={}, npIdArray={}, npIdArraySize={}, "
+              "rankArray={}, rankArraySize={}, commentArray={}, commentArraySize={}, "
+              "infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, totalRecord={}, "
+              "option={}",
+              reqId, boardId, PTR(npIdArray), npIdArraySize, PTR(rankArray), rankArraySize,
+              PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
+              PTR(lastSortDate), PTR(totalRecord), PTR(option));
+    return GetRankingByNpIdImpl(reqId, boardId, npIdArray, npIdArraySize, rankArray, rankArraySize,
+                                commentArray, commentArraySize, infoArray, infoArraySize, arrayNum,
+                                lastSortDate, totalRecord, option, false);
+}
+
+int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
+    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
+    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
+    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
+              arrayNum);
+    return GetRankingByNpIdImpl(reqId, boardId, npIdArray, npIdArraySize, rankArray, rankArraySize,
+                                commentArray, commentArraySize, infoArray, infoArraySize, arrayNum,
+                                lastSortDate, totalRecord, option, true);
+}
+
 //***********************************
 // Stubbed functions
 //***********************************
@@ -752,32 +861,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdForCrossSaveAsync(
               reqId, boardId, PTR(idArray), idArraySize, PTR(rankArray), rankArraySize,
               PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
               PTR(lastSortDate), PTR(totalRecord), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
-    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
-    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
-    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
-    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, npIdArray={}, npIdArraySize={}, "
-              "rankArray={}, rankArraySize={}, commentArray={}, commentArraySize={}, "
-              "infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, totalRecord={}, "
-              "option={}",
-              reqId, boardId, PTR(npIdArray), npIdArraySize, PTR(rankArray), rankArraySize,
-              PTR(commentArray), commentArraySize, PTR(infoArray), infoArraySize, arrayNum,
-              PTR(lastSortDate), PTR(totalRecord), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
-    s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
-    OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
-    u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
-    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
-              arrayNum);
     return ORBIS_OK;
 }
 
