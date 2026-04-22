@@ -22,7 +22,6 @@
 
 #include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
 #include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
-#include "imgui_fonts/roboto_medium.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -132,20 +131,12 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
         imgui_font_notosansjp_regular_compressed_data,
         imgui_font_notosansjp_regular_compressed_size, 32.0f, &font_cfg, ranges.Data);
-    ImFontConfig merge_cfg = font_cfg;
-    merge_cfg.MergeMode = true;
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_roboto_medium_compressed_data,
-                                             imgui_font_roboto_medium_compressed_size, 32.0f,
-                                             &merge_cfg, ranges.Data);
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
                                              32.0f);
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
                                              imgui_font_notosansjp_regular_compressed_size, 128.0f,
                                              &font_cfg, ranges.Data);
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_roboto_medium_compressed_data,
-                                             imgui_font_roboto_medium_compressed_size, 128.0f,
-                                             &merge_cfg, ranges.Data);
 
     io.FontGlobalScale = 0.5f;
 
