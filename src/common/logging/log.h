@@ -37,7 +37,11 @@ void Flush();
 
 // Define the fmt lib macros
 #define LOG_GENERIC(log_class, log_level, ...)                                                     \
-    SPDLOG_LOGGER_CALL(Common::Log::ALL_LOGGERS[log_class], log_level, __VA_ARGS__)
+    do {                                                                                           \
+        if (auto logger = Common::Log::ALL_LOGGERS[log_class]) {                                   \
+            SPDLOG_LOGGER_CALL(logger, log_level, __VA_ARGS__);                                    \
+        }                                                                                          \
+    } while (false)
 
 #ifdef _DEBUG
 #define LOG_TRACE(log_class, ...)                                                                  \
