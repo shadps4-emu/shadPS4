@@ -234,13 +234,20 @@ u16 ResolveImeKeycode(const ImeKbKeySpec& key, const char* label_override = null
     case ImeKbKeyAction::ArrowRight:
     case ImeKbKeyAction::PageNext:
         return kCodeArrowRight;
-    case ImeKbKeyAction::SymbolsMode:
-        if (key.label && std::strcmp(key.label, "ABC") == 0) {
+    case ImeKbKeyAction::SymbolsMode: {
+        const char* mode_label = label_override ? label_override : key.label;
+        if (mode_label && std::strcmp(mode_label, "ABC") == 0) {
             return kCodeLetters;
         }
         return kCodeSym1;
-    case ImeKbKeyAction::SpecialsMode:
+    }
+    case ImeKbKeyAction::SpecialsMode: {
+        const char* mode_label = label_override ? label_override : key.label;
+        if (mode_label && std::strcmp(mode_label, "ABC") == 0) {
+            return kCodeLetters;
+        }
         return kCodeAccents;
+    }
     case ImeKbKeyAction::Keyboard:
         return kCodeKeyboard;
     case ImeKbKeyAction::Menu:
@@ -439,8 +446,8 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinLowerKeys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "\xC3\xA0", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -502,8 +509,8 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinUpperKeys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "\xC3\xA0", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -518,7 +525,7 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinUpperKeys = {{
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
-constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage1Keys = {{
+constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage1Keys = {{
     KEY(0, 0, "!", Character),
     KEY(0, 1, "?", Character),
     KEY(0, 2, "\"", Character),
@@ -550,7 +557,7 @@ constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage1Keys = {{
     KEY(2, 6, "{", Character),
     KEY(2, 7, "}", Character),
     KEY(2, 8, "{}", Character),
-    KEYSPANHOTGLYPH(2, 9, 1, 2, "R1", ArrowRight, PageNext),
+    KEYSPAN(2, 9, 1, 2, ">", PageNext),
 
     KEY(3, 0, "\\", Character),
     KEY(3, 1, "|", Character),
@@ -563,7 +570,7 @@ constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage1Keys = {{
     KEY(3, 8, "\xE2\x80\x99", Character),
 
     KEYHOT(4, 1, "ABC", "L2+Tri", SymbolsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
@@ -577,7 +584,7 @@ constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage1Keys = {{
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
-constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage2Keys = {{
+constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage2Keys = {{
     KEY(0, 0, "\xE2\x80\x9C", Character),
     KEY(0, 1, "\xE2\x80\x9D", Character),
     KEY(0, 2, "\xE2\x80\x9E", Character),
@@ -609,7 +616,7 @@ constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage2Keys = {{
     KEY(2, 6, "\xC2\xBC", Character),
     KEY(2, 7, "\xC2\xBD", Character),
     KEY(2, 8, "\xC2\xBE", Character),
-    KEYSPANHOTGLYPH(2, 9, 1, 2, "L1", ArrowLeft, PagePrev),
+    KEYSPAN(2, 9, 1, 2, "<", PagePrev),
 
     KEY(3, 0, "\xC2\xA2", Character),
     KEY(3, 1, "\xC2\xA4", Character),
@@ -622,7 +629,7 @@ constexpr std::array<ImeKbKeySpec, 54> kSymbolsPage2Keys = {{
     KEY(3, 8, nullptr, None),
 
     KEYHOT(4, 1, "ABC", "L2+Tri", SymbolsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
@@ -683,8 +690,8 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1Keys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -746,8 +753,8 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1UpperKeys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -809,8 +816,8 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2Keys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -872,8 +879,8 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2UpperKeys = {{
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "Spec", "L3", SpecialsMode),
-    KEYSPAN(4, 3, 4, 1, "Space", Space),
+    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
     KEY(4, 7, nullptr, None),
     KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
 
@@ -926,6 +933,78 @@ const ImeTopPanelLayoutConfig& GetDefaultTopPanelLayoutConfig() {
 #undef KEYSPANHOTGLYPH
 
 } // namespace
+
+namespace {
+
+void AddImeKeyLabelGlyphs(ImFontGlyphRangesBuilder& builder, const char* label) {
+    if (!label || label[0] == '\0') {
+        return;
+    }
+    builder.AddText(label);
+}
+
+void AddImeLayoutGlyphs(ImFontGlyphRangesBuilder& builder, const ImeKbLayoutModel& model,
+                        const ImeKbLayoutSelection& selection,
+                        const OrbisImeLanguage supported_languages) {
+    if (!model.keys || model.key_count == 0) {
+        return;
+    }
+
+    for (std::size_t i = 0; i < model.key_count; ++i) {
+        const ImeKbKeySpec& key = model.keys[i];
+        const bool is_done = key.action == ImeKbKeyAction::Done;
+        const char* label = key.label;
+        if (!is_done) {
+            label = ResolveSymbolOverrideLabel(selection, supported_languages, key, label);
+            label = ResolveShiftOverrideLabel(selection, key, label);
+        }
+        AddImeKeyLabelGlyphs(builder, label);
+        AddImeKeyLabelGlyphs(builder, key.hotkey_label);
+    }
+}
+
+} // namespace
+
+void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder) {
+    // Resolve labels via real layout selection paths so accent/symbol overrides stay complete.
+    constexpr std::array<OrbisImeLanguage, 5> kLanguageMasks = {
+        static_cast<OrbisImeLanguage>(0), OrbisImeLanguage::ENGLISH_US,
+        OrbisImeLanguage::ENGLISH_GB,     OrbisImeLanguage::JAPANESE,
+        OrbisImeLanguage::KOREAN,
+    };
+    constexpr std::array<ImeKbLayoutFamily, 3> kFamilies = {
+        ImeKbLayoutFamily::Latin,
+        ImeKbLayoutFamily::Symbols,
+        ImeKbLayoutFamily::Specials,
+    };
+    constexpr std::array<ImeKbCaseState, 3> kCaseStates = {
+        ImeKbCaseState::Lower,
+        ImeKbCaseState::Upper,
+        ImeKbCaseState::CapsLock,
+    };
+
+    for (const OrbisImeLanguage language_mask : kLanguageMasks) {
+        for (const ImeKbLayoutFamily family : kFamilies) {
+            for (const ImeKbCaseState case_state : kCaseStates) {
+                for (u8 page = 0; page < 2; ++page) {
+                    const ImeKbLayoutSelection selection{
+                        .family = family,
+                        .case_state = case_state,
+                        .page = page,
+                    };
+                    const ImeKbLayoutModel& model = GetImeKeyboardLayout(selection);
+                    AddImeLayoutGlyphs(builder, model, selection, language_mask);
+                }
+            }
+        }
+    }
+
+    // Done key label is injected dynamically from game params.
+    AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Default));
+    AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Go));
+    AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Search));
+    AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Send));
+}
 
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k) {
     ImeViewportMetrics metrics{};
@@ -1107,6 +1186,54 @@ const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(const ImeKbLayoutSelec
     return GetImeTopPanelLayoutConfig(ResolveImeKeyboardLayoutId(selection));
 }
 
+ImU32 ImeColorToImU32(const OrbisImeColor& color) {
+    return IM_COL32(color.r, color.g, color.b, color.a);
+}
+
+ImVec4 ImeColorToImVec4(const OrbisImeColor& color) {
+    return ImGui::ColorConvertU32ToFloat4(ImeColorToImU32(color));
+}
+
+ImeStyleConfig GetDefaultImeStyleConfig() {
+    return ImeStyleConfig{};
+}
+
+ImeStyleConfig ResolveImeStyleConfig(const OrbisImeParamExtended* extended) {
+    ImeStyleConfig style = GetDefaultImeStyleConfig();
+    if (!extended) {
+        return style;
+    }
+    if (!True(extended->option & OrbisImeExtOption::SET_COLOR)) {
+        return style;
+    }
+
+    style.color_base = extended->color_base;
+    style.color_line = extended->color_line;
+    style.color_text_field = extended->color_text_field;
+    style.color_preedit = extended->color_preedit;
+    style.color_button_default = extended->color_button_default;
+    style.color_button_function = extended->color_button_function;
+    style.color_button_symbol = extended->color_button_symbol;
+    style.color_text = extended->color_text;
+    style.color_special = extended->color_special;
+    return style;
+}
+
+void ApplyImeStyleToKeyboardDrawParams(const ImeStyleConfig& style, ImeKbDrawParams& params) {
+    params.key_bg_default = ImeColorToImU32(style.color_button_default);
+    params.key_bg_function = ImeColorToImU32(style.color_button_function);
+    params.key_bg_symbol = ImeColorToImU32(style.color_button_symbol);
+    params.key_border = ImeColorToImU32(style.color_line);
+    params.key_done = ImeColorToImU32(style.color_special);
+    params.key_text = ImeColorToImU32(style.color_text);
+
+    ImVec4 hotkey = ImeColorToImVec4(style.color_text);
+    hotkey.x = std::clamp(hotkey.x * 0.92f, 0.0f, 1.0f);
+    hotkey.y = std::clamp(hotkey.y * 0.92f, 0.0f, 1.0f);
+    hotkey.z = std::clamp(hotkey.z * 0.92f, 0.0f, 1.0f);
+    params.key_hotkey_text = ImGui::ColorConvertFloat4ToU32(hotkey);
+}
+
 void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& params,
                          ImeKbDrawState& state) {
     state.done_pressed = false;
@@ -1215,7 +1342,18 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             ImVec2 pos{x, y};
             ImVec2 size{w, h};
 
-            ImU32 bg = (row >= grid_rows - 2) ? params.key_bg_alt : params.key_bg;
+            const auto slot_base_bg = [&](int slot_row) {
+                const bool function_row = slot_row >= std::max(0, grid_rows - 2);
+                if (function_row) {
+                    return params.key_bg_function;
+                }
+                if (params.selection.family == ImeKbLayoutFamily::Symbols) {
+                    return params.key_bg_symbol;
+                }
+                return params.key_bg_default;
+            };
+
+            ImU32 bg = slot_base_bg(row);
             bool is_done = false;
             const char* label = nullptr;
             const char* hotkey_label = nullptr;
@@ -1223,6 +1361,19 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             bool underline_label = false;
             bool disabled_visual = false;
             if (key) {
+                const bool symbols_layout = params.selection.family == ImeKbLayoutFamily::Symbols;
+                const bool typing_key = key->action == ImeKbKeyAction::Character;
+                const bool function_key =
+                    key->action != ImeKbKeyAction::Character && key->action != ImeKbKeyAction::None;
+                if (symbols_layout && typing_key) {
+                    bg = params.key_bg_symbol;
+                } else if (function_key) {
+                    bg = params.key_bg_function;
+                } else if (key->action == ImeKbKeyAction::None) {
+                    bg = slot_base_bg(row);
+                } else {
+                    bg = params.key_bg_default;
+                }
                 is_done = key->action == ImeKbKeyAction::Done;
                 if (is_done) {
                     bg = params.key_done;
@@ -1239,12 +1390,6 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                     label = ResolveShiftOverrideLabel(params.selection, *key, label);
                     underline_label = key->action == ImeKbKeyAction::Shift &&
                                       params.selection.case_state == ImeKbCaseState::CapsLock;
-                }
-
-                if (key->action == ImeKbKeyAction::SymbolsMode) {
-                    disabled_visual = (params.selection.family == ImeKbLayoutFamily::Symbols);
-                } else if (key->action == ImeKbKeyAction::SpecialsMode) {
-                    disabled_visual = (params.selection.family == ImeKbLayoutFamily::Specials);
                 }
             }
 
@@ -1368,18 +1513,18 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     if (params.allow_nav_input) {
-        const bool move_left = ImGui::IsKeyPressed(ImGuiKey_LeftArrow, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
-        const bool move_right = ImGui::IsKeyPressed(ImGuiKey_RightArrow, false) ||
-                                ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
-                                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
-        const bool move_up = ImGui::IsKeyPressed(ImGuiKey_UpArrow, false) ||
-                             ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
-                             ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
-        const bool move_down = ImGui::IsKeyPressed(ImGuiKey_DownArrow, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false);
+        const bool move_left = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
+                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false) ||
+                               params.external_nav_left;
+        const bool move_right = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
+                                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false) ||
+                                params.external_nav_right;
+        const bool move_up = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
+                             ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false) ||
+                             params.external_nav_up;
+        const bool move_down = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
+                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false) ||
+                               params.external_nav_down;
 
         if (move_left) {
             move_cursor(0, -1);

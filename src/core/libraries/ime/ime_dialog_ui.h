@@ -37,6 +37,7 @@ class ImeDialogState final {
     u32 panel_req_height = 0;
     OrbisImeExtOption ext_option = OrbisImeExtOption::DEFAULT;
     OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
+    Libraries::Ime::ImeStyleConfig style_config{};
 
     s32 user_id{};
     bool is_multi_line{};
@@ -111,6 +112,10 @@ class ImeDialogUi final : public ImGui::Layer {
     bool text_select_mode = false;
     bool pending_input_selection_apply = false;
     bool prev_virtual_cross_down = false;
+    bool prev_virtual_lstick_left_down = false;
+    bool prev_virtual_lstick_right_down = false;
+    bool prev_virtual_lstick_up_down = false;
+    bool prev_virtual_lstick_down_down = false;
     u32 prev_virtual_buttons = 0;
     bool panel_position_initialized = false;
     bool panel_drag_active = false;

@@ -128,6 +128,7 @@ struct ImeKbLayoutSelection {
 };
 
 enum class ImeKbKeyAction : u8 {
+    // Disabled key slot. It is not selectable and should not expose any visible label.
     None = 0,
     Character = 1,
     Shift = 2,
@@ -162,6 +163,12 @@ struct ImeKbKeySpec {
     u8 col = 0;
     u8 col_span = 1;
     u8 row_span = 1;
+    // Disabled key contract:
+    // - action == ImeKbKeyAction::None
+    // - label == nullptr
+    // - hotkey_label == nullptr
+    // - glyph == ImeKbKeyGlyph::None
+    // This means the key loses both label visibility and functionality.
     const char* label = nullptr;
     const char* hotkey_label = nullptr;
     ImeKbKeyAction action = ImeKbKeyAction::None;
@@ -192,6 +199,20 @@ struct ImeTopPanelLayoutConfig {
     u8 cols = 10;
 };
 
+// Mirrors OrbisImeParamExtended color buckets so UI styling can be themed
+// through one config and optionally overridden by game-provided SET_COLOR.
+struct ImeStyleConfig {
+    OrbisImeColor color_base{18, 18, 18, 255};
+    OrbisImeColor color_line{70, 70, 70, 255};
+    OrbisImeColor color_text_field{22, 37, 60, 255};
+    OrbisImeColor color_preedit{35, 35, 35, 255};
+    OrbisImeColor color_button_default{35, 35, 35, 255};
+    OrbisImeColor color_button_function{60, 60, 60, 255};
+    OrbisImeColor color_button_symbol{78, 78, 78, 255};
+    OrbisImeColor color_text{230, 230, 230, 255};
+    OrbisImeColor color_special{30, 90, 170, 255};
+};
+
 struct ImeKbDrawParams {
     ImeKbLayoutSelection selection{};
     const ImeKbLayoutModel* layout_model = nullptr;
@@ -200,11 +221,16 @@ struct ImeKbDrawParams {
     bool show_selection_highlight = true;
     bool allow_nav_input = true;
     bool allow_activate_input = true;
+    bool external_nav_left = false;
+    bool external_nav_right = false;
+    bool external_nav_up = false;
+    bool external_nav_down = false;
     bool external_activate_pressed = false;
     int requested_selected_row = -1;
     int requested_selected_col = -1;
-    ImU32 key_bg = IM_COL32(35, 35, 35, 255);
-    ImU32 key_bg_alt = IM_COL32(50, 50, 50, 255);
+    ImU32 key_bg_default = IM_COL32(35, 35, 35, 255);
+    ImU32 key_bg_function = IM_COL32(60, 60, 60, 255);
+    ImU32 key_bg_symbol = IM_COL32(78, 78, 78, 255);
     ImU32 key_border = IM_COL32(80, 80, 80, 255);
     ImU32 key_done = IM_COL32(30, 90, 170, 255);
     ImU32 key_text = IM_COL32(230, 230, 230, 255);
@@ -269,6 +295,12 @@ const ImeKbLayoutModel& GetImeKeyboardLayout(const ImeKbLayoutSelection& selecti
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig();
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(ImeKbLayoutId id);
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(const ImeKbLayoutSelection& selection);
+ImeStyleConfig GetDefaultImeStyleConfig();
+ImeStyleConfig ResolveImeStyleConfig(const OrbisImeParamExtended* extended);
+ImU32 ImeColorToImU32(const OrbisImeColor& color);
+ImVec4 ImeColorToImVec4(const OrbisImeColor& color);
+void ApplyImeStyleToKeyboardDrawParams(const ImeStyleConfig& style, ImeKbDrawParams& params);
+void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder);
 
 void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& params,
                          ImeKbDrawState& state);

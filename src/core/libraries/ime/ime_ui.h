@@ -73,6 +73,7 @@ class ImeUi : public ImGui::Layer {
     ImeState* state{};
     const OrbisImeParam* ime_param{};
     const OrbisImeParamExtended* extended_param{};
+    ImeStyleConfig style_config{};
 
     bool first_render = true;
     bool accept_armed = false;
@@ -84,6 +85,10 @@ class ImeUi : public ImGui::Layer {
     bool text_select_mode = false;
     bool pending_input_selection_apply = false;
     bool prev_virtual_cross_down = false;
+    bool prev_virtual_lstick_left_down = false;
+    bool prev_virtual_lstick_right_down = false;
+    bool prev_virtual_lstick_up_down = false;
+    bool prev_virtual_lstick_down_down = false;
     u32 prev_virtual_buttons = 0;
     bool panel_position_initialized = false;
     bool panel_drag_active = false;
