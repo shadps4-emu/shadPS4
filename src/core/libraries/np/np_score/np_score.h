@@ -218,7 +218,22 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
-
+//***********************************
+// Friend Ranking functions
+//***********************************
+int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
+                                             s32 includeSelf, OrbisNpScoreRankData* rankArray,
+                                             u64 rankArraySize, OrbisNpScoreComment* commentArray,
+                                             u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
+                                             u64 infoArraySize, u64 arrayNum,
+                                             Rtc::OrbisRtcTick* lastSortDate,
+                                             OrbisNpScoreRankNumber* totalRecord, void* option);
+int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
+    s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankData* rankArray,
+    u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
+    OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
+    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord,
+    OrbisNpScoreGetFriendRankingOptParam* option);
 //***********************************
 // Stubbed functions
 //***********************************
@@ -230,13 +245,6 @@ int PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
                                         OrbisNpScoreBoardInfo* boardInfo, void* option);
 int PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
                                              OrbisNpScoreBoardInfo* boardInfo, void* option);
-int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
-                                             s32 includeSelf, OrbisNpScoreRankData* rankArray,
-                                             u64 rankArraySize, OrbisNpScoreComment* commentArray,
-                                             u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
-                                             u64 infoArraySize, u64 arrayNum,
-                                             Rtc::OrbisRtcTick* lastSortDate,
-                                             OrbisNpScoreRankNumber* totalRecord, void* option);
 int PS4_SYSV_ABI sceNpScoreGetFriendsRankingA(s32 reqId, OrbisNpScoreBoardId boardId,
                                               s32 includeSelf, OrbisNpScoreRankDataA* rankArray,
                                               u64 rankArraySize, OrbisNpScoreComment* commentArray,
@@ -247,12 +255,6 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingA(s32 reqId, OrbisNpScoreBoardId boa
                                               OrbisNpScoreGetFriendRankingOptParam* option);
 int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankDataA* rankArray,
-    u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
-    OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
-    Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord,
-    OrbisNpScoreGetFriendRankingOptParam* option);
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
-    s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankData* rankArray,
     u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
     OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord,
