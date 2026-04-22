@@ -89,7 +89,15 @@ class ImeUi : public ImGui::Layer {
     bool prev_virtual_lstick_right_down = false;
     bool prev_virtual_lstick_up_down = false;
     bool prev_virtual_lstick_down_down = false;
+    int left_stick_repeat_dir = 0;
+    double left_stick_next_repeat_time = 0.0;
     u32 prev_virtual_buttons = 0;
+    bool prev_virtual_square_down = false;
+    bool prev_virtual_l1_down = false;
+    bool prev_virtual_r1_down = false;
+    double virtual_square_next_repeat_time = 0.0;
+    double virtual_l1_next_repeat_time = 0.0;
+    double virtual_r1_next_repeat_time = 0.0;
     bool panel_position_initialized = false;
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;

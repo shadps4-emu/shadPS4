@@ -431,7 +431,7 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinLowerKeys = {{
     KEY(2, 6, "j", Character),
     KEY(2, 7, "k", Character),
     KEY(2, 8, "l", Character),
-    KEY(2, 9, "\"", Character),
+    KEY(2, 9, "'", Character),
 
     KEY(3, 0, "z", Character),
     KEY(3, 1, "x", Character),
@@ -440,9 +440,9 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinLowerKeys = {{
     KEY(3, 4, "b", Character),
     KEY(3, 5, "n", Character),
     KEY(3, 6, "m", Character),
-    KEY(3, 7, "-", Character),
-    KEY(3, 8, "_", Character),
-    KEY(3, 9, "/", Character),
+    KEY(3, 7, ",", Character),
+    KEY(3, 8, ".", Character),
+    KEY(3, 9, "?", Character),
 
     KEYHOT(4, 0, "Shift", "L2", Shift),
     KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
@@ -455,10 +455,10 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinLowerKeys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -518,10 +518,10 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinUpperKeys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -577,54 +577,54 @@ constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage1Keys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
 constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage2Keys = {{
-    KEY(0, 0, "\xE2\x80\x9C", Character),
-    KEY(0, 1, "\xE2\x80\x9D", Character),
-    KEY(0, 2, "\xE2\x80\x9E", Character),
-    KEY(0, 3, "\xC2\xA1", Character),
-    KEY(0, 4, "\xC2\xA1!", Character),
-    KEY(0, 5, "\xC2\xBF", Character),
-    KEY(0, 6, "\xC2\xBF?", Character),
-    KEY(0, 7, "~", Character),
-    KEY(0, 8, "\xC2\xB7", Character),
-    KEY(0, 9, nullptr, None),
+    KEY(0, 0, "\xE2\x80\x9A", Character),
+    KEY(0, 1, "\xE2\x80\x9C", Character),
+    KEY(0, 2, "\xE2\x80\x9D", Character),
+    KEY(0, 3, "\xE2\x80\x9E", Character),
+    KEY(0, 4, "~", Character),
+    KEY(0, 5, "\xC2\xA1", Character),
+    KEY(0, 6, "\xC2\xA1!", Character),
+    KEY(0, 7, "\xC2\xBF", Character),
+    KEY(0, 8, "\xC2\xBF?", Character),
+    KEY(0, 9, "\xE2\x80\xB9", Character),
 
-    KEY(1, 0, "\xC3\x97", Character),
-    KEY(1, 1, "\xC3\xB7", Character),
-    KEY(1, 2, "\xE2\x80\xB9", Character),
-    KEY(1, 3, "\xE2\x80\xBA", Character),
-    KEY(1, 4, "\xC2\xAB", Character),
-    KEY(1, 5, "\xC2\xBB", Character),
-    KEY(1, 6, "\xC2\xBA", Character),
-    KEY(1, 7, "\xC2\xAA", Character),
-    KEY(1, 8, "\xC2\xB0", Character),
-    KEY(1, 9, "\xC2\xA7", Character),
+    KEY(1, 0, "\xE2\x80\xBA", Character),
+    KEY(1, 1, "\xC2\xAB", Character),
+    KEY(1, 2, "\xC2\xBB", Character),
+    KEY(1, 3, "\xC2\xB0", Character),
+    KEY(1, 4, "\xC2\xAA", Character),
+    KEY(1, 5, "\xC2\xBA", Character),
+    KEY(1, 6, "\xC3\x97", Character),
+    KEY(1, 7, "\xC3\xB7", Character),
+    KEY(1, 8, "\xC2\xA4", Character),
+    KEY(1, 9, "\xC2\xA2", Character),
 
-    KEY(2, 0, "\xC2\xA6", Character),
-    KEY(2, 1, "\xC2\xB5", Character),
-    KEY(2, 2, "\xC2\xAC", Character),
-    KEY(2, 3, "\xC2\xB9", Character),
-    KEY(2, 4, "\xC2\xB2", Character),
-    KEY(2, 5, "\xC2\xB3", Character),
-    KEY(2, 6, "\xC2\xBC", Character),
-    KEY(2, 7, "\xC2\xBD", Character),
-    KEY(2, 8, "\xC2\xBE", Character),
+    KEY(2, 0, "\xC2\xA5", Character),
+    KEY(2, 1, "\xC2\xA3", Character),
+    KEY(2, 2, "\xE2\x82\xA9", Character),
+    KEY(2, 3, "\xC2\xA7", Character),
+    KEY(2, 4, "\xC2\xA6", Character),
+    KEY(2, 5, "\xC2\xB5", Character),
+    KEY(2, 6, "\xC2\xAC", Character),
+    KEY(2, 7, "\xC2\xB9", Character),
+    KEY(2, 8, "\xC2\xB2", Character),
     KEYSPAN(2, 9, 1, 2, "<", PagePrev),
 
-    KEY(3, 0, "\xC2\xA2", Character),
-    KEY(3, 1, "\xC2\xA4", Character),
-    KEY(3, 2, "\xE2\x80\x99", Character),
-    KEY(3, 3, "\xE2\x80\x98", Character),
-    KEY(3, 4, "\xE2\x80\x9B", Character),
-    KEY(3, 5, "\xE2\x80\x9A", Character),
-    KEY(3, 6, "\xE2\x84\x96", Character),
+    KEY(3, 0, "\xC2\xB3", Character),
+    KEY(3, 1, "\xC2\xBC", Character),
+    KEY(3, 2, "\xC2\xBD", Character),
+    KEY(3, 3, "\xC2\xBE", Character),
+    KEY(3, 4, "\xE2\x84\x96", Character),
+    KEY(3, 5, "\xC2\xB7", Character),
+    KEY(3, 6, nullptr, None),
     KEY(3, 7, nullptr, None),
     KEY(3, 8, nullptr, None),
 
@@ -636,10 +636,10 @@ constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage2Keys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -699,10 +699,10 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1Keys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -762,10 +762,10 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1UpperKeys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -825,10 +825,10 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2Keys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -888,10 +888,10 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2UpperKeys = {{
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, "KB", Keyboard),
+    KEY(5, 4, nullptr, None),
     KEY(5, 5, "...", Menu),
     KEYHOT(5, 6, "Gyro", "R3", Settings),
-    KEY(5, 7, "Ret", NewLine),
+    KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
@@ -1537,10 +1537,10 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
     }
 
-    const bool imgui_activate_selected = ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, false);
-    const bool activate_selected =
-        params.allow_activate_input &&
-        (imgui_activate_selected || (!imgui_activate_selected && params.external_activate_pressed));
+    const bool imgui_activate_selected_once =
+        ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, false);
+    const bool imgui_activate_selected_repeat =
+        ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, true);
 
     const auto activate_key = [&](const RenderedKey& render_key) {
         if (!render_key.key || !render_key.selectable) {
@@ -1572,6 +1572,20 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     if (selected_render_index >= 0) {
         state.selected_center =
             rendered_keys[static_cast<std::size_t>(selected_render_index)].center;
+    }
+
+    bool activate_selected = false;
+    if (params.allow_activate_input) {
+        bool imgui_activate = imgui_activate_selected_once;
+        if (selected_render_index >= 0) {
+            const auto& selected_key = rendered_keys[static_cast<std::size_t>(selected_render_index)];
+            if (selected_key.key && selected_key.key->action == ImeKbKeyAction::Backspace) {
+                // Mirror PS4 OSK behavior: holding Cross on selected Backspace should auto-repeat.
+                imgui_activate = imgui_activate_selected_repeat;
+            }
+        }
+        activate_selected =
+            imgui_activate || (!imgui_activate && params.external_activate_pressed);
     }
 
     const auto draw_key_glyph = [&](ImVec2 pos, ImVec2 size, ImeKbKeyGlyph glyph) {
