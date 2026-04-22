@@ -1537,10 +1537,8 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
     }
 
-    const bool imgui_activate_selected_once =
-        ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, false);
-    const bool imgui_activate_selected_repeat =
-        ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, true);
+    const bool imgui_activate_selected_once = ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, false);
+    const bool imgui_activate_selected_repeat = ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, true);
 
     const auto activate_key = [&](const RenderedKey& render_key) {
         if (!render_key.key || !render_key.selectable) {
@@ -1578,14 +1576,14 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     if (params.allow_activate_input) {
         bool imgui_activate = imgui_activate_selected_once;
         if (selected_render_index >= 0) {
-            const auto& selected_key = rendered_keys[static_cast<std::size_t>(selected_render_index)];
+            const auto& selected_key =
+                rendered_keys[static_cast<std::size_t>(selected_render_index)];
             if (selected_key.key && selected_key.key->action == ImeKbKeyAction::Backspace) {
                 // Mirror PS4 OSK behavior: holding Cross on selected Backspace should auto-repeat.
                 imgui_activate = imgui_activate_selected_repeat;
             }
         }
-        activate_selected =
-            imgui_activate || (!imgui_activate && params.external_activate_pressed);
+        activate_selected = imgui_activate || (!imgui_activate && params.external_activate_pressed);
     }
 
     const auto draw_key_glyph = [&](ImVec2 pos, ImVec2 size, ImeKbKeyGlyph glyph) {

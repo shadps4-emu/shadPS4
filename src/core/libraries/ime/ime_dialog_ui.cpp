@@ -338,10 +338,10 @@ VirtualPadSnapshot ReadVirtualPadSnapshot(Libraries::UserService::OrbisUserServi
     Input::State state{};
     if (ReadControllerState(user_id, &state)) {
         snapshot.buttons = static_cast<u32>(state.buttonsState);
-        const float lx = ApplyAxisDeadzone(
-            ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftX)]));
-        const float ly = ApplyAxisDeadzone(
-            ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftY)]));
+        const float lx =
+            ApplyAxisDeadzone(ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftX)]));
+        const float ly =
+            ApplyAxisDeadzone(ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftY)]));
         snapshot.left_stick_dirs.left = lx <= -kNavAxisThreshold;
         snapshot.left_stick_dirs.right = lx >= kNavAxisThreshold;
         snapshot.left_stick_dirs.up = ly <= -kNavAxisThreshold;
@@ -1175,11 +1175,10 @@ void ImeDialogUi::Draw() {
             left_stick_next_repeat_time = 0.0;
         } else {
             const double now = ImGui::GetTime();
-            const float t = std::clamp((stick_strength - kNavAxisThreshold) /
-                                           (1.0f - kNavAxisThreshold),
-                                       0.0f, 1.0f);
-            const double initial_delay =
-                std::lerp(kStickNavInitialDelaySlow, kStickNavInitialDelayFast, static_cast<double>(t));
+            const float t = std::clamp(
+                (stick_strength - kNavAxisThreshold) / (1.0f - kNavAxisThreshold), 0.0f, 1.0f);
+            const double initial_delay = std::lerp(
+                kStickNavInitialDelaySlow, kStickNavInitialDelayFast, static_cast<double>(t));
             const double repeat_interval =
                 std::lerp(kStickNavRepeatSlow, kStickNavRepeatFast, static_cast<double>(t));
             bool dir_edge_pressed = false;
@@ -1229,17 +1228,14 @@ void ImeDialogUi::Draw() {
                 }
             }
         }
-        const bool nav_left =
-            (allow_osk_shortcuts && gamepad_nav_left) ||
-            (allow_osk_shortcuts && (virtual_nav_left || stick_nav_left));
-        const bool nav_right =
-            (allow_osk_shortcuts && gamepad_nav_right) ||
-            (allow_osk_shortcuts && (virtual_nav_right || stick_nav_right));
+        const bool nav_left = (allow_osk_shortcuts && gamepad_nav_left) ||
+                              (allow_osk_shortcuts && (virtual_nav_left || stick_nav_left));
+        const bool nav_right = (allow_osk_shortcuts && gamepad_nav_right) ||
+                               (allow_osk_shortcuts && (virtual_nav_right || stick_nav_right));
         const bool nav_up = (allow_osk_shortcuts && gamepad_nav_up) ||
                             (allow_osk_shortcuts && (virtual_nav_up || stick_nav_up));
-        const bool nav_down =
-            (allow_osk_shortcuts && gamepad_nav_down) ||
-            (allow_osk_shortcuts && (virtual_nav_down || stick_nav_down));
+        const bool nav_down = (allow_osk_shortcuts && gamepad_nav_down) ||
+                              (allow_osk_shortcuts && (virtual_nav_down || stick_nav_down));
         const bool cancel_shortcut_pressed =
             allow_osk_shortcuts &&
             (IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
@@ -1777,14 +1773,11 @@ void ImeDialogUi::Draw() {
         kb_params.allow_activate_input = allow_osk_shortcuts && accept_armed && !menu_modal &&
                                          !text_select_mode &&
                                          (panel_selection == PanelSelectionTarget::Keyboard);
-        kb_params.external_nav_left =
-            allow_osk_shortcuts && (virtual_nav_left || stick_nav_left);
+        kb_params.external_nav_left = allow_osk_shortcuts && (virtual_nav_left || stick_nav_left);
         kb_params.external_nav_right =
             allow_osk_shortcuts && (virtual_nav_right || stick_nav_right);
-        kb_params.external_nav_up =
-            allow_osk_shortcuts && (virtual_nav_up || stick_nav_up);
-        kb_params.external_nav_down =
-            allow_osk_shortcuts && (virtual_nav_down || stick_nav_down);
+        kb_params.external_nav_up = allow_osk_shortcuts && (virtual_nav_up || stick_nav_up);
+        kb_params.external_nav_down = allow_osk_shortcuts && (virtual_nav_down || stick_nav_down);
         kb_params.external_activate_pressed = panel_activate_pressed;
         kb_params.requested_selected_row = pending_keyboard_row;
         kb_params.requested_selected_col = pending_keyboard_col;
