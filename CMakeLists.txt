@@ -1104,10 +1104,6 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/renderer/imgui_impl_sdlrenderer3.h
           src/imgui/renderer/imgui_impl_vulkan.cpp
           src/imgui/renderer/imgui_impl_vulkan.h
-          src/imgui/renderer/font_data.cpp
-          src/imgui/renderer/font_data.h
-          src/imgui/renderer/font_stack.cpp
-          src/imgui/renderer/font_stack.h
           src/imgui/renderer/texture_manager.cpp
           src/imgui/renderer/texture_manager.h
           src/imgui/big_picture.cpp

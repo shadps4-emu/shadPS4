@@ -9,14 +9,15 @@
 #include "big_picture.h"
 #include "common/logging/log.h"
 #include "core/devtools/layer.h"
-#include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "emulator.h"
 #include "imgui/imgui_std.h"
-#include "imgui/renderer/font_stack.h"
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 #include "settings_dialog_imgui.h"
+
+#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
+#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 CMRC_DECLARE(res);
 
@@ -66,12 +67,24 @@ void Launch() {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigNavCursorVisibleAlways = true;
 
-    ImFontConfig font_cfg;
-    font_cfg.OversampleH = 2;
-    font_cfg.OversampleV = 1;
-    ImFont* myFont = ImGui::FontStack::AddPrimaryUiFont(
-        io.Fonts, 32.0f, EmulatorSettings.GetConsoleLanguage(), font_cfg, true);
-    io.FontDefault = myFont;
+    ImFontConfig configBase;
+    configBase.OversampleH = 3;
+    configBase.OversampleV = 3;
+
+    ImFontConfig configMerge;
+    configMerge.OversampleH = 3;
+    configMerge.OversampleV = 3;
+    configMerge.MergeMode = true;
+
+    // tm symbol
+    const ImWchar icon_ranges[] = {0x2122, 0x2122, 0};
+    ImFont* myFont = io.Fonts->AddFontFromMemoryCompressedTTF(
+        imgui_font_notosansjp_regular_compressed_data,
+        imgui_font_notosansjp_regular_compressed_size, 32.0f, &configBase, icon_ranges);
+
+    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
+                                             imgui_font_notosansjp_regular_compressed_size, 32.0f,
+                                             &configMerge, io.Fonts->GetGlyphRangesDefault());
 
     io.Fonts->Build();
 
