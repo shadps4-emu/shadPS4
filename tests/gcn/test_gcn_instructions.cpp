@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "gcn_test_runner.hpp"
+#include "instructions.hpp"
 #include "translator.hpp"
 
 class GcnTest : public ::testing::Test {
@@ -26,7 +27,7 @@ struct F32x2 {
 //     auto runner = gcn_test::Runner::instance().value();
 //
 //     // v_add_f32 v0, v0, v1
-//     auto spirv = TranslateToSpirv(0x06000300);
+//     auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_ADD_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
 //
 //     // run<T> tells how to interpret the result (only 32bit as of now)
 //     // the second argument is templated, it can be at most 4 u32s
@@ -41,9 +42,7 @@ struct F32x2 {
 TEST_F(GcnTest, add_f32) {
     auto runner = gcn_test::Runner::instance().value();
 
-    // v_add_f32 v0, v0, v1
-    auto spirv = TranslateToSpirv(0x06000300);
-
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_ADD_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
     auto result = runner->run<float>(spirv, F32x2{1.5f, 6.0f});
 
     EXPECT_TRUE(result.has_value());
@@ -53,9 +52,7 @@ TEST_F(GcnTest, add_f32) {
 TEST_F(GcnTest, add_nan) {
     auto runner = gcn_test::Runner::instance().value();
 
-    // v_add_f32 v0, v0, v1
-    auto spirv = TranslateToSpirv(0x06000300);
-
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_ADD_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
     auto result = runner->run<float>(spirv, F32x2{1.0f, std::numeric_limits<float>::quiet_NaN()});
 
     EXPECT_TRUE(result.has_value());

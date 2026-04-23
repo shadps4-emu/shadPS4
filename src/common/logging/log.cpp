@@ -242,7 +242,12 @@ void Shutdown() {
 }
 
 void Flush() {
-    g_shad_file_sink->flush();
-    g_console_sink->flush();
+    if (g_shad_file_sink != nullptr) {
+        g_shad_file_sink->flush();
+    }
+
+    if (g_console_sink != nullptr) {
+        g_console_sink->flush();
+    }
 }
 } // namespace Common::Log

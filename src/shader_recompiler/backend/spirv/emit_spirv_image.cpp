@@ -226,7 +226,12 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
     Id texel;
     if (!texture.is_storage) {
         const Id image = ctx.OpLoad(texture.image_type, texture.id);
-        operands.Add(spv::ImageOperandsMask::Lod, lod);
+        if (texture.view_type != AmdGpu::ImageType::Color2DMsaa) {
+            if (Sirit::ValidId(ms)) {
+                LOG_ERROR(Render_Recompiler, "image is not MS but ms operand is provided");
+            }
+            operands.Add(spv::ImageOperandsMask::Lod, lod);
+        }
         texel = ctx.OpImageFetch(color_type, image, coords, operands.mask, operands.operands);
     } else {
         Id image_ptr = texture.id;

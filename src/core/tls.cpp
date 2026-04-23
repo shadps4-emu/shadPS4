@@ -4,7 +4,6 @@
 #include <mutex>
 #include "common/arch.h"
 #include "common/assert.h"
-#include "common/types.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/tls.h"
 
@@ -23,6 +22,8 @@
 #if defined(__linux__) && defined(ARCH_X86_64)
 #include <asm/prctl.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #endif
 
 namespace Core {
