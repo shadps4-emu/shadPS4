@@ -65,6 +65,7 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
+    io.Fonts->Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight;
     const int console_language = EmulatorSettings.GetConsoleLanguage();
     io.FontDefault = FontStack::AddPrimaryUiFont(io.Fonts, 32.0f, console_language, font_cfg, true);
 
@@ -72,7 +73,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
                                              imgui_font_proggyvector_regular_compressed_size,
                                              32.0f);
 
-    FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, true);
+    // Avoid exploding atlas size on Metal/MoltenVK when CJK fallback is enabled.
+    FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, false);
     io.Fonts->Build();
 
     io.FontGlobalScale = 0.5f;

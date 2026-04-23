@@ -100,16 +100,19 @@ const ImWchar* GetPrimaryTextRanges(ImFontAtlas* atlas) {
     return ranges.Data;
 }
 
-const ImWchar* GetCjkCoverageRanges(ImFontAtlas* atlas) {
-    static ImVector<ImWchar> ranges{};
-    if (ranges.empty()) {
-        ImFontGlyphRangesBuilder rb{};
-        rb.AddRanges(atlas->GetGlyphRangesJapanese());
-        rb.AddRanges(atlas->GetGlyphRangesKorean());
-        rb.AddRanges(atlas->GetGlyphRangesChineseFull());
-        rb.BuildRanges(&ranges);
+const ImWchar* GetCjkCoverageRanges(ImFontAtlas* atlas, const int console_language) {
+    switch (console_language) {
+    case kConsoleLanguageJapanese:
+        return atlas->GetGlyphRangesJapanese();
+    case kConsoleLanguageKorean:
+        return atlas->GetGlyphRangesKorean();
+    case kConsoleLanguageSimplifiedChinese:
+        return atlas->GetGlyphRangesChineseSimplifiedCommon();
+    case kConsoleLanguageTraditionalChinese:
+        return atlas->GetGlyphRangesChineseFull();
+    default:
+        return nullptr;
     }
-    return ranges.Data;
 }
 
 void AddMergedFont(ImFontAtlas* atlas, const CompressedFontBlob blob, const float font_size,
@@ -136,9 +139,12 @@ ImFont* AddPrimaryUiFont(ImFontAtlas* atlas, const float font_size, const int co
     AddMergedFont(atlas, kNotoSansSymbols2Blob, font_size, kSymbolsRanges, base_cfg);
 
     if (include_cjk_fallback) {
-        const ImWchar* cjk_ranges = GetCjkCoverageRanges(atlas);
-        AddMergedFont(atlas, kNotoSansCjkBlob, font_size, cjk_ranges, base_cfg,
-                      GetCjkFontIndex(console_language));
+        // Keep the atlas lean by only merging CJK ranges for active CJK console locales.
+        const ImWchar* cjk_ranges = GetCjkCoverageRanges(atlas, console_language);
+        if (cjk_ranges != nullptr) {
+            AddMergedFont(atlas, kNotoSansCjkBlob, font_size, cjk_ranges, base_cfg,
+                          GetCjkFontIndex(console_language));
+        }
     }
 
     return font;
