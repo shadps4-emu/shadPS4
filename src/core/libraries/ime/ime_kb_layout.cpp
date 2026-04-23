@@ -64,6 +64,7 @@ constexpr float kPadX = 26.0f;
 constexpr float kPadBottomSingle = 26.0f;
 constexpr float kPadBottomMulti = 26.0f;
 constexpr float kKeyFontRatio = 0.042f;
+constexpr float kTypingKeyLabelScale = 1.60f;
 constexpr float kCornerRatio = 0.004f;
 constexpr float kSingleLineTextFill = 0.85f;
 constexpr float kMultiLineTextFill = 0.85f;
@@ -1711,7 +1712,8 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             draw_key_glyph(pos, size, glyph);
         }
         if (label && label[0] != '\0') {
-            float label_font_size = base_font_size * (emphasize_main_label ? 1.50f : 1.0f);
+            float label_font_size =
+                base_font_size * (emphasize_main_label ? kTypingKeyLabelScale : 1.0f);
             const float label_padding_x = std::max(4.0f, size.x * 0.08f);
             const float label_max_w = std::max(0.0f, size.x - label_padding_x * 2.0f);
             ImVec2 text_size = font->CalcTextSizeA(label_font_size,

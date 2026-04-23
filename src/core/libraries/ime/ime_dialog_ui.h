@@ -123,9 +123,17 @@ class ImeDialogUi final : public ImGui::Layer {
     bool prev_virtual_square_down = false;
     bool prev_virtual_l1_down = false;
     bool prev_virtual_r1_down = false;
+    bool prev_virtual_dpad_left_down = false;
+    bool prev_virtual_dpad_right_down = false;
+    bool prev_virtual_dpad_up_down = false;
+    bool prev_virtual_dpad_down_down = false;
     double virtual_square_next_repeat_time = 0.0;
     double virtual_l1_next_repeat_time = 0.0;
     double virtual_r1_next_repeat_time = 0.0;
+    double virtual_dpad_left_next_repeat_time = 0.0;
+    double virtual_dpad_right_next_repeat_time = 0.0;
+    double virtual_dpad_up_next_repeat_time = 0.0;
+    double virtual_dpad_down_next_repeat_time = 0.0;
     bool panel_position_initialized = false;
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
@@ -144,6 +152,7 @@ class ImeDialogUi final : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
+    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     std::mutex draw_mutex;
 
 public:

@@ -739,6 +739,10 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
     if (state && *status == OrbisImeDialogStatus::Running) {
         kb_layout_selection =
             ResolveInitialKbLayoutSelection(state->ext_option, state->panel_priority);
+        kb_alpha_family =
+            (kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Specials)
+                ? Libraries::Ime::ImeKbLayoutFamily::Specials
+                : Libraries::Ime::ImeKbLayoutFamily::Latin;
         AddLayer(this);
         ImGui::Core::AcquireGamepadInputCapture();
         gamepad_input_capture_active = true;
@@ -771,9 +775,17 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
       prev_virtual_square_down(other.prev_virtual_square_down),
       prev_virtual_l1_down(other.prev_virtual_l1_down),
       prev_virtual_r1_down(other.prev_virtual_r1_down),
+      prev_virtual_dpad_left_down(other.prev_virtual_dpad_left_down),
+      prev_virtual_dpad_right_down(other.prev_virtual_dpad_right_down),
+      prev_virtual_dpad_up_down(other.prev_virtual_dpad_up_down),
+      prev_virtual_dpad_down_down(other.prev_virtual_dpad_down_down),
       virtual_square_next_repeat_time(other.virtual_square_next_repeat_time),
       virtual_l1_next_repeat_time(other.virtual_l1_next_repeat_time),
       virtual_r1_next_repeat_time(other.virtual_r1_next_repeat_time),
+      virtual_dpad_left_next_repeat_time(other.virtual_dpad_left_next_repeat_time),
+      virtual_dpad_right_next_repeat_time(other.virtual_dpad_right_next_repeat_time),
+      virtual_dpad_up_next_repeat_time(other.virtual_dpad_up_next_repeat_time),
+      virtual_dpad_down_next_repeat_time(other.virtual_dpad_down_next_repeat_time),
       panel_position_initialized(other.panel_position_initialized),
       panel_drag_active(other.panel_drag_active), panel_position(other.panel_position),
       input_cursor_utf16(other.input_cursor_utf16), input_cursor_byte(other.input_cursor_byte),
@@ -787,6 +799,7 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
       last_keyboard_selected_row(other.last_keyboard_selected_row),
       last_keyboard_selected_col(other.last_keyboard_selected_col),
       edit_menu_index(other.edit_menu_index), kb_layout_selection(other.kb_layout_selection),
+      kb_alpha_family(other.kb_alpha_family),
       gamepad_input_capture_active(other.gamepad_input_capture_active) {
 
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
@@ -803,9 +816,18 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
     other.prev_virtual_square_down = false;
     other.prev_virtual_l1_down = false;
     other.prev_virtual_r1_down = false;
+    other.prev_virtual_dpad_left_down = false;
+    other.prev_virtual_dpad_right_down = false;
+    other.prev_virtual_dpad_up_down = false;
+    other.prev_virtual_dpad_down_down = false;
     other.virtual_square_next_repeat_time = 0.0;
     other.virtual_l1_next_repeat_time = 0.0;
     other.virtual_r1_next_repeat_time = 0.0;
+    other.virtual_dpad_left_next_repeat_time = 0.0;
+    other.virtual_dpad_right_next_repeat_time = 0.0;
+    other.virtual_dpad_up_next_repeat_time = 0.0;
+    other.virtual_dpad_down_next_repeat_time = 0.0;
+    other.kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     other.gamepad_input_capture_active = false;
 
     if (state && *status == OrbisImeDialogStatus::Running) {
@@ -844,9 +866,17 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     prev_virtual_square_down = other.prev_virtual_square_down;
     prev_virtual_l1_down = other.prev_virtual_l1_down;
     prev_virtual_r1_down = other.prev_virtual_r1_down;
+    prev_virtual_dpad_left_down = other.prev_virtual_dpad_left_down;
+    prev_virtual_dpad_right_down = other.prev_virtual_dpad_right_down;
+    prev_virtual_dpad_up_down = other.prev_virtual_dpad_up_down;
+    prev_virtual_dpad_down_down = other.prev_virtual_dpad_down_down;
     virtual_square_next_repeat_time = other.virtual_square_next_repeat_time;
     virtual_l1_next_repeat_time = other.virtual_l1_next_repeat_time;
     virtual_r1_next_repeat_time = other.virtual_r1_next_repeat_time;
+    virtual_dpad_left_next_repeat_time = other.virtual_dpad_left_next_repeat_time;
+    virtual_dpad_right_next_repeat_time = other.virtual_dpad_right_next_repeat_time;
+    virtual_dpad_up_next_repeat_time = other.virtual_dpad_up_next_repeat_time;
+    virtual_dpad_down_next_repeat_time = other.virtual_dpad_down_next_repeat_time;
     panel_position_initialized = other.panel_position_initialized;
     panel_drag_active = other.panel_drag_active;
     panel_position = other.panel_position;
@@ -864,6 +894,7 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     last_keyboard_selected_col = other.last_keyboard_selected_col;
     edit_menu_index = other.edit_menu_index;
     kb_layout_selection = other.kb_layout_selection;
+    kb_alpha_family = other.kb_alpha_family;
     gamepad_input_capture_active = other.gamepad_input_capture_active;
     other.state = nullptr;
     other.status = nullptr;
@@ -878,9 +909,18 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     other.prev_virtual_square_down = false;
     other.prev_virtual_l1_down = false;
     other.prev_virtual_r1_down = false;
+    other.prev_virtual_dpad_left_down = false;
+    other.prev_virtual_dpad_right_down = false;
+    other.prev_virtual_dpad_up_down = false;
+    other.prev_virtual_dpad_down_down = false;
     other.virtual_square_next_repeat_time = 0.0;
     other.virtual_l1_next_repeat_time = 0.0;
     other.virtual_r1_next_repeat_time = 0.0;
+    other.virtual_dpad_left_next_repeat_time = 0.0;
+    other.virtual_dpad_right_next_repeat_time = 0.0;
+    other.virtual_dpad_up_next_repeat_time = 0.0;
+    other.virtual_dpad_down_next_repeat_time = 0.0;
+    other.kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     other.gamepad_input_capture_active = false;
 
     if (state && *status == OrbisImeDialogStatus::Running) {
@@ -1123,12 +1163,17 @@ void ImeDialogUi::Draw() {
         const bool gamepad_nav_up = IsKeyPressed(ImGuiKey_GamepadDpadUp, true);
         const bool gamepad_nav_down = IsKeyPressed(ImGuiKey_GamepadDpadDown, true);
         const bool virtual_nav_left =
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Left);
-        const bool virtual_nav_right =
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Right);
-        const bool virtual_nav_up = virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Up);
+            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Left,
+                                   prev_virtual_dpad_left_down, virtual_dpad_left_next_repeat_time);
+        const bool virtual_nav_right = virtual_repeat_pressed(
+            Libraries::Pad::OrbisPadButtonDataOffset::Right, prev_virtual_dpad_right_down,
+            virtual_dpad_right_next_repeat_time);
+        const bool virtual_nav_up =
+            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Up,
+                                   prev_virtual_dpad_up_down, virtual_dpad_up_next_repeat_time);
         const bool virtual_nav_down =
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Down);
+            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Down,
+                                   prev_virtual_dpad_down_down, virtual_dpad_down_next_repeat_time);
         const bool imgui_lstick_left_pressed = IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
         const bool imgui_lstick_right_pressed = IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
         const bool imgui_lstick_up_pressed = IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
@@ -1814,8 +1859,24 @@ void ImeDialogUi::Draw() {
         const auto set_family_and_reset_page = [&](Libraries::Ime::ImeKbLayoutFamily family) {
             kb_layout_selection.family = family;
             kb_layout_selection.page = 0;
+            if (family == Libraries::Ime::ImeKbLayoutFamily::Latin ||
+                family == Libraries::Ime::ImeKbLayoutFamily::Specials) {
+                kb_alpha_family = family;
+            }
         };
         const auto toggle_family_mode = [&](Libraries::Ime::ImeKbLayoutFamily target_family) {
+            if (target_family == Libraries::Ime::ImeKbLayoutFamily::Symbols) {
+                if (kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Symbols) {
+                    set_family_and_reset_page(kb_alpha_family);
+                } else {
+                    if (kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Latin ||
+                        kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Specials) {
+                        kb_alpha_family = kb_layout_selection.family;
+                    }
+                    set_family_and_reset_page(Libraries::Ime::ImeKbLayoutFamily::Symbols);
+                }
+                return;
+            }
             if (kb_layout_selection.family == target_family) {
                 set_family_and_reset_page(Libraries::Ime::ImeKbLayoutFamily::Latin);
             } else {
