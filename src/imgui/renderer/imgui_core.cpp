@@ -10,7 +10,8 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
-#include "core/libraries/ime/ime_kb_layout.h"
+#include "font_data.h"
+#include "font_stack.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -19,9 +20,6 @@
 #include "sdl_window.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
-#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -86,57 +84,18 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     std::memcpy(log_file_buf, path.c_str(), path.size());
     io.LogFilename = log_file_buf;
 
-    ImFontGlyphRangesBuilder rb{};
-    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
-    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
-    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
-    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-    rb.AddRanges(io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
-    rb.AddRanges(io.Fonts->GetGlyphRangesChineseFull());
-    rb.AddRanges(io.Fonts->GetGlyphRangesThai());
-    rb.AddRanges(io.Fonts->GetGlyphRangesVietnamese());
-    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-    // Covers all currently declared OrbisImeLanguage scripts:
-    // - Latin variants (European + Vietnamese + Turkish + Romanian + Hungarian + Czech)
-    // - Cyrillic (Russian)
-    // - Greek
-    // - Arabic
-    // - Thai
-    // - currency/punctuation blocks used by OSK labels
-    static constexpr ImWchar kImeSupportedLanguageRanges[] = {
-        0x0100, 0x024F, // Latin Extended-A/B
-        0x0300, 0x036F, // Combining Diacritical Marks
-        0x1E00, 0x1EFF, // Latin Extended Additional (includes many Vietnamese forms)
-        0x1F00, 0x1FFF, // Greek Extended
-        0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
-        0x2DE0, 0x2DFF, // Cyrillic Extended-A
-        0xA640, 0xA69F, // Cyrillic Extended-B
-        0x0600, 0x06FF, // Arabic
-        0x0750, 0x077F, // Arabic Supplement
-        0x08A0, 0x08FF, // Arabic Extended-A
-        0xFB50, 0xFDFF, // Arabic Presentation Forms-A
-        0xFE70, 0xFEFF, // Arabic Presentation Forms-B
-        0x0E00, 0x0E7F, // Thai
-        0x2000, 0x206F, // General Punctuation
-        0x20A0, 0x20CF, // Currency Symbols
-        0,
-    };
-    rb.AddRanges(kImeSupportedLanguageRanges);
-    Libraries::Ime::AddImeKeyboardGlyphsToFontRanges(rb);
-    ImVector<ImWchar> ranges{};
-    rb.BuildRanges(&ranges);
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
-        imgui_font_notosansjp_regular_compressed_data,
-        imgui_font_notosansjp_regular_compressed_size, 32.0f, &font_cfg, ranges.Data);
+    const int console_language = EmulatorSettings.GetConsoleLanguage();
+    io.FontDefault = FontStack::AddPrimaryUiFont(io.Fonts, 32.0f, console_language, font_cfg, true);
+
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
                                              32.0f);
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 128.0f,
-                                             &font_cfg, ranges.Data);
+
+    FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, true);
+    io.Fonts->Build();
 
     io.FontGlobalScale = 0.5f;
 
