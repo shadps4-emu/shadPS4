@@ -787,7 +787,10 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
       virtual_dpad_up_next_repeat_time(other.virtual_dpad_up_next_repeat_time),
       virtual_dpad_down_next_repeat_time(other.virtual_dpad_down_next_repeat_time),
       panel_position_initialized(other.panel_position_initialized),
+      panel_layout_anchor_initialized(other.panel_layout_anchor_initialized),
       panel_drag_active(other.panel_drag_active), panel_position(other.panel_position),
+      panel_layout_anchor(other.panel_layout_anchor),
+      panel_drag_press_offset(other.panel_drag_press_offset),
       input_cursor_utf16(other.input_cursor_utf16), input_cursor_byte(other.input_cursor_byte),
       input_selection_start_byte(other.input_selection_start_byte),
       input_selection_end_byte(other.input_selection_end_byte),
@@ -827,6 +830,9 @@ ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
     other.virtual_dpad_right_next_repeat_time = 0.0;
     other.virtual_dpad_up_next_repeat_time = 0.0;
     other.virtual_dpad_down_next_repeat_time = 0.0;
+    other.panel_layout_anchor_initialized = false;
+    other.panel_layout_anchor = {};
+    other.panel_drag_press_offset = {};
     other.kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     other.gamepad_input_capture_active = false;
 
@@ -878,8 +884,11 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     virtual_dpad_up_next_repeat_time = other.virtual_dpad_up_next_repeat_time;
     virtual_dpad_down_next_repeat_time = other.virtual_dpad_down_next_repeat_time;
     panel_position_initialized = other.panel_position_initialized;
+    panel_layout_anchor_initialized = other.panel_layout_anchor_initialized;
     panel_drag_active = other.panel_drag_active;
     panel_position = other.panel_position;
+    panel_layout_anchor = other.panel_layout_anchor;
+    panel_drag_press_offset = other.panel_drag_press_offset;
     input_cursor_utf16 = other.input_cursor_utf16;
     input_cursor_byte = other.input_cursor_byte;
     input_selection_start_byte = other.input_selection_start_byte;
@@ -920,6 +929,9 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     other.virtual_dpad_right_next_repeat_time = 0.0;
     other.virtual_dpad_up_next_repeat_time = 0.0;
     other.virtual_dpad_down_next_repeat_time = 0.0;
+    other.panel_layout_anchor_initialized = false;
+    other.panel_layout_anchor = {};
+    other.panel_drag_press_offset = {};
     other.kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     other.gamepad_input_capture_active = false;
 
@@ -1027,15 +1039,24 @@ void ImeDialogUi::Draw() {
     const float max_y = viewport_offset.y + std::max(0.0f, viewport_size.y - window_size.y);
     base_x = std::clamp(base_x, min_x, max_x);
     base_y = std::clamp(base_y, min_y, max_y);
+    const ImVec2 layout_anchor{base_x, base_y};
+    if (!panel_layout_anchor_initialized) {
+        panel_layout_anchor = layout_anchor;
+        panel_layout_anchor_initialized = true;
+    }
+    const ImVec2 layout_anchor_delta{layout_anchor.x - panel_layout_anchor.x,
+                                     layout_anchor.y - panel_layout_anchor.y};
 
     if (!panel_position_initialized) {
-        panel_position = {base_x, base_y};
+        panel_position = layout_anchor;
         panel_position_initialized = true;
     }
     if (state->fixed_position) {
-        panel_position = {base_x, base_y};
+        panel_position = layout_anchor;
         panel_drag_active = false;
     } else {
+        panel_position.x += layout_anchor_delta.x;
+        panel_position.y += layout_anchor_delta.y;
         if (!ps4_typing_mode_active) {
             panel_drag_active = false;
         } else {
@@ -1047,11 +1068,14 @@ void ImeDialogUi::Draw() {
             if (!panel_drag_active && IsMouseClicked(ImGuiMouseButton_Left, false) &&
                 mouse_over_panel) {
                 panel_drag_active = true;
+                // Preserve the initial grab offset so cursor stays on the pressed panel point.
+                panel_drag_press_offset = {mouse_pos.x - panel_position.x,
+                                           mouse_pos.y - panel_position.y};
             }
             if (panel_drag_active) {
                 if (IsMouseDown(ImGuiMouseButton_Left)) {
-                    panel_position.x += io.MouseDelta.x;
-                    panel_position.y += io.MouseDelta.y;
+                    panel_position.x = mouse_pos.x - panel_drag_press_offset.x;
+                    panel_position.y = mouse_pos.y - panel_drag_press_offset.y;
                 } else {
                     panel_drag_active = false;
                 }
@@ -1061,6 +1085,7 @@ void ImeDialogUi::Draw() {
             panel_position.y += right_stick_delta.y;
         }
     }
+    panel_layout_anchor = layout_anchor;
     panel_position.x = std::clamp(panel_position.x, min_x, max_x);
     panel_position.y = std::clamp(panel_position.y, min_y, max_y);
     SetNextWindowPos(panel_position);
@@ -1800,10 +1825,27 @@ void ImeDialogUi::Draw() {
         kb_layout.cols = keyboard_cols;
         kb_layout.rows = keyboard_rows;
         const int layout_rows = std::max(1, kb_layout.rows);
-        const float computed_key_h =
-            (kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1)) /
-            static_cast<float>(layout_rows);
-        kb_layout.key_h = std::max(8.0f, computed_key_h);
+        const bool preserve_function_row_height =
+            kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Specials &&
+            layout_rows > 2;
+        if (preserve_function_row_height) {
+            constexpr int kFixedFunctionRows = 2;
+            kb_layout.fixed_bottom_rows = std::min(kFixedFunctionRows, layout_rows);
+            kb_layout.bottom_row_h = std::max(8.0f, metrics.key_h);
+            const int typing_rows = std::max(1, layout_rows - kb_layout.fixed_bottom_rows);
+            const float typing_area_h =
+                kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1) -
+                kb_layout.bottom_row_h * static_cast<float>(kb_layout.fixed_bottom_rows);
+            const float computed_typing_key_h = typing_area_h / static_cast<float>(typing_rows);
+            kb_layout.key_h = std::max(8.0f, computed_typing_key_h);
+        } else {
+            kb_layout.fixed_bottom_rows = 0;
+            kb_layout.bottom_row_h = 0.0f;
+            const float computed_key_h =
+                (kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1)) /
+                static_cast<float>(layout_rows);
+            kb_layout.key_h = std::max(8.0f, computed_key_h);
+        }
         kb_layout.corner_radius = metrics.corner_radius;
 
         Libraries::Ime::ImeKbDrawParams kb_params{};
@@ -1881,6 +1923,24 @@ void ImeDialogUi::Draw() {
                 set_family_and_reset_page(Libraries::Ime::ImeKbLayoutFamily::Latin);
             } else {
                 set_family_and_reset_page(target_family);
+            }
+        };
+        const auto focus_keyboard_action_key = [&](Libraries::Ime::ImeKbKeyAction action) {
+            const auto& focus_layout = Libraries::Ime::GetImeKeyboardLayout(kb_layout_selection);
+            if (!focus_layout.keys || focus_layout.key_count == 0) {
+                return;
+            }
+            for (std::size_t i = 0; i < focus_layout.key_count; ++i) {
+                const auto& key = focus_layout.keys[i];
+                if (key.action != action) {
+                    continue;
+                }
+                pending_keyboard_row = static_cast<int>(key.row);
+                pending_keyboard_col = static_cast<int>(key.col);
+                last_keyboard_selected_row = pending_keyboard_row;
+                last_keyboard_selected_col = pending_keyboard_col;
+                panel_selection = PanelSelectionTarget::Keyboard;
+                return;
             }
         };
         const auto flip_mode_page = [&](int direction) {
@@ -2092,9 +2152,11 @@ void ImeDialogUi::Draw() {
             break;
         case Libraries::Ime::ImeKbKeyAction::SymbolsMode:
             toggle_family_mode(Libraries::Ime::ImeKbLayoutFamily::Symbols);
+            focus_keyboard_action_key(Libraries::Ime::ImeKbKeyAction::SymbolsMode);
             break;
         case Libraries::Ime::ImeKbKeyAction::SpecialsMode:
             toggle_family_mode(Libraries::Ime::ImeKbLayoutFamily::Specials);
+            focus_keyboard_action_key(Libraries::Ime::ImeKbKeyAction::SpecialsMode);
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowLeft:
             (void)move_text_caret(-1, text_select_mode);

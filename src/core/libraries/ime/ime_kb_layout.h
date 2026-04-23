@@ -26,7 +26,11 @@ struct ImeKbGridLayout {
     ImVec2 size{};
     float key_gap_x = 0.0f;
     float key_gap_y = 0.0f;
+    // Base row height used for non-fixed rows.
     float key_h = 0.0f;
+    // Optional fixed-size bottom rows (used by accents/specials to preserve function-row height).
+    float bottom_row_h = 0.0f;
+    int fixed_bottom_rows = 0;
     int cols = 10;
     int rows = 6;
     float corner_radius = 0.0f;

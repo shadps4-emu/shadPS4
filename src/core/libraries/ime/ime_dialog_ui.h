@@ -135,9 +135,12 @@ class ImeDialogUi final : public ImGui::Layer {
     double virtual_dpad_up_next_repeat_time = 0.0;
     double virtual_dpad_down_next_repeat_time = 0.0;
     bool panel_position_initialized = false;
+    bool panel_layout_anchor_initialized = false;
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
     ImVec2 panel_position{};
+    ImVec2 panel_layout_anchor{};
+    ImVec2 panel_drag_press_offset{};
     int input_cursor_utf16 = 0;
     int input_cursor_byte = 0;
     int input_selection_start_byte = 0;

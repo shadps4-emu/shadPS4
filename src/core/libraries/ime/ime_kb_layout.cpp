@@ -70,6 +70,7 @@ constexpr float kSingleLineTextFill = 0.85f;
 constexpr float kMultiLineTextFill = 0.85f;
 constexpr int kMultiLineVisibleLines = 4;
 constexpr int kKeyRows = 6;
+constexpr int kSpecialsKeyRows = 7;
 constexpr int kKeyCols = 10;
 constexpr char kCurrencyDollar[] = "$";
 constexpr char kCurrencyEuro[] = "\xE2\x82\xAC";
@@ -382,8 +383,9 @@ const char* ResolveShiftOverrideLabel(const ImeKbLayoutSelection& selection,
 }
 
 template <std::size_t N>
-constexpr ImeKbLayoutModel MakeLayoutModel(const std::array<ImeKbKeySpec, N>& keys) {
-    return ImeKbLayoutModel{keys.data(), N, static_cast<u8>(kKeyCols), static_cast<u8>(kKeyRows)};
+constexpr ImeKbLayoutModel MakeLayoutModel(const std::array<ImeKbKeySpec, N>& keys,
+                                           const u8 rows = static_cast<u8>(kKeyRows)) {
+    return ImeKbLayoutModel{keys.data(), N, static_cast<u8>(kKeyCols), rows};
 }
 
 const char* GetEnterLabel(OrbisImeEnterLabel label) {
@@ -644,7 +646,7 @@ constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage2Keys = {{
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
 
-constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1Keys = {{
+constexpr std::array<ImeKbKeySpec, 65> kSpecialsPage1Keys = {{
     KEY(0, 0, "à", Character),
     KEY(0, 1, "á", Character),
     KEY(0, 2, "â", Character),
@@ -689,25 +691,36 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1Keys = {{
     KEY(3, 8, "ü", Character),
     KEY(3, 9, "ý", Character),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
+    KEY(4, 0, "ÿ", Character),
+    KEY(4, 1, "ź", Character),
+    KEY(4, 2, "ż", Character),
+    KEY(4, 3, "ž", Character),
+    KEY(4, 4, "ð", Character),
+    KEY(4, 5, "þ", Character),
+    KEY(4, 6, nullptr, None),
     KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEY(4, 8, nullptr, None),
+    KEY(4, 9, nullptr, None),
 
-    KEYGLYPH(5, 0, ArrowDown, ArrowDown),
-    KEYGLYPH(5, 1, ArrowUp, ArrowUp),
-    KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
-    KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
-    KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 0, "Shift", "L2", Shift),
+    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
+    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+
+    KEYGLYPH(6, 0, ArrowDown, ArrowDown),
+    KEYGLYPH(6, 1, ArrowUp, ArrowUp),
+    KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
+    KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
+    KEY(6, 4, nullptr, None),
+    KEY(6, 5, "...", Menu),
+    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEY(6, 7, nullptr, None),
+    KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
 
-constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1UpperKeys = {{
+constexpr std::array<ImeKbKeySpec, 65> kSpecialsPage1UpperKeys = {{
     KEY(0, 0, "À", Character),
     KEY(0, 1, "Á", Character),
     KEY(0, 2, "Â", Character),
@@ -752,22 +765,33 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage1UpperKeys = {{
     KEY(3, 8, "Ü", Character),
     KEY(3, 9, "Ý", Character),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
+    KEY(4, 0, "Ÿ", Character),
+    KEY(4, 1, "Ź", Character),
+    KEY(4, 2, "Ż", Character),
+    KEY(4, 3, "Ž", Character),
+    KEY(4, 4, "Ð", Character),
+    KEY(4, 5, "Þ", Character),
+    KEY(4, 6, nullptr, None),
     KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEY(4, 8, nullptr, None),
+    KEY(4, 9, nullptr, None),
 
-    KEYGLYPH(5, 0, ArrowDown, ArrowDown),
-    KEYGLYPH(5, 1, ArrowUp, ArrowUp),
-    KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
-    KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
-    KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 0, "Shift", "L2", Shift),
+    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
+    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+
+    KEYGLYPH(6, 0, ArrowDown, ArrowDown),
+    KEYGLYPH(6, 1, ArrowUp, ArrowUp),
+    KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
+    KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
+    KEY(6, 4, nullptr, None),
+    KEY(6, 5, "...", Menu),
+    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEY(6, 7, nullptr, None),
+    KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
 
 constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2Keys = {{
@@ -815,22 +839,22 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2Keys = {{
     KEY(3, 8, nullptr, None),
     KEY(3, 9, nullptr, None),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
-    KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
-
-    KEYGLYPH(5, 0, ArrowDown, ArrowDown),
-    KEYGLYPH(5, 1, ArrowUp, ArrowUp),
-    KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
-    KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
-    KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 0, "Shift", "L2", Shift),
+    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
+    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+
+    KEYGLYPH(6, 0, ArrowDown, ArrowDown),
+    KEYGLYPH(6, 1, ArrowUp, ArrowUp),
+    KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
+    KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
+    KEY(6, 4, nullptr, None),
+    KEY(6, 5, "...", Menu),
+    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEY(6, 7, nullptr, None),
+    KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
 
 constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2UpperKeys = {{
@@ -878,32 +902,36 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2UpperKeys = {{
     KEY(3, 8, nullptr, None),
     KEY(3, 9, nullptr, None),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
-    KEYHOT(4, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
-    KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
-
-    KEYGLYPH(5, 0, ArrowDown, ArrowDown),
-    KEYGLYPH(5, 1, ArrowUp, ArrowUp),
-    KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
-    KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
-    KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 0, "Shift", "L2", Shift),
+    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
+    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
+    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+
+    KEYGLYPH(6, 0, ArrowDown, ArrowDown),
+    KEYGLYPH(6, 1, ArrowUp, ArrowUp),
+    KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
+    KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
+    KEY(6, 4, nullptr, None),
+    KEY(6, 5, "...", Menu),
+    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEY(6, 7, nullptr, None),
+    KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
 
 constexpr ImeKbLayoutModel kLatinLowerModel = MakeLayoutModel(kLatinLowerKeys);
 constexpr ImeKbLayoutModel kLatinUpperModel = MakeLayoutModel(kLatinUpperKeys);
 constexpr ImeKbLayoutModel kSymbolsPage1Model = MakeLayoutModel(kSymbolsPage1Keys);
 constexpr ImeKbLayoutModel kSymbolsPage2Model = MakeLayoutModel(kSymbolsPage2Keys);
-constexpr ImeKbLayoutModel kSpecialsPage1Model = MakeLayoutModel(kSpecialsPage1Keys);
-constexpr ImeKbLayoutModel kSpecialsPage2Model = MakeLayoutModel(kSpecialsPage2Keys);
-constexpr ImeKbLayoutModel kSpecialsPage1UpperModel = MakeLayoutModel(kSpecialsPage1UpperKeys);
-constexpr ImeKbLayoutModel kSpecialsPage2UpperModel = MakeLayoutModel(kSpecialsPage2UpperKeys);
+constexpr ImeKbLayoutModel kSpecialsPage1Model =
+    MakeLayoutModel(kSpecialsPage1Keys, static_cast<u8>(kSpecialsKeyRows));
+constexpr ImeKbLayoutModel kSpecialsPage2Model =
+    MakeLayoutModel(kSpecialsPage2Keys, static_cast<u8>(kSpecialsKeyRows));
+constexpr ImeKbLayoutModel kSpecialsPage1UpperModel =
+    MakeLayoutModel(kSpecialsPage1UpperKeys, static_cast<u8>(kSpecialsKeyRows));
+constexpr ImeKbLayoutModel kSpecialsPage2UpperModel =
+    MakeLayoutModel(kSpecialsPage2UpperKeys, static_cast<u8>(kSpecialsKeyRows));
 
 constexpr std::array<ImeTopPanelElementSpec, 2> kTopPanelDefaultElements = {{
     ImeTopPanelElementSpec{ImeTopPanelElementId::Prediction, 0, 9},
@@ -1268,6 +1296,37 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     const float key_gap_y = layout.key_gap_y;
     const float key_h = layout.key_h;
     const float key_w = (layout.size.x - key_gap_x * (grid_cols - 1)) / grid_cols;
+    const int fixed_bottom_rows = std::clamp(layout.fixed_bottom_rows, 0, grid_rows);
+
+    thread_local std::vector<float> row_heights;
+    row_heights.assign(static_cast<std::size_t>(grid_rows), key_h);
+    if (fixed_bottom_rows > 0 && layout.bottom_row_h > 0.0f) {
+        for (int row = grid_rows - fixed_bottom_rows; row < grid_rows; ++row) {
+            row_heights[static_cast<std::size_t>(row)] = layout.bottom_row_h;
+        }
+    }
+
+    thread_local std::vector<float> row_offsets;
+    row_offsets.resize(static_cast<std::size_t>(grid_rows));
+    float y_cursor = layout.pos.y;
+    for (int row = 0; row < grid_rows; ++row) {
+        row_offsets[static_cast<std::size_t>(row)] = y_cursor;
+        y_cursor += row_heights[static_cast<std::size_t>(row)];
+        if (row + 1 < grid_rows) {
+            y_cursor += key_gap_y;
+        }
+    }
+
+    const auto span_row_height = [&](int row, int span) {
+        float total = 0.0f;
+        for (int i = 0; i < span; ++i) {
+            total += row_heights[static_cast<std::size_t>(row + i)];
+        }
+        if (span > 1) {
+            total += key_gap_y * static_cast<float>(span - 1);
+        }
+        return total;
+    };
 
     const auto idx = [grid_cols](int row, int col) { return row * grid_cols + col; };
     thread_local std::vector<const ImeKbKeySpec*> occupied;
@@ -1337,9 +1396,9 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             }
 
             const float x = layout.pos.x + col * (key_w + key_gap_x);
-            const float y = layout.pos.y + row * (key_h + key_gap_y);
+            const float y = row_offsets[static_cast<std::size_t>(row)];
             const float w = key_w * col_span + key_gap_x * (col_span - 1);
-            const float h = key_h * row_span + key_gap_y * (row_span - 1);
+            const float h = span_row_height(row, row_span);
             ImVec2 pos{x, y};
             ImVec2 size{w, h};
 

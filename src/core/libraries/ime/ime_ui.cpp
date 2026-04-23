@@ -1479,10 +1479,26 @@ void ImeUi::Draw() {
         kb_layout.cols = keyboard_cols;
         kb_layout.rows = keyboard_rows;
         const int layout_rows = std::max(1, kb_layout.rows);
-        const float computed_key_h =
-            (kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1)) /
-            static_cast<float>(layout_rows);
-        kb_layout.key_h = std::max(8.0f, computed_key_h);
+        const bool preserve_function_row_height =
+            kb_layout_selection.family == ImeKbLayoutFamily::Specials && layout_rows > 2;
+        if (preserve_function_row_height) {
+            constexpr int kFixedFunctionRows = 2;
+            kb_layout.fixed_bottom_rows = std::min(kFixedFunctionRows, layout_rows);
+            kb_layout.bottom_row_h = std::max(8.0f, metrics.key_h);
+            const int typing_rows = std::max(1, layout_rows - kb_layout.fixed_bottom_rows);
+            const float typing_area_h =
+                kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1) -
+                kb_layout.bottom_row_h * static_cast<float>(kb_layout.fixed_bottom_rows);
+            const float computed_typing_key_h = typing_area_h / static_cast<float>(typing_rows);
+            kb_layout.key_h = std::max(8.0f, computed_typing_key_h);
+        } else {
+            kb_layout.fixed_bottom_rows = 0;
+            kb_layout.bottom_row_h = 0.0f;
+            const float computed_key_h =
+                (kb_layout.size.y - kb_layout.key_gap_y * static_cast<float>(layout_rows - 1)) /
+                static_cast<float>(layout_rows);
+            kb_layout.key_h = std::max(8.0f, computed_key_h);
+        }
         kb_layout.corner_radius = metrics.corner_radius;
 
         Libraries::Ime::ImeKbDrawParams kb_params{};
@@ -1559,6 +1575,24 @@ void ImeUi::Draw() {
                 set_family_and_reset_page(ImeKbLayoutFamily::Latin);
             } else {
                 set_family_and_reset_page(target_family);
+            }
+        };
+        const auto focus_keyboard_action_key = [&](ImeKbKeyAction action) {
+            const auto& focus_layout = GetImeKeyboardLayout(kb_layout_selection);
+            if (!focus_layout.keys || focus_layout.key_count == 0) {
+                return;
+            }
+            for (std::size_t i = 0; i < focus_layout.key_count; ++i) {
+                const auto& key = focus_layout.keys[i];
+                if (key.action != action) {
+                    continue;
+                }
+                pending_keyboard_row = static_cast<int>(key.row);
+                pending_keyboard_col = static_cast<int>(key.col);
+                last_keyboard_selected_row = pending_keyboard_row;
+                last_keyboard_selected_col = pending_keyboard_col;
+                panel_selection = PanelSelectionTarget::Keyboard;
+                return;
             }
         };
         const auto flip_mode_page = [&](int direction) {
@@ -1774,6 +1808,7 @@ void ImeUi::Draw() {
             break;
         case Libraries::Ime::ImeKbKeyAction::SpecialsMode:
             toggle_family_mode(ImeKbLayoutFamily::Specials);
+            focus_keyboard_action_key(ImeKbKeyAction::SpecialsMode);
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowLeft:
             (void)move_text_caret(-1, text_select_mode);
