@@ -548,8 +548,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option) {
-    LOG_ERROR(Lib_NpScore, "called reqId={}, boardId={}, arrayNum={}", reqId, boardId,
-              arrayNum);
+    LOG_ERROR(Lib_NpScore, "called reqId={}, boardId={}, arrayNum={}", reqId, boardId, arrayNum);
     return GetRankingByNpIdImpl(reqId, boardId, npIdArray, npIdArraySize, rankArray, rankArraySize,
                                 commentArray, commentArraySize, infoArray, infoArraySize, arrayNum,
                                 lastSortDate, totalRecord, option, true);
