@@ -574,6 +574,13 @@ static int GetFriendsRankingImpl(s32 reqId, OrbisNpScoreBoardId boardId, s32 inc
     }
     auto* opt = static_cast<OrbisNpScoreGetFriendRankingOptParam*>(option);
     u32 startSerialRank = 1;
+    if (includeSelf == 0) {
+        if (opt != nullptr) {
+            LOG_ERROR(Lib_NpScore ,"includeSelf is 0 but option struct is not null");
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+        }
+        return ORBIS_OK;
+    }
     if (opt != nullptr) {
         if (opt->size != sizeof(OrbisNpScoreGetFriendRankingOptParam)) {
             LOG_ERROR(Lib_NpScore, "Invalid size for option struct: {}", opt->size);
