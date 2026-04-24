@@ -34,6 +34,7 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
         }
         return;
     }
+
     Common::FS::IOFile src{from, Common::FS::FileAccessMode::Read, Common::FS::FileType::BinaryFile,
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!src.IsOpen()) {
@@ -41,18 +42,13 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
         return;
     }
     const u64 size = src.GetSize();
-    std::vector<u8> buf;
-    buf.resize(size);
-    if (size == 0) {
-        src.Close();
-        return;
-    }
+    std::vector<u8> buf(size);
     if (size > 0) {
         src.ReadRaw<u8>(buf.data(), size);
     }
     src.Close();
 
-    Common::FS::IOFile dst{to, Common::FS::FileAccessMode::Write, Common::FS::FileType::BinaryFile,
+    Common::FS::IOFile dst{to, Common::FS::FileAccessMode::Create, Common::FS::FileType::BinaryFile,
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!dst.IsOpen()) {
         LOG_ERROR(Lib_SaveData, "Backup: failed to open destination {}", fmt::UTF(to.u8string()));
