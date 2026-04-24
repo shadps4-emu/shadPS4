@@ -43,6 +43,10 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
     const u64 size = src.GetSize();
     std::vector<u8> buf;
     buf.resize(size);
+    if (size == 0) {
+        src.Close();
+        return;
+    }
     if (size > 0) {
         src.ReadRaw<u8>(buf.data(), size);
     }
