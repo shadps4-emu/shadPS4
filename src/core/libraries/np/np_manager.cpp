@@ -315,6 +315,10 @@ s32 PS4_SYSV_ABI sceNpCheckNpAvailability(s32 req_id, OrbisNpOnlineId* online_id
 
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,
                                            Libraries::UserService::OrbisUserServiceUserId user_id) {
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        LOG_ERROR(Lib_NpManager, "invalid user_id {}", user_id);
+        return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     std::scoped_lock lk{g_request_mutex};
     s32 err;
     NpRequest* req = GetRequest(req_id, &err);
@@ -619,8 +623,10 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
 
 s32 PS4_SYSV_ABI
 sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServiceUserId* user_id) {
-    if (user_id == nullptr)
+    if (account_id == 0 || user_id == nullptr) {
+        LOG_ERROR(Lib_NpManager, "invalid argument: account_id={} user_id={}", account_id, user_id);
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     if (!g_shadnet_enabled)
         return ORBIS_NP_ERROR_SIGNED_OUT;
 
@@ -644,6 +650,8 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
         user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    *has_signed_up = false;
+
     const User* u = UserManagement.GetUserByID(user_id);
     if (!u) {
         return ORBIS_NP_ERROR_USER_NOT_FOUND;
