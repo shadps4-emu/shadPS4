@@ -106,10 +106,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libc++-dev libc++abi-dev ninja-build libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev libxrandr-dev libxfixes-dev libudev-dev uuid-dev uuid-dev
 
-      - name: Install dependencies (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install ninja
+      # - name: Install dependencies (macOS)
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     brew install
 
       - name: Configure CMake
         run: |
