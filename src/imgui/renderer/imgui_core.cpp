@@ -8,6 +8,8 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
+#include "font_data.h"
+#include "font_stack.h"
 #include "imgui/imgui_layer.h"
 #include "imgui_core.h"
 #include "imgui_impl_sdl3.h"
@@ -16,9 +18,6 @@
 #include "sdl_window.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
-
-#include "imgui_fonts/notosansjp_regular.ttf.g.cpp"
-#include "imgui_fonts/proggyvector_regular.ttf.g.cpp"
 
 static void CheckVkResult(const vk::Result err) {
     LOG_ERROR(ImGui, "Vulkan error {}", vk::to_string(err));
@@ -63,26 +62,20 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     std::memcpy(log_file_buf, path.c_str(), path.size());
     io.LogFilename = log_file_buf;
 
-    ImFontGlyphRangesBuilder rb{};
-    rb.AddRanges(io.Fonts->GetGlyphRangesDefault());
-    rb.AddRanges(io.Fonts->GetGlyphRangesGreek());
-    rb.AddRanges(io.Fonts->GetGlyphRangesKorean());
-    rb.AddRanges(io.Fonts->GetGlyphRangesJapanese());
-    rb.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
-    ImVector<ImWchar> ranges{};
-    rb.BuildRanges(&ranges);
     ImFontConfig font_cfg{};
     font_cfg.OversampleH = 2;
     font_cfg.OversampleV = 1;
-    io.FontDefault = io.Fonts->AddFontFromMemoryCompressedTTF(
-        imgui_font_notosansjp_regular_compressed_data,
-        imgui_font_notosansjp_regular_compressed_size, 32.0f, &font_cfg, ranges.Data);
+    io.Fonts->Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight;
+    const int console_language = EmulatorSettings.GetConsoleLanguage();
+    io.FontDefault = FontStack::AddPrimaryUiFont(io.Fonts, 32.0f, console_language, font_cfg, true);
+
     io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_proggyvector_regular_compressed_data,
                                              imgui_font_proggyvector_regular_compressed_size,
                                              32.0f);
-    io.Fonts->AddFontFromMemoryCompressedTTF(imgui_font_notosansjp_regular_compressed_data,
-                                             imgui_font_notosansjp_regular_compressed_size, 128.0f,
-                                             &font_cfg, ranges.Data);
+
+    // Avoid exploding atlas size on Metal/MoltenVK when CJK fallback is enabled.
+    FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, false);
+    io.Fonts->Build();
 
     io.FontGlobalScale = 0.5f;
 
