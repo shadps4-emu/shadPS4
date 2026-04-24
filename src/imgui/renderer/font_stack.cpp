@@ -38,6 +38,7 @@ constexpr ImWchar kArabicRanges[] = {
 };
 
 constexpr ImWchar kSymbolsRanges[] = {
+    0x2000, 0x206F, // General punctuation
     0x20A0, 0x20CF, // Currency symbols
     0x2100, 0x214F, // Letterlike symbols
     0x2190, 0x21FF, // Arrows
@@ -95,6 +96,7 @@ const ImWchar* GetPrimaryTextRanges(ImFontAtlas* atlas) {
         rb.AddRanges(atlas->GetGlyphRangesCyrillic());
         rb.AddRanges(atlas->GetGlyphRangesVietnamese());
         rb.AddRanges(kLatinExtendedRanges);
+        rb.AddRanges(kSymbolsRanges);
         rb.BuildRanges(&ranges);
     }
     return ranges.Data;

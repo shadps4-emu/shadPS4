@@ -134,6 +134,8 @@ class ImeDialogUi final : public ImGui::Layer {
     double virtual_dpad_right_next_repeat_time = 0.0;
     double virtual_dpad_up_next_repeat_time = 0.0;
     double virtual_dpad_down_next_repeat_time = 0.0;
+    Libraries::Ime::ImeEdgeWrapNavState panel_vertical_nav_state{};
+    Libraries::Ime::ImeSelectorFadeState selector_fade_state{};
     bool panel_position_initialized = false;
     bool panel_layout_anchor_initialized = false;
     bool panel_drag_active = false;
@@ -155,6 +157,8 @@ class ImeDialogUi final : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
+    Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
+    bool nav_layout_selection_initialized = false;
     Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     std::mutex draw_mutex;
 

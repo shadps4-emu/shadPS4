@@ -10,13 +10,12 @@
 #include <utility>
 #include <vector>
 #include <imgui_internal.h>
-#include "common/singleton.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_ui_shared.h"
 #include "core/libraries/pad/pad.h"
 #include "ime_ui.h"
 #include "imgui/imgui_std.h"
 #include "imgui/renderer/imgui_core.h"
-#include "input/controller.h"
 
 namespace Libraries::Ime {
 
@@ -27,288 +26,6 @@ constexpr ImU32 kSelectorBorderColor = IM_COL32(248, 248, 248, 255);
 constexpr ImU32 kSelectorOverlayColor = IM_COL32(255, 255, 255, 18);
 constexpr float kSelectorBorderThickness = 2.0f;
 constexpr float kSelectorInnerMargin = 2.0f;
-
-ImVec4 BrightenColor(ImU32 color, float delta) {
-    ImVec4 out = ImGui::ColorConvertU32ToFloat4(color);
-    out.x = std::clamp(out.x + delta, 0.0f, 1.0f);
-    out.y = std::clamp(out.y + delta, 0.0f, 1.0f);
-    out.z = std::clamp(out.z + delta, 0.0f, 1.0f);
-    return out;
-}
-
-int Utf16CountFromUtf8Range(const char* text, const char* end) {
-    if (!text) {
-        return 0;
-    }
-    const char* const range_end = end ? end : (text + std::strlen(text));
-    const char* p = text;
-    int utf16_units = 0;
-    while (p < range_end && *p) {
-        unsigned int c = 0;
-        const int step = ImTextCharFromUtf8(&c, p, range_end);
-        if (step <= 0) {
-            break;
-        }
-        utf16_units += (c > 0xFFFF) ? 2 : 1;
-        p += step;
-    }
-    return utf16_units;
-}
-
-int Utf8ByteIndexFromUtf16Index(const char* text, int utf16_index) {
-    if (!text || utf16_index <= 0) {
-        return 0;
-    }
-    const char* p = text;
-    int count = 0;
-    while (*p && count < utf16_index) {
-        unsigned int c = 0;
-        const int step = ImTextCharFromUtf8(&c, p, nullptr);
-        if (step <= 0) {
-            break;
-        }
-        const int utf16_units = (c > 0xFFFF) ? 2 : 1;
-        if (count + utf16_units > utf16_index) {
-            break;
-        }
-        count += utf16_units;
-        p += step;
-    }
-    return static_cast<int>(p - text);
-}
-
-bool RejectInputCharByUtf16Limit(const ImGuiInputTextCallbackData* data, int max_utf16) {
-    if (!data || max_utf16 < 0 || data->EventChar == 0) {
-        return false;
-    }
-    ImGuiContext* g = data->Ctx;
-    if (!g) {
-        return false;
-    }
-    ImGuiInputTextState* st = &g->InputTextState;
-    if (!st || !st->TextSrc) {
-        return false;
-    }
-
-    const int cur_units = Utf16CountFromUtf8Range(st->TextSrc, st->TextSrc + st->TextLen);
-    int selected_units = 0;
-    if (st->HasSelection()) {
-        const int sel_begin = st->GetSelectionStart();
-        const int sel_end = st->GetSelectionEnd();
-        selected_units = Utf16CountFromUtf8Range(st->TextSrc + sel_begin, st->TextSrc + sel_end);
-    }
-
-    const int incoming_units = data->EventChar > 0xFFFF ? 2 : 1;
-    const int remaining_units = max_utf16 - (cur_units - selected_units);
-    return remaining_units < incoming_units;
-}
-
-bool ClampInputBufferToUtf16Limit(ImGuiInputTextCallbackData* data, int max_utf16) {
-    if (!data || max_utf16 < 0) {
-        return false;
-    }
-    const int utf16_len = Utf16CountFromUtf8Range(data->Buf, data->Buf + data->BufTextLen);
-    if (utf16_len <= max_utf16) {
-        return false;
-    }
-
-    const int keep_bytes = Utf8ByteIndexFromUtf16Index(data->Buf, max_utf16);
-    if (keep_bytes < data->BufTextLen) {
-        data->DeleteChars(keep_bytes, data->BufTextLen - keep_bytes);
-    }
-    data->CursorPos = std::clamp(data->CursorPos, 0, data->BufTextLen);
-    data->SelectionStart = std::clamp(data->SelectionStart, 0, data->BufTextLen);
-    data->SelectionEnd = std::clamp(data->SelectionEnd, 0, data->BufTextLen);
-    return true;
-}
-
-void DrawInactiveCaretOverlay(const ImRect& frame_rect, const char* text, int caret_byte,
-                              int selection_start_byte, int selection_end_byte) {
-    if (!text) {
-        return;
-    }
-    if (selection_start_byte != selection_end_byte) {
-        return;
-    }
-
-    const int text_len = static_cast<int>(std::strlen(text));
-    const int clamped_byte = std::clamp(caret_byte, 0, text_len);
-    const char* const caret_ptr = text + clamped_byte;
-
-    const ImGuiStyle& style = GetStyle();
-    const float left = frame_rect.Min.x + style.FramePadding.x;
-    const float right = frame_rect.Max.x - style.FramePadding.x;
-    if (right <= left) {
-        return;
-    }
-
-    float caret_x = left + CalcTextSize(text, caret_ptr, false, -1.0f).x;
-    caret_x = std::clamp(caret_x, left, right);
-
-    const float top = frame_rect.Min.y + style.FramePadding.y;
-    const float bottom = frame_rect.Max.y - style.FramePadding.y;
-    if (bottom <= top) {
-        return;
-    }
-
-    const ImU32 caret_col = GetColorU32(ImGuiCol_Text);
-    GetWindowDrawList()->AddLine({caret_x, top}, {caret_x, bottom}, caret_col, 1.5f);
-}
-
-bool ReadControllerState(Libraries::UserService::OrbisUserServiceUserId user_id,
-                         Input::State* out_state) {
-    if (!out_state) {
-        return false;
-    }
-    auto* controllers = Common::Singleton<Input::GameControllers>::Instance();
-    if (!controllers) {
-        return false;
-    }
-
-    const auto read_state = [&](u8 index, bool* has_state) {
-        if (has_state) {
-            *has_state = false;
-        }
-        Input::State pad_state{};
-        bool connected = false;
-        int connected_count = 0;
-        (*controllers)[index]->ReadState(&pad_state, &connected, &connected_count);
-        if (!connected) {
-            return false;
-        }
-        if (has_state) {
-            *has_state = true;
-        }
-        *out_state = pad_state;
-        return true;
-    };
-
-    const auto mapped = Input::GameControllers::GetControllerIndexFromUserID(user_id);
-    if (mapped.has_value() && *mapped < 5) {
-        bool has_state = false;
-        if (read_state(*mapped, &has_state) && has_state) {
-            return true;
-        }
-    }
-
-    for (u8 index = 0; index < 5; ++index) {
-        if (mapped.has_value() && index == *mapped) {
-            continue;
-        }
-        bool has_state = false;
-        if (read_state(index, &has_state) && has_state) {
-            return true;
-        }
-    }
-    return false;
-}
-
-struct VirtualLeftStickDirections {
-    bool left = false;
-    bool right = false;
-    bool up = false;
-    bool down = false;
-};
-
-constexpr float kNavAxisThreshold = 0.55f;
-constexpr float kAxisDeadzone = 0.24f;
-constexpr double kStickNavInitialDelaySlow = 0.26;
-constexpr double kStickNavInitialDelayFast = 0.16;
-constexpr double kStickNavRepeatSlow = 0.20;
-constexpr double kStickNavRepeatFast = 0.11;
-constexpr float kPanelMoveSpeed = 900.0f; // pixels per second at full tilt
-
-float ToAxisUnit(const s32 axis) {
-    const float centered = (static_cast<float>(axis) - 128.0f) / 127.0f;
-    return std::clamp(centered, -1.0f, 1.0f);
-}
-
-float ApplyAxisDeadzone(const float v) {
-    const float av = std::abs(v);
-    if (av <= kAxisDeadzone) {
-        return 0.0f;
-    }
-    const float scaled = (av - kAxisDeadzone) / (1.0f - kAxisDeadzone);
-    return std::copysign(std::clamp(scaled, 0.0f, 1.0f), v);
-}
-
-struct VirtualPadSnapshot {
-    u32 buttons = 0;
-    VirtualLeftStickDirections left_stick_dirs{};
-    ImVec2 left_stick{};
-    ImVec2 panel_delta{};
-};
-
-VirtualPadSnapshot ReadVirtualPadSnapshot(Libraries::UserService::OrbisUserServiceUserId user_id,
-                                          const float delta_time) {
-    VirtualPadSnapshot snapshot{};
-
-    const float imgui_rx =
-        ApplyAxisDeadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickRight)->AnalogValue -
-                          ImGui::GetKeyData(ImGuiKey_GamepadRStickLeft)->AnalogValue);
-    const float imgui_ry =
-        ApplyAxisDeadzone(ImGui::GetKeyData(ImGuiKey_GamepadRStickDown)->AnalogValue -
-                          ImGui::GetKeyData(ImGuiKey_GamepadRStickUp)->AnalogValue);
-
-    float virtual_rx = 0.0f;
-    float virtual_ry = 0.0f;
-    Input::State state{};
-    if (ReadControllerState(user_id, &state)) {
-        snapshot.buttons = static_cast<u32>(state.buttonsState);
-        const float lx =
-            ApplyAxisDeadzone(ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftX)]));
-        const float ly =
-            ApplyAxisDeadzone(ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftY)]));
-        snapshot.left_stick_dirs.left = lx <= -kNavAxisThreshold;
-        snapshot.left_stick_dirs.right = lx >= kNavAxisThreshold;
-        snapshot.left_stick_dirs.up = ly <= -kNavAxisThreshold;
-        snapshot.left_stick_dirs.down = ly >= kNavAxisThreshold;
-        snapshot.left_stick = {lx, ly};
-        virtual_rx = ApplyAxisDeadzone(
-            ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::RightX)]));
-        virtual_ry = ApplyAxisDeadzone(
-            ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::RightY)]));
-    }
-
-    if (delta_time > 0.0f) {
-        const float rx = (std::abs(virtual_rx) > std::abs(imgui_rx)) ? virtual_rx : imgui_rx;
-        const float ry = (std::abs(virtual_ry) > std::abs(imgui_ry)) ? virtual_ry : imgui_ry;
-        snapshot.panel_delta = {rx * kPanelMoveSpeed * delta_time,
-                                ry * kPanelMoveSpeed * delta_time};
-    }
-    return snapshot;
-}
-
-enum class StickNavDirection : int {
-    None = 0,
-    Left = 1,
-    Right = 2,
-    Up = 3,
-    Down = 4,
-};
-
-StickNavDirection ResolveStickNavDirection(const float lx, const float ly, float* strength) {
-    const float abs_x = std::abs(lx);
-    const float abs_y = std::abs(ly);
-    if (abs_x < kNavAxisThreshold && abs_y < kNavAxisThreshold) {
-        if (strength) {
-            *strength = 0.0f;
-        }
-        return StickNavDirection::None;
-    }
-
-    if (abs_x >= abs_y) {
-        if (strength) {
-            *strength = abs_x;
-        }
-        return (lx < 0.0f) ? StickNavDirection::Left : StickNavDirection::Right;
-    }
-
-    if (strength) {
-        *strength = abs_y;
-    }
-    return (ly < 0.0f) ? StickNavDirection::Up : StickNavDirection::Down;
-}
 
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(const OrbisImeParamExtended* extended_param) {
     ImeKbLayoutSelection selection{};
@@ -543,6 +260,8 @@ ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExt
       style_config(ResolveImeStyleConfig(extended)) {
     if (param) {
         kb_layout_selection = ResolveInitialKbLayoutSelection(extended_param);
+        last_nav_layout_selection = kb_layout_selection;
+        nav_layout_selection_initialized = true;
         kb_alpha_family = (kb_layout_selection.family == ImeKbLayoutFamily::Specials)
                               ? ImeKbLayoutFamily::Specials
                               : ImeKbLayoutFamily::Latin;
@@ -596,6 +315,8 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     virtual_dpad_right_next_repeat_time = other.virtual_dpad_right_next_repeat_time;
     virtual_dpad_up_next_repeat_time = other.virtual_dpad_up_next_repeat_time;
     virtual_dpad_down_next_repeat_time = other.virtual_dpad_down_next_repeat_time;
+    panel_vertical_nav_state = other.panel_vertical_nav_state;
+    selector_fade_state = other.selector_fade_state;
     panel_position_initialized = other.panel_position_initialized;
     panel_drag_active = other.panel_drag_active;
     panel_position = other.panel_position;
@@ -613,6 +334,8 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     last_keyboard_selected_col = other.last_keyboard_selected_col;
     edit_menu_index = other.edit_menu_index;
     kb_layout_selection = other.kb_layout_selection;
+    last_nav_layout_selection = other.last_nav_layout_selection;
+    nav_layout_selection_initialized = other.nav_layout_selection_initialized;
     kb_alpha_family = other.kb_alpha_family;
     gamepad_input_capture_active = other.gamepad_input_capture_active;
     other.state = nullptr;
@@ -640,6 +363,9 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     other.virtual_dpad_right_next_repeat_time = 0.0;
     other.virtual_dpad_up_next_repeat_time = 0.0;
     other.virtual_dpad_down_next_repeat_time = 0.0;
+    ResetImeEdgeWrapNav(other.panel_vertical_nav_state);
+    other.selector_fade_state = {};
+    other.nav_layout_selection_initialized = false;
     other.kb_alpha_family = ImeKbLayoutFamily::Latin;
     other.gamepad_input_capture_active = false;
 
@@ -795,8 +521,11 @@ void ImeUi::Draw() {
             return (virtual_buttons & mask) != 0 && (prev_virtual_buttons & mask) == 0;
         };
         const auto virtual_repeat_pressed = [&](Libraries::Pad::OrbisPadButtonDataOffset button,
-                                                bool& prev_down_state,
-                                                double& next_repeat_time) -> bool {
+                                                bool& prev_down_state, double& next_repeat_time,
+                                                bool* out_repeat = nullptr) -> bool {
+            if (out_repeat) {
+                *out_repeat = false;
+            }
             const bool down = virtual_down(button);
             if (!down) {
                 prev_down_state = false;
@@ -820,6 +549,9 @@ void ImeUi::Draw() {
             }
             if (now >= next_repeat_time) {
                 next_repeat_time = now + static_cast<double>(io.KeyRepeatRate);
+                if (out_repeat) {
+                    *out_repeat = true;
+                }
                 return true;
             }
             return false;
@@ -836,22 +568,39 @@ void ImeUi::Draw() {
         // immediate unintended key presses when OSK opens.
         const bool panel_activate_pressed_raw = cross_down && !prev_virtual_cross_down;
 
-        const bool gamepad_nav_left = IsKeyPressed(ImGuiKey_GamepadDpadLeft, true);
-        const bool gamepad_nav_right = IsKeyPressed(ImGuiKey_GamepadDpadRight, true);
-        const bool gamepad_nav_up = IsKeyPressed(ImGuiKey_GamepadDpadUp, true);
-        const bool gamepad_nav_down = IsKeyPressed(ImGuiKey_GamepadDpadDown, true);
-        const bool virtual_nav_left =
-            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Left,
-                                   prev_virtual_dpad_left_down, virtual_dpad_left_next_repeat_time);
+        const bool gamepad_nav_left_once = IsKeyPressed(ImGuiKey_GamepadDpadLeft, false);
+        const bool gamepad_nav_right_once = IsKeyPressed(ImGuiKey_GamepadDpadRight, false);
+        const bool gamepad_nav_up_once = IsKeyPressed(ImGuiKey_GamepadDpadUp, false);
+        const bool gamepad_nav_down_once = IsKeyPressed(ImGuiKey_GamepadDpadDown, false);
+        const bool gamepad_nav_left_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadLeft, true);
+        const bool gamepad_nav_right_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadRight, true);
+        const bool gamepad_nav_up_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadUp, true);
+        const bool gamepad_nav_down_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadDown, true);
+        const bool gamepad_nav_left = gamepad_nav_left_with_repeat;
+        const bool gamepad_nav_right = gamepad_nav_right_with_repeat;
+        const bool gamepad_nav_up = gamepad_nav_up_with_repeat;
+        const bool gamepad_nav_down = gamepad_nav_down_with_repeat;
+        const bool gamepad_nav_left_repeat = gamepad_nav_left_with_repeat && !gamepad_nav_left_once;
+        const bool gamepad_nav_right_repeat =
+            gamepad_nav_right_with_repeat && !gamepad_nav_right_once;
+        const bool gamepad_nav_up_repeat = gamepad_nav_up_with_repeat && !gamepad_nav_up_once;
+        const bool gamepad_nav_down_repeat = gamepad_nav_down_with_repeat && !gamepad_nav_down_once;
+        bool virtual_nav_left_repeat = false;
+        bool virtual_nav_right_repeat = false;
+        bool virtual_nav_up_repeat = false;
+        bool virtual_nav_down_repeat = false;
+        const bool virtual_nav_left = virtual_repeat_pressed(
+            Libraries::Pad::OrbisPadButtonDataOffset::Left, prev_virtual_dpad_left_down,
+            virtual_dpad_left_next_repeat_time, &virtual_nav_left_repeat);
         const bool virtual_nav_right = virtual_repeat_pressed(
             Libraries::Pad::OrbisPadButtonDataOffset::Right, prev_virtual_dpad_right_down,
-            virtual_dpad_right_next_repeat_time);
-        const bool virtual_nav_up =
-            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Up,
-                                   prev_virtual_dpad_up_down, virtual_dpad_up_next_repeat_time);
-        const bool virtual_nav_down =
-            virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Down,
-                                   prev_virtual_dpad_down_down, virtual_dpad_down_next_repeat_time);
+            virtual_dpad_right_next_repeat_time, &virtual_nav_right_repeat);
+        const bool virtual_nav_up = virtual_repeat_pressed(
+            Libraries::Pad::OrbisPadButtonDataOffset::Up, prev_virtual_dpad_up_down,
+            virtual_dpad_up_next_repeat_time, &virtual_nav_up_repeat);
+        const bool virtual_nav_down = virtual_repeat_pressed(
+            Libraries::Pad::OrbisPadButtonDataOffset::Down, prev_virtual_dpad_down_down,
+            virtual_dpad_down_next_repeat_time, &virtual_nav_down_repeat);
         const bool imgui_lstick_left_pressed = IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
         const bool imgui_lstick_right_pressed = IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
         const bool imgui_lstick_up_pressed = IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
@@ -877,6 +626,43 @@ void ImeUi::Draw() {
         const bool virtual_lstick_down_edge =
             virtual_lstick_dirs.down && !prev_virtual_lstick_down_down;
 
+        const bool raw_gamepad_control_input =
+            gamepad_nav_left_once || gamepad_nav_right_once || gamepad_nav_up_once ||
+            gamepad_nav_down_once || imgui_lstick_left_pressed || imgui_lstick_right_pressed ||
+            imgui_lstick_up_pressed || imgui_lstick_down_pressed ||
+            IsKeyPressed(ImGuiKey_GamepadFaceDown, false) ||
+            IsKeyPressed(ImGuiKey_GamepadFaceUp, false) ||
+            IsKeyPressed(ImGuiKey_GamepadFaceLeft, false) ||
+            IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
+            IsKeyPressed(ImGuiKey_GamepadL1, false) || IsKeyPressed(ImGuiKey_GamepadR1, false) ||
+            IsKeyPressed(ImGuiKey_GamepadL2, false) || IsKeyPressed(ImGuiKey_GamepadR2, false) ||
+            IsKeyPressed(ImGuiKey_GamepadL3, false) || IsKeyPressed(ImGuiKey_GamepadR3, false);
+        const bool raw_virtual_control_input =
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Left) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Right) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Up) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Down) ||
+            virtual_lstick_left_edge || virtual_lstick_right_edge || virtual_lstick_up_edge ||
+            virtual_lstick_down_edge ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Cross) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Square) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Circle) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L1) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R1) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3) ||
+            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3);
+        const bool raw_osk_control_input = raw_gamepad_control_input || raw_virtual_control_input;
+        if (native_input_active && raw_osk_control_input && !request_input_focus &&
+            !pending_input_selection_apply) {
+            native_input_active = false;
+            request_input_focus = false;
+            pending_input_selection_apply = false;
+            ImGui::ClearActiveID();
+        }
+
         const bool controller_shortcuts_disabled =
             extended_param &&
             True(extended_param->disable_device & OrbisImeDisableDevice::CONTROLLER);
@@ -894,6 +680,10 @@ void ImeUi::Draw() {
         bool stick_nav_right = false;
         bool stick_nav_up = false;
         bool stick_nav_down = false;
+        bool stick_nav_left_repeat = false;
+        bool stick_nav_right_repeat = false;
+        bool stick_nav_up_repeat = false;
+        bool stick_nav_down_repeat = false;
         if (!allow_osk_shortcuts || stick_dir == StickNavDirection::None) {
             left_stick_repeat_dir = 0;
             left_stick_next_repeat_time = 0.0;
@@ -924,27 +714,33 @@ void ImeUi::Draw() {
                 break;
             }
             bool stick_pulse = false;
+            bool stick_pulse_repeat = false;
             if (left_stick_repeat_dir != static_cast<int>(stick_dir) || dir_edge_pressed) {
                 stick_pulse = true;
                 left_stick_repeat_dir = static_cast<int>(stick_dir);
                 left_stick_next_repeat_time = now + initial_delay;
             } else if (now >= left_stick_next_repeat_time) {
                 stick_pulse = true;
+                stick_pulse_repeat = true;
                 left_stick_next_repeat_time = now + repeat_interval;
             }
             if (stick_pulse) {
                 switch (stick_dir) {
                 case StickNavDirection::Left:
                     stick_nav_left = true;
+                    stick_nav_left_repeat = stick_pulse_repeat;
                     break;
                 case StickNavDirection::Right:
                     stick_nav_right = true;
+                    stick_nav_right_repeat = stick_pulse_repeat;
                     break;
                 case StickNavDirection::Up:
                     stick_nav_up = true;
+                    stick_nav_up_repeat = stick_pulse_repeat;
                     break;
                 case StickNavDirection::Down:
                     stick_nav_down = true;
+                    stick_nav_down_repeat = stick_pulse_repeat;
                     break;
                 case StickNavDirection::None:
                 default:
@@ -960,6 +756,19 @@ void ImeUi::Draw() {
                             (allow_osk_shortcuts && (virtual_nav_up || stick_nav_up));
         const bool nav_down = (allow_osk_shortcuts && gamepad_nav_down) ||
                               (allow_osk_shortcuts && (virtual_nav_down || stick_nav_down));
+        const bool nav_left_repeat =
+            (allow_osk_shortcuts && gamepad_nav_left_repeat) ||
+            (allow_osk_shortcuts && (virtual_nav_left_repeat || stick_nav_left_repeat));
+        const bool nav_right_repeat =
+            (allow_osk_shortcuts && gamepad_nav_right_repeat) ||
+            (allow_osk_shortcuts && (virtual_nav_right_repeat || stick_nav_right_repeat));
+        const bool nav_up_repeat =
+            (allow_osk_shortcuts && gamepad_nav_up_repeat) ||
+            (allow_osk_shortcuts && (virtual_nav_up_repeat || stick_nav_up_repeat));
+        const bool nav_down_repeat =
+            (allow_osk_shortcuts && gamepad_nav_down_repeat) ||
+            (allow_osk_shortcuts && (virtual_nav_down_repeat || stick_nav_down_repeat));
+        const double nav_now = ImGui::GetTime();
         const bool cancel_shortcut_pressed =
             allow_osk_shortcuts &&
             (IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
@@ -1002,8 +811,8 @@ void ImeUi::Draw() {
         if (osk_control_input) {
             pointer_navigation_active = false;
         }
-        if (native_input_active && gamepad_control_input && !request_input_focus &&
-            !pending_input_selection_apply) {
+        if (native_input_active && (gamepad_control_input || virtual_control_input) &&
+            !request_input_focus && !pending_input_selection_apply) {
             native_input_active = false;
             ImGui::ClearActiveID();
         }
@@ -1017,15 +826,37 @@ void ImeUi::Draw() {
 
         using SelectionIndex = ImeSelectionGridIndex;
         const auto& selected_kb_layout = Libraries::Ime::GetImeKeyboardLayout(kb_layout_selection);
+        const bool nav_layout_changed =
+            nav_layout_selection_initialized &&
+            (last_nav_layout_selection.family != kb_layout_selection.family ||
+             last_nav_layout_selection.case_state != kb_layout_selection.case_state ||
+             last_nav_layout_selection.page != kb_layout_selection.page);
+        if (nav_layout_changed) {
+            ResetImeEdgeWrapNav(panel_vertical_nav_state);
+        }
+        last_nav_layout_selection = kb_layout_selection;
+        nav_layout_selection_initialized = true;
         const int keyboard_min_col = 0;
         const int keyboard_min_row = 0;
         const int keyboard_cols = std::max(1, static_cast<int>(selected_kb_layout.cols));
         const int keyboard_rows = std::max(1, static_cast<int>(selected_kb_layout.rows));
         const int keyboard_max_col = keyboard_cols - 1;
         const int keyboard_max_row = keyboard_rows - 1;
+        const auto keyboard_vertical_wraps_from = [&](int from_row, int from_col, int step_row) {
+            return DoesImeKeyboardNavigationWrap(selected_kb_layout, from_row, from_col, step_row,
+                                                 0);
+        };
 
         const auto& top_layout_cfg =
             Libraries::Ime::GetImeTopPanelLayoutConfig(kb_layout_selection);
+        const int top_panel_row =
+            SelectionIndex::PanelTopRowFromConfig(static_cast<int>(top_layout_cfg.row));
+        const int top_panel_rows =
+            SelectionIndex::PanelTopRowsFromConfig(static_cast<int>(top_layout_cfg.row_span));
+        const int keyboard_panel_min_row =
+            SelectionIndex::PanelKeyboardMinRowForTopPanel(top_panel_row, top_panel_rows);
+        const int keyboard_panel_max_row = SelectionIndex::PanelKeyboardMaxRowForKeyboardRows(
+            keyboard_rows, top_panel_row, top_panel_rows);
         const int top_col_min = 0;
         const int top_cols_cfg = std::max(1, static_cast<int>(top_layout_cfg.cols));
         const int top_col_max = top_col_min + top_cols_cfg - 1;
@@ -1136,22 +967,47 @@ void ImeUi::Draw() {
             return std::clamp(clamped_col, element.min_col, element.max_col);
         };
         const bool menu_modal = (edit_menu_popup != EditMenuPopup::None);
+        const int keyboard_row_before_panel_nav =
+            (pending_keyboard_row >= keyboard_min_row && pending_keyboard_row <= keyboard_max_row)
+                ? pending_keyboard_row
+                : last_keyboard_selected_row;
+        const int keyboard_col_before_panel_nav =
+            (pending_keyboard_col >= keyboard_min_col && pending_keyboard_col <= keyboard_max_col)
+                ? pending_keyboard_col
+                : last_keyboard_selected_col;
         bool entered_top_from_keyboard = false;
+        const auto move_keyboard_edge_to_top = [&](int wrap_dir_y, int keyboard_col) {
+            const int top_col = keyboard_to_top_col(keyboard_col);
+            const int element_idx = element_index_for_col(top_col);
+            if (element_idx >= 0) {
+                const auto& element = top_elements[static_cast<std::size_t>(element_idx)];
+                set_top_selection(element.target, top_col);
+            } else if (!top_elements.empty()) {
+                const auto& first_element = top_elements[0];
+                set_top_selection(first_element.target, first_element.min_col);
+            }
+            CommitImeEdgeWrapStep(panel_vertical_nav_state, wrap_dir_y, 0, nav_now);
+            entered_top_from_keyboard = true;
+        };
         if (!menu_modal && !text_select_mode && !pointer_navigation_active &&
             panel_selection == PanelSelectionTarget::Keyboard) {
-            const bool wrap_to_top = (nav_up && last_keyboard_selected_row == keyboard_min_row) ||
-                                     (nav_down && last_keyboard_selected_row == keyboard_max_row);
-            if (wrap_to_top) {
-                const int top_col = keyboard_to_top_col(last_keyboard_selected_col);
-                const int element_idx = element_index_for_col(top_col);
-                if (element_idx >= 0) {
-                    const auto& element = top_elements[static_cast<std::size_t>(element_idx)];
-                    set_top_selection(element.target, top_col);
-                } else if (!top_elements.empty()) {
-                    const auto& first_element = top_elements[0];
-                    set_top_selection(first_element.target, first_element.min_col);
+            const int wrap_dir_y =
+                (nav_up && keyboard_vertical_wraps_from(keyboard_row_before_panel_nav,
+                                                        keyboard_col_before_panel_nav, -1))
+                    ? -1
+                    : ((nav_down && keyboard_vertical_wraps_from(keyboard_row_before_panel_nav,
+                                                                 keyboard_col_before_panel_nav, 1))
+                           ? 1
+                           : 0);
+            if (wrap_dir_y != 0) {
+                const bool hold_before_wrap_to_top = wrap_dir_y > 0;
+                const bool wrap_repeat = nav_down_repeat;
+                if (!hold_before_wrap_to_top ||
+                    !ShouldDelayImeEdgeWrap(panel_vertical_nav_state, wrap_dir_y, 0, wrap_repeat,
+                                            true, nav_now, kPanelEdgeWrapHoldDelaySec,
+                                            kRepeatIntentWindowSec)) {
+                    move_keyboard_edge_to_top(wrap_dir_y, keyboard_col_before_panel_nav);
                 }
-                entered_top_from_keyboard = true;
             }
         }
 
@@ -1159,24 +1015,33 @@ void ImeUi::Draw() {
         const bool input_hovered = DrawInputText(metrics, pointer_navigation_active);
         const bool input_selected =
             pointer_navigation_active && (input_hovered || native_input_active);
-        auto draw_selector = [&](ImVec2 pos, ImVec2 size, bool selected) {
-            if (!selected) {
-                return;
-            }
+        auto draw_selector = [&](ImVec2 pos, ImVec2 size, bool selected,
+                                 PanelSelectionTarget fade_target) {
             const float inset = kSelectorInnerMargin;
             if (size.x <= inset * 2.0f || size.y <= inset * 2.0f) {
                 return;
             }
+            const int fade_index = static_cast<int>(fade_target);
+            if (fade_index < 0 ||
+                fade_index >= static_cast<int>(selector_fade_state.panel_alpha.size())) {
+                return;
+            }
+            const float alpha = UpdateImeSelectorFadeAlpha(
+                selector_fade_state.panel_alpha[static_cast<std::size_t>(fade_index)], selected,
+                io.DeltaTime);
+            if (alpha <= 0.0f) {
+                return;
+            }
             const ImVec2 sel_min{pos.x + inset, pos.y + inset};
-            const ImVec2 sel_max{pos.x + size.x - inset, pos.y + size.y - inset};
+            const ImVec2 sel_size{size.x - inset * 2.0f, size.y - inset * 2.0f};
             const float selector_corner_radius = std::max(0.0f, metrics.corner_radius - inset);
             auto* selector_draw = GetWindowDrawList();
-            selector_draw->AddRectFilled(sel_min, sel_max, kSelectorOverlayColor,
-                                         selector_corner_radius);
-            selector_draw->AddRect(sel_min, sel_max, kSelectorBorderColor, selector_corner_radius,
-                                   0, kSelectorBorderThickness);
+            DrawImeSelectorFrame(selector_draw, sel_min, sel_size, selector_corner_radius,
+                                 kSelectorOverlayColor, kSelectorBorderColor,
+                                 kSelectorBorderThickness, alpha);
         };
-        draw_selector(metrics.input_pos_screen, metrics.input_size, input_selected);
+        draw_selector(metrics.input_pos_screen, metrics.input_size, input_selected,
+                      PanelSelectionTarget::Input);
 
         auto* draw = GetWindowDrawList();
         const ImU32 pane_bg = ImeColorToImU32(style_config.color_base);
@@ -1208,7 +1073,8 @@ void ImeUi::Draw() {
         }
         PopID();
         draw_selector(metrics.predict_pos, metrics.predict_size,
-                      panel_selection == PanelSelectionTarget::Prediction);
+                      panel_selection == PanelSelectionTarget::Prediction,
+                      PanelSelectionTarget::Prediction);
         const ImU32 close_button_bg = ImeColorToImU32(style_config.color_button_function);
         PushStyleColor(ImGuiCol_Button, BrightenColor(close_button_bg, 0.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, BrightenColor(close_button_bg, 0.08f));
@@ -1226,7 +1092,7 @@ void ImeUi::Draw() {
         }
         PopStyleColor(3);
         draw_selector(metrics.close_pos, metrics.close_size,
-                      panel_selection == PanelSelectionTarget::Close);
+                      panel_selection == PanelSelectionTarget::Close, PanelSelectionTarget::Close);
         if (!cancel_pressed && panel_selection == PanelSelectionTarget::Close &&
             panel_activate_pressed) {
             cancel_pressed = true;
@@ -1246,16 +1112,27 @@ void ImeUi::Draw() {
             if (dir_x != 0) {
                 if (origin_element_idx >= 0) {
                     const int span = top_col_max - top_col_min + 1;
+                    bool crossed_wrap = false;
                     for (int step = 1; step <= span; ++step) {
+                        const int next_col_raw = col + dir_x * step;
+                        crossed_wrap = crossed_wrap || next_col_raw < top_col_min ||
+                                       next_col_raw > top_col_max;
                         const int next_col =
                             top_col_min + (col - top_col_min + dir_x * step + span) % span;
                         const int next_element_idx = element_index_for_col(next_col);
                         if (next_element_idx < 0 || next_element_idx == origin_element_idx) {
                             continue;
                         }
+                        const bool repeat_hint = dir_x < 0 ? nav_left_repeat : nav_right_repeat;
+                        if (ShouldDelayImeEdgeWrap(
+                                panel_vertical_nav_state, 0, dir_x, repeat_hint, crossed_wrap,
+                                nav_now, kPanelEdgeWrapHoldDelaySec, kRepeatIntentWindowSec)) {
+                            return;
+                        }
                         const auto& next_element =
                             top_elements[static_cast<std::size_t>(next_element_idx)];
                         set_top_selection(next_element.target, next_col);
+                        CommitImeEdgeWrapStep(panel_vertical_nav_state, 0, dir_x, nav_now);
                         return;
                     }
                 }
@@ -1263,17 +1140,26 @@ void ImeUi::Draw() {
 
             if (origin_element_idx >= 0) {
                 if (dir_y > 0) {
-                    pending_keyboard_row = keyboard_min_row;
+                    pending_keyboard_row = SelectionIndex::PanelToKeyboardRow(
+                        keyboard_panel_min_row, keyboard_rows, top_panel_row, top_panel_rows);
                     pending_keyboard_col = top_to_keyboard_col(col);
                     panel_selection = PanelSelectionTarget::Keyboard;
                     entered_keyboard_from_top = true;
+                    CommitImeEdgeWrapStep(panel_vertical_nav_state, dir_y, 0, nav_now);
                     return;
                 }
                 if (dir_y < 0) {
-                    pending_keyboard_row = keyboard_max_row;
+                    if (ShouldDelayImeEdgeWrap(panel_vertical_nav_state, dir_y, 0, nav_up_repeat,
+                                               true, nav_now, kPanelEdgeWrapHoldDelaySec,
+                                               kRepeatIntentWindowSec)) {
+                        return;
+                    }
+                    pending_keyboard_row = SelectionIndex::PanelToKeyboardRow(
+                        keyboard_panel_max_row, keyboard_rows, top_panel_row, top_panel_rows);
                     pending_keyboard_col = top_to_keyboard_col(col);
                     panel_selection = PanelSelectionTarget::Keyboard;
                     entered_keyboard_from_top = true;
+                    CommitImeEdgeWrapStep(panel_vertical_nav_state, dir_y, 0, nav_now);
                     return;
                 }
             }
@@ -1479,11 +1365,9 @@ void ImeUi::Draw() {
         kb_layout.cols = keyboard_cols;
         kb_layout.rows = keyboard_rows;
         const int layout_rows = std::max(1, kb_layout.rows);
-        const bool preserve_function_row_height =
-            kb_layout_selection.family == ImeKbLayoutFamily::Specials && layout_rows > 2;
-        if (preserve_function_row_height) {
-            constexpr int kFixedFunctionRows = 2;
-            kb_layout.fixed_bottom_rows = std::min(kFixedFunctionRows, layout_rows);
+        kb_layout.fixed_bottom_rows = SelectionIndex::ResolveFunctionRows(
+            layout_rows, static_cast<int>(selected_kb_layout.function_rows));
+        if (kb_layout.fixed_bottom_rows > 0) {
             kb_layout.bottom_row_h = std::max(8.0f, metrics.key_h);
             const int typing_rows = std::max(1, layout_rows - kb_layout.fixed_bottom_rows);
             const float typing_area_h =
@@ -1501,12 +1385,17 @@ void ImeUi::Draw() {
         }
         kb_layout.corner_radius = metrics.corner_radius;
 
+        ResizeImeKeyboardSelectorFade(selector_fade_state, keyboard_rows, keyboard_cols);
         Libraries::Ime::ImeKbDrawParams kb_params{};
         kb_params.selection = kb_layout_selection;
         kb_params.layout_model = &selected_kb_layout;
         kb_params.supported_languages = ime_param->supported_languages;
         kb_params.enter_label = ime_param->enter_label;
         kb_params.show_selection_highlight = (panel_selection == PanelSelectionTarget::Keyboard);
+        kb_params.selection_fade_alpha = selector_fade_state.keyboard_alpha.data();
+        kb_params.selection_fade_rows = selector_fade_state.keyboard_rows;
+        kb_params.selection_fade_cols = selector_fade_state.keyboard_cols;
+        kb_params.delta_time = io.DeltaTime;
         kb_params.allow_nav_input = allow_osk_shortcuts && !menu_modal && !text_select_mode &&
                                     (panel_selection == PanelSelectionTarget::Keyboard) &&
                                     !entered_keyboard_from_top;
@@ -1518,7 +1407,20 @@ void ImeUi::Draw() {
             allow_osk_shortcuts && (virtual_nav_right || stick_nav_right);
         kb_params.external_nav_up = allow_osk_shortcuts && (virtual_nav_up || stick_nav_up);
         kb_params.external_nav_down = allow_osk_shortcuts && (virtual_nav_down || stick_nav_down);
+        kb_params.external_nav_left_repeat =
+            allow_osk_shortcuts && ((virtual_nav_left && virtual_nav_left_repeat) ||
+                                    (stick_nav_left && stick_nav_left_repeat));
+        kb_params.external_nav_right_repeat =
+            allow_osk_shortcuts && ((virtual_nav_right && virtual_nav_right_repeat) ||
+                                    (stick_nav_right && stick_nav_right_repeat));
+        kb_params.external_nav_up_repeat =
+            allow_osk_shortcuts &&
+            ((virtual_nav_up && virtual_nav_up_repeat) || (stick_nav_up && stick_nav_up_repeat));
+        kb_params.external_nav_down_repeat =
+            allow_osk_shortcuts && ((virtual_nav_down && virtual_nav_down_repeat) ||
+                                    (stick_nav_down && stick_nav_down_repeat));
         kb_params.external_activate_pressed = panel_activate_pressed;
+        kb_params.reset_nav_state = nav_layout_changed;
         kb_params.requested_selected_row = pending_keyboard_row;
         kb_params.requested_selected_col = pending_keyboard_col;
         ApplyImeStyleToKeyboardDrawParams(style_config, kb_params);

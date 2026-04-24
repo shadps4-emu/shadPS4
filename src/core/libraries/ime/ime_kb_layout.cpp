@@ -383,9 +383,10 @@ const char* ResolveShiftOverrideLabel(const ImeKbLayoutSelection& selection,
 }
 
 template <std::size_t N>
-constexpr ImeKbLayoutModel MakeLayoutModel(const std::array<ImeKbKeySpec, N>& keys,
-                                           const u8 rows = static_cast<u8>(kKeyRows)) {
-    return ImeKbLayoutModel{keys.data(), N, static_cast<u8>(kKeyCols), rows};
+constexpr ImeKbLayoutModel MakeLayoutModel(
+    const std::array<ImeKbKeySpec, N>& keys, const u8 rows = static_cast<u8>(kKeyRows),
+    const u8 function_rows = static_cast<u8>(ImeSelectionGridIndex::DefaultFunctionRows)) {
+    return ImeKbLayoutModel{keys.data(), N, static_cast<u8>(kKeyCols), rows, function_rows};
 }
 
 const char* GetEnterLabel(OrbisImeEnterLabel label) {
@@ -942,6 +943,8 @@ constexpr ImeTopPanelLayoutConfig kTopPanelDefaultLayout{
     kTopPanelDefaultElements.data(),
     kTopPanelDefaultElements.size(),
     10,
+    static_cast<u8>(ImeSelectionGridIndex::DefaultTopPanelRow),
+    static_cast<u8>(ImeSelectionGridIndex::DefaultTopPanelRows),
 };
 
 const ImeKbLayoutModel& GetDefaultLayoutModel() {
@@ -1403,7 +1406,8 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             ImVec2 size{w, h};
 
             const auto slot_base_bg = [&](int slot_row) {
-                const bool function_row = slot_row >= std::max(0, grid_rows - 2);
+                const bool function_row =
+                    fixed_bottom_rows > 0 && slot_row >= std::max(0, grid_rows - fixed_bottom_rows);
                 if (function_row) {
                     return params.key_bg_function;
                 }
@@ -1475,12 +1479,26 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     }
 
     struct ImeKbNavState {
-        int selected_row = -1;
-        int selected_col = -1;
+        int cursor_row = -1;
+        int cursor_col = -1;
+        int fallback_prefer_col_dir = 0;
+        ImeEdgeWrapNavState edge_wrap_nav{};
+        int last_grid_rows = -1;
+        int last_grid_cols = -1;
     };
     static std::unordered_map<ImGuiID, ImeKbNavState> s_nav_states;
     const ImGuiID nav_id = ImGui::GetID("##ImeKbGridNav");
     ImeKbNavState& nav_state = s_nav_states[nav_id];
+    const bool grid_shape_changed =
+        nav_state.last_grid_rows != grid_rows || nav_state.last_grid_cols != grid_cols;
+    if (grid_shape_changed) {
+        nav_state.last_grid_rows = grid_rows;
+        nav_state.last_grid_cols = grid_cols;
+        ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
+    }
+    if (params.reset_nav_state) {
+        ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
+    }
 
     const auto is_selectable_cell = [&](int row, int col) {
         if (row < 0 || row >= grid_rows || col < 0 || col >= grid_cols) {
@@ -1521,79 +1539,181 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         return {best_row, best_col};
     };
 
+    const auto nearest_selectable_cell_on_row = [&](int from_row, int from_col,
+                                                    int prefer_col_dir) -> std::pair<int, int> {
+        if (from_row < 0 || from_row >= grid_rows) {
+            return {-1, -1};
+        }
+
+        int best_col = -1;
+        int best_distance = std::numeric_limits<int>::max();
+        bool best_in_direction = false;
+        for (int col = 0; col < grid_cols; ++col) {
+            if (!is_selectable_cell(from_row, col)) {
+                continue;
+            }
+
+            const int distance = std::abs(col - from_col);
+            const bool in_direction =
+                (prefer_col_dir > 0 && col > from_col) || (prefer_col_dir < 0 && col < from_col);
+            const bool better_tie = (prefer_col_dir != 0 && in_direction != best_in_direction)
+                                        ? in_direction
+                                        : col < best_col;
+            if (distance < best_distance ||
+                (distance == best_distance && (best_col < 0 || better_tie))) {
+                best_distance = distance;
+                best_col = col;
+                best_in_direction = in_direction;
+            }
+        }
+
+        return best_col >= 0 ? std::pair<int, int>{from_row, best_col}
+                             : std::pair<int, int>{-1, -1};
+    };
+
+    const auto visible_cell_for_cursor = [&]() -> std::pair<int, int> {
+        if (is_selectable_cell(nav_state.cursor_row, nav_state.cursor_col)) {
+            return {nav_state.cursor_row, nav_state.cursor_col};
+        }
+        auto row_fallback = nearest_selectable_cell_on_row(
+            nav_state.cursor_row, nav_state.cursor_col, nav_state.fallback_prefer_col_dir);
+        if (row_fallback.first >= 0 && row_fallback.second >= 0) {
+            return row_fallback;
+        }
+        return nearest_selectable_cell(nav_state.cursor_row, nav_state.cursor_col);
+    };
+
     if (params.requested_selected_row >= 0 && params.requested_selected_col >= 0) {
-        const auto [row, col] =
-            nearest_selectable_cell(params.requested_selected_row, params.requested_selected_col);
-        if (row >= 0 && col >= 0) {
-            nav_state.selected_row = row;
-            nav_state.selected_col = col;
+        const int row = std::clamp(params.requested_selected_row, 0, std::max(0, grid_rows - 1));
+        const int col = std::clamp(params.requested_selected_col, 0, std::max(0, grid_cols - 1));
+        if (nearest_selectable_cell(row, col).first >= 0) {
+            nav_state.cursor_row = row;
+            nav_state.cursor_col = col;
+            nav_state.fallback_prefer_col_dir = 0;
+            ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
         }
     }
 
-    if (!is_selectable_cell(nav_state.selected_row, nav_state.selected_col)) {
-        const auto [row, col] = first_selectable_cell();
-        nav_state.selected_row = row;
-        nav_state.selected_col = col;
+    if (nav_state.cursor_row < 0 || nav_state.cursor_row >= grid_rows || nav_state.cursor_col < 0 ||
+        nav_state.cursor_col >= grid_cols) {
+        const int anchor_row = std::clamp(nav_state.cursor_row, 0, std::max(0, grid_rows - 1));
+        const int anchor_col = std::clamp(nav_state.cursor_col, 0, std::max(0, grid_cols - 1));
+        auto [row, col] = nearest_selectable_cell(anchor_row, anchor_col);
+        if (row < 0 || col < 0) {
+            const auto first = first_selectable_cell();
+            row = first.first;
+            col = first.second;
+        }
+        nav_state.cursor_row = row;
+        nav_state.cursor_col = col;
+        nav_state.fallback_prefer_col_dir = 0;
+        ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
     }
 
-    const auto move_cursor = [&](int step_row, int step_col) {
+    constexpr double kEdgeWrapHoldDelaySec = 0.5;
+    constexpr double kRepeatIntentWindowSec = 0.45;
+
+    const auto move_cursor = [&](int step_row, int step_col, bool repeat_hint) {
         if (step_row == 0 && step_col == 0) {
             return;
         }
-        int row = nav_state.selected_row;
-        int col = nav_state.selected_col;
+
+        int row = nav_state.cursor_row;
+        int col = nav_state.cursor_col;
+        const double now = ImGui::GetTime();
         if (row < 0 || col < 0) {
             const auto [first_row, first_col] = first_selectable_cell();
-            nav_state.selected_row = first_row;
-            nav_state.selected_col = first_col;
+            nav_state.cursor_row = first_row;
+            nav_state.cursor_col = first_col;
+            nav_state.fallback_prefer_col_dir = 0;
+            ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
             return;
         }
 
         const ImeKbKeySpec* origin_key =
-            occupied[static_cast<std::size_t>(idx(nav_state.selected_row, nav_state.selected_col))];
+            occupied[static_cast<std::size_t>(idx(nav_state.cursor_row, nav_state.cursor_col))];
+        if (origin_key && origin_key->action == ImeKbKeyAction::None) {
+            origin_key = nullptr;
+        }
         const int max_steps = std::max(1, grid_rows * grid_cols);
+        bool crossed_wrap = false;
         for (int i = 0; i < max_steps; ++i) {
-            row = (row + step_row + grid_rows) % grid_rows;
-            col = (col + step_col + grid_cols) % grid_cols;
+            crossed_wrap = crossed_wrap || DoesImeKeyboardStepCrossGridEdge(
+                                               row, col, step_row, step_col, grid_rows, grid_cols);
+            const int next_row = row + step_row;
+            const int next_col = col + step_col;
+            row = (next_row + grid_rows) % grid_rows;
+            col = (next_col + grid_cols) % grid_cols;
 
             const ImeKbKeySpec* candidate_key = occupied[static_cast<std::size_t>(idx(row, col))];
-            if (!candidate_key || candidate_key->action == ImeKbKeyAction::None) {
-                continue;
-            }
-
             // Treat each spanned key as one navigation node in every direction.
             if (origin_key && candidate_key == origin_key) {
                 continue;
             }
 
-            nav_state.selected_row = row;
-            nav_state.selected_col = col;
+            if (ShouldDelayImeEdgeWrap(nav_state.edge_wrap_nav, step_row, step_col, repeat_hint,
+                                       crossed_wrap, now, kEdgeWrapHoldDelaySec,
+                                       kRepeatIntentWindowSec)) {
+                return;
+            }
+
+            nav_state.cursor_row = row;
+            nav_state.cursor_col = col;
+            nav_state.fallback_prefer_col_dir = step_col;
+            CommitImeEdgeWrapStep(nav_state.edge_wrap_nav, step_row, step_col, now);
             return;
         }
     };
 
     if (params.allow_nav_input) {
-        const bool move_left = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false) ||
-                               params.external_nav_left;
-        const bool move_right = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
-                                ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false) ||
-                                params.external_nav_right;
-        const bool move_up = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
-                             ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false) ||
-                             params.external_nav_up;
-        const bool move_down = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
-                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false) ||
-                               params.external_nav_down;
+        const bool imgui_move_left_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
+                                          ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
+        const bool imgui_move_right_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
+                                           ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
+        const bool imgui_move_up_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
+                                        ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
+        const bool imgui_move_down_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
+                                          ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false);
+        const bool imgui_move_left_with_repeat =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, true) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, true);
+        const bool imgui_move_right_with_repeat =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, true) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, true);
+        const bool imgui_move_up_with_repeat = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, true) ||
+                                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, true);
+        const bool imgui_move_down_with_repeat =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, true) ||
+            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, true);
+        const bool imgui_move_left_repeat = imgui_move_left_with_repeat && !imgui_move_left_once;
+        const bool imgui_move_right_repeat = imgui_move_right_with_repeat && !imgui_move_right_once;
+        const bool imgui_move_up_repeat = imgui_move_up_with_repeat && !imgui_move_up_once;
+        const bool imgui_move_down_repeat = imgui_move_down_with_repeat && !imgui_move_down_once;
+        const bool move_left =
+            imgui_move_left_once || imgui_move_left_repeat || params.external_nav_left;
+        const bool move_right =
+            imgui_move_right_once || imgui_move_right_repeat || params.external_nav_right;
+        const bool move_up = imgui_move_up_once || imgui_move_up_repeat || params.external_nav_up;
+        const bool move_down =
+            imgui_move_down_once || imgui_move_down_repeat || params.external_nav_down;
+        const bool move_left_repeat =
+            imgui_move_left_repeat || (params.external_nav_left && params.external_nav_left_repeat);
+        const bool move_right_repeat =
+            imgui_move_right_repeat ||
+            (params.external_nav_right && params.external_nav_right_repeat);
+        const bool move_up_repeat =
+            imgui_move_up_repeat || (params.external_nav_up && params.external_nav_up_repeat);
+        const bool move_down_repeat =
+            imgui_move_down_repeat || (params.external_nav_down && params.external_nav_down_repeat);
 
         if (move_left) {
-            move_cursor(0, -1);
+            move_cursor(0, -1, move_left_repeat);
         } else if (move_right) {
-            move_cursor(0, 1);
+            move_cursor(0, 1, move_right_repeat);
         } else if (move_up) {
-            move_cursor(-1, 0);
+            move_cursor(-1, 0, move_up_repeat);
         } else if (move_down) {
-            move_cursor(1, 0);
+            move_cursor(1, 0, move_down_repeat);
         }
     }
 
@@ -1614,9 +1734,10 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     int selected_render_index = -1;
-    if (is_selectable_cell(nav_state.selected_row, nav_state.selected_col)) {
+    const auto [visible_row, visible_col] = visible_cell_for_cursor();
+    if (is_selectable_cell(visible_row, visible_col)) {
         const ImeKbKeySpec* selected_spec =
-            occupied[static_cast<std::size_t>(idx(nav_state.selected_row, nav_state.selected_col))];
+            occupied[static_cast<std::size_t>(idx(visible_row, visible_col))];
         for (int i = 0; i < static_cast<int>(rendered_keys.size()); ++i) {
             const auto& key = rendered_keys[static_cast<std::size_t>(i)];
             if (key.key == selected_spec && key.selectable) {
@@ -1625,11 +1746,11 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             }
         }
     }
-    state.selected_row = nav_state.selected_row;
-    state.selected_col = nav_state.selected_col;
+    state.selected_row = nav_state.cursor_row;
+    state.selected_col = nav_state.cursor_col;
     if (selected_render_index >= 0) {
-        state.selected_center =
-            rendered_keys[static_cast<std::size_t>(selected_render_index)].center;
+        const auto& selected_key = rendered_keys[static_cast<std::size_t>(selected_render_index)];
+        state.selected_center = selected_key.center;
     }
 
     bool activate_selected = false;
@@ -1724,14 +1845,14 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     const auto draw_key = [&](ImVec2 pos, ImVec2 size, ImU32 bg, const char* label,
-                              const char* hotkey_label, ImeKbKeyGlyph glyph, bool selected,
+                              const char* hotkey_label, ImeKbKeyGlyph glyph, float selected_alpha,
                               bool emphasize_main_label, bool underline_main_label,
                               bool disabled_visual) {
-        if (selected) {
+        if (selected_alpha > 0.0f) {
             ImVec4 selected_bg = ImGui::ColorConvertU32ToFloat4(bg);
-            selected_bg.x = std::min(1.0f, selected_bg.x + 0.11f);
-            selected_bg.y = std::min(1.0f, selected_bg.y + 0.11f);
-            selected_bg.z = std::min(1.0f, selected_bg.z + 0.11f);
+            selected_bg.x = std::min(1.0f, selected_bg.x + 0.11f * selected_alpha);
+            selected_bg.y = std::min(1.0f, selected_bg.y + 0.11f * selected_alpha);
+            selected_bg.z = std::min(1.0f, selected_bg.z + 0.11f * selected_alpha);
             bg = ImGui::ColorConvertFloat4ToU32(selected_bg);
         }
         ImU32 key_text_color = params.key_text;
@@ -1747,10 +1868,13 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
 
         draw->AddRectFilled(pos, {pos.x + size.x, pos.y + size.y}, bg, layout.corner_radius);
-        const ImU32 border_color = selected ? IM_COL32(248, 248, 248, 255) : params.key_border;
-        const float border_thickness = selected ? 2.0f : 1.0f;
-        draw->AddRect(pos, {pos.x + size.x, pos.y + size.y}, border_color, layout.corner_radius, 0,
-                      border_thickness);
+        draw->AddRect(pos, {pos.x + size.x, pos.y + size.y}, params.key_border,
+                      layout.corner_radius, 0, 1.0f);
+        if (selected_alpha > 0.0f) {
+            draw->AddRect(pos, {pos.x + size.x, pos.y + size.y},
+                          ApplyImeAlpha(IM_COL32(248, 248, 248, 255), selected_alpha),
+                          layout.corner_radius, 0, 2.0f);
+        }
         ImFont* font = ImGui::GetFont();
         const float base_font_size = ImGui::GetFontSize();
         if (hotkey_label && hotkey_label[0] != '\0') {
@@ -1799,9 +1923,19 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     for (int i = 0; i < static_cast<int>(rendered_keys.size()); ++i) {
         const auto& key = rendered_keys[static_cast<std::size_t>(i)];
         const bool selected = params.show_selection_highlight && (i == selected_render_index);
+        float selected_alpha = selected ? 1.0f : 0.0f;
+        const bool has_fade =
+            params.selection_fade_alpha && params.selection_fade_rows == layout.rows &&
+            params.selection_fade_cols == layout.cols && key.row >= 0 && key.col >= 0 &&
+            key.row < params.selection_fade_rows && key.col < params.selection_fade_cols;
+        if (has_fade) {
+            float& alpha =
+                params.selection_fade_alpha[key.row * params.selection_fade_cols + key.col];
+            selected_alpha = UpdateImeSelectorFadeAlpha(alpha, selected, params.delta_time);
+        }
         const bool emphasize_main_label = key.key && key.key->action == ImeKbKeyAction::Character;
         const bool underline_main_label = key.underline_label;
-        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selected,
+        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selected_alpha,
                  emphasize_main_label, underline_main_label, key.disabled_visual);
 
         if (!key.selectable) {
@@ -1818,8 +1952,9 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
         if (key_activated) {
             state.clicked = true;
-            nav_state.selected_row = key.row;
-            nav_state.selected_col = key.col;
+            nav_state.cursor_row = key.row;
+            nav_state.cursor_col = key.col;
+            nav_state.fallback_prefer_col_dir = 0;
             activate_key(key);
         }
         ImGui::PopID();

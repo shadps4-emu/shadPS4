@@ -106,6 +106,8 @@ class ImeUi : public ImGui::Layer {
     double virtual_dpad_right_next_repeat_time = 0.0;
     double virtual_dpad_up_next_repeat_time = 0.0;
     double virtual_dpad_down_next_repeat_time = 0.0;
+    ImeEdgeWrapNavState panel_vertical_nav_state{};
+    ImeSelectorFadeState selector_fade_state{};
     bool panel_position_initialized = false;
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
@@ -124,6 +126,8 @@ class ImeUi : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     ImeKbLayoutSelection kb_layout_selection{};
+    ImeKbLayoutSelection last_nav_layout_selection{};
+    bool nav_layout_selection_initialized = false;
     ImeKbLayoutFamily kb_alpha_family = ImeKbLayoutFamily::Latin;
     std::mutex draw_mutex;
 
