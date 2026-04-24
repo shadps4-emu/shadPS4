@@ -1,7 +1,7 @@
 ﻿// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
+#include <cctype>
 #include <map>
 #include <mutex>
 #include <variant>
@@ -14,11 +14,71 @@
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
+#include "core/user_manager.h"
 #include "np_handler.h"
 
 namespace Libraries::Np::NpManager {
 
 static bool g_shadnet_enabled = false;
+
+using UserId = Libraries::UserService::OrbisUserServiceUserId;
+
+static void FillCountryCodeFromProfile(UserId user_id, OrbisNpCountryCode* out) {
+    std::memset(out, 0, sizeof(OrbisNpCountryCode));
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string cfg = u ? u->np_country : std::string();
+    const bool ok = cfg.size() == 2 && std::isalpha(static_cast<unsigned char>(cfg[0])) &&
+                    std::isalpha(static_cast<unsigned char>(cfg[1]));
+    const char* src = ok ? cfg.c_str() : "us";
+    std::memcpy(out->country_code, src, 2);
+}
+
+static void FillLanguageCodeFromProfile(UserId user_id, OrbisNpLanguageCode* out) {
+    std::memset(out, 0, sizeof(OrbisNpLanguageCode));
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string cfg = u ? u->np_language : std::string();
+    const bool ok = cfg.size() == 2 && std::isalpha(static_cast<unsigned char>(cfg[0])) &&
+                    std::isalpha(static_cast<unsigned char>(cfg[1]));
+    const char* src = ok ? cfg.c_str() : "en";
+    std::memcpy(out->code, src, 2);
+}
+
+static s8 GetAgeFromProfile(UserId user_id) {
+    const User* u = UserManagement.GetUserByID(user_id);
+    const int v = u ? static_cast<int>(u->np_age) : 0;
+    if (v <= 0 || v > 127) {
+        return 13;
+    }
+    return static_cast<s8>(v);
+}
+
+static void FillDateOfBirthFromProfile(UserId user_id, OrbisNpDate* out) {
+    const User* u = UserManagement.GetUserByID(user_id);
+    const std::string s = u ? u->np_date_of_birth : std::string();
+
+    int y = 0, m = 0, d = 0;
+    bool ok = s.size() == 10 && s[4] == '-' && s[7] == '-';
+    if (ok) {
+        auto is_digit_at = [&](size_t i) { return std::isdigit(static_cast<unsigned char>(s[i])); };
+        for (size_t i : {0u, 1u, 2u, 3u, 5u, 6u, 8u, 9u}) {
+            if (!is_digit_at(i)) {
+                ok = false;
+                break;
+            }
+        }
+    }
+    if (ok) {
+        y = (s[0] - '0') * 1000 + (s[1] - '0') * 100 + (s[2] - '0') * 10 + (s[3] - '0');
+        m = (s[5] - '0') * 10 + (s[6] - '0');
+        d = (s[8] - '0') * 10 + (s[9] - '0');
+        ok = y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= 31;
+    }
+
+    out->year = ok ? static_cast<u16>(y) : 2000;
+    out->month = ok ? static_cast<u16>(m) : 1;
+    out->day = ok ? static_cast<u16>(d) : 1;
+}
+
 static s32 g_active_requests = 0;
 static std::mutex g_request_mutex;
 
@@ -326,8 +386,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguage(s32 req_id, OrbisNpOnlineId* online_id,
         return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    std::memcpy(language->code, "en", 2); // return "en" for now, TODO make it configurable
+    FillLanguageCodeFromProfile(user_id, language);
     return CompleteRequest(*req, ORBIS_OK);
 }
 
@@ -346,8 +405,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountLanguageA(s32 req_id,
         return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
-    std::memset(language, 0, sizeof(OrbisNpLanguageCode));
-    std::memcpy(language->code, "en", 2); // return "en" for now, TODO make it configurable
+    FillLanguageCodeFromProfile(user_id, language);
     return CompleteRequest(*req, ORBIS_OK);
 }
 
@@ -367,7 +425,7 @@ s32 PS4_SYSV_ABI sceNpGetParentalControlInfo(s32 req_id, OrbisNpOnlineId* online
         return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}", req_id);
-    *age = 13; // TODO make it configurable?
+    *age = GetAgeFromProfile(user_id);
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
     return CompleteRequest(*req, ORBIS_OK);
 }
@@ -387,7 +445,7 @@ sceNpGetParentalControlInfoA(s32 req_id, Libraries::UserService::OrbisUserServic
         return CompleteRequest(*req, ORBIS_NP_ERROR_SIGNED_OUT);
     }
     LOG_DEBUG(Lib_NpManager, "req_id = {:#x}, user_id = {}", req_id, user_id);
-    *age = 13; // TODO make it configurable?
+    *age = GetAgeFromProfile(user_id);
     std::memset(info, 0, sizeof(OrbisNpParentalControlInfo));
     return CompleteRequest(*req, ORBIS_OK);
 }
@@ -402,8 +460,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountry(OrbisNpOnlineId* online_id,
         !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
-    std::memcpy(country_code->country_code, "us", 2); // TODO: get NP country code from config
+    FillCountryCodeFromProfile(user_id, country_code);
     return ORBIS_OK;
 }
 
@@ -415,8 +472,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountCountryA(Libraries::UserService::OrbisUserServic
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    std::memset(country_code, 0, sizeof(OrbisNpCountryCode));
-    std::memcpy(country_code->country_code, "us", 2); // TODO: get NP country code from config
+    FillCountryCodeFromProfile(user_id, country_code);
     return ORBIS_OK;
 }
 
@@ -430,10 +486,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirth(OrbisNpOnlineId* online_id,
         !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    // TODO: maybe add to config?
-    date_of_birth->day = 1;
-    date_of_birth->month = 1;
-    date_of_birth->year = 2000;
+    FillDateOfBirthFromProfile(user_id, date_of_birth);
     return ORBIS_OK;
 }
 
@@ -445,10 +498,7 @@ s32 PS4_SYSV_ABI sceNpGetAccountDateOfBirthA(Libraries::UserService::OrbisUserSe
     if (!g_shadnet_enabled || !Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id)) {
         return ORBIS_NP_ERROR_SIGNED_OUT;
     }
-    // TODO: maybe add to config?
-    date_of_birth->day = 1;
-    date_of_birth->month = 1;
-    date_of_birth->year = 2000;
+    FillDateOfBirthFromProfile(user_id, date_of_birth);
     return ORBIS_OK;
 }
 
