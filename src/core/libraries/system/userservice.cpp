@@ -1092,6 +1092,10 @@ int PS4_SYSV_ABI sceUserServiceGetUserGroupNum() {
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserName(int user_id, char* user_name, std::size_t size) {
     LOG_DEBUG(Lib_UserService, "called user_id = {}, size = {} ", user_id, size);
+    if (user_id == ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        LOG_ERROR(Lib_UserService, "invalid user_id");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
     if (user_name == nullptr) {
         LOG_ERROR(Lib_UserService, "user_name is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
