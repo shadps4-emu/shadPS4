@@ -12,10 +12,10 @@
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "emulator.h"
+#include "imgui/big_picture/imgui_impl_sdl3_big_picture.h"
+#include "imgui/big_picture/imgui_impl_sdlrenderer3.h"
 #include "imgui/imgui_std.h"
 #include "imgui/renderer/font_stack.h"
-#include "imgui/renderer/imgui_impl_sdl3_bpm.h"
-#include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 #include "settings_dialog_imgui.h"
 
 CMRC_DECLARE(res);
