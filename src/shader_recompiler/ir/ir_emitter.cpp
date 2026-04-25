@@ -1381,11 +1381,12 @@ U1 IREmitter::FPIsInf(const F32F64& value) {
 U1 IREmitter::FPIsDenorm(const F32F64& value) {
     switch (value.Type()) {
     case Type::F32: {
-        const IR::F32 flt_min = BitCast<IR::F32, IR::U32>(Imm32(0x00800000));
+        const IR::F32 flt_min = BitCast<IR::F32, IR::U32>(Imm32(0x00800000U));
         return FPLessThan(FPAbs(value), flt_min, true);
     }
     case Type::F64: {
-        const IR::F64 dbl_min = BitCast<IR::F64, IR::U64>(Imm64(0x0010000000000000));
+        const u64 hex = 0x0010000000000000ULL;
+        const IR::F64 dbl_min = BitCast<IR::F64, IR::U64>(Imm64(hex));
         return FPLessThan(FPAbs(value), dbl_min, true);
     }
     default:
