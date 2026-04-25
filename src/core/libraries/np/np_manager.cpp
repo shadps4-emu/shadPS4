@@ -819,7 +819,7 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    ASSERT_MSG(sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
                "Failed to get compiled SDK verision.");
     g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
     Libraries::Np::NpHandler::GetInstance().Initialize();
