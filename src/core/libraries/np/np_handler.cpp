@@ -406,11 +406,19 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
 
 s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
                                 const std::vector<std::string>& npIds,
+                                const std::vector<s32>& pcIds,
                                 NpScore::OrbisNpScorePlayerRankData* rankArray,
                                 NpScore::OrbisNpScoreComment* commentArray,
                                 NpScore::OrbisNpScoreGameInfo* infoArray,
                                 Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                                 std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    // pcIds must either be empty (use 0 for everything) or match npIds in size.
+    if (!pcIds.empty() && pcIds.size() != npIds.size()) {
+        LOG_ERROR(NpHandler, "GetRankingByNpId: pcIds size {} != npIds size {}", pcIds.size(),
+                  npIds.size());
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
     // Look up the user's session.
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
@@ -431,10 +439,10 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
     proto.set_boardid(boardId);
     proto.set_withcomment(commentArray != nullptr);
     proto.set_withgameinfo(infoArray != nullptr);
-    for (const auto& npid : npIds) {
+    for (size_t i = 0; i < npIds.size(); ++i) {
         auto* entry = proto.add_npids();
-        entry->set_npid(npid);
-        entry->set_pcid(0);
+        entry->set_npid(npIds[i]);
+        entry->set_pcid(pcIds.empty() ? 0 : pcIds[i]);
     }
 
     const std::string proto_bytes = proto.SerializeAsString();
@@ -467,8 +475,8 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
     }
     LOG_INFO(NpHandler,
              "GetRankingByNpId: user_id={} service_label={} board={} npIdCount={} "
-             "withComment={} withGameInfo={} pkt_id={} com_id='{}'",
-             user_id, service_label, boardId, npIds.size(), commentArray != nullptr,
+             "withPcId={} withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, npIds.size(), !pcIds.empty(), commentArray != nullptr,
              infoArray != nullptr, pkt_id, com_id);
     return ORBIS_OK;
 }

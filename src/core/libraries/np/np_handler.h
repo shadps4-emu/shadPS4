@@ -79,7 +79,7 @@ public:
 
     // Submit a GetRankingByNpId request to the shadNet server.
     s32 GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
-                         const std::vector<std::string>& npIds,
+                         const std::vector<std::string>& npIds, const std::vector<s32>& pcIds,
                          NpScore::OrbisNpScorePlayerRankData* rankArray,
                          NpScore::OrbisNpScoreComment* commentArray,
                          NpScore::OrbisNpScoreGameInfo* infoArray,
