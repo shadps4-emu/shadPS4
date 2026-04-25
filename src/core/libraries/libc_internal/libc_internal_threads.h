@@ -18,5 +18,8 @@ s32 PS4_SYSV_ABI internal__Mtxlock(Libraries::Kernel::PthreadMutexT* mtx);
 s32 PS4_SYSV_ABI internal__Mtxunlock(Libraries::Kernel::PthreadMutexT* mtx);
 s32 PS4_SYSV_ABI internal__Mtxdst(Libraries::Kernel::PthreadMutexT* mtx);
 
-void RegisterlibSceLibcInternalThreads(Core::Loader::SymbolsResolver* sym);
+struct LibcInternalThreads {
+    LibcInternalThreads(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::LibcInternal

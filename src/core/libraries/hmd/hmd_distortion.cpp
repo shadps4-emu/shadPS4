@@ -75,7 +75,7 @@ s32 PS4_SYSV_ABI Func_B614F290B67FB59B() {
     return ORBIS_OK;
 }
 
-void RegisterDistortion(Core::Loader::SymbolsResolver* sym) {
+HleDistortion::HleDistortion(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGet2dVrCommand);
     LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGet2dVrCommand);

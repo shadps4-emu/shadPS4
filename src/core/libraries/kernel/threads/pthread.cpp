@@ -650,7 +650,7 @@ int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
     return posix_pthread_setaffinity_np(thread, sizeof(Cpuset), &cpuset);
 }
 
-void RegisterThread(Core::Loader::SymbolsResolver* sym) {
+HleThread::HleThread(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("Z4QosVuAsA0", "libScePosix", 1, "libkernel", posix_pthread_once);
     LIB_FUNCTION("7Xl257M4VNI", "libScePosix", 1, "libkernel", posix_pthread_equal);

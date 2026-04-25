@@ -4,7 +4,16 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/kernel/aio.h"
+#include "core/libraries/kernel/debug.h"
+#include "core/libraries/kernel/equeue.h"
+#include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/process.h"
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/time.h"
 #include "core/linker.h"
 
 namespace Core::Loader {
@@ -80,6 +89,17 @@ struct OrbisKernelAppInfo {
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    Kernel::HleFileSystem m_file_system;
+    Kernel::HleTime m_time;
+    Kernel::HleThreads m_threads;
+    Kernel::HleKernelEventFlag m_kernel_event_flag;
+    Kernel::HleMemory m_memory;
+    Kernel::HleEventQueue m_event_queue;
+    Kernel::HleProcess m_process;
+    Kernel::HleException m_exception;
+    Kernel::HleAio m_aio;
+    Kernel::HleDebug m_debug;
 };
 
 constexpr u32 POSIX_SC_ARG_MAX = 1;

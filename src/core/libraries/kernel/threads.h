@@ -39,7 +39,19 @@ int PS4_SYSV_ABI posix_pthread_mutex_lock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_unlock(PthreadMutexT* mutex);
 int PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex);
 
-void RegisterThreads(Core::Loader::SymbolsResolver* sym);
+struct HleThreads {
+    HleThreads(Core::Loader::SymbolsResolver* sym);
+
+    HleMutex m_mutex;
+    HleCond m_cond;
+    HleRwlock m_rw_lock;
+    HleSemaphore m_semaphore;
+    HleSpec m_spec;
+    HleThreadAttr m_thread_attr;
+    HleThread m_thread;
+    HleRtld m_rtld;
+    HlePthreadClean m_pthread_clean;
+};
 
 class Thread {
 public:

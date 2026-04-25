@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include "common/types.h"
+#include "common/va_ctx.h"
 #include "core/libraries/kernel/threads.h"
 
 namespace Core::Loader {
@@ -93,6 +94,12 @@ s32 PS4_SYSV_ABI internal__Frprep(OrbisFILE* file);
 u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file);
 s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file);
 
-void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
-void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
+struct LibcInternalIo {
+    LibcInternalIo(Core::Loader::SymbolsResolver* sym);
+};
+
+struct LibcInternalIoV2 {
+    LibcInternalIoV2(Core::Loader::SymbolsResolver* sym);
+};
+
 } // namespace Libraries::LibcInternal

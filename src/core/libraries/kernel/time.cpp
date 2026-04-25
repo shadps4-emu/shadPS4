@@ -544,7 +544,7 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
     return ret;
 }
 
-void RegisterTime(Core::Loader::SymbolsResolver* sym) {
+HleTime::HleTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
 

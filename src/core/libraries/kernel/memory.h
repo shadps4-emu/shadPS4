@@ -186,6 +186,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStat
 
 s32 PS4_SYSV_ABI sceKernelMunmap(void* addr, u64 len);
 
-void RegisterMemory(Core::Loader::SymbolsResolver* sym);
+struct HleMemory {
+    HleMemory(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

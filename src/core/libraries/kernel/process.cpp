@@ -290,7 +290,7 @@ s32 PS4_SYSV_ABI exit(s32 status) {
     return 0;
 }
 
-void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
+HleProcess::HleProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xeu-pV8wkKs", "libkernel", 1, "libkernel", sceKernelIsInSandbox);
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);

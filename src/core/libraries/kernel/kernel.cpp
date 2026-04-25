@@ -419,19 +419,10 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     }
 }
 
-Library::Library(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym)
+    : m_file_system(sym), m_time(sym), m_threads(sym), m_kernel_event_flag(sym), m_memory(sym),
+      m_event_queue(sym), m_process(sym), m_exception(sym), m_aio(sym), m_debug(sym) {
     service_thread = std::jthread{KernelServiceThread};
-
-    Libraries::Kernel::RegisterFileSystem(sym);
-    Libraries::Kernel::RegisterTime(sym);
-    Libraries::Kernel::RegisterThreads(sym);
-    Libraries::Kernel::RegisterKernelEventFlag(sym);
-    Libraries::Kernel::RegisterMemory(sym);
-    Libraries::Kernel::RegisterEventQueue(sym);
-    Libraries::Kernel::RegisterProcess(sym);
-    Libraries::Kernel::RegisterException(sym);
-    Libraries::Kernel::RegisterAio(sym);
-    Libraries::Kernel::RegisterDebug(sym);
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);

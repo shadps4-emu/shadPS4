@@ -141,7 +141,7 @@ const void* PS4_SYSV_ABI posix_pthread_getspecific(PthreadKeyT key) {
     return nullptr;
 }
 
-void RegisterSpec(Core::Loader::SymbolsResolver* sym) {
+HleSpec::HleSpec(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("mqULNdimTn0", "libScePosix", 1, "libkernel", posix_pthread_key_create);
     LIB_FUNCTION("6BpEZuDT7YI", "libScePosix", 1, "libkernel", posix_pthread_key_delete);

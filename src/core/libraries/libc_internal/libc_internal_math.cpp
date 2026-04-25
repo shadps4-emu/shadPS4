@@ -115,7 +115,7 @@ float PS4_SYSV_ABI internal_log10f(float x) {
     return log10f(x);
 }
 
-void RegisterlibSceLibcInternalMath(Core::Loader::SymbolsResolver* sym) {
+LibcInternalMath::LibcInternalMath(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("H8ya2H00jbI", "libSceLibcInternal", 1, "libSceLibcInternal", internal_sin);
     LIB_FUNCTION("Q4rRL34CEeE", "libSceLibcInternal", 1, "libSceLibcInternal", internal_sinf);
     LIB_FUNCTION("2WE3BTYVwKM", "libSceLibcInternal", 1, "libSceLibcInternal", internal_cos);

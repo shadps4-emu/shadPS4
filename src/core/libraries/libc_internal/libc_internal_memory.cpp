@@ -31,7 +31,7 @@ s32 PS4_SYSV_ABI internal_memcmp(const void* s1, const void* s2, size_t n) {
     return std::memcmp(s1, s2, n);
 }
 
-void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
+LibcInternalMemory::LibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("NFLs+dRJGNg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy_s);
     LIB_FUNCTION("Q3VBxCXhUHs", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy);

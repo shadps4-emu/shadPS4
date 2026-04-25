@@ -464,7 +464,7 @@ s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file) {
     return 0;
 }
 
-void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
+LibcInternalIo::LibcInternalIo(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("eLdDw6l0-bU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_snprintf);
     LIB_FUNCTION("MUjC4lbHrK4", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fflush);
     LIB_FUNCTION("xGT4Mc55ViQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Fofind);
@@ -480,7 +480,7 @@ void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
                  internal__Unlockfilelock);
 }
 
-void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym) {
+LibcInternalIoV2::LibcInternalIoV2(Core::Loader::SymbolsResolver* sym) {
     // Goal is to be minimally intrusive here to allow LLE for printf/stdout writes.
     LIB_FUNCTION("xeYO4u7uyJ0", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fopen);
     LIB_FUNCTION("rQFVBXp-Cxg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_fseek);

@@ -39,5 +39,7 @@ struct OrbisKernelAioRWRequest {
     s32 fd;
 };
 
-void RegisterAio(Core::Loader::SymbolsResolver* sym);
+struct HleAio {
+    HleAio(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::Kernel

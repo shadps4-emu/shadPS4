@@ -7,16 +7,8 @@
 
 namespace Libraries::Kernel {
 
-void RegisterThreads(Core::Loader::SymbolsResolver* sym) {
-    RegisterMutex(sym);
-    RegisterCond(sym);
-    RegisterRwlock(sym);
-    RegisterSemaphore(sym);
-    RegisterSpec(sym);
-    RegisterThreadAttr(sym);
-    RegisterThread(sym);
-    RegisterRtld(sym);
-    RegisterPthreadClean(sym);
-}
+HleThreads::HleThreads(Core::Loader::SymbolsResolver* sym)
+    : m_mutex(sym), m_cond(sym), m_rw_lock(sym), m_semaphore(sym), m_spec(sym), m_thread_attr(sym),
+      m_thread(sym), m_rtld(sym), m_pthread_clean(sym) {}
 
 } // namespace Libraries::Kernel
