@@ -10,16 +10,12 @@
 #include "core/libraries/macro.h"
 #include "ime_dialog.h"
 #include "ime_dialog_ui.h"
+#include "shadps4_app.h"
 
 static constexpr std::array<float, 2> MAX_X_POSITIONS = {3840.0f, 1920.0f};
 static constexpr std::array<float, 2> MAX_Y_POSITIONS = {2160.0f, 1080.0f};
 
 namespace Libraries::ImeDialog {
-
-static OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::None;
-static OrbisImeDialogResult g_ime_dlg_result{};
-static ImeDialogState g_ime_dlg_state{};
-static ImeDialogUi g_ime_dlg_ui;
 
 static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
     if (False(~option & (OrbisImeOption::MULTILINE |
@@ -41,32 +37,32 @@ static bool IsValidOption(OrbisImeOption option, OrbisImeType type) {
 }
 
 Error PS4_SYSV_ABI sceImeDialogAbort() {
-    if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
     }
 
-    if (g_ime_dlg_status != OrbisImeDialogStatus::Running) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status != OrbisImeDialogStatus::Running) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not running");
         return Error::DIALOG_NOT_RUNNING;
     }
 
-    g_ime_dlg_status = OrbisImeDialogStatus::Finished;
-    g_ime_dlg_result.endstatus = OrbisImeDialogEndStatus::Aborted;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status = OrbisImeDialogStatus::Finished;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_result.endstatus = OrbisImeDialogEndStatus::Aborted;
 
     return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceImeDialogForceClose() {
     LOG_INFO(Lib_ImeDialog, "called");
-    if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
     }
 
-    g_ime_dlg_status = OrbisImeDialogStatus::None;
-    g_ime_dlg_ui = ImeDialogUi();
-    g_ime_dlg_state = ImeDialogState();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status = OrbisImeDialogStatus::None;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_ui = ImeDialogUi();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state = ImeDialogState();
 
     return Error::OK;
 }
@@ -312,7 +308,7 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended(const OrbisImeDialogParam* p
 }
 
 Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
-    if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog is not running");
         return Error::DIALOG_NOT_IN_USE;
     }
@@ -322,22 +318,22 @@ Error PS4_SYSV_ABI sceImeDialogGetResult(OrbisImeDialogResult* result) {
         return Error::INVALID_ADDRESS;
     }
 
-    result->endstatus = g_ime_dlg_result.endstatus;
+    result->endstatus = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_result.endstatus;
 
-    if (g_ime_dlg_status == OrbisImeDialogStatus::Running) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::Running) {
         return Error::DIALOG_NOT_FINISHED;
     }
 
-    g_ime_dlg_state.CopyTextToOrbisBuffer();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state.CopyTextToOrbisBuffer();
     return Error::OK;
 }
 
 OrbisImeDialogStatus PS4_SYSV_ABI sceImeDialogGetStatus() {
-    if (g_ime_dlg_status == OrbisImeDialogStatus::Running) {
-        g_ime_dlg_state.CallTextFilter();
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::Running) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state.CallTextFilter();
     }
 
-    return g_ime_dlg_status;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status;
 }
 
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
@@ -369,8 +365,8 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         LOG_DEBUG(Lib_ImeDialog, "param.title: {}", param->title ? "<non-null>" : "NULL");
     }
 
-    if (g_ime_dlg_status != OrbisImeDialogStatus::None) {
-        LOG_ERROR(Lib_ImeDialog, "busy (status={})", (u32)g_ime_dlg_status);
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status != OrbisImeDialogStatus::None) {
+        LOG_ERROR(Lib_ImeDialog, "busy (status={})", (u32)ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status);
         return Error::BUSY;
     }
 
@@ -486,10 +482,10 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
         return Error::INVALID_MAX_TEXT_LENGTH;
     }
 
-    g_ime_dlg_result = {};
-    g_ime_dlg_state = ImeDialogState(param, extended);
-    g_ime_dlg_status = OrbisImeDialogStatus::Running;
-    g_ime_dlg_ui = ImeDialogUi(&g_ime_dlg_state, &g_ime_dlg_status, &g_ime_dlg_result);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_result = {};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state = ImeDialogState(param, extended);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status = OrbisImeDialogStatus::Running;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_ui = ImeDialogUi(&ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_result);
 
     LOG_INFO(Lib_ImeDialog, "sceImeDialogInit: successful, status now=Running");
     return Error::OK;
@@ -517,19 +513,19 @@ int PS4_SYSV_ABI sceImeDialogSetPanelPosition() {
 
 Error PS4_SYSV_ABI sceImeDialogTerm() {
     LOG_INFO(Lib_ImeDialog, "called");
-    if (g_ime_dlg_status == OrbisImeDialogStatus::None) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::None) {
         LOG_INFO(Lib_ImeDialog, "IME dialog not in use");
         return Error::DIALOG_NOT_IN_USE;
     }
 
-    if (g_ime_dlg_status == OrbisImeDialogStatus::Running) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status == OrbisImeDialogStatus::Running) {
         LOG_INFO(Lib_ImeDialog, "IME dialog is still running");
         return Error::DIALOG_NOT_FINISHED;
     }
 
-    g_ime_dlg_status = OrbisImeDialogStatus::None;
-    g_ime_dlg_ui = ImeDialogUi();
-    g_ime_dlg_state = ImeDialogState();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_status = OrbisImeDialogStatus::None;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_ui = ImeDialogUi();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime_dialog.g_ime_dlg_state = ImeDialogState();
 
     return Error::OK;
 }

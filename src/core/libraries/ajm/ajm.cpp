@@ -9,6 +9,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -19,8 +20,6 @@ constexpr int ORBIS_AJM_CHANNELMASK_STEREO = 0x0003;
 constexpr int ORBIS_AJM_CHANNELMASK_QUAD = 0x0033;
 constexpr int ORBIS_AJM_CHANNELMASK_5POINT1 = 0x060F;
 constexpr int ORBIS_AJM_CHANNELMASK_7POINT1 = 0x063F;
-
-static std::unordered_map<u32, std::unique_ptr<AjmContext>> contexts{};
 
 u32 GetChannelMask(u32 num_channels) {
     switch (num_channels) {
@@ -42,8 +41,8 @@ u32 GetChannelMask(u32 num_channels) {
 int PS4_SYSV_ABI sceAjmBatchCancel(const u32 context_id, const u32 batch_id) {
     LOG_INFO(Lib_Ajm, "called context_id = {} batch_id = {}", context_id, batch_id);
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -98,8 +97,8 @@ int PS4_SYSV_ABI sceAjmBatchStartBuffer(u32 context_id, u8* p_batch, u32 batch_s
     LOG_TRACE(Lib_Ajm, "called context = {}, batch_size = {:#x}, priority = {}", context_id,
               batch_size, priority);
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -111,8 +110,8 @@ int PS4_SYSV_ABI sceAjmBatchWait(const u32 context_id, const u32 batch_id, const
     LOG_TRACE(Lib_Ajm, "called context = {}, batch_id = {}, timeout = {}", context_id, batch_id,
               timeout);
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -139,9 +138,9 @@ int PS4_SYSV_ABI sceAjmInitialize(s64 reserved, u32* p_context_id) {
     if (p_context_id == nullptr || reserved != 0) {
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
-    u32 id = contexts.size() + 1;
+    u32 id = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.size() + 1;
     *p_context_id = id;
-    contexts.emplace(id, std::make_unique<AjmContext>());
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.emplace(id, std::make_unique<AjmContext>());
     return ORBIS_OK;
 }
 
@@ -154,8 +153,8 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context_id, AjmCodecType codec_type,
     LOG_INFO(Lib_Ajm, "called context = {}, codec_type = {}, flags = {:#x}", context_id,
              magic_enum::enum_name(codec_type), flags.raw);
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -165,8 +164,8 @@ int PS4_SYSV_ABI sceAjmInstanceCreate(u32 context_id, AjmCodecType codec_type,
 int PS4_SYSV_ABI sceAjmInstanceDestroy(u32 context_id, u32 instance_id) {
     LOG_INFO(Lib_Ajm, "called context = {}, instance = {}", context_id, instance_id);
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -201,8 +200,8 @@ int PS4_SYSV_ABI sceAjmModuleRegister(u32 context_id, AjmCodecType codec_type, s
         return ORBIS_AJM_ERROR_INVALID_PARAMETER;
     }
 
-    auto it = contexts.find(context_id);
-    if (it == contexts.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.find(context_id);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ajm.contexts.end()) {
         return ORBIS_AJM_ERROR_INVALID_CONTEXT;
     }
 
@@ -243,5 +242,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Wi7DtlLV+KI", "libSceAjm", 1, "libSceAjm", sceAjmModuleUnregister);
     LIB_FUNCTION("AxhcqVv5AYU", "libSceAjm", 1, "libSceAjm", sceAjmStrError);
 };
+
+Library::~Library() = default;
 
 } // namespace Libraries::Ajm

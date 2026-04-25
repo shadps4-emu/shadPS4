@@ -382,6 +382,8 @@ struct HleThread {
 
 struct HleRtld {
     HleRtld(Core::Loader::SymbolsResolver* sym);
+
+    std::shared_mutex RtldLock;
 };
 
 struct HleKernelEventFlag {

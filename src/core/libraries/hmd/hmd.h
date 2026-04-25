@@ -263,14 +263,23 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231();
 
 struct HleDistortion {
     HleDistortion(Core::Loader::SymbolsResolver* sym);
+
+    bool g_library_initialized = false;
 };
 
 struct HleReprojection {
     HleReprojection(Core::Loader::SymbolsResolver* sym);
+
+    bool g_library_initialized = false;
 };
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    bool g_library_initialized = false;
+    s32 g_firmware_version = 0;
+    s32 g_internal_handle = 0;
+    Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
 
     HleDistortion m_distortion;
     HleReprojection m_reprojection;

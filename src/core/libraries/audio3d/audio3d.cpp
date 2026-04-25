@@ -14,6 +14,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Audio3d {
 
@@ -23,14 +24,12 @@ static constexpr AudioOut::OrbisAudioOutParamFormat AUDIO3D_OUTPUT_FORMAT =
     AudioOut::OrbisAudioOutParamFormat::S16Stereo;
 static constexpr u32 AUDIO3D_OUTPUT_NUM_CHANNELS = 2;
 
-static std::unique_ptr<Audio3dState> state;
-
 s32 PS4_SYSV_ABI sceAudio3dAudioOutClose(const s32 handle) {
     LOG_INFO(Lib_Audio3d, "called, handle = {}", handle);
 
     // Remove from any port that was tracking this handle.
-    if (state) {
-        for (auto& [port_id, port] : state->ports) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state) {
+        for (auto& [port_id, port] : ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports) {
             std::scoped_lock lock{port.mutex};
             auto& handles = port.audioout_handles;
             handles.erase(std::remove(handles.begin(), handles.end(), handle), handles.end());
@@ -48,13 +47,13 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(
              "called, port_id = {}, user_id = {}, type = {}, index = {}, len = {}, freq = {}",
              port_id, user_id, type, index, len, freq);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    std::scoped_lock lock{state->ports[port_id].mutex};
-    if (len != state->ports[port_id].parameters.granularity) {
+    std::scoped_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].mutex};
+    if (len != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].parameters.granularity) {
         LOG_ERROR(Lib_Audio3d, "len != state->ports[port_id].parameters.granularity");
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
@@ -66,7 +65,7 @@ s32 PS4_SYSV_ABI sceAudio3dAudioOutOpen(
     }
 
     // Track this handle in the port so sceAudio3dPortFlush can use it for sync.
-    state->ports[port_id].audioout_handles.push_back(handle);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].audioout_handles.push_back(handle);
     return handle;
 }
 
@@ -146,7 +145,7 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
         port_id, num_channels, magic_enum::enum_name(format), num_samples,
         magic_enum::enum_name(output_route), restricted);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
@@ -183,14 +182,14 @@ s32 PS4_SYSV_ABI sceAudio3dBedWrite2(const OrbisAudio3dPortId port_id, const u32
         }
     }
 
-    std::scoped_lock lock{state->ports[port_id].mutex};
-    return ConvertAndEnqueue(state->ports[port_id].bed_queue,
+    std::scoped_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].mutex};
+    return ConvertAndEnqueue(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].bed_queue,
                              OrbisAudio3dPcm{
                                  .format = format,
                                  .sample_buffer = buffer,
                                  .num_samples = num_samples,
                              },
-                             num_channels, state->ports[port_id].parameters.granularity);
+                             num_channels, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id].parameters.granularity);
 }
 
 s32 PS4_SYSV_ABI sceAudio3dCreateSpeakerArray() {
@@ -242,12 +241,12 @@ s32 PS4_SYSV_ABI sceAudio3dInitialize(const s64 reserved) {
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    if (state) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state) {
         LOG_ERROR(Lib_Audio3d, "already initialized");
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
 
-    state = std::make_unique<Audio3dState>();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state = std::make_unique<Audio3dState>();
 
     if (const auto init_ret = AudioOut::sceAudioOutInit();
         init_ret < 0 && init_ret != ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT) {
@@ -269,12 +268,12 @@ s32 PS4_SYSV_ABI sceAudio3dObjectReserve(const OrbisAudio3dPortId port_id,
 
     *object_id = ORBIS_AUDIO3D_OBJECT_INVALID;
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
 
     // Enforce the max_objects limit set at PortOpen time.
@@ -304,12 +303,12 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttribute(const OrbisAudio3dPortId port_id,
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, object_id = {}, attribute_id = {:#x}, size = {}",
               port_id, object_id, static_cast<u32>(attribute_id), attribute_size);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
     if (!port.objects.contains(object_id)) {
         LOG_DEBUG(Lib_Audio3d, "object_id {} not reserved (race with Unreserve?), no-op",
@@ -352,7 +351,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
               "called, port_id = {}, object_id = {}, num_attributes = {}, attribute_array = {}",
               port_id, object_id, num_attributes, fmt::ptr(attribute_array));
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
@@ -362,7 +361,7 @@ s32 PS4_SYSV_ABI sceAudio3dObjectSetAttributes(const OrbisAudio3dPortId port_id,
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
     if (!port.objects.contains(object_id)) {
         LOG_DEBUG(Lib_Audio3d, "object_id {} not reserved", object_id);
@@ -427,12 +426,12 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(const OrbisAudio3dPortId port_id,
                                            const OrbisAudio3dObjectId object_id) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, object_id = {}", port_id, object_id);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
 
     if (!port.objects.contains(object_id)) {
@@ -452,12 +451,12 @@ s32 PS4_SYSV_ABI sceAudio3dObjectUnreserve(const OrbisAudio3dPortId port_id,
 s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}", port_id);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
 
     if (port.parameters.buffer_mode == OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_NO_ADVANCE) {
         LOG_ERROR(Lib_Audio3d, "port doesn't have advance capability");
@@ -580,12 +579,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
 s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     LOG_INFO(Lib_Audio3d, "called, port_id = {}", port_id);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     {
         std::scoped_lock lock{port.mutex};
 
@@ -614,7 +613,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
         }
     }
 
-    state->ports.erase(port_id);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.erase(port_id);
     return ORBIS_OK;
 }
 
@@ -631,12 +630,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortDestroy() {
 s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}", port_id);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
 
     if (!port.audioout_handles.empty()) {
@@ -715,7 +714,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, queue_level = {}, queue_available = {}", port_id,
               static_cast<void*>(queue_level), static_cast<void*>(queue_available));
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
@@ -724,7 +723,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    const auto& port = state->ports[port_id];
+    const auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
     std::scoped_lock lock{port.mutex};
     const size_t size = port.mixed_queue.size();
 
@@ -756,7 +755,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
     LOG_INFO(Lib_Audio3d, "called, user_id = {}, parameters = {}, id = {}", user_id,
              static_cast<const void*>(parameters), static_cast<void*>(port_id));
 
-    if (!state) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state) {
         LOG_ERROR(Lib_Audio3d, "!initialized");
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
@@ -766,7 +765,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
         return ORBIS_AUDIO3D_ERROR_INVALID_PARAMETER;
     }
 
-    const int id = static_cast<int>(state->ports.size()) + 1;
+    const int id = static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.size()) + 1;
 
     if (id > 3) {
         LOG_ERROR(Lib_Audio3d, "id > 3");
@@ -774,7 +773,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortOpen(const Libraries::UserService::OrbisUserServi
     }
 
     *port_id = id;
-    auto& port = state->ports[id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[id];
     std::memcpy(
         &port.parameters, parameters,
         std::min(parameters->size_this, static_cast<u64>(sizeof(OrbisAudio3dOpenParameters))));
@@ -787,12 +786,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
     LOG_DEBUG(Lib_Audio3d, "called, port_id = {}, blocking = {}", port_id,
               magic_enum::enum_name(blocking));
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
 
-    auto& port = state->ports[port_id];
+    auto& port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports[port_id];
 
     if (port.parameters.buffer_mode !=
         OrbisAudio3dBufferMode::ORBIS_AUDIO3D_BUFFER_ADVANCE_AND_PUSH) {
@@ -894,7 +893,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortSetAttribute(const OrbisAudio3dPortId port_id,
              "called, port_id = {}, attribute_id = {}, attribute = {}, attribute_size = {}",
              port_id, static_cast<u32>(attribute_id), attribute, attribute_size);
 
-    if (!state->ports.contains(port_id)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports.contains(port_id)) {
         LOG_ERROR(Lib_Audio3d, "!state->ports.contains(port_id)");
         return ORBIS_AUDIO3D_ERROR_INVALID_PORT;
     }
@@ -931,19 +930,19 @@ s32 PS4_SYSV_ABI sceAudio3dStrError() {
 
 s32 PS4_SYSV_ABI sceAudio3dTerminate() {
     LOG_INFO(Lib_Audio3d, "called");
-    if (!state) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state) {
         return ORBIS_AUDIO3D_ERROR_NOT_READY;
     }
 
     std::vector<OrbisAudio3dPortId> port_ids;
-    for (const auto& [id, _] : state->ports) {
+    for (const auto& [id, _] : ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state->ports) {
         port_ids.push_back(id);
     }
     for (const auto id : port_ids) {
         sceAudio3dPortClose(id);
     }
 
-    state.reset();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio3d->state.reset();
     return ORBIS_OK;
 }
 

@@ -194,6 +194,8 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev);
 
 struct HleEventQueue {
     HleEventQueue(Core::Loader::SymbolsResolver* sym);
+
+    std::unordered_map<s32, EqueueInternal*> kqueues;
 };
 
 } // namespace Libraries::Kernel

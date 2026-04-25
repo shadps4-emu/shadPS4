@@ -21,9 +21,6 @@
 
 namespace Libraries::Kernel {
 
-static s32 g_sdk_version = -1;
-static bool g_alias_dmem = false;
-
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_TRACE(Kernel_Vmm, "called");
     const auto* memory = Core::Memory::Instance();
@@ -32,7 +29,7 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
     LOG_DEBUG(Kernel_Vmm, "called");
-    g_alias_dmem = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_alias_dmem = true;
     return ORBIS_OK;
 }
 
@@ -221,9 +218,9 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
 
     auto* memory = Core::Memory::Instance();
     bool should_check = false;
-    if (g_sdk_version >= Common::ElfInfo::FW_25 && False(map_flags & Core::MemoryMapFlags::Stack)) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_sdk_version >= Common::ElfInfo::FW_25 && False(map_flags & Core::MemoryMapFlags::Stack)) {
         // Under these conditions, this would normally redirect to sceKernelMapDirectMemory2.
-        should_check = !g_alias_dmem;
+        should_check = !ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_alias_dmem;
     }
     const auto ret =
         memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
@@ -275,7 +272,7 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     auto* memory = Core::Memory::Instance();
     const auto ret =
         memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
-                          !g_alias_dmem, phys_addr, alignment);
+                          !ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_alias_dmem, phys_addr, alignment);
 
     if (ret == 0) {
         // If the map call succeeds, set the direct memory type using the output address.
@@ -776,10 +773,8 @@ s32 PS4_SYSV_ABI posix_munmap(void* addr, u64 len) {
     return result;
 }
 
-static constexpr s32 MAX_PRT_APERTURES = 3;
 static constexpr VAddr PRT_AREA_START_ADDR = 0x1000000000;
 static constexpr u64 PRT_AREA_SIZE = 0xec00000000;
-static std::array<std::pair<VAddr, u64>, MAX_PRT_APERTURES> PrtApertures{};
 
 s32 PS4_SYSV_ABI sceKernelSetPrtAperture(s32 id, VAddr address, u64 size) {
     if (id < 0 || id >= MAX_PRT_APERTURES) {
@@ -801,7 +796,7 @@ s32 PS4_SYSV_ABI sceKernelSetPrtAperture(s32 id, VAddr address, u64 size) {
     auto* memory = Core::Memory::Instance();
     memory->SetPrtArea(id, address, size);
 
-    PrtApertures[id] = {address, size};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.PrtApertures[id] = {address, size};
     return ORBIS_OK;
 }
 
@@ -810,7 +805,7 @@ s32 PS4_SYSV_ABI sceKernelGetPrtAperture(s32 id, VAddr* address, u64* size) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    std::tie(*address, *size) = PrtApertures[id];
+    std::tie(*address, *size) = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.PrtApertures[id];
     return ORBIS_OK;
 }
 

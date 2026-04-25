@@ -28,8 +28,6 @@ void SetPosixErrno(s32 e);
 s32* PS4_SYSV_ABI __Error();
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
 
-extern Core::EntryParams entry_params;
-
 template <class F, F f>
 struct OrbisWrapperImpl;
 
@@ -89,6 +87,19 @@ struct OrbisKernelAppInfo {
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    void KernelServiceThread(std::stop_token stoken);
+
+    boost::asio::io_context io_context;
+    std::mutex m_asio_req;
+    std::condition_variable_any cv_asio_req;
+    std::atomic<u32> asio_requests;
+    std::jthread service_thread;
+
+    Core::EntryParams entry_params{};
+
+    u64 g_mspace_atomic_id_mask = 0;
+    u64 g_mstate_table[64] = {0};
 
     Kernel::HleFileSystem m_file_system;
     Kernel::HleTime m_time;

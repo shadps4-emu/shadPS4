@@ -9,12 +9,9 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Ime {
-
-static std::queue<OrbisImeEvent> g_ime_events;
-static std::unique_ptr<ImeState> g_ime_state;
-static std::unique_ptr<ImeUi> g_ime_ui;
 
 class ImeHandler {
 public:
@@ -68,14 +65,14 @@ public:
         }*/
 
         if (ime_mode) {
-            g_ime_state = std::make_unique<ImeState>(&m_param.ime, &m_param.ime_ext);
-            g_ime_ui = std::make_unique<ImeUi>(g_ime_state.get(), &m_param.ime, &m_param.ime_ext);
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state = std::make_unique<ImeState>(&m_param.ime, &m_param.ime_ext);
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_ui = std::make_unique<ImeUi>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state.get(), &m_param.ime, &m_param.ime_ext);
 
             // Queue the Open event so it is delivered on next sceImeUpdate
             LOG_DEBUG(Lib_Ime, "IME Event queued: Open rect x={}, y={}, w={}, h={}",
                       openEvent.param.rect.x, openEvent.param.rect.y, openEvent.param.rect.width,
                       openEvent.param.rect.height);
-            g_ime_state->SendEvent(&openEvent);
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->SendEvent(&openEvent);
         }
     }
 
@@ -85,11 +82,11 @@ public:
             return Error::OK;
         }
 
-        std::unique_lock<std::mutex> lock{g_ime_state->queue_mutex};
+        std::unique_lock<std::mutex> lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->queue_mutex};
 
-        while (!g_ime_state->event_queue.empty()) {
-            OrbisImeEvent event = g_ime_state->event_queue.front();
-            g_ime_state->event_queue.pop();
+        while (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->event_queue.empty()) {
+            OrbisImeEvent event = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->event_queue.front();
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->event_queue.pop();
             Execute(handler, &event, false);
         }
 
@@ -119,7 +116,7 @@ public:
             LOG_WARNING(Lib_Ime, "ImeHandler::SetText received null text pointer");
             return Error::INVALID_ADDRESS;
         }
-        g_ime_state->SetText(text, length);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->SetText(text, length);
         return Error::OK;
     }
 
@@ -128,7 +125,7 @@ public:
             LOG_WARNING(Lib_Ime, "ImeHandler::SetCaret received null caret pointer");
             return Error::INVALID_ADDRESS;
         }
-        g_ime_state->SetCaret(caret->index);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state->SetCaret(caret->index);
         return Error::OK;
     }
 
@@ -144,9 +141,6 @@ private:
     } m_param{};
     bool m_ime_mode = false;
 };
-
-static std::unique_ptr<ImeHandler> g_ime_handler;
-static std::unique_ptr<ImeHandler> g_keyboard_handler;
 
 int PS4_SYSV_ABI FinalizeImeModule() {
     LOG_ERROR(Lib_Ime, "(STUBBED) called");
@@ -176,18 +170,18 @@ int PS4_SYSV_ABI sceImeCheckUpdateTextInfo() {
 Error PS4_SYSV_ABI sceImeClose() {
     LOG_DEBUG(Lib_Ime, "called");
 
-    if (!g_ime_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         LOG_ERROR(Lib_Ime, "No IME handler is open");
         return Error::NOT_OPENED;
     }
 
-    g_ime_handler.reset();
-    if (g_ime_handler) {
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler.reset();
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
         return Error::INTERNAL;
     }
-    g_ime_ui = std::make_unique<ImeUi>();
-    g_ime_state = std::make_unique<ImeState>();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_ui = std::make_unique<ImeUi>();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_state = std::make_unique<ImeState>();
 
     LOG_DEBUG(Lib_Ime, "IME closed successfully");
     return Error::OK;
@@ -319,7 +313,7 @@ Error PS4_SYSV_ABI sceImeGetPanelSize(const OrbisImeParam* param, u32* width, u3
 Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceUserId userId) {
     LOG_INFO(Lib_Ime, "called");
 
-    if (!g_keyboard_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "No keyboard handler is open");
         return Error::NOT_OPENED;
     }
@@ -330,8 +324,8 @@ Error PS4_SYSV_ABI sceImeKeyboardClose(Libraries::UserService::OrbisUserServiceU
         return Error::INVALID_USER_ID;
     }
 
-    g_keyboard_handler.reset();
-    if (g_keyboard_handler) {
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler.reset();
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "failed to close keyboard handler, it is still open");
         return Error::INTERNAL;
     }
@@ -366,7 +360,7 @@ sceImeKeyboardGetResourceId(Libraries::UserService::OrbisUserServiceUserId userI
         return Error::INVALID_USER_ID;
     }
 
-    if (!g_keyboard_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Keyboard handler not opened");
         resourceIdArray->user_id = userId;
         for (u32& id : resourceIdArray->resource_id) {
@@ -445,13 +439,13 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
         return Error::CONNECTION_FAILED;
     }
 
-    if (g_keyboard_handler) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Keyboard handler is already open");
         return Error::BUSY;
     }
 
-    g_keyboard_handler = std::make_unique<ImeHandler>(param);
-    if (!g_keyboard_handler) {
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler = std::make_unique<ImeHandler>(param);
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create keyboard handler");
         return Error::INTERNAL; // or Error::NO_MEMORY;
     }
@@ -647,17 +641,17 @@ Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExt
         }
     }
 
-    if (g_ime_handler) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         LOG_ERROR(Lib_Ime, "IME handler is already open");
         return Error::BUSY;
     }
 
     if (extended) {
-        g_ime_handler = std::make_unique<ImeHandler>(param, extended);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler = std::make_unique<ImeHandler>(param, extended);
     } else {
-        g_ime_handler = std::make_unique<ImeHandler>(param);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler = std::make_unique<ImeHandler>(param);
     }
-    if (!g_ime_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         LOG_ERROR(Lib_Ime, "Failed to create IME handler");
         return Error::NO_MEMORY; // or Error::INTERNAL
     }
@@ -690,20 +684,20 @@ int PS4_SYSV_ABI sceImeSetCandidateIndex() {
 Error PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret) {
     LOG_TRACE(Lib_Ime, "called");
 
-    if (!g_ime_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         return Error::NOT_OPENED;
     }
     if (!caret) {
         return Error::INVALID_ADDRESS;
     }
 
-    return g_ime_handler->SetCaret(caret);
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler->SetCaret(caret);
 }
 
 Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
     LOG_TRACE(Lib_Ime, "called");
 
-    if (!g_ime_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
         LOG_ERROR(Lib_Ime, "IME handler not opened");
         return Error::NOT_OPENED;
     }
@@ -712,7 +706,7 @@ Error PS4_SYSV_ABI sceImeSetText(const char16_t* text, u32 length) {
         return Error::INVALID_ADDRESS;
     }
 
-    return g_ime_handler->SetText(text, length);
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler->SetText(text, length);
 }
 
 int PS4_SYSV_ABI sceImeSetTextGeometry() {
@@ -721,15 +715,15 @@ int PS4_SYSV_ABI sceImeSetTextGeometry() {
 }
 
 Error PS4_SYSV_ABI sceImeUpdate(OrbisImeEventHandler handler) {
-    if (g_ime_handler) {
-        g_ime_handler->Update(handler);
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler->Update(handler);
     }
 
-    if (g_keyboard_handler) {
-        g_keyboard_handler->Update(handler);
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler->Update(handler);
     }
 
-    if (!g_ime_handler && !g_keyboard_handler) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_ime_handler && !ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_ime.g_keyboard_handler) {
         LOG_ERROR(Lib_Ime, "sceImeUpdate called with no active handler");
         return Error::OK;
     }
@@ -888,5 +882,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("O7Fdd+Oc-qQ", "libSceIme", 1, "libSceIme", sceImeVshUpdateContext);
     LIB_FUNCTION("fwcPR7+7Rks", "libSceIme", 1, "libSceIme", sceImeVshUpdateContext2);
 };
+
+Library::~Library() = default;
 
 } // namespace Libraries::Ime

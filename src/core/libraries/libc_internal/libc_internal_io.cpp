@@ -18,6 +18,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
 #include "printf.h"
+#include "shadps4_app.h"
 
 namespace Libraries::LibcInternal {
 
@@ -26,16 +27,10 @@ s32 PS4_SYSV_ABI internal_snprintf(char* s, u64 n, VA_ARGS) {
     return snprintf_ctx(s, n, &ctx);
 }
 
-std::map<s32, OrbisFILE*> g_files{};
-// Constants for tracking accurate file indexes.
-// Since the file struct is exposed to the application, accuracy is important.
-static constexpr s32 g_initial_files = 5;
-static constexpr s32 g_max_files = 0x100;
-
 OrbisFILE* PS4_SYSV_ABI internal__Fofind() {
-    u64 index = g_initial_files;
-    while (index != g_max_files) {
-        OrbisFILE* file = g_files[index];
+    u64 index = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_initial_files;
+    while (index != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_max_files) {
+        OrbisFILE* file = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_files[index];
         // If file doesn't exist, create it.
         if (file == nullptr) {
             file = new OrbisFILE();
@@ -43,7 +38,7 @@ OrbisFILE* PS4_SYSV_ABI internal__Fofind() {
                 return nullptr;
             }
             // Store new file in the array, initialize default values, and return it.
-            g_files[index] = file;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_files[index] = file;
             file->_Mode = 0x80;
             file->_Idx = index;
             return file;
@@ -211,7 +206,7 @@ s32 PS4_SYSV_ABI internal_fflush(OrbisFILE* file) {
     if (file == nullptr) {
         std::scoped_lock lk{g_file_mtx};
         s32 fflush_result = 0;
-        for (auto& file : g_files) {
+        for (auto& file : ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_files) {
             s32 res = internal_fflush(file.second);
             if (res < 0) {
                 fflush_result = -1;
@@ -433,7 +428,7 @@ void PS4_SYSV_ABI internal__Fofree(OrbisFILE* file) {
     file->_WRback = &file->unk1;
     if (trunc_mode < 0) {
         // Remove file from vector
-        g_files.erase(file->_Idx);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_libc_internal.m_libc_internal_io.g_files.erase(file->_Idx);
         internal__Mtxdst(&file->_Mutex);
         free(file);
     }

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/libraries/ajm/ajm.h"
 #include "core/libraries/ajm/ajm_instance_statistics.h"
+#include "core/libraries/ajm/ajm_codec_type.h"
 
 namespace Libraries::Ajm {
 

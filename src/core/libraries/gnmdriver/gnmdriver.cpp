@@ -22,6 +22,7 @@
 #include "core/libraries/videoout/video_out.h"
 #include "core/memory.h"
 #include "core/platform.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
@@ -63,30 +64,18 @@ static constexpr std::array indirect_sgpr_offsets{0u, 0u, 0x4cu, 0u, 0xccu, 0u, 
 // this flag in case we need it in the future.
 static constexpr bool UseNeoCompatSequences = false;
 
-// In case if `submitDone` is issued we need to block submissions until GPU idle
-static u32 submission_lock{};
-std::condition_variable cv_lock{};
-std::mutex m_submission{};
-static u64 frames_submitted{};      // frame counter
-static bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
-static s32 sdk_version{0};
-
-static u32 asc_next_offs_dw[Liverpool::NumComputeRings];
-
-// This address is initialized in sceGnmGetTheTessellationFactorRingBufferBaseAddress
-static VAddr tessellation_factors_ring_addr = -1;
 static constexpr u32 tessellation_offchip_buffer_size = 0x800000u;
 
 static void ResetSubmissionLock(Platform::InterruptId irq) {
-    std::unique_lock lock{m_submission};
-    submission_lock = 0;
-    cv_lock.notify_all();
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.m_submission};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.submission_lock = 0;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.cv_lock.notify_all();
 }
 
 static void WaitGpuIdle() {
     HLE_TRACE;
-    std::unique_lock lock{m_submission};
-    cv_lock.wait(lock, [] { return submission_lock == 0; });
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.m_submission};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.cv_lock.wait(lock, [] { return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.submission_lock == 0; });
 }
 
 // Write a special ending NOP packet with N DWs data block
@@ -161,7 +150,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
 
 int PS4_SYSV_ABI sceGnmAreSubmitsAllowed() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    return submission_lock == 0;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.submission_lock == 0;
 }
 
 int PS4_SYSV_ABI sceGnmBeginWorkload(u32 workload_stream, u64* workload) {
@@ -307,7 +296,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     auto& asc_queue = ShadPs4App::GetInstance()
                           ->m_emulator.m_hle_layer->m_gnm_driver.liverpool->asc_queues[{vqid}];
 
-    auto& offs_dw = asc_next_offs_dw[vqid];
+    auto& offs_dw = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.asc_next_offs_dw[vqid];
 
     if (next_offs_dw < offs_dw && next_offs_dw != 0) {
         // For cases if a submission is split at the end of the ring buffer, we need to submit it in
@@ -322,15 +311,15 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
     const auto acb_size_dw = (next_offs_dw ? next_offs_dw : asc_queue.ring_size_dw) - offs_dw;
     const std::span acb_span{acb_ptr, acb_size_dw};
 
-    asc_next_offs_dw[vqid] = next_offs_dw;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.asc_next_offs_dw[vqid] = next_offs_dw;
 
     if (DebugState.DumpingCurrentFrame()) {
         static auto last_frame_num = -1LL;
         static u32 seq_num{};
-        if (last_frame_num == frames_submitted) {
+        if (last_frame_num == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted) {
             ++seq_num;
         } else {
-            last_frame_num = frames_submitted;
+            last_frame_num = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted;
             seq_num = 0u;
         }
 
@@ -1028,14 +1017,14 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
 
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (tessellation_factors_ring_addr == -1) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.tessellation_factors_ring_addr == -1) {
         auto* memory = Core::Memory::Instance();
         auto& address_space = memory->GetAddressSpace();
-        tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
                                          address_space.SystemReservedVirtualSize() - 0x10000000;
     }
 
-    return tessellation_factors_ring_addr;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.tessellation_factors_ring_addr;
 }
 
 void PS4_SYSV_ABI sceGnmGpuPaDebugEnter() {
@@ -2229,11 +2218,11 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
         DebugState.PauseGuestThreads();
     }
 
-    if (send_init_packet) {
-        if (sdk_version < Common::ElfInfo::FW_20) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.send_init_packet) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.sdk_version < Common::ElfInfo::FW_20) {
             ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->SubmitGfx(
                 InitSequence, {});
-        } else if (sdk_version < Common::ElfInfo::FW_40) {
+        } else if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.sdk_version < Common::ElfInfo::FW_40) {
             if (sceKernelIsNeoMode()) {
                 if (!UseNeoCompatSequences) {
                     ShadPs4App::GetInstance()
@@ -2266,7 +2255,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
                                                                                 {});
             }
         }
-        send_init_packet = false;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.send_init_packet = false;
     }
 
     for (auto cbpair = 0u; cbpair < count; ++cbpair) {
@@ -2282,10 +2271,10 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
         if (DebugState.DumpingCurrentFrame()) {
             static auto last_frame_num = -1LL;
             static u32 seq_num{};
-            if (last_frame_num == frames_submitted && cbpair == 0) {
+            if (last_frame_num == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted && cbpair == 0) {
                 ++seq_num;
             } else {
-                last_frame_num = frames_submitted;
+                last_frame_num = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted;
                 seq_num = 0u;
             }
 
@@ -2325,11 +2314,11 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     LOG_DEBUG(Lib_GnmDriver, "called");
     WaitGpuIdle();
     if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->IsGpuIdle()) {
-        submission_lock = true;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.submission_lock = true;
     }
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->SubmitDone();
-    send_init_packet = true;
-    ++frames_submitted;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.send_init_packet = true;
+    ++ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted;
     DebugState.IncGnmFrameNum();
     return ORBIS_OK;
 }
@@ -2828,7 +2817,7 @@ int PS4_SYSV_ABI Func_C4C328B7CF3B4171() {
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf, u32 size) {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.sdk_version >= Common::ElfInfo::FW_40) {
         return sceGnmDrawInitToDefaultContextState400(cmdbuf, size);
     }
     return sceGnmDrawInitToDefaultContextState(cmdbuf, size);
@@ -2836,7 +2825,7 @@ int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalCommand(u32* cmdbuf,
 
 int PS4_SYSV_ABI sceGnmDrawInitToDefaultContextStateInternalSize() {
     LOG_TRACE(Lib_GnmDriver, "called");
-    if (sdk_version >= Common::ElfInfo::FW_40) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.sdk_version >= Common::ElfInfo::FW_40) {
         return 0x100;
     }
     return 0x20;

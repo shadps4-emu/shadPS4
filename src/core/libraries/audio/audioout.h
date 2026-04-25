@@ -217,7 +217,19 @@ s32 PS4_SYSV_ABI sceAudioOutSparkControlSetEqCoef();
 s32 PS4_SYSV_ABI sceAudioOutSetSystemDebugState();
 
 void AdjustVol();
+
+class AudioOutBackend;
+
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+    ~Library();
+
+    // Port table with shared_ptr - use std::shared_mutex for RW locking
+    std::array<std::shared_ptr<PortOut>, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
+    std::shared_mutex port_table_mutex;
+    std::mutex port_allocation_mutex;
+
+    std::unique_ptr<AudioOutBackend> audio;
+    std::atomic<int> lazy_init{0};
 };
 } // namespace Libraries::AudioOut

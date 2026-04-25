@@ -10,8 +10,6 @@
 
 namespace Libraries::Http {
 
-static bool g_isHttpInitialized = true; // TODO temp always inited
-
 void NormalizeAndAppendPath(char* dest, char* src) {
     char* lastSlash;
     u64 length;

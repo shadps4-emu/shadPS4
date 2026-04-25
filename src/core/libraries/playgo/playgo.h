@@ -6,6 +6,8 @@
 #include "common/types.h"
 #include "playgo_types.h"
 
+class PlaygoFile;
+
 namespace Core::Loader {
 class SymbolsResolver;
 }
@@ -43,5 +45,8 @@ s32 PS4_SYSV_ABI scePlayGoTerminate();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+    ~Library();
+
+    std::unique_ptr<PlaygoFile> playgo;
 };
 } // namespace Libraries::PlayGo

@@ -7,9 +7,11 @@
 #include <variant>
 #include "common/fixed_value.h"
 #include "common/types.h"
+#include "core/libraries/np/np_types.h"
 #include "core/libraries/system/commondialog.h"
 #include "imgui/imgui_layer.h"
-#include "np_profile_dialog.h"
+#include "np_profile_dialog_mode.h"
+#include "np_profile_dialog_result.h"
 
 namespace Libraries::Np::NpProfileDialog {
 

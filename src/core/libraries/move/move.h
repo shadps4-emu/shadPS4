@@ -45,5 +45,7 @@ struct OrbisMoveData {
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    bool g_library_initialized = false;
 };
 } // namespace Libraries::Move

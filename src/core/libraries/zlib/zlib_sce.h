@@ -17,7 +17,30 @@ s32 PS4_SYSV_ABI sceZlibWaitForDone(u64* request_id, const u32* timeout);
 s32 PS4_SYSV_ABI sceZlibGetResult(u64 request_id, u32* dst_length, s32* status);
 s32 PS4_SYSV_ABI sceZlibFinalize();
 
+struct InflateTask {
+    u64 request_id;
+    const void* src;
+    u32 src_length;
+    void* dst;
+    u32 dst_length;
+};
+
+struct InflateResult {
+    u32 length;
+    s32 status;
+};
+
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    Kernel::Thread task_thread;
+
+    std::mutex mutex;
+    std::queue<InflateTask> task_queue;
+    std::condition_variable_any task_queue_cv;
+    std::queue<u64> done_queue;
+    std::condition_variable_any done_queue_cv;
+    std::unordered_map<u64, InflateResult> results;
+    u64 next_request_id;
 };
 } // namespace Libraries::Zlib

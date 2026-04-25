@@ -36,6 +36,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
+#include "core/libraries/videoout/driver.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/user_settings.h"
@@ -452,6 +453,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize kernel and library facilities.
     m_hle_layer = std::make_unique<Libraries::HleLayer>(&linker->GetHLESymbols());
+    m_hle_layer->m_video_out.driver->cond_var.notify_all();
 
     // Load the module with the linker
     if (linker->LoadModule(eboot_path) == -1) {

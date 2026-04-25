@@ -14,24 +14,9 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
 #include "core/libraries/system/systemservice.h"
+#include "shadps4_app.h"
 
 namespace Libraries::AppContent {
-
-struct AddContInfo {
-    char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
-    OrbisAppContentAddcontDownloadStatus status;
-    OrbisAppContentGetEntitlementKey key;
-};
-
-static std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_info = {{
-    {"0000000000000000",
-     OrbisAppContentAddcontDownloadStatus::Installed,
-     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00}},
-}};
-
-static s32 addcont_count = 0;
-static std::string title_id;
 
 int PS4_SYSV_ABI _Z5dummyv() {
     LOG_ERROR(Lib_AppContent, "(STUBBED) called");
@@ -58,13 +43,13 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
                                            OrbisAppContentMountPoint* mount_point) {
     LOG_INFO(Lib_AppContent, "called");
 
-    const auto& addon_path = EmulatorSettings.GetAddonInstallDir() / title_id;
+    const auto& addon_path = EmulatorSettings.GetAddonInstallDir() / ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.title_id;
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     // Determine which loaded additional content this entitlement label is for.
     s32 i = 0;
-    while (i < addcont_count) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
+    while (i < ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count) {
+        if (strncmp(entitlement_label->data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) == 0) {
             snprintf(mount_point->data, ORBIS_APP_CONTENT_MOUNTPOINT_DATA_MAXSIZE, "/addcont%d", i);
             break;
@@ -72,7 +57,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         ++i;
     }
 
-    if (i == addcont_count) {
+    if (i == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count) {
         // None of the loaded additional content match the entitlement label requested.
         return ORBIS_APP_CONTENT_ERROR_NOT_FOUND;
     }
@@ -206,17 +191,17 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfo(u32 service_label,
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
 
-    for (auto i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlementLabel->data, addcont_info[i].entitlement_label,
+    for (auto i = 0; i < ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count; i++) {
+        if (strncmp(entitlementLabel->data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
 
         LOG_INFO(Lib_AppContent, "found DLC {}", entitlementLabel->data);
 
-        strncpy(info->entitlement_label.data, addcont_info[i].entitlement_label,
+        strncpy(info->entitlement_label.data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
-        info->status = addcont_info[i].status;
+        info->status = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].status;
         return ORBIS_OK;
     }
 
@@ -233,15 +218,15 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoList(u32 service_label,
             return ORBIS_APP_CONTENT_ERROR_PARAMETER;
         }
 
-        *hit_num = addcont_count;
+        *hit_num = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count;
         return ORBIS_OK;
     }
 
-    int dlcs_to_list = addcont_count < list_num ? addcont_count : list_num;
+    int dlcs_to_list = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count < list_num ? ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count : list_num;
     for (int i = 0; i < dlcs_to_list; i++) {
-        strncpy(list[i].entitlement_label.data, addcont_info[i].entitlement_label,
+        strncpy(list[i].entitlement_label.data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].entitlement_label,
                 ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE);
-        list[i].status = addcont_info[i].status;
+        list[i].status = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].status;
     }
 
     if (hit_num != nullptr) {
@@ -260,13 +245,13 @@ int PS4_SYSV_ABI sceAppContentGetEntitlementKey(
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
 
-    for (int i = 0; i < addcont_count; i++) {
-        if (strncmp(entitlement_label->data, addcont_info[i].entitlement_label,
+    for (int i = 0; i < ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count; i++) {
+        if (strncmp(entitlement_label->data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].entitlement_label,
                     ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE - 1) != 0) {
             continue;
         }
 
-        memcpy(key->data, addcont_info[i].key.data, ORBIS_APP_CONTENT_ENTITLEMENT_KEY_SIZE);
+        memcpy(key->data, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[i].key.data, ORBIS_APP_CONTENT_ENTITLEMENT_KEY_SIZE);
         return ORBIS_OK;
     }
 
@@ -285,11 +270,11 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
 
     const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
-        title_id = *value;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.title_id = *value;
     } else {
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }
-    const auto addon_path = addons_dir / title_id;
+    const auto addon_path = addons_dir / ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.title_id;
     if (!std::filesystem::exists(addon_path)) {
         return ORBIS_OK;
     }
@@ -332,7 +317,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
                 LOG_INFO(Lib_AppContent, "Entitlement {} found", entitlement_id);
 
                 // Save the additional content info in addcont_info.
-                auto& info = addcont_info[addcont_count++];
+                auto& info = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_info[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count++];
                 entitlement_id.copy(info.entitlement_label, entitlement_id.length());
                 info.status = OrbisAppContentAddcontDownloadStatus::Installed;
             } else {
@@ -343,7 +328,7 @@ int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initPar
         }
     }
 
-    if (addcont_count > 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.addcont_count > 0) {
         SystemService::OrbisSystemServiceEvent event{};
         event.event_type = SystemService::OrbisSystemServiceEventType::EntitlementUpdate;
         event.service_entitlement_update.userId = 0;

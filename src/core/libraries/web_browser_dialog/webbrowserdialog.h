@@ -29,5 +29,7 @@ s32 PS4_SYSV_ABI Func_F2BE042771625F8C();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    Libraries::CommonDialog::Status g_status = Libraries::CommonDialog::Status::NONE;
 };
 } // namespace Libraries::WebBrowserDialog

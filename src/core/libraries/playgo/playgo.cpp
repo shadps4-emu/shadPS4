@@ -10,11 +10,11 @@
 #include "core/libraries/macro.h"
 #include "core/libraries/system/systemservice.h"
 #include "playgo.h"
+#include "shadps4_app.h"
 
 namespace Libraries::PlayGo {
 
 static constexpr OrbisPlayGoHandle PlaygoHandle = 1;
-static std::unique_ptr<PlaygoFile> playgo;
 
 s32 PS4_SYSV_ABI sceDbgPlayGoRequestNextChunk() {
     LOG_ERROR(Lib_PlayGo, "(STUBBED)called");
@@ -32,7 +32,7 @@ s32 PS4_SYSV_ABI scePlayGoClose(OrbisPlayGoHandle handle) {
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     return ORBIS_OK;
@@ -52,18 +52,18 @@ s32 PS4_SYSV_ABI scePlayGoGetChunkId(OrbisPlayGoHandle handle, OrbisPlayGoChunkI
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
 
-    if (playgo->GetPlaygoHeader().file_size == 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetPlaygoHeader().file_size == 0) {
         *outEntries = 0;
         return ORBIS_OK;
     }
 
     if (outChunkIdList == nullptr) {
-        *outEntries = playgo->chunks.size();
+        *outEntries = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks.size();
         return ORBIS_OK;
     }
 
-    if (numberOfEntries > playgo->chunks.size()) {
-        numberOfEntries = playgo->chunks.size();
+    if (numberOfEntries > ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks.size()) {
+        numberOfEntries = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks.size();
     }
 
     for (u32 i = 0; i < numberOfEntries; i++) {
@@ -100,20 +100,20 @@ s32 PS4_SYSV_ABI scePlayGoGetInstallSpeed(OrbisPlayGoHandle handle,
     if (outSpeed == nullptr) {
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
-    std::scoped_lock lk{playgo->GetSpeedMutex()};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetSpeedMutex()};
 
-    if (playgo->speed == OrbisPlayGoInstallSpeed::Suspended) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed == OrbisPlayGoInstallSpeed::Suspended) {
         using namespace std::chrono;
         if ((duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count() -
-             playgo->speed_tick) > 30 * 1000) { // 30sec
-            playgo->speed = OrbisPlayGoInstallSpeed::Trickle;
+             ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed_tick) > 30 * 1000) { // 30sec
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed = OrbisPlayGoInstallSpeed::Trickle;
         }
     }
-    *outSpeed = playgo->speed;
+    *outSpeed = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed;
 
     return ORBIS_OK;
 }
@@ -128,11 +128,11 @@ s32 PS4_SYSV_ABI scePlayGoGetLanguageMask(OrbisPlayGoHandle handle,
     if (outLanguageMask == nullptr) {
         return ORBIS_PLAYGO_ERROR_BAD_POINTER;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
-    *outLanguageMask = playgo->langMask;
+    *outLanguageMask = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->langMask;
     return ORBIS_OK;
 }
 
@@ -151,15 +151,15 @@ s32 PS4_SYSV_ABI scePlayGoGetLocus(OrbisPlayGoHandle handle, const OrbisPlayGoCh
     LOG_DEBUG(Lib_PlayGo, "called handle = {}, chunkIds = {}, numberOfEntries = {}", handle,
               *chunkIds, numberOfEntries);
 
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
-    if (playgo->GetPlaygoHeader().file_size == 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetPlaygoHeader().file_size == 0) {
         return ORBIS_PLAYGO_ERROR_NOT_SUPPORT_PLAYGO;
     }
 
     for (int i = 0; i < numberOfEntries; i++) {
-        if (chunkIds[i] < playgo->chunks.size()) {
+        if (chunkIds[i] < ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks.size()) {
             outLoci[i] = OrbisPlayGoLocus::LocalFast;
         } else {
             outLoci[i] = OrbisPlayGoLocus::NotDownloaded;
@@ -183,10 +183,10 @@ s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayG
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
-    if (playgo->GetPlaygoHeader().file_size == 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetPlaygoHeader().file_size == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_CHUNK_ID;
     }
 
@@ -196,8 +196,8 @@ s32 PS4_SYSV_ABI scePlayGoGetProgress(OrbisPlayGoHandle handle, const OrbisPlayG
     u64 total_size = 0;
     for (u32 i = 0; i < numberOfEntries; i++) {
         u32 chunk_id = chunkIds[i];
-        if (chunk_id < playgo->chunks.size()) {
-            total_size += playgo->chunks[chunk_id].total_size;
+        if (chunk_id < ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks.size()) {
+            total_size += ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->chunks[chunk_id].total_size;
         } else {
             return ORBIS_PLAYGO_ERROR_BAD_CHUNK_ID;
         }
@@ -222,7 +222,7 @@ s32 PS4_SYSV_ABI scePlayGoGetToDoList(OrbisPlayGoHandle handle, OrbisPlayGoToDo*
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     *outEntries = 0; // nothing to do
@@ -245,23 +245,23 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
     if (param->bufSize < 0x200000) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (playgo) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_ALREADY_INITIALIZED;
     }
 
     using namespace SystemService;
 
-    playgo = std::make_unique<PlaygoFile>();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo = std::make_unique<PlaygoFile>();
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
-    if (!playgo->Open(file_path)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->Open(file_path)) {
         LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
     }
 
     s32 system_lang = 0;
     sceSystemServiceParamGetInt(OrbisSystemServiceParamId::Lang, &system_lang);
-    playgo->langMask = scePlayGoConvertLanguage(system_lang);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->langMask = scePlayGoConvertLanguage(system_lang);
 
     return ORBIS_OK;
 }
@@ -275,14 +275,14 @@ s32 PS4_SYSV_ABI scePlayGoOpen(OrbisPlayGoHandle* outHandle, const void* param) 
     if (param) {
         return ORBIS_PLAYGO_ERROR_INVALID_ARGUMENT;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
-    if (playgo->GetPlaygoHeader().file_size == 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetPlaygoHeader().file_size == 0) {
         return ORBIS_PLAYGO_ERROR_NOT_SUPPORT_PLAYGO;
     }
 
-    playgo->handle = *outHandle = PlaygoHandle;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->handle = *outHandle = PlaygoHandle;
     return ORBIS_OK;
 }
 
@@ -299,7 +299,7 @@ s32 PS4_SYSV_ABI scePlayGoPrefetch(OrbisPlayGoHandle handle, const OrbisPlayGoCh
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -320,7 +320,7 @@ s32 PS4_SYSV_ABI scePlayGoSetInstallSpeed(OrbisPlayGoHandle handle, OrbisPlayGoI
     if (handle != PlaygoHandle) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
@@ -333,10 +333,10 @@ s32 PS4_SYSV_ABI scePlayGoSetInstallSpeed(OrbisPlayGoHandle handle, OrbisPlayGoI
         return ORBIS_PLAYGO_ERROR_INVALID_ARGUMENT;
     }
 
-    std::scoped_lock lk{playgo->GetSpeedMutex()};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->GetSpeedMutex()};
     using namespace std::chrono;
-    playgo->speed = speed;
-    playgo->speed_tick =
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed = speed;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->speed_tick =
         duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 
     return ORBIS_OK;
@@ -349,11 +349,11 @@ s32 PS4_SYSV_ABI scePlayGoSetLanguageMask(OrbisPlayGoHandle handle,
     if (handle != 1) {
         return ORBIS_PLAYGO_ERROR_BAD_HANDLE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
 
-    playgo->langMask = languageMask;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->langMask = languageMask;
     return ORBIS_OK;
 }
 
@@ -370,7 +370,7 @@ s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayG
     if (numberOfEntries == 0) {
         return ORBIS_PLAYGO_ERROR_BAD_SIZE;
     }
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
     return ORBIS_OK;
@@ -379,10 +379,10 @@ s32 PS4_SYSV_ABI scePlayGoSetToDoList(OrbisPlayGoHandle handle, const OrbisPlayG
 s32 PS4_SYSV_ABI scePlayGoTerminate() {
     LOG_INFO(Lib_PlayGo, "called");
 
-    if (!playgo) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo) {
         return ORBIS_PLAYGO_ERROR_NOT_INITIALIZED;
     }
-    playgo.reset();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo.reset();
     return ORBIS_OK;
 }
 
@@ -405,5 +405,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("gUPGiOQ1tmQ", "libScePlayGo", 1, "libScePlayGo", scePlayGoSetToDoList);
     LIB_FUNCTION("MPe0EeBGM-E", "libScePlayGo", 1, "libScePlayGo", scePlayGoTerminate);
 };
+
+Library::~Library() = default;
 
 } // namespace Libraries::PlayGo

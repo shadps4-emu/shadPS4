@@ -6,6 +6,9 @@
 #include <core/libraries/system/commondialog.h>
 #include <core/libraries/system/userservice.h>
 #include "common/types.h"
+#include "core/libraries/np/np_profile_dialog/np_profile_dialog_mode.h"
+#include "core/libraries/np/np_profile_dialog/np_profile_dialog_result.h"
+#include "core/libraries/np/np_profile_dialog/np_profile_dialog_ui.h"
 #include "core/libraries/np/np_types.h"
 
 namespace Core::Loader {
@@ -13,14 +16,6 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Np::NpProfileDialog {
-
-enum class OrbisNpProfileDialogMode : u32 {
-    ORBIS_NP_PROFILE_DIALOG_MODE_INVALID = 0,
-    ORBIS_NP_PROFILE_DIALOG_MODE_NORMAL = 1,
-    ORBIS_NP_PROFILE_DIALOG_MODE_FRIEND_REQUEST = 2,
-    ORBIS_NP_PROFILE_DIALOG_MODE_ADD_TO_BLOCK_LIST = 3,
-    ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT = 4,
-};
 
 static constexpr s32 ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_INVALID = 0x00000000;
 static constexpr s32 ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ONLINE_ID = 0x00000001;
@@ -57,13 +52,6 @@ struct OrbisNpProfileDialogParamA {
     };
 };
 
-struct OrbisNpProfileDialogResult {
-    s32 result;
-    CommonDialog::Result userAction;
-    void* userData;
-    u8 reserved[32];
-};
-
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param);
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose();
@@ -78,5 +66,10 @@ Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    Libraries::CommonDialog::Status g_status = Libraries::CommonDialog::Status::NONE;
+    NpProfileDialogState g_state{};
+    OrbisNpProfileDialogResult g_result{};
+    NpProfileDialogUi g_profile_dialog_ui;
 };
 } // namespace Libraries::Np::NpProfileDialog

@@ -17,10 +17,12 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+#include "shadps4_app.h"
 
 #ifndef _WIN32
 #include <signal.h>
@@ -138,7 +140,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
         ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
 
         // Start main module.
-        EntryParams& params = Libraries::Kernel::entry_params;
+        auto& params = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.entry_params;
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {

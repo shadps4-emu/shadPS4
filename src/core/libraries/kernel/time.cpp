@@ -13,6 +13,7 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 #ifdef _WIN64
 #include <windows.h>
@@ -29,28 +30,25 @@
 
 namespace Libraries::Kernel {
 
-static u64 initial_ptc;
-static std::unique_ptr<Common::NativeClock> clock;
-
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
-    return clock->GetTscFrequency();
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock->GetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
     // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
-    return clock->GetTimeUS(initial_ptc);
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock->GetTimeUS(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.initial_ptc);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return clock->GetUptime() - initial_ptc;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock->GetUptime() - ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.initial_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
-    return clock->GetTscFrequency();
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock->GetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    return clock->GetUptime();
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock->GetUptime();
 }
 
 static s32 posix_nanosleep_impl(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp,
@@ -475,11 +473,11 @@ s32 PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2,
 
 namespace Dev {
 u64& GetInitialPtc() {
-    return initial_ptc;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.initial_ptc;
 }
 
 Common::NativeClock* GetClock() {
-    return clock.get();
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_time.clock.get();
 }
 
 } // namespace Dev
@@ -584,5 +582,7 @@ HleTime::HleTime(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("0NTHN1NKONI", "libkernel", 1, "libkernel", sceKernelConvertLocaltimeToUtc);
     LIB_FUNCTION("-o5uEDpN+oY", "libkernel", 1, "libkernel", sceKernelConvertUtcToLocaltime);
 }
+
+HleTime::~HleTime() = default;
 
 } // namespace Libraries::Kernel

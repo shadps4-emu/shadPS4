@@ -181,5 +181,7 @@ s32 PS4_SYSV_ABI sceAudio3dTerminate();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    std::unique_ptr<Audio3dState> state;
 };
 } // namespace Libraries::Audio3d

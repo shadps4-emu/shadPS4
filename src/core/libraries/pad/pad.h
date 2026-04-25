@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <core/libraries/system/userservice.h>
 #include "common/enum.h"
 #include "common/types.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -366,5 +366,8 @@ int PS4_SYSV_ABI Func_EF103E845B6F0420();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    bool g_initialized = false;
+    std::unordered_map<UserService::OrbisUserServiceUserId, s32> user_id_pad_handle_map{};
 };
 } // namespace Libraries::Pad

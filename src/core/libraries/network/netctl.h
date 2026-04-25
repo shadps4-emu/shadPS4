@@ -167,5 +167,7 @@ int PS4_SYSV_ABI sceNetCtlApRpUnregisterCallback();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    NetCtlInternal netctl;
 };
 } // namespace Libraries::NetCtl

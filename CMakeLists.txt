@@ -281,6 +281,27 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
             src/core/libraries/ajm/ajm_instance.h
             src/core/libraries/ajm/ajm_mp3.cpp
             src/core/libraries/ajm/ajm_mp3.h
+            src/core/libraries/ajm/ajm_buffer.h
+            src/core/libraries/ajm/ajm_codec_type.h
+            src/core/libraries/ajm/ajm_dec_at9_initialize_parameters.h
+            src/core/libraries/ajm/ajm_format_encoding.h
+            src/core/libraries/ajm/ajm_job_control_flags.h
+            src/core/libraries/ajm/ajm_job_flags.h
+            src/core/libraries/ajm/ajm_job_run_flags.h
+            src/core/libraries/ajm/ajm_job_sideband_flags.h
+            src/core/libraries/ajm/ajm_sideband_format.h
+            src/core/libraries/ajm/ajm_sideband_gapless_decode.h
+            src/core/libraries/ajm/ajm_sideband_init_parameters.h
+            src/core/libraries/ajm/ajm_sideband_mframe.h
+            src/core/libraries/ajm/ajm_sideband_resample_parameters.h
+            src/core/libraries/ajm/ajm_sideband_result.h
+            src/core/libraries/ajm/ajm_sideband_statistics_engine.h
+            src/core/libraries/ajm/ajm_sideband_statistics_engine_parameters.h
+            src/core/libraries/ajm/ajm_sideband_statistics_engine_per_codec.h
+            src/core/libraries/ajm/ajm_sideband_statistics_memory.h
+            src/core/libraries/ajm/ajm_sideband_stream.h
+            src/core/libraries/ajm/ajm_statistics_flags.h
+            src/core/libraries/ajm/ajm_statistics_job_flags.h
 )
 
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
@@ -529,6 +550,9 @@ set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/ime.cpp
             src/core/libraries/ime/ime.h
             src/core/libraries/ime/ime_error.h
+            src/core/libraries/ime/ime_dialog_end_status.h
+            src/core/libraries/ime/ime_dialog_result.h
+            src/core/libraries/ime/ime_dialog_status.h
 )
 
 set(PAD_LIB src/core/libraries/pad/pad.cpp
@@ -634,6 +658,8 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_partner.cpp
             src/core/libraries/np/np_partner.h
             src/core/libraries/np/object_manager.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_mode.h
+            src/core/libraries/np/np_profile_dialog/np_profile_dialog_result.h
 )
 
 set(ZLIB_LIB src/core/libraries/zlib/zlib.cpp

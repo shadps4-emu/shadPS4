@@ -36,5 +36,7 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    std::mutex g_mutex{};
 };
 } // namespace Libraries::SysModule

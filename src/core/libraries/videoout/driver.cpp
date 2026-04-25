@@ -44,10 +44,23 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     main_port.resolution.full_height = height;
     main_port.resolution.pane_width = width;
     main_port.resolution.pane_height = height;
-    present_thread = std::jthread([&](std::stop_token token) { PresentThread(token); });
+    present_thread = std::jthread([&](std::stop_token token) {
+        {
+            std::unique_lock lk(mutex);
+            cond_var.wait(lk, [] { return ShadPs4App::GetInstance()->m_emulator.m_hle_layer != nullptr; });
+        }
+
+        try {
+            PresentThread(token);
+        } catch (const std::runtime_error& exception) {
+            LOG_TRACE(Lib_VideoOut, "Thread stop: {}", exception.what());
+        }
+    });
 }
 
-VideoOutDriver::~VideoOutDriver() = default;
+VideoOutDriver::~VideoOutDriver() {
+    present_thread.request_stop();
+}
 
 int VideoOutDriver::Open(const ServiceThreadParams* params) {
     if (main_port.is_open) {

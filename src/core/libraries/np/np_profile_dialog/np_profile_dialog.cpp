@@ -10,17 +10,13 @@
 #include "magic_enum/magic_enum.hpp"
 #include "np_profile_dialog.h"
 #include "np_profile_dialog_ui.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Np::NpProfileDialog {
 
-static auto g_status = Libraries::CommonDialog::Status::NONE;
-static NpProfileDialogState g_state{};
-static OrbisNpProfileDialogResult g_result{};
-static NpProfileDialogUi g_profile_dialog_ui;
-
 Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
-    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
-        g_status != Libraries::CommonDialog::Status::FINISHED) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_ERROR(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
@@ -39,15 +35,15 @@ Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam*
     state.hasAccountId = false;
     state.mode = param->mode;
     state.userId = param->userId;
-    g_state = state;
-    g_result = {};
-    g_result.userData = param->userData;
-    g_status = Libraries::CommonDialog::Status::RUNNING;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_state = state;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result = {};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result.userData = param->userData;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status = Libraries::CommonDialog::Status::RUNNING;
 
     LOG_DEBUG(Lib_NpProfileDialog, "creating UI with onlineId='{}', mode={}, userId={}",
               state.onlineId, static_cast<int>(state.mode), state.userId);
 
-    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_status, &g_result);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_profile_dialog_ui = NpProfileDialogUi(&ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_state, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result);
 
     LOG_INFO(Lib_NpProfileDialog, "dialog opened successfully for user {}", param->userId);
     return Libraries::CommonDialog::Error::OK;
@@ -55,13 +51,13 @@ Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam*
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
-    if (g_status == Libraries::CommonDialog::Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status == Libraries::CommonDialog::Status::NONE) {
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
     }
-    if (g_status != Libraries::CommonDialog::Status::RUNNING) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::RUNNING) {
         return Libraries::CommonDialog::Error::NOT_RUNNING;
     }
-    g_profile_dialog_ui.Finish(Libraries::CommonDialog::Result::OK);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_profile_dialog_ui.Finish(Libraries::CommonDialog::Result::OK);
     return Libraries::CommonDialog::Error::OK;
 }
 
@@ -69,7 +65,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
 
-    if (g_status == Libraries::CommonDialog::Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status == Libraries::CommonDialog::Status::NONE) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: not initialized (g_status=NONE)");
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
     }
@@ -77,22 +73,22 @@ sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: result pointer is nullptr");
         return Libraries::CommonDialog::Error::ARG_NULL;
     }
-    if (g_status != Libraries::CommonDialog::Status::FINISHED) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: dialog not finished (g_status={})",
-                  static_cast<int>(g_status));
+                  static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status));
         return Libraries::CommonDialog::Error::NOT_FINISHED;
     }
 
-    *result = g_result;
+    *result = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result;
 
     LOG_DEBUG(Lib_NpProfileDialog, "result details: resultCode={}, userAction={}, userData={}",
-              g_result.result, static_cast<int>(g_result.userAction), fmt::ptr(g_result.userData));
+              ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result.result, static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result.userAction), fmt::ptr(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result.userData));
     return Libraries::CommonDialog::Error::OK;
 }
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogGetStatus() {
     LOG_TRACE(Lib_NpProfileDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status;
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
@@ -100,9 +96,9 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
         LOG_ERROR(Lib_NpProfileDialog, "failed: system not initialized");
         return Libraries::CommonDialog::Error::NOT_SYSTEM_INITIALIZED;
     }
-    if (g_status != Libraries::CommonDialog::Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::NONE) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: already initialized (g_status={})",
-                  static_cast<int>(g_status));
+                  static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status));
         return Libraries::CommonDialog::Error::ALREADY_INITIALIZED;
     }
     if (CommonDialog::g_isUsed) {
@@ -110,7 +106,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
         return Libraries::CommonDialog::Error::BUSY;
     }
 
-    g_status = Libraries::CommonDialog::Status::INITIALIZED;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status = Libraries::CommonDialog::Status::INITIALIZED;
     CommonDialog::g_isUsed = true;
     LOG_INFO(Lib_NpProfileDialog, "initialized successfully");
     return Libraries::CommonDialog::Error::OK;
@@ -118,8 +114,8 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
-    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
-        g_status != Libraries::CommonDialog::Status::FINISHED) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::INITIALIZED &&
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status != Libraries::CommonDialog::Status::FINISHED) {
         LOG_ERROR(Lib_NpProfileDialog, "called without initialize");
         return Libraries::CommonDialog::Error::INVALID_STATE;
     }
@@ -139,15 +135,15 @@ sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
     state.hasAccountId = true;
     state.mode = param->mode;
     state.userId = param->userId;
-    g_state = state;
-    g_result = {};
-    g_result.userData = param->userData;
-    g_status = Libraries::CommonDialog::Status::RUNNING;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_state = state;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result = {};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result.userData = param->userData;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status = Libraries::CommonDialog::Status::RUNNING;
 
     LOG_DEBUG(Lib_NpProfileDialog, "creating UI with accountId='{}', mode={}, userId={}",
               state.accountId, static_cast<int>(state.mode), state.userId);
 
-    g_profile_dialog_ui = NpProfileDialogUi(&g_state, &g_status, &g_result);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_profile_dialog_ui = NpProfileDialogUi(&ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_state, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status, &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_result);
 
     LOG_INFO(Lib_NpProfileDialog, "dialog opened successfully for user {} (account ID variant)",
              param->userId);
@@ -155,18 +151,18 @@ sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
 }
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate() {
-    LOG_DEBUG(Lib_NpProfileDialog, "called (g_status={})", static_cast<int>(g_status));
+    LOG_DEBUG(Lib_NpProfileDialog, "called (g_status={})", static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status));
 
-    if (g_status == Libraries::CommonDialog::Status::RUNNING) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status == Libraries::CommonDialog::Status::RUNNING) {
         LOG_ERROR(Lib_NpProfileDialog, "dialog is running, closing it first");
         sceNpProfileDialogClose();
     }
-    if (g_status == Libraries::CommonDialog::Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status == Libraries::CommonDialog::Status::NONE) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: not initialized (g_status=NONE)");
         return Libraries::CommonDialog::Error::NOT_INITIALIZED;
     }
 
-    g_status = Libraries::CommonDialog::Status::NONE;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status = Libraries::CommonDialog::Status::NONE;
     CommonDialog::g_isUsed = false;
 
     LOG_INFO(Lib_NpProfileDialog, "terminated successfully");
@@ -175,7 +171,7 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogTerminate() {
 
 Libraries::CommonDialog::Status PS4_SYSV_ABI sceNpProfileDialogUpdateStatus() {
     LOG_TRACE(Lib_NpProfileDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_np_profile_dialog.g_status;
 }
 
 Library::Library(Core::Loader::SymbolsResolver* sym) {

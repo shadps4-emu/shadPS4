@@ -21,10 +21,9 @@
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/netctl.h"
 #include "net_util.h"
+#include "shadps4_app.h"
 
 namespace Libraries::NetCtl {
-
-static NetCtlInternal netctl;
 
 int PS4_SYSV_ABI sceNetBweCheckCallbackIpcInt() {
     LOG_ERROR(Lib_NetCtl, "(STUBBED) called");
@@ -361,7 +360,7 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallback(OrbisNetCtlCallback func, void* arg, 
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
-    s32 result = netctl.RegisterCallback(func, arg);
+    s32 result = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_net_ctl.netctl.RegisterCallback(func, arg);
     if (result < 0) {
         return result;
     } else {
@@ -450,7 +449,7 @@ int PS4_SYSV_ABI sceNetCtlRegisterCallbackForNpToolkit(OrbisNetCtlCallbackForNpT
     if (!func || !cid) {
         return ORBIS_NET_CTL_ERROR_INVALID_ADDR;
     }
-    s32 result = netctl.RegisterNpToolkitCallback(func, arg);
+    s32 result = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_net_ctl.netctl.RegisterNpToolkitCallback(func, arg);
     if (result < 0) {
         return result;
     } else {

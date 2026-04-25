@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <shared_mutex>
 #include "audioin_backend.h"
 #include "audioin_error.h"
 #include "common/logging/log.h"
@@ -9,14 +8,9 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::AudioIn {
-
-std::array<std::shared_ptr<PortIn>, ORBIS_AUDIO_IN_NUM_PORTS> port_table{};
-std::shared_mutex port_table_mutex;
-std::mutex port_allocation_mutex;
-
-static std::unique_ptr<AudioInBackend> audio;
 
 /*
  * Helper functions
@@ -44,8 +38,8 @@ static s32 GetPortType(s32 handle) {
 static int AllocatePort(OrbisAudioInType type) {
     // TODO implement port type ranges if needed
     for (int i = 0; i <= ORBIS_AUDIO_IN_NUM_PORTS; i++) {
-        std::shared_lock read_lock{port_table_mutex};
-        if (!port_table[i]) {
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table_mutex};
+        if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[i]) {
             return i;
         }
     }
@@ -62,7 +56,7 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
     if (!initOnce) {
         // sceAudioInInit doesn't seem to be called by most apps before sceAudioInOpen so we init
         // here
-        audio = std::make_unique<SDLAudioIn>();
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.audio = std::make_unique<SDLAudioIn>();
         initOnce = true;
     }
 
@@ -86,7 +80,7 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
         return ORBIS_AUDIO_IN_ERROR_INVALID_FREQ;
     }
 
-    std::unique_lock lock{port_allocation_mutex};
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_allocation_mutex};
 
     // Allocate port
     int port_id = AllocatePort(in_type);
@@ -121,7 +115,7 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
         }
 
         // Open backend
-        port->impl = audio->Open(*port);
+        port->impl = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.audio->Open(*port);
         if (!port->impl) {
             throw std::runtime_error("Failed to create audio backend");
         }
@@ -136,8 +130,8 @@ int PS4_SYSV_ABI sceAudioInOpen(Libraries::UserService::OrbisUserServiceUserId u
 
     // Store the port pointer with write lock
     {
-        std::unique_lock write_lock{port_table_mutex};
-        port_table[port_id] = port;
+        std::unique_lock write_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table_mutex};
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[port_id] = port;
     }
 
     // Create handle
@@ -168,18 +162,18 @@ int PS4_SYSV_ABI sceAudioInClose(s32 handle) {
         return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
     }
 
-    std::unique_lock lock{port_allocation_mutex};
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_allocation_mutex};
     std::shared_ptr<PortIn> port;
 
     // Get and clear the port pointer with write lock
     {
-        std::unique_lock write_lock{port_table_mutex};
-        port = std::move(port_table[port_id]);
+        std::unique_lock write_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table_mutex};
+        port = std::move(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[port_id]);
         if (!port) {
             LOG_ERROR(Lib_AudioIn, "Port wasn't open {}", port_id);
             return ORBIS_AUDIO_IN_ERROR_NOT_OPENED;
         }
-        port_table[port_id].reset();
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[port_id].reset();
     }
 
     // Free resources
@@ -207,12 +201,12 @@ int PS4_SYSV_ABI sceAudioInInput(s32 handle, void* dest) {
     // Get port with read lock
     std::shared_ptr<PortIn> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        if (port_id < 0 || port_id >= static_cast<int>(port_table.size())) {
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table_mutex};
+        if (port_id < 0 || port_id >= static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table.size())) {
             LOG_ERROR(Lib_AudioIn, "Invalid port id: {}", port_id);
             return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
         }
-        port = port_table[port_id];
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[port_id];
     }
 
     if (!port || !port->impl) {
@@ -234,12 +228,12 @@ int PS4_SYSV_ABI sceAudioInGetSilentState(s32 handle) {
     // Get port with read lock
     std::shared_ptr<PortIn> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        if (port_id < 0 || port_id >= static_cast<int>(port_table.size())) {
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table_mutex};
+        if (port_id < 0 || port_id >= static_cast<int>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table.size())) {
             LOG_ERROR(Lib_AudioIn, "Invalid port id: {}", port_id);
             return ORBIS_AUDIO_IN_ERROR_INVALID_HANDLE;
         }
-        port = port_table[port_id];
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_in.port_table[port_id];
     }
 
     if (!port || !port->impl) {
@@ -490,5 +484,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("3ULZGIl+Acc", "libSceAudioIn", 1, "libSceAudioIn", sceAudioInVmicDestroy);
     LIB_FUNCTION("4kHw99LUG3A", "libSceAudioIn", 1, "libSceAudioIn", sceAudioInVmicWrite);
 };
+
+Library::~Library() = default;
 
 } // namespace Libraries::AudioIn

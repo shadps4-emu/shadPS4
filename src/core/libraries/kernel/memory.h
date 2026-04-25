@@ -186,8 +186,15 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStat
 
 s32 PS4_SYSV_ABI sceKernelMunmap(void* addr, u64 len);
 
+static constexpr s32 MAX_PRT_APERTURES = 3;
+
 struct HleMemory {
     HleMemory(Core::Loader::SymbolsResolver* sym);
+
+    s32 g_sdk_version = -1;
+    bool g_alias_dmem = false;
+
+    std::array<std::pair<VAddr, u64>, MAX_PRT_APERTURES> PrtApertures{};
 };
 
 } // namespace Libraries::Kernel

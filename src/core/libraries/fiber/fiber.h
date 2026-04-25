@@ -118,5 +118,7 @@ s32 PS4_SYSV_ABI sceFiberGetThreadFramePointerAddress(u64* addr_frame_pointer);
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    std::atomic<u32> context_size_check = false;
 };
 } // namespace Libraries::Fiber

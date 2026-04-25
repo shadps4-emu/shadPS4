@@ -8,24 +8,23 @@
 #include "core/libraries/move/move.h"
 #include "core/libraries/move/move_error.h"
 #include "move.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Move {
 
-static bool g_library_initialized = false;
-
 s32 PS4_SYSV_ABI sceMoveInit() {
-    if (g_library_initialized) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_ALREADY_INIT;
     }
     LOG_WARNING(Lib_Move, "Move controllers are not supported yet");
-    g_library_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized = true;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceMoveOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                              s32 index) {
     LOG_DEBUG(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     // Even when no controllers are connected, this returns a proper handle.
@@ -36,7 +35,7 @@ s32 PS4_SYSV_ABI sceMoveOpen(Libraries::UserService::OrbisUserServiceUserId user
 
 s32 PS4_SYSV_ABI sceMoveGetDeviceInfo(s32 handle, OrbisMoveDeviceInfo* info) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     if (info == nullptr) {
@@ -47,7 +46,7 @@ s32 PS4_SYSV_ABI sceMoveGetDeviceInfo(s32 handle, OrbisMoveDeviceInfo* info) {
 
 s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
     LOG_TRACE(Lib_Move, "(called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     if (data == nullptr) {
@@ -59,7 +58,7 @@ s32 PS4_SYSV_ABI sceMoveReadStateLatest(s32 handle, OrbisMoveData* data) {
 s32 PS4_SYSV_ABI sceMoveReadStateRecent(s32 handle, s64 timestamp, OrbisMoveData* data,
                                         s32* out_count) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     if (timestamp < 0 || data == nullptr || out_count == nullptr) {
@@ -70,7 +69,7 @@ s32 PS4_SYSV_ABI sceMoveReadStateRecent(s32 handle, s64 timestamp, OrbisMoveData
 
 s32 PS4_SYSV_ABI sceMoveGetExtensionPortInfo(s32 handle, void* data) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     if (data == nullptr) {
@@ -81,7 +80,7 @@ s32 PS4_SYSV_ABI sceMoveGetExtensionPortInfo(s32 handle, void* data) {
 
 s32 PS4_SYSV_ABI sceMoveSetVibration(s32 handle, u8 intensity) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
@@ -89,7 +88,7 @@ s32 PS4_SYSV_ABI sceMoveSetVibration(s32 handle, u8 intensity) {
 
 s32 PS4_SYSV_ABI sceMoveSetLightSphere(s32 handle, u8 red, u8 green, u8 blue) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     return ORBIS_MOVE_ERROR_NO_CONTROLLER_CONNECTED;
@@ -97,7 +96,7 @@ s32 PS4_SYSV_ABI sceMoveSetLightSphere(s32 handle, u8 red, u8 green, u8 blue) {
 
 s32 PS4_SYSV_ABI sceMoveResetLightSphere(s32 handle) {
     LOG_TRACE(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     // Returns success, even if no controllers are connected.
@@ -106,7 +105,7 @@ s32 PS4_SYSV_ABI sceMoveResetLightSphere(s32 handle) {
 
 s32 PS4_SYSV_ABI sceMoveClose(s32 handle) {
     LOG_DEBUG(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
     return ORBIS_OK;
@@ -114,10 +113,10 @@ s32 PS4_SYSV_ABI sceMoveClose(s32 handle) {
 
 s32 PS4_SYSV_ABI sceMoveTerm() {
     LOG_DEBUG(Lib_Move, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized) {
         return ORBIS_MOVE_ERROR_NOT_INIT;
     }
-    g_library_initialized = false;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_move.g_library_initialized = false;
     return ORBIS_OK;
 }
 

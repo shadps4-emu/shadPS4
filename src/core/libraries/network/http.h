@@ -159,5 +159,7 @@ int PS4_SYSV_ABI sceHttpWaitRequest();
 
 struct Library {
     Library(Core::Loader::SymbolsResolver* sym);
+
+    bool g_isHttpInitialized = true; // TODO temp always inited
 };
 } // namespace Libraries::Http

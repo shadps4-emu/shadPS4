@@ -11,6 +11,7 @@
 #include "core/user_settings.h"
 #include "input/controller.h"
 #include "pad.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Pad {
 
@@ -18,8 +19,6 @@ using Input::GameController;
 using Input::GameControllers;
 using namespace Libraries::UserService;
 
-static bool g_initialized = false;
-static std::unordered_map<OrbisUserServiceUserId, s32> user_id_pad_handle_map{};
 static constexpr s32 tv_remote_handle = 5;
 
 int PS4_SYSV_ABI scePadClose(s32 handle) {
@@ -162,14 +161,14 @@ int PS4_SYSV_ABI scePadGetFeatureReport() {
 
 int PS4_SYSV_ABI scePadGetHandle(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                  s32 index) {
-    if (!g_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
     if (userId == -1) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
-    auto it = user_id_pad_handle_map.find(userId);
-    if (it == user_id_pad_handle_map.end()) {
+    auto it = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.user_id_pad_handle_map.find(userId);
+    if (it == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.user_id_pad_handle_map.end()) {
         return ORBIS_PAD_ERROR_DEVICE_NO_HANDLE;
     }
     s32 pad_handle = it->second;
@@ -229,7 +228,7 @@ int PS4_SYSV_ABI scePadGetVersionInfo() {
 
 int PS4_SYSV_ABI scePadInit() {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    g_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.g_initialized = true;
     return ORBIS_OK;
 }
 
@@ -275,7 +274,7 @@ int PS4_SYSV_ABI scePadMbusTerm() {
 
 int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                             s32 index, const OrbisPadOpenParam* pParam) {
-    if (!g_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.g_initialized) {
         return ORBIS_PAD_ERROR_NOT_INITIALIZED;
     }
     if (userId < 0) {
@@ -284,7 +283,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (userId == ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
         if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
             LOG_INFO(Lib_Pad, "Opened a TV remote device");
-            user_id_pad_handle_map[ORBIS_USER_SERVICE_USER_ID_SYSTEM] = tv_remote_handle;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.user_id_pad_handle_map[ORBIS_USER_SERVICE_USER_ID_SYSTEM] = tv_remote_handle;
             return tv_remote_handle;
         }
         return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
@@ -301,7 +300,7 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
              index, pad_handle);
     scePadResetLightBar(pad_handle);
     scePadResetOrientation(pad_handle);
-    user_id_pad_handle_map[userId] = pad_handle;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.user_id_pad_handle_map[userId] = pad_handle;
     return pad_handle;
 }
 
@@ -317,7 +316,7 @@ int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId us
              index, pad_handle);
     scePadResetLightBar(pad_handle);
     scePadResetOrientation(pad_handle);
-    user_id_pad_handle_map[userId] = pad_handle;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_pad.user_id_pad_handle_map[userId] = pad_handle;
     return pad_handle;
 }
 

@@ -90,6 +90,10 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
 
 struct HleTime {
     HleTime(Core::Loader::SymbolsResolver* sym);
+    ~HleTime();
+
+    u64 initial_ptc;
+    std::unique_ptr<Common::NativeClock> clock;
 };
 
 } // namespace Libraries::Kernel

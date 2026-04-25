@@ -17,8 +17,6 @@
 
 namespace Libraries::VideoOut {
 
-static std::unique_ptr<VideoOutDriver> driver;
-
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel) {
@@ -41,7 +39,7 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, Pixe
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handle, void* udata) {
     LOG_INFO(Lib_VideoOut, "handle = {}", handle);
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (port == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -66,7 +64,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handl
 }
 
 s32 PS4_SYSV_ABI sceVideoOutDeleteFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handle) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (port == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -83,7 +81,7 @@ s32 PS4_SYSV_ABI sceVideoOutDeleteFlipEvent(Kernel::OrbisKernelEqueue eq, s32 ha
 s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 handle, void* udata) {
     LOG_INFO(Lib_VideoOut, "handle = {}", handle);
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (port == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -108,7 +106,7 @@ s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 han
 }
 
 s32 PS4_SYSV_ABI sceVideoOutDeleteVblankEvent(Kernel::OrbisKernelEqueue eq, s32 handle) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (port == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -129,31 +127,31 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port || !port->is_open) {
         LOG_ERROR(Lib_VideoOut, "Invalid handle = {}", handle);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    return driver->RegisterBuffers(port, startIndex, addresses, bufferNum, attribute);
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->RegisterBuffers(port, startIndex, addresses, bufferNum, attribute);
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
     LOG_TRACE(Lib_VideoOut, "called");
-    driver->GetPort(handle)->flip_rate = rate;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle)->flip_rate = rate;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle) {
     LOG_TRACE(Lib_VideoOut, "called");
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     std::unique_lock lock{port->port_mutex};
     s32 pending = port->flip_status.flip_pending_num;
     return pending;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode, s64 flipArg) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         LOG_ERROR(Lib_VideoOut, "Invalid handle = {}", handle);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
@@ -176,7 +174,7 @@ s32 PS4_SYSV_ABI sceVideoOutSubmitFlip(s32 handle, s32 bufferIndex, s32 flipMode
     LOG_DEBUG(Lib_VideoOut, "bufferIndex = {}, flipMode = {}, flipArg = {}", bufferIndex, flipMode,
               flipArg);
 
-    if (!driver->SubmitFlip(port, bufferIndex, flipArg)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->SubmitFlip(port, bufferIndex, flipArg)) {
         LOG_ERROR(Lib_VideoOut, "Flip queue is full");
         return ORBIS_VIDEO_OUT_ERROR_FLIP_QUEUE_FULL;
     }
@@ -247,7 +245,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetFlipStatus(s32 handle, FlipStatus* status) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         LOG_ERROR(Lib_VideoOut, "Invalid port handle = {}", handle);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
@@ -273,7 +271,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus*
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         LOG_ERROR(Lib_VideoOut, "Invalid port handle = {}", handle);
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
@@ -286,7 +284,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetVblankStatus(int handle, SceVideoOutVblankStatus*
 
 s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutionStatus* status) {
     LOG_INFO(Lib_VideoOut, "called");
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port || !port->is_open) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -306,7 +304,7 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId 
     }
 
     auto* params = reinterpret_cast<const ServiceThreadParams*>(param);
-    int handle = driver->Open(params);
+    int handle = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->Open(params);
 
     if (handle < 0) {
         LOG_ERROR(Lib_VideoOut, "All available handles are open");
@@ -317,24 +315,24 @@ s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId 
 }
 
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle) {
-    driver->Close(handle);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->Close(handle);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port || !port->is_open) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    return driver->UnregisterBuffers(port, attributeIndex);
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->UnregisterBuffers(port, attributeIndex);
 }
 
 s32 PS4_SYSV_ABI sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr) {
     if (label_addr == nullptr) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -343,7 +341,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_a
 }
 
 s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, void** unk) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -352,7 +350,7 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, voi
         Platform::InterruptId::GfxFlip, [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxFlip, "An unexpected IRQ occured");
             ASSERT_MSG(port->buffer_labels[buf_id] == 1, "Out of order flip IRQ");
-            const auto result = driver->SubmitFlip(port, buf_id, flip_arg, true);
+            const auto result = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->SubmitFlip(port, buf_id, flip_arg, true);
             ASSERT_MSG(result, "EOP flip submission failed");
         });
 
@@ -372,7 +370,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
 }
 
 s32 PS4_SYSV_ABI sceVideoOutWaitVblank(s32 handle) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -396,7 +394,7 @@ s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettin
         return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
     }
 
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -424,7 +422,7 @@ void PS4_SYSV_ABI sceVideoOutModeSetAny_(Mode* mode, u32 size) {
 s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const Mode* mode,
                                                  const void* options, u32 size_mode,
                                                  u32 size_options) {
-    auto* port = driver->GetPort(handle);
+    auto* port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_video_out.driver->GetPort(handle);
     if (!port) {
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
@@ -494,5 +492,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym, Vulkan::Presenter& presente
     LIB_FUNCTION("MTxxrOCeSig", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutSetWindowModeMargins);
 }
+
+Library::~Library() = default;
 
 } // namespace Libraries::VideoOut

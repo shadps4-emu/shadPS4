@@ -15,10 +15,9 @@ namespace Libraries::Kernel {
 static constexpr size_t TlsTcbSize = 0x40;
 static constexpr size_t TlsTcbAlign = 0x20;
 
-static std::shared_mutex RtldLock;
-
 Core::Tcb* TcbCtor(Pthread* thread, int initial) {
-    std::scoped_lock lk{RtldLock};
+    std::scoped_lock lk{
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_threads.m_rtld.RtldLock};
 
     auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* addr_out = linker->AllocateTlsForThread(initial);
@@ -61,7 +60,8 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
 }
 
 void TcbDtor(Core::Tcb* oldtls) {
-    std::scoped_lock lk{RtldLock};
+    std::scoped_lock lk{
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_threads.m_rtld.RtldLock};
     auto* dtv_table = oldtls->tcb_dtv;
 
     auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
