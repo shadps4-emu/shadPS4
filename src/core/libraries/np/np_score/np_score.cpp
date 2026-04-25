@@ -580,9 +580,7 @@ static int GetFriendsRankingImpl(s32 reqId, OrbisNpScoreBoardId boardId, s32 inc
             LOG_ERROR(Lib_NpScore, "includeSelf is 0 but option struct is not null");
             return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
         }
-        return ORBIS_OK;
-    }
-    if (opt != nullptr) {
+    } else if (opt != nullptr) {
         if (opt->size != sizeof(OrbisNpScoreGetFriendRankingOptParam)) {
             LOG_ERROR(Lib_NpScore, "Invalid size for option struct: {}", opt->size);
             return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
@@ -698,7 +696,7 @@ s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
 //***********************************
 // Misc functions
 //***********************************
-s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxOrReqId, OrbisNpScorePcId pcId) {
+s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
     if (pcId < 0) {
         LOG_ERROR(Lib_NpScore, "SetPlayerCharacterId: pcId={} < 0", pcId);
         return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
@@ -707,21 +705,21 @@ s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxOrReqId, OrbisNpScorePcId
 
     // Try title-ctx pool first. Setting it here updates the default that
     // subsequent CreateRequest will inherit.
-    if (auto* tc = LookupTitleCtxUnlocked(ctxOrReqId)) {
+    if (auto* tc = LookupTitleCtxUnlocked(ctxId)) {
         tc->pcId = pcId;
-        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: titleCtxId={} pcId={}", ctxOrReqId, pcId);
+        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: titleCtxId={} pcId={}", ctxId, pcId);
         return ORBIS_OK;
     }
 
     // Fall through to the request pool. Setting it here only affects
     // operations dispatched on this specific request
-    if (auto req = LookupRequestUnlocked(ctxOrReqId)) {
+    if (auto req = LookupRequestUnlocked(ctxId)) {
         req->pcId = pcId;
-        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: reqId={} pcId={}", ctxOrReqId, pcId);
+        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: reqId={} pcId={}", ctxId, pcId);
         return ORBIS_OK;
     }
 
-    LOG_ERROR(Lib_NpScore, "SetPlayerCharacterId: invalid id {}", ctxOrReqId);
+    LOG_ERROR(Lib_NpScore, "SetPlayerCharacterId: invalid id {}", ctxId);
     return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
 }
 
