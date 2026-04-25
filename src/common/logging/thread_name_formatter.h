@@ -14,13 +14,6 @@
 namespace Common::Log {
 static constexpr unsigned long long UNLIMITED_SIZE = 0;
 
-static constexpr std::array level_string_views{"Trace", "Debug",    "Info", "Warning",
-                                               "Error", "Critical", "Off"};
-
-[[nodiscard]] static constexpr std::string_view to_string_view(spdlog::level lvl) noexcept {
-    return level_string_views.at(level_to_number(lvl));
-}
-
 struct thread_name_formatter : spdlog::formatter {
     ~thread_name_formatter() override = default;
 
@@ -33,27 +26,6 @@ struct thread_name_formatter : spdlog::formatter {
 
         msg.color_range_start = dest.size();
 
-        dest.push_back('[');
-        spdlog::details::fmt_helper::append_string_view(msg.logger_name, dest);
-        dest.push_back(']');
-        dest.push_back(' ');
-        dest.push_back('<');
-        spdlog::details::fmt_helper::append_string_view(Log::to_string_view(msg.log_level), dest);
-        dest.push_back('>');
-        dest.push_back(' ');
-        dest.push_back('(');
-        spdlog::details::fmt_helper::append_string_view(GetCurrentThreadName(), dest);
-        dest.push_back(')');
-        dest.push_back(' ');
-        spdlog::details::fmt_helper::append_string_view(msg.source.short_filename, dest);
-        dest.push_back(':');
-        spdlog::details::fmt_helper::append_int(msg.source.line, dest);
-        dest.push_back(' ');
-        spdlog::details::fmt_helper::append_string_view(
-            std::string_view(msg.source.funcname) == "operator()" ? "lambda" : msg.source.funcname,
-            dest);
-        dest.push_back(':');
-        dest.push_back(' ');
         spdlog::details::fmt_helper::append_string_view(msg.payload, dest);
         spdlog::details::fmt_helper::append_string_view(spdlog::details::os::default_eol, dest);
 
