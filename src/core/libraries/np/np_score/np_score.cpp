@@ -421,7 +421,7 @@ static int GetRankingByRangeImpl(s32 reqId, OrbisNpScoreBoardId boardId,
     }
     return req->Wait();
 }
-int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRange(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -433,7 +433,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
                                  lastSortDate, totalRecord, option, false);
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -527,7 +527,7 @@ static int GetRankingByNpIdImpl(s32 reqId, OrbisNpScoreBoardId boardId, const Or
     return req->Wait();
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -545,7 +545,7 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
                                 lastSortDate, totalRecord, option, false);
 }
 
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -658,7 +658,7 @@ static int GetFriendsRankingImpl(s32 reqId, OrbisNpScoreBoardId boardId, s32 inc
     return req->Wait();
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
                                              s32 includeSelf, OrbisNpScoreRankData* rankArray,
                                              u64 rankArraySize, OrbisNpScoreComment* commentArray,
                                              u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
@@ -677,7 +677,7 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boar
                                  lastSortDate, totalRecord, option, false);
 }
 
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankData* rankArray,
     u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
     OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -693,6 +693,36 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
     return GetFriendsRankingImpl(reqId, boardId, includeSelf, rankArray, rankArraySize,
                                  commentArray, commentArraySize, infoArray, infoArraySize, arrayNum,
                                  lastSortDate, totalRecord, option, true);
+}
+
+//***********************************
+// Misc functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxOrReqId, OrbisNpScorePcId pcId) {
+    if (pcId < 0) {
+        LOG_ERROR(Lib_NpScore, "SetPlayerCharacterId: pcId={} < 0", pcId);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    std::lock_guard lock(g_mutex);
+
+    // Try title-ctx pool first. Setting it here updates the default that
+    // subsequent CreateRequest will inherit.
+    if (auto* tc = LookupTitleCtxUnlocked(ctxOrReqId)) {
+        tc->pcId = pcId;
+        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: titleCtxId={} pcId={}", ctxOrReqId, pcId);
+        return ORBIS_OK;
+    }
+
+    // Fall through to the request pool. Setting it here only affects
+    // operations dispatched on this specific request
+    if (auto req = LookupRequestUnlocked(ctxOrReqId)) {
+        req->pcId = pcId;
+        LOG_INFO(Lib_NpScore, "SetPlayerCharacterId: reqId={} pcId={}", ctxOrReqId, pcId);
+        return ORBIS_OK;
+    }
+
+    LOG_ERROR(Lib_NpScore, "SetPlayerCharacterId: invalid id {}", ctxOrReqId);
+    return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
 }
 
 //***********************************
@@ -1096,11 +1126,6 @@ int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
               "(STUBBED) called reqId={}, comment={}, sanitizedComment={}, "
               "option={}",
               reqId, comment ? comment : "null", PTR(sanitizedComment), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called ctxId={}, pcId={}", ctxId, pcId);
     return ORBIS_OK;
 }
 

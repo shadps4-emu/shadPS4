@@ -195,12 +195,12 @@ s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId board
 //***********************************
 // RankingByRage functions
 //***********************************
-int PS4_SYSV_ABI sceNpScoreGetRankingByRange(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRange(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
-int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreRankNumber startSerialRank,
     OrbisNpScoreRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -208,12 +208,12 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeAsync(
 //***********************************
 // Ranking by NpId functions
 //***********************************
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpId(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord, void* option);
-int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npIdArray, u64 npIdArraySize,
     OrbisNpScorePlayerRankData* rankArray, u64 rankArraySize, OrbisNpScoreComment* commentArray,
     u64 commentArraySize, OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
@@ -221,19 +221,23 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByNpIdAsync(
 //***********************************
 // Friend Ranking functions
 //***********************************
-int PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRanking(s32 reqId, OrbisNpScoreBoardId boardId,
                                              s32 includeSelf, OrbisNpScoreRankData* rankArray,
                                              u64 rankArraySize, OrbisNpScoreComment* commentArray,
                                              u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
                                              u64 infoArraySize, u64 arrayNum,
                                              Rtc::OrbisRtcTick* lastSortDate,
                                              OrbisNpScoreRankNumber* totalRecord, void* option);
-int PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
+s32 PS4_SYSV_ABI sceNpScoreGetFriendsRankingAsync(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf, OrbisNpScoreRankData* rankArray,
     u64 rankArraySize, OrbisNpScoreComment* commentArray, u64 commentArraySize,
     OrbisNpScoreGameInfo* infoArray, u64 infoArraySize, u64 arrayNum,
     Rtc::OrbisRtcTick* lastSortDate, OrbisNpScoreRankNumber* totalRecord,
     OrbisNpScoreGetFriendRankingOptParam* option);
+//***********************************
+// Misc functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId);
 //***********************************
 // Stubbed functions
 //***********************************
@@ -373,7 +377,6 @@ int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char*
                                            void* option);
 int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
                                                 char* sanitizedComment, void* option);
-int PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId);
 int PS4_SYSV_ABI sceNpScoreSetThreadParam(s32 threadPriority, u64 cpuAffinityMask);
 int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeout, s32 connTimeout,
                                       s32 sendTimeout, s32 recvTimeout);
