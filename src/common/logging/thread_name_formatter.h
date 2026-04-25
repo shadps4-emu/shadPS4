@@ -9,8 +9,6 @@
 #include <spdlog/details/log_msg.h>
 #include <spdlog/formatter.h>
 
-#include "common/thread.h"
-
 namespace Common::Log {
 static constexpr unsigned long long UNLIMITED_SIZE = 0;
 
