@@ -22,6 +22,7 @@ namespace Libraries::Np::NpScore {
 struct ScoreTitleCtx {
     OrbisNpServiceLabel serviceLabel = 0;
     s32 userId = -1;
+    OrbisNpScorePcId pcId = 0;
 };
 
 static std::mutex g_mutex;
@@ -142,6 +143,7 @@ s32 PS4_SYSV_ABI sceNpScoreCreateRequest(s32 titleCtxId) {
     auto req = std::make_shared<ScoreRequestCtx>();
     req->titleCtxId = titleCtxId;
     req->userId = tc->userId;
+    req->pcId = tc->pcId;
     g_requests[id] = std::move(req);
     LOG_INFO(Lib_NpScore, "CreateRequest id={} titleCtxId={}", id, titleCtxId);
     return id;
@@ -271,7 +273,7 @@ s32 PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
     const size_t gameInfoLen = (gameInfo != nullptr) ? gameInfo->infoSize : 0;
 
     const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
-        req->userId, ServiceLabelForRequest(req), boardId, /*pcId=*/0, score, commentBytes,
+        req->userId, ServiceLabelForRequest(req), boardId, req->pcId, score, commentBytes,
         commentLen, gameInfoBytes, gameInfoLen, req);
     if (dispatch_err != ORBIS_OK) {
         req->SetResult(dispatch_err);
@@ -324,7 +326,7 @@ s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId board
     const size_t gameInfoLen = (gameInfo != nullptr) ? gameInfo->infoSize : 0;
 
     const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
-        req->userId, ServiceLabelForRequest(req), boardId, /*pcId=*/0, score, commentBytes,
+        req->userId, ServiceLabelForRequest(req), boardId, req->pcId, score, commentBytes,
         commentLen, gameInfoBytes, gameInfoLen, req);
     if (dispatch_err != ORBIS_OK) {
         // Dispatch failed synchronously (user signed out, not authed, etc.).

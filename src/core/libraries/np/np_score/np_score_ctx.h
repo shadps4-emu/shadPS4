@@ -18,6 +18,7 @@ struct ScoreRequestCtx {
 
     s32 titleCtxId = 0;
     s32 userId = -1;
+    s32 pcId = 0;
     u32* tmpRankOut = nullptr;
 
     void SetResult(s32 r) {
