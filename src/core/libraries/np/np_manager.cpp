@@ -624,7 +624,7 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
 s32 PS4_SYSV_ABI
 sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServiceUserId* user_id) {
     if (account_id == 0 || user_id == nullptr) {
-        LOG_ERROR(Lib_NpManager, "invalid argument: account_id={} user_id={}", account_id, user_id);
+        LOG_ERROR(Lib_NpManager, "invalid argument: account_id={}", account_id);
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     if (!g_shadnet_enabled)
