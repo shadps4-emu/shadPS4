@@ -183,6 +183,11 @@ public:
     void V_CVT_PKNORM_U16_F32(const GcnInst& inst);
     void V_CVT_PKNORM_I16_F32(const GcnInst& inst);
     void V_CVT_PKRTZ_F16_F32(const GcnInst& inst);
+    void V_ADD_F16(const GcnInst& inst);
+    void V_SUB_F16(const GcnInst& inst);
+    void V_MUL_F16(const GcnInst& inst);
+    void V_MAX_F16(const GcnInst& inst);
+    void V_MIN_F16(const GcnInst& inst);
 
     // VOP1
     void V_MOV(const GcnInst& inst);
@@ -310,10 +315,14 @@ private:
     IR::U1 GetSrc1(const InstOperand& operand);
     template <typename T = IR::U32>
     [[nodiscard]] T GetSrc(const InstOperand& operand);
+    template <typename T = IR::U32, bool is_signed = false>
+    [[nodiscard]] T GetSrc16(const InstOperand& operand);
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
     void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
+    template <bool is_signed = false>
+    void SetDst16(const InstOperand& operand, const IR::U32F32& value);
     void SetDst64(const InstOperand& operand, const IR::U64F64& value_raw);
 
     // Vector ALU Helpers

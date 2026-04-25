@@ -244,11 +244,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     EmulatorSettings.Load(id);
 
+    Common::Log::Shutdown();
     // Initialize logging as soon as possible
-    if (!id.empty() && EmulatorSettings.IsLogSeparate()) {
-        Common::Log::Shutdown();
-        Common::Log::Setup(id + ".log");
-    }
+    Common::Log::Setup((!id.empty() && EmulatorSettings.IsLogSeparate()) ? id + ".log"
+                                                                         : "shad_log.txt");
 
     if (!std::filesystem::exists(file)) {
         LOG_CRITICAL(Loader, "eboot.bin does not exist: {}",
