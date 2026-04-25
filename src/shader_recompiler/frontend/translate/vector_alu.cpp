@@ -456,6 +456,8 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_HI_U32(true, inst);
     case Opcode::V_MAD_U64_U32:
         return V_MAD_U64_U32(inst);
+    case Opcode::V_DIV_SCALE_F32:
+        return V_DIV_SCALE_F32(inst);
     case Opcode::V_NOP:
         return;
     default:
@@ -1534,6 +1536,55 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
     const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
     ir.SetVcc(did_overflow);
+}
+
+void Translator::V_DIV_SCALE_F32(const GcnInst& inst) {
+    const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
+    const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
+    const IR::U32 exp1{ir.Select(ir.FPIsInf(src1), ir.Imm32(128U), ir.FPFrexpExp(src1))};
+    const IR::F32 src2{GetSrc<IR::F32>(inst.src[2])};
+    const IR::U32 exp2{ir.Select(ir.FPIsInf(src2), ir.Imm32(128U), ir.FPFrexpExp(src2))};
+
+    // we cannot rely on division preserving denorms, so instead
+    // of checking if |num / denom| < FLT_MIN, rewrite it and check
+    // if the result of |num| < FLT_MIN * |denom| is true
+    const auto would_div_be_denorm = [&](auto num, auto denom) {
+        const auto flt_min = ir.BitCast<IR::F32>(ir.Imm32(0x00800000U));
+        return ir.FPLessThan(ir.FPAbs(num), ir.FPMul(flt_min, ir.FPAbs(denom)), true);
+    };
+
+    const IR::U1 exp_diff_large = ir.IGreaterThanEqual(ir.ISub(exp2, exp1), ir.Imm32(96), true);
+    const IR::U1 src_quot_denorm = would_div_be_denorm(src2, src1);
+
+    ir.SetVcc(ir.LogicalOr(exp_diff_large, src_quot_denorm));
+
+    const IR::F32 f32_zero = ir.Imm32(0.0f);
+    const IR::U32 u32_zero = ir.Imm32(0U);
+    const IR::U32 u32_64 = ir.Imm32(64U);
+    const IR::U1 one_over_src1_denorm = would_div_be_denorm(ir.Imm32(1.0f), src1);
+
+    IR::U32 scale{ir.Select(
+        exp_diff_large, ir.Select(ir.FPEqual(src0, src1, true), u32_64, u32_zero),
+        ir.Select(
+            ir.FPIsDenorm(src1), u32_64,
+            ir.Select(ir.LogicalAnd(one_over_src1_denorm, src_quot_denorm),
+                      ir.Select(ir.FPEqual(src0, src1, true), ir.Imm32(-64), u32_zero),
+                      ir.Select(one_over_src1_denorm, ir.Imm32(-64),
+                                ir.Select(src_quot_denorm,
+                                          ir.Select(ir.FPEqual(src0, src2, true), u32_64, u32_zero),
+                                          ir.Select(ir.LogicalAnd(ir.ILessThanEqual(
+                                                                      exp2, ir.Imm32(-23), true),
+                                                                  ir.FPEqual(src0, src2, true)),
+                                                    u32_64, u32_zero))))))};
+
+    const IR::F32 f32_nan =
+        ir.BitCast<IR::F32, IR::U32>(ir.Imm32(0xffc00000)); // this is the NaN ps4 uses
+    const IR::U1 nan_cond =
+        ir.LogicalAnd(ir.FPNotEqual(src1, f32_zero), ir.FPNotEqual(src2, f32_zero));
+
+    const IR::F32 result{ir.Select(nan_cond, ir.FPLdexp(src0, scale), f32_nan)};
+
+    SetDst(inst.dst[0], result);
 }
 
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
