@@ -100,6 +100,16 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_CVT_PKNORM_I16_F32(inst);
     case Opcode::V_CVT_PKRTZ_F16_F32:
         return V_CVT_PKRTZ_F16_F32(inst);
+    case Opcode::V_ADD_F16:
+        return V_ADD_F16(inst);
+    case Opcode::V_SUB_F16:
+        return V_SUB_F16(inst);
+    case Opcode::V_MUL_F16:
+        return V_MUL_F16(inst);
+    case Opcode::V_MAX_F16:
+        return V_MAX_F16(inst);
+    case Opcode::V_MIN_F16:
+        return V_MIN_F16(inst);
 
         // VOP1
     case Opcode::V_MOV_B32:
@@ -744,6 +754,51 @@ void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
     SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Float, vec_f32));
+}
+
+void Translator::V_ADD_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+
+    const auto result = ir.FPAdd(src0, src1);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_SUB_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+
+    const auto result = ir.FPSub(src0, src1);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_MUL_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+
+    const auto result = ir.FPMul(src0, src1);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_MAX_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+
+    const auto result = ir.FPMax(src0, src1);
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_MIN_F16(const GcnInst& inst) {
+    const auto src0 = GetSrc16<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrc16<IR::F32>(inst.src[1]);
+
+    const auto result = ir.FPMin(src0, src1);
+
+    SetDst16(inst.dst[0], result);
 }
 
 // VOP1

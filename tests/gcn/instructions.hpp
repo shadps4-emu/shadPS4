@@ -3,12 +3,15 @@
 
 #include "shader_recompiler/frontend/opcodes.h"
 
+#include <ranges>
 
 using OpcodeSOP1 = Shader::Gcn::OpcodeSOP1;
 using OpcodeSOP2 = Shader::Gcn::OpcodeSOP2;
 using OpcodeSOPK = Shader::Gcn::OpcodeSOPK;
 using OpcodeVOP1 = Shader::Gcn::OpcodeVOP1;
 using OpcodeVOP2 = Shader::Gcn::OpcodeVOP2;
+using OpcodeVOP3 = Shader::Gcn::OpcodeVOP3;
+using OpcodeVOP3P = Shader::Gcn::OpcodeVOP3P;
 
 enum class VOperand8 : u8 {
     V0 = 0,
@@ -1184,4 +1187,165 @@ private:
     } i;
 
     static_assert(sizeof(VOP2Internal) == sizeof(u32));
+};
+
+enum class Omod : u8 {
+    None = 0,
+    Mul2 = 1,
+    Mul4 = 2,
+    Div2 = 3,
+};
+
+class VOP3A {
+public:
+    explicit constexpr VOP3A(OpcodeVOP3 op, VOperand8 vdst, SOperand9 src0, SOperand9 src1, SOperand9 src2 = SOperand9::S0) {
+        i.src0 = std::to_underlying(src0);
+        i.src1 = std::to_underlying(src1);
+        i.src2 = std::to_underlying(src2);
+        i.vdst = std::to_underlying(vdst);
+        i.op = std::to_underlying(op) & 0x1FF;
+        i.op_msb = std::to_underlying(op) >> 9;
+        i.encoding = 0b110100;
+    }
+
+    VOP3A& SetAbs(const std::array<bool, 3>& abs) {
+        u8 a = 0;
+        for (auto x : abs | std::views::reverse) {
+            a |= x;
+            a <<= 1;
+        }
+        i.abs = a >> 1;
+        return *this;
+    }
+
+    VOP3A& SetClamp(bool clamp) {
+        i.clmp = clamp;
+        return *this;
+    }
+
+    VOP3A& SetNeg(const std::array<bool, 3>& neg) {
+        u8 n = 0;
+        for (auto x : neg | std::views::reverse) {
+            n |= x;
+            n <<= 1;
+        }
+        i.neg = n >> 1;
+        return *this;
+    }
+
+    VOP3A& SetOmod(Omod omod) {
+        i.omod = std::to_underlying(omod);
+        return *this;
+    }
+
+    VOP3A& SetOpSel(const std::array<bool, 4>& op_sel) {
+        u8 o = 0;
+        for (auto x : op_sel | std::views::reverse) {
+            o |= x;
+            o <<= 1;
+        }
+        i.op_sel = o >> 1;
+        return *this;
+    }
+
+    u64 Get() {
+        return std::bit_cast<u64>(i);
+    }
+
+private:
+    struct VOP3Internal {
+        u64 vdst : 8;
+        u64 abs : 3;
+        u64 clmp : 1;
+        u64 op_sel : 4;
+        u64 op_msb : 1;
+        u64 op : 9;
+        u64 encoding : 6;
+        u64 src0 : 9;
+        u64 src1 : 9;
+        u64 src2 : 9;
+        u64 omod : 2;
+        u64 neg : 3;
+    } i;
+
+    static_assert(sizeof(VOP3Internal) == sizeof(u64));
+};
+
+class VOP3P {
+public:
+    explicit constexpr VOP3P(OpcodeVOP3P op, VOperand8 vdst, SOperand9 src0, SOperand9 src1, SOperand9 src2 = SOperand9::S0) {
+        i.src0 = std::to_underlying(src0);
+        i.src1 = std::to_underlying(src1);
+        i.src2 = std::to_underlying(src2);
+        i.vdst = std::to_underlying(vdst);
+        i.op = std::to_underlying(op);
+        // enable op_sel_hi as a sensible default, so both 16-bit chunks are processed
+        i.op_sel_hi01 = 0b11;
+        i.op_sel_hi2 = 0b1;
+        i.encoding = 0b110011;
+    }
+
+    VOP3P& SetClamp(bool clamp) {
+        i.clmp = clamp;
+        return *this;
+    }
+
+    VOP3P& SetNeg(const std::array<bool, 3>& neg) {
+        u8 n = 0;
+        for (auto x : neg | std::views::reverse) {
+            n |= x;
+            n <<= 1;
+        }
+        i.neg = n >> 1;
+        return *this;
+    }
+
+    VOP3P& SetNegHi(const std::array<bool, 3>& neg) {
+        u8 n = 0;
+        for (auto x : neg | std::views::reverse) {
+            n |= x;
+            n <<= 1;
+        }
+        i.neg_hi = n >> 1;
+        return *this;
+    }
+
+    VOP3P& SetOpSel(const std::array<bool, 3>& op_sel) {
+        u8 o = 0;
+        for (auto x : op_sel | std::views::reverse) {
+            o |= x;
+            o <<= 1;
+        }
+        i.op_sel = o >> 1;
+        return *this;
+    }
+
+    VOP3P& SetOpSelHi(const std::array<bool, 3>& op_sel) {
+        i.op_sel_hi2 = op_sel[2];
+        i.op_sel_hi01 = (op_sel[1] << 1) | op_sel[0];
+        return *this;
+    }
+
+    u64 Get() {
+        return std::bit_cast<u64>(i);
+    }
+
+private:
+    struct VOP3PInternal {
+        u64 vdst : 8;
+        u64 neg_hi : 3;
+        u64 op_sel : 3;
+        u64 op_sel_hi2 : 1;
+        u64 clmp : 1;
+        u64 op : 7;
+        u64 : 3;
+        u64 encoding : 6;
+        u64 src0 : 9;
+        u64 src1 : 9;
+        u64 src2 : 9;
+        u64 op_sel_hi01 : 2;
+        u64 neg : 3;
+    } i;
+
+    static_assert(sizeof(VOP3PInternal) == sizeof(u64));
 };

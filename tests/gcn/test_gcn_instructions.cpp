@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include <gtest/gtest.h>
+#include <half.hpp>
 
 #include "gcn_test_runner.hpp"
 #include "instructions.hpp"
@@ -57,4 +58,66 @@ TEST_F(GcnTest, add_nan) {
 
     EXPECT_TRUE(result.has_value());
     EXPECT_TRUE(std::isnan(*result));
+}
+
+using half = half_float::half;
+
+struct F16x2 {
+    half a;
+    half b = half(0.0f);
+
+    bool operator==(const F16x2& rhs) const = default;
+};
+
+static_assert(sizeof(F16x2) == sizeof(float));
+
+TEST_F(GcnTest, add_f16) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_ADD_F16, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f)}, F16x2{half(1.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, F16x2{half(2.0f)});
+}
+
+TEST_F(GcnTest, add_f16_clamp) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetClamp(true).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f)}, F16x2{half(1.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, F16x2{half(1.0f)}); //confirmed with neo
+}
+
+TEST_F(GcnTest, add_f16_neg) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetNeg({true, true, false}).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f)}, F16x2{half(1.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ((*result).a, half(-2.0f)); //confirmed with neo
+}
+
+TEST_F(GcnTest, add_f16_opsel_hi) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetOpSel({true, true, false, true}).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f), half(2.0f)}, F16x2{half(1.0f), half(2.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ((*result).a, half(1.0f));
+    EXPECT_EQ((*result).b, half(4.0f));
+}
+
+TEST_F(GcnTest, sub_f16) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_SUB_F16, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(0.0f)}, F16x2{half(1.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, F16x2{half(-1.0f)}); //confirmed with neo
 }
