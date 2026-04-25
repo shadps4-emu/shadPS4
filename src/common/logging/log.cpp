@@ -176,7 +176,7 @@ void Setup(std::string_view log_filename) {
     }
 
 #else
-    g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>());
+    g_console_sink = UpdateColorLevels(std::make_shared<spdlog_stdout>(spdlog::color_mode::always));
 #endif
 
     g_console_sink->set_formatter(std::make_unique<thread_name_formatter>(UNLIMITED_SIZE));
