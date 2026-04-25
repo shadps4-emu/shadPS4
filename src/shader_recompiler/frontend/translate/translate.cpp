@@ -396,6 +396,150 @@ T Translator::GetSrc(const InstOperand& operand) {
 template IR::U32 Translator::GetSrc<IR::U32>(const InstOperand&);
 template IR::F32 Translator::GetSrc<IR::F32>(const InstOperand&);
 
+template <typename T, bool is_signed>
+T Translator::GetSrc16(const InstOperand& operand) {
+    constexpr bool is_float = std::is_same_v<T, IR::F32>;
+
+    const auto get_imm = [&](auto value) -> T {
+        if constexpr (is_float) {
+            return ir.Imm32(std::bit_cast<float>(value));
+        } else {
+            return ir.Imm32(std::bit_cast<u32>(value));
+        }
+    };
+
+    const auto number_format = []() -> AmdGpu::NumberFormat {
+        if constexpr (is_float) {
+            return AmdGpu::NumberFormat::Float;
+        } else {
+            return AmdGpu::NumberFormat::Uint;
+        }
+    }();
+
+    const auto bitcast_to_u = [&](auto value) -> IR::U32 {
+        if constexpr (is_float) {
+            return ir.BitCast<IR::U32>(value);
+        } else {
+            return value;
+        }
+    };
+
+    const auto cast = [&](auto value) -> T {
+        if constexpr (is_float) {
+            return value;
+        } else {
+            return ir.BitFieldExtract(ir.BitCast<IR::U32>(value), ir.Imm32(0), ir.Imm32(16),
+                                      is_signed);
+        }
+    };
+
+    const auto op_sel = operand.op_sel.op_sel;
+
+    T value{};
+    switch (operand.field) {
+    case OperandField::ScalarGPR: {
+        const auto f = ir.GetScalarReg<T>(IR::ScalarReg(operand.code));
+        value = cast(IR::F32{
+            ir.CompositeExtract(ir.Unpack2x16(number_format, bitcast_to_u(f)), op_sel ? 1 : 0)});
+        break;
+    }
+    case OperandField::VectorGPR: {
+        const auto v = ir.GetVectorReg<T>(IR::VectorReg(operand.code));
+        value = cast(IR::F32{
+            ir.CompositeExtract(ir.Unpack2x16(number_format, bitcast_to_u(v)), op_sel ? 1 : 0)});
+        break;
+    }
+    case OperandField::ConstZero:
+        value = get_imm(0U);
+        break;
+    case OperandField::SignedConstIntPos:
+        value = get_imm(operand.code - SignedConstIntPosMin + 1);
+        break;
+    case OperandField::SignedConstIntNeg:
+        value = get_imm(-s32(operand.code) + SignedConstIntNegMin - 1);
+        break;
+    case OperandField::LiteralConst:
+        value = get_imm(operand.code);
+        break;
+    case OperandField::ConstFloatPos_1_0:
+        value = get_imm(1.f);
+        break;
+    case OperandField::ConstFloatPos_0_5:
+        value = get_imm(0.5f);
+        break;
+    case OperandField::ConstFloatPos_2_0:
+        value = get_imm(2.0f);
+        break;
+    case OperandField::ConstFloatPos_4_0:
+        value = get_imm(4.0f);
+        break;
+    case OperandField::ConstFloatNeg_0_5:
+        value = get_imm(-0.5f);
+        break;
+    case OperandField::ConstFloatNeg_1_0:
+        value = get_imm(-1.0f);
+        break;
+    case OperandField::ConstFloatNeg_2_0:
+        value = get_imm(-2.0f);
+        break;
+    case OperandField::ConstFloatNeg_4_0:
+        value = get_imm(-4.0f);
+        break;
+    case OperandField::Inv2Pi:
+        value = get_imm(static_cast<float>(1.0f / (2.0f * std::numbers::pi)));
+        break;
+    case OperandField::Sdwa:
+        LOG_ERROR(Render_Recompiler, "unhandled SDWA");
+        value = get_imm(0U);
+        break;
+    case OperandField::Dpp:
+        LOG_ERROR(Render_Recompiler, "unhandled DPP");
+        value = get_imm(0U);
+        break;
+    case OperandField::VccLo:
+        if constexpr (is_float) {
+            value = IR::F32{
+                ir.CompositeExtract(ir.Unpack2x16(number_format, ir.GetVccLo()), op_sel ? 1 : 0)};
+        } else {
+            value = cast(IR::F32{ir.CompositeExtract(
+                ir.Unpack2x16(number_format, bitcast_to_u(ir.GetVccLo())), op_sel ? 1 : 0)});
+        }
+        break;
+    case OperandField::VccHi:
+        UNREACHABLE();
+        break;
+    case OperandField::M0:
+        UNREACHABLE();
+        break;
+    case OperandField::Scc:
+        UNREACHABLE();
+        break;
+    default:
+        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+    }
+
+    if constexpr (is_float) {
+        if (operand.input_modifier.abs) {
+            value = ir.FPAbs(value);
+        }
+        if (operand.input_modifier.neg) {
+            value = ir.FPNeg(value);
+        }
+    } else {
+        if (operand.input_modifier.abs) {
+            value = ir.BitwiseAnd(value, ir.Imm32(0x7FFFFFFFu));
+        }
+        if (operand.input_modifier.neg) {
+            value = ir.BitwiseXor(value, ir.Imm32(0x80000000u));
+        }
+    }
+    return value;
+}
+
+template IR::U32 Translator::GetSrc16<IR::U32, false>(const InstOperand&);
+template IR::U32 Translator::GetSrc16<IR::U32, true>(const InstOperand&);
+template IR::F32 Translator::GetSrc16<IR::F32, false>(const InstOperand&);
+
 template <typename T>
 T Translator::GetSrc64(const InstOperand& operand) {
     constexpr bool is_float = std::is_same_v<T, IR::F64>;
@@ -551,6 +695,67 @@ void Translator::SetDst(const InstOperand& operand, const IR::U32F32& value) {
         UNREACHABLE();
     }
 }
+
+template <bool is_signed>
+void Translator::SetDst16(const InstOperand& operand, const IR::U32F32& value) {
+    IR::U32F32 result = value;
+    if (value.Type() == IR::Type::F32) {
+        if (operand.output_modifier.multiplier != 0.f) {
+            result = ir.FPMul(result, ir.Imm32(operand.output_modifier.multiplier));
+        }
+        if (operand.output_modifier.clamp) {
+            result = ir.FPSaturate(result);
+        }
+    } else {
+        if (operand.output_modifier.clamp) {
+            if constexpr (is_signed) {
+                result = ir.SClamp(result, ir.Imm32(-32768), ir.Imm32(32767));
+            } else {
+                result = ir.UMin(result, ir.Imm32(0xFFFF));
+            }
+        }
+    }
+
+    const auto cast = [&](auto value) -> IR::U32 {
+        if (value.Type() == IR::Type::F32) {
+            return ir.UConvert(32, ir.BitCast<IR::U16>(IR::F16{ir.FPConvert(16, value)}));
+        } else if (value.Type() == IR::Type::U32) {
+            return value;
+        } else {
+            UNREACHABLE();
+        }
+    };
+
+    const auto op_sel = operand.op_sel.op_sel;
+
+    switch (operand.field) {
+    case OperandField::ScalarGPR: {
+        const auto prev_dst = ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code));
+        const auto result_16 = cast(result);
+        const auto new_dst =
+            ir.BitFieldInsert(prev_dst, result_16, ir.Imm32(op_sel ? 16 : 0), ir.Imm32(16));
+        return ir.SetScalarReg(IR::ScalarReg(operand.code), new_dst);
+    }
+    case OperandField::VectorGPR: {
+        const auto prev_dst = ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code));
+        const auto result_16 = cast(result);
+        const auto new_dst =
+            ir.BitFieldInsert(prev_dst, result_16, ir.Imm32(op_sel ? 16 : 0), ir.Imm32(16));
+        return ir.SetVectorReg(IR::VectorReg(operand.code), new_dst);
+    }
+    case OperandField::VccLo:
+        UNREACHABLE();
+    case OperandField::VccHi:
+        UNREACHABLE();
+    case OperandField::M0:
+        UNREACHABLE();
+    default:
+        UNREACHABLE();
+    }
+}
+
+template void Translator::SetDst16<false>(const InstOperand&, const IR::U32F32& value);
+template void Translator::SetDst16<true>(const InstOperand&, const IR::U32F32& value);
 
 void Translator::SetDst64(const InstOperand& operand, const IR::U64F64& value_raw) {
     IR::U64F64 value_untyped = value_raw;
