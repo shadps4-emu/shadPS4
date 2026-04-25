@@ -22,8 +22,7 @@
 namespace Libraries::Np::NpManager {
 
 static bool g_shadnet_enabled = false;
-static s32 g_firmware_version = 0;
-static s32 sdk_ret = 0;
+static s32 g_firmware_version = -1;
 using UserId = Libraries::UserService::OrbisUserServiceUserId;
 
 static void FillCountryCodeFromProfile(UserId user_id, OrbisNpCountryCode* out) {
@@ -567,7 +566,7 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
                               OrbisNpId* np_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        return (sdk_ret >= 0 && g_firmware_version < Common::ElfInfo::FW_90)
+        return (g_firmware_version >= 0 && g_firmware_version < Common::ElfInfo::FW_90)
                    ? ORBIS_NP_ERROR_USER_NOT_FOUND
                    : ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -591,7 +590,7 @@ s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId
                                   OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        return (sdk_ret >= 0 && g_firmware_version < Common::ElfInfo::FW_90)
+        return (g_firmware_version >= 0 && g_firmware_version < Common::ElfInfo::FW_90)
                    ? ORBIS_NP_ERROR_USER_NOT_FOUND
                    : ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -617,7 +616,7 @@ s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserSe
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        if (sdk_ret < 0 || g_firmware_version >= Common::ElfInfo::FW_40) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_40) {
             return ORBIS_NP_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -633,7 +632,7 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        if (sdk_ret < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
             return ORBIS_NP_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -681,7 +680,7 @@ s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId
     *has_signed_up = false;
 
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
-        if (sdk_ret < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
+        if (g_firmware_version < 0 || g_firmware_version >= Common::ElfInfo::FW_90) {
             return ORBIS_NP_ERROR_INVALID_ARGUMENT;
         }
     }
@@ -820,7 +819,8 @@ void DeregisterNpCallback(std::string key) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
+    ASSERT_MSG(sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
+               "Failed to get compiled SDK verision.");
     g_shadnet_enabled = EmulatorSettings.IsShadNetEnabled();
     Libraries::Np::NpHandler::GetInstance().Initialize();
 
