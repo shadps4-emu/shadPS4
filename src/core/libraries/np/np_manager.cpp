@@ -7,9 +7,11 @@
 #include <variant>
 
 #include <core/user_settings.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
@@ -20,7 +22,7 @@
 namespace Libraries::Np::NpManager {
 
 static bool g_shadnet_enabled = false;
-
+static s32 sdk_version{0};
 using UserId = Libraries::UserService::OrbisUserServiceUserId;
 
 static void FillCountryCodeFromProfile(UserId user_id, OrbisNpCountryCode* out) {
@@ -563,6 +565,12 @@ s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUser
 s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
                               OrbisNpId* np_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        const s32 sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+        return (sdk_ret >= 0 && sdk_version < Common::ElfInfo::FW_90)
+                   ? ORBIS_NP_ERROR_USER_NOT_FOUND
+                   : ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     if (np_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -582,6 +590,12 @@ s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId use
 s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   OrbisNpOnlineId* online_id) {
     LOG_DEBUG(Lib_NpManager, "user_id {}", user_id);
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        const s32 sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+        return (sdk_ret >= 0 && sdk_version < Common::ElfInfo::FW_90)
+                   ? ORBIS_NP_ERROR_USER_NOT_FOUND
+                   : ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
     if (online_id == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
@@ -597,6 +611,12 @@ s32 PS4_SYSV_ABI sceNpGetNpReachabilityState(Libraries::UserService::OrbisUserSe
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        const s32 sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+        if (sdk_ret < 0 || sdk_version >= Common::ElfInfo::FW_40) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
     *state = (g_shadnet_enabled && Libraries::Np::NpHandler::GetInstance().IsPsnSignedIn(user_id))
                  ? OrbisNpReachabilityState::Reachable
                  : OrbisNpReachabilityState::Unavailable;
@@ -607,6 +627,12 @@ s32 PS4_SYSV_ABI sceNpGetState(Libraries::UserService::OrbisUserServiceUserId us
                                OrbisNpState* state) {
     if (state == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+    }
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        const s32 sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+        if (sdk_ret < 0 || sdk_version >= Common::ElfInfo::FW_90) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
     }
     if (!g_shadnet_enabled) {
         *state = OrbisNpState::SignedOut;
@@ -646,11 +672,17 @@ sceNpGetUserIdByAccountId(u64 account_id, Libraries::UserService::OrbisUserServi
 
 s32 PS4_SYSV_ABI sceNpHasSignedUp(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   bool* has_signed_up) {
-    if (has_signed_up == nullptr ||
-        user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+    if (has_signed_up == nullptr) {
         return ORBIS_NP_ERROR_INVALID_ARGUMENT;
     }
     *has_signed_up = false;
+
+    if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID) {
+        const s32 sdk_ret = Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version);
+        if (sdk_ret < 0 || sdk_version >= Common::ElfInfo::FW_90) {
+            return ORBIS_NP_ERROR_INVALID_ARGUMENT;
+        }
+    }
 
     const User* u = UserManagement.GetUserByID(user_id);
     if (!u) {
