@@ -20,7 +20,7 @@
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
 #include "emulator.h"
-#include "imgui/big_picture.h"
+#include "imgui/big_picture/big_picture.h"
 
 #ifdef _WIN32
 #include <windows.h>
