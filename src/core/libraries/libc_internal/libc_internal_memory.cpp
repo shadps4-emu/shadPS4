@@ -5,6 +5,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "libc_internal_memory.h"
 
 namespace Libraries::LibcInternal {
@@ -30,7 +31,7 @@ s32 PS4_SYSV_ABI internal_memcmp(const void* s1, const void* s2, size_t n) {
     return std::memcmp(s1, s2, n);
 }
 
-void RegisterlibSceLibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
+LibcInternalMemory::LibcInternalMemory(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("NFLs+dRJGNg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy_s);
     LIB_FUNCTION("Q3VBxCXhUHs", "libSceLibcInternal", 1, "libSceLibcInternal", internal_memcpy);

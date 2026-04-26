@@ -17,10 +17,12 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/sysmodule/sysmodule.h"
+#include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/tls.h"
 #include "ipc/ipc.h"
+#include "shadps4_app.h"
 
 #ifndef _WIN32
 #include <signal.h>
@@ -56,9 +58,11 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-Linker::Linker() : memory{Memory::Instance()} {}
+Linker::Linker() = default;
 
-Linker::~Linker() = default;
+Linker::~Linker() {
+    main_thread.Stop();
+}
 
 void Linker::Execute(const std::vector<std::string>& args) {
     if (EmulatorSettings.IsDebugDump()) {
@@ -107,7 +111,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
         use_extended_mem2 = mem_param.extended_memory_2 ? *mem_param.extended_memory_2 : false;
     }
 
-    memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
+    ShadPs4App::GetInstance()->m_emulator.memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
@@ -116,9 +120,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
         sigemptyset(&emptyset);
         pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
 #endif
-        if (auto& ipc = IPC::Instance()) {
-            ipc.WaitForStart();
-        }
+
+        ShadPs4App::GetInstance()->m_ipc.WaitForStart();
 
         // Have libSceSysmodule preload our libraries.
         Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
@@ -136,7 +139,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
         ASSERT_MSG(result == 0, "Unable to emulate libSceGnmDriver initialization");
 
         // Start main module.
-        EntryParams& params = Libraries::Kernel::entry_params;
+        auto& params = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.entry_params;
         params.argc = 1;
         params.argv[0] = "eboot.bin";
         if (!args.empty()) {
@@ -159,7 +162,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
         return -1;
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
+    auto module = std::make_unique<Module>(ShadPs4App::GetInstance()->m_emulator.memory.get(), elf_name, max_tls_index);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;

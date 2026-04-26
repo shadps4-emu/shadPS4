@@ -8,6 +8,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2.h"
 #include "core/libraries/np/np_types.h"
@@ -768,7 +769,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(OrbisNpMatching2ContextId ctx
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("10t3e5+JPnU", "libSceNpMatching2", 1, "libSceNpMatching2",
                  sceNpMatching2Initialize);
     LIB_FUNCTION("Mqp3lJ+sjy4", "libSceNpMatching2", 1, "libSceNpMatching2",

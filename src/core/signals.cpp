@@ -7,6 +7,7 @@
 #include "common/signal_context.h"
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/signals.h"
+#include "shadps4_app.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -61,7 +62,7 @@ static std::string DisassembleInstruction(void* code_address) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status =
-        Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+        ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(instruction, operands, code_address);
     if (ZYAN_SUCCESS(status)) {
         ZydisFormatter formatter;
         ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
@@ -75,7 +76,7 @@ static std::string DisassembleInstruction(void* code_address) {
 }
 
 void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
-    const auto* signals = Signals::Instance();
+    const auto& signals = *ShadPs4App::GetInstance()->m_emulator.m_signals;
 
     auto* code_address = Common::GetRip(raw_context);
 
@@ -83,7 +84,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGSEGV:
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
-        if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
+        if (!signals.DispatchAccessViolation(raw_context, info->si_addr)) {
             // If the guest has installed a custom signal handler, and the access violation didn't
             // come from HLE memory tracking, pass the signal on
             if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
@@ -98,7 +99,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         break;
     }
     case SIGILL:
-        if (!signals->DispatchIllegalInstruction(raw_context)) {
+        if (!signals.DispatchIllegalInstruction(raw_context)) {
             if (Libraries::Kernel::Handlers[Libraries::Kernel::NativeToOrbisSignal(sig)]) {
                 Libraries::Kernel::SigactionHandler(sig, info,
                                                     reinterpret_cast<ucontext_t*>(raw_context));

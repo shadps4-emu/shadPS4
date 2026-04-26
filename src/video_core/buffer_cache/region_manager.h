@@ -6,6 +6,7 @@
 #include "common/div_ceil.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "shadps4_app.h"
 
 #ifdef __unix__
 #include "common/adaptive_mutex.h"

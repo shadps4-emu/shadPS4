@@ -4,7 +4,16 @@
 #pragma once
 
 #include "common/types.h"
+#include "core/libraries/kernel/aio.h"
+#include "core/libraries/kernel/debug.h"
+#include "core/libraries/kernel/equeue.h"
+#include "core/libraries/kernel/file_system.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/process.h"
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/time.h"
 #include "core/linker.h"
 
 namespace Core::Loader {
@@ -18,8 +27,6 @@ s32 ErrnoToSceKernelError(s32 e);
 void SetPosixErrno(s32 e);
 s32* PS4_SYSV_ABI __Error();
 const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
-
-extern Core::EntryParams entry_params;
 
 template <class F, F f>
 struct OrbisWrapperImpl;
@@ -78,7 +85,33 @@ struct OrbisKernelAppInfo {
     OrbisKernelTitleWorkaround title_workaround;
 };
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    void KernelServiceThread(std::stop_token stoken);
+
+    boost::asio::io_context io_context;
+    std::mutex m_asio_req;
+    std::condition_variable_any cv_asio_req;
+    std::atomic<u32> asio_requests;
+    std::jthread service_thread;
+
+    Core::EntryParams entry_params{};
+
+    u64 g_mspace_atomic_id_mask = 0;
+    u64 g_mstate_table[64] = {0};
+
+    Kernel::HleFileSystem m_file_system;
+    Kernel::HleTime m_time;
+    Kernel::HleThreads m_threads;
+    Kernel::HleKernelEventFlag m_kernel_event_flag;
+    Kernel::HleMemory m_memory;
+    Kernel::HleEventQueue m_event_queue;
+    Kernel::HleProcess m_process;
+    Kernel::HleException m_exception;
+    Kernel::HleAio m_aio;
+    Kernel::HleDebug m_debug;
+};
 
 constexpr u32 POSIX_SC_ARG_MAX = 1;
 constexpr u32 POSIX_SC_CHILD_MAX = 2;

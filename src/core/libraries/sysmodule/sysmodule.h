@@ -34,5 +34,9 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleByNameInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternal();
 s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    std::mutex g_mutex{};
+};
 } // namespace Libraries::SysModule

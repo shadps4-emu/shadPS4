@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include "common/singleton.h"
-
 #include <semaphore>
 #include <string>
 #include <thread>
@@ -18,10 +16,6 @@ class IPC {
     std::binary_semaphore start_semaphore{0};
 
 public:
-    static IPC& Instance() {
-        return *Common::Singleton<IPC>::Instance();
-    }
-
     void Init();
 
     operator bool() const {

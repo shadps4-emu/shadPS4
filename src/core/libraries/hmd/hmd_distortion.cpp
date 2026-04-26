@@ -6,14 +6,14 @@
 #include "core/libraries/hmd/hmd.h"
 #include "core/libraries/hmd/hmd_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Hmd {
 
-static bool g_library_initialized = false;
-
 s32 PS4_SYSV_ABI sceHmdDistortionInitialize(void* reserved) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    g_library_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.m_distortion.g_library_initialized = true;
     return ORBIS_OK;
 }
 
@@ -62,10 +62,10 @@ s32 PS4_SYSV_ABI sceHmdGetDistortionParams() {
 
 s32 PS4_SYSV_ABI sceHmdDistortionTerminate() {
     // Internal (non-exported) library function for terminating the distortion sub-library.
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.m_distortion.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    g_library_initialized = false;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.m_distortion.g_library_initialized = false;
     return ORBIS_OK;
 }
 
@@ -74,7 +74,7 @@ s32 PS4_SYSV_ABI Func_B614F290B67FB59B() {
     return ORBIS_OK;
 }
 
-void RegisterDistortion(Core::Loader::SymbolsResolver* sym) {
+HleDistortion::HleDistortion(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("gEokC+OGI8g", "libSceHmdDistortion", 1, "libSceHmd",
                  sceHmdDistortionGet2dVrCommand);
     LIB_FUNCTION("za4xJfzCBcM", "libSceHmd", 1, "libSceHmd", sceHmdDistortionGet2dVrCommand);

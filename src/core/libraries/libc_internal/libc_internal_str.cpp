@@ -5,6 +5,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "libc_internal_str.h"
 
 namespace Libraries::LibcInternal {
@@ -60,7 +61,7 @@ const char* PS4_SYSV_ABI internal_strchr(const char* str, int c) {
     return std::strchr(str, c);
 }
 
-void RegisterlibSceLibcInternalStr(Core::Loader::SymbolsResolver* sym) {
+LibcInternalStr::LibcInternalStr(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("5Xa2ACNECdo", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcpy_s);
     LIB_FUNCTION("K+gcnFFJKVc", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcat_s);
     LIB_FUNCTION("aesyjrHVWy4", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcmp);

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/pad/pad_errors.h"
 #include "input/controller.h"
@@ -123,7 +123,7 @@ int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizerRectangle() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("1MMK0W-kMgA", "libSceSystemGesture", 1, "libSceSystemGesture",
                  sceSystemGestureAppendTouchRecognizer);
     LIB_FUNCTION("j4yXIA2jJ68", "libSceSystemGesture", 1, "libSceSystemGesture",

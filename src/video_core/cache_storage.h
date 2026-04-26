@@ -4,8 +4,8 @@
 #pragma once
 
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "common/types.h"
+#include "shadps4_app.h"
 
 #include <functional>
 #include <thread>
@@ -22,10 +22,6 @@ enum class BlobType : u32 {
 
 class DataBase {
 public:
-    static DataBase& Instance() {
-        return *Common::Singleton<DataBase>::Instance();
-    }
-
     void Open();
     void Close();
     [[nodiscard]] bool IsOpened() const {

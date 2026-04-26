@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <list>
+#include <SDL3/SDL.h>
 
 #include "common/assert.h"
 #include "common/types.h"
 #include "input/controller.h"
 #include "input/input_handler.h"
 #include "input_mouse.h"
-
-#include <common/singleton.h>
-#include <emulator.h>
-#include "SDL3/SDL.h"
-
-extern Frontend::WindowSDL* g_window;
+#include "emulator.h"
+#include "shadps4_app.h"
 
 namespace Input {
 
@@ -102,8 +100,8 @@ void EmulateTouchpad(GameController* controller, u32 interval) {
     float x, y;
     SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&x, &y);
     controller->SetTouchpadState(0, (mouse_buttons & SDL_BUTTON_LMASK) != 0,
-                                 std::clamp(x / g_window->GetWidth(), 0.0f, 1.0f),
-                                 std::clamp(y / g_window->GetHeight(), 0.0f, 1.0f));
+                                 std::clamp(x / ShadPs4App::GetInstance()->m_emulator.window->GetWidth(), 0.0f, 1.0f),
+                                 std::clamp(y / ShadPs4App::GetInstance()->m_emulator.window->GetHeight(), 0.0f, 1.0f));
     controller->Button(Libraries::Pad::OrbisPadButtonDataOffset::TouchPad,
                        (mouse_buttons & SDL_BUTTON_RMASK) != 0);
 }

@@ -3,11 +3,21 @@
 
 #pragma once
 
+#include "common/logging/log.h"
 #include "common/types.h"
 #include "core/libraries/kernel/equeue.h"
+#include "video_core/amdgpu/liverpool.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
+}
+
+namespace Vulkan {
+class Presenter;
+}
+
+namespace AmdGpu {
+class Liverpool;
 }
 
 namespace Libraries::GnmDriver {
@@ -299,5 +309,30 @@ int PS4_SYSV_ABI Func_BFB41C057478F0BF();
 int PS4_SYSV_ABI Func_E51D44DB8151238C();
 int PS4_SYSV_ABI Func_F916890425496553();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Context {
+    Context() {
+        LOG_INFO(Lib_GnmDriver, "Initializing presenter");
+    }
+};
+
+struct Library : public Context {
+    Library(Core::Loader::SymbolsResolver* sym);
+    ~Library();
+
+    // In case if `submitDone` is issued we need to block submissions until GPU idle
+    u32 submission_lock{};
+    std::condition_variable cv_lock{};
+    std::mutex m_submission{};
+    u64 frames_submitted{};      // frame counter
+    bool send_init_packet{true}; // initialize HW state before first game's submit in a frame
+    s32 sdk_version{0};
+
+    u32 asc_next_offs_dw[AmdGpu::Liverpool::NumComputeRings];
+
+    // This address is initialized in sceGnmGetTheTessellationFactorRingBufferBaseAddress
+    VAddr tessellation_factors_ring_addr = -1;
+
+    std::unique_ptr<AmdGpu::Liverpool> liverpool;
+    std::unique_ptr<Vulkan::Presenter> presenter;
+};
 } // namespace Libraries::GnmDriver

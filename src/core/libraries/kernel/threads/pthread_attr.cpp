@@ -6,6 +6,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -215,8 +216,8 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
     if (pthread == nullptr || dstattr == nullptr || (dst = *dstattr) == nullptr) {
         return POSIX_EINVAL;
     }
-    auto* thread_state = ThrState::Instance();
-    const int ret = thread_state->FindThread(pthread, /*include dead*/ false);
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    const int ret = thread_state.FindThread(pthread, /*include dead*/ false);
     if (ret != 0) {
         return ret;
     }
@@ -284,7 +285,7 @@ int PS4_SYSV_ABI scePthreadAttrSetaffinity(PthreadAttrT* attr, const u64 mask) {
     return posix_pthread_attr_setaffinity_np(attr, sizeof(Cpuset), &cpuset);
 }
 
-void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym) {
+HleThreadAttr::HleThreadAttr(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("wtkt-teR1so", "libScePosix", 1, "libkernel", posix_pthread_attr_init);
     LIB_FUNCTION("vQm4fDEsWi8", "libScePosix", 1, "libkernel", posix_pthread_attr_getstack);

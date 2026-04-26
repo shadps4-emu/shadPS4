@@ -8,6 +8,7 @@
 #include "libraries/system/userservice.h"
 #include "user_manager.h"
 #include "user_settings.h"
+#include "shadps4_app.h"
 
 bool UserManager::AddUser(const User& user) {
     for (const auto& u : m_users.user) {

@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/system/systemservice.h"
 #include "core/libraries/system/systemservice_error.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 
 namespace Libraries::SystemService {
 
@@ -1871,9 +1872,9 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser() {
 
 int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) {
     LOG_DEBUG(Lib_SystemService, "called");
-    auto emu = Common::Singleton<Core::Emulator>::Instance();
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto hostPath = mnt->GetHostPath(std::string_view(path));
+    auto& emu = ShadPs4App::GetInstance()->m_emulator;
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+    auto hostPath = mnt.GetHostPath(std::string_view(path));
     if (hostPath.empty()) {
         LOG_INFO(Lib_SystemService, "Restart called with invalid file '{}', exiting.", path);
         std::quick_exit(0);
@@ -1884,7 +1885,7 @@ int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) 
             args.push_back(std::string(*ptr));
         }
     }
-    emu->Restart(hostPath, args);
+    emu.Restart(hostPath, args);
     return ORBIS_OK;
 }
 
@@ -2446,7 +2447,7 @@ void PushSystemServiceEvent(const OrbisSystemServiceEvent& event) {
     g_event_queue.push(event);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("alZfRdr2RP8", "libSceAppMessaging", 1, "libSceSystemService",
                  sceAppMessagingClearEventFlag);
     LIB_FUNCTION("jKgAUl6cLy0", "libSceAppMessaging", 1, "libSceSystemService",

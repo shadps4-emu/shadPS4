@@ -35,5 +35,7 @@ int PS4_SYSV_ABI sceSystemGestureUpdatePrimitiveTouchRecognizer();
 int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizer();
 int PS4_SYSV_ABI sceSystemGestureUpdateTouchRecognizerRectangle();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::SystemGesture

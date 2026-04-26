@@ -9,6 +9,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -371,7 +372,7 @@ int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
     return result;
 }
 
-void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym) {
+HleKernelEventFlag::HleKernelEventFlag(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("PZku4ZrXJqg", "libkernel", 1, "libkernel", sceKernelCancelEventFlag);
     LIB_FUNCTION("7uhBFWRAS60", "libkernel", 1, "libkernel", sceKernelClearEventFlag);
     LIB_FUNCTION("s9-RaxukuzQ", "libkernel", 1, "libkernel", sceKernelCloseEventFlag);

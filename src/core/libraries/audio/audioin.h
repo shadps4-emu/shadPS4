@@ -5,8 +5,10 @@
 
 #include <memory>
 #include <mutex>
-#include <core/libraries/system/userservice.h>
+#include <shared_mutex>
+
 #include "common/types.h"
+#include "core/libraries/system/userservice.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -84,5 +86,16 @@ int PS4_SYSV_ABI sceAudioInVmicCreate();
 int PS4_SYSV_ABI sceAudioInVmicDestroy();
 int PS4_SYSV_ABI sceAudioInVmicWrite();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+class AudioInBackend;
+
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+    ~Library();
+
+    std::array<std::shared_ptr<PortIn>, ORBIS_AUDIO_IN_NUM_PORTS> port_table{};
+    std::shared_mutex port_table_mutex;
+    std::mutex port_allocation_mutex;
+
+    std::unique_ptr<AudioInBackend> audio;
+};
 } // namespace Libraries::AudioIn

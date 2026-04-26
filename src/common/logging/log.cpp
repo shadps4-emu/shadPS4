@@ -10,6 +10,7 @@
 #include "common/logging/thread_name_formatter.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
+#include "shadps4_app.h"
 #ifdef _WIN32
 #include <Windows.h>
 #endif

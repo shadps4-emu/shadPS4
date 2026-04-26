@@ -9,6 +9,8 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 #include <utility>
 
@@ -17,9 +19,6 @@
 
 namespace Libraries::Camera {
 
-static bool g_library_opened = false;
-static s32 g_firmware_version = 0;
-static s32 g_handles = 0;
 static constexpr s32 c_width = 1280, c_height = 800;
 
 SDL_Camera* sdl_camera = nullptr;
@@ -76,14 +75,14 @@ s32 PS4_SYSV_ABI sceCameraClose(s32 handle) {
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
     // Decrement handles on close.
     // If no handles remain, then the library itself is considered closed.
-    if (--g_handles == 0) {
-        g_library_opened = false;
+    if (--ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_handles == 0) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened = false;
     }
     return ORBIS_OK;
 }
@@ -93,14 +92,14 @@ s32 PS4_SYSV_ABI sceCameraCloseByHandle(s32 handle) {
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
     // Decrement handles on close.
     // If no handles remain, then the library itself is considered closed.
-    if (--g_handles == 0) {
-        g_library_opened = false;
+    if (--ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_handles == 0) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened = false;
     }
     return ORBIS_OK;
 }
@@ -117,7 +116,7 @@ s32 PS4_SYSV_ABI sceCameraGetAttribute(s32 handle, OrbisCameraAttribute* attribu
         attribute->channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -148,11 +147,11 @@ s32 PS4_SYSV_ABI sceCameraGetAutoExposureGain(s32 handle, OrbisCameraChannel cha
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable == nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (option != nullptr && (g_firmware_version < Common::ElfInfo::FW_30 ||
+    if (option != nullptr && (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_firmware_version < Common::ElfInfo::FW_30 ||
                               option->sizeThis != sizeof(OrbisCameraAutoExposureGainTarget))) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -172,7 +171,7 @@ s32 PS4_SYSV_ABI sceCameraGetAutoWhiteBalance(s32 handle, OrbisCameraChannel cha
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -211,7 +210,7 @@ s32 PS4_SYSV_ABI sceCameraGetConfig(s32 handle, OrbisCameraConfig* config) {
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -244,7 +243,7 @@ s32 PS4_SYSV_ABI sceCameraGetContrast(s32 handle, OrbisCameraChannel channel, u3
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -260,7 +259,7 @@ s32 PS4_SYSV_ABI sceCameraGetDefectivePixelCancellation(s32 handle, OrbisCameraC
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -272,7 +271,7 @@ s32 PS4_SYSV_ABI sceCameraGetDeviceConfig(s32 handle, OrbisCameraConfig* config)
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -284,7 +283,7 @@ s32 PS4_SYSV_ABI sceCameraGetDeviceConfigWithoutHandle(OrbisCameraConfig* config
     if (config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -308,7 +307,7 @@ s32 PS4_SYSV_ABI sceCameraGetDeviceInfo(s32 reserved, OrbisCameraDeviceInfo* dev
         device_info->sizeThis != sizeof(OrbisCameraDeviceInfo) || device_info->infoRevision != 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_INIT;
     }
 
@@ -323,7 +322,7 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -334,9 +333,6 @@ s32 PS4_SYSV_ABI sceCameraGetExposureGain(s32 handle, OrbisCameraChannel channel
     exposure_gain->mode = 0;
     return ORBIS_OK;
 }
-
-static std::vector<u16> raw16_buffer1, raw16_buffer2;
-static std::vector<u8> raw8_buffer1, raw8_buffer2;
 
 static void ConvertRGBA8888ToRAW16(const u8* src, u16* dst, int width, int height) {
     for (int y = 0; y < height; ++y) {
@@ -405,7 +401,7 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened || !sdl_camera) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened || !sdl_camera) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (EmulatorSettings.GetCameraId() == -1) {
@@ -427,12 +423,12 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[0][0] = frame->pixels;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer1.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw16_buffer1.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer1.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer1.data();
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer1.data(), c_width, c_height);
-        frame_data->pFramePointerList[0][0] = raw8_buffer1.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer1.data(), c_width, c_height);
+        frame_data->pFramePointerList[0][0] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer1.data();
         break;
     default:
         UNREACHABLE();
@@ -442,12 +438,12 @@ s32 PS4_SYSV_ABI sceCameraGetFrameData(s32 handle, OrbisCameraFrameData* frame_d
         frame_data->pFramePointerList[1][0] = frame->pixels;
         break;
     case ORBIS_CAMERA_FORMAT_RAW16:
-        ConvertRGBA8888ToRAW16((u8*)frame->pixels, raw16_buffer2.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw16_buffer2.data();
+        ConvertRGBA8888ToRAW16((u8*)frame->pixels, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer2.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer2.data();
         break;
     case ORBIS_CAMERA_FORMAT_RAW8:
-        ConvertRGBA8888ToRAW8((u8*)frame->pixels, raw8_buffer2.data(), c_width, c_height);
-        frame_data->pFramePointerList[1][0] = raw8_buffer2.data();
+        ConvertRGBA8888ToRAW8((u8*)frame->pixels, ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer2.data(), c_width, c_height);
+        frame_data->pFramePointerList[1][0] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer2.data();
         break;
     default:
         UNREACHABLE();
@@ -465,7 +461,7 @@ s32 PS4_SYSV_ABI sceCameraGetGamma(s32 handle, OrbisCameraChannel channel, Orbis
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -482,7 +478,7 @@ s32 PS4_SYSV_ABI sceCameraGetHue(s32 handle, OrbisCameraChannel channel, s32* hu
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -498,7 +494,7 @@ s32 PS4_SYSV_ABI sceCameraGetLensCorrection(s32 handle, OrbisCameraChannel chann
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -508,7 +504,7 @@ s32 PS4_SYSV_ABI sceCameraGetLensCorrection(s32 handle, OrbisCameraChannel chann
 
 s32 PS4_SYSV_ABI sceCameraGetMmapConnectedCount(u32* count) {
     LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (count == nullptr) {
@@ -524,7 +520,7 @@ s32 PS4_SYSV_ABI sceCameraGetProductInfo(void* product_info) {
     if (product_info == nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_INIT;
     }
 
@@ -541,7 +537,7 @@ s32 PS4_SYSV_ABI sceCameraGetRegistryInfo(void* registry_info) {
     if (registry_info == nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_INIT;
     }
 
@@ -556,7 +552,7 @@ s32 PS4_SYSV_ABI sceCameraGetSaturation(s32 handle, OrbisCameraChannel channel, 
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -572,7 +568,7 @@ s32 PS4_SYSV_ABI sceCameraGetSharpness(s32 handle, OrbisCameraChannel channel, u
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -593,7 +589,7 @@ s32 PS4_SYSV_ABI sceCameraGetWhiteBalance(s32 handle, OrbisCameraChannel channel
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -607,7 +603,7 @@ s32 PS4_SYSV_ABI sceCameraGetWhiteBalance(s32 handle, OrbisCameraChannel channel
 
 s32 PS4_SYSV_ABI sceCameraInitializeRegistryCalibData() {
     LOG_ERROR(Lib_Camera, "(STUBBED) called");
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_INIT;
     }
     return ORBIS_OK;
@@ -632,7 +628,7 @@ s32 PS4_SYSV_ABI sceCameraIsValidFrameData(s32 handle, OrbisCameraFrameData* fra
     if (handle < 1 || frame_data == nullptr || frame_data->sizeThis > 584) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -647,8 +643,8 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
         return ORBIS_CAMERA_ERROR_PARAM;
     }
 
-    g_library_opened = true;
-    return ++g_handles;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened = true;
+    return ++ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_handles;
 }
 
 s32 PS4_SYSV_ABI sceCameraOpenByModuleId() {
@@ -673,7 +669,7 @@ s32 PS4_SYSV_ABI sceCameraSetAttribute(s32 handle, OrbisCameraAttribute* attribu
         attribute->channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -693,7 +689,7 @@ s32 PS4_SYSV_ABI sceCameraSetAutoExposureGain(s32 handle, OrbisCameraChannel cha
         return ORBIS_CAMERA_ERROR_PARAM;
     }
     if (option != nullptr) {
-        if (g_firmware_version < Common::ElfInfo::FW_30 ||
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_firmware_version < Common::ElfInfo::FW_30 ||
             option->sizeThis != sizeof(OrbisCameraAutoExposureGainTarget)) {
             return ORBIS_CAMERA_ERROR_PARAM;
         }
@@ -702,7 +698,7 @@ s32 PS4_SYSV_ABI sceCameraSetAutoExposureGain(s32 handle, OrbisCameraChannel cha
             return ORBIS_CAMERA_ERROR_PARAM;
         }
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -716,7 +712,7 @@ s32 PS4_SYSV_ABI sceCameraSetAutoWhiteBalance(s32 handle, OrbisCameraChannel cha
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -733,7 +729,7 @@ s32 PS4_SYSV_ABI sceCameraSetConfig(s32 handle, OrbisCameraConfig* config) {
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
     if (EmulatorSettings.GetCameraId() == -1) {
@@ -774,7 +770,7 @@ s32 PS4_SYSV_ABI sceCameraSetConfigInternal(s32 handle, OrbisCameraConfig* confi
     if (handle < 1 || config == nullptr || config->sizeThis != sizeof(OrbisCameraConfig)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -788,7 +784,7 @@ s32 PS4_SYSV_ABI sceCameraSetContrast(s32 handle, OrbisCameraChannel channel, u3
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -810,7 +806,7 @@ s32 PS4_SYSV_ABI sceCameraSetDefectivePixelCancellation(s32 handle, OrbisCameraC
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable > 1 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -825,7 +821,7 @@ s32 PS4_SYSV_ABI sceCameraSetDefectivePixelCancellationInternal(s32 handle,
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable > 2 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -840,7 +836,7 @@ s32 PS4_SYSV_ABI sceCameraSetExposureGain(s32 handle, OrbisCameraChannel channel
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -860,7 +856,7 @@ s32 PS4_SYSV_ABI sceCameraSetGamma(s32 handle, OrbisCameraChannel channel, Orbis
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -873,7 +869,7 @@ s32 PS4_SYSV_ABI sceCameraSetHue(s32 handle, OrbisCameraChannel channel, s32 hue
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -887,7 +883,7 @@ s32 PS4_SYSV_ABI sceCameraSetLensCorrection(s32 handle, OrbisCameraChannel chann
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable > 1 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -901,7 +897,7 @@ s32 PS4_SYSV_ABI sceCameraSetLensCorrectionInternal(s32 handle, OrbisCameraChann
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || enable > 2 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -930,7 +926,7 @@ s32 PS4_SYSV_ABI sceCameraSetSaturation(s32 handle, OrbisCameraChannel channel, 
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -944,10 +940,10 @@ s32 PS4_SYSV_ABI sceCameraSetSharpness(s32 handle, OrbisCameraChannel channel, u
         channel < OrbisCameraChannel::ORBIS_CAMERA_CHANNEL_0 || option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_35 && sharpness > 10) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_firmware_version >= Common::ElfInfo::FW_35 && sharpness > 10) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -971,7 +967,7 @@ s32 PS4_SYSV_ABI sceCameraSetVideoSync(s32 handle, OrbisCameraVideoSyncParameter
         video_sync->videoSyncMode > 1 || video_sync->pModeOption != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -992,7 +988,7 @@ s32 PS4_SYSV_ABI sceCameraSetWhiteBalance(s32 handle, OrbisCameraChannel channel
         option != nullptr) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -1004,10 +1000,10 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
     if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_25 &&
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_firmware_version >= Common::ElfInfo::FW_25 &&
         (param->formatLevel[0] >= 0xf || param->formatLevel[1] >= 0xf ||
          (param->formatLevel[0] | param->formatLevel[1]) == 0)) {
         return ORBIS_CAMERA_ERROR_FORMAT_UNKNOWN;
@@ -1027,10 +1023,10 @@ s32 PS4_SYSV_ABI sceCameraStart(s32 handle, OrbisCameraStartParameter* param) {
         LOG_INFO(Lib_Camera, "No camera devices connected");
         return ORBIS_CAMERA_ERROR_NOT_CONNECTED;
     }
-    raw8_buffer1.resize(c_width * c_height);
-    raw16_buffer1.resize(c_width * c_height);
-    raw8_buffer2.resize(c_width * c_height);
-    raw16_buffer2.resize(c_width * c_height);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer1.resize(c_width * c_height);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer1.resize(c_width * c_height);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw8_buffer2.resize(c_width * c_height);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.raw16_buffer2.resize(c_width * c_height);
     SDL_CameraSpec cam_spec{};
     switch (output_config0.format.formatLevel0) {
     case ORBIS_CAMERA_FORMAT_YUV422:
@@ -1094,7 +1090,7 @@ s32 PS4_SYSV_ABI sceCameraStartByHandle(s32 handle, OrbisCameraStartParameter* p
     if (handle < 1 || param == nullptr || param->sizeThis != sizeof(OrbisCameraStartParameter)) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -1106,7 +1102,7 @@ s32 PS4_SYSV_ABI sceCameraStop(s32 handle) {
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
@@ -1118,14 +1114,14 @@ s32 PS4_SYSV_ABI sceCameraStopByHandle(s32 handle) {
     if (handle < 1) {
         return ORBIS_CAMERA_ERROR_PARAM;
     }
-    if (!g_library_opened) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_camera.g_library_opened) {
         return ORBIS_CAMERA_ERROR_NOT_OPEN;
     }
 
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
 
     LIB_FUNCTION("QhjrPkRPUZQ", "libSceCamera", 1, "libSceCamera", sceCameraAccGetData);

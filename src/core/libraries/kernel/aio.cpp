@@ -10,14 +10,13 @@
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "file_system.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
 #define MAX_QUEUE 512
-
-static s32* id_state;
-static s32 id_index;
 
 s32 PS4_SYSV_ABI sceKernelAioInitializeImpl(void* p, s32 size) {
 
@@ -28,7 +27,7 @@ s32 PS4_SYSV_ABI sceKernelAioDeleteRequest(OrbisKernelAioSubmitId id, s32* ret) 
     if (ret == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    id_state[id] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id] = ORBIS_KERNEL_AIO_STATE_ABORTED;
     *ret = 0;
     return 0;
 }
@@ -38,7 +37,7 @@ s32 PS4_SYSV_ABI sceKernelAioDeleteRequests(OrbisKernelAioSubmitId id[], s32 num
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     for (s32 i = 0; i < num; i++) {
-        id_state[id[i]] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]] = ORBIS_KERNEL_AIO_STATE_ABORTED;
         ret[i] = 0;
     }
 
@@ -48,7 +47,7 @@ s32 PS4_SYSV_ABI sceKernelAioPollRequest(OrbisKernelAioSubmitId id, s32* state) 
     if (state == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    *state = id_state[id];
+    *state = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id];
     return 0;
 }
 
@@ -57,7 +56,7 @@ s32 PS4_SYSV_ABI sceKernelAioPollRequests(OrbisKernelAioSubmitId id[], s32 num, 
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     for (s32 i = 0; i < num; i++) {
-        state[i] = id_state[id[i]];
+        state[i] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]];
     }
 
     return 0;
@@ -68,7 +67,7 @@ s32 PS4_SYSV_ABI sceKernelAioCancelRequest(OrbisKernelAioSubmitId id, s32* state
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     if (id) {
-        id_state[id] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id] = ORBIS_KERNEL_AIO_STATE_ABORTED;
         *state = ORBIS_KERNEL_AIO_STATE_ABORTED;
     } else {
         *state = ORBIS_KERNEL_AIO_STATE_PROCESSING;
@@ -82,7 +81,7 @@ s32 PS4_SYSV_ABI sceKernelAioCancelRequests(OrbisKernelAioSubmitId id[], s32 num
     }
     for (s32 i = 0; i < num; i++) {
         if (id[i]) {
-            id_state[id[i]] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]] = ORBIS_KERNEL_AIO_STATE_ABORTED;
             state[i] = ORBIS_KERNEL_AIO_STATE_ABORTED;
         } else {
             state[i] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
@@ -100,7 +99,7 @@ s32 PS4_SYSV_ABI sceKernelAioWaitRequest(OrbisKernelAioSubmitId id, s32* state, 
 
     s32 timeout = 0;
 
-    while (id_state[id] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
+    while (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
         sceKernelUsleep(10);
 
         timer += 10;
@@ -112,7 +111,7 @@ s32 PS4_SYSV_ABI sceKernelAioWaitRequest(OrbisKernelAioSubmitId id, s32* state, 
         }
     }
 
-    *state = id_state[id];
+    *state = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id];
 
     if (timeout)
         return ORBIS_KERNEL_ERROR_ETIMEDOUT;
@@ -130,7 +129,7 @@ s32 PS4_SYSV_ABI sceKernelAioWaitRequests(OrbisKernelAioSubmitId id[], s32 num, 
 
     for (s32 i = 0; i < num; i++) {
         if (!completion && !timeout) {
-            while (id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
+            while (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
                 sceKernelUsleep(10);
                 timer += 10;
 
@@ -144,11 +143,11 @@ s32 PS4_SYSV_ABI sceKernelAioWaitRequests(OrbisKernelAioSubmitId id[], s32 num, 
         }
 
         if (mode == 0x02) {
-            if (id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_COMPLETED)
+            if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_COMPLETED)
                 completion = 1;
         }
 
-        state[i] = id_state[id[i]];
+        state[i] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[id[i]];
     }
 
     if (timeout)
@@ -165,7 +164,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommands(OrbisKernelAioRWRequest req[], s
     if (id == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    id_state[id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
 
     for (s32 i = 0; i < size; i++) {
 
@@ -181,14 +180,14 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommands(OrbisKernelAioRWRequest req[], s
         }
     }
 
-    id_state[id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
 
-    *id = id_index;
+    *id = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index;
 
-    id_index = (id_index + 1) % MAX_QUEUE;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index = (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index + 1) % MAX_QUEUE;
 
-    if (!id_index)
-        id_index++;
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index)
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index++;
 
     return 0;
 }
@@ -202,7 +201,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommandsMultiple(OrbisKernelAioRWRequest 
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
 
         s64 ret = sceKernelPread(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
 
@@ -210,21 +209,21 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommandsMultiple(OrbisKernelAioRWRequest 
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_ABORTED;
             req[i].result->returnValue = ret;
 
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
 
         } else {
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_COMPLETED;
             req[i].result->returnValue = ret;
 
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
         }
 
-        id[i] = id_index;
+        id[i] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index;
 
-        id_index = (id_index + 1) % MAX_QUEUE;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index = (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index + 1) % MAX_QUEUE;
 
-        if (!id_index)
-            id_index++;
+        if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index)
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index++;
     }
 
     return 0;
@@ -239,7 +238,7 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommands(OrbisKernelAioRWRequest req[], 
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
 
         s64 ret = sceKernelPwrite(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
 
@@ -247,24 +246,24 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommands(OrbisKernelAioRWRequest req[], 
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_ABORTED;
             req[i].result->returnValue = ret;
 
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
 
         } else {
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_COMPLETED;
             req[i].result->returnValue = ret;
 
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
         }
     }
 
-    *id = id_index;
+    *id = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index;
 
-    id_index = (id_index + 1) % MAX_QUEUE;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index = (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index + 1) % MAX_QUEUE;
 
     // skip id_index equals 0 , because sceKernelAioCancelRequest will submit id
     // equal to 0
-    if (!id_index)
-        id_index++;
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index)
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index++;
 
     return 0;
 }
@@ -278,26 +277,26 @@ s32 PS4_SYSV_ABI sceKernelAioSubmitWriteCommandsMultiple(OrbisKernelAioRWRequest
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
     for (s32 i = 0; i < size; i++) {
-        id_state[id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_PROCESSING;
         s64 ret = sceKernelPwrite(req[i].fd, req[i].buf, req[i].nbyte, req[i].offset);
 
         if (ret < 0) {
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_ABORTED;
             req[i].result->returnValue = ret;
 
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_ABORTED;
 
         } else {
             req[i].result->state = ORBIS_KERNEL_AIO_STATE_COMPLETED;
             req[i].result->returnValue = ret;
-            id_state[id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_state[ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index] = ORBIS_KERNEL_AIO_STATE_COMPLETED;
         }
 
-        id[i] = id_index;
-        id_index = (id_index + 1) % MAX_QUEUE;
+        id[i] = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index = (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index + 1) % MAX_QUEUE;
 
-        if (!id_index)
-            id_index++;
+        if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index)
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_aio.id_index++;
     }
     return 0;
 }
@@ -312,7 +311,7 @@ s32 PS4_SYSV_ABI sceKernelAioInitializeParam() {
     return ORBIS_OK;
 }
 
-void RegisterAio(Core::Loader::SymbolsResolver* sym) {
+HleAio::HleAio(Core::Loader::SymbolsResolver* sym) {
     id_index = 1;
     id_state = (int*)malloc(sizeof(int) * MAX_QUEUE);
     memset(id_state, 0, sizeof(sizeof(int) * MAX_QUEUE));

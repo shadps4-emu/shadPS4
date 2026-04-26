@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -336,7 +337,7 @@ int PS4_SYSV_ABI posix_pthread_condattr_setpshared(PthreadCondAttrT* attr, int p
     return 0;
 }
 
-void RegisterCond(Core::Loader::SymbolsResolver* sym) {
+HleCond::HleCond(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("mKoTx03HRWA", "libScePosix", 1, "libkernel", posix_pthread_condattr_init);
     LIB_FUNCTION("dJcuQVn6-Iw", "libScePosix", 1, "libkernel", posix_pthread_condattr_destroy);

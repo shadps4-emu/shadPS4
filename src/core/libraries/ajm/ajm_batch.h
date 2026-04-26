@@ -5,7 +5,19 @@
 
 #include "common/assert.h"
 #include "common/types.h"
-#include "core/libraries/ajm/ajm.h"
+#include "core/libraries/ajm/ajm_buffer.h"
+#include "core/libraries/ajm/ajm_job_flags.h"
+#include "core/libraries/ajm/ajm_sideband_format.h"
+#include "core/libraries/ajm/ajm_sideband_gapless_decode.h"
+#include "core/libraries/ajm/ajm_sideband_init_parameters.h"
+#include "core/libraries/ajm/ajm_sideband_mframe.h"
+#include "core/libraries/ajm/ajm_sideband_resample_parameters.h"
+#include "core/libraries/ajm/ajm_sideband_result.h"
+#include "core/libraries/ajm/ajm_sideband_statistics_engine.h"
+#include "core/libraries/ajm/ajm_sideband_statistics_engine_parameters.h"
+#include "core/libraries/ajm/ajm_sideband_statistics_engine_per_codec.h"
+#include "core/libraries/ajm/ajm_sideband_statistics_memory.h"
+#include "core/libraries/ajm/ajm_sideband_stream.h"
 
 #include <boost/container/small_vector.hpp>
 

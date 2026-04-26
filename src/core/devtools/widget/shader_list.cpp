@@ -13,12 +13,12 @@
 #include "core/debug_state.h"
 #include "core/devtools/options.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/libs.h"
 #include "imgui/imgui_std.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 
@@ -31,12 +31,16 @@ ShaderList::Selection::Selection(int index)
     isa_editor->SetReadOnly(true);
     glsl_editor->SetPalette(TextEditor::GetDarkPalette());
     glsl_editor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-    presenter->GetWindow().RequestKeyboard();
+    ShadPs4App::GetInstance()
+        ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetWindow()
+        .RequestKeyboard();
 }
 
 ShaderList::Selection::~Selection() {
     if (index >= 0) {
-        presenter->GetWindow().ReleaseKeyboard();
+        ShadPs4App::GetInstance()
+            ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetWindow()
+            .ReleaseKeyboard();
     }
 }
 
@@ -58,7 +62,9 @@ void ShaderList::Selection::ReloadShader(DebugStateType::ShaderDump& value) {
     if (spv.empty()) {
         return;
     }
-    auto& cache = presenter->GetRasterizer().GetPipelineCache();
+    auto& cache = ShadPs4App::GetInstance()
+                      ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetRasterizer()
+                      .GetPipelineCache();
     if (const auto m = cache.ReplaceShader(value.module, spv); m) {
         value.module = *m;
     }
@@ -176,7 +182,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             file << value.patch_source;
             std::string msg = "Patch saved to ";
             msg += Common::U8stringToString(patch_path.u8string());
-            DebugState.ShowDebugMessage(msg);
+            ShadPs4App::GetInstance()->DebugState.ShowDebugMessage(msg);
         }
         if (compile) {
             static std::map<Shader::LogicalStage, std::string> stage_arg = {
@@ -189,7 +195,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
             };
             auto stage = stage_arg.find(value.l_stage);
             if (stage == stage_arg.end()) {
-                DebugState.ShowDebugMessage(std::string{"Invalid shader stage"});
+                ShadPs4App::GetInstance()->DebugState.ShowDebugMessage(std::string{"Invalid shader stage"});
             } else {
                 std::string cmd =
                     fmt::format("glslc --target-env=vulkan1.3 --target-spv=spv1.6 "
@@ -198,7 +204,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                 bool success = false;
                 auto res = RunDisassembler(cmd, value.patch_source, &success);
                 if (!res.empty() || !success) {
-                    DebugState.ShowDebugMessage("Compilation failed:\n" + res);
+                    ShadPs4App::GetInstance()->DebugState.ShowDebugMessage("Compilation failed:\n" + res);
                 } else {
                     Common::FS::IOFile file{patch_bin_path, Common::FS::FileAccessMode::Read};
                     value.patch_spv.resize(file.GetSize() / sizeof(u32));
@@ -206,7 +212,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
                     value.cache_patch_disasm =
                         RunDisassembler("spirv-dis {src}", value.patch_spv, &success);
                     if (!success) {
-                        DebugState.ShowDebugMessage("Decompilation failed (Compile was ok):\n" +
+                        ShadPs4App::GetInstance()->DebugState.ShowDebugMessage("Decompilation failed (Compile was ok):\n" +
                                                     res);
                     } else {
                         isa_editor->SetText(value.cache_patch_disasm);
@@ -230,7 +236,7 @@ bool ShaderList::Selection::DrawShader(DebugStateType::ShaderDump& value) {
 void ShaderList::Draw() {
     for (auto it = open_shaders.begin(); it != open_shaders.end();) {
         auto& selection = *it;
-        auto& shader = DebugState.shader_dump_list[selection.index];
+        auto& shader = ShadPs4App::GetInstance()->DebugState.shader_dump_list[selection.index];
         if (!selection.DrawShader(shader)) {
             it = open_shaders.erase(it);
         } else {
@@ -255,7 +261,7 @@ void ShaderList::Draw() {
 
     auto width = GetContentRegionAvail().x;
     int i = 0;
-    for (const auto& shader : DebugState.shader_dump_list) {
+    for (const auto& shader : ShadPs4App::GetInstance()->DebugState.shader_dump_list) {
         if (search_box[0] != '\0' && !shader.name.contains(search_box)) {
             i++;
             continue;

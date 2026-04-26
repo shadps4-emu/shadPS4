@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "common/types.h"
 
 namespace Core::Loader {
@@ -120,5 +122,23 @@ int PS4_SYSV_ABI sceAppContentGetAddcontInfoByEntitlementId();
 int PS4_SYSV_ABI sceAppContentGetAddcontInfoListByIroTag();
 int PS4_SYSV_ABI sceAppContentGetDownloadedStoreCountry();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct AddContInfo {
+    char entitlement_label[ORBIS_NP_UNIFIED_ENTITLEMENT_LABEL_SIZE];
+    OrbisAppContentAddcontDownloadStatus status;
+    OrbisAppContentGetEntitlementKey key;
+};
+
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    std::array<AddContInfo, ORBIS_APP_CONTENT_INFO_LIST_MAX_SIZE> addcont_info = {{
+        {"0000000000000000",
+         OrbisAppContentAddcontDownloadStatus::Installed,
+         {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+          0x00}},
+    }};
+
+    s32 addcont_count = 0;
+    std::string title_id;
+};
 } // namespace Libraries::AppContent

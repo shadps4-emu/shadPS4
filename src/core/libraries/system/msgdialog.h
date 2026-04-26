@@ -4,6 +4,7 @@
 #pragma once
 
 #include "core/libraries/system/commondialog.h"
+#include "core/libraries/system/msgdialog_ui.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -29,5 +30,12 @@ CommonDialog::Error PS4_SYSV_ABI sceMsgDialogProgressBarSetValue(OrbisMsgDialogP
 CommonDialog::Error PS4_SYSV_ABI sceMsgDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceMsgDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    CommonDialog::Status g_status = CommonDialog::Status::NONE;
+    MsgDialogState g_state{};
+    DialogResult g_result{};
+    MsgDialogUi g_msg_dialog_ui;
+};
 } // namespace Libraries::MsgDialog

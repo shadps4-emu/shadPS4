@@ -4,6 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/network/ssl2.h"
 #include "core/libraries/network/ssl2_error.h"
 
@@ -313,7 +314,7 @@ int PS4_SYSV_ABI Func_28F8791A771D39C7() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("Md+HYkCBZB4", "libSceSsl", 1, "libSceSsl", CA_MGMT_extractKeyBlobEx);
     LIB_FUNCTION("9bKYzKP6kYU", "libSceSsl", 1, "libSceSsl", CA_MGMT_extractPublicKeyInfo);
     LIB_FUNCTION("ipLIammTj2Q", "libSceSsl", 1, "libSceSsl", CA_MGMT_freeKeyBlob);

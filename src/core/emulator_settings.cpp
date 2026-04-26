@@ -12,14 +12,11 @@
 #include "common/logging/log.h"
 #include "emulator_settings.h"
 #include "emulator_state.h"
+#include "shadps4_app.h"
 
 #include <SDL3/SDL_messagebox.h>
 
 using json = nlohmann::json;
-
-// ── Singleton storage ─────────────────────────────────────────────────
-std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::s_instance = nullptr;
-std::mutex EmulatorSettingsImpl::s_mutex;
 
 // ── nlohmann helpers for std::filesystem::path ───────────────────────
 namespace nlohmann {
@@ -103,18 +100,6 @@ EmulatorSettingsImpl::EmulatorSettingsImpl() = default;
 EmulatorSettingsImpl::~EmulatorSettingsImpl() {
     if (m_loaded)
         Save();
-}
-
-std::shared_ptr<EmulatorSettingsImpl> EmulatorSettingsImpl::GetInstance() {
-    std::lock_guard lock(s_mutex);
-    if (!s_instance)
-        s_instance = std::make_shared<EmulatorSettingsImpl>();
-    return s_instance;
-}
-
-void EmulatorSettingsImpl::SetInstance(std::shared_ptr<EmulatorSettingsImpl> instance) {
-    std::lock_guard lock(s_mutex);
-    s_instance = std::move(instance);
 }
 
 // --------------------
@@ -474,7 +459,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_vulkan, gj.at("Vulkan"), changed);
 
             PrintChangedSummary(changed);
-            EmulatorState::GetInstance()->SetGameSpecifigConfigUsed(true);
+            ShadPs4App::GetInstance()->m_emulator_state.SetGameSpecifigConfigUsed(true);
             return true;
         }
     } catch (const std::exception& e) {

@@ -403,5 +403,23 @@ s32 PS4_SYSV_ABI sceVrTrackerStopLiveCapture();
 s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle);
 s32 PS4_SYSV_ABI sceVrTrackerTerm();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    bool g_library_initialized = false;
+
+    // Internal memory
+    void* g_garlic_memory_pointer = nullptr;
+    u32 g_garlic_size = 0;
+    void* g_onion_memory_pointer = nullptr;
+    u32 g_onion_size = 0;
+    void* g_work_memory_pointer = nullptr;
+    u32 g_work_size = 0;
+
+    // Registered handles
+    s32 g_pad_handle = -1;
+    s32 g_move_handle = -1;
+    s32 g_gun_handle = -1;
+    s32 g_hmd_handle = -1;
+};
 } // namespace Libraries::VrTracker

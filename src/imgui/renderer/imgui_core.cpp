@@ -16,6 +16,7 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_internal.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "texture_manager.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
@@ -192,7 +193,7 @@ ImGuiID NewFrame(bool is_reusing_frame) {
 
     ImGuiWindowFlags flags =
         ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_AutoHideTabBar;
-    if (!DebugState.IsShowingDebugMenuBar()) {
+    if (!ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar()) {
         flags |= ImGuiDockNodeFlags_NoTabBar;
     }
     ImGuiID dockId = DockSpaceOverViewport(0, GetMainViewport(), flags);
@@ -243,7 +244,7 @@ void Render(const vk::CommandBuffer& cmdbuf, const vk::ImageView& image_view,
 }
 
 bool MustKeepDrawing() {
-    return layers.size() > 1 || change_layers.size() > 1 || DebugState.IsShowingDebugMenuBar();
+    return layers.size() > 1 || change_layers.size() > 1 || ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar();
 }
 
 } // namespace Core

@@ -21,12 +21,12 @@
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
+#include "shadps4_app.h"
 
 namespace Input {
 /*
@@ -227,9 +227,6 @@ std::array<std::pair<int, int>, 4> leftjoystick_deadzone, rightjoystick_deadzone
 std::list<std::pair<InputEvent, bool>> pressed_keys;
 std::list<InputID> toggled_keys;
 static std::vector<BindingConnection> connections;
-
-GameControllers ControllerOutput::controllers =
-    *Common::Singleton<Input::GameControllers>::Instance();
 
 std::array<ControllerAllOutputs, 9> output_arrays = {
     ControllerAllOutputs(0), ControllerAllOutputs(1), ControllerAllOutputs(2),
@@ -656,11 +653,11 @@ InputEvent InputBinding::GetInputEventFromSDLEvent(const SDL_Event& e) {
                           e.type == SDL_EVENT_MOUSE_WHEEL, 0);
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:
-        gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
+        gamepad = ShadPs4App::GetInstance()->m_emulator.controllers->GetGamepadIndexFromJoystickId(e.gbutton.which) + 1;
         return InputEvent({InputType::Controller, (u32)e.gbutton.button, gamepad}, e.gbutton.down,
                           0);
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-        gamepad = ControllerOutput::controllers.GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
+        gamepad = ShadPs4App::GetInstance()->m_emulator.controllers->GetGamepadIndexFromJoystickId(e.gaxis.which) + 1;
         return InputEvent({InputType::Axis, (u32)e.gaxis.axis, gamepad}, true, e.gaxis.value / 256);
     default:
         return InputEvent();
@@ -730,7 +727,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
     old_param = *new_param;
     GameController* controller;
     if (gamepad_index < 5)
-        controller = controllers[gamepad_index];
+        controller = (*ShadPs4App::GetInstance()->m_emulator.controllers)[gamepad_index];
     else
         UNREACHABLE();
     if (button != SDL_GAMEPAD_BUTTON_INVALID) {
@@ -754,7 +751,7 @@ void ControllerOutput::FinalizeUpdate(u8 gamepad_index) {
             rightjoystick_halfmode = new_button_state;
             break;
         case HOTKEY_RELOAD_INPUTS:
-            ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+            ParseInputConfig(std::string(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial()));
             break;
         case HOTKEY_FULLSCREEN:
             PushSDLEvent(SDL_EVENT_TOGGLE_FULLSCREEN);

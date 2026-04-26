@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/singleton.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/linker.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
 static constexpr size_t TlsTcbSize = 0x40;
 static constexpr size_t TlsTcbAlign = 0x20;
 
-static std::shared_mutex RtldLock;
-
 Core::Tcb* TcbCtor(Pthread* thread, int initial) {
-    std::scoped_lock lk{RtldLock};
+    std::scoped_lock lk{
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_threads.m_rtld.RtldLock};
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     auto* addr_out = linker->AllocateTlsForThread(initial);
     ASSERT_MSG(addr_out, "Unable to allocate guest TCB");
 
@@ -59,10 +59,11 @@ Core::Tcb* TcbCtor(Pthread* thread, int initial) {
 }
 
 void TcbDtor(Core::Tcb* oldtls) {
-    std::scoped_lock lk{RtldLock};
+    std::scoped_lock lk{
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_threads.m_rtld.RtldLock};
     auto* dtv_table = oldtls->tcb_dtv;
 
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     const u32 max_tls_index = linker->MaxTlsIndex();
     const u32 num_dtvs = dtv_table[1].counter;
     ASSERT_MSG(num_dtvs <= max_tls_index, "Out of bounds DTV access");
@@ -86,11 +87,11 @@ struct TlsIndex {
 };
 
 void* PS4_SYSV_ABI __tls_get_addr(TlsIndex* index) {
-    auto* linker = Common::Singleton<Core::Linker>::Instance();
+    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
     return linker->TlsGetAddr(index->ti_module, index->ti_offset);
 }
 
-void RegisterRtld(Core::Loader::SymbolsResolver* sym) {
+HleRtld::HleRtld(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("vNe1w4diLCs", "libkernel", 1, "libkernel", __tls_get_addr);
 }
 

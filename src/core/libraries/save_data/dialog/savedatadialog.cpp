@@ -6,6 +6,7 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/system/commondialog.h"
 #include "savedatadialog.h"
 #include "savedatadialog_ui.h"
@@ -139,7 +140,7 @@ Status PS4_SYSV_ABI sceSaveDataDialogUpdateStatus() {
     return g_status;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fH46Lag88XY", "libSceSaveDataDialog", 1, "libSceSaveDataDialog",
                  sceSaveDataDialogClose);
     LIB_FUNCTION("yEiJ-qqr6Cg", "libSceSaveDataDialog", 1, "libSceSaveDataDialog",

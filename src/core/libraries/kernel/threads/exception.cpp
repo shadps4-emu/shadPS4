@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/threads/exception.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/signals.h"
 
 #ifdef _WIN64
@@ -503,7 +504,7 @@ s32 PS4_SYSV_ABI sceKernelDebugRaiseExceptionOnReleaseMode(s32 error, s64 unk) {
     return ORBIS_OK;
 }
 
-void RegisterException(Core::Loader::SymbolsResolver* sym) {
+HleException::HleException(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("il03nluKfMk", "libkernel_unity", 1, "libkernel", sceKernelRaiseException);
     LIB_FUNCTION("WkwEd3N7w0Y", "libkernel_unity", 1, "libkernel",
                  sceKernelInstallExceptionHandler);

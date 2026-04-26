@@ -7,6 +7,7 @@
 #include "core/libraries/network/net_ctl_codes.h"
 #include "core/libraries/network/net_ctl_obj.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::NetCtl {
 

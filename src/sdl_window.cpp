@@ -162,7 +162,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
 #endif
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
-    Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+    Input::ParseInputConfig(std::string(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial()));
     controllers.TryOpenSDLControllers();
 
     if (EmulatorSettings.IsBackgroundControllerInput()) {
@@ -231,12 +231,12 @@ void WindowSDL::WaitEvent() {
         break;
     }
     case SDL_EVENT_TOGGLE_PAUSE:
-        if (DebugState.IsGuestThreadsPaused()) {
+        if (ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused()) {
             LOG_INFO(Frontend, "Game Resumed");
-            DebugState.ResumeGuestThreads();
+            ShadPs4App::GetInstance()->DebugState.ResumeGuestThreads();
         } else {
             LOG_INFO(Frontend, "Game Paused");
-            DebugState.PauseGuestThreads();
+            ShadPs4App::GetInstance()->DebugState.PauseGuestThreads();
         }
         break;
     case SDL_EVENT_CHANGE_CONTROLLER:
@@ -246,7 +246,7 @@ void WindowSDL::WaitEvent() {
         Overlay::ToggleSimpleFps();
         break;
     case SDL_EVENT_RELOAD_INPUTS:
-        Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
+        Input::ParseInputConfig(std::string(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial()));
         break;
     case SDL_EVENT_MOUSE_TO_JOYSTICK:
         SDL_SetWindowRelativeMouseMode(this->GetSDLWindow(),

@@ -7,6 +7,7 @@
 #include "core/libraries/libpng/pngdec.h"
 #include "core/libraries/libpng/pngdec_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::PngDec {
 
@@ -261,7 +262,7 @@ s32 PS4_SYSV_ABI scePngDecQueryMemorySize(const OrbisPngDecCreateParam* param) {
     return sizeof(PngHandler);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("m0uW+8pFyaw", "libScePngDec", 1, "libScePngDec", scePngDecCreate);
     LIB_FUNCTION("WC216DD3El4", "libScePngDec", 1, "libScePngDec", scePngDecDecode);
     LIB_FUNCTION("cJ--1xAbj-I", "libScePngDec", 1, "libScePngDec", scePngDecDecodeWithInputControl);

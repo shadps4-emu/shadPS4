@@ -202,7 +202,7 @@ private:
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
-    Core::MemoryManager* memory;
+    //Core::MemoryManager* memory;
     TextureCache& texture_cache;
     FaultManager fault_manager;
     std::unique_ptr<MemoryTracker> memory_tracker;

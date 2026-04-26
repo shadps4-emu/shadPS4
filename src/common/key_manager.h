@@ -29,10 +29,6 @@ public:
     KeyManager();
     ~KeyManager();
 
-    // ------------------- Singleton -------------------
-    static std::shared_ptr<KeyManager> GetInstance();
-    static void SetInstance(std::shared_ptr<KeyManager> instance);
-
     // ------------------- File operations -------------------
     bool LoadFromFile();
     bool SaveToFile();
@@ -57,9 +53,6 @@ private:
     void JsonToKeys(const json& j);
 
     AllKeys m_keys{};
-
-    static std::shared_ptr<KeyManager> s_instance;
-    static std::mutex s_mutex;
 };
 
 // ------------------- NLOHMANN macros -------------------

@@ -7,7 +7,9 @@
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Fiber {
 
@@ -16,8 +18,6 @@ static constexpr u32 kFiberSignature1 = 0xb37592a0;
 static constexpr u32 kFiberOptSignature = 0xbb40e64d;
 static constexpr u64 kFiberStackSignature = 0x7149f2ca7149f2ca;
 static constexpr u64 kFiberStackSizeCheck = 0xdeadbeefdeadbeef;
-
-static std::atomic<u32> context_size_check = false;
 
 OrbisFiberContext* GetFiberContext() {
     return Core::GetTcbBase()->tcb_fiber;
@@ -180,7 +180,7 @@ s32 PS4_SYSV_ABI sceFiberInitializeImpl(OrbisFiber* fiber, const char* name, Orb
     if (build_ver >= Common::ElfInfo::FW_35) {
         user_flags |= FiberFlags::SetFpuRegs;
     }
-    if (context_size_check) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_fiber.context_size_check) {
         user_flags |= FiberFlags::ContextSizeCheck;
     }
 
@@ -485,7 +485,7 @@ s32 PS4_SYSV_ABI sceFiberStartContextSizeCheck(u32 flags) {
     }
 
     u32 expected = 0;
-    if (!context_size_check.compare_exchange_strong(expected, 1u)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_fiber.context_size_check.compare_exchange_strong(expected, 1u)) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
@@ -494,7 +494,7 @@ s32 PS4_SYSV_ABI sceFiberStartContextSizeCheck(u32 flags) {
 
 s32 PS4_SYSV_ABI sceFiberStopContextSizeCheck() {
     u32 expected = 1;
-    if (!context_size_check.compare_exchange_strong(expected, 0u)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_fiber.context_size_check.compare_exchange_strong(expected, 0u)) {
         return ORBIS_FIBER_ERROR_STATE;
     }
 
@@ -545,7 +545,7 @@ s32 PS4_SYSV_ABI sceFiberSwitch(OrbisFiber* fiber, u64 arg_on_run_to, u64* arg_o
     return sceFiberSwitchImpl(fiber, nullptr, 0, arg_on_run_to, arg_on_run);
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("hVYD7Ou2pCQ", "libSceFiber", 1, "libSceFiber", sceFiberInitialize);
     LIB_FUNCTION("7+OJIpko9RY", "libSceFiber", 1, "libSceFiber",
                  sceFiberInitializeImpl); // _sceFiberInitializeWithInternalOptionImpl

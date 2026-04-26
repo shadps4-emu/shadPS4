@@ -35,7 +35,7 @@ public:
     }
 
     static bool IsSystemModule(const std::string& name) {
-        const auto game_modules_path = Common::ElfInfo::Instance().GetGameFolder() / "sce_module";
+        const auto game_modules_path = ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetGameFolder() / "sce_module";
         const auto prx_path = game_modules_path / name;
 
         if (!std::filesystem::exists(prx_path)) {

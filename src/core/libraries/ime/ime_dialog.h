@@ -6,29 +6,15 @@
 #include "common/enum.h"
 #include "common/types.h"
 #include "ime_common.h"
+#include "ime_dialog_result.h"
+#include "ime_dialog_status.h"
+#include "ime_dialog_ui.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
 }
 
 namespace Libraries::ImeDialog {
-
-enum class OrbisImeDialogStatus : u32 {
-    None = 0,
-    Running = 1,
-    Finished = 2,
-};
-
-enum class OrbisImeDialogEndStatus : u32 {
-    Ok = 0,
-    UserCanceled = 1,
-    Aborted = 2,
-};
-
-struct OrbisImeDialogResult {
-    OrbisImeDialogEndStatus endstatus;
-    s32 reserved[12];
-};
 
 Error PS4_SYSV_ABI sceImeDialogAbort();
 Error PS4_SYSV_ABI sceImeDialogForceClose();
@@ -49,5 +35,12 @@ int PS4_SYSV_ABI sceImeDialogInitInternal3();
 int PS4_SYSV_ABI sceImeDialogSetPanelPosition();
 Error PS4_SYSV_ABI sceImeDialogTerm();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+
+    OrbisImeDialogStatus g_ime_dlg_status = OrbisImeDialogStatus::None;
+    OrbisImeDialogResult g_ime_dlg_result{};
+    ImeDialogState g_ime_dlg_state{};
+    ImeDialogUi g_ime_dlg_ui{};
+};
 } // namespace Libraries::ImeDialog

@@ -568,7 +568,7 @@ vk::ShaderModule PipelineCache::CompileModule(Shader::Info& info, Shader::Runtim
     const auto name = GetShaderName(info.stage, info.pgm_hash, perm_idx);
     Vulkan::SetObjectName(instance.GetDevice(), module, name);
     if (EmulatorSettings.IsShaderCollect()) {
-        DebugState.CollectShader(name, info.l_stage, module, spv, code,
+        ShadPs4App::GetInstance()->DebugState.CollectShader(name, info.l_stage, module, spv, code,
                                  patch ? *patch : std::span<const u32>{}, is_patched);
     }
     return module;

@@ -15,6 +15,7 @@
 #include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/texture_cache.h"
 #include "video_core/texture_cache/tile_manager.h"
+#include "shadps4_app.h"
 
 namespace VideoCore {
 
@@ -125,7 +126,7 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
 
     scheduler.DeferPriorityOperation(
         [this, device_addr = image.info.guest_address, download, download_size] {
-            Core::Memory::Instance()->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
+            ShadPs4App::GetInstance()->m_emulator.memory->TryWriteBacking(std::bit_cast<u8*>(device_addr), download,
                                                       download_size);
         });
 }

@@ -5,28 +5,14 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/vr_tracker/vr_tracker_error.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/liverpool.h"
 
 namespace Libraries::VrTracker {
-
-static bool g_library_initialized = false;
-
-// Internal memory
-static void* g_garlic_memory_pointer = nullptr;
-static u32 g_garlic_size = 0;
-static void* g_onion_memory_pointer = nullptr;
-static u32 g_onion_size = 0;
-static void* g_work_memory_pointer = nullptr;
-static u32 g_work_size = 0;
-
-// Registered handles
-static s32 g_pad_handle = -1;
-static s32 g_move_handle = -1;
-static s32 g_gun_handle = -1;
-static s32 g_hmd_handle = -1;
 
 s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* param,
                                          OrbisVrTrackerQueryMemoryResult* result) {
@@ -65,7 +51,7 @@ s32 PS4_SYSV_ABI sceVrTrackerQueryMemory(const OrbisVrTrackerQueryMemoryParam* p
 }
 
 s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
-    if (g_library_initialized) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_ALREADY_INITIALIZED;
     }
 
@@ -106,37 +92,37 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
 
     // Real hardware will segfault if any of the supplied mappings aren't long enough,
     // Validate each of them to ensure nothing weird can occur when this library is implemented.
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     Libraries::Kernel::OrbisVirtualQueryInfo info;
     // The memory type for the whole range should be the same here,
     // so the memory should be contained in one VMA.
     VAddr addr_to_check = std::bit_cast<VAddr>(param->direct_memory_garlic);
-    s32 result = memory->VirtualQuery(addr_to_check, 0, &info);
+    s32 result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_garlic_size,
                "Insufficient garlic memory provided");
 
-    g_garlic_memory_pointer = param->direct_memory_garlic;
-    g_garlic_size = param->direct_memory_garlic_size;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_garlic_memory_pointer = param->direct_memory_garlic;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_garlic_size = param->direct_memory_garlic_size;
 
     addr_to_check = std::bit_cast<VAddr>(param->direct_memory_onion);
-    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_onion_size,
                "Insufficient onion memory provided");
 
-    g_onion_memory_pointer = param->direct_memory_onion;
-    g_onion_size = param->direct_memory_onion_size;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_onion_memory_pointer = param->direct_memory_onion;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_onion_size = param->direct_memory_onion_size;
 
     addr_to_check = std::bit_cast<VAddr>(param->work_memory);
-    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->work_memory_size,
                "Insufficient work memory provided");
 
-    g_work_memory_pointer = param->work_memory;
-    g_work_size = param->work_memory_size;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_work_memory_pointer = param->work_memory;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_work_size = param->work_memory_size;
 
     // All initialization checks passed.
     LOG_WARNING(Lib_VrTracker, "PSVR headsets are not supported yet");
-    g_library_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized = true;
 
     return ORBIS_OK;
 }
@@ -157,7 +143,7 @@ s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal(const OrbisVrTrackerDeviceTy
                                                     const s32 handle, s32 unk0, s32 unk1) {
     LOG_WARNING(Lib_VrTracker, "(STUBBED) called, device_type = {}, handle = {}",
                 static_cast<u32>(device_type), handle);
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (device_type > OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN || unk0 > 4) {
@@ -167,31 +153,31 @@ s32 PS4_SYSV_ABI sceVrTrackerRegisterDeviceInternal(const OrbisVrTrackerDeviceTy
     // Ignore handle handle validation for now, since most of that logic isn't really handled.
     switch (device_type) {
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_HMD: {
-        if (g_hmd_handle != -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_hmd_handle != -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
         }
-        g_hmd_handle = handle;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_hmd_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_DUALSHOCK4: {
-        if (g_pad_handle != -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_pad_handle != -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
         }
-        g_pad_handle = handle;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_pad_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_MOVE: {
-        if (g_move_handle != -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_move_handle != -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
         }
-        g_move_handle = handle;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_move_handle = handle;
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN: {
-        if (g_gun_handle != -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_gun_handle != -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_ALREADY_REGISTERED;
         }
-        g_gun_handle = handle;
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_gun_handle = handle;
         break;
     }
     default: {
@@ -221,7 +207,7 @@ s32 PS4_SYSV_ABI sceVrTrackerGetResult(const OrbisVrTrackerGetResultParam* param
 
 s32 PS4_SYSV_ABI sceVrTrackerGetTime(u64* time) {
     LOG_TRACE(Lib_VrTracker, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (time == nullptr) {
@@ -233,7 +219,7 @@ s32 PS4_SYSV_ABI sceVrTrackerGetTime(u64* time) {
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuSubmit(const OrbisVrTrackerGpuSubmitParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
 
@@ -243,7 +229,7 @@ s32 PS4_SYSV_ABI sceVrTrackerGpuSubmit(const OrbisVrTrackerGpuSubmitParam* param
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuWait(const OrbisVrTrackerGpuWaitParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (param == nullptr || param->size != sizeof(OrbisVrTrackerGpuWaitParam)) {
@@ -256,7 +242,7 @@ s32 PS4_SYSV_ABI sceVrTrackerGpuWait(const OrbisVrTrackerGpuWaitParam* param) {
 
 s32 PS4_SYSV_ABI sceVrTrackerGpuWaitAndCpuProcess() {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
 
@@ -272,7 +258,7 @@ sceVrTrackerNotifyEndOfCpuProcess(const OrbisVrTrackerNotifyEndOfCpuProcessParam
 
 s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* param) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (param == nullptr || param->size != sizeof(OrbisVrTrackerRecalibrateParam) ||
@@ -288,19 +274,19 @@ s32 PS4_SYSV_ABI sceVrTrackerRecalibrate(const OrbisVrTrackerRecalibrateParam* p
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_DUALSHOCK4: {
-        if (g_pad_handle == -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_pad_handle == -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
         }
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_MOVE: {
-        if (g_move_handle == -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_move_handle == -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
         }
         break;
     }
     case OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN: {
-        if (g_gun_handle == -1) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_gun_handle == -1) {
             return ORBIS_VR_TRACKER_ERROR_DEVICE_NOT_REGISTERED;
         }
         break;
@@ -334,7 +320,7 @@ s32 PS4_SYSV_ABI sceVrTrackerSaveInternalBuffers() {
 s32 PS4_SYSV_ABI sceVrTrackerSetDurationUntilStatusNotTracking(
     const OrbisVrTrackerDeviceType device_type, const u32 duration_camera_frames) {
     LOG_ERROR(Lib_VrTracker, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (device_type > OrbisVrTrackerDeviceType::ORBIS_VR_TRACKER_DEVICE_GUN) {
@@ -443,21 +429,21 @@ s32 PS4_SYSV_ABI sceVrTrackerStopLiveCapture() {
 
 s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle) {
     LOG_DEBUG(Lib_VrTracker, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
     if (handle < 0) {
         return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
     }
     // Since this function only takes a handle, compare the handle to registered handles.
-    if (handle == g_hmd_handle) {
-        g_hmd_handle = -1;
-    } else if (handle == g_pad_handle) {
-        g_pad_handle = -1;
-    } else if (handle == g_move_handle) {
-        g_move_handle = -1;
-    } else if (handle == g_gun_handle) {
-        g_gun_handle = -1;
+    if (handle == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_hmd_handle) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_hmd_handle = -1;
+    } else if (handle == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_pad_handle) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_pad_handle = -1;
+    } else if (handle == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_move_handle) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_move_handle = -1;
+    } else if (handle == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_gun_handle) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_gun_handle = -1;
     } else {
         // If none of the handles match up, then return an error.
         return ORBIS_VR_TRACKER_ERROR_ARGUMENT_INVALID;
@@ -468,14 +454,14 @@ s32 PS4_SYSV_ABI sceVrTrackerUnregisterDevice(const s32 handle) {
 
 s32 PS4_SYSV_ABI sceVrTrackerTerm() {
     LOG_DEBUG(Lib_VrTracker, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized) {
         return ORBIS_VR_TRACKER_ERROR_NOT_INIT;
     }
-    g_library_initialized = false;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_library_initialized = false;
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("24kDA+A0Ox0", "libSceVrTrackerFourDeviceAllowed", 1, "libSceVrTracker",
                  sceVrTrackerRegisterDevice2);
     LIB_FUNCTION("5IFOAYv-62g", "libSceVrTracker", 1, "libSceVrTracker", sceVrTrackerCpuProcess);

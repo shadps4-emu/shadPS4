@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -13,7 +14,7 @@ void PS4_SYSV_ABI sceKernelDebugOutText(void* unk, char* text) {
     return;
 }
 
-void RegisterDebug(Core::Loader::SymbolsResolver* sym) {
+HleDebug::HleDebug(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9JYNqN6jAKI", "libkernel", 1, "libkernel", sceKernelDebugOutText);
 }
 

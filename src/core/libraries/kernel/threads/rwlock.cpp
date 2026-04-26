@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -233,7 +234,7 @@ int PS4_SYSV_ABI posix_pthread_rwlockattr_setpshared(PthreadRwlockAttrT* rwlocka
     return 0;
 }
 
-void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
+HleRwlock::HleRwlock(Core::Loader::SymbolsResolver* sym) {
     // Posix-Kernel
     LIB_FUNCTION("1471ajPzxh0", "libkernel", 1, "libkernel", posix_pthread_rwlock_destroy);
     LIB_FUNCTION("ytQULN-nhL4", "libkernel", 1, "libkernel", posix_pthread_rwlock_init);

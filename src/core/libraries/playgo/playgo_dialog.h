@@ -34,5 +34,7 @@ CommonDialog::Error PS4_SYSV_ABI scePlayGoDialogOpen(const OrbisPlayGoDialogPara
 CommonDialog::Error PS4_SYSV_ABI scePlayGoDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI scePlayGoDialogUpdateStatus();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+};
 } // namespace Libraries::PlayGo::Dialog

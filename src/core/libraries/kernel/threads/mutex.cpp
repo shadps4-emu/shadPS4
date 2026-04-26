@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -431,7 +432,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_setpshared(PthreadMutexAttrT* attr, s32
     return ORBIS_OK;
 }
 
-void RegisterMutex(Core::Loader::SymbolsResolver* sym) {
+HleMutex::HleMutex(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("ttHNfU+qDBU", "libScePosix", 1, "libkernel", posix_pthread_mutex_init);
     LIB_FUNCTION("7H0iTOciTLo", "libScePosix", 1, "libkernel", posix_pthread_mutex_lock);

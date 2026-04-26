@@ -14,7 +14,7 @@
 #include "common/logging/log.h"
 #include "common/types.h"
 
-#define EmulatorSettings (*EmulatorSettingsImpl::GetInstance())
+#define EmulatorSettings ShadPs4App::GetInstance()->m_emulator_settings
 
 enum HideCursorState : int {
     Never,
@@ -449,9 +449,6 @@ public:
     EmulatorSettingsImpl();
     ~EmulatorSettingsImpl();
 
-    static std::shared_ptr<EmulatorSettingsImpl> GetInstance();
-    static void SetInstance(std::shared_ptr<EmulatorSettingsImpl> instance);
-
     bool Save(const std::string& serial = "");
     bool Load(const std::string& serial = "");
     void SetDefaultValues();
@@ -504,9 +501,6 @@ private:
     ConfigMode m_configMode{ConfigMode::Default};
 
     bool m_loaded{false};
-
-    static std::shared_ptr<EmulatorSettingsImpl> s_instance;
-    static std::mutex s_mutex;
 
     /// Apply overrideable fields from groupJson into group.game_specific_value.
     template <typename Group>

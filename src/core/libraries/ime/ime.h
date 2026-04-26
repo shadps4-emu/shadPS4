@@ -6,6 +6,7 @@
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_common.h"
+//#include "core/libraries/ime/ime_ui.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -71,6 +72,20 @@ int PS4_SYSV_ABI sceImeVshUpdate();
 int PS4_SYSV_ABI sceImeVshUpdateContext();
 int PS4_SYSV_ABI sceImeVshUpdateContext2();
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+class ImeState;
+class ImeUi;
+class ImeHandler;
+
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym);
+    ~Library();
+
+    std::queue<OrbisImeEvent> g_ime_events;
+    std::unique_ptr<ImeState> g_ime_state;
+    std::unique_ptr<ImeUi> g_ime_ui;
+
+    std::unique_ptr<ImeHandler> g_ime_handler;
+    std::unique_ptr<ImeHandler> g_keyboard_handler;
+};
 
 } // namespace Libraries::Ime

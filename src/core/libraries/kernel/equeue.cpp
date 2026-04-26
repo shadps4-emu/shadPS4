@@ -7,7 +7,6 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/kernel.h"
@@ -15,34 +14,34 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
-extern boost::asio::io_context io_context;
 extern void KernelSignalRequest();
 
-static std::unordered_map<s32, EqueueInternal*> kqueues;
 static constexpr auto HrTimerSpinlockThresholdNs = 1200000u;
 
 EqueueInternal* GetEqueue(OrbisKernelEqueue eq) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return nullptr;
     }
-    return kqueues[eq];
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
 }
 
 static void HrTimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
-    if (kqueues.contains(eq)) {
-        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::HrTimer, kevent.udata);
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::HrTimer, kevent.udata);
     }
 }
 
 static void TimerCallback(OrbisKernelEqueue eq, const OrbisKernelEvent& kevent) {
-    if (kqueues.contains(eq) && kqueues[eq]->EventExists(kevent.ident, kevent.filter)) {
-        kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::Timer, kevent.udata);
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq) && ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->EventExists(kevent.ident, kevent.filter)) {
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->TriggerEvent(kevent.ident, OrbisKernelEvent::Filter::Timer, kevent.udata);
         if (!(kevent.flags & OrbisKernelEvent::Flags::OneShot)) {
             // Reschedule the event for its next period.
-            kqueues[eq]->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
+            ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->ScheduleEvent(kevent.ident, kevent.filter, TimerCallback);
         }
     }
 }
@@ -133,7 +132,7 @@ bool EqueueInternal::ScheduleEvent(u64 id, s16 filter,
            event.event.filter == OrbisKernelEvent::Filter::HrTimer);
 
     if (!it->timer) {
-        it->timer = std::make_unique<boost::asio::steady_timer>(io_context, event.timer_interval);
+        it->timer = std::make_unique<boost::asio::steady_timer>(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.io_context, event.timer_interval);
     } else {
         // If the timer already exists we are scheduling a reoccurrence after the next period.
         // Set the expiration time to the previous occurrence plus the period.
@@ -316,9 +315,9 @@ bool EqueueInternal::EventExists(u64 id, s16 filter) {
 
 s32 PS4_SYSV_ABI posix_kqueue() {
     // Reserve a file handle for the kqueue
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    s32 kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    s32 kqueue_handle = handles.CreateHandle();
+    auto* kqueue_file = handles.GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Plenty of equeue logic uses names to identify queues.
@@ -328,7 +327,7 @@ s32 PS4_SYSV_ABI posix_kqueue() {
     snprintf(name, sizeof(name), "kqueue%i", kqueue_handle);
 
     // Create the queue
-    kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
     LOG_INFO(Kernel_Event, "kqueue created with name {}", name);
 
     // Return handle.
@@ -351,11 +350,11 @@ s32 PS4_SYSV_ABI posix_kevent(s32 handle, OrbisKernelEvent* changelist, u64 ncha
              nevents);
 
     // Get the equeue
-    if (!kqueues.contains(handle)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(handle)) {
         *__Error() = POSIX_EBADF;
         return ORBIS_FAIL;
     }
-    auto equeue = kqueues[handle];
+    auto equeue = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[handle];
 
     // First step is to apply all changes in changelist.
     for (u64 i = 0; i < nchanges; i++) {
@@ -435,38 +434,38 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) 
     LOG_INFO(Kernel_Event, "name = {}", name);
 
     // Reserve a file handle for the kqueue
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    OrbisKernelEqueue kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    OrbisKernelEqueue kqueue_handle = handles.CreateHandle();
+    auto* kqueue_file = handles.GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Create the equeue
-    kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[kqueue_handle] = new EqueueInternal(kqueue_handle, name);
     *eq = kqueue_handle;
 
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    handles->DeleteHandle(eq);
-    delete kqueues[eq];
-    kqueues.erase(eq);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    handles.DeleteHandle(eq);
+    delete ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.erase(eq);
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev, int num, int* out,
                                      OrbisKernelUseconds* timo) {
     HLE_TRACE;
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    auto& equeue = kqueues[eq];
+    auto& equeue = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
 
     TRACE_HINT(equeue->GetName());
     LOG_TRACE(Kernel_Event, "equeue = {} num = {}", equeue->GetName(), num);
@@ -491,7 +490,7 @@ int PS4_SYSV_ABI sceKernelWaitEqueue(OrbisKernelEqueue eq, OrbisKernelEvent* ev,
 
 s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelTimespec* ts,
                                           void* udata) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -514,7 +513,7 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKer
     // `HrTimerSpinlockThresholdUs`) and fall back to boost asio timers if the time to tick is
     // large. Even for large delays, we truncate a small portion to complete the wait
     // using the spinlock, prioritizing precision.
-    auto& equeue = kqueues[eq];
+    auto& equeue = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
     if (total_ns < HrTimerSpinlockThresholdNs) {
         return equeue->AddSmallTimer(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
     }
@@ -526,11 +525,11 @@ s32 PS4_SYSV_ABI sceKernelAddHRTimerEvent(OrbisKernelEqueue eq, int id, OrbisKer
 }
 
 int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(OrbisKernelEqueue eq, int id) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    auto& equeue = kqueues[eq];
+    auto& equeue = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
     if (equeue->HasSmallTimer()) {
         return equeue->RemoveSmallTimer(id) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOENT;
     } else {
@@ -542,7 +541,7 @@ int PS4_SYSV_ABI sceKernelDeleteHRTimerEvent(OrbisKernelEqueue eq, int id) {
 
 int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKernelUseconds usec,
                                         void* udata) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -554,7 +553,7 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKerne
     event.event.data = usec / 1000;
     event.event.udata = udata;
 
-    auto& equeue = kqueues[eq];
+    auto& equeue = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
     if (!equeue->AddEvent(event)) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
@@ -562,17 +561,17 @@ int PS4_SYSV_ABI sceKernelAddTimerEvent(OrbisKernelEqueue eq, int id, OrbisKerne
 }
 
 int PS4_SYSV_ABI sceKernelDeleteTimerEvent(OrbisKernelEqueue eq, int id) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    return kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::Timer)
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::Timer)
                ? ORBIS_OK
                : ORBIS_KERNEL_ERROR_ENOENT;
 }
 
 int PS4_SYSV_ABI sceKernelAddUserEvent(OrbisKernelEqueue eq, int id) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -584,11 +583,11 @@ int PS4_SYSV_ABI sceKernelAddUserEvent(OrbisKernelEqueue eq, int id) {
     event.event.fflags = 0;
     event.event.data = 0;
 
-    return kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
 }
 
 int PS4_SYSV_ABI sceKernelAddUserEventEdge(OrbisKernelEqueue eq, int id) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
@@ -600,7 +599,7 @@ int PS4_SYSV_ABI sceKernelAddUserEventEdge(OrbisKernelEqueue eq, int id) {
     event.event.fflags = 0;
     event.event.data = 0;
 
-    return kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->AddEvent(event) ? ORBIS_OK : ORBIS_KERNEL_ERROR_ENOMEM;
 }
 
 void* PS4_SYSV_ABI sceKernelGetEventUserData(const OrbisKernelEvent* ev) {
@@ -613,22 +612,22 @@ u64 PS4_SYSV_ABI sceKernelGetEventId(const OrbisKernelEvent* ev) {
 }
 
 int PS4_SYSV_ABI sceKernelTriggerUserEvent(OrbisKernelEqueue eq, int id, void* udata) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (!kqueues[eq]->TriggerEvent(id, OrbisKernelEvent::Filter::User, udata)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->TriggerEvent(id, OrbisKernelEvent::Filter::User, udata)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
 }
 
 int PS4_SYSV_ABI sceKernelDeleteUserEvent(OrbisKernelEqueue eq, int id) {
-    if (!kqueues.contains(eq)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.contains(eq)) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (!kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::User)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::User)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
     return ORBIS_OK;
@@ -642,7 +641,7 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
     return ev->data;
 }
 
-void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
+HleEventQueue::HleEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
     LIB_FUNCTION("RW-GEfpnsqg", "libScePosix", 1, "libkernel", posix_kevent);
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);

@@ -6,7 +6,6 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
-#include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -26,9 +25,6 @@ constexpr auto SAVE_ICON_PADDING = ImVec2{8.0f, 2.0f};
 static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
 constexpr auto FOOTER_HEIGHT = BUTTON_SIZE.y + 15.0f;
 static constexpr float PROGRESS_BAR_WIDTH{0.8f};
-
-static ::Core::FileSys::MntPoints* g_mnt =
-    Common::Singleton<::Core::FileSys::MntPoints>::Instance();
 
 static std::string SpaceSizeToString(size_t size) {
     std::string size_str;
@@ -67,9 +63,9 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
         this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
     }
 
-    const auto& game_serial = Common::Singleton<PSF>::Instance()
+    const auto& game_serial = ShadPs4App::GetInstance()->m_emulator.m_psf
                                   ->GetString("INSTALL_DIR_SAVEDATA")
-                                  .value_or(ElfInfo::Instance().GameSerial());
+                                  .value_or(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial());
 
     const auto item = param.items;
     this->user_id = item->userId;
@@ -138,7 +134,7 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
             auto buf = (u8*)new_item->iconBuf;
             icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
         } else {
-            const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
+            const auto& src_icon = ShadPs4App::GetInstance()->m_emulator.m_mnt_points->GetHostPath("/app0/sce_sys/save_data.png");
             if (std::filesystem::exists(src_icon)) {
                 icon = RefCountedTexture::DecodePngFile(src_icon);
             }
@@ -287,7 +283,7 @@ SaveDialogState::ErrorCodeState::ErrorCodeState(const OrbisSaveDataDialogParam& 
 }
 SaveDialogState::ProgressBarState::ProgressBarState(const SaveDialogState& state,
                                                     const OrbisSaveDataDialogParam& param) {
-    static auto fw_ver = ElfInfo::Instance().FirmwareVer();
+    static auto fw_ver = ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer();
 
     this->progress = 0;
 
@@ -698,7 +694,7 @@ void SaveDialogUi::DrawUser() {
             }
             SameLine();
             if (Button("No", BUTTON_SIZE)) {
-                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                if (ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer() < ElfInfo::FW_45) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::NO);
@@ -710,7 +706,7 @@ void SaveDialogUi::DrawUser() {
         } else {
             if (Button("OK", BUTTON_SIZE)) {
                 if (btn_type == ButtonType::OK &&
-                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+                    ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer() < ElfInfo::FW_45) {
                     Finish(ButtonId::INVALID, Result::USER_CANCELED);
                 } else {
                     Finish(ButtonId::OK);
@@ -763,7 +759,7 @@ void SaveDialogUi::DrawSystemMessage() {
     });
     BeginGroup();
     if (Button(sys_state.show_no ? "Yes" : "OK", BUTTON_SIZE)) {
-        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (sys_state.return_cancel && ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer() < ElfInfo::FW_45) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::YES);
@@ -772,7 +768,7 @@ void SaveDialogUi::DrawSystemMessage() {
     SameLine();
     if (sys_state.show_no) {
         if (Button("No", BUTTON_SIZE)) {
-            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+            if (ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer() < ElfInfo::FW_45) {
                 Finish(ButtonId::INVALID, Result::USER_CANCELED);
             } else {
                 Finish(ButtonId::NO);
@@ -811,7 +807,7 @@ void SaveDialogUi::DrawErrorCode() {
         ws.y - FOOTER_HEIGHT + 5.0f,
     });
     if (Button("OK", BUTTON_SIZE)) {
-        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_45) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer() < ElfInfo::FW_45) {
             Finish(ButtonId::INVALID, Result::USER_CANCELED);
         } else {
             Finish(ButtonId::OK);

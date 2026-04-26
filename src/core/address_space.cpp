@@ -12,6 +12,7 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/memory.h"
 #include "libraries/error_codes.h"
+#include "shadps4_app.h"
 
 #ifdef _WIN32
 #include <windows.h>

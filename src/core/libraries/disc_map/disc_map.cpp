@@ -4,6 +4,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "disc_map.h"
 #include "disc_map_codes.h"
 
@@ -34,7 +35,7 @@ int PS4_SYSV_ABI Func_E7EBCE96E92F91F8() {
     return ORBIS_DISC_MAP_ERROR_NO_BITMAP_INFO;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("fl1eoDnwQ4s", "libSceDiscMap", 1, "libSceDiscMap", sceDiscMapGetPackageSize);
     LIB_FUNCTION("lbQKqsERhtE", "libSceDiscMap", 1, "libSceDiscMap", sceDiscMapIsRequestOnHDD);
     LIB_FUNCTION("fJgP+wqifno", "libSceDiscMap", 1, "libSceDiscMap", Func_7C980FFB0AA27E7A);

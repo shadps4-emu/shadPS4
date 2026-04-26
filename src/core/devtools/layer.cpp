@@ -7,22 +7,21 @@
 #include <imgui.h>
 
 #include "SDL3/SDL_log.h"
-#include "common/singleton.h"
 #include "common/types.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
+#include "core/libraries/libs.h"
 #include "imgui/imgui_std.h"
 #include "imgui_internal.h"
 #include "options.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "widget/frame_dump.h"
 #include "widget/frame_graph.h"
 #include "widget/memory_map.h"
 #include "widget/module_list.h"
 #include "widget/shader_list.h"
-
-extern std::unique_ptr<Vulkan::Presenter> presenter;
 
 using namespace ImGui;
 using namespace ::Core::Devtools;
@@ -52,6 +51,9 @@ static Widget::ModuleList module_list;
 // clang-format off
 static std::string help_text =
 #include "help.txt"
+
+
+
     ;
 // clang-format on
 
@@ -59,7 +61,7 @@ void L::DrawMenuBar() {
     const auto& ctx = *GImGui;
     const auto& io = ctx.IO;
 
-    auto isSystemPaused = DebugState.IsGuestThreadsPaused();
+    auto isSystemPaused = ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused();
 
     bool open_popup_options = false;
     bool open_popup_help = false;
@@ -68,9 +70,9 @@ void L::DrawMenuBar() {
         if (BeginMenu("Options")) {
             if (MenuItemEx("Emulator Paused", nullptr, nullptr, isSystemPaused)) {
                 if (isSystemPaused) {
-                    DebugState.ResumeGuestThreads();
+                    ShadPs4App::GetInstance()->DebugState.ResumeGuestThreads();
                 } else {
-                    DebugState.PauseGuestThreads();
+                    ShadPs4App::GetInstance()->DebugState.PauseGuestThreads();
                 }
             }
             ImGui::EndMenu();
@@ -80,8 +82,8 @@ void L::DrawMenuBar() {
             MenuItem("Show loaded shaders", nullptr, &shader_list.open);
             if (BeginMenu("Dump frames")) {
                 SliderInt("Count", &dump_frame_count, 1, 5);
-                if (MenuItem("Dump", "Ctrl+Alt+F9", nullptr, !DebugState.DumpingCurrentFrame())) {
-                    DebugState.RequestFrameDump(dump_frame_count);
+                if (MenuItem("Dump", "Ctrl+Alt+F9", nullptr, !ShadPs4App::GetInstance()->DebugState.DumpingCurrentFrame())) {
+                    ShadPs4App::GetInstance()->DebugState.RequestFrameDump(dump_frame_count);
                 }
                 ImGui::EndMenu();
             }
@@ -90,13 +92,17 @@ void L::DrawMenuBar() {
             ImGui::EndMenu();
         }
         if (BeginMenu("Display")) {
-            auto& pp_settings = presenter->GetPPSettingsRef();
+            auto& pp_settings =
+                ShadPs4App::GetInstance()
+                    ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetPPSettingsRef();
             if (BeginMenu("Brightness")) {
                 SliderFloat("Gamma", &pp_settings.gamma, 0.1f, 2.0f);
                 ImGui::EndMenu();
             }
             if (BeginMenu("FSR")) {
-                auto& fsr = presenter->GetFsrSettingsRef();
+                auto& fsr =
+                    ShadPs4App::GetInstance()
+                        ->m_emulator.m_hle_layer->m_gnm_driver.presenter->GetFsrSettingsRef();
                 Checkbox("FSR Enabled", &fsr.enable);
                 BeginDisabled(!fsr.enable);
                 {
@@ -134,7 +140,7 @@ void L::DrawMenuBar() {
 
         SameLine(ImGui::GetWindowWidth() - 30.0f);
         if (Button("X", ImVec2(25, 25))) {
-            DebugState.IsShowingDebugMenuBar() = false;
+            ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar() = false;
         }
 
         EndMainMenuBar();
@@ -156,18 +162,18 @@ void L::DrawAdvanced() {
 
     frame_graph.Draw();
 
-    if (DebugState.should_show_frame_dump && DebugState.waiting_reg_dumps.empty()) {
-        DebugState.should_show_frame_dump = false;
-        std::unique_lock lock{DebugState.frame_dump_list_mutex};
-        while (!DebugState.frame_dump_list.empty()) {
-            const auto& frame_dump = DebugState.frame_dump_list.back();
+    if (ShadPs4App::GetInstance()->DebugState.should_show_frame_dump && ShadPs4App::GetInstance()->DebugState.waiting_reg_dumps.empty()) {
+        ShadPs4App::GetInstance()->DebugState.should_show_frame_dump = false;
+        std::unique_lock lock{ShadPs4App::GetInstance()->DebugState.frame_dump_list_mutex};
+        while (!ShadPs4App::GetInstance()->DebugState.frame_dump_list.empty()) {
+            const auto& frame_dump = ShadPs4App::GetInstance()->DebugState.frame_dump_list.back();
             frame_viewers.emplace_back(frame_dump);
-            DebugState.frame_dump_list.pop_back();
+            ShadPs4App::GetInstance()->DebugState.frame_dump_list.pop_back();
         }
         static bool first_time = true;
         if (first_time) {
             first_time = false;
-            DebugState.ShowDebugMessage("Tip: You can shift+click any\n"
+            ShadPs4App::GetInstance()->DebugState.ShowDebugMessage("Tip: You can shift+click any\n"
                                         "popup to open a new window");
         }
     }
@@ -181,7 +187,7 @@ void L::DrawAdvanced() {
         }
     }
 
-    if (!DebugState.debug_message_popup.empty()) {
+    if (!ShadPs4App::GetInstance()->DebugState.debug_message_popup.empty()) {
         if (debug_popup_timing > 0.0f) {
             debug_popup_timing -= io.DeltaTime;
             if (Begin("##devtools_msg", nullptr,
@@ -189,7 +195,7 @@ void L::DrawAdvanced() {
                           ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMove)) {
                 BringWindowToDisplayFront(GetCurrentWindow());
                 const auto display_size = io.DisplaySize;
-                const auto& msg = DebugState.debug_message_popup.front();
+                const auto& msg = ShadPs4App::GetInstance()->DebugState.debug_message_popup.front();
                 const auto padding = GetStyle().WindowPadding;
                 const auto txt_size = CalcTextSize(&msg.front(), &msg.back() + 1, false, 250.0f);
                 SetWindowPos({display_size.x - padding.x * 2.0f - txt_size.x, 50.0f});
@@ -200,7 +206,7 @@ void L::DrawAdvanced() {
             }
             End();
         } else {
-            DebugState.debug_message_popup.pop();
+            ShadPs4App::GetInstance()->DebugState.debug_message_popup.pop();
             debug_popup_timing = 3.0f;
         }
     }
@@ -276,7 +282,7 @@ void L::DrawAdvanced() {
 }
 
 void L::DrawSimple() {
-    const float frameRate = DebugState.Framerate;
+    const float frameRate = ShadPs4App::GetInstance()->DebugState.Framerate;
     if (frameRate < 10) {
         PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); // Red
     } else if (frameRate >= 10 && frameRate < 20) {
@@ -296,7 +302,7 @@ static void LoadSettings(const char* line) {
         return;
     }
     if (sscanf(line, "show_advanced_debug=%d", &i) == 1) {
-        DebugState.IsShowingDebugMenuBar() = i != 0;
+        ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar() = i != 0;
         return;
     }
     if (sscanf(line, "show_frame_graph=%d", &i) == 1) {
@@ -342,7 +348,7 @@ void L::SetupSettings() {
     handler.WriteAllFn = [](ImGuiContext*, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) {
         buf->appendf("[%s][Data]\n", handler->TypeName);
         buf->appendf("fps_scale=%f\n", fps_scale);
-        buf->appendf("show_advanced_debug=%d\n", DebugState.IsShowingDebugMenuBar());
+        buf->appendf("show_advanced_debug=%d\n", ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar());
         buf->appendf("show_frame_graph=%d\n", frame_graph.is_open);
         buf->appendf("dump_frame_count=%d\n", dump_frame_count);
         buf->append("\n");
@@ -366,27 +372,27 @@ void L::Draw() {
     const auto io = GetIO();
     PushID("DevtoolsLayer");
 
-    if (!DebugState.IsGuestThreadsPaused()) {
-        const auto fn = DebugState.flip_frame_count.load();
-        frame_graph.AddFrame(fn, DebugState.FrameDeltaTime);
+    if (!ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused()) {
+        const auto fn = ShadPs4App::GetInstance()->DebugState.flip_frame_count.load();
+        frame_graph.AddFrame(fn, ShadPs4App::GetInstance()->DebugState.FrameDeltaTime);
     }
 
     if (IsKeyPressed(ImGuiKey_F10, false)) {
         if (io.KeyCtrl) {
-            DebugState.IsShowingDebugMenuBar() ^= true;
+            ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar() ^= true;
         }
         visibility_toggled = true;
     }
 
     if (IsKeyPressed(ImGuiKey_F9, false)) {
         if (io.KeyCtrl && io.KeyAlt) {
-            if (!DebugState.ShouldPauseInSubmit()) {
-                DebugState.RequestFrameDump(dump_frame_count);
+            if (!ShadPs4App::GetInstance()->DebugState.ShouldPauseInSubmit()) {
+                ShadPs4App::GetInstance()->DebugState.RequestFrameDump(dump_frame_count);
             }
         }
     }
 
-    if (DebugState.IsGuestThreadsPaused()) {
+    if (ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused()) {
         ImVec2 pos = ImVec2(10, 10);
         ImU32 color = IM_COL32(255, 255, 255, 255);
         ImGui::GetForegroundDrawList()->AddText(pos, color, "Emulation Paused");
@@ -420,7 +426,7 @@ void L::Draw() {
         End();
     }
 
-    if (DebugState.IsShowingDebugMenuBar()) {
+    if (ShadPs4App::GetInstance()->DebugState.IsShowingDebugMenuBar()) {
         PushFont(io.Fonts->Fonts[IMGUI_FONT_MONO]);
         PushID("DevtoolsLayer");
         DrawAdvanced();

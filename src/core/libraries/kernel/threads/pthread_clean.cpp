@@ -3,6 +3,7 @@
 
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Kernel {
 
@@ -41,7 +42,7 @@ void PS4_SYSV_ABI posix_pthread_cleanup_pop(int execute) {
     }
 }
 
-void RegisterPthreadClean(Core::Loader::SymbolsResolver* sym) {
+HlePthreadClean::HlePthreadClean(Core::Loader::SymbolsResolver* sym) {
     // Posix
     LIB_FUNCTION("4ZeZWcMsAV0", "libScePosix", 1, "libkernel", posix_pthread_cleanup_push);
     LIB_FUNCTION("RVxb0Ssa5t0", "libScePosix", 1, "libkernel", posix_pthread_cleanup_pop);

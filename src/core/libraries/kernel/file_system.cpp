@@ -9,7 +9,6 @@
 #include "common/error.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
-#include "common/singleton.h"
 #include "core/file_sys/devices/console_device.h"
 #include "core/file_sys/devices/deci_tty6_device.h"
 #include "core/file_sys/devices/logger.h"
@@ -25,6 +24,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/network/sockets.h"
 #include "core/memory.h"
 #include "kernel.h"
@@ -43,7 +43,7 @@ using FactoryDevice = std::function<std::shared_ptr<D::BaseDevice>(u32, const ch
 
 #define GET_DEVICE_FD(fd)                                                                          \
     [](u32, const char*, int, u16) {                                                               \
-        return Common::Singleton<Core::FileSys::HandleTable>::Instance()->GetFile(fd)->device;     \
+        return ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(fd)->device;     \
     }
 
 // prefix path, only dev devices
@@ -77,8 +77,8 @@ namespace Libraries::Kernel {
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
 
     bool read = (flags & 0x3) == ORBIS_KERNEL_O_RDONLY;
     bool write = (flags & 0x3) == ORBIS_KERNEL_O_WRONLY;
@@ -113,8 +113,8 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     }
 
     std::string_view path{raw_path};
-    u32 handle = h->CreateHandle();
-    auto* file = h->GetFile(handle);
+    u32 handle = h.CreateHandle();
+    auto* file = h.GetFile(handle);
 
     if (path.starts_with("/dev/")) {
         for (const auto& [prefix, factory] : available_device) {
@@ -130,14 +130,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
     bool read_only = false;
     file->m_guest_name = path;
-    file->m_host_name = mnt->GetHostPath(file->m_guest_name, &read_only);
+    file->m_host_name = mnt.GetHostPath(file->m_guest_name, &read_only);
     bool exists = fs::exists(file->m_host_name);
     s32 e = 0;
 
     if (create) {
         if (excl && exists) {
             // Error if file exists
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_EEXIST;
             LOG_ERROR(Kernel_Fs, "Creating {} failed, file already exists", raw_path);
             return -1;
@@ -146,7 +146,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         if (!exists) {
             if (read_only) {
                 // Can't create files in a read only directory
-                h->DeleteHandle(handle);
+                h.DeleteHandle(handle);
                 *__Error() = POSIX_EROFS;
                 LOG_ERROR(Kernel_Fs, "Creating {} failed, path is read-only", raw_path);
                 return -1;
@@ -156,7 +156,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
-        h->DeleteHandle(handle);
+        h.DeleteHandle(handle);
         *__Error() = POSIX_ENOENT;
         LOG_ERROR(Kernel_Fs, "Opening path {} failed, file does not exist", raw_path);
         return -1;
@@ -172,7 +172,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         if (!fs::is_directory(file->m_host_name)) {
             // If the opened file is not a directory, return ENOTDIR.
             // This will trigger when create & directory is specified, this is expected.
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_ENOTDIR;
             LOG_ERROR(Kernel_Fs, "Opening directory {} failed, file is not a directory", raw_path);
             return -1;
@@ -180,7 +180,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         if (write || rdwr) {
             // Cannot open directories with any type of write access
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             LOG_ERROR(Kernel_Fs, "Opening directory {} failed, cannot open directories for writing",
                       raw_path);
@@ -189,7 +189,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         if (truncate) {
             // Cannot open directories with truncate
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_EISDIR;
             LOG_ERROR(Kernel_Fs, "Opening directory {} failed, cannot truncate directories",
                       raw_path);
@@ -209,7 +209,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         if (truncate && read_only) {
             // Can't open files with truncate flag in a read only directory
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
             LOG_ERROR(Kernel_Fs, "Truncating {} failed, path is read-only", raw_path);
             return -1;
@@ -228,7 +228,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             e = file->f.Open(file->m_host_name, Common::FS::FileAccessMode::Read);
         } else if (read_only) {
             // Can't open files with write/read-write access in a read only directory
-            h->DeleteHandle(handle);
+            h.DeleteHandle(handle);
             *__Error() = POSIX_EROFS;
             LOG_ERROR(Kernel_Fs, "Opening {} for writing failed, path is read-only", raw_path);
             return -1;
@@ -254,7 +254,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
     if (e != 0) {
         // Open failed in platform-specific code, errno needs to be converted.
-        h->DeleteHandle(handle);
+        h.DeleteHandle(handle);
         SetPosixErrno(e);
         LOG_ERROR(Kernel_Fs, "Opening {} failed, error = {}", raw_path, *__Error());
         return -1;
@@ -277,8 +277,8 @@ s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u
 }
 
 s32 PS4_SYSV_ABI close(s32 fd) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -295,7 +295,7 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
     // FIXME: Lock file mutex before deleting it?
-    h->DeleteHandle(fd);
+    h.DeleteHandle(fd);
     return ORBIS_OK;
 }
 
@@ -313,8 +313,8 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
 }
 
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -353,17 +353,17 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 }
 
 s64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
-    const auto* memory = Core::Memory::Instance();
+    const auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+    memory.InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
     return file.ReadRaw<u8>(buf, nbytes);
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -412,8 +412,8 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 }
 
 s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -454,8 +454,8 @@ s64 PS4_SYSV_ABI sceKernelWritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt
 }
 
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -524,8 +524,8 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -582,10 +582,10 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         *__Error() = POSIX_ENOTDIR;
         return -1;
     }
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
 
     bool ro = false;
-    const auto dir_name = mnt->GetHostPath(path, &ro);
+    const auto dir_name = mnt.GetHostPath(path, &ro);
 
     if (fs::exists(dir_name)) {
         *__Error() = POSIX_EEXIST;
@@ -625,10 +625,10 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
     bool ro = false;
 
-    const fs::path dir_name = mnt->GetHostPath(path, &ro);
+    const fs::path dir_name = mnt.GetHostPath(path, &ro);
 
     if (ro) {
         *__Error() = POSIX_EROFS;
@@ -670,8 +670,8 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+    const auto path_name = mnt.GetHostPath(path);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
     const bool is_dir = fs::is_directory(path_name);
     const bool is_file = fs::is_regular_file(path_name);
@@ -722,14 +722,14 @@ s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
     std::string_view guest_path{path};
     for (const auto& prefix : available_device | std::views::keys) {
         if (guest_path.starts_with(prefix)) {
             return ORBIS_OK;
         }
     }
-    const auto path_name = mnt->GetHostPath(guest_path);
+    const auto path_name = mnt.GetHostPath(guest_path);
     if (!fs::exists(path_name)) {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
@@ -742,8 +742,8 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -829,8 +829,8 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
 
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
@@ -865,9 +865,9 @@ s32 PS4_SYSV_ABI sceKernelFtruncate(s32 fd, s64 length) {
 }
 
 s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
     bool ro = false;
-    const auto src_path = mnt->GetHostPath(from, &ro);
+    const auto src_path = mnt.GetHostPath(from, &ro);
     if (strlen(from) > 255) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
@@ -884,7 +884,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
-    const auto dst_path = mnt->GetHostPath(to, &ro);
+    const auto dst_path = mnt.GetHostPath(to, &ro);
     if (ro) {
         *__Error() = POSIX_EROFS;
         return -1;
@@ -910,8 +910,8 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     // On Windows, fs::rename will error if the file has been opened before.
     fs::copy(src_path, dst_path,
              fs::copy_options::overwrite_existing | fs::copy_options::recursive);
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto file = h->GetFile(src_path);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto file = h.GetFile(src_path);
     if (file) {
         auto access_mode = file->f.GetAccessMode();
         file->f.Close();
@@ -939,8 +939,8 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
         return -1;
     }
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -1003,8 +1003,8 @@ s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset) {
 }
 
 s32 PS4_SYSV_ABI posix_fsync(s32 fd) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -1036,8 +1036,8 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -1111,8 +1111,8 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
         return -1;
     }
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         *__Error() = POSIX_EBADF;
         return -1;
@@ -1180,11 +1180,11 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         return -1;
     }
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
 
     bool ro = false;
-    const auto host_path = mnt->GetHostPath(path, &ro);
+    const auto host_path = mnt.GetHostPath(path, &ro);
     if (host_path.empty()) {
         *__Error() = POSIX_ENOENT;
         return -1;
@@ -1200,7 +1200,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         return -1;
     }
 
-    auto* file = h->GetFile(host_path);
+    auto* file = h.GetFile(host_path);
     if (file == nullptr) {
         // File to unlink hasn't been opened, manually open and unlink it.
         Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
@@ -1414,7 +1414,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
     LOG_DEBUG(Kernel_Fs, "nfds = {}, readfds = {}, writefds = {}, exceptfds = {}, timeout = {}",
               nfds, fmt::ptr(readfds), fmt::ptr(writefds), fmt::ptr(exceptfds), fmt::ptr(timeout));
 
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
     fd_set read_host, write_host, except_host;
     FD_ZERO(&read_host);
     FD_ZERO(&write_host);
@@ -1428,7 +1428,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
         auto write = writefds && FD_ISSET(i, writefds);
         auto except = exceptfds && FD_ISSET(i, exceptfds);
         if (read || write || except) {
-            auto* file = h->GetFile(i);
+            auto* file = h.GetFile(i);
             if (file == nullptr ||
                 ((file->type == Core::FileSys::FileType::Regular && !file->f.IsOpen()) ||
                  (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
@@ -1512,7 +1512,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 }
 #endif
 
-void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
+HleFileSystem::HleFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", posix_open);
     LIB_FUNCTION("wuCroIGjt2g", "libkernel", 1, "libkernel", posix_open);

@@ -5,7 +5,6 @@
 
 #include "common/assert.h"
 #include "common/native_clock.h"
-#include "common/singleton.h"
 #include "core/signals.h"
 #include "debug_state.h"
 #include "devtools/widget/common.h"
@@ -15,8 +14,6 @@
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 
 using namespace DebugStateType;
-
-DebugStateImpl& DebugState = *Common::Singleton<DebugStateImpl>::Instance();
 
 bool DebugStateType::showing_debug_menu_bar = false;
 

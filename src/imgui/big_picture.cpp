@@ -17,6 +17,7 @@
 #include "imgui/renderer/imgui_impl_sdl3_bpm.h"
 #include "imgui/renderer/imgui_impl_sdlrenderer3.h"
 #include "settings_dialog_imgui.h"
+#include "shadps4_app.h"
 
 CMRC_DECLARE(res);
 
@@ -230,8 +231,7 @@ void Launch() {
     EmulatorSettings.Save();
 
     if (runEbootPath != "") {
-        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
-        emulator->Run(runEbootPath);
+        ShadPs4App::GetInstance()->m_emulator.Run(runEbootPath);
     }
 }
 

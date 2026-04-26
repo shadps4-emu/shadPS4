@@ -157,7 +157,6 @@ public:
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
 
-    MemoryManager* memory;
     Libraries::Kernel::Thread main_thread;
     std::mutex mutex;
     u32 dtv_generation_counter{1};

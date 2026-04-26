@@ -10,6 +10,7 @@
 #include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "shadps4_app.h"
 
 #include <boost/container/static_vector.hpp>
 

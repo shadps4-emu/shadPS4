@@ -12,6 +12,7 @@
 #include "core/debug_state.h"
 #include "video_core/host_shaders/fsr/ffx_a.h"
 #include "video_core/host_shaders/fsr/ffx_fsr1.h"
+#include "shadps4_app.h"
 
 typedef u32 uvec4[4];
 
@@ -140,15 +141,15 @@ vk::ImageView FsrPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
                               vk::Extent2D input_size, vk::Extent2D output_size, Settings settings,
                               bool hdr) {
     if (!settings.enable) {
-        DebugState.is_using_fsr = false;
+        ShadPs4App::GetInstance()->DebugState.is_using_fsr = false;
         return input;
     }
     if (input_size.width >= output_size.width && input_size.height >= output_size.height) {
-        DebugState.is_using_fsr = false;
+        ShadPs4App::GetInstance()->DebugState.is_using_fsr = false;
         return input;
     }
 
-    DebugState.is_using_fsr = true;
+    ShadPs4App::GetInstance()->DebugState.is_using_fsr = true;
 
     if (output_size != cur_size) {
         ResizeAndInvalidate(output_size.width, output_size.height);

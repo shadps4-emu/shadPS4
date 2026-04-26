@@ -9,6 +9,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
+#include "shadps4_app.h"
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
@@ -21,7 +22,7 @@ namespace Vulkan {
 
 void RegisterPipelineData(const ComputePipelineKey& key,
                           ComputePipeline::SerializationSupport& sdata) {
-    if (!Storage::DataBase::Instance().IsOpened()) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_database->IsOpened()) {
         return;
     }
 
@@ -34,13 +35,13 @@ void RegisterPipelineData(const ComputePipelineKey& key,
     key.Serialize(ar);
     sdata.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Save(Storage::BlobType::PipelineKey,
                                        fmt::format("c_{:#018x}", key.value), ar.TakeOff());
 }
 
 void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
                           GraphicsPipeline::SerializationSupport& sdata) {
-    if (!Storage::DataBase::Instance().IsOpened()) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_database->IsOpened()) {
         return;
     }
 
@@ -53,7 +54,7 @@ void RegisterPipelineData(const GraphicsPipelineKey& key, u64 hash,
     key.Serialize(ar);
     sdata.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::PipelineKey,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Save(Storage::BlobType::PipelineKey,
                                        fmt::format("g_{:#018x}", hash), ar.TakeOff());
 }
 
@@ -61,7 +62,7 @@ void RegisterShaderMeta(const Shader::Info& info,
                         const std::optional<Shader::Gcn::FetchShaderData>& fetch_shader_data,
                         const Shader::StageSpecialization& spec, size_t perm_hash,
                         size_t perm_idx) {
-    if (!Storage::DataBase::Instance().IsOpened()) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_database->IsOpened()) {
         return;
     }
 
@@ -77,16 +78,16 @@ void RegisterShaderMeta(const Shader::Info& info,
     spec.Serialize(ar);
     info.Serialize(ar);
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderMeta,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Save(Storage::BlobType::ShaderMeta,
                                        fmt::format("{:#018x}", perm_hash), ar.TakeOff());
 }
 
 void RegisterShaderBinary(std::vector<u32>&& spv, u64 pgm_hash, size_t perm_idx) {
-    if (!Storage::DataBase::Instance().IsOpened()) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_database->IsOpened()) {
         return;
     }
 
-    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderBinary,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Save(Storage::BlobType::ShaderBinary,
                                        fmt::format("{:#018x}_{}", pgm_hash, perm_idx),
                                        std::move(spv));
 }
@@ -147,7 +148,7 @@ bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
     sdata.Deserialize(ar);
 
     std::vector<u8> meta_blob;
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Load(Storage::BlobType::ShaderMeta,
                                        fmt::format("{:#018x}", compute_key.value), meta_blob);
     if (meta_blob.empty()) {
         return false;
@@ -221,7 +222,7 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
         }
 
         std::vector<u8> meta_blob;
-        Storage::DataBase::Instance().Load(Storage::BlobType::ShaderMeta,
+        ShadPs4App::GetInstance()->m_emulator.m_database->Load(Storage::BlobType::ShaderMeta,
                                            fmt::format("{:#018x}", hash), meta_blob);
         if (meta_blob.empty()) {
             return false;
@@ -258,7 +259,7 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
     }
 
     std::vector<u32> spv{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
+    ShadPs4App::GetInstance()->m_emulator.m_database->Load(Storage::BlobType::ShaderBinary,
                                        fmt::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
                                        spv);
     if (spv.empty()) {
@@ -299,17 +300,17 @@ void PipelineCache::WarmUp() {
         return;
     }
 
-    Storage::DataBase::Instance().Open();
+    ShadPs4App::GetInstance()->m_emulator.m_database->Open();
 
     // Check if cache is compatible
     std::vector<u8> profile_data{};
-    Storage::DataBase::Instance().Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
+    ShadPs4App::GetInstance()->m_emulator.m_database->Load(Storage::BlobType::ShaderProfile, "profile", profile_data);
     if (profile_data.empty()) {
-        Storage::DataBase::Instance().FinishPreload();
+        ShadPs4App::GetInstance()->m_emulator.m_database->FinishPreload();
 
         profile_data.resize(sizeof(profile));
         std::memcpy(profile_data.data(), &profile, sizeof(profile));
-        Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
+        ShadPs4App::GetInstance()->m_emulator.m_database->Save(Storage::BlobType::ShaderProfile, "profile",
                                            std::move(profile_data));
         return;
     }
@@ -322,7 +323,7 @@ void PipelineCache::WarmUp() {
     u32 num_pipelines{};
     u32 num_total_pipelines{};
 
-    Storage::DataBase::Instance().ForEachBlob(
+    ShadPs4App::GetInstance()->m_emulator.m_database->ForEachBlob(
         Storage::BlobType::PipelineKey, [&](std::vector<u8>&& data) {
             ++num_total_pipelines;
 
@@ -356,11 +357,11 @@ void PipelineCache::WarmUp() {
                     num_total_pipelines - num_pipelines);
     }
 
-    Storage::DataBase::Instance().FinishPreload();
+    ShadPs4App::GetInstance()->m_emulator.m_database->FinishPreload();
 }
 
 void PipelineCache::Sync() {
-    Storage::DataBase::Instance().Close();
+    ShadPs4App::GetInstance()->m_emulator.m_database->Close();
 }
 
 } // namespace Vulkan

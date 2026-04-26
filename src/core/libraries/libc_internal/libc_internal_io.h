@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include "common/types.h"
+#include "common/va_ctx.h"
 #include "core/libraries/kernel/threads.h"
 
 namespace Core::Loader {
@@ -93,6 +94,24 @@ s32 PS4_SYSV_ABI internal__Frprep(OrbisFILE* file);
 u64 PS4_SYSV_ABI internal_fread(char* ptr, u64 size, u64 nmemb, OrbisFILE* file);
 s32 PS4_SYSV_ABI internal_fclose(OrbisFILE* file);
 
-void RegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
-void ForceRegisterlibSceLibcInternalIo(Core::Loader::SymbolsResolver* sym);
+struct LibcInternalIo {
+    LibcInternalIo(Core::Loader::SymbolsResolver* sym);
+
+    std::map<s32, OrbisFILE*> g_files{};
+    // Constants for tracking accurate file indexes.
+    // Since the file struct is exposed to the application, accuracy is important.
+    static constexpr s32 g_initial_files = 5;
+    static constexpr s32 g_max_files = 0x100;
+};
+
+struct LibcInternalIoV2 {
+    LibcInternalIoV2(Core::Loader::SymbolsResolver* sym);
+
+    std::map<s32, OrbisFILE*> g_files{};
+    // Constants for tracking accurate file indexes.
+    // Since the file struct is exposed to the application, accuracy is important.
+    static constexpr s32 g_initial_files = 5;
+    static constexpr s32 g_max_files = 0x100;
+};
+
 } // namespace Libraries::LibcInternal

@@ -92,7 +92,7 @@ void DataBase::Open() {
         return;
     }
 
-    const auto& game_info = Common::ElfInfo::Instance();
+    const auto& game_info = *ShadPs4App::GetInstance()->m_emulator.m_elf_info;
 
     using namespace Common::FS;
     if (EmulatorSettings.IsPipelineCacheArchived()) {

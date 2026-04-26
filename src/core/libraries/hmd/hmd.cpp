@@ -8,16 +8,13 @@
 #include "core/libraries/hmd/hmd_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Hmd {
 
-static bool g_library_initialized = false;
-static s32 g_firmware_version = 0;
-static s32 g_internal_handle = 0;
-static Libraries::UserService::OrbisUserServiceUserId g_user_id = -1;
-
 s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
-    if (g_library_initialized) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
     }
     if (param == nullptr) {
@@ -27,32 +24,32 @@ s32 PS4_SYSV_ABI sceHmdInitialize(const OrbisHmdInitializeParam* param) {
     if (param->reserved0 != nullptr) {
         sceHmdDistortionInitialize(param->reserved0);
     }
-    g_library_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized = true;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceHmdInitialize315(const OrbisHmdInitializeParam* param) {
-    if (g_library_initialized) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_ALREADY_INITIALIZED;
     }
     if (param == nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
     LOG_WARNING(Lib_Hmd, "PSVR headsets are not supported yet");
-    g_library_initialized = true;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized = true;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_id, s32 type,
                             s32 index, OrbisHmdOpenParam* param) {
     LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
     if (type != 0 || index != 0 || param != nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_INVALID;
     }
-    if (g_internal_handle != 0) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle != 0) {
         return ORBIS_HMD_ERROR_ALREADY_OPENED;
     }
     if (user_id == Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID ||
@@ -62,21 +59,21 @@ s32 PS4_SYSV_ABI sceHmdOpen(Libraries::UserService::OrbisUserServiceUserId user_
 
     // Return positive value representing handle.
     // Internal libSceVrTracker logic requires this handle to be different from other devices.
-    g_user_id = user_id;
-    g_internal_handle = 0xf000000;
-    return g_internal_handle;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_user_id = user_id;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle = 0xf000000;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle;
 }
 
 s32 PS4_SYSV_ABI sceHmdGet2DEyeOffset(s32 handle, OrbisHmdEyeOffset* left_offset,
                                       OrbisHmdEyeOffset* right_offset) {
     LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_firmware_version >= Common::ElfInfo::FW_45) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -101,7 +98,7 @@ s32 PS4_SYSV_ABI sceHmdGetAssyError(void* data) {
     if (data == nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
 
@@ -113,22 +110,22 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformation(OrbisHmdDeviceInformation* info) {
     if (info == nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
 
     memset(info, 0, sizeof(OrbisHmdDeviceInformation));
     info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
-    info->user_id = g_user_id;
+    info->user_id = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_user_id;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceInformation* info) {
     LOG_DEBUG(Lib_Hmd, "called");
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_firmware_version >= Common::ElfInfo::FW_45) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -136,13 +133,13 @@ s32 PS4_SYSV_ABI sceHmdGetDeviceInformationByHandle(s32 handle, OrbisHmdDeviceIn
     if (info == nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
 
     memset(info, 0, sizeof(OrbisHmdDeviceInformation));
     info->status = OrbisHmdDeviceStatus::ORBIS_HMD_DEVICE_STATUS_NOT_DETECTED;
-    info->user_id = g_user_id;
+    info->user_id = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_user_id;
     return ORBIS_OK;
 }
 
@@ -151,15 +148,15 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
     if (field_of_view == nullptr) {
         return ORBIS_HMD_ERROR_PARAMETER_NULL;
     }
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_firmware_version >= Common::ElfInfo::FW_45) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
 
@@ -176,13 +173,13 @@ s32 PS4_SYSV_ABI sceHmdGetFieldOfView(s32 handle, OrbisHmdFieldOfView* field_of_
 
 s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_firmware_version >= Common::ElfInfo::FW_45) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -193,25 +190,25 @@ s32 PS4_SYSV_ABI sceHmdGetInertialSensorData(s32 handle, void* data, s32 unk) {
 
 s32 PS4_SYSV_ABI sceHmdClose(s32 handle) {
     LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
 
-    g_internal_handle = 0;
-    g_user_id = -1;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle = 0;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_user_id = -1;
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceHmdTerminate() {
     LOG_DEBUG(Lib_Hmd, "called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
     sceHmdDistortionTerminate();
-    g_library_initialized = false;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized = false;
     return ORBIS_OK;
 }
 
@@ -793,13 +790,13 @@ s32 PS4_SYSV_ABI Func_63D403167DC08CF0() {
 
 s32 PS4_SYSV_ABI Func_69383B2B4E3AEABF(s32 handle, void* data, s32 unk) {
     LOG_ERROR(Lib_Hmd, "(STUBBED) called");
-    if (!g_library_initialized) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_library_initialized) {
         return ORBIS_HMD_ERROR_NOT_INITIALIZED;
     }
-    if (handle != g_internal_handle) {
+    if (handle != ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_internal_handle) {
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
     }
-    if (g_firmware_version >= Common::ElfInfo::FW_45) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_hmd.g_firmware_version >= Common::ElfInfo::FW_45) {
         // Due to some faulty in-library checks, a missing headset results in this error
         // instead of the expected ORBIS_HMD_ERROR_DEVICE_DISCONNECTED error.
         return ORBIS_HMD_ERROR_HANDLE_INVALID;
@@ -863,7 +860,7 @@ s32 PS4_SYSV_ABI Func_FF2E0E53015FE231() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) : m_distortion(sym), m_reprojection(sym) {
     Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version);
     LIB_FUNCTION("6biw1XHTSqQ", "libSceHmd", 1, "libSceHmd", sceHmdClose);
     LIB_FUNCTION("BWY-qKM5hxE", "libSceHmd", 1, "libSceHmd", sceHmdGet2DEyeOffset);
@@ -1021,9 +1018,6 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sWZSZB-mnw4", "libSceHmd", 1, "libSceHmd", Func_B16652641FE69F0E);
     LIB_FUNCTION("-Bk71lPyry4", "libSceHmd", 1, "libSceHmd", Func_FC193BD653F2AF2E);
     LIB_FUNCTION("-y4OUwFf4jE", "libSceHmd", 1, "libSceHmd", Func_FF2E0E53015FE231);
-
-    RegisterDistortion(sym);
-    RegisterReprojection(sym);
 };
 
 } // namespace Libraries::Hmd

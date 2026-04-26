@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/rtc/rtc.h"
 #include "core/libraries/rtc/rtc_error.h"
 
@@ -1181,7 +1182,7 @@ int PS4_SYSV_ABI sceRtcTickAddYears(OrbisRtcTick* pTick1, OrbisRtcTick* pTick2, 
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("lPEBYdVX0XQ", "libSceRtc", 1, "libSceRtc", sceRtcCheckValid);
     LIB_FUNCTION("fNaZ4DbzHAE", "libSceRtc", 1, "libSceRtc", sceRtcCompareTick);
     LIB_FUNCTION("8Yr143yEnRo", "libSceRtc", 1, "libSceRtc", sceRtcConvertLocalTimeToUtc);

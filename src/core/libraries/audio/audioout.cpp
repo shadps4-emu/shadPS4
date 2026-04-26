@@ -16,16 +16,10 @@
 #include "core/libraries/audio/audioout_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
+#include "shadps4_app.h"
 
 namespace Libraries::AudioOut {
-
-// Port table with shared_ptr - use std::shared_mutex for RW locking
-std::array<std::shared_ptr<PortOut>, ORBIS_AUDIO_OUT_NUM_PORTS> port_table{};
-std::shared_mutex port_table_mutex;
-std::mutex port_allocation_mutex;
-
-static std::unique_ptr<AudioOutBackend> audio;
-static std::atomic<int> lazy_init{0};
 
 // Port allocation ranges
 constexpr struct PortRange {
@@ -134,8 +128,8 @@ static int AllocatePort(OrbisAudioOutPort type) {
 
     const auto& range = port_ranges[range_idx];
     for (int i = range.start; i <= range.end; i++) {
-        std::shared_lock read_lock{port_table_mutex};
-        if (!port_table[i]) {
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[i]) {
             return i;
         }
     }
@@ -143,13 +137,13 @@ static int AllocatePort(OrbisAudioOutPort type) {
 }
 
 void AdjustVol() {
-    if (lazy_init.load(std::memory_order_relaxed) == 0 && audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 && ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         return;
     }
 
-    std::shared_lock read_lock{port_table_mutex};
+    std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
     for (int i = 0; i < ORBIS_AUDIO_OUT_NUM_PORTS; i++) {
-        if (auto port = port_table[i]) {
+        if (auto port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[i]) {
             std::unique_lock lock{port->mutex, std::try_to_lock};
             if (lock.owns_lock()) {
                 port->impl->SetVolume(port->volume);
@@ -201,14 +195,14 @@ s32 PS4_SYSV_ABI sceAudioOutInit() {
     LOG_TRACE(Lib_AudioOut, "called");
 
     int expected = 0;
-    if (!lazy_init.compare_exchange_strong(expected, 1, std::memory_order_acq_rel)) {
+    if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.compare_exchange_strong(expected, 1, std::memory_order_acq_rel)) {
         return ORBIS_AUDIO_OUT_ERROR_ALREADY_INIT;
     }
 
     if (EmulatorSettings.GetAudioBackend() == AudioBackend::OpenAL) {
-        audio = std::make_unique<OpenALAudioOut>();
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio = std::make_unique<OpenALAudioOut>();
     } else {
-        audio = std::make_unique<SDLAudioOut>();
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio = std::make_unique<SDLAudioOut>();
     }
 
     LOG_INFO(Lib_AudioOut, "Audio system initialized");
@@ -228,7 +222,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
              magic_enum::enum_name(param_type.attributes.Value()),
              static_cast<u32>(param_type.attributes.Value()));
 
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -282,7 +276,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
 
-    std::unique_lock lock{port_allocation_mutex};
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_allocation_mutex};
 
     // Allocate port
     int port_id = AllocatePort(port_type);
@@ -317,7 +311,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         }
 
         // Create backend
-        port->impl = audio->Open(*port);
+        port->impl = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio->Open(*port);
         if (!port->impl) {
             throw std::runtime_error("Failed to create audio backend");
         }
@@ -343,8 +337,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     }
 
     {
-        std::unique_lock write_lock{port_table_mutex};
-        port_table[port_id] = port;
+        std::unique_lock write_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id] = port;
     }
 
     // Create handle
@@ -355,7 +349,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
 s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
     LOG_INFO(Lib_AudioOut, "handle = {:#x}", handle);
 
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -379,13 +373,13 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
 
-    std::unique_lock lock{port_allocation_mutex};
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_allocation_mutex};
 
     std::shared_ptr<PortOut> port;
     {
-        std::unique_lock write_lock{port_table_mutex};
-        port = std::move(port_table[port_id]);
-        port_table[port_id].reset();
+        std::unique_lock write_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = std::move(ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id]);
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id].reset();
     }
 
     if (!port) {
@@ -403,7 +397,7 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -421,8 +415,8 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 
     std::shared_ptr<PortOut> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        port = port_table[port_id];
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
     }
 
     if (!port) {
@@ -437,7 +431,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* state) {
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -455,8 +449,8 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     std::shared_ptr<PortOut> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        port = port_table[port_id];
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
     }
 
     if (!port) {
@@ -510,7 +504,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={:#x}, ptr={}", handle, fmt::ptr(ptr));
 
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -536,8 +530,8 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 
     std::shared_ptr<PortOut> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        port = port_table[port_id];
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
     }
 
     if (!port) {
@@ -570,7 +564,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     } else {
         LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param=nullptr, num={}", num);
     }
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -593,7 +587,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     u32 buffer_frames = 0;
 
     {
-        std::shared_lock read_lock{port_table_mutex};
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
 
         for (u32 i = 0; i < num; i++) {
             int port_id = GetPortId(param[i].handle);
@@ -624,7 +618,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
             }
 
             // Get port
-            auto port = port_table[port_id];
+            auto port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
             if (!port) {
                 LOG_ERROR(Lib_AudioOut, "Port not opened {}", port_id);
                 return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
@@ -660,7 +654,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -697,8 +691,8 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
     // Get port with shared lock (read-only access to table)
     std::shared_ptr<PortOut> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        port = port_table[port_id];
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
     }
 
     if (!port) {
@@ -733,7 +727,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
 
 s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
     LOG_INFO(Lib_AudioOut, "(STUBBED) called");
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -756,8 +750,8 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
 
     std::shared_ptr<PortOut> port;
     {
-        std::shared_lock read_lock{port_table_mutex};
-        port = port_table[port_id];
+        std::shared_lock read_lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table_mutex};
+        port = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.port_table[port_id];
     }
 
     if (!port) {
@@ -773,7 +767,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutGetSystemState(OrbisAudioOutSystemState* state) {
-    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.lazy_init.load(std::memory_order_relaxed) == 0 || ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_audio_out.audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
     }
@@ -1096,7 +1090,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetSystemDebugState() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("cx2dYFbzIAg", "libSceAudioOutDeviceService", 1, "libSceAudioOut",
                  sceAudioOutDeviceIdOpen);
     LIB_FUNCTION("tKumjQSzhys", "libSceAudioDeviceControl", 1, "libSceAudioOut",
@@ -1200,5 +1194,7 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("7UsdDOEvjlk", "libSceDbgAudioOut", 1, "libSceAudioOut",
                  sceAudioOutSetSystemDebugState);
 };
+
+Library::~Library() = default;
 
 } // namespace Libraries::AudioOut

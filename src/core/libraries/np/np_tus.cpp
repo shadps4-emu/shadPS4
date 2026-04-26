@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_tus.h"
@@ -1161,7 +1162,7 @@ s32 PS4_SYSV_ABI sceNpTusWaitAsync(int reqId, int* result) {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("sRVb2Cf0GHg", "libSceNpTusCompat", 1, "libSceNpTus", sceNpTssCreateNpTitleCtx);
     LIB_FUNCTION("cRVmNrJDbG8", "libSceNpTusCompat", 1, "libSceNpTus", sceNpTusAddAndGetVariable);
     LIB_FUNCTION("Q2UmHdK04c8", "libSceNpTusCompat", 1, "libSceNpTus",

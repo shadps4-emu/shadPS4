@@ -26,14 +26,15 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/network/sys_net.h"
+#include "shadps4_app.h"
 
 #ifdef _WIN64
 #include <Rpc.h>
 #else
 #include <uuid/uuid.h>
 #endif
-#include <common/singleton.h>
 #include <core/libraries/network/net_error.h>
 #include <core/libraries/network/sockets.h>
 #include <core/linker.h>
@@ -43,28 +44,20 @@ namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
 
-boost::asio::io_context io_context;
-static std::mutex m_asio_req;
-static std::condition_variable_any cv_asio_req;
-static std::atomic<u32> asio_requests;
-static std::jthread service_thread;
-
-Core::EntryParams entry_params{};
-
 void KernelSignalRequest() {
-    std::unique_lock lock{m_asio_req};
-    ++asio_requests;
-    cv_asio_req.notify_one();
+    std::unique_lock lock{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_asio_req};
+    ++ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.asio_requests;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.cv_asio_req.notify_one();
 }
 
-static void KernelServiceThread(std::stop_token stoken) {
+void Library::KernelServiceThread(std::stop_token stoken) {
     Common::SetCurrentThreadName("shadPS4:KernelServiceThread");
 
     while (!stoken.stop_requested()) {
         HLE_TRACE;
         {
             std::unique_lock lock{m_asio_req};
-            Common::CondvarWait(cv_asio_req, lock, stoken, [] { return asio_requests != 0; });
+            Common::CondvarWait(cv_asio_req, lock, stoken, [&] { return asio_requests != 0; });
         }
         if (stoken.stop_requested()) {
             break;
@@ -144,9 +137,6 @@ void SetPosixErrno(s32 e) {
     }
 }
 
-static u64 g_mspace_atomic_id_mask = 0;
-static u64 g_mstate_table[64] = {0};
-
 struct HeapInfoInfo {
     u64 size = sizeof(HeapInfoInfo);
     u32 flag;
@@ -156,8 +146,8 @@ struct HeapInfoInfo {
 };
 
 void PS4_SYSV_ABI sceLibcHeapGetTraceInfo(HeapInfoInfo* info) {
-    info->mspace_atomic_id_mask = &g_mspace_atomic_id_mask;
-    info->mstate_table = g_mstate_table;
+    info->mspace_atomic_id_mask = &ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.g_mspace_atomic_id_mask;
+    info->mstate_table = ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.g_mstate_table;
     info->getSegmentInfo = 0;
 }
 
@@ -189,8 +179,8 @@ s32 PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 }
 
 s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
         g_posix_errno = POSIX_EBADF;
@@ -259,11 +249,11 @@ s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
 }
 
 s32 PS4_SYSV_ABI getargc() {
-    return entry_params.argc;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.entry_params.argc;
 }
 
 const char** PS4_SYSV_ABI getargv() {
-    return entry_params.argv;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.entry_params.argv;
 }
 
 s32 PS4_SYSV_ABI get_authinfo(s32 pid, AuthInfoData* p2) {
@@ -291,7 +281,7 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
         return ORBIS_OK;
     }
 
-    auto& game_info = Common::ElfInfo::Instance();
+    auto& game_info = *ShadPs4App::GetInstance()->m_emulator.m_elf_info;
     *app_info = {};
     app_info->has_param_sfo = 1;
     strncpy(app_info->cusa_name, game_info.GameSerial().data(), 10);
@@ -418,19 +408,10 @@ u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     }
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    service_thread = std::jthread{KernelServiceThread};
-
-    Libraries::Kernel::RegisterFileSystem(sym);
-    Libraries::Kernel::RegisterTime(sym);
-    Libraries::Kernel::RegisterThreads(sym);
-    Libraries::Kernel::RegisterKernelEventFlag(sym);
-    Libraries::Kernel::RegisterMemory(sym);
-    Libraries::Kernel::RegisterEventQueue(sym);
-    Libraries::Kernel::RegisterProcess(sym);
-    Libraries::Kernel::RegisterException(sym);
-    Libraries::Kernel::RegisterAio(sym);
-    Libraries::Kernel::RegisterDebug(sym);
+Library::Library(Core::Loader::SymbolsResolver* sym)
+    : m_file_system(sym), m_time(sym), m_threads(sym), m_kernel_event_flag(sym), m_memory(sym),
+      m_event_queue(sym), m_process(sym), m_exception(sym), m_aio(sym), m_debug(sym) {
+    service_thread = std::jthread{&Library::KernelServiceThread, this};
 
     LIB_OBJ("f7uOxY9mM1U", "libkernel", 1, "libkernel", &g_stack_chk_guard);
     LIB_FUNCTION("D4yla3vx4tY", "libkernel", 1, "libkernel", sceKernelError);

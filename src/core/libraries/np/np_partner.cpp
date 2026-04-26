@@ -5,6 +5,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_partner_error.h"
 #include "core/libraries/system/userservice.h"
@@ -58,7 +59,7 @@ s32 PS4_SYSV_ABI sceNpHasEAAccessSubscription(UserService::OrbisUserServiceUserI
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("pMxXhNozUX8", "libSceNpPartner001", 1, "libSceNpPartner001",
                  sceNpEAAccessTerminate);
     LIB_FUNCTION("pQfYTZHznMc", "libSceNpPartner001", 1, "libSceNpPartner001",

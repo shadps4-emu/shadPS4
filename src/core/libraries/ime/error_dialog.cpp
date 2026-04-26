@@ -9,110 +9,13 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/system/commondialog.h"
 #include "error_dialog.h"
-#include "imgui/imgui_layer.h"
 #include "imgui/imgui_std.h"
-
-static constexpr ImVec2 BUTTON_SIZE{100.0f, 30.0f};
+#include "shadps4_app.h"
 
 namespace Libraries::ErrorDialog {
-
-using CommonDialog::Error;
-using CommonDialog::Result;
-using CommonDialog::Status;
-
-class ErrorDialogUi final : public ImGui::Layer {
-    bool first_render{false};
-
-    Status* status{nullptr};
-    std::string err_message{};
-
-public:
-    explicit ErrorDialogUi(Status* status = nullptr, std::string err_message = "")
-        : status(status), err_message(std::move(err_message)) {
-        if (status && *status == Status::RUNNING) {
-            first_render = true;
-            AddLayer(this);
-        }
-    }
-    ~ErrorDialogUi() override {
-        Finish();
-    }
-    ErrorDialogUi(const ErrorDialogUi& other) = delete;
-    ErrorDialogUi(ErrorDialogUi&& other) noexcept
-        : Layer(other), status(other.status), err_message(std::move(other.err_message)) {
-        other.status = nullptr;
-    }
-    ErrorDialogUi& operator=(ErrorDialogUi other) {
-        using std::swap;
-        swap(status, other.status);
-        swap(err_message, other.err_message);
-        if (status && *status == Status::RUNNING) {
-            first_render = true;
-            AddLayer(this);
-        }
-        return *this;
-    }
-
-    void Finish() {
-        if (status) {
-            *status = Status::FINISHED;
-        }
-        status = nullptr;
-        RemoveLayer(this);
-    }
-
-    void Draw() override {
-        using namespace ImGui;
-        if (status == nullptr || *status != Status::RUNNING) {
-            return;
-        }
-        const auto& io = GetIO();
-
-        const ImVec2 window_size{
-            std::min(io.DisplaySize.x, 500.0f),
-            std::min(io.DisplaySize.y, 300.0f),
-        };
-
-        CentralizeNextWindow();
-        SetNextWindowSize(window_size);
-        SetNextWindowCollapsed(false);
-        if (first_render || !io.NavActive) {
-            SetNextWindowFocus();
-        }
-        KeepNavHighlight();
-        if (Begin("Error Dialog##ErrorDialog", nullptr,
-                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-            const auto ws = GetWindowSize();
-
-            DrawPrettyBackground();
-            const char* begin = &err_message.front();
-            const char* end = &err_message.back() + 1;
-            SetWindowFontScale(1.3f);
-            DrawCenteredText(begin, end,
-                             GetContentRegionAvail() - ImVec2{0.0f, 15.0f + BUTTON_SIZE.y});
-            SetWindowFontScale(1.0f);
-
-            SetCursorPos({
-                ws.x / 2.0f - BUTTON_SIZE.x / 2.0f,
-                ws.y - 10.0f - BUTTON_SIZE.y,
-            });
-            if (Button("OK", BUTTON_SIZE)) {
-                Finish();
-            }
-            if (first_render) {
-                SetItemCurrentNavFocus();
-            }
-        }
-        End();
-
-        first_render = false;
-    }
-};
-
-static auto g_status = Status::NONE;
-static ErrorDialogUi g_dialog_ui;
 
 struct Param {
     s32 size;
@@ -123,29 +26,35 @@ struct Param {
 
 Error PS4_SYSV_ABI sceErrorDialogClose() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status != Status::RUNNING) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status !=
+        Status::RUNNING) {
         return Error::NOT_RUNNING;
     }
-    g_dialog_ui.Finish();
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_dialog_ui.Finish();
     return Error::OK;
 }
 
 Status PS4_SYSV_ABI sceErrorDialogGetStatus() {
     LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status;
 }
 
 Error PS4_SYSV_ABI sceErrorDialogInitialize() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status != Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status !=
+        Status::NONE) {
         return Error::ALREADY_INITIALIZED;
     }
-    g_status = Status::INITIALIZED;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status =
+        Status::INITIALIZED;
     return Error::OK;
 }
 
 Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
-    if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status !=
+            Status::INITIALIZED &&
+        ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status !=
+            Status::FINISHED) {
         LOG_INFO(Lib_ErrorDialog, "called without initialize");
         return Error::INVALID_STATE;
     }
@@ -158,8 +67,9 @@ Error PS4_SYSV_ABI sceErrorDialogOpen(const Param* param) {
     ASSERT(param->size == sizeof(Param));
 
     const std::string err_message = fmt::format("An error has occurred. \nCode: {:#X}", err);
-    g_status = Status::RUNNING;
-    g_dialog_ui = ErrorDialogUi{&g_status, err_message};
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status = Status::RUNNING;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_dialog_ui =
+        ErrorDialogUi{&ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status, err_message};
     return Error::OK;
 }
 
@@ -175,22 +85,24 @@ int PS4_SYSV_ABI sceErrorDialogOpenWithReport() {
 
 Error PS4_SYSV_ABI sceErrorDialogTerminate() {
     LOG_DEBUG(Lib_ErrorDialog, "called");
-    if (g_status == Status::RUNNING) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status ==
+        Status::RUNNING) {
         sceErrorDialogClose();
     }
-    if (g_status == Status::NONE) {
+    if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status ==
+        Status::NONE) {
         return Error::NOT_INITIALIZED;
     }
-    g_status = Status::NONE;
+    ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status = Status::NONE;
     return Error::OK;
 }
 
 Status PS4_SYSV_ABI sceErrorDialogUpdateStatus() {
     LOG_TRACE(Lib_ErrorDialog, "called status={}", magic_enum::enum_name(g_status));
-    return g_status;
+    return ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_error_dialog.g_status;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ekXHb1kDBl0", "libSceErrorDialog", 1, "libSceErrorDialog", sceErrorDialogClose);
     LIB_FUNCTION("t2FvHRXzgqk", "libSceErrorDialog", 1, "libSceErrorDialog",
                  sceErrorDialogGetStatus);

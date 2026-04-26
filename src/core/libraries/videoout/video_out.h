@@ -11,6 +11,10 @@ namespace Core::Loader {
 class SymbolsResolver;
 }
 
+namespace Vulkan {
+class Presenter;
+}
+
 namespace Libraries::VideoOut {
 
 // SceVideoOutBusType
@@ -141,6 +145,14 @@ s32 PS4_SYSV_ABI sceVideoOutAdjustColor(s32 handle, const SceVideoOutColorSettin
 // Internal system functions
 s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, void** unk);
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym);
+class VideoOutDriver;
+
+struct Library {
+    Library(Core::Loader::SymbolsResolver* sym, Vulkan::Presenter& presenter);
+    ~Library();
+
+    Vulkan::Presenter& m_presenter;
+    std::unique_ptr<VideoOutDriver> driver;
+};
 
 } // namespace Libraries::VideoOut

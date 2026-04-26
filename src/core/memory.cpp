@@ -683,8 +683,8 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
     uintptr_t handle = 0;
     std::scoped_lock lk{unmap_mutex};
     // Get the file to map
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto file = h.GetFile(fd);
     if (file == nullptr) {
         LOG_WARNING(Kernel_Vmm, "Invalid file for mmap, fd {}", fd);
         return ORBIS_KERNEL_ERROR_EBADF;

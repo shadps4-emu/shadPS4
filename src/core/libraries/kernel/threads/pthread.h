@@ -352,15 +352,46 @@ using PthreadT = Pthread*;
 
 extern thread_local Pthread* g_curthread;
 
-void RegisterMutex(Core::Loader::SymbolsResolver* sym);
-void RegisterCond(Core::Loader::SymbolsResolver* sym);
-void RegisterRwlock(Core::Loader::SymbolsResolver* sym);
-void RegisterSemaphore(Core::Loader::SymbolsResolver* sym);
-void RegisterSpec(Core::Loader::SymbolsResolver* sym);
-void RegisterThreadAttr(Core::Loader::SymbolsResolver* sym);
-void RegisterThread(Core::Loader::SymbolsResolver* sym);
-void RegisterRtld(Core::Loader::SymbolsResolver* sym);
-void RegisterKernelEventFlag(Core::Loader::SymbolsResolver* sym);
-void RegisterPthreadClean(Core::Loader::SymbolsResolver* sym);
+struct HleMutex {
+    HleMutex(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleCond {
+    HleCond(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleRwlock {
+    HleRwlock(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleSemaphore {
+    HleSemaphore(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleSpec {
+    HleSpec(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleThreadAttr {
+    HleThreadAttr(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleThread {
+    HleThread(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HleRtld {
+    HleRtld(Core::Loader::SymbolsResolver* sym);
+
+    std::shared_mutex RtldLock;
+};
+
+struct HleKernelEventFlag {
+    HleKernelEventFlag(Core::Loader::SymbolsResolver* sym);
+};
+
+struct HlePthreadClean {
+    HlePthreadClean(Core::Loader::SymbolsResolver* sym);
+};
 
 } // namespace Libraries::Kernel

@@ -9,14 +9,14 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/sysmodule/sysmodule.h"
 #include "core/libraries/sysmodule/sysmodule_error.h"
 #include "core/libraries/sysmodule/sysmodule_internal.h"
 #include "core/linker.h"
+#include "shadps4_app.h"
 
 namespace Libraries::SysModule {
-
-static std::mutex g_mutex{};
 
 s32 PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal(OrbisSysModuleInternal id, s32* handle) {
     LOG_INFO(Lib_SysModule, "called");
@@ -24,7 +24,7 @@ s32 PS4_SYSV_ABI sceSysmoduleGetModuleHandleInternal(OrbisSysModuleInternal id, 
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return getModuleHandle(id, handle);
 }
 
@@ -57,7 +57,7 @@ s32 PS4_SYSV_ABI sceSysmoduleIsLoaded(OrbisSysModule id) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return getModuleHandle(id, nullptr);
 }
 
@@ -66,7 +66,7 @@ s32 PS4_SYSV_ABI sceSysmoduleIsLoadedInternal(OrbisSysModuleInternal id) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return getModuleHandle(id, nullptr);
 }
 
@@ -79,7 +79,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModule(OrbisSysModule id) {
 
     // Only locks for internal loadModule call.
     {
-        std::scoped_lock lk{g_mutex};
+        std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
         result = loadModule(id, 0, nullptr, nullptr);
     }
 
@@ -114,7 +114,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternal(OrbisSysModuleInternal id) {
     if (id == 0x80000039) {
         return loadModule(id, 0, nullptr, nullptr);
     }
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return loadModule(id, 0, nullptr, nullptr);
 }
 
@@ -130,7 +130,7 @@ s32 PS4_SYSV_ABI sceSysmoduleLoadModuleInternalWithArg(OrbisSysModuleInternal id
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return loadModule(id, argc, argv, res_out);
 }
 
@@ -150,7 +150,7 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModule(OrbisSysModule id) {
         return ORBIS_SYSMODULE_INVALID_ID;
     }
 
-    std::scoped_lock lk{g_mutex};
+    std::scoped_lock lk{ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_sys_module.g_mutex};
     return unloadModule(id, 0, nullptr, nullptr, false);
 }
 
@@ -169,7 +169,7 @@ s32 PS4_SYSV_ABI sceSysmoduleUnloadModuleInternalWithArg() {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("D8cuU4d72xM", "libSceSysmodule", 1, "libSceSysmodule",
                  sceSysmoduleGetModuleHandleInternal);
     LIB_FUNCTION("4fU5yvOkVG4", "libSceSysmodule", 1, "libSceSysmodule",

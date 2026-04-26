@@ -5,7 +5,6 @@
 
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "common/types.h"
 
 #include <magic_enum/magic_enum.hpp>
@@ -90,7 +89,5 @@ private:
     };
     std::unordered_map<InterruptId, IrqContext> irq_contexts{};
 };
-
-using IrqC = Common::Singleton<IrqController>;
 
 } // namespace Platform

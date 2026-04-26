@@ -88,6 +88,12 @@ s32 PS4_SYSV_ABI posix_clock_settime(s32 clock_id, OrbisKernelTimespec* tp);
 s32 PS4_SYSV_ABI posix_settimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimezone* _tz);
 
-void RegisterTime(Core::Loader::SymbolsResolver* sym);
+struct HleTime {
+    HleTime(Core::Loader::SymbolsResolver* sym);
+    ~HleTime();
+
+    u64 initial_ptc;
+    std::unique_ptr<Common::NativeClock> clock;
+};
 
 } // namespace Libraries::Kernel

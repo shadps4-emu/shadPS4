@@ -5,6 +5,7 @@
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 #include "core/libraries/ulobjmgr/ulobjmgr.h"
 
 namespace Libraries::Ulobjmgr {
@@ -35,7 +36,7 @@ s32 PS4_SYSV_ABI Func_4B07893BBB77A649(u64 arg0) {
     return ORBIS_OK;
 }
 
-void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+Library::Library(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("BG26hBGiNlw", "ulobjmgr", 1, "ulobjmgr", Func_046DBA8411A2365C);
     LIB_FUNCTION("HZ9Q2c+4BU4", "ulobjmgr", 1, "ulobjmgr", Func_1D9F50D9CFB8054E);
     LIB_FUNCTION("Smf+fUNblPc", "ulobjmgr", 1, "ulobjmgr", Func_4A67FE7D435B94F7);

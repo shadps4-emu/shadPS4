@@ -6,6 +6,7 @@
 #include "core/libraries/hmd/hmd.h"
 #include "core/libraries/hmd/hmd_error.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/macro.h"
 
 namespace Libraries::Hmd {
 
@@ -175,7 +176,7 @@ s32 PS4_SYSV_ABI Func_B9A6FA0735EC7E49() {
     return ORBIS_OK;
 }
 
-void RegisterReprojection(Core::Loader::SymbolsResolver* sym) {
+HleReprojection::HleReprojection(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("8gH1aLgty5I", "libsceHmdReprojectionMultilayer", 1, "libSceHmd",
                  sceHmdReprojectionStartMultilayer);
     LIB_FUNCTION("NTIbBpSH9ik", "libSceHmd", 1, "libSceHmd", sceHmdReprojectionAddDisplayBuffer);

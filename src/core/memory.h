@@ -9,7 +9,6 @@
 #include <string_view>
 #include "common/enum.h"
 #include "common/shared_first_mutex.h"
-#include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
 #include "core/libraries/kernel/memory.h"
@@ -355,7 +354,5 @@ private:
 
     friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };
-
-using Memory = Common::Singleton<MemoryManager>;
 
 } // namespace Core

@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/file_format/trp.h"
+#include "shadps4_app.h"
 
 static void DecryptEFSM(std::span<const u8, 16> trophyKey, std::span<const u8, 16> NPcommID,
                         std::span<const u8, 16> efsmIv, std::span<const u8> ciphertext,
@@ -74,7 +75,7 @@ bool TRP::Extract(const std::filesystem::path& trophyPath, int index, std::strin
     LOG_INFO(Common_Filesystem, "Using trophy file: {}", gameSysDir.filename().string());
 
     const auto& user_key_vec =
-        KeyManager::GetInstance()->GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
+        ShadPs4App::GetInstance()->m_key_manager.GetAllKeys().TrophyKeySet.ReleaseTrophyKey;
 
     if (user_key_vec.size() != 16) {
         LOG_INFO(Common_Filesystem, "Trophy decryption key is not specified");
