@@ -110,6 +110,14 @@ public:
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    // A-variant of GetFriendsRanking
+    s32 GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
+                           u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                           NpScore::OrbisNpScoreComment* commentArray,
+                           NpScore::OrbisNpScoreGameInfo* infoArray,
+                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     // State callbacks
     using StateCallback = std::function<void(Libraries::UserService::OrbisUserServiceUserId user_id,
                                              NpManager::OrbisNpState state)>;
