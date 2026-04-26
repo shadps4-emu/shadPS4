@@ -15,7 +15,6 @@
 #include "common/assert.h"
 #include "common/error.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -30,8 +29,6 @@
 #include "sys_net.h"
 
 namespace Libraries::Net {
-
-using FDTable = Common::Singleton<Core::FileSys::HandleTable>;
 
 static thread_local int32_t net_errno = 0;
 
@@ -623,7 +620,7 @@ int PS4_SYSV_ABI sceNetEpollAbort() {
 
 int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, OrbisNetId id,
                                     OrbisNetEpollEvent* event) {
-    auto file = FDTable::Instance()->GetEpoll(epollid);
+    auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetEpoll(epollid);
     if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
@@ -647,7 +644,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             return ORBIS_NET_ERROR_EEXIST;
         }
 
-        auto file = FDTable::Instance()->GetFile(id);
+        auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(id);
         if (!file) {
             *sceNetErrnoLoc() = ORBIS_NET_EBADF;
             LOG_ERROR(Lib_Net, "file id is invalid = {}", id);
@@ -697,7 +694,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             return ORBIS_NET_ERROR_EBADF;
         }
 
-        auto file = FDTable::Instance()->GetFile(id);
+        auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(id);
         if (!file) {
             *sceNetErrnoLoc() = ORBIS_NET_EBADF;
             LOG_ERROR(Lib_Net, "file id is invalid = {}", id);
@@ -741,7 +738,7 @@ int PS4_SYSV_ABI sceNetEpollControl(OrbisNetId epollid, OrbisNetEpollFlag op, Or
             return ORBIS_NET_ERROR_EBADF;
         }
 
-        auto file = FDTable::Instance()->GetFile(id);
+        auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(id);
         if (!file) {
             *sceNetErrnoLoc() = ORBIS_NET_EBADF;
             LOG_ERROR(Lib_Net, "file id is invalid = {}", id);
@@ -790,8 +787,8 @@ int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
         return ORBIS_NET_ERROR_EINVAL;
     }
 
-    auto fd = FDTable::Instance()->CreateHandle();
-    auto* epoll = FDTable::Instance()->GetFile(fd);
+    auto fd = ShadPs4App::GetInstance()->m_emulator.m_handle_table->CreateHandle();
+    auto* epoll = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(fd);
     epoll->is_opened = true;
     epoll->type = Core::FileSys::FileType::Epoll;
     epoll->epoll = std::make_shared<Epoll>(name);
@@ -800,7 +797,7 @@ int PS4_SYSV_ABI sceNetEpollCreate(const char* name, int flags) {
 }
 
 int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
-    auto file = FDTable::Instance()->GetEpoll(epollid);
+    auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetEpoll(epollid);
     if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
@@ -809,7 +806,7 @@ int PS4_SYSV_ABI sceNetEpollDestroy(OrbisNetId epollid) {
     LOG_DEBUG(Lib_Net, "called, epollid = {} ({})", epollid, file->epoll->name);
 
     file->epoll->Destroy();
-    FDTable::Instance()->DeleteHandle(epollid);
+    ShadPs4App::GetInstance()->m_emulator.m_handle_table->DeleteHandle(epollid);
 
     return ORBIS_OK;
 }
@@ -819,7 +816,7 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
 #ifdef __FreeBSD__
     return 0;
 #else
-    auto file = FDTable::Instance()->GetEpoll(epollid);
+    auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetEpoll(epollid);
     if (!file) {
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
         return ORBIS_NET_ERROR_EBADF;
@@ -888,7 +885,7 @@ int PS4_SYSV_ABI sceNetEpollWait(OrbisNetId epollid, OrbisNetEpollEvent* events,
             }
             auto rid = epoll->async_resolutions.front();
             epoll->async_resolutions.pop_front();
-            auto file = FDTable::Instance()->GetResolver(rid);
+            auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetResolver(rid);
             if (!file) {
                 LOG_ERROR(Lib_Net, "resolver {} does not exist", rid);
                 continue;
@@ -999,9 +996,9 @@ int PS4_SYSV_ABI sceNetGetMacAddress(Libraries::NetCtl::OrbisNetEtherAddr* addr,
     }
     LOG_DEBUG(Lib_Net, "called");
 
-    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
-    netinfo->RetrieveEthernetAddr();
-    memcpy(addr->data, netinfo->GetEthernetAddr().data(), 6);
+    auto& netinfo = *ShadPs4App::GetInstance()->m_emulator.m_net_util_internal;
+    netinfo.RetrieveEthernetAddr();
+    memcpy(addr->data, netinfo.GetEthernetAddr().data(), 6);
 
     return ORBIS_OK;
 }
@@ -1399,8 +1396,8 @@ int PS4_SYSV_ABI sceNetResolverCreate(const char* name, int poolid, int flags) {
         return ORBIS_NET_ERROR_EINVAL;
     }
 
-    auto fd = FDTable::Instance()->CreateHandle();
-    auto* resolver = FDTable::Instance()->GetFile(fd);
+    auto fd = ShadPs4App::GetInstance()->m_emulator.m_handle_table->CreateHandle();
+    auto* resolver = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetFile(fd);
     resolver->is_opened = true;
     resolver->type = Core::FileSys::FileType::Resolver;
     resolver->resolver = std::make_shared<Resolver>(safe_name, poolid, flags);
@@ -1420,7 +1417,7 @@ int PS4_SYSV_ABI sceNetResolverGetError(OrbisNetId resolverid, s32* status) {
         return ORBIS_NET_ERROR_EINVAL;
     }
 
-    auto file = FDTable::Instance()->GetResolver(resolverid);
+    auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetResolver(resolverid);
     if (!file) {
         LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
@@ -1448,7 +1445,7 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
              "called, resolverid = {}, hostname = {}, timeout = {}, retry = {}, flags = {}",
              resolverid, hostname, timeout, retry, flags);
 
-    auto file = FDTable::Instance()->GetResolver(resolverid);
+    auto file = ShadPs4App::GetInstance()->m_emulator.m_handle_table->GetResolver(resolverid);
     if (!file) {
         LOG_ERROR(Lib_Net, "invalid resolverid {}", resolverid);
         *sceNetErrnoLoc() = ORBIS_NET_EBADF;
@@ -1465,8 +1462,8 @@ int PS4_SYSV_ABI sceNetResolverStartNtoa(OrbisNetId resolverid, const char* host
         return file->resolver->ResolveAsync(hostname, addr, timeout, retry, flags);
     }
 
-    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
-    auto ret = netinfo->ResolveHostname(hostname, addr);
+    auto& netinfo = *ShadPs4App::GetInstance()->m_emulator.m_net_util_internal;
+    auto ret = netinfo.ResolveHostname(hostname, addr);
 
     if (ret != 0) {
         *sceNetErrnoLoc() = ret;

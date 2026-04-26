@@ -5,7 +5,6 @@
 
 #include <set>
 #include <signal.h>
-#include "common/singleton.h"
 #include "common/types.h"
 
 #ifdef _WIN32
@@ -61,7 +60,5 @@ private:
     void* handle{};
 #endif
 };
-
-using Signals = Common::Singleton<SignalDispatch>;
 
 } // namespace Core

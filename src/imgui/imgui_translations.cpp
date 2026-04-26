@@ -3,6 +3,7 @@
 
 #include "core/emulator_settings.h"
 #include "imgui_translations.h"
+#include "shadps4_app.h"
 
 namespace ImguiTranslate {
 

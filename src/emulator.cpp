@@ -18,13 +18,13 @@
 #ifdef ENABLE_DISCORD_RPC
 #include "common/discord_rpc_handler.h"
 #endif
+#include "common/decoder.h"
 #include "common/elf_info.h"
 #include "common/memory_patcher.h"
 #include "common/ntapi.h"
 #include "common/path_util.h"
 #include "common/polyfill_thread.h"
 #include "common/scm_rev.h"
-#include "common/singleton.h"
 #include "core/debugger.h"
 #include "core/devtools/widget/module_list.h"
 #include "core/emulator_settings.h"
@@ -39,8 +39,11 @@
 #include "core/libraries/videoout/driver.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/platform.h"
+#include "core/signals.h"
 #include "core/user_settings.h"
 #include "emulator.h"
+#include "shadps4_app.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderdoc.h"
 
@@ -54,11 +57,17 @@
 #endif
 #include <core/file_format/npbind.h>
 
-Frontend::WindowSDL* g_window = nullptr;
-
 namespace Core {
 
-Emulator::Emulator() {
+Emulator::Emulator()
+    : m_mnt_points(std::make_unique<Core::FileSys::MntPoints>()),
+      m_elf_info(std::make_unique<Common::ElfInfo>()),
+      irq_controller(std::make_unique<Platform::IrqController>()),
+      m_net_util_internal(std::make_unique<NetUtil::NetUtilInternal>()),
+      m_psf(std::make_unique<PSF>()),
+      m_decoder(std::make_unique<Common::DecoderImpl>()),
+      m_signals(std::make_unique<Core::SignalDispatch>()),
+      m_database(std::make_unique<Storage::DataBase>()) {
     // Initialize NT API functions, set high priority and disable WER
 #ifdef _WIN32
     Common::NtApi::Initialize();
@@ -71,7 +80,7 @@ Emulator::Emulator() {
 #endif
 }
 
-Emulator::~Emulator() {}
+Emulator::~Emulator() = default;
 
 s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
     Core::Loader::Elf elf;
@@ -124,52 +133,49 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     std::filesystem::path eboot_name = std::filesystem::relative(file, game_folder);
 
     // Applications expect to be run from /app0 so mount the file's parent path as app0.
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    mnt->Mount(game_folder, "/app0", true);
+    m_mnt_points->Mount(game_folder, "/app0", true);
     // Certain games may use /hostapp as well such as CUSA001100
-    mnt->Mount(game_folder, "/hostapp", true);
+    m_mnt_points->Mount(game_folder, "/hostapp", true);
 
-    const auto param_sfo_path = mnt->GetHostPath("/app0/sce_sys/param.sfo");
+    const auto param_sfo_path = m_mnt_points->GetHostPath("/app0/sce_sys/param.sfo");
     const auto param_sfo_exists = std::filesystem::exists(param_sfo_path);
 
     // Load param.sfo details if it exists
     std::string id;
     std::string title;
     std::string app_version;
-    u32 sdk_version;
-    u32 fw_version;
+    u32 sdk_version = 0;
+    u32 fw_version = 0;
     Common::PSFAttributes psf_attributes{};
     if (param_sfo_exists) {
-        auto* param_sfo = Common::Singleton<PSF>::Instance();
-        ASSERT_MSG(param_sfo->Open(param_sfo_path), "Failed to open param.sfo");
+        ASSERT_MSG(m_psf->Open(param_sfo_path), "Failed to open param.sfo");
 
-        const auto content_id = param_sfo->GetString("CONTENT_ID");
-        const auto title_id = param_sfo->GetString("TITLE_ID");
+        const auto content_id = m_psf->GetString("CONTENT_ID");
+        const auto title_id = m_psf->GetString("TITLE_ID");
         if (content_id.has_value() && !content_id->empty()) {
             id = std::string(*content_id, 7, 9);
         } else if (title_id.has_value()) {
             id = *title_id;
         }
-        title = param_sfo->GetString("TITLE").value_or("Unknown title");
-        fw_version = param_sfo->GetInteger("SYSTEM_VER").value_or(0x4700000);
-        app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
-        if (const auto raw_attributes = param_sfo->GetInteger("ATTRIBUTE")) {
+        title = m_psf->GetString("TITLE").value_or("Unknown title");
+        fw_version = m_psf->GetInteger("SYSTEM_VER").value_or(0x4700000);
+        app_version = m_psf->GetString("APP_VER").value_or("Unknown version");
+        if (const auto raw_attributes = m_psf->GetInteger("ATTRIBUTE")) {
             psf_attributes.raw = *raw_attributes;
         }
 
         // Extract sdk version from pubtool info.
-        std::string_view pubtool_info =
-            param_sfo->GetString("PUBTOOLINFO").value_or("Unknown value");
+        std::string_view pubtool_info = m_psf->GetString("PUBTOOLINFO").value_or("Unknown value");
         u64 sdk_ver_offset = pubtool_info.find("sdk_ver");
 
-        if (sdk_ver_offset == pubtool_info.npos) {
+        if (sdk_ver_offset == std::string_view::npos) {
             // Default to using firmware version if SDK version is not found.
             sdk_version = fw_version;
         } else {
             // Increment offset to account for sdk_ver= part of string.
             sdk_ver_offset += 8;
             u64 sdk_ver_len = pubtool_info.find(",", sdk_ver_offset);
-            if (sdk_ver_len == pubtool_info.npos) {
+            if (sdk_ver_len == std::string_view::npos) {
                 // If there's no more commas, this is likely the last entry of pubtool info.
                 // Use string length instead.
                 sdk_ver_len = pubtool_info.size();
@@ -182,24 +188,24 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     auto guest_eboot_path = "/app0/" + eboot_name.generic_string();
-    const auto eboot_path = mnt->GetHostPath(guest_eboot_path);
+    const auto eboot_path = m_mnt_points->GetHostPath(guest_eboot_path);
 
-    auto& game_info = Common::ElfInfo::Instance();
-    game_info.initialized = true;
-    game_info.game_serial = id;
-    game_info.title = title;
-    game_info.app_ver = app_version;
-    game_info.firmware_ver = fw_version & 0xFFF00000;
-    game_info.raw_firmware_ver = fw_version;
-    game_info.sdk_ver = ReadCompiledSdkVersion(eboot_path);
-    game_info.psf_attributes = psf_attributes;
+    // game_info
+    m_elf_info->initialized = true;
+    m_elf_info->game_serial = id;
+    m_elf_info->title = title;
+    m_elf_info->app_ver = app_version;
+    m_elf_info->firmware_ver = fw_version & 0xFFF00000;
+    m_elf_info->raw_firmware_ver = fw_version;
+    m_elf_info->sdk_ver = ReadCompiledSdkVersion(eboot_path);
+    m_elf_info->psf_attributes = psf_attributes;
 
-    const auto pic1_path = mnt->GetHostPath("/app0/sce_sys/pic1.png");
+    const auto pic1_path = m_mnt_points->GetHostPath("/app0/sce_sys/pic1.png");
     if (std::filesystem::exists(pic1_path)) {
-        game_info.splash_path = pic1_path;
+        m_elf_info->splash_path = pic1_path;
     }
 
-    game_info.game_folder = game_folder;
+    m_elf_info->game_folder = game_folder;
     std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
     std::filesystem::path trophyDir = game_folder / "sce_sys/trophy";
     NPBindFile npbind;
@@ -237,8 +243,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                 trophyIndexMap[trophy_index] = npCommId;
                 LOG_DEBUG(Loader, "Mapped trophy index {} to npCommId: {}", trophy_index, npCommId);
             }
-            game_info.trophyIndexMap = std::move(trophyIndexMap);
-            game_info.npCommIds = std::move(npCommIds);
+            m_elf_info->trophyIndexMap = std::move(trophyIndexMap);
+            m_elf_info->npCommIds = std::move(npCommIds);
         }
     }
 
@@ -262,7 +268,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Loader, "Remote {}", Common::g_scm_remote_url);
 
     LOG_INFO(Config, "Game-specific config used: {}",
-             EmulatorState::GetInstance()->IsGameSpecifigConfigUsed());
+             ShadPs4App::GetInstance()->m_emulator_state.IsGameSpecifigConfigUsed());
 
     LOG_INFO(Config, "General isNeo: {}", EmulatorSettings.IsNeo());
     LOG_INFO(Config, "General isDevKit: {}", EmulatorSettings.IsDevKit());
@@ -309,7 +315,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         LOG_INFO(Loader, "Game id: {} Title: {}", id, title);
         LOG_INFO(Loader, "Fw: {:#x} App Version: {}", fw_version, app_version);
         LOG_INFO(Loader, "param.sfo SDK version: {:#x}", sdk_version);
-        LOG_INFO(Loader, "eboot SDK version: {:#x}", game_info.sdk_ver);
+        LOG_INFO(Loader, "eboot SDK version: {:#x}", m_elf_info->sdk_ver);
         LOG_INFO(Loader, "PSVR Supported: {}", (bool)psf_attributes.support_ps_vr.Value());
         LOG_INFO(Loader, "PSVR Required: {}", (bool)psf_attributes.require_ps_vr.Value());
     }
@@ -331,11 +337,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     // Create stdin/stdout/stderr
-    Common::Singleton<FileSys::HandleTable>::Instance()->CreateStdHandles();
+    m_handle_table = std::make_unique<Core::FileSys::HandleTable>();
+    m_handle_table->CreateStdHandles();
 
     // Initialize components
-    memory = Core::Memory::Instance();
-    controllers = Common::Singleton<Input::GameControllers>::Instance();
+    memory = std::make_unique<Core::MemoryManager>();
+    controllers = std::make_unique<Input::GameControllers>();
     linker = std::make_unique<Core::Linker>();
 
     // Load renderdoc module
@@ -346,7 +353,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         MemoryPatcher::g_game_serial = id;
 
         int index = 0;
-        for (std::string npCommId : game_info.npCommIds) {
+        for (std::string npCommId : m_elf_info->npCommIds) {
             const auto trophyDir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / npCommId;
             if (!std::filesystem::exists(trophyDir)) {
@@ -392,13 +399,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         }
     }
     window = std::make_unique<Frontend::WindowSDL>(EmulatorSettings.GetWindowWidth(),
-                                                   EmulatorSettings.GetWindowHeight(), controllers,
-                                                   window_title);
-
-    g_window = window.get();
+                                                   EmulatorSettings.GetWindowHeight(),
+                                                   controllers.get(), window_title);
 
     const auto& mount_data_dir = Common::FS::GetUserPath(Common::FS::PathType::GameDataDir);
-    mnt->Mount(mount_data_dir, "/data");
+    m_mnt_points->Mount(mount_data_dir, "/data");
 
     // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
@@ -407,15 +412,15 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::remove_all(mount_temp_dir);
     }
     std::filesystem::create_directory(mount_temp_dir);
-    mnt->Mount(mount_temp_dir, "/temp0");
-    mnt->Mount(mount_temp_dir, "/temp");
+    m_mnt_points->Mount(mount_temp_dir, "/temp0");
+    m_mnt_points->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
         Common::FS::GetUserPath(Common::FS::PathType::DownloadDir) / id;
     if (!std::filesystem::exists(mount_download_dir)) {
         std::filesystem::create_directory(mount_download_dir);
     }
-    mnt->Mount(mount_download_dir, "/download0");
+    m_mnt_points->Mount(mount_download_dir, "/download0");
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {
@@ -437,7 +442,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (!std::filesystem::exists(host_font_dir)) {
         std::filesystem::create_directory(host_font_dir);
     }
-    mnt->Mount(host_font_dir, guest_font_dir);
+    m_mnt_points->Mount(host_font_dir, guest_font_dir);
 
     // There is a second font directory, mount that too.
     guest_font_dir.append("2");
@@ -445,7 +450,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     if (!std::filesystem::exists(host_font2_dir)) {
         std::filesystem::create_directory(host_font2_dir);
     }
-    mnt->Mount(host_font2_dir, guest_font_dir);
+    m_mnt_points->Mount(host_font2_dir, guest_font_dir);
 
     if (std::filesystem::is_empty(host_font_dir) || std::filesystem::is_empty(host_font2_dir)) {
         LOG_WARNING(Loader, "No dumped system fonts, expect missing text or instability");
@@ -453,7 +458,6 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Initialize kernel and library facilities.
     m_hle_layer = std::make_unique<Libraries::HleLayer>(&linker->GetHLESymbols());
-    m_hle_layer->m_video_out.driver->cond_var.notify_all();
 
     // Load the module with the linker
     if (linker->LoadModule(eboot_path) == -1) {
@@ -462,14 +466,18 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::quick_exit(0);
     }
 
+    m_thread_state = std::make_unique<Libraries::Kernel::ThreadState>(*memory);
+
+    m_hle_layer->m_video_out.driver->cond_var.notify_all();
+
 #ifdef ENABLE_DISCORD_RPC
     // Discord RPC
     if (EmulatorSettings.IsDiscordRPCEnabled()) {
-        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
-        if (rpc->getRPCEnabled() == false) {
-            rpc->init();
+        auto& rpc = ShadPs4App::GetInstance()->m_discord;
+        if (rpc.getRPCEnabled() == false) {
+            rpc.init();
         }
-        rpc->setStatusPlaying(game_info.title, id);
+        rpc.setStatusPlaying(m_elf_info->title, id);
     }
 #endif
 
@@ -492,16 +500,18 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         window->WaitEvent();
     }
 
+    play_time_thread.request_stop();
+
     UpdatePlayTime(id);
-    Storage::DataBase::Instance().Close();
+
+    ShadPs4App::GetInstance()->m_emulator.m_database->Close();
 }
 
 void Emulator::Restart(std::filesystem::path eboot_path,
                        const std::vector<std::string>& guest_args) {
     std::vector<std::string> args;
 
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto game_path = mnt->GetHostPath("/app0");
+    auto game_path = m_mnt_points->GetHostPath("/app0");
 
     args.push_back("--log-append");
     args.push_back("--game");
@@ -537,7 +547,7 @@ void Emulator::Restart(std::filesystem::path eboot_path,
     Libraries::SaveData::Backup::StopThread();
     Common::Log::Shutdown();
 
-    auto& ipc = IPC::Instance();
+    auto& ipc = ShadPs4App::GetInstance()->m_ipc;
 
     if (ipc.IsEnabled()) {
         ipc.SendRestart(args);

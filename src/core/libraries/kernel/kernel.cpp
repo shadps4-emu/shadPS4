@@ -35,7 +35,6 @@
 #else
 #include <uuid/uuid.h>
 #endif
-#include <common/singleton.h>
 #include <core/libraries/network/net_error.h>
 #include <core/libraries/network/sockets.h>
 #include <core/linker.h>
@@ -180,8 +179,8 @@ s32 PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 }
 
 s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
-    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto& h = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    auto* file = h.GetFile(fd);
     if (file == nullptr) {
         LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
         g_posix_errno = POSIX_EBADF;
@@ -282,7 +281,7 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
         return ORBIS_OK;
     }
 
-    auto& game_info = Common::ElfInfo::Instance();
+    auto& game_info = *ShadPs4App::GetInstance()->m_emulator.m_elf_info;
     *app_info = {};
     app_info->has_param_sfo = 1;
     strncpy(app_info->cusa_name, game_info.GameSerial().data(), 10);

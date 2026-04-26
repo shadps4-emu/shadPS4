@@ -318,10 +318,10 @@ static std::array<std::optional<SaveInstance>, 16> g_mount_slots;
 
 static void initialize() {
     g_initialized = true;
-    g_game_serial = Common::Singleton<PSF>::Instance()
+    g_game_serial = ShadPs4App::GetInstance()->m_emulator.m_psf
                         ->GetString("INSTALL_DIR_SAVEDATA")
-                        .value_or(ElfInfo::Instance().GameSerial());
-    g_fw_ver = ElfInfo::Instance().FirmwareVer();
+                        .value_or(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial());
+    g_fw_ver = ShadPs4App::GetInstance()->m_emulator.m_elf_info->FirmwareVer();
     Backup::StartThread();
 }
 

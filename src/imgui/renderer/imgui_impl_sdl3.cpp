@@ -11,6 +11,7 @@
 #include "input/controller.h"
 #include "input/input_handler.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 
 // SDL
 #include <SDL3/SDL.h>
@@ -737,7 +738,7 @@ static void UpdateGamepads() {
     ImGuiIO& io = ImGui::GetIO();
     SdlData* bd = GetBackendData();
 
-    auto& controllers = *Common::Singleton<Input::GameControllers>::Instance();
+    auto& controllers = *ShadPs4App::GetInstance()->m_emulator.controllers;
     SDL_Gamepad* SDLGamepad = controllers[0]->m_sdl_gamepad;
     // Update list of gamepads to use
     if (bd->want_update_gamepads_list && bd->gamepad_mode != ImGui_ImplSDL3_GamepadMode_Manual) {
@@ -830,7 +831,7 @@ void NewFrame(bool is_reusing_frame) {
                 ? (float)((double)(current_time - bd->nonReusedtime) / (double)frequency)
                 : 1.0f / 60.0f;
         bd->nonReusedtime = current_time;
-        DebugState.FrameDeltaTime = deltaTime;
+        ShadPs4App::GetInstance()->DebugState.FrameDeltaTime = deltaTime;
 
         int& frameIdx = bd->framerateSecPerFrameIdx;
         float& framerateSec = bd->framerateSecPerFrame[frameIdx];
@@ -839,7 +840,7 @@ void NewFrame(bool is_reusing_frame) {
         acc += deltaTime - framerateSec;
         framerateSec = deltaTime;
         frameIdx = (frameIdx + 1) % count;
-        DebugState.Framerate = acc > 0.0f ? 1.0f / (acc / (float)count) : FLT_MAX;
+        ShadPs4App::GetInstance()->DebugState.Framerate = acc > 0.0f ? 1.0f / (acc / (float)count) : FLT_MAX;
     }
 
     if (bd->mouse_pending_leave_frame && bd->mouse_pending_leave_frame >= ImGui::GetFrameCount() &&

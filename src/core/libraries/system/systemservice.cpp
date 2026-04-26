@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/libs.h"
@@ -1874,8 +1873,8 @@ int PS4_SYSV_ABI sceSystemServiceLaunchWebBrowser() {
 int PS4_SYSV_ABI sceSystemServiceLoadExec(const char* path, const char* argv[]) {
     LOG_DEBUG(Lib_SystemService, "called");
     auto& emu = ShadPs4App::GetInstance()->m_emulator;
-    auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto hostPath = mnt->GetHostPath(std::string_view(path));
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+    auto hostPath = mnt.GetHostPath(std::string_view(path));
     if (hostPath.empty()) {
         LOG_INFO(Lib_SystemService, "Restart called with invalid file '{}', exiting.", path);
         std::quick_exit(0);

@@ -118,9 +118,9 @@ bool validateModuleId(s32 id) {
 }
 
 s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
-    auto* game_info = Common::Singleton<Common::ElfInfo>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+    auto& linker = *ShadPs4App::GetInstance()->m_emulator.linker.get();
+    auto& game_info = *ShadPs4App::GetInstance()->m_emulator.m_elf_info;
 
     // If the module is already loaded, increment is_loaded and return ORBIS_OK.
     OrbisSysmoduleModuleInternal& mod = g_modules_array[index];
@@ -135,10 +135,10 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     if ((mod.flags & OrbisSysmoduleModuleInternalFlags::IsGame) != 0) {
         std::string guest_path = std::string("/app0/sce_module/").append(mod.name);
         guest_path.append(".prx");
-        const auto& host_path = mnt->GetHostPath(guest_path);
+        const auto& host_path = mnt.GetHostPath(guest_path);
 
         // For convenience, load through linker directly instead of loading through libkernel calls.
-        s32 result = linker->LoadAndStartModule(host_path, argc, argv, &start_result);
+        s32 result = linker.LoadAndStartModule(host_path, argc, argv, &start_result);
         // If the module is missing, the library prints a very helpful message for developers.
         // We'll just log an error.
         if (result < 0) {
@@ -192,13 +192,13 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         // First, we allow all modules from game-specific sys_modules
         const auto& sys_module_path = EmulatorSettings.GetSysModulesDir();
         const auto& game_specific_module_path =
-            sys_module_path / game_info->GameSerial() / mod_name;
+            sys_module_path / game_info.GameSerial() / mod_name;
         if (std::filesystem::exists(game_specific_module_path)) {
             // The requested module is present in the game-specific sys_modules, load it.
             LOG_INFO(Loader, "Loading {} from game serial file {}", mod_name,
-                     game_info->GameSerial());
+                     game_info.GameSerial());
             s32 handle =
-                linker->LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
+                linker.LoadAndStartModule(game_specific_module_path, argc, argv, &start_result);
             ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
             mod.handle = handle;
             mod.is_loaded++;
@@ -246,7 +246,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
         const auto& module_path = sys_module_path / mod_name;
         if (std::filesystem::exists(module_path)) {
             LOG_INFO(Loader, "Loading {}", mod_name);
-            s32 handle = linker->LoadAndStartModule(module_path, argc, argv, &start_result);
+            s32 handle = linker.LoadAndStartModule(module_path, argc, argv, &start_result);
             ASSERT_MSG(handle >= 0, "Failed to load module {}", mod_name);
             mod.handle = handle;
         } else {
@@ -254,11 +254,11 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
             auto& [name, init_func] = *it;
             if (init_func) {
                 LOG_INFO(Loader, "Can't Load {} switching to HLE", mod_name);
-                ShadPs4App::GetInstance()->m_emulator.m_hle_layer->load(name, &linker->GetHLESymbols());
+                ShadPs4App::GetInstance()->m_emulator.m_hle_layer->load(name, &linker.GetHLESymbols());
 
                 // When loading HLEs, we need to relocate imports
                 // This ensures later module loads can see our HLE functions.
-                linker->RelocateAllImports();
+                linker.RelocateAllImports();
             } else {
                 LOG_INFO(Loader, "No HLE available for {} module", mod_name);
             }

@@ -9,27 +9,12 @@
 #include "key_manager.h"
 #include "path_util.h"
 
-std::shared_ptr<KeyManager> KeyManager::s_instance = nullptr;
-std::mutex KeyManager::s_mutex;
-
 // ------------------- Constructor & Singleton -------------------
 KeyManager::KeyManager() {
     SetDefaultKeys();
 }
 KeyManager::~KeyManager() {
     SaveToFile();
-}
-
-std::shared_ptr<KeyManager> KeyManager::GetInstance() {
-    std::lock_guard<std::mutex> lock(s_mutex);
-    if (!s_instance)
-        s_instance = std::make_shared<KeyManager>();
-    return s_instance;
-}
-
-void KeyManager::SetInstance(std::shared_ptr<KeyManager> instance) {
-    std::lock_guard<std::mutex> lock(s_mutex);
-    s_instance = instance;
 }
 
 // ------------------- Load / Save -------------------

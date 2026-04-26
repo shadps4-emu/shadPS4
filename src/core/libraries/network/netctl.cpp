@@ -12,7 +12,6 @@
 #include <unistd.h>
 #endif
 
-#include <common/singleton.h>
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -166,15 +165,15 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         return ORBIS_NET_CTL_ERROR_NOT_CONNECTED;
     }
 
-    auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
+    auto& netinfo = *ShadPs4App::GetInstance()->m_emulator.m_net_util_internal;
 
     switch (code) {
     case ORBIS_NET_CTL_INFO_DEVICE:
         info->device = ORBIS_NET_CTL_DEVICE_WIRED;
         break;
     case ORBIS_NET_CTL_INFO_ETHER_ADDR: {
-        netinfo->RetrieveEthernetAddr();
-        memcpy(info->ether_addr.data, netinfo->GetEthernetAddr().data(), 6);
+        netinfo.RetrieveEthernetAddr();
+        memcpy(info->ether_addr.data, netinfo.GetEthernetAddr().data(), 6);
     } break;
     case ORBIS_NET_CTL_INFO_MTU:
         info->mtu = 1500; // default value
@@ -186,18 +185,18 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
     case ORBIS_NET_CTL_INFO_IP_ADDRESS: {
         strcpy(info->ip_address,
                "127.0.0.1"); // placeholder in case ip retrieval failed
-        auto success = netinfo->RetrieveIp();
+        auto success = netinfo.RetrieveIp();
         if (success) {
-            strncpy(info->ip_address, netinfo->GetIp().data(), sizeof(info->ip_address));
+            strncpy(info->ip_address, netinfo.GetIp().data(), sizeof(info->ip_address));
         } else {
             LOG_WARNING(Lib_NetCtl, "local ip: failed to retrieve");
         }
         break;
     }
     case ORBIS_NET_CTL_INFO_NETMASK: {
-        auto success = netinfo->RetrieveNetmask();
+        auto success = netinfo.RetrieveNetmask();
         if (success) {
-            strncpy(info->netmask, netinfo->GetNetmask().data(), sizeof(info->netmask));
+            strncpy(info->netmask, netinfo.GetNetmask().data(), sizeof(info->netmask));
             LOG_DEBUG(Lib_NetCtl, "netmask: {}", info->netmask);
         } else {
             LOG_WARNING(Lib_NetCtl, "netmask: failed to retrieve");
@@ -205,9 +204,9 @@ int PS4_SYSV_ABI sceNetCtlGetInfo(int code, OrbisNetCtlInfo* info) {
         break;
     }
     case ORBIS_NET_CTL_INFO_DEFAULT_ROUTE: {
-        auto success = netinfo->RetrieveDefaultGateway();
+        auto success = netinfo.RetrieveDefaultGateway();
         if (success) {
-            strncpy(info->default_route, netinfo->GetDefaultGateway().data(),
+            strncpy(info->default_route, netinfo.GetDefaultGateway().data(),
                     sizeof(info->default_route));
             LOG_DEBUG(Lib_NetCtl, "default gateway: {}", info->default_route);
         } else {

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/alignment.h"
-#include "common/singleton.h"
 #include "common/thread.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/avplayer/avplayer_error.h"
 #include "core/libraries/avplayer/avplayer_file_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
+#include "shadps4_app.h"
 
 #include <magic_enum/magic_enum.hpp>
 
@@ -46,8 +46,8 @@ bool AvPlayerSource::Init(const AvPlayerInitData& init_data, std::string_view pa
             return false;
         }
     } else {
-        const auto mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-        const auto filepath = mnt->GetHostPath(path);
+        auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+        const auto filepath = mnt.GetHostPath(path);
         if (AVPLAYER_IS_ERROR(
                 avformat_open_input(&context, filepath.string().c_str(), nullptr, nullptr))) {
             return false;

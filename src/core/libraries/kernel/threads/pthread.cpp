@@ -12,6 +12,7 @@
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 
 extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,
                                                  void* stackb) asm("_runOnAnotherStack");
@@ -38,8 +39,8 @@ static void ExitThread() {
         _thread_cleanupspecific();
     }
 
-    auto* thread_state = ThrState::Instance();
-    ASSERT(thread_state->active_threads.fetch_sub(1) != 1);
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    ASSERT(thread_state.active_threads.fetch_sub(1) != 1);
 
     curthread->lock.lock();
     curthread->state = PthreadState::Dead;
@@ -50,7 +51,7 @@ static void ExitThread() {
      * reference count to allow it to be garbage collected.
      */
     curthread->refcount--;
-    thread_state->TryCollect(curthread); /* thread lock released */
+    thread_state.TryCollect(curthread); /* thread lock released */
 
     /*
      * Kernel will do wakeup at the address, so joiner thread
@@ -104,8 +105,8 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
         return POSIX_EDEADLK;
     }
 
-    auto* thread_state = ThrState::Instance();
-    if (int ret = thread_state->FindThread(pthread, true); ret != 0) {
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    if (int ret = thread_state.FindThread(pthread, true); ret != 0) {
         return POSIX_ESRCH;
     }
 
@@ -154,7 +155,7 @@ static int JoinThread(PthreadT pthread, void** thread_return, const OrbisKernelT
     pthread->lock.lock();
     pthread->flags |= ThreadFlags::Detached;
     pthread->joiner = nullptr;
-    thread_state->TryCollect(pthread); /* thread lock released */
+    thread_state.TryCollect(pthread); /* thread lock released */
     if (thread_return != nullptr) {
         *thread_return = tmp;
     }
@@ -181,8 +182,8 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
         return POSIX_EINVAL;
     }
 
-    auto* thread_state = ThrState::Instance();
-    if (int ret = thread_state->FindThread(pthread, true); ret != 0) {
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    if (int ret = thread_state.FindThread(pthread, true); ret != 0) {
         return ret;
     }
 
@@ -194,7 +195,7 @@ int PS4_SYSV_ABI posix_pthread_detach(PthreadT pthread) {
 
     /* Flag the thread as detached. */
     pthread->flags |= ThreadFlags::Detached;
-    thread_state->TryCollect(pthread); /* thread lock released */
+    thread_state.TryCollect(pthread); /* thread lock released */
     return 0;
 }
 
@@ -206,7 +207,7 @@ static void* RunThread(void* arg) {
     auto* curthread = static_cast<Pthread*>(arg);
     g_curthread = curthread;
     Common::SetCurrentThreadName(curthread->name.c_str());
-    DebugState.AddCurrentThreadToGuestList();
+    ShadPs4App::GetInstance()->DebugState.AddCurrentThreadToGuestList();
     Core::InitializeTLS();
 
     curthread->native_thr.Initialize();
@@ -217,7 +218,7 @@ static void* RunThread(void* arg) {
     void* ret = _runOnAnotherStack(curthread->arg, (void*)curthread->start_routine, stack);
 
     /* Remove thread from tracking */
-    DebugState.RemoveCurrentThreadFromGuestList();
+    ShadPs4App::GetInstance()->DebugState.RemoveCurrentThreadFromGuestList();
     posix_pthread_exit(ret);
 #ifdef WIN32
     return 0;
@@ -230,8 +231,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
                                               PthreadEntryFunc start_routine, void* arg,
                                               const char* name) {
     Pthread* curthread = g_curthread;
-    auto* thread_state = ThrState::Instance();
-    Pthread* new_thread = thread_state->Alloc(curthread);
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    Pthread* new_thread = thread_state.Alloc(curthread);
     if (new_thread == nullptr) {
         return POSIX_EAGAIN;
     }
@@ -261,9 +262,9 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
         new_thread->attr.stacksize_attr += AdditionalStack;
     }
 
-    if (thread_state->CreateStack(&new_thread->attr) != 0) {
+    if (thread_state.CreateStack(&new_thread->attr) != 0) {
         /* Insufficient memory to create a stack: */
-        thread_state->Free(curthread, new_thread);
+        thread_state.Free(curthread, new_thread);
         return POSIX_EAGAIN;
     }
 
@@ -277,8 +278,8 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     new_thread->cancel_enable = true;
     new_thread->cancel_async = false;
 
-    auto* memory = Core::Memory::Instance();
-    if (name && memory->IsValidMapping(reinterpret_cast<VAddr>(name))) {
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    if (name && memory.IsValidMapping(reinterpret_cast<VAddr>(name))) {
         new_thread->name = name;
     } else {
         new_thread->name = fmt::format("Thread{}", new_thread->tid.load());
@@ -293,7 +294,7 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
 
     /* Add the new thread. */
     new_thread->refcount = 1;
-    thread_state->Link(curthread, new_thread);
+    thread_state.Link(curthread, new_thread);
 
     /* Return thread pointer eariler so that new thread can use it. */
     (*thread) = new_thread;
@@ -440,16 +441,16 @@ int PS4_SYSV_ABI posix_pthread_getschedparam(PthreadT pthread, SchedPolicy* poli
         param->sched_priority = g_curthread->attr.prio;
         return 0;
     }
-    auto* thread_state = ThrState::Instance();
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
     /* Find the thread in the list of active threads. */
-    if (int ret = thread_state->RefAdd(pthread, /*include dead*/ false); ret != 0) {
+    if (int ret = thread_state.RefAdd(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
     pthread->lock.lock();
     *policy = pthread->attr.sched_policy;
     param->sched_priority = pthread->attr.prio;
     pthread->lock.unlock();
-    thread_state->RefDelete(pthread);
+    thread_state.RefDelete(pthread);
     return 0;
 }
 
@@ -459,10 +460,10 @@ int PS4_SYSV_ABI posix_pthread_setschedparam(PthreadT pthread, SchedPolicy polic
         return POSIX_EINVAL;
     }
 
-    auto* thread_state = ThrState::Instance();
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
     if (pthread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (int ret = thread_state->FindThread(pthread, /*include dead*/ false); ret != 0) {
+    } else if (int ret = thread_state.FindThread(pthread, /*include dead*/ false); ret != 0) {
         return ret;
     }
 
@@ -493,10 +494,10 @@ int PS4_SYSV_ABI posix_pthread_setprio(PthreadT thread, int prio) {
     SchedParam param;
     param.sched_priority = prio;
 
-    auto* thread_state = ThrState::Instance();
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (const int ret = thread_state->FindThread(thread, /*include dead*/ false); ret != 0) {
+    } else if (const int ret = thread_state.FindThread(thread, /*include dead*/ false); ret != 0) {
         return ret;
     }
 
@@ -596,10 +597,10 @@ int PS4_SYSV_ABI posix_pthread_getaffinity_np(PthreadT thread, size_t cpusetsize
         return POSIX_EINVAL;
     }
 
-    auto* thread_state = ThrState::Instance();
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
+    } else if (const auto ret = thread_state.FindThread(thread, /*include dead*/ false);
                ret != 0) {
         return ret;
     }
@@ -617,10 +618,10 @@ int PS4_SYSV_ABI posix_pthread_setaffinity_np(PthreadT thread, size_t cpusetsize
         return POSIX_EINVAL;
     }
 
-    auto* thread_state = ThrState::Instance();
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
     if (thread == g_curthread) {
         g_curthread->lock.lock();
-    } else if (const auto ret = thread_state->FindThread(thread, /*include dead*/ false);
+    } else if (const auto ret = thread_state.FindThread(thread, /*include dead*/ false);
                ret != 0) {
         return ret;
     }

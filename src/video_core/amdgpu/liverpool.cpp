@@ -17,6 +17,7 @@
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderdoc.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "shadps4_app.h"
 
 namespace AmdGpu {
 
@@ -145,7 +146,7 @@ void Liverpool::Process(std::stop_token stoken) {
             submit_done = false;
         }
 
-        Platform::IrqC::Instance()->Signal(Platform::InterruptId::GpuIdle);
+        ShadPs4App::GetInstance()->m_emulator.irq_controller->Signal(Platform::InterruptId::GpuIdle);
     }
 }
 
@@ -265,7 +266,7 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 case PM4CmdNop::PayloadType::PatchedFlip: {
                     // There is no evidence that GPU CP drives flip events by parsing
                     // special NOP packets. For convenience lets assume that it does.
-                    Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxFlip);
+                    ShadPs4App::GetInstance()->m_emulator.irq_controller->Signal(Platform::InterruptId::GfxFlip);
                     break;
                 }
                 case PM4CmdNop::PayloadType::DebugMarkerPush: {
@@ -424,8 +425,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.index_base_address.base_addr_hi = draw_index->index_base_hi;
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -445,8 +446,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 regs.max_index_size = draw_index_off->max_size;
                 regs.num_indices = draw_index_off->index_count;
                 regs.draw_initiator = draw_index_off->draw_initiator;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -465,8 +466,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index = reinterpret_cast<const PM4CmdDrawIndexAuto*>(header);
                 regs.num_indices = draw_index->index_count;
                 regs.draw_initiator = draw_index->draw_initiator;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -485,8 +486,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_indirect = reinterpret_cast<const PM4CmdDrawIndirect*>(header);
                 const auto offset = draw_indirect->data_offset;
                 const auto stride = sizeof(DrawIndirectArgs);
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -505,8 +506,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_indirect =
                     reinterpret_cast<const PM4CmdDrawIndirectMulti*>(header);
                 const auto offset = draw_indirect->data_offset;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -528,8 +529,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                     reinterpret_cast<const PM4CmdDrawIndexIndirect*>(header);
                 const auto offset = draw_index_indirect->data_offset;
                 const auto stride = sizeof(DrawIndexedIndirectArgs);
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -548,8 +549,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirectMulti*>(header);
                 const auto offset = draw_index_indirect->data_offset;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -572,8 +573,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* draw_index_indirect =
                     reinterpret_cast<const PM4CmdDrawIndexIndirectCountMulti*>(header);
                 const auto offset = draw_index_indirect->data_offset;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDump(base_addr, reinterpret_cast<uintptr_t>(header), regs);
                 }
                 if (rasterizer) {
                     const auto cmd_address = reinterpret_cast<const void*>(header);
@@ -605,8 +606,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 cs_program.dim_y = dispatch_direct->dim_y;
                 cs_program.dim_z = dispatch_direct->dim_z;
                 cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
                                                    cs_program);
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
@@ -628,8 +629,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 auto& cs_program = GetCsRegs();
                 const auto offset = dispatch_indirect->data_offset;
                 const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
-                if (DebugState.DumpingCurrentReg()) {
-                    DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+                if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                    ShadPs4App::GetInstance()->DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
                                                    cs_program);
                 }
                 if (rasterizer && (cs_program.dispatch_initiator & 1)) {
@@ -692,8 +693,8 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
             case PM4ItOpcode::EventWriteEos: {
                 const auto* event_eos = reinterpret_cast<const PM4CmdEventWriteEos*>(header);
                 event_eos->SignalFence([](void* address, u64 data, u32 num_bytes) {
-                    auto* memory = Core::Memory::Instance();
-                    if (!memory->TryWriteBacking(address, &data, num_bytes)) {
+                    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+                    if (!memory.TryWriteBacking(address, &data, num_bytes)) {
                         memcpy(address, &data, num_bytes);
                     }
                 });
@@ -711,12 +712,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb, std::span<c
                 const auto* event_eop = reinterpret_cast<const PM4CmdEventWriteEop*>(header);
                 event_eop->SignalFence(
                     [](void* address, u64 data, u32 num_bytes) {
-                        auto* memory = Core::Memory::Instance();
-                        if (!memory->TryWriteBacking(address, &data, num_bytes)) {
+                        auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+                        if (!memory.TryWriteBacking(address, &data, num_bytes)) {
                             memcpy(address, &data, num_bytes);
                         }
                     },
-                    [] { Platform::IrqC::Instance()->Signal(Platform::InterruptId::GfxEop); });
+                    [] { ShadPs4App::GetInstance()->m_emulator.irq_controller->Signal(Platform::InterruptId::GfxEop); });
                 break;
             }
             case PM4ItOpcode::DmaData: {
@@ -1064,8 +1065,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             cs_program.dim_y = dispatch_direct->dim_y;
             cs_program.dim_z = dispatch_direct->dim_z;
             cs_program.dispatch_initiator = dispatch_direct->dispatch_initiator;
-            if (DebugState.DumpingCurrentReg()) {
-                DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+            if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                ShadPs4App::GetInstance()->DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
                                                cs_program);
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
@@ -1087,8 +1088,8 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             auto& cs_program = GetCsRegs();
             const auto ib_address = dispatch_indirect->Address<VAddr>();
             const auto size = sizeof(PM4CmdDispatchIndirect::GroupDimensions);
-            if (DebugState.DumpingCurrentReg()) {
-                DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
+            if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentReg()) {
+                ShadPs4App::GetInstance()->DebugState.PushRegsDumpCompute(base_addr, reinterpret_cast<uintptr_t>(header),
                                                cs_program);
             }
             if (rasterizer && (cs_program.dispatch_initiator & 1)) {
@@ -1139,7 +1140,7 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             const auto* release_mem = reinterpret_cast<const PM4CmdReleaseMem*>(header);
             release_mem->SignalFence(
                 [pipe_id = queue.pipe_id] {
-                    Platform::IrqC::Instance()->Signal(static_cast<Platform::InterruptId>(pipe_id));
+                    ShadPs4App::GetInstance()->m_emulator.irq_controller->Signal(static_cast<Platform::InterruptId>(pipe_id));
                 },
                 [this](VAddr dst, u16 gds_index, u16 num_dwords) {
                     rasterizer->CopyBuffer(dst, gds_index, num_dwords * sizeof(u32), false, true);

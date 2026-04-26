@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_format/playgo_chunk.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
@@ -253,8 +252,8 @@ s32 PS4_SYSV_ABI scePlayGoInitialize(OrbisPlayGoInitParams* param) {
 
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo = std::make_unique<PlaygoFile>();
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto file_path = mnt->GetHostPath("/app0/sce_sys/playgo-chunk.dat");
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
+    const auto file_path = mnt.GetHostPath("/app0/sce_sys/playgo-chunk.dat");
     if (!ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_play_go.playgo->Open(file_path)) {
         LOG_WARNING(Lib_PlayGo, "Could not open PlayGo file");
     }

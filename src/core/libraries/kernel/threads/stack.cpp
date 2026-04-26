@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/memory.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
@@ -98,14 +99,14 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
 
     /* Map the stack and guard page together, and split guard
        page from allocated space: */
-    auto* memory = Core::Memory::Instance();
-    int ret = memory->MapMemory(reinterpret_cast<void**>(&stackaddr), stackaddr,
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    int ret = memory.MapMemory(reinterpret_cast<void**>(&stackaddr), stackaddr,
                                 stacksize + guardsize, Core::MemoryProt::CpuReadWrite,
                                 Core::MemoryMapFlags::NoFlags, Core::VMAType::Stack);
     ASSERT_MSG(ret == 0, "Unable to map stack memory");
 
     if (guardsize != 0) {
-        ret = memory->Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
+        ret = memory.Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
         ASSERT_MSG(ret == 0, "Unable to protect guard page");
     }
 

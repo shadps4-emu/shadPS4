@@ -15,6 +15,9 @@
 #include "core/ipc/ipc.h"
 #include "core/user_settings.h"
 #include "emulator.h"
+#include "core/devtools//layer.h"
+#include "common/discord_rpc_handler.h"
+#include "core/debug_state.h"
 
 class ShadPs4App {
 public:
@@ -49,4 +52,7 @@ public:
     EmulatorSettingsImpl m_emulator_settings;
 
     Core::Emulator m_emulator;
+    Core::Devtools::Layer m_devtools_layer;
+    DebugStateType::DebugStateImpl DebugState;
+    DiscordRPCHandler::RPC m_discord;
 };

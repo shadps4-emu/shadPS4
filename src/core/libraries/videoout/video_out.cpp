@@ -346,7 +346,7 @@ s32 sceVideoOutSubmitEopFlip(s32 handle, u32 buf_id, u32 mode, s64 flip_arg, voi
         return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
     }
 
-    Platform::IrqC::Instance()->RegisterOnce(
+    ShadPs4App::GetInstance()->m_emulator.irq_controller->RegisterOnce(
         Platform::InterruptId::GfxFlip, [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == Platform::InterruptId::GfxFlip, "An unexpected IRQ occured");
             ASSERT_MSG(port->buffer_labels[buf_id] == 1, "Out of order flip IRQ");
@@ -361,7 +361,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetDeviceCapabilityInfo(
     s32 handle, SceVideoOutDeviceCapabilityInfo* pDeviceCapabilityInfo) {
     pDeviceCapabilityInfo->capability = 0;
     if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.presenter->IsHDRSupported()) {
-        auto& game_info = Common::ElfInfo::Instance();
+        auto& game_info = *ShadPs4App::GetInstance()->m_emulator.m_elf_info;
         if (game_info.GetPSFAttributes().support_hdr) {
             pDeviceCapabilityInfo->capability |= ORBIS_VIDEO_OUT_DEVICE_CAPABILITY_BT2020_PQ;
         }
@@ -436,7 +436,7 @@ s32 PS4_SYSV_ABI sceVideoOutConfigureOutputMode_(s32 handle, u32 reserved, const
         port->is_hdr = false;
         break;
     case OrbisVideoOutColorimetry::Bt2020PQ:
-        if (Common::ElfInfo::Instance().GetPSFAttributes().support_hdr) {
+        if (ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetPSFAttributes().support_hdr) {
             port->is_hdr = true;
         }
         break;

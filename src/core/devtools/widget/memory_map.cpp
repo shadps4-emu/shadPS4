@@ -8,6 +8,7 @@
 #include "core/debug_state.h"
 #include "core/memory.h"
 #include "memory_map.h"
+#include "shadps4_app.h"
 
 using namespace ImGui;
 
@@ -69,8 +70,8 @@ void MemoryMapViewer::Draw() {
         return;
     }
 
-    auto mem = Memory::Instance();
-    std::scoped_lock lck{mem->mutex};
+    auto& mem = *ShadPs4App::GetInstance()->m_emulator.memory;
+    std::scoped_lock lck{mem.mutex};
 
     {
         bool next_showing_vma = showing_vma;
@@ -99,12 +100,12 @@ void MemoryMapViewer::Draw() {
     Iterator it{};
     if (showing_vma) {
         it.is_vma = true;
-        it.vma.it = mem->vma_map.begin();
-        it.vma.end = mem->vma_map.end();
+        it.vma.it = mem.vma_map.begin();
+        it.vma.end = mem.vma_map.end();
     } else {
         it.is_vma = false;
-        it.dmem.it = mem->dmem_map.begin();
-        it.dmem.end = mem->dmem_map.end();
+        it.dmem.it = mem.dmem_map.begin();
+        it.dmem.end = mem.dmem_map.end();
     }
 
     if (BeginTable("memory_view_table", showing_vma ? 6 : 4,

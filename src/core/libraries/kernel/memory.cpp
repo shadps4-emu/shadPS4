@@ -8,7 +8,6 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
-#include "common/singleton.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -23,8 +22,8 @@ namespace Libraries::Kernel {
 
 u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     LOG_TRACE(Kernel_Vmm, "called");
-    const auto* memory = Core::Memory::Instance();
-    return memory->GetTotalDirectSize();
+    const auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.GetTotalDirectSize();
 }
 
 s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
@@ -65,8 +64,8 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
 
-    auto* memory = Core::Memory::Instance();
-    PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    PAddr phys_addr = memory.Allocate(searchStart, searchEnd, len, alignment, memoryType);
     if (phys_addr == -1) {
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
@@ -97,8 +96,8 @@ s32 PS4_SYSV_ABI sceKernelCheckedReleaseDirectMemory(u64 start, u64 len) {
     if (len == 0) {
         return ORBIS_OK;
     }
-    auto* memory = Core::Memory::Instance();
-    return memory->Free(start, len, true);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.Free(start, len, true);
 }
 
 s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len) {
@@ -111,8 +110,8 @@ s32 PS4_SYSV_ABI sceKernelReleaseDirectMemory(u64 start, u64 len) {
     if (len == 0) {
         return ORBIS_OK;
     }
-    auto* memory = Core::Memory::Instance();
-    memory->Free(start, len, false);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    memory.Free(start, len, false);
     return ORBIS_OK;
 }
 
@@ -125,11 +124,11 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
 
     PAddr physAddr{};
     u64 size{};
-    s32 result = memory->DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, &size);
+    s32 result = memory.DirectQueryAvailable(searchStart, searchEnd, alignment, &physAddr, &size);
 
     if (size == 0) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
@@ -144,8 +143,8 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 searchStart, u64 searchE
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, s32 flags, OrbisVirtualQueryInfo* info,
                                        u64 infoSize) {
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}", fmt::ptr(addr), flags);
-    auto* memory = Core::Memory::Instance();
-    return memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
 }
 
 s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u64 alignment) {
@@ -166,11 +165,11 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
         }
     }
 
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
 
-    s32 result = memory->MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
+    s32 result = memory.MapMemory(addr, in_addr, len, Core::MemoryProt::NoAccess, map_flags,
                                    Core::VMAType::Reserved, "anon", false, -1, alignment);
     if (result == 0) {
         LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
@@ -216,14 +215,14 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     bool should_check = false;
     if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_sdk_version >= Common::ElfInfo::FW_25 && False(map_flags & Core::MemoryMapFlags::Stack)) {
         // Under these conditions, this would normally redirect to sceKernelMapDirectMemory2.
         should_check = !ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_alias_dmem;
     }
     const auto ret =
-        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
+        memory.MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, name,
                           should_check, phys_addr, alignment);
 
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr));
@@ -269,16 +268,15 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr);
 
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     const auto ret =
-        memory->MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
+        memory.MapMemory(addr, in_addr, len, mem_prot, map_flags, Core::VMAType::Direct, "anon",
                           !ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.g_alias_dmem, phys_addr, alignment);
 
     if (ret == 0) {
         // If the map call succeeds, set the direct memory type using the output address.
-        auto* memory = Core::Memory::Instance();
         const auto out_addr = reinterpret_cast<VAddr>(*addr);
-        memory->SetDirectMemoryType(out_addr, len, type);
+        memory.SetDirectMemoryType(out_addr, len, type);
         LOG_INFO(Kernel_Vmm, "out_addr = {:#x}", out_addr);
     }
     return ret;
@@ -306,8 +304,8 @@ s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, u64 len, s3
     const VAddr in_addr = reinterpret_cast<VAddr>(*addr_in_out);
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
-    auto* memory = Core::Memory::Instance();
-    const auto ret = memory->MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    const auto ret = memory.MapMemory(addr_in_out, in_addr, len, mem_prot, map_flags,
                                        Core::VMAType::Flexible, name);
     LOG_INFO(Kernel_Vmm, "out_addr = {}", fmt::ptr(*addr_in_out));
     return ret;
@@ -318,8 +316,8 @@ s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, u64 len, s32 pro
 }
 
 s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot) {
-    auto* memory = Core::Memory::Instance();
-    return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
 s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
@@ -335,12 +333,12 @@ s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot) {
         return ORBIS_OK;
     }
 
-    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    auto& memory_manager = *ShadPs4App::GetInstance()->m_emulator.memory;
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
 
-    s32 result = memory_manager->Protect(aligned_addr, aligned_size, protection_flags);
+    s32 result = memory_manager.Protect(aligned_addr, aligned_size, protection_flags);
     if (result == ORBIS_OK) {
-        memory_manager->InvalidateMemory(aligned_addr, aligned_size);
+        memory_manager.InvalidateMemory(aligned_addr, aligned_size);
     }
     return result;
 }
@@ -367,13 +365,13 @@ s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s3
         return ORBIS_OK;
     }
 
-    Core::MemoryManager* memory_manager = Core::Memory::Instance();
+    auto& memory_manager = *ShadPs4App::GetInstance()->m_emulator.memory;
     Core::MemoryProt protection_flags = static_cast<Core::MemoryProt>(prot);
 
-    s32 result = memory_manager->Protect(aligned_addr, aligned_size, protection_flags);
+    s32 result = memory_manager.Protect(aligned_addr, aligned_size, protection_flags);
     if (result == ORBIS_OK) {
-        memory_manager->SetDirectMemoryType(aligned_addr, aligned_size, mtype);
-        memory_manager->InvalidateMemory(aligned_addr, aligned_size);
+        memory_manager.SetDirectMemoryType(aligned_addr, aligned_size, mtype);
+        memory_manager.InvalidateMemory(aligned_addr, aligned_size);
     }
     return result;
 }
@@ -381,13 +379,13 @@ s32 PS4_SYSV_ABI sceKernelMtypeprotect(const void* addr, u64 size, s32 mtype, s3
 s32 PS4_SYSV_ABI sceKernelDirectMemoryQuery(u64 offset, s32 flags, OrbisQueryInfo* query_info,
                                             u64 infoSize) {
     LOG_INFO(Kernel_Vmm, "called offset = {:#x}, flags = {:#x}", offset, flags);
-    auto* memory = Core::Memory::Instance();
-    return memory->DirectMemoryQuery(offset, flags == 1, query_info);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.DirectMemoryQuery(offset, flags == 1, query_info);
 }
 
 s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(u64* out_size) {
-    auto* memory = Core::Memory::Instance();
-    *out_size = memory->GetAvailableFlexibleSize();
+    const auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    *out_size = memory.GetAvailableFlexibleSize();
     LOG_INFO(Kernel_Vmm, "called size = {:#x}", *out_size);
     return ORBIS_OK;
 }
@@ -401,15 +399,15 @@ s32 PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, s32* directMemoryTypeOut
                                               void** directMemoryStartOut,
                                               void** directMemoryEndOut) {
     LOG_WARNING(Kernel_Vmm, "called, direct memory addr = {:#x}", addr);
-    auto* memory = Core::Memory::Instance();
-    return memory->GetDirectMemoryType(addr, directMemoryTypeOut, directMemoryStartOut,
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.GetDirectMemoryType(addr, directMemoryTypeOut, directMemoryStartOut,
                                        directMemoryEndOut);
 }
 
 s32 PS4_SYSV_ABI sceKernelIsStack(void* addr, void** start, void** end) {
     LOG_DEBUG(Kernel_Vmm, "called, addr = {}", fmt::ptr(addr));
-    auto* memory = Core::Memory::Instance();
-    return memory->IsStack(std::bit_cast<VAddr>(addr), start, end);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.IsStack(std::bit_cast<VAddr>(addr), start, end);
 }
 
 u32 PS4_SYSV_ABI sceKernelIsAddressSanitizerEnabled() {
@@ -485,8 +483,8 @@ s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const c
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
-    auto* memory = Core::Memory::Instance();
-    memory->NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    memory.NameVirtualRange(std::bit_cast<VAddr>(addr), len, name);
     return ORBIS_OK;
 }
 
@@ -518,8 +516,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 l
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
 
-    auto* memory = Core::Memory::Instance();
-    PAddr phys_addr = memory->PoolExpand(searchStart, searchEnd, len, alignment);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    PAddr phys_addr = memory.PoolExpand(searchStart, searchEnd, len, alignment);
     if (phys_addr == -1) {
         return ORBIS_KERNEL_ERROR_ENOMEM;
     }
@@ -549,12 +547,12 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(void* addr_in, u64 len, u64 alignmen
         }
     }
 
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     const VAddr in_addr = reinterpret_cast<VAddr>(addr_in);
     const auto map_flags = static_cast<Core::MemoryMapFlags>(flags);
     u64 map_alignment = alignment == 0 ? 2_MB : alignment;
 
-    return memory->MapMemory(addr_out, std::bit_cast<VAddr>(addr_in), len,
+    return memory.MapMemory(addr_out, std::bit_cast<VAddr>(addr_in), len,
                              Core::MemoryProt::NoAccess, map_flags, Core::VMAType::PoolReserved,
                              "anon", false, -1, map_alignment);
 }
@@ -579,8 +577,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
              fmt::ptr(addr), len, type, prot, flags);
 
     const VAddr in_addr = reinterpret_cast<VAddr>(addr);
-    auto* memory = Core::Memory::Instance();
-    return memory->PoolCommit(in_addr, len, mem_prot, type);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.PoolCommit(in_addr, len, mem_prot, type);
 }
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
@@ -596,9 +594,9 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolDecommit(void* addr, u64 len, s32 flags) {
     LOG_INFO(Kernel_Vmm, "addr = {}, len = {:#x}, flags = {:#x}", fmt::ptr(addr), len, flags);
 
     const VAddr pool_addr = reinterpret_cast<VAddr>(addr);
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
 
-    return memory->PoolDecommit(pool_addr, len);
+    return memory.PoolDecommit(pool_addr, len);
 }
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry* entries, s32 count,
@@ -657,9 +655,9 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolBatch(const OrbisKernelMemoryPoolBatchEntry*
 s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStats* stats,
                                                   u64 size) {
     LOG_WARNING(Kernel_Vmm, "called");
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     OrbisKernelMemoryPoolBlockStats local_stats;
-    memory->GetMemoryPoolStats(&local_stats);
+    memory.GetMemoryPoolStats(&local_stats);
 
     u64 size_to_copy = size < sizeof(OrbisKernelMemoryPoolBlockStats)
                            ? size
@@ -684,7 +682,7 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     }
 
     void* addr_out;
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
     const auto mem_flags = static_cast<Core::MemoryMapFlags>(flags);
     const auto vaddr = reinterpret_cast<VAddr>(addr);
@@ -702,20 +700,20 @@ void* PS4_SYSV_ABI posix_mmap(void* addr, u64 len, s32 prot, s32 flags, s32 fd, 
     s32 result = ORBIS_OK;
     if (True(mem_flags & Core::MemoryMapFlags::Anon)) {
         // Maps flexible memory
-        result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
+        result = memory.MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Flexible, "anon", false);
     } else if (True(mem_flags & Core::MemoryMapFlags::Stack)) {
         // Maps stack memory
-        result = memory->MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
+        result = memory.MapMemory(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags,
                                    Core::VMAType::Stack, "anon", false);
     } else if (True(mem_flags & Core::MemoryMapFlags::Void)) {
         // Reserves memory
         result =
-            memory->MapMemory(&addr_out, aligned_addr, aligned_size, Core::MemoryProt::NoAccess,
+            memory.MapMemory(&addr_out, aligned_addr, aligned_size, Core::MemoryProt::NoAccess,
                               mem_flags, Core::VMAType::Reserved, "anon", false);
     } else {
         // Default to file mapping
-        result = memory->MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags, fd,
+        result = memory.MapFile(&addr_out, aligned_addr, aligned_size, mem_prot, mem_flags, fd,
                                  phys_addr);
     }
 
@@ -749,8 +747,8 @@ s32 PS4_SYSV_ABI sceKernelConfiguredFlexibleMemorySize(u64* sizeOut) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto* memory = Core::Memory::Instance();
-    *sizeOut = memory->GetTotalFlexibleSize();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    *sizeOut = memory.GetTotalFlexibleSize();
     return ORBIS_OK;
 }
 
@@ -759,8 +757,8 @@ s32 PS4_SYSV_ABI sceKernelMunmap(void* addr, u64 len) {
     if (len == 0) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    auto* memory = Core::Memory::Instance();
-    return memory->UnmapMemory(std::bit_cast<VAddr>(addr), len);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    return memory.UnmapMemory(std::bit_cast<VAddr>(addr), len);
 }
 
 s32 PS4_SYSV_ABI posix_munmap(void* addr, u64 len) {
@@ -793,8 +791,8 @@ s32 PS4_SYSV_ABI sceKernelSetPrtAperture(s32 id, VAddr address, u64 size) {
                 "PRT aperture id = {}, address = {:#x}, size = {:#x} is set but not used", id,
                 address, size);
 
-    auto* memory = Core::Memory::Instance();
-    memory->SetPrtArea(id, address, size);
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+    memory.SetPrtArea(id, address, size);
 
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_memory.PrtApertures[id] = {address, size};
     return ORBIS_OK;

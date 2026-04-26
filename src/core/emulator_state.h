@@ -11,9 +11,6 @@ public:
     EmulatorState();
     ~EmulatorState();
 
-    static std::shared_ptr<EmulatorState> GetInstance();
-    static void SetInstance(std::shared_ptr<EmulatorState> instance);
-
     bool IsGameRunning() const;
     void SetGameRunning(bool running);
     bool IsAutoPatchesLoadEnabled() const;
@@ -22,9 +19,6 @@ public:
     void SetGameSpecifigConfigUsed(bool used);
 
 private:
-    static std::shared_ptr<EmulatorState> s_instance;
-    static std::mutex s_mutex;
-
     // state variables
     bool m_running = false;
     bool m_load_patches_auto = true;

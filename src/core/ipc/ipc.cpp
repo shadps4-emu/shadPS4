@@ -72,7 +72,7 @@ void IPC::Init() {
         return;
     }
 
-    EmulatorState::GetInstance()->SetAutoPatchesLoadEnabled(false);
+    ShadPs4App::GetInstance()->m_emulator_state.SetAutoPatchesLoadEnabled(false);
 
     input_thread = std::jthread([this] {
         Common::SetCurrentThreadName("IPC Read thread");
@@ -137,9 +137,9 @@ void IPC::InputLoop() {
             entry.maskOffset = static_cast<int>(next_u64());
             MemoryPatcher::AddPatchToQueue(entry);
         } else if (cmd == "PAUSE") {
-            DebugState.PauseGuestThreads();
+            ShadPs4App::GetInstance()->DebugState.PauseGuestThreads();
         } else if (cmd == "RESUME") {
-            DebugState.ResumeGuestThreads();
+            ShadPs4App::GetInstance()->DebugState.ResumeGuestThreads();
         } else if (cmd == "STOP") {
             SDL_Event event;
             SDL_memset(&event, 0, sizeof(event));

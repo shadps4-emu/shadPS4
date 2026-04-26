@@ -7,7 +7,6 @@
 #include "common/assert.h"
 #include "common/debug.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/kernel.h"
@@ -316,9 +315,9 @@ bool EqueueInternal::EventExists(u64 id, s16 filter) {
 
 s32 PS4_SYSV_ABI posix_kqueue() {
     // Reserve a file handle for the kqueue
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    s32 kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    s32 kqueue_handle = handles.CreateHandle();
+    auto* kqueue_file = handles.GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Plenty of equeue logic uses names to identify queues.
@@ -435,9 +434,9 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) 
     LOG_INFO(Kernel_Event, "name = {}", name);
 
     // Reserve a file handle for the kqueue
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    OrbisKernelEqueue kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    OrbisKernelEqueue kqueue_handle = handles.CreateHandle();
+    auto* kqueue_file = handles.GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Create the equeue
@@ -452,8 +451,8 @@ int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    handles->DeleteHandle(eq);
+    auto& handles = *ShadPs4App::GetInstance()->m_emulator.m_handle_table;
+    handles.DeleteHandle(eq);
     delete ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues[eq];
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_kernel.m_event_queue.kqueues.erase(eq);
     return ORBIS_OK;

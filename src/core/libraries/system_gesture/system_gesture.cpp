@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"
 #include "core/libraries/pad/pad.h"

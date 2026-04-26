@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/memory.h"
 #include "core/tls.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Kernel {
 
@@ -18,13 +19,12 @@ thread_local Pthread* g_curthread{};
 Core::Tcb* TcbCtor(Pthread* thread, int initial);
 void TcbDtor(Core::Tcb* oldtls);
 
-ThreadState::ThreadState() {
+ThreadState::ThreadState(Core::MemoryManager& memory) {
     // Reserve memory for maximum amount of threads allowed.
-    auto* memory = Core::Memory::Instance();
-    auto& impl = memory->GetAddressSpace();
+    auto& impl = memory.GetAddressSpace();
     static constexpr u32 ThrHeapSize = Common::AlignUp(sizeof(Pthread) * MaxThreads, 16_KB);
     void* heap_addr{};
-    const int ret = memory->MapMemory(&heap_addr, impl.SystemReservedVirtualBase(), ThrHeapSize,
+    const int ret = memory.MapMemory(&heap_addr, impl.SystemReservedVirtualBase(), ThrHeapSize,
                                       Core::MemoryProt::CpuReadWrite, Core::MemoryMapFlags::NoFlags,
                                       Core::VMAType::File, "ThrHeap");
     ASSERT_MSG(ret == 0, "Unable to allocate thread heap memory {}", ret);

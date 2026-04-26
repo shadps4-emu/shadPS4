@@ -12,6 +12,7 @@
 #include "frame_dump.h"
 #include "imgui_internal.h"
 #include "imgui_memory_editor.h"
+#include "shadps4_app.h"
 
 using namespace ImGui;
 using namespace DebugStateType;
@@ -126,10 +127,10 @@ void FrameDumpViewer::Draw() {
             Common::FS::IOFile file(fname, Common::FS::FileAccessMode::Create);
             const auto& data = frame_dump->queues[selected_cmd].data;
             if (file.IsOpen()) {
-                DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
+                ShadPs4App::GetInstance()->DebugState.ShowDebugMessage(fmt::format("Dumping cmd as {}", fname));
                 file.Write(data);
             } else {
-                DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
+                ShadPs4App::GetInstance()->DebugState.ShowDebugMessage(fmt::format("Failed to save {}", fname));
                 LOG_ERROR(Core, "Failed to open file {}", fname);
             }
         }

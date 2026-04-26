@@ -27,8 +27,6 @@
 #include "video_core/amdgpu/pm4_cmds.h"
 #include "video_core/renderer_vulkan/vk_presenter.h"
 
-extern Frontend::WindowSDL* g_window;
-
 namespace Libraries::GnmDriver {
 
 using namespace AmdGpu;
@@ -130,7 +128,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
 
     equeue->AddEvent(kernel_event);
 
-    Platform::IrqC::Instance()->Register(
+    ShadPs4App::GetInstance()->m_emulator.irq_controller->Register(
         static_cast<Platform::InterruptId>(id),
         [=](Platform::InterruptId irq) {
             ASSERT_MSG(irq == static_cast<Platform::InterruptId>(id), "An unexpected IRQ occured");
@@ -269,7 +267,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id) {
 
     equeue->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
 
-    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), equeue);
+    ShadPs4App::GetInstance()->m_emulator.irq_controller->Unregister(static_cast<Platform::InterruptId>(id), equeue);
     return ORBIS_OK;
 }
 
@@ -288,8 +286,8 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
 
     WaitGpuIdle();
 
-    if (DebugState.ShouldPauseInSubmit()) {
-        DebugState.PauseGuestThreads();
+    if (ShadPs4App::GetInstance()->DebugState.ShouldPauseInSubmit()) {
+        ShadPs4App::GetInstance()->DebugState.PauseGuestThreads();
     }
 
     auto vqid = gnm_vqid - 1;
@@ -313,7 +311,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
 
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.asc_next_offs_dw[vqid] = next_offs_dw;
 
-    if (DebugState.DumpingCurrentFrame()) {
+    if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentFrame()) {
         static auto last_frame_num = -1LL;
         static u32 seq_num{};
         if (last_frame_num == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted) {
@@ -337,7 +335,7 @@ void PS4_SYSV_ABI sceGnmDingDong(u32 gnm_vqid, u32 next_offs_dw) {
 
         using namespace DebugStateType;
 
-        DebugState.PushQueueDump({
+        ShadPs4App::GetInstance()->DebugState.PushQueueDump({
             .type = QueueType::acb,
             .submit_num = seq_num,
             .num2 = gnm_vqid,
@@ -1018,8 +1016,8 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus() {
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress() {
     LOG_TRACE(Lib_GnmDriver, "called");
     if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.tessellation_factors_ring_addr == -1) {
-        auto* memory = Core::Memory::Instance();
-        auto& address_space = memory->GetAddressSpace();
+        auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+        auto& address_space = memory.GetAddressSpace();
         ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.tessellation_factors_ring_addr = address_space.SystemReservedVirtualBase() +
                                          address_space.SystemReservedVirtualSize() - 0x10000000;
     }
@@ -2214,8 +2212,8 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
 
     WaitGpuIdle();
 
-    if (DebugState.ShouldPauseInSubmit()) {
-        DebugState.PauseGuestThreads();
+    if (ShadPs4App::GetInstance()->DebugState.ShouldPauseInSubmit()) {
+        ShadPs4App::GetInstance()->DebugState.PauseGuestThreads();
     }
 
     if (ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.send_init_packet) {
@@ -2268,7 +2266,7 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
         const auto& dcb_span = std::span{dcb_gpu_addrs[cbpair], dcb_size_dw};
         const auto& ccb_span = std::span{ccb, ccb_size_dw};
 
-        if (DebugState.DumpingCurrentFrame()) {
+        if (ShadPs4App::GetInstance()->DebugState.DumpingCurrentFrame()) {
             static auto last_frame_num = -1LL;
             static u32 seq_num{};
             if (last_frame_num == ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted && cbpair == 0) {
@@ -2280,14 +2278,14 @@ int PS4_SYSV_ABI sceGnmSubmitCommandBuffersForWorkload(u32 workload, u32 count,
 
             using DebugStateType::QueueType;
 
-            DebugState.PushQueueDump({
+            ShadPs4App::GetInstance()->DebugState.PushQueueDump({
                 .type = QueueType::dcb,
                 .submit_num = seq_num,
                 .num2 = cbpair,
                 .data = {dcb_span.begin(), dcb_span.end()},
                 .base_addr = reinterpret_cast<uintptr_t>(dcb_gpu_addrs[cbpair]),
             });
-            DebugState.PushQueueDump({
+            ShadPs4App::GetInstance()->DebugState.PushQueueDump({
                 .type = QueueType::ccb,
                 .submit_num = seq_num,
                 .num2 = cbpair,
@@ -2319,7 +2317,7 @@ int PS4_SYSV_ABI sceGnmSubmitDone() {
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.liverpool->SubmitDone();
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.send_init_packet = true;
     ++ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_gnm_driver.frames_submitted;
-    DebugState.IncGnmFrameNum();
+    ShadPs4App::GetInstance()->DebugState.IncGnmFrameNum();
     return ORBIS_OK;
 }
 
@@ -2876,7 +2874,7 @@ int PS4_SYSV_ABI Func_F916890425496553() {
 
 Library::Library(Core::Loader::SymbolsResolver* sym)
     : liverpool(std::make_unique<AmdGpu::Liverpool>()),
-      presenter(std::make_unique<Vulkan::Presenter>(*g_window, liverpool.get())) {
+      presenter(std::make_unique<Vulkan::Presenter>(*ShadPs4App::GetInstance()->m_emulator.window, liverpool.get())) {
     const s32 result = sceKernelGetCompiledSdkVersion(&sdk_version);
     if (result != ORBIS_OK) {
         sdk_version = 0;
@@ -2886,7 +2884,7 @@ Library::Library(Core::Loader::SymbolsResolver* sym)
         liverpool->ReserveCopyBufferSpace();
     }
 
-    Platform::IrqC::Instance()->Register(Platform::InterruptId::GpuIdle, ResetSubmissionLock,
+    ShadPs4App::GetInstance()->m_emulator.irq_controller->Register(Platform::InterruptId::GpuIdle, ResetSubmissionLock,
                                          nullptr);
 
     LIB_FUNCTION("b0xyllnVY-I", "libSceGnmDriver", 1, "libSceGnmDriver", sceGnmAddEqEvent);

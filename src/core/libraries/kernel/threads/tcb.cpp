@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/singleton.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"

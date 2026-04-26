@@ -7,17 +7,15 @@
 
 #include "common/assert.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "save_backup.h"
 #include "save_instance.h"
+#include "shadps4_app.h"
 
 constexpr auto OrbisSaveDataBlocksMin2 = 96;    // 3MiB
 constexpr auto OrbisSaveDataBlocksMax = 32768;  // 1 GiB
 constexpr std::string_view sce_sys = "sce_sys"; // system folder inside save
-
-static Core::FileSys::MntPoints* g_mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
 namespace fs = std::filesystem;
 
@@ -106,7 +104,7 @@ SaveInstance::SaveInstance(int slot_num, Libraries::UserService::OrbisUserServic
     mount_point = "/savedata" + std::to_string(slot_num);
 
     this->exists = fs::exists(param_sfo_path);
-    this->mounted = g_mnt->GetMount(mount_point) != std::nullopt;
+    this->mounted = ShadPs4App::GetInstance()->m_emulator.m_mnt_points->GetMount(mount_point) != std::nullopt;
 }
 
 SaveInstance::~SaveInstance() {
@@ -151,7 +149,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     if (!exists) {
         CreateFiles();
         if (copy_icon) {
-            const auto& src_icon = g_mnt->GetHostPath("/app0/sce_sys/save_data.png");
+            const auto& src_icon = ShadPs4App::GetInstance()->m_emulator.m_mnt_points->GetHostPath("/app0/sce_sys/save_data.png");
             if (fs::exists(src_icon)) {
                 auto output_icon = GetIconPath();
                 if (fs::exists(output_icon)) {
@@ -187,7 +185,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
 
     max_blocks = static_cast<int>(GetMaxBlockFromSFO(param_sfo));
 
-    g_mnt->Mount(save_path, mount_point, read_only);
+    ShadPs4App::GetInstance()->m_emulator.m_mnt_points->Mount(save_path, mount_point, read_only);
     mounted = true;
     this->read_only = read_only;
 }
@@ -206,7 +204,7 @@ void SaveInstance::Umount() {
     param_sfo = PSF();
 
     fs::remove(corrupt_file_path);
-    g_mnt->Unmount(save_path, mount_point);
+    ShadPs4App::GetInstance()->m_emulator.m_mnt_points->Unmount(save_path, mount_point);
 }
 
 void SaveInstance::CreateFiles() {

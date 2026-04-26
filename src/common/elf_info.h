@@ -11,8 +11,8 @@
 #include <map>
 #include "assert.h"
 #include "bit_field.h"
-#include "singleton.h"
 #include "types.h"
+#include "shadps4_app.h"
 
 namespace Core {
 class Emulator;
@@ -97,13 +97,9 @@ public:
     static constexpr u32 FW_80 = 0x8000000;
     static constexpr u32 FW_115 = 0x11500000;
 
-    static ElfInfo& Instance() {
-        return *Singleton<ElfInfo>::Instance();
-    }
-
     [[nodiscard]] std::string_view GameSerial() const {
         ASSERT(initialized);
-        return Instance().game_serial;
+        return ShadPs4App::GetInstance()->m_emulator.m_elf_info->game_serial;
     }
 
     [[nodiscard]] std::string_view Title() const {

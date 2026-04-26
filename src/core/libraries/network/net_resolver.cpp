@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/assert.h"
-#include "common/singleton.h"
 #include "common/types.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "net_error.h"
 #include "net_resolver.h"
 #include "net_util.h"
+#include "shadps4_app.h"
 
 namespace Libraries::Net {
 
@@ -33,8 +33,8 @@ void Resolver::Resolve() {
     }
 
     if (async_resolution) {
-        auto* netinfo = Common::Singleton<NetUtil::NetUtilInternal>::Instance();
-        auto ret = netinfo->ResolveHostname(async_resolution->hostname, async_resolution->addr);
+        auto& netinfo = *ShadPs4App::GetInstance()->m_emulator.m_net_util_internal;
+        auto ret = netinfo.ResolveHostname(async_resolution->hostname, async_resolution->addr);
         resolution_error = ret;
         if (ret != ORBIS_OK) {
             // Resolver errors are stored as ORBIS_NET_ERROR values.

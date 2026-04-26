@@ -5,7 +5,6 @@
 #include "common/elf_info.h"
 #include "common/io_file.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
@@ -19,6 +18,7 @@
 #include "video_core/renderer_vulkan/vk_presenter.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/texture_cache/image.h"
+#include "shadps4_app.h"
 
 #include <algorithm>
 #include <array>
@@ -176,7 +176,7 @@ static std::vector<std::filesystem::path> BuildScreenshotPaths(const ScreenshotK
     std::filesystem::create_directories(screenshots_dir);
 
     const auto game_id =
-        SanitizeFilenameComponent(std::string(Common::ElfInfo::Instance().GameSerial()));
+        SanitizeFilenameComponent(std::string(ShadPs4App::GetInstance()->m_emulator.m_elf_info->GameSerial()));
     const auto now = std::chrono::system_clock::now();
     const auto now_time = std::chrono::system_clock::to_time_t(now);
     const auto ms =
@@ -501,11 +501,11 @@ Presenter::Presenter(Frontend::WindowSDL& window_, AmdGpu::Liverpool* liverpool_
     fsr_pass.Create(device, instance.GetAllocator(), num_images);
     pp_pass.Create(device, swapchain.GetSurfaceFormat().format);
 
-    ImGui::Layer::AddLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
+    ImGui::Layer::AddLayer(&ShadPs4App::GetInstance()->m_devtools_layer);
 }
 
 Presenter::~Presenter() {
-    ImGui::Layer::RemoveLayer(Common::Singleton<Core::Devtools::Layer>::Instance());
+    ImGui::Layer::RemoveLayer(&ShadPs4App::GetInstance()->m_devtools_layer);
 
     draw_scheduler.Finish();
     present_scheduler.Finish();
@@ -737,8 +737,8 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
                                  fsr_settings, frame->is_hdr);
     pp_pass.Render(cmdbuf, image_view, image_size, *frame, pp_settings);
 
-    DebugState.game_resolution = {image_size.width, image_size.height};
-    DebugState.output_resolution = {frame->width, frame->height};
+    ShadPs4App::GetInstance()->DebugState.game_resolution = {image_size.width, image_size.height};
+    ShadPs4App::GetInstance()->DebugState.output_resolution = {frame->width, frame->height};
 
     std::shared_ptr<std::vector<ScreenshotReadback>> deferred_screenshots{};
     if (!pending_screenshots.empty()) {
@@ -942,7 +942,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
                 if (Libraries::SystemService::IsSplashVisible()) { // draw splash
                     if (!splash_img.has_value()) {
                         splash_img.emplace();
-                        auto splash_path = Common::ElfInfo::Instance().GetSplashPath();
+                        auto splash_path = ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetSplashPath();
                         if (!splash_path.empty()) {
                             splash_img = ImGui::RefCountedTexture::DecodePngFile(splash_path);
                         }
@@ -1077,7 +1077,7 @@ void Presenter::Present(Frame* frame, bool is_reusing_frame) {
 
     free_frame();
     if (!is_reusing_frame) {
-        DebugState.IncFlipFrameNum();
+        ShadPs4App::GetInstance()->DebugState.IncFlipFrameNum();
     }
 }
 

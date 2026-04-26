@@ -5,6 +5,7 @@
 #include "core/emulator_settings.h"
 #include "core/memory.h"
 #include "shader_recompiler/runtime_info.h"
+#include "shadps4_app.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -36,12 +37,11 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
     : instance{instance_}, scheduler{scheduler_}, page_manager{this},
       buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
-      liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool} {
+      liverpool{liverpool_}, pipeline_cache{instance, scheduler, liverpool} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
-    memory->SetRasterizer(this);
+    ShadPs4App::GetInstance()->m_emulator.memory->SetRasterizer(this);
 }
 
 Rasterizer::~Rasterizer() = default;
@@ -586,7 +586,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     for (const auto& desc : stage.buffers) {
         const auto vsharp = desc.GetSharp(stage);
         if (!desc.IsSpecial() && vsharp.base_address != 0 && vsharp.GetSize() > 0) {
-            const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+            const u64 size = ShadPs4App::GetInstance()->m_emulator.memory->ClampRangeSize(
+                vsharp.base_address, vsharp.GetSize());
             const auto buffer_id = buffer_cache.FindBuffer(vsharp.base_address, size);
             buffer_bindings.emplace_back(buffer_id, vsharp, size);
         } else {

@@ -216,8 +216,8 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
     if (pthread == nullptr || dstattr == nullptr || (dst = *dstattr) == nullptr) {
         return POSIX_EINVAL;
     }
-    auto* thread_state = ThrState::Instance();
-    const int ret = thread_state->FindThread(pthread, /*include dead*/ false);
+    auto& thread_state = *ShadPs4App::GetInstance()->m_emulator.m_thread_state;
+    const int ret = thread_state.FindThread(pthread, /*include dead*/ false);
     if (ret != 0) {
         return ret;
     }

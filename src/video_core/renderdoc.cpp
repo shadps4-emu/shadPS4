@@ -5,6 +5,7 @@
 #include "common/logging/formatter.h"
 #include "core/emulator_settings.h"
 #include "video_core/renderdoc.h"
+#include "shadps4_app.h"
 
 #include <atomic>
 #include <renderdoc_app.h>

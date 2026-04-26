@@ -3,11 +3,11 @@
 
 #include "frame_graph.h"
 
-#include "common/singleton.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "shadps4_app.h"
 
 using namespace ImGui;
 
@@ -40,7 +40,7 @@ void FrameGraph::DrawFrameGraph() {
                             IM_COL32(0x33, 0x33, 0x33, 0xFF));
     draw_list.PushClipRect({pos.x, pos.y}, {pos.x + full_width, final_pos_y}, true);
     for (u32 i = 0; i < FRAME_BUFFER_SIZE; ++i) {
-        const auto& frame_info = frame_list[(DebugState.GetFrameNum() - i) % FRAME_BUFFER_SIZE];
+        const auto& frame_info = frame_list[(ShadPs4App::GetInstance()->DebugState.GetFrameNum() - i) % FRAME_BUFFER_SIZE];
         const float dt_factor = target_dt / frame_info.delta;
 
         const float width = std::ceil(BAR_WIDTH_MULT / dt_factor);
@@ -80,10 +80,10 @@ void FrameGraph::Draw() {
         const auto& window = *ctx.CurrentWindow;
         auto& draw_list = *window.DrawList;
 
-        auto isSystemPaused = DebugState.IsGuestThreadsPaused();
+        auto isSystemPaused = ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused();
 
         if (!isSystemPaused) {
-            deltaTime = DebugState.FrameDeltaTime * 1000.0f;
+            deltaTime = ShadPs4App::GetInstance()->DebugState.FrameDeltaTime * 1000.0f;
             frameRate = 1000.0f / deltaTime;
         }
 
@@ -94,13 +94,13 @@ void FrameGraph::Draw() {
 
         Text("Frame time: %.3f ms (%.1f FPS)", deltaTime, frameRate);
         Text("Presenter time: %.3f ms (%.1f FPS)", io.DeltaTime * 1000.0f, 1.0f / io.DeltaTime);
-        Text("Flip frame: %d Gnm submit frame: %d", DebugState.flip_frame_count.load(),
-             DebugState.gnm_frame_count.load());
-        Text("Game Res: %dx%d", DebugState.game_resolution.first,
-             DebugState.game_resolution.second);
-        Text("Output Res: %dx%d", DebugState.output_resolution.first,
-             DebugState.output_resolution.second);
-        Text("FSR: %s", DebugState.is_using_fsr ? "on" : "off");
+        Text("Flip frame: %d Gnm submit frame: %d", ShadPs4App::GetInstance()->DebugState.flip_frame_count.load(),
+             ShadPs4App::GetInstance()->DebugState.gnm_frame_count.load());
+        Text("Game Res: %dx%d", ShadPs4App::GetInstance()->DebugState.game_resolution.first,
+             ShadPs4App::GetInstance()->DebugState.game_resolution.second);
+        Text("Output Res: %dx%d", ShadPs4App::GetInstance()->DebugState.output_resolution.first,
+             ShadPs4App::GetInstance()->DebugState.output_resolution.second);
+        Text("FSR: %s", ShadPs4App::GetInstance()->DebugState.is_using_fsr ? "on" : "off");
     }
     End();
 }

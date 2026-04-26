@@ -12,28 +12,12 @@
 
 using json = nlohmann::json;
 
-// Singleton storage
-std::shared_ptr<UserSettingsImpl> UserSettingsImpl::s_instance = nullptr;
-std::mutex UserSettingsImpl::s_mutex;
-
 // Singleton
 UserSettingsImpl::UserSettingsImpl() = default;
 
 UserSettingsImpl::~UserSettingsImpl() {
     if (m_loaded)
         Save();
-}
-
-std::shared_ptr<UserSettingsImpl> UserSettingsImpl::GetInstance() {
-    std::lock_guard lock(s_mutex);
-    if (!s_instance)
-        s_instance = std::make_shared<UserSettingsImpl>();
-    return s_instance;
-}
-
-void UserSettingsImpl::SetInstance(std::shared_ptr<UserSettingsImpl> instance) {
-    std::lock_guard lock(s_mutex);
-    s_instance = std::move(instance);
 }
 
 bool UserSettingsImpl::Save() const {

@@ -6,7 +6,6 @@
 #include "app_content.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
@@ -44,7 +43,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
     LOG_INFO(Lib_AppContent, "called");
 
     const auto& addon_path = EmulatorSettings.GetAddonInstallDir() / ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.title_id;
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
 
     // Determine which loaded additional content this entitlement label is for.
     s32 i = 0;
@@ -90,7 +89,7 @@ int PS4_SYSV_ABI sceAppContentAddcontMount(u32 service_label,
         auto entitlement_id = content_id.value().substr(ORBIS_APP_CONTENT_ENTITLEMENT_LABEL_OFFSET);
         if (strncmp(entitlement_id.data(), entitlement_label->data, entitlement_id.length()) == 0) {
             // We've located the correct folder.
-            mnt->Mount(entry.path(), mount_point->data);
+            mnt.Mount(entry.path(), mount_point->data);
             return ORBIS_OK;
         }
     }
@@ -114,23 +113,23 @@ int PS4_SYSV_ABI sceAppContentAddcontUnmount() {
 int PS4_SYSV_ABI sceAppContentAppParamGetInt(OrbisAppContentAppParamId paramId, s32* out_value) {
     if (out_value == nullptr)
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    auto& param_sfo = *ShadPs4App::GetInstance()->m_emulator.m_psf;
     std::optional<s32> value;
     switch (paramId) {
     case ORBIS_APP_CONTENT_APPPARAM_ID_SKU_FLAG:
         value = ORBIS_APP_CONTENT_APPPARAM_SKU_FLAG_FULL;
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_1:
-        value = param_sfo->GetInteger("USER_DEFINED_PARAM_1");
+        value = param_sfo.GetInteger("USER_DEFINED_PARAM_1");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_2:
-        value = param_sfo->GetInteger("USER_DEFINED_PARAM_2");
+        value = param_sfo.GetInteger("USER_DEFINED_PARAM_2");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_3:
-        value = param_sfo->GetInteger("USER_DEFINED_PARAM_3");
+        value = param_sfo.GetInteger("USER_DEFINED_PARAM_3");
         break;
     case ORBIS_APP_CONTENT_APPPARAM_ID_USER_DEFINED_PARAM_4:
-        value = param_sfo->GetInteger("USER_DEFINED_PARAM_4");
+        value = param_sfo.GetInteger("USER_DEFINED_PARAM_4");
         break;
     default:
         LOG_ERROR(Lib_AppContent, " paramId = {} paramId is not valid", paramId);
@@ -266,10 +265,10 @@ int PS4_SYSV_ABI sceAppContentGetRegion() {
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
                                          OrbisAppContentBootParam* bootParam) {
     LOG_ERROR(Lib_AppContent, "(DUMMY) called");
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
+    auto& param_sfo = *ShadPs4App::GetInstance()->m_emulator.m_psf;
 
     const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
-    if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
+    if (const auto value = param_sfo.GetString("TITLE_ID"); value.has_value()) {
         ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_app_content.title_id = *value;
     } else {
         UNREACHABLE_MSG("Failed to get TITLE_ID");

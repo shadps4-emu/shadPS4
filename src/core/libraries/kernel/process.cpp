@@ -21,8 +21,9 @@ s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
 s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
     static s32 IsNeoMode = -1;
     if (IsNeoMode == -1) {
-        IsNeoMode = EmulatorSettings.IsNeo() &&
-                    Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
+        IsNeoMode =
+            EmulatorSettings.IsNeo() &&
+            ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetPSFAttributes().support_neo_mode;
     }
     return IsNeoMode;
 }
@@ -45,13 +46,13 @@ s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver) {
     if (!ver) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    *ver = Common::ElfInfo::Instance().CompiledSdkVer();
+    *ver = ShadPs4App::GetInstance()->m_emulator.m_elf_info->CompiledSdkVer();
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceKernelGetCpumode() {
     LOG_DEBUG(Lib_Kernel, "called");
-    auto& attrs = Common::ElfInfo::Instance().GetPSFAttributes();
+    auto& attrs = ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetPSFAttributes();
     u32 is_cpu6 = attrs.six_cpu_mode.Value();
     u32 is_cpu7 = attrs.seven_cpu_mode.Value();
     if (is_cpu6 == 1 && is_cpu7 == 1) {
@@ -78,7 +79,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
     LOG_INFO(Lib_Kernel, "called filename = {}, args = {}", moduleFileName, args);
     ASSERT(flags == 0);
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
     auto* linker = ShadPs4App::GetInstance()->m_emulator.linker.get();
 
     std::filesystem::path path;
@@ -89,13 +90,13 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
     if (guest_path[0] == '/') {
         // try load /system/common/lib/ +path
         // try load /system/priv/lib/   +path
-        path = mnt->GetHostPath(guest_path);
+        path = mnt.GetHostPath(guest_path);
         handle = linker->LoadAndStartModule(path, args, argp, pRes);
         if (handle != -1)
             return handle;
     } else {
         if (!guest_path.contains('/')) {
-            path = mnt->GetHostPath("/app0/" + guest_path);
+            path = mnt.GetHostPath("/app0/" + guest_path);
             handle = linker->LoadAndStartModule(path, args, argp, pRes);
             if (handle != -1)
                 return handle;
@@ -103,7 +104,7 @@ s32 PS4_SYSV_ABI sceKernelLoadStartModule(const char* moduleFileName, u64 args, 
             //  try load /system/priv/lib/   +basename
             //  try load /system/common/lib/ +basename
         } else {
-            path = mnt->GetHostPath(guest_path);
+            path = mnt.GetHostPath(guest_path);
             handle = linker->LoadAndStartModule(path, args, argp, pRes);
             if (handle != -1)
                 return handle;

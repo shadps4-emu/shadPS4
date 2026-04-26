@@ -92,12 +92,12 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
 
     // Real hardware will segfault if any of the supplied mappings aren't long enough,
     // Validate each of them to ensure nothing weird can occur when this library is implemented.
-    auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     Libraries::Kernel::OrbisVirtualQueryInfo info;
     // The memory type for the whole range should be the same here,
     // so the memory should be contained in one VMA.
     VAddr addr_to_check = std::bit_cast<VAddr>(param->direct_memory_garlic);
-    s32 result = memory->VirtualQuery(addr_to_check, 0, &info);
+    s32 result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_garlic_size,
                "Insufficient garlic memory provided");
 
@@ -105,7 +105,7 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_garlic_size = param->direct_memory_garlic_size;
 
     addr_to_check = std::bit_cast<VAddr>(param->direct_memory_onion);
-    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->direct_memory_onion_size,
                "Insufficient onion memory provided");
 
@@ -113,7 +113,7 @@ s32 PS4_SYSV_ABI sceVrTrackerInit(const OrbisVrTrackerInitParam* param) {
     ShadPs4App::GetInstance()->m_emulator.m_hle_layer->m_vr_tracker.g_onion_size = param->direct_memory_onion_size;
 
     addr_to_check = std::bit_cast<VAddr>(param->work_memory);
-    result = memory->VirtualQuery(addr_to_check, 0, &info);
+    result = memory.VirtualQuery(addr_to_check, 0, &info);
     ASSERT_MSG(result == 0 && info.end - addr_to_check >= param->work_memory_size,
                "Insufficient work memory provided");
 

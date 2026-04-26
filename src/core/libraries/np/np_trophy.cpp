@@ -221,7 +221,7 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
 
     // Resolve and cache all paths once so callers never recompute them.
     std::string np_comm_id;
-    const auto& trophyMap = Common::ElfInfo::Instance().GetTrophyIndexMap();
+    const auto& trophyMap = ShadPs4App::GetInstance()->m_emulator.m_elf_info->GetTrophyIndexMap();
     auto it = trophyMap.find(service_label);
     if (it != trophyMap.end()) {
         np_comm_id = it->second;
@@ -305,10 +305,10 @@ s32 PS4_SYSV_ABI sceNpTrophyDestroyHandle(OrbisNpTrophyHandle handle) {
 }
 
 u64 ReadFile(Common::FS::IOFile& file, void* buf, u64 nbytes) {
-    const auto* memory = Core::Memory::Instance();
+    auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file.GetSize() - file.Tell();
-    memory->InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
+    memory.InvalidateMemory(reinterpret_cast<VAddr>(buf), std::min<u64>(nbytes, remaining));
 
     return file.ReadRaw<u8>(buf, nbytes);
 }

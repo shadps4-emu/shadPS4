@@ -18,6 +18,7 @@
 #include "core/signals.h"
 #include "core/tls.h"
 #include "cpu_patches.h"
+#include "shadps4_app.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -529,8 +530,8 @@ static PatchModule* GetModule(const void* ptr) {
 static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
-                                                                       module->end - code);
+    const auto status = ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(
+        instruction, operands, code, module->end - code);
     if (!ZYAN_SUCCESS(status)) {
         return std::make_pair(false, 1);
     }
@@ -619,8 +620,8 @@ static bool TryExecuteIllegalInstruction(void* ctx, void* code_address) {
     } else {
         ZydisDecodedInstruction instruction;
         ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-        const auto status =
-            Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+        const auto status = ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(
+            instruction, operands, code_address);
         LOG_ERROR(Core, "Unhandled illegal instruction at code address {}: {}",
                   fmt::ptr(code_address),
                   ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
@@ -786,8 +787,8 @@ static bool PatchesIllegalInstructionHandler(void* context) {
         if (!TryPatchJit(code_address)) {
             ZydisDecodedInstruction instruction;
             ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-            const auto status =
-                Common::Decoder::Instance()->decodeInstruction(instruction, operands, code_address);
+            const auto status = ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(
+                instruction, operands, code_address);
             LOG_ERROR(Core, "Failed to patch address {:x} -- mnemonic: {}",
                       reinterpret_cast<u64>(code_address),
                       ZYAN_SUCCESS(status) ? ZydisMnemonicGetString(instruction.mnemonic)
@@ -801,11 +802,11 @@ static bool PatchesIllegalInstructionHandler(void* context) {
 
 static void PatchesInit() {
     if (!Patches.empty()) {
-        auto* signals = Signals::Instance();
+        auto& signals = *ShadPs4App::GetInstance()->m_emulator.m_signals;
         // Should be called last.
         constexpr auto priority = std::numeric_limits<u32>::max();
-        signals->RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
-        signals->RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
+        signals.RegisterAccessViolationHandler(PatchesAccessViolationHandler, priority);
+        signals.RegisterIllegalInstructionHandler(PatchesIllegalInstructionHandler, priority);
     }
 }
 

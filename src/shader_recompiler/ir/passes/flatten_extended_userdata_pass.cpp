@@ -21,6 +21,7 @@
 #include "shader_recompiler/ir/value.h"
 #include "src/common/arch.h"
 #include "src/common/decoder.h"
+#include "shadps4_app.h"
 
 using namespace Xbyak::util;
 
@@ -56,10 +57,10 @@ static void DumpSrtProgram(const Shader::Info& info, const u8* code, size_t code
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     ZyanStatus status = ZYAN_STATUS_SUCCESS;
-    while (address < code_end && ZYAN_SUCCESS(Common::Decoder::Instance()->decodeInstruction(
+    while (address < code_end && ZYAN_SUCCESS(ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(
                                      instruction, operands, reinterpret_cast<void*>(address)))) {
         std::string s =
-            Common::Decoder::Instance()->disassembleInst(instruction, operands, address);
+            ShadPs4App::GetInstance()->m_emulator.m_decoder->disassembleInst(instruction, operands, address);
         s += "\n";
         file.WriteString(s);
         address += instruction.length;
@@ -79,7 +80,7 @@ static bool SrtWalkerSignalHandler(void* context, void* fault_address) {
     // Patch instruction to zero register
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
-    ZyanStatus status = Common::Decoder::Instance()->decodeInstruction(instruction, operands,
+    ZyanStatus status = ShadPs4App::GetInstance()->m_emulator.m_decoder->decodeInstruction(instruction, operands,
                                                                        const_cast<void*>(code), 15);
 
     ASSERT(ZYAN_SUCCESS(status) && instruction.mnemonic == ZYDIS_MNEMONIC_MOV &&
@@ -208,10 +209,10 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     // Register the signal handler for SRT walker, if not already registered
     if (g_srt_codegen_start == nullptr) {
         g_srt_codegen_start = c.getCurr();
-        auto* signals = Core::Signals::Instance();
+        auto& signals = *ShadPs4App::GetInstance()->m_emulator.m_signals;
         // Call after the memory invalidation handler
         constexpr u32 priority = 1;
-        signals->RegisterAccessViolationHandler(SrtWalkerSignalHandler, priority);
+        signals.RegisterAccessViolationHandler(SrtWalkerSignalHandler, priority);
     }
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();

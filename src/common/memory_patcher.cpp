@@ -14,6 +14,7 @@
 #include "core/emulator_state.h"
 #include "core/file_format/psf.h"
 #include "memory_patcher.h"
+#include "shadps4_app.h"
 
 namespace MemoryPatcher {
 
@@ -118,8 +119,8 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(path.c_str());
 
-    auto* param_sfo = Common::Singleton<PSF>::Instance();
-    auto app_version = param_sfo->GetString("APP_VER").value_or("Unknown version");
+    auto& param_sfo = *ShadPs4App::GetInstance()->m_emulator.m_psf;
+    auto app_version = param_sfo.GetString("APP_VER").value_or("Unknown version");
 
     if (result) {
         auto patchXML = doc.child("Patch");
@@ -192,7 +193,7 @@ void OnGameLoaded() {
         } else {
             ApplyPatchesFromXML(file_path);
         }
-    } else if (EmulatorState::GetInstance()->IsAutoPatchesLoadEnabled()) {
+    } else if (ShadPs4App::GetInstance()->m_emulator_state.IsAutoPatchesLoadEnabled()) {
         for (auto const& repo : std::filesystem::directory_iterator(patch_dir)) {
             if (!repo.is_directory()) {
                 continue;

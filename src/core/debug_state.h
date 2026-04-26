@@ -234,5 +234,3 @@ private:
     std::optional<RegDump*> GetRegDump(uintptr_t base_addr, uintptr_t header_addr);
 };
 } // namespace DebugStateType
-
-extern DebugStateType::DebugStateImpl& DebugState;

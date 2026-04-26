@@ -15,7 +15,7 @@
 #include "common/types.h"
 #include "core/user_manager.h"
 
-#define UserSettings (*UserSettingsImpl::GetInstance())
+#define UserSettings ShadPs4App::GetInstance()->m_user_settings
 
 #define UserManagement UserSettings.GetUserManager()
 
@@ -35,12 +35,7 @@ public:
     bool Save() const;
     bool Load();
 
-    static std::shared_ptr<UserSettingsImpl> GetInstance();
-    static void SetInstance(std::shared_ptr<UserSettingsImpl> instance);
-
 private:
     UserManager m_userManager;
     bool m_loaded{false};
-    static std::shared_ptr<UserSettingsImpl> s_instance;
-    static std::mutex s_mutex;
 };

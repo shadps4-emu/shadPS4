@@ -26,7 +26,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
                          AmdGpu::Liverpool* liverpool_, TextureCache& texture_cache_,
                          PageManager& tracker)
     : instance{instance_}, scheduler{scheduler_}, liverpool{liverpool_},
-      memory{Core::Memory::Instance()}, texture_cache{texture_cache_},
+      texture_cache{texture_cache_},
       fault_manager{instance, scheduler, *this, CACHING_PAGEBITS, CACHING_NUMPAGES},
       staging_buffer{instance, scheduler, MemoryUsage::Upload, StagingBufferSize},
       stream_buffer{instance, scheduler, MemoryUsage::Stream, UboStreamBufferSize},
@@ -124,11 +124,11 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.copyBuffer(buffer.buffer, download_buffer.Handle(), copies);
     const auto write_data = [&]() {
-        auto* memory = Core::Memory::Instance();
+        auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
         for (const auto& copy : copies) {
             const VAddr copy_device_addr = buffer.CpuAddr() + copy.srcOffset;
             const u64 dst_offset = copy.dstOffset - offset;
-            memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
+            memory.TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
         }
         memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
@@ -202,7 +202,7 @@ void BufferCache::BindVertexBuffers(const Vulkan::GraphicsPipeline& pipeline) {
 
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
-        const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
+        const u64 size = ShadPs4App::GetInstance()->m_emulator.memory->ClampRangeSize(range.base_address, range.GetSize());
         const auto [buffer, offset] = ObtainBuffer(range.base_address, size, false);
         range.vk_buffer = buffer->buffer;
         range.offset = offset;
@@ -406,7 +406,7 @@ std::pair<Buffer*, u32> BufferCache::ObtainBufferForImage(VAddr gpu_addr, u32 si
     }
     // In all other cases, just do a CPU copy to the staging buffer.
     const auto [data, offset] = staging_buffer.Map(size, 16);
-    memory->CopySparseMemory(gpu_addr, data, size);
+    ShadPs4App::GetInstance()->m_emulator.memory->CopySparseMemory(gpu_addr, data, size);
     staging_buffer.Commit();
     return {&staging_buffer, offset};
 }
@@ -701,7 +701,7 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
         for (auto& copy : copies) {
             u8* const src_pointer = staging + copy.srcOffset;
             const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            memory->CopySparseMemory(device_addr, src_pointer, copy.size);
+            ShadPs4App::GetInstance()->m_emulator.memory->CopySparseMemory(device_addr, src_pointer, copy.size);
             // Apply the staging offset
             copy.srcOffset += offset;
         }
@@ -717,7 +717,7 @@ vk::Buffer BufferCache::UploadCopies(Buffer& buffer, std::span<vk::BufferCopy> c
         for (const auto& copy : copies) {
             u8* const src_pointer = staging + copy.srcOffset;
             const VAddr device_addr = buffer.CpuAddr() + copy.dstOffset;
-            memory->CopySparseMemory(device_addr, src_pointer, copy.size);
+            ShadPs4App::GetInstance()->m_emulator.memory->CopySparseMemory(device_addr, src_pointer, copy.size);
         }
         scheduler.DeferOperation([buffer = std::move(temp_buffer)]() mutable { buffer.reset(); });
         return src_buffer;

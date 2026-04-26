@@ -8,9 +8,12 @@
 #include <mutex>
 #include <set>
 #include <stack>
-#include "common/singleton.h"
 #include "common/slab_heap.h"
 #include "common/types.h"
+
+namespace Core {
+class MemoryManager;
+}
 
 namespace Libraries::Kernel {
 
@@ -28,7 +31,7 @@ struct ThreadState {
     static constexpr size_t MaxThreads = 100000;
     static constexpr size_t MaxCachedThreads = 100;
 
-    explicit ThreadState();
+    explicit ThreadState(Core::MemoryManager& memory);
 
     bool GcNeeded() const noexcept {
         return gc_list.size() >= GcThreshold;
@@ -81,7 +84,5 @@ struct ThreadState {
     std::list<Stack*> mstackq;
     VAddr last_stack = 0;
 };
-
-using ThrState = Common::Singleton<ThreadState>;
 
 } // namespace Libraries::Kernel

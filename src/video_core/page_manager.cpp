@@ -11,6 +11,7 @@
 #include "core/signals.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+#include "shadps4_app.h"
 
 #ifndef _WIN64
 #include <sys/mman.h>
@@ -186,7 +187,7 @@ struct PageManager::Impl {
 
         // Should be called first.
         constexpr auto priority = std::numeric_limits<u32>::min();
-        Core::Signals::Instance()->RegisterAccessViolationHandler(GuestFaultSignalHandler,
+        ShadPs4App::GetInstance()->m_emulator.m_signals->RegisterAccessViolationHandler(GuestFaultSignalHandler,
                                                                   priority);
     }
 
@@ -200,8 +201,8 @@ struct PageManager::Impl {
 
     void Protect(VAddr address, size_t size, Core::MemoryPermission perms) {
         RENDERER_TRACE;
-        auto* memory = Core::Memory::Instance();
-        auto& impl = memory->GetAddressSpace();
+        auto& memory = *ShadPs4App::GetInstance()->m_emulator.memory;
+        auto& impl = memory.GetAddressSpace();
         ASSERT_MSG(perms != Core::MemoryPermission::Write,
                    "Attempted to protect region as write-only which is not a valid permission");
         impl.Protect(address, size, perms);

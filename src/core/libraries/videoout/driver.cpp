@@ -47,7 +47,7 @@ VideoOutDriver::VideoOutDriver(u32 width, u32 height) {
     present_thread = std::jthread([&](std::stop_token token) {
         {
             std::unique_lock lk(mutex);
-            cond_var.wait(lk, [] { return ShadPs4App::GetInstance()->m_emulator.m_hle_layer != nullptr; });
+            cond_var.wait(lk, [&] { return token.stop_requested() || ShadPs4App::GetInstance()->m_emulator.m_hle_layer != nullptr; });
         }
 
         try {
@@ -313,7 +313,7 @@ void VideoOutDriver::PresentThread(std::stop_token token) {
     while (!token.stop_requested()) {
         timer.Start();
 
-        if (DebugState.IsGuestThreadsPaused()) {
+        if (ShadPs4App::GetInstance()->DebugState.IsGuestThreadsPaused()) {
             DrawLastFrame();
             timer.End();
             continue;

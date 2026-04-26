@@ -7,17 +7,43 @@
 #include <optional>
 #include <thread>
 
-#include "core/linker.h"
+#include "core/file_sys/fs.h"
+#include "core/libraries/kernel/threads/thread_state.h"
+#include "core/libraries/network/net_util.h"
 #include "input/controller.h"
 #include "sdl_window.h"
+
+class PSF;
 
 namespace Libraries {
 struct HleLayer;
 }
 
-namespace Core {
+namespace Storage {
+struct DataBase;
+}
 
-using HLEInitDef = void (*)(Core::Loader::SymbolsResolver* sym);
+namespace Common {
+class ElfInfo;
+class DecoderImpl;
+}
+
+namespace Libraries::Kernel {
+struct ThreadState;
+}
+
+namespace Platform {
+struct IrqController;
+}
+
+namespace Core {
+class Linker;
+class MemoryManager;
+class SignalDispatch;
+
+namespace FileSys {
+class MntPoints;
+}
 
 struct SysModules {
     std::string_view module_name;
@@ -44,13 +70,24 @@ public:
 
     void LoadSystemModules(const std::string& game_serial);
 
-    Core::MemoryManager* memory;
-    Input::GameControllers* controllers;
+    std::unique_ptr<Core::MemoryManager> memory;
+    std::unique_ptr<Input::GameControllers> controllers;
     std::unique_ptr<Core::Linker> linker;
     std::unique_ptr<Frontend::WindowSDL> window;
     std::chrono::steady_clock::time_point start_time;
     std::jthread play_time_thread;
     std::unique_ptr<Libraries::HleLayer> m_hle_layer;
+
+    std::unique_ptr<Core::FileSys::MntPoints> m_mnt_points;
+    std::unique_ptr<Common::ElfInfo> m_elf_info;
+    std::unique_ptr<Platform::IrqController> irq_controller;
+    std::unique_ptr<NetUtil::NetUtilInternal> m_net_util_internal;
+    std::unique_ptr<PSF> m_psf;
+    std::unique_ptr<Core::FileSys::HandleTable> m_handle_table;
+    std::unique_ptr<Libraries::Kernel::ThreadState> m_thread_state;
+    std::unique_ptr<Common::DecoderImpl> m_decoder;
+    std::unique_ptr<Core::SignalDispatch> m_signals;
+    std::unique_ptr<Storage::DataBase> m_database;
 };
 
 } // namespace Core

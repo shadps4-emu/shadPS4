@@ -21,6 +21,7 @@
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
 #include "sdl_window.h"
+#include "shadps4_app.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
 #ifdef __APPLE__

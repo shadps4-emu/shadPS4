@@ -7,7 +7,6 @@
 
 #include <core/user_settings.h>
 #include <queue>
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/macro.h"

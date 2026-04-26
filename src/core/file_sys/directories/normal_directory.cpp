@@ -4,9 +4,9 @@
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging/log.h"
-#include "common/singleton.h"
 #include "core/file_sys/directories/normal_directory.h"
 #include "core/file_sys/fs.h"
+#include "shadps4_app.h"
 
 namespace Core::Directories {
 
@@ -113,9 +113,9 @@ void NormalDirectory::RebuildDirents() {
     dirent_cache_bin.clear();
     dirent_cache_bin.reserve(512);
 
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto& mnt = *ShadPs4App::GetInstance()->m_emulator.m_mnt_points;
 
-    mnt->IterateDirectory(
+    mnt.IterateDirectory(
         guest_directory, [this, &next_ceiling, &dirent_offset, &last_reclen_offset](
                              const std::filesystem::path& ent_path, const bool ent_is_file) {
             NormalDirectoryDirent tmp{};

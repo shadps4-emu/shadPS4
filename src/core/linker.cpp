@@ -58,7 +58,7 @@ static PS4_SYSV_ABI void* RunMainEntry [[noreturn]] (EntryParams* params) {
 }
 #endif
 
-Linker::Linker() : memory{Memory::Instance()} {}
+Linker::Linker() = default;
 
 Linker::~Linker() {
     main_thread.Stop();
@@ -111,7 +111,7 @@ void Linker::Execute(const std::vector<std::string>& args) {
         use_extended_mem2 = mem_param.extended_memory_2 ? *mem_param.extended_memory_2 : false;
     }
 
-    memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
+    ShadPs4App::GetInstance()->m_emulator.memory->SetupMemoryRegions(fmem_size, use_extended_mem1, use_extended_mem2);
 
     main_thread.Run([this, module, &args](std::stop_token) {
         Common::SetCurrentThreadName("Game:Main");
@@ -120,9 +120,8 @@ void Linker::Execute(const std::vector<std::string>& args) {
         sigemptyset(&emptyset);
         pthread_sigmask(SIG_SETMASK, &emptyset, nullptr);
 #endif
-        if (auto& ipc = IPC::Instance()) {
-            ipc.WaitForStart();
-        }
+
+        ShadPs4App::GetInstance()->m_ipc.WaitForStart();
 
         // Have libSceSysmodule preload our libraries.
         Libraries::SysModule::sceSysmodulePreloadModuleForLibkernel();
@@ -163,7 +162,7 @@ s32 Linker::LoadModule(const std::filesystem::path& elf_name, bool is_dynamic) {
         return -1;
     }
 
-    auto module = std::make_unique<Module>(memory, elf_name, max_tls_index);
+    auto module = std::make_unique<Module>(ShadPs4App::GetInstance()->m_emulator.memory.get(), elf_name, max_tls_index);
     if (!module->IsValid()) {
         LOG_ERROR(Core_Linker, "Provided file {} is not valid ELF file", elf_name.string());
         return -1;

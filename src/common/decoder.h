@@ -4,7 +4,6 @@
 #pragma once
 
 #include <Zydis/Zydis.h>
-#include "common/singleton.h"
 #include "common/types.h"
 
 namespace Common {
@@ -25,7 +24,5 @@ private:
     ZydisDecoder m_decoder;
     ZydisFormatter m_formatter;
 };
-
-using Decoder = Common::Singleton<DecoderImpl>;
 
 } // namespace Common

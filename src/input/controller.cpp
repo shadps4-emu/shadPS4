@@ -5,7 +5,6 @@
 #include <unordered_set>
 #include <SDL3/SDL.h>
 #include <common/elf_info.h>
-#include <common/singleton.h>
 #include "common/logging/log.h"
 #include "controller.h"
 #include "core/emulator_settings.h"
@@ -14,6 +13,7 @@
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
 #include "input/controller.h"
+#include "shadps4_app.h"
 
 namespace Input {
 

@@ -171,33 +171,28 @@ std::optional<int> ShadPs4App::parse(int argc, char* argv[]) {
 }
 
 void ShadPs4App::init() {
-    IPC::Instance().Init();
+    m_ipc.Init();
 
-    auto emu_state = std::make_shared<EmulatorState>();
-    EmulatorState::SetInstance(emu_state);
-    UserSettings.Load();
+    m_user_settings.Load();
 
     const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
     Config::load(user_dir / "config.toml");
 
     // ---- Trophy key migration ----
-    auto key_manager = KeyManager::GetInstance();
-    key_manager->LoadFromFile();
-    if (key_manager->GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
+    m_key_manager.LoadFromFile();
+    if (m_key_manager.GetAllKeys().TrophyKeySet.ReleaseTrophyKey.empty() &&
         !Config::getTrophyKey().empty()) {
-        auto keys = key_manager->GetAllKeys();
+        auto keys = m_key_manager.GetAllKeys();
         if (keys.TrophyKeySet.ReleaseTrophyKey.empty() && !Config::getTrophyKey().empty()) {
             keys.TrophyKeySet.ReleaseTrophyKey =
                 KeyManager::HexStringToBytes(Config::getTrophyKey());
-            key_manager->SetAllKeys(keys);
-            key_manager->SaveToFile();
+            m_key_manager.SetAllKeys(keys);
+            m_key_manager.SaveToFile();
         }
     }
 
     // Load configurations
-    std::shared_ptr<EmulatorSettingsImpl> emu_settings = std::make_shared<EmulatorSettingsImpl>();
-    EmulatorSettingsImpl::SetInstance(emu_settings);
-    emu_settings->Load();
+    m_emulator_settings.Load();
 }
 
 int ShadPs4App::run() {

@@ -11,6 +11,7 @@
 #include "core/emulator_settings.h"
 #include "imgui/imgui_std.h"
 #include "settings_dialog_imgui.h"
+#include "shadps4_app.h"
 
 CMRC_DECLARE(res);
 namespace BigPictureMode {

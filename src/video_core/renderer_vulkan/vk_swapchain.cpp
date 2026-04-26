@@ -10,6 +10,7 @@
 #include "sdl_window.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
+#include "shadps4_app.h"
 
 namespace Vulkan {
 
