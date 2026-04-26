@@ -544,6 +544,72 @@ s32 NpHandler::GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u3
     return ORBIS_OK;
 }
 
+s32 NpHandler::GetRankingByRangeA(s32 user_id, s32 service_label, u32 boardId, u32 startSerialRank,
+                                  u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                                  NpScore::OrbisNpScoreComment* commentArray,
+                                  NpScore::OrbisNpScoreGameInfo* infoArray,
+                                  Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                                  std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "GetRankingByRangeA: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "GetRankingByRangeA: user_id={} not authenticated", user_id);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    shadnet::GetScoreRangeRequest proto;
+    proto.set_boardid(boardId);
+    proto.set_startrank(startSerialRank);
+    proto.set_numranks(arrayNum);
+    proto.set_withcomment(commentArray != nullptr);
+    proto.set_withgameinfo(infoArray != nullptr);
+
+    const std::string proto_bytes = proto.SerializeAsString();
+    const std::string com_id = GetNpCommId(service_label);
+
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size());
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetScoreRange, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::GetScoreRange;
+        // Note: aRankArray is set, plainRankArray remains null. The shared
+        // GetScoreRange/GetScoreFriends branch in OnScoreReply dispatches
+        // on which one is non-null to pick the right fill helper.
+        pending.aRankArray = rankArray;
+        pending.commentArray = commentArray;
+        pending.infoArray = infoArray;
+        pending.lastSortDate = lastSortDate;
+        pending.totalRecord = totalRecord;
+        pending.arrayNum = arrayNum;
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler,
+             "GetRankingByRangeA: user_id={} service_label={} board={} startRank={} numRanks={} "
+             "withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, startSerialRank, arrayNum, commentArray != nullptr,
+             infoArray != nullptr, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
 s32 NpHandler::GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId,
                                      const std::vector<u64>& accountIds,
                                      const std::vector<s32>& pcIds,

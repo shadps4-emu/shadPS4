@@ -94,6 +94,14 @@ public:
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    // A-variant of GetRankingByRange.
+    s32 GetRankingByRangeA(s32 user_id, s32 service_label, u32 boardId, u32 startSerialRank,
+                           u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                           NpScore::OrbisNpScoreComment* commentArray,
+                           NpScore::OrbisNpScoreGameInfo* infoArray,
+                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     s32 GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId,
                               const std::vector<u64>& accountIds, const std::vector<s32>& pcIds,
                               NpScore::OrbisNpScorePlayerRankDataA* rankArray,
