@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     Common::Log::Setup("shad_log.txt");
 
     if (bigPicture) {
-        BigPictureMode::Launch();
+        BigPictureMode::Launch(argv[0]);
         return 0;
     }
 
