@@ -69,6 +69,8 @@ enum class CommandType : u16 {
     GetScoreRange = 34,
     GetScoreFriends = 35,
     GetScoreNpid = 36,
+    GetScoreAccountId = 37,
+    GetScoreGameDataByAccId = 38,
 };
 
 enum class NotificationType : u16 {

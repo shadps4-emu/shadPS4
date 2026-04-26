@@ -25,10 +25,10 @@ message FriendEntry {
 message LoginReply {
     string               avatar_url               = 1;
     uint64               user_id                  = 2;
-    repeated FriendEntry friends                  = 4;
-    repeated string      friend_requests_sent     = 5;
-    repeated string      friend_requests_received = 6;
-    repeated string      blocked                  = 7;
+    repeated FriendEntry friends                  = 3;
+    repeated string      friend_requests_sent     = 4;
+    repeated string      friend_requests_received = 5;
+    repeated string      blocked                  = 6;
 }
 
 message RegistrationRequest {
@@ -131,6 +131,24 @@ message GetScoreFriendsRequest {
     bool   withGameInfo = 5;
 }
 
+message ScoreAccountIdPcId {
+    int64 accountId = 1;
+    int32 pcId      = 2;
+}
+
+message GetScoreAccountIdRequest {
+    uint32                       boardId      = 1;
+    repeated ScoreAccountIdPcId  ids          = 2;
+    bool                         withComment  = 3;
+    bool                         withGameInfo = 4;
+}
+
+message GetScoreGameDataByAccountIdRequest {
+    uint32 boardId   = 1;
+    int64  accountId = 2;
+    int32  pcId      = 3;
+}
+
 // Score: responses
 
 message ScoreRankData {
@@ -140,6 +158,7 @@ message ScoreRankData {
     int64  score       = 4;
     bool   hasGameData = 5;
     uint64 recordDate  = 6;
+    int64  accountId   = 7;
 }
 
 message ScoreInfo {

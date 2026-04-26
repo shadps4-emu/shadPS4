@@ -544,6 +544,72 @@ s32 NpHandler::GetRankingByRange(s32 user_id, s32 service_label, u32 boardId, u3
     return ORBIS_OK;
 }
 
+s32 Np::NpHandler::GetRankingByAccountId(
+    s32 user_id, s32 service_label, u32 boardId, const std::vector<u64>& accountIds,
+    const std::vector<s32>& pcIds, NpScore::OrbisNpScorePlayerRankDataA* rankArray,
+    NpScore::OrbisNpScoreComment* commentArray, NpScore::OrbisNpScoreGameInfo* infoArray,
+    Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+    std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "GetRankingByAccountId: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    shadnet::GetScoreAccountIdRequest proto;
+    proto.set_boardid(boardId);
+    for (size_t i = 0; i < accountIds.size(); ++i) {
+        auto* entry = proto.add_ids();
+        entry->set_accountid(static_cast<int64_t>(accountIds[i]));
+        // If the caller provided per-entry pcIds, use them; otherwise all zero.
+        entry->set_pcid(i < pcIds.size() ? pcIds[i] : 0);
+    }
+    proto.set_withcomment(commentArray != nullptr);
+    proto.set_withgameinfo(infoArray != nullptr);
+
+    const std::string proto_bytes = proto.SerializeAsString();
+    const std::string com_id = GetNpCommId(service_label);
+
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size());
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetScoreAccountId, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::GetScoreAccountId;
+        pending.aPlayerRankArray = rankArray;
+        pending.commentArray = commentArray;
+        pending.infoArray = infoArray;
+        pending.lastSortDate = lastSortDate;
+        pending.totalRecord = totalRecord;
+        pending.arrayNum = accountIds.size();
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler,
+             "GetRankingByAccountId: user_id={} service_label={} board={} accountIdCount={} "
+             "withComment={} withGameInfo={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, accountIds.size(), commentArray != nullptr,
+             infoArray != nullptr, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
 s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
                                  u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
                                  NpScore::OrbisNpScoreComment* commentArray,
@@ -651,6 +717,57 @@ static u32 FillPlainRankArrayFromProto(const shadnet::GetScoreResponse& resp, u6
         ++out_i;
     }
     return out_i;
+}
+
+static u32 FillPlayerRankArrayAFromProto(const shadnet::GetScoreResponse& resp, u64 requestedCount,
+                                         NpScore::OrbisNpScorePlayerRankDataA* rankArray,
+                                         NpScore::OrbisNpScoreComment* commentArray,
+                                         NpScore::OrbisNpScoreGameInfo* infoArray) {
+    const int n_resp = resp.rankarray_size();
+    const int n_req = static_cast<int>(requestedCount);
+    if (n_resp != n_req) {
+        LOG_WARNING(NpHandler,
+                    "FillPlayerRankArrayAFromProto: response count {} != request count {} — "
+                    "will fill up to min() and leave extras at hasData=0",
+                    n_resp, n_req);
+    }
+    const int n = std::min(n_resp, n_req);
+    u32 found = 0;
+    for (int i = 0; i < n; ++i) {
+        const auto& r = resp.rankarray(i);
+        if (r.npid().empty()) {
+            continue; // no score on this board for this input accountId
+        }
+        auto& out = rankArray[i];
+        out.hasData = 1;
+        const std::string& npid = r.npid();
+        const size_t cp = std::min<size_t>(npid.size(), sizeof(out.rankData.onlineId.data));
+        std::memcpy(out.rankData.onlineId.data, npid.data(), cp);
+        out.rankData.onlineId.term = 0;
+        out.rankData.pcId = r.pcid();
+        out.rankData.serialRank = r.rank();
+        out.rankData.rank = r.rank();
+        out.rankData.highestRank = r.rank();
+        out.rankData.hasGameData = r.hasgamedata() ? 1 : 0;
+        out.rankData.scoreValue = r.score();
+        out.rankData.recordDate.tick = r.recorddate();
+        out.rankData.accountId = static_cast<Libraries::Np::OrbisNpAccountId>(r.accountid());
+
+        if (commentArray != nullptr && i < resp.commentarray_size()) {
+            const std::string& cmt = resp.commentarray(i);
+            const size_t ccp =
+                std::min<size_t>(cmt.size(), sizeof(commentArray[i].utf8Comment) - 1);
+            std::memcpy(commentArray[i].utf8Comment, cmt.data(), ccp);
+        }
+        if (infoArray != nullptr && i < resp.infoarray_size()) {
+            const std::string& gi = resp.infoarray(i).data();
+            const size_t gcp = std::min<size_t>(gi.size(), sizeof(infoArray[i].data));
+            infoArray[i].infoSize = static_cast<u32>(gcp);
+            std::memcpy(infoArray[i].data, gi.data(), gcp);
+        }
+        ++found;
+    }
+    return found;
 }
 
 static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
@@ -802,6 +919,47 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         }
         LOG_INFO(NpHandler,
                  "OnScoreReply: GetScoreNpid user_id={} pkt_id={} found={}/{} totalRecord={}",
+                 user_id, pkt_id, found, pending.arrayNum, resp.totalrecord());
+        req->SetResult(static_cast<s32>(found));
+        break;
+    }
+    case ShadNet::CommandType::GetScoreAccountId: {
+        // Reply body = u32 LE proto size + GetScoreResponse proto bytes.
+        // Index-aligned with the request's accountIds[] (empty-npid sentinel
+        // marks "no score on this board"), same contract as GetScoreNpid.
+        if (body.size() < 4) {
+            LOG_ERROR(NpHandler, "OnScoreReply: GetScoreAccountId body too small ({})",
+                      body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        const u32 proto_size = static_cast<u32>(body[0]) | (static_cast<u32>(body[1]) << 8) |
+                               (static_cast<u32>(body[2]) << 16) |
+                               (static_cast<u32>(body[3]) << 24);
+        if (static_cast<size_t>(4) + proto_size > body.size()) {
+            LOG_ERROR(NpHandler,
+                      "OnScoreReply: GetScoreAccountId proto size {} exceeds body size {}",
+                      proto_size, body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        shadnet::GetScoreResponse resp;
+        if (!resp.ParseFromArray(body.data() + 4, static_cast<int>(proto_size))) {
+            LOG_ERROR(NpHandler, "OnScoreReply: GetScoreAccountId proto parse failed");
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        const u32 found =
+            FillPlayerRankArrayAFromProto(resp, pending.arrayNum, pending.aPlayerRankArray,
+                                          pending.commentArray, pending.infoArray);
+        if (pending.lastSortDate != nullptr) {
+            pending.lastSortDate->tick = resp.lastsortdate();
+        }
+        if (pending.totalRecord != nullptr) {
+            *pending.totalRecord = resp.totalrecord();
+        }
+        LOG_INFO(NpHandler,
+                 "OnScoreReply: GetScoreAccountId user_id={} pkt_id={} found={}/{} totalRecord={}",
                  user_id, pkt_id, found, pending.arrayNum, resp.totalrecord());
         req->SetResult(static_cast<s32>(found));
         break;

@@ -94,6 +94,14 @@ public:
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
                           std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    s32 GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId,
+                              const std::vector<u64>& accountIds, const std::vector<s32>& pcIds,
+                              NpScore::OrbisNpScorePlayerRankDataA* rankArray,
+                              NpScore::OrbisNpScoreComment* commentArray,
+                              NpScore::OrbisNpScoreGameInfo* infoArray,
+                              Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
+                              std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     // Submit a GetFriendsRanking request to the shadNet server.
     s32 GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
                           u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
@@ -152,6 +160,8 @@ private:
         std::vector<std::string> requestedNpIds;
         NpScore::OrbisNpScorePlayerRankData* rankArray = nullptr;
         NpScore::OrbisNpScoreRankData* plainRankArray = nullptr;
+        NpScore::OrbisNpScoreRankDataA* aRankArray = nullptr;
+        NpScore::OrbisNpScorePlayerRankDataA* aPlayerRankArray = nullptr;
         NpScore::OrbisNpScoreComment* commentArray = nullptr;
         NpScore::OrbisNpScoreGameInfo* infoArray = nullptr;
         Libraries::Rtc::OrbisRtcTick* lastSortDate = nullptr;
