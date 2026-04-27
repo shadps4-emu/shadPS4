@@ -1485,19 +1485,31 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         ImeEdgeWrapNavState edge_wrap_nav{};
         int last_grid_rows = -1;
         int last_grid_cols = -1;
+        int mouse_hold_row = -1;
+        int mouse_hold_col = -1;
+        bool mouse_hold_prev_down = false;
+        double mouse_hold_next_repeat_time = 0.0;
     };
     static std::unordered_map<ImGuiID, ImeKbNavState> s_nav_states;
     const ImGuiID nav_id = ImGui::GetID("##ImeKbGridNav");
     ImeKbNavState& nav_state = s_nav_states[nav_id];
+    const auto clear_mouse_hold = [&]() {
+        nav_state.mouse_hold_row = -1;
+        nav_state.mouse_hold_col = -1;
+        nav_state.mouse_hold_prev_down = false;
+        nav_state.mouse_hold_next_repeat_time = 0.0;
+    };
     const bool grid_shape_changed =
         nav_state.last_grid_rows != grid_rows || nav_state.last_grid_cols != grid_cols;
     if (grid_shape_changed) {
         nav_state.last_grid_rows = grid_rows;
         nav_state.last_grid_cols = grid_cols;
         ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
+        clear_mouse_hold();
     }
     if (params.reset_nav_state) {
         ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
+        clear_mouse_hold();
     }
 
     const auto is_selectable_cell = [&](int row, int col) {
@@ -1759,34 +1771,34 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             rendered_keys[static_cast<std::size_t>(selected_render_index)].center;
     }
 
+    const auto action_allows_repeat = [](ImeKbKeyAction action) {
+        switch (action) {
+        case ImeKbKeyAction::Character:
+        case ImeKbKeyAction::Space:
+        case ImeKbKeyAction::Backspace:
+        case ImeKbKeyAction::ArrowLeft:
+        case ImeKbKeyAction::ArrowRight:
+        case ImeKbKeyAction::ArrowUp:
+        case ImeKbKeyAction::ArrowDown:
+        case ImeKbKeyAction::NewLine:
+            return true;
+        case ImeKbKeyAction::None:
+        case ImeKbKeyAction::Shift:
+        case ImeKbKeyAction::SymbolsMode:
+        case ImeKbKeyAction::SpecialsMode:
+        case ImeKbKeyAction::PagePrev:
+        case ImeKbKeyAction::PageNext:
+        case ImeKbKeyAction::Keyboard:
+        case ImeKbKeyAction::Menu:
+        case ImeKbKeyAction::Settings:
+        case ImeKbKeyAction::Done:
+        default:
+            return false;
+        }
+    };
+
     bool activate_selected = false;
     if (params.allow_activate_input) {
-        const auto action_allows_repeat = [](ImeKbKeyAction action) {
-            switch (action) {
-            case ImeKbKeyAction::Character:
-            case ImeKbKeyAction::Space:
-            case ImeKbKeyAction::Backspace:
-            case ImeKbKeyAction::ArrowLeft:
-            case ImeKbKeyAction::ArrowRight:
-            case ImeKbKeyAction::ArrowUp:
-            case ImeKbKeyAction::ArrowDown:
-            case ImeKbKeyAction::NewLine:
-                return true;
-            case ImeKbKeyAction::None:
-            case ImeKbKeyAction::Shift:
-            case ImeKbKeyAction::SymbolsMode:
-            case ImeKbKeyAction::SpecialsMode:
-            case ImeKbKeyAction::PagePrev:
-            case ImeKbKeyAction::PageNext:
-            case ImeKbKeyAction::Keyboard:
-            case ImeKbKeyAction::Menu:
-            case ImeKbKeyAction::Settings:
-            case ImeKbKeyAction::Done:
-            default:
-                return false;
-            }
-        };
-
         bool activate_once = imgui_activate_selected_once;
         bool activate_repeat = imgui_activate_selected_repeat && !imgui_activate_selected_once;
         if (!activate_once && params.external_activate_pressed) {
@@ -1976,19 +1988,79 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         ImGui::PushID(idx(key.row, key.col));
         ImGui::SetCursorScreenPos(key.pos);
         ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
-        const bool key_activated = ImGui::InvisibleButton("##ImeGridKey", key.size);
+        (void)ImGui::InvisibleButton("##ImeGridKey", key.size);
         ImGui::PopItemFlag();
         if (ImGui::IsItemHovered()) {
             state.hovered = true;
         }
-        if (key_activated) {
+        if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
             state.clicked = true;
             nav_state.cursor_row = key.row;
             nav_state.cursor_col = key.col;
             nav_state.fallback_prefer_col_dir = 0;
             activate_key(key);
+            if (key.key && action_allows_repeat(key.key->action)) {
+                nav_state.mouse_hold_row = key.row;
+                nav_state.mouse_hold_col = key.col;
+                nav_state.mouse_hold_prev_down = true;
+                nav_state.mouse_hold_next_repeat_time =
+                    ImGui::GetTime() + static_cast<double>(ImGui::GetIO().KeyRepeatDelay);
+            } else {
+                clear_mouse_hold();
+            }
         }
         ImGui::PopID();
+    }
+
+    if (nav_state.mouse_hold_row >= 0 && nav_state.mouse_hold_col >= 0) {
+        int hold_render_index = -1;
+        for (int i = 0; i < static_cast<int>(rendered_keys.size()); ++i) {
+            const auto& key = rendered_keys[static_cast<std::size_t>(i)];
+            if (!key.selectable) {
+                continue;
+            }
+            if (key.row == nav_state.mouse_hold_row && key.col == nav_state.mouse_hold_col) {
+                hold_render_index = i;
+                break;
+            }
+        }
+
+        if (hold_render_index < 0 || !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            clear_mouse_hold();
+        } else {
+            const auto& hold_key = rendered_keys[static_cast<std::size_t>(hold_render_index)];
+            const ImeKbKeyAction hold_action =
+                hold_key.key ? hold_key.key->action : ImeKbKeyAction::None;
+            if (!action_allows_repeat(hold_action)) {
+                clear_mouse_hold();
+            } else {
+                const ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+                const bool mouse_over_hold_key =
+                    mouse_pos.x >= hold_key.pos.x &&
+                    mouse_pos.x <= (hold_key.pos.x + hold_key.size.x) &&
+                    mouse_pos.y >= hold_key.pos.y &&
+                    mouse_pos.y <= (hold_key.pos.y + hold_key.size.y);
+                const bool down = ImGui::IsMouseDown(ImGuiMouseButton_Left) && mouse_over_hold_key;
+                const double now = ImGui::GetTime();
+                const double repeat_delay = static_cast<double>(ImGui::GetIO().KeyRepeatDelay);
+                const double repeat_rate = static_cast<double>(ImGui::GetIO().KeyRepeatRate);
+                bool trigger_repeat = false;
+                if (!down) {
+                    nav_state.mouse_hold_prev_down = false;
+                    nav_state.mouse_hold_next_repeat_time = 0.0;
+                } else if (!nav_state.mouse_hold_prev_down) {
+                    nav_state.mouse_hold_prev_down = true;
+                    nav_state.mouse_hold_next_repeat_time = now + repeat_delay;
+                } else if (repeat_rate > 0.0 && now >= nav_state.mouse_hold_next_repeat_time) {
+                    nav_state.mouse_hold_next_repeat_time = now + repeat_rate;
+                    trigger_repeat = true;
+                }
+
+                if (trigger_repeat) {
+                    activate_key(hold_key);
+                }
+            }
+        }
     }
 
     if (activate_selected && selected_render_index >= 0) {

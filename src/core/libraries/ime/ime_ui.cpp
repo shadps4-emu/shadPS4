@@ -27,38 +27,6 @@ constexpr ImU32 kSelectorOverlayColor = IM_COL32(255, 255, 255, 18);
 constexpr float kSelectorBorderThickness = 2.0f;
 constexpr float kSelectorInnerMargin = 2.0f;
 
-ImeKbLayoutSelection ResolveInitialKbLayoutSelection(const OrbisImeParamExtended* extended_param) {
-    ImeKbLayoutSelection selection{};
-    if (!extended_param) {
-        return selection;
-    }
-
-    const bool set_priority = True(extended_param->option & OrbisImeExtOption::SET_PRIORITY);
-    if (set_priority) {
-        switch (extended_param->priority) {
-        case OrbisImePanelPriority::Symbol:
-            selection.family = ImeKbLayoutFamily::Symbols;
-            break;
-        case OrbisImePanelPriority::Accent:
-            selection.family = ImeKbLayoutFamily::Specials;
-            break;
-        case OrbisImePanelPriority::Alphabet:
-        case OrbisImePanelPriority::Default:
-        default:
-            selection.family = ImeKbLayoutFamily::Latin;
-            break;
-        }
-    }
-
-    const bool shift_lock =
-        set_priority && True(extended_param->option & OrbisImeExtOption::PRIORITY_SHIFT);
-    if (shift_lock && selection.family != ImeKbLayoutFamily::Symbols) {
-        // SDK docs: PRIORITY_SHIFT starts the initial panel in Shift-lock state.
-        selection.case_state = ImeKbCaseState::CapsLock;
-    }
-    return selection;
-}
-
 } // namespace
 
 ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* extended) {
@@ -259,7 +227,11 @@ ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExt
     : state(state), ime_param(param), extended_param(extended),
       style_config(ResolveImeStyleConfig(extended)) {
     if (param) {
-        kb_layout_selection = ResolveInitialKbLayoutSelection(extended_param);
+        const OrbisImeExtOption ext_option =
+            extended_param ? extended_param->option : OrbisImeExtOption::DEFAULT;
+        const OrbisImePanelPriority panel_priority =
+            extended_param ? extended_param->priority : OrbisImePanelPriority::Default;
+        kb_layout_selection = ResolveInitialKbLayoutSelection(ext_option, panel_priority);
         last_nav_layout_selection = kb_layout_selection;
         nav_layout_selection_initialized = true;
         kb_alpha_family = (kb_layout_selection.family == ImeKbLayoutFamily::Specials)
@@ -290,6 +262,7 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     pointer_navigation_active = other.pointer_navigation_active;
     edit_menu_popup = other.edit_menu_popup;
     menu_activate_armed = other.menu_activate_armed;
+    l2_shortcut_armed = other.l2_shortcut_armed;
     request_input_focus = other.request_input_focus;
     request_input_select_all = other.request_input_select_all;
     text_select_mode = other.text_select_mode;
@@ -345,6 +318,7 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     other.extended_param = nullptr;
     other.style_config = GetDefaultImeStyleConfig();
     other.menu_activate_armed = true;
+    other.l2_shortcut_armed = true;
     other.prev_virtual_lstick_left_down = false;
     other.prev_virtual_lstick_right_down = false;
     other.prev_virtual_lstick_up_down = false;
@@ -393,7 +367,8 @@ void ImeUi::Draw() {
     const bool imgui_typing_mode_active =
         native_input_active || request_input_focus || pending_input_selection_apply;
     const bool ps4_typing_mode_active = !imgui_typing_mode_active;
-    const VirtualPadSnapshot virtual_pad = ReadVirtualPadSnapshot(ime_param->user_id, io.DeltaTime);
+    const VirtualPadSnapshot virtual_pad =
+        ReadVirtualPadSnapshot(ime_param->user_id, io.DeltaTime, !ps4_typing_mode_active);
 
     const bool use_over2k =
         (ime_param->option & OrbisImeOption::USE_OVER_2K_COORDINATES) != OrbisImeOption::DEFAULT;
@@ -512,139 +487,48 @@ void ImeUi::Draw() {
         const Libraries::Ime::ImePanelMetrics metrics =
             Libraries::Ime::ComputeImePanelMetrics(metrics_cfg);
 
-        const u32 virtual_buttons = virtual_pad.buttons;
-        if (first_render) {
-            prev_virtual_buttons = virtual_buttons;
-        }
-        const auto virtual_down = [&](Libraries::Pad::OrbisPadButtonDataOffset button) {
-            const u32 mask = static_cast<u32>(button);
-            return (virtual_buttons & mask) != 0;
+        const bool controller_shortcuts_disabled =
+            extended_param &&
+            True(extended_param->disable_device & OrbisImeDisableDevice::CONTROLLER);
+        const bool allow_osk_shortcuts = ps4_typing_mode_active && !controller_shortcuts_disabled;
+        OskPadInputState panel_pad_state{
+            prev_virtual_buttons,
+            prev_virtual_cross_down,
+            prev_virtual_lstick_left_down,
+            prev_virtual_lstick_right_down,
+            prev_virtual_lstick_up_down,
+            prev_virtual_lstick_down_down,
+            left_stick_repeat_dir,
+            left_stick_next_repeat_time,
+            virtual_cross_next_repeat_time,
+            prev_virtual_dpad_left_down,
+            prev_virtual_dpad_right_down,
+            prev_virtual_dpad_up_down,
+            prev_virtual_dpad_down_down,
+            virtual_dpad_left_next_repeat_time,
+            virtual_dpad_right_next_repeat_time,
+            virtual_dpad_up_next_repeat_time,
+            virtual_dpad_down_next_repeat_time,
         };
-        const auto virtual_pressed = [&](Libraries::Pad::OrbisPadButtonDataOffset button) {
-            const u32 mask = static_cast<u32>(button);
-            return (virtual_buttons & mask) != 0 && (prev_virtual_buttons & mask) == 0;
-        };
-        const auto virtual_repeat_pressed = [&](Libraries::Pad::OrbisPadButtonDataOffset button,
-                                                bool& prev_down_state, double& next_repeat_time,
-                                                bool* out_repeat = nullptr) -> bool {
-            const double now = ImGui::GetTime();
-            const VirtualButtonRepeatResult result = ProcessRepeatButton(
-                virtual_down(button), virtual_pressed(button), now,
-                static_cast<double>(io.KeyRepeatDelay), static_cast<double>(io.KeyRepeatRate),
-                prev_down_state, next_repeat_time);
-            if (out_repeat) {
-                *out_repeat = result.repeat;
-            }
-            return result.pressed;
-        };
-        const bool imgui_cross_down = IsKeyDown(ImGuiKey_GamepadFaceDown);
-        const bool virtual_cross_down =
-            virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::Cross);
-        const bool cross_down = imgui_cross_down || virtual_cross_down;
-        bool prev_virtual_cross_hold_down =
-            (prev_virtual_buttons &
-             static_cast<u32>(Libraries::Pad::OrbisPadButtonDataOffset::Cross)) != 0;
-        const VirtualButtonRepeatResult virtual_cross_repeat = ProcessRepeatButton(
-            virtual_cross_down, virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Cross),
-            ImGui::GetTime(), static_cast<double>(io.KeyRepeatDelay),
-            static_cast<double>(io.KeyRepeatRate), prev_virtual_cross_hold_down,
-            virtual_cross_next_repeat_time);
-        if (first_render) {
-            prev_virtual_cross_down = cross_down;
-        }
+        const OskPadInputFrame panel_input = ComputeOskPadInputFrame(
+            virtual_pad, allow_osk_shortcuts, first_render, panel_pad_state);
 
-        // Use an explicit edge detector for activation to avoid stale SDL key events triggering
-        // immediate unintended key presses when OSK opens.
-        const bool panel_activate_pressed_raw = cross_down && !prev_virtual_cross_down;
-        const bool panel_activate_repeat_raw = virtual_cross_repeat.repeat;
+        const OskVirtualPadInputView virtual_pad_input(panel_input, io);
+        const bool cross_down = panel_input.cross_down;
+        const bool panel_activate_pressed_raw = panel_input.panel_activate_pressed_raw;
+        const bool panel_activate_repeat_raw = panel_input.panel_activate_repeat_raw;
+        const bool nav_left = panel_input.nav_left;
+        const bool nav_right = panel_input.nav_right;
+        const bool nav_up = panel_input.nav_up;
+        const bool nav_down = panel_input.nav_down;
+        const bool nav_left_repeat = panel_input.nav_left_repeat;
+        const bool nav_right_repeat = panel_input.nav_right_repeat;
+        const bool nav_up_repeat = panel_input.nav_up_repeat;
+        const bool nav_down_repeat = panel_input.nav_down_repeat;
+        const bool virtual_control_input = panel_input.virtual_control_input;
+        const bool osk_control_input = panel_input.osk_control_input;
 
-        const bool gamepad_nav_left_once = IsKeyPressed(ImGuiKey_GamepadDpadLeft, false);
-        const bool gamepad_nav_right_once = IsKeyPressed(ImGuiKey_GamepadDpadRight, false);
-        const bool gamepad_nav_up_once = IsKeyPressed(ImGuiKey_GamepadDpadUp, false);
-        const bool gamepad_nav_down_once = IsKeyPressed(ImGuiKey_GamepadDpadDown, false);
-        const bool gamepad_nav_left_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadLeft, true);
-        const bool gamepad_nav_right_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadRight, true);
-        const bool gamepad_nav_up_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadUp, true);
-        const bool gamepad_nav_down_with_repeat = IsKeyPressed(ImGuiKey_GamepadDpadDown, true);
-        const bool gamepad_nav_left = gamepad_nav_left_with_repeat;
-        const bool gamepad_nav_right = gamepad_nav_right_with_repeat;
-        const bool gamepad_nav_up = gamepad_nav_up_with_repeat;
-        const bool gamepad_nav_down = gamepad_nav_down_with_repeat;
-        const bool gamepad_nav_left_repeat = gamepad_nav_left_with_repeat && !gamepad_nav_left_once;
-        const bool gamepad_nav_right_repeat =
-            gamepad_nav_right_with_repeat && !gamepad_nav_right_once;
-        const bool gamepad_nav_up_repeat = gamepad_nav_up_with_repeat && !gamepad_nav_up_once;
-        const bool gamepad_nav_down_repeat = gamepad_nav_down_with_repeat && !gamepad_nav_down_once;
-        bool virtual_nav_left_repeat = false;
-        bool virtual_nav_right_repeat = false;
-        bool virtual_nav_up_repeat = false;
-        bool virtual_nav_down_repeat = false;
-        const bool virtual_nav_left = virtual_repeat_pressed(
-            Libraries::Pad::OrbisPadButtonDataOffset::Left, prev_virtual_dpad_left_down,
-            virtual_dpad_left_next_repeat_time, &virtual_nav_left_repeat);
-        const bool virtual_nav_right = virtual_repeat_pressed(
-            Libraries::Pad::OrbisPadButtonDataOffset::Right, prev_virtual_dpad_right_down,
-            virtual_dpad_right_next_repeat_time, &virtual_nav_right_repeat);
-        const bool virtual_nav_up = virtual_repeat_pressed(
-            Libraries::Pad::OrbisPadButtonDataOffset::Up, prev_virtual_dpad_up_down,
-            virtual_dpad_up_next_repeat_time, &virtual_nav_up_repeat);
-        const bool virtual_nav_down = virtual_repeat_pressed(
-            Libraries::Pad::OrbisPadButtonDataOffset::Down, prev_virtual_dpad_down_down,
-            virtual_dpad_down_next_repeat_time, &virtual_nav_down_repeat);
-        const bool imgui_lstick_left_pressed = IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
-        const bool imgui_lstick_right_pressed = IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
-        const bool imgui_lstick_up_pressed = IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
-        const bool imgui_lstick_down_pressed = IsKeyPressed(ImGuiKey_GamepadLStickDown, false);
-        const float imgui_lx =
-            ApplyAxisDeadzone(ImGui::GetKeyData(ImGuiKey_GamepadLStickRight)->AnalogValue -
-                              ImGui::GetKeyData(ImGuiKey_GamepadLStickLeft)->AnalogValue);
-        const float imgui_ly =
-            ApplyAxisDeadzone(ImGui::GetKeyData(ImGuiKey_GamepadLStickDown)->AnalogValue -
-                              ImGui::GetKeyData(ImGuiKey_GamepadLStickUp)->AnalogValue);
-        const VirtualLeftStickDirections virtual_lstick_dirs = virtual_pad.left_stick_dirs;
-        if (first_render) {
-            prev_virtual_lstick_left_down = virtual_lstick_dirs.left;
-            prev_virtual_lstick_right_down = virtual_lstick_dirs.right;
-            prev_virtual_lstick_up_down = virtual_lstick_dirs.up;
-            prev_virtual_lstick_down_down = virtual_lstick_dirs.down;
-        }
-        const bool virtual_lstick_left_edge =
-            virtual_lstick_dirs.left && !prev_virtual_lstick_left_down;
-        const bool virtual_lstick_right_edge =
-            virtual_lstick_dirs.right && !prev_virtual_lstick_right_down;
-        const bool virtual_lstick_up_edge = virtual_lstick_dirs.up && !prev_virtual_lstick_up_down;
-        const bool virtual_lstick_down_edge =
-            virtual_lstick_dirs.down && !prev_virtual_lstick_down_down;
-
-        const bool raw_gamepad_control_input =
-            gamepad_nav_left_once || gamepad_nav_right_once || gamepad_nav_up_once ||
-            gamepad_nav_down_once || imgui_lstick_left_pressed || imgui_lstick_right_pressed ||
-            imgui_lstick_up_pressed || imgui_lstick_down_pressed ||
-            IsKeyPressed(ImGuiKey_GamepadFaceDown, false) ||
-            IsKeyPressed(ImGuiKey_GamepadFaceUp, false) ||
-            IsKeyPressed(ImGuiKey_GamepadFaceLeft, false) ||
-            IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
-            IsKeyPressed(ImGuiKey_GamepadL1, false) || IsKeyPressed(ImGuiKey_GamepadR1, false) ||
-            IsKeyPressed(ImGuiKey_GamepadL2, false) || IsKeyPressed(ImGuiKey_GamepadR2, false) ||
-            IsKeyPressed(ImGuiKey_GamepadL3, false) || IsKeyPressed(ImGuiKey_GamepadR3, false);
-        const bool raw_virtual_control_input =
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Left) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Right) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Up) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Down) ||
-            virtual_lstick_left_edge || virtual_lstick_right_edge || virtual_lstick_up_edge ||
-            virtual_lstick_down_edge ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Cross) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Square) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Circle) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L1) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R1) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3) ||
-            virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3);
-        const bool raw_osk_control_input = raw_gamepad_control_input || raw_virtual_control_input;
+        const bool raw_osk_control_input = panel_input.raw_osk_control_input;
         if (native_input_active && raw_osk_control_input && !request_input_focus &&
             !pending_input_selection_apply) {
             native_input_active = false;
@@ -652,92 +536,10 @@ void ImeUi::Draw() {
             pending_input_selection_apply = false;
             ImGui::ClearActiveID();
         }
-
-        const bool controller_shortcuts_disabled =
-            extended_param &&
-            True(extended_param->disable_device & OrbisImeDisableDevice::CONTROLLER);
-        const bool allow_osk_shortcuts = ps4_typing_mode_active && !controller_shortcuts_disabled;
-        const float combined_lx = (std::abs(virtual_pad.left_stick.x) > std::abs(imgui_lx))
-                                      ? virtual_pad.left_stick.x
-                                      : imgui_lx;
-        const float combined_ly = (std::abs(virtual_pad.left_stick.y) > std::abs(imgui_ly))
-                                      ? virtual_pad.left_stick.y
-                                      : imgui_ly;
-        float stick_strength = 0.0f;
-        const StickNavDirection stick_dir =
-            ResolveStickNavDirection(combined_lx, combined_ly, &stick_strength);
-        const bool stick_dir_edge_pressed = IsStickDirectionEdgePressed(
-            stick_dir, imgui_lstick_left_pressed || virtual_lstick_left_edge,
-            imgui_lstick_right_pressed || virtual_lstick_right_edge,
-            imgui_lstick_up_pressed || virtual_lstick_up_edge,
-            imgui_lstick_down_pressed || virtual_lstick_down_edge);
-        StickNavPulseState stick_nav_state{left_stick_repeat_dir, left_stick_next_repeat_time};
-        const StickNavPulseResult stick_nav_pulse =
-            ProcessStickNavPulse(allow_osk_shortcuts, stick_dir, stick_strength,
-                                 stick_dir_edge_pressed, stick_nav_state, ImGui::GetTime());
-        left_stick_repeat_dir = stick_nav_state.repeat_dir;
-        left_stick_next_repeat_time = stick_nav_state.next_repeat_time;
-        const bool stick_nav_left = stick_nav_pulse.left;
-        const bool stick_nav_right = stick_nav_pulse.right;
-        const bool stick_nav_up = stick_nav_pulse.up;
-        const bool stick_nav_down = stick_nav_pulse.down;
-        const bool stick_nav_left_repeat = stick_nav_pulse.left_repeat;
-        const bool stick_nav_right_repeat = stick_nav_pulse.right_repeat;
-        const bool stick_nav_up_repeat = stick_nav_pulse.up_repeat;
-        const bool stick_nav_down_repeat = stick_nav_pulse.down_repeat;
-        const bool nav_left = (allow_osk_shortcuts && gamepad_nav_left) ||
-                              (allow_osk_shortcuts && (virtual_nav_left || stick_nav_left));
-        const bool nav_right = (allow_osk_shortcuts && gamepad_nav_right) ||
-                               (allow_osk_shortcuts && (virtual_nav_right || stick_nav_right));
-        const bool nav_up = (allow_osk_shortcuts && gamepad_nav_up) ||
-                            (allow_osk_shortcuts && (virtual_nav_up || stick_nav_up));
-        const bool nav_down = (allow_osk_shortcuts && gamepad_nav_down) ||
-                              (allow_osk_shortcuts && (virtual_nav_down || stick_nav_down));
-        const bool nav_left_repeat =
-            (allow_osk_shortcuts && gamepad_nav_left_repeat) ||
-            (allow_osk_shortcuts && (virtual_nav_left_repeat || stick_nav_left_repeat));
-        const bool nav_right_repeat =
-            (allow_osk_shortcuts && gamepad_nav_right_repeat) ||
-            (allow_osk_shortcuts && (virtual_nav_right_repeat || stick_nav_right_repeat));
-        const bool nav_up_repeat =
-            (allow_osk_shortcuts && gamepad_nav_up_repeat) ||
-            (allow_osk_shortcuts && (virtual_nav_up_repeat || stick_nav_up_repeat));
-        const bool nav_down_repeat =
-            (allow_osk_shortcuts && gamepad_nav_down_repeat) ||
-            (allow_osk_shortcuts && (virtual_nav_down_repeat || stick_nav_down_repeat));
         const double nav_now = ImGui::GetTime();
         const bool cancel_shortcut_pressed =
             allow_osk_shortcuts &&
-            (IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Circle));
-
-        const bool gamepad_control_input =
-            allow_osk_shortcuts &&
-            (gamepad_nav_left || gamepad_nav_right || gamepad_nav_up || gamepad_nav_down ||
-             stick_nav_left || stick_nav_right || stick_nav_up || stick_nav_down ||
-             IsKeyPressed(ImGuiKey_GamepadFaceDown, false) ||
-             IsKeyPressed(ImGuiKey_GamepadFaceUp, false) ||
-             IsKeyPressed(ImGuiKey_GamepadFaceLeft, false) ||
-             IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
-             IsKeyPressed(ImGuiKey_GamepadL1, false) || IsKeyPressed(ImGuiKey_GamepadR1, false) ||
-             IsKeyPressed(ImGuiKey_GamepadL2, false) || IsKeyPressed(ImGuiKey_GamepadR2, false) ||
-             IsKeyPressed(ImGuiKey_GamepadL3, false) || IsKeyPressed(ImGuiKey_GamepadR3, false));
-        const bool virtual_control_input =
-            allow_osk_shortcuts &&
-            (virtual_nav_left || virtual_nav_right || virtual_nav_up || virtual_nav_down ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Cross) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Square) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Circle) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L1) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R1) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3) ||
-             virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3));
-        const bool osk_control_input =
-            gamepad_control_input || virtual_control_input ||
-            (allow_osk_shortcuts && (panel_activate_pressed_raw || panel_activate_repeat_raw));
+            virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::Circle);
         const ImVec2 mouse_delta = ImGui::GetIO().MouseDelta;
         const bool pointer_input = IsMouseClicked(ImGuiMouseButton_Left, false) ||
                                    IsMouseClicked(ImGuiMouseButton_Right, false) ||
@@ -749,8 +551,8 @@ void ImeUi::Draw() {
         if (osk_control_input) {
             pointer_navigation_active = false;
         }
-        if (native_input_active && (gamepad_control_input || virtual_control_input) &&
-            !request_input_focus && !pending_input_selection_apply) {
+        if (native_input_active && virtual_control_input && !request_input_focus &&
+            !pending_input_selection_apply) {
             native_input_active = false;
             ImGui::ClearActiveID();
         }
@@ -1327,23 +1129,7 @@ void ImeUi::Draw() {
         kb_params.allow_activate_input = allow_osk_shortcuts && accept_armed && !menu_modal &&
                                          !text_select_mode &&
                                          (panel_selection == PanelSelectionTarget::Keyboard);
-        kb_params.external_nav_left = allow_osk_shortcuts && (virtual_nav_left || stick_nav_left);
-        kb_params.external_nav_right =
-            allow_osk_shortcuts && (virtual_nav_right || stick_nav_right);
-        kb_params.external_nav_up = allow_osk_shortcuts && (virtual_nav_up || stick_nav_up);
-        kb_params.external_nav_down = allow_osk_shortcuts && (virtual_nav_down || stick_nav_down);
-        kb_params.external_nav_left_repeat =
-            allow_osk_shortcuts && ((virtual_nav_left && virtual_nav_left_repeat) ||
-                                    (stick_nav_left && stick_nav_left_repeat));
-        kb_params.external_nav_right_repeat =
-            allow_osk_shortcuts && ((virtual_nav_right && virtual_nav_right_repeat) ||
-                                    (stick_nav_right && stick_nav_right_repeat));
-        kb_params.external_nav_up_repeat =
-            allow_osk_shortcuts &&
-            ((virtual_nav_up && virtual_nav_up_repeat) || (stick_nav_up && stick_nav_up_repeat));
-        kb_params.external_nav_down_repeat =
-            allow_osk_shortcuts && ((virtual_nav_down && virtual_nav_down_repeat) ||
-                                    (stick_nav_down && stick_nav_down_repeat));
+        ApplyOskPanelNavToKeyboardParams(kb_params, allow_osk_shortcuts, panel_input);
         kb_params.external_activate_pressed = panel_activate_pressed;
         kb_params.external_activate_repeat =
             allow_osk_shortcuts && accept_armed && panel_activate_repeat_raw;
@@ -1554,85 +1340,23 @@ void ImeUi::Draw() {
         };
 
         bool opened_menu_this_frame = false;
-        if (!(allow_osk_shortcuts && !menu_modal)) {
-            prev_virtual_square_down = false;
-            prev_virtual_l1_down = false;
-            prev_virtual_r1_down = false;
-            virtual_square_next_repeat_time = 0.0;
-            virtual_l1_next_repeat_time = 0.0;
-            virtual_r1_next_repeat_time = 0.0;
-            virtual_triangle_next_repeat_time = 0.0;
-        }
-        if (allow_osk_shortcuts && !menu_modal &&
-            kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None) {
-            const bool l1_down = IsKeyDown(ImGuiKey_GamepadL1) ||
-                                 virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::L1);
-            const bool l1_edge_pressed =
-                IsKeyPressed(ImGuiKey_GamepadL1, false) ||
-                virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L1);
-            const bool l1_repeat_pressed =
-                IsKeyPressed(ImGuiKey_GamepadL1, true) ||
-                virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L1,
-                                       prev_virtual_l1_down, virtual_l1_next_repeat_time);
-            const bool square_down = IsKeyDown(ImGuiKey_GamepadFaceLeft) ||
-                                     virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::Square);
-            const bool square_edge_pressed =
-                IsKeyPressed(ImGuiKey_GamepadFaceLeft, false) ||
-                virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Square);
-            const bool square_repeat_pressed =
-                IsKeyPressed(ImGuiKey_GamepadFaceLeft, true) ||
-                virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Square,
-                                       prev_virtual_square_down, virtual_square_next_repeat_time);
-            const bool r1_repeat_pressed =
-                IsKeyPressed(ImGuiKey_GamepadR1, true) ||
-                virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R1,
-                                       prev_virtual_r1_down, virtual_r1_next_repeat_time);
-            const bool clear_all_shortcut_pressed =
-                (l1_down && square_edge_pressed) || (square_down && l1_edge_pressed);
-            const bool l2_down = IsKeyDown(ImGuiKey_GamepadL2) ||
-                                 virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::L2);
-            const bool l2_pressed = IsKeyPressed(ImGuiKey_GamepadL2, false) ||
-                                    virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2);
-            const bool tri_down = IsKeyDown(ImGuiKey_GamepadFaceUp) ||
-                                  virtual_down(Libraries::Pad::OrbisPadButtonDataOffset::Triangle);
-            bool prev_virtual_triangle_down =
-                (prev_virtual_buttons &
-                 static_cast<u32>(Libraries::Pad::OrbisPadButtonDataOffset::Triangle)) != 0;
-            bool tri_repeat_pressed = false;
-            const bool tri_pressed =
-                IsKeyPressed(ImGuiKey_GamepadFaceUp, false) ||
-                virtual_repeat_pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle,
-                                       prev_virtual_triangle_down,
-                                       virtual_triangle_next_repeat_time, &tri_repeat_pressed);
-            const bool symbols_shortcut_pressed =
-                (l2_down && tri_pressed) || (tri_down && l2_pressed);
-            if (symbols_shortcut_pressed) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::SymbolsMode;
-            } else if (tri_repeat_pressed && !l2_down) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::Space;
-            } else if (kb_layout_selection.family != Libraries::Ime::ImeKbLayoutFamily::Symbols &&
-                       (IsKeyPressed(ImGuiKey_GamepadL3, false) ||
-                        virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3))) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::SpecialsMode;
-            } else if (IsKeyPressed(ImGuiKey_GamepadR2, false) ||
-                       virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2)) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::Done;
-            } else if (clear_all_shortcut_pressed) {
-                (void)clear_all_text();
-            } else if (square_repeat_pressed) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::Backspace;
-            } else if (l1_repeat_pressed) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::ArrowLeft;
-            } else if (r1_repeat_pressed) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::ArrowRight;
-            } else if (IsKeyPressed(ImGuiKey_GamepadR3, false) ||
-                       virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3)) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::Settings;
-            } else if (kb_layout_selection.family != Libraries::Ime::ImeKbLayoutFamily::Symbols &&
-                       (IsKeyPressed(ImGuiKey_GamepadL2, false) ||
-                        virtual_pressed(Libraries::Pad::OrbisPadButtonDataOffset::L2))) {
-                kb_state.pressed_action = Libraries::Ime::ImeKbKeyAction::Shift;
-            }
+        OskShortcutRepeatState shortcut_repeat_state{prev_virtual_square_down,
+                                                     prev_virtual_l1_down,
+                                                     prev_virtual_r1_down,
+                                                     l2_shortcut_armed,
+                                                     virtual_square_next_repeat_time,
+                                                     virtual_l1_next_repeat_time,
+                                                     virtual_r1_next_repeat_time,
+                                                     virtual_triangle_next_repeat_time};
+        const OskShortcutActionResult shortcut_action = EvaluateOskShortcutAction(
+            allow_osk_shortcuts, menu_modal,
+            kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None, panel_input,
+            virtual_pad_input, prev_virtual_buttons, kb_layout_selection.family,
+            shortcut_repeat_state);
+        if (shortcut_action.clear_all) {
+            (void)clear_all_text();
+        } else if (shortcut_action.action != Libraries::Ime::ImeKbKeyAction::None) {
+            kb_state.pressed_action = shortcut_action.action;
         }
         switch (kb_state.pressed_action) {
         case Libraries::Ime::ImeKbKeyAction::Character:
@@ -1860,12 +1584,7 @@ void ImeUi::Draw() {
             state->SendCloseEvent();
         }
 
-        prev_virtual_buttons = virtual_buttons;
-        prev_virtual_cross_down = cross_down;
-        prev_virtual_lstick_left_down = virtual_lstick_dirs.left;
-        prev_virtual_lstick_right_down = virtual_lstick_dirs.right;
-        prev_virtual_lstick_up_down = virtual_lstick_dirs.up;
-        prev_virtual_lstick_down_down = virtual_lstick_dirs.down;
+        CommitOskPadInputFrame(panel_input, panel_pad_state);
         lock_window_scroll();
         SetWindowFontScale(1.0f);
     }

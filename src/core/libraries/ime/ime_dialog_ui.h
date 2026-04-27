@@ -109,6 +109,7 @@ class ImeDialogUi final : public ImGui::Layer {
     bool pointer_navigation_active = true;
     EditMenuPopup edit_menu_popup = EditMenuPopup::None;
     bool menu_activate_armed = true;
+    bool l2_shortcut_armed = true;
     bool request_input_focus = false;
     bool request_input_select_all = false;
     bool text_select_mode = false;
