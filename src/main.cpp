@@ -140,6 +140,11 @@ int main(int argc, char* argv[]) {
     Common::Log::g_should_append |= EmulatorSettings.IsLogAppend();
     Common::Log::Setup("shad_log.txt");
 
+    if (bigPicture) {
+        BigPictureMode::Launch(argv[0]);
+        return 0;
+    }
+
     // ---- Utility commands ----
     if (addGameFolder) {
         EmulatorSettings.AddGameInstallDir(*addGameFolder);
@@ -155,7 +160,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (!gamePath.has_value() && !bigPicture) {
+    if (!gamePath.has_value()) {
         if (!gameArgs.empty()) {
             gamePath = gameArgs.front();
             gameArgs.erase(gameArgs.begin());
@@ -212,20 +217,16 @@ int main(int argc, char* argv[]) {
                 break;
             }
         }
-        if (!found && !bigPicture) {
+        if (!found) {
             std::cerr << "Error: Game ID or file path not found: " << *gamePath << "\n";
             return 1;
         }
     }
 
-    if (bigPicture) {
-        BigPictureMode::Launch();
-    } else {
-        auto* emulator = Common::Singleton<Core::Emulator>::Instance();
-        emulator->executableName = argv[0];
-        emulator->waitForDebuggerBeforeRun = waitForDebugger;
-        emulator->Run(ebootPath, gameArgs, overrideRoot);
-    }
+    auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+    emulator->executableName = argv[0];
+    emulator->waitForDebuggerBeforeRun = waitForDebugger;
+    emulator->Run(ebootPath, gameArgs, overrideRoot);
 
     return 0;
 }
