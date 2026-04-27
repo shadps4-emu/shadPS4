@@ -1426,6 +1426,127 @@ s32 PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId bo
     return RecordGameDataImpl(reqId, boardId, score, totalSize, sendSize, data, option, true);
 }
 //***********************************
+// Censor functions
+//***********************************
+static int CensorCommentImpl(s32 reqId, const char* comment, void* option, bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "CensorComment: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (comment == nullptr) {
+        LOG_ERROR(Lib_NpScore, "CensorComment: comment must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    constexpr size_t probe = ORBIS_NP_SCORE_CENSOR_COMMENT_MAXLEN + 1;
+    const size_t len = strnlen(comment, probe);
+    if (len > ORBIS_NP_SCORE_CENSOR_COMMENT_MAXLEN) {
+        LOG_ERROR(Lib_NpScore, "CensorComment: comment too long (max {} chars + null)",
+                  ORBIS_NP_SCORE_CENSOR_COMMENT_MAXLEN);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Passthrough
+    LOG_INFO(Lib_NpScore, "CensorComment: reqId={} len={} (passthrough)", reqId, len);
+    req->SetResult(ORBIS_OK);
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, comment={}, option={}", reqId,
+             comment ? comment : "null", PTR(option));
+    return CensorCommentImpl(reqId, comment, option, false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, comment={}, option={}", reqId,
+             comment ? comment : "null", PTR(option));
+    return CensorCommentImpl(reqId, comment, option, true);
+}
+
+//***********************************
+// Sanitize functions
+//***********************************
+static int SanitizeCommentImpl(s32 reqId, const char* comment, char* sanitizedComment, void* option,
+                               bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "SanitizeComment: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (comment == nullptr) {
+        LOG_ERROR(Lib_NpScore, "SanitizeComment: comment must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    if (sanitizedComment == nullptr) {
+        LOG_ERROR(Lib_NpScore, "SanitizeComment: sanitizedComment must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    constexpr size_t probe = ORBIS_NP_SCORE_SANITIZE_COMMENT_MAXLEN + 1;
+    const size_t len = strnlen(comment, probe);
+    if (len > ORBIS_NP_SCORE_SANITIZE_COMMENT_MAXLEN) {
+        LOG_ERROR(Lib_NpScore, "SanitizeComment: comment too long (max {} chars + null)",
+                  ORBIS_NP_SCORE_SANITIZE_COMMENT_MAXLEN);
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    // Passthrough copy
+    std::memcpy(sanitizedComment, comment, len);
+    sanitizedComment[len] = '\0';
+
+    LOG_INFO(Lib_NpScore, "SanitizeComment: reqId={} len={} (passthrough)", reqId, len);
+    req->SetResult(ORBIS_OK);
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
+                                           void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, comment={}, sanitizedComment={}, option={}", reqId,
+             comment ? comment : "null", PTR(sanitizedComment), PTR(option));
+    return SanitizeCommentImpl(reqId, comment, sanitizedComment, option, false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
+                                                char* sanitizedComment, void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, comment={}, sanitizedComment={}, option={}", reqId,
+             comment ? comment : "null", PTR(sanitizedComment), PTR(option));
+    return SanitizeCommentImpl(reqId, comment, sanitizedComment, option, true);
+}
+
+//***********************************
 // Misc functions
 //***********************************
 s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
@@ -1458,17 +1579,6 @@ s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId
 //***********************************
 // Stubbed functions
 //***********************************
-int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, option={}", reqId,
-              comment ? comment : "null", PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, option={}", reqId,
-              comment ? comment : "null", PTR(option));
-    return ORBIS_OK;
-}
 
 int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
@@ -1612,22 +1722,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
         reqId, boardId, startSerialRank, PTR(rankArray), rankArraySize, PTR(commentArray),
         commentArraySize, PTR(infoArray), infoArraySize, arrayNum, PTR(lastSortDate),
         PTR(totalRecord), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
-                                           void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, comment={}, sanitizedComment={}, option={}",
-              reqId, comment ? comment : "null", PTR(sanitizedComment), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
-                                                char* sanitizedComment, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, comment={}, sanitizedComment={}, "
-              "option={}",
-              reqId, comment ? comment : "null", PTR(sanitizedComment), PTR(option));
     return ORBIS_OK;
 }
 

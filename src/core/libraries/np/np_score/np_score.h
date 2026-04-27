@@ -333,14 +333,25 @@ s32 PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId bo
                                                OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
                                                const void* data, void* option);
 //***********************************
+// Censor functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
+s32 PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);
+//***********************************
+// Sanitize functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
+                                           void* option);
+s32 PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
+                                                char* sanitizedComment, void* option);
+//***********************************
 // Misc functions
 //***********************************
 s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId);
 //***********************************
 // Stubbed functions
 //***********************************
-int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* option);
-int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);
+
 int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners();
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx();
 int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSave(
@@ -391,10 +402,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
     OrbisNpScoreComment* commentArray, u64 commentArraySize, OrbisNpScoreGameInfo* infoArray,
     u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
     OrbisNpScoreRankNumber* totalRecord, void* option);
-int PS4_SYSV_ABI sceNpScoreSanitizeComment(s32 reqId, const char* comment, char* sanitizedComment,
-                                           void* option);
-int PS4_SYSV_ABI sceNpScoreSanitizeCommentAsync(s32 reqId, const char* comment,
-                                                char* sanitizedComment, void* option);
 int PS4_SYSV_ABI sceNpScoreSetThreadParam(s32 threadPriority, u64 cpuAffinityMask);
 int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeout, s32 connTimeout,
                                       s32 sendTimeout, s32 recvTimeout);
