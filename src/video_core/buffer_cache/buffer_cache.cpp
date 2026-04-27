@@ -145,7 +145,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
     };
 
     if constexpr (async) {
-        scheduler.DeferOperation(write_func);
+        scheduler.DeferOperation(std::move(write_func));
     } else {
         scheduler.Finish();
         write_func();
@@ -931,6 +931,7 @@ void BufferCache::RunGarbageCollector() {
         DownloadBufferMemory<true>(buffer, buffer.CpuAddr(), buffer.SizeBytes(), true);
         DeleteBuffer(buffer_id);
     };
+    lru_cache.ForEachItemBelow(gc_tick - ticks_to_destroy, clean_up);
 }
 
 void BufferCache::TouchBuffer(const Buffer& buffer) {

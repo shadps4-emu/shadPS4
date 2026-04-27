@@ -1058,7 +1058,6 @@ void TextureCache::RunGarbageCollector() {
 
     for (const auto& image_id : download_pending) {
         DownloadImageMemory<false>(image_id);
-        DeleteImage(image_id);
     }
 
     if (!download_pending.empty()) {
@@ -1067,6 +1066,10 @@ void TextureCache::RunGarbageCollector() {
         // outdated buffer cache contents are used instead.
         scheduler.Finish();
         scheduler.PopPendingOperations();
+    }
+
+    for (const auto& image_id : download_pending) {
+        DeleteImage(image_id);
     }
 }
 
