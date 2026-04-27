@@ -5,8 +5,8 @@
 #include <cmath>
 #include <cstdint>
 #include <new>
-#include "common/config.h"
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/process.h"
@@ -800,7 +800,7 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
             accessibility = true;
         } else {
             // Emulate system accessibility setting (LLE FUN_01005a50 path).
-            accessibility = Config::getImeAccessibilityEnabled();
+            accessibility = EmulatorSettings.IsImeAccessibilityEnabled();
         }
     }
 
@@ -829,7 +829,7 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
     auto use_short_url_mail_height = [&](u32 ime_type) {
         // LLE: (SVar1 & ~BASIC_LATIN) == (URL | bVar15), with bVar15 default true.
         // When bVar15 is true, this condition is false for Url/Mail; false enables short heights.
-        const bool bVar15 = !Config::getImeUrlMailShortPanel();
+        const bool bVar15 = !EmulatorSettings.IsImeUrlMailShortPanel();
         const u32 masked_type = ime_type & ~static_cast<u32>(OrbisImeType::BasicLatin);
         const u32 url_or_mail = static_cast<u32>(OrbisImeType::Url) | (bVar15 ? 1U : 0U);
         return masked_type == url_or_mail;
