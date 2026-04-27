@@ -456,6 +456,10 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_HI_U32(true, inst);
     case Opcode::V_MAD_U64_U32:
         return V_MAD_U64_U32(inst);
+    case Opcode::V_ADD3_U32:
+        return V_ADD3_U32(inst);
+    case Opcode::V_OR3_B32:
+        return V_OR3_B32(inst);
     case Opcode::V_NOP:
         return;
     default:
@@ -1546,6 +1550,24 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
     const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
     ir.SetVcc(did_overflow);
+}
+
+void Translator::V_ADD3_U32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    SetDst(inst.dst[0], ir.IAdd(src0, ir.IAdd(src1, src2)));
+}
+
+void Translator::V_OR3_B32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    const auto result = ir.BitwiseOr(ir.BitwiseOr(src0, src1), src2);
+
+    SetDst(inst.dst[0], result);
 }
 
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {
