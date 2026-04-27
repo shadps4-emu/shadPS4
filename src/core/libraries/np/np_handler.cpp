@@ -404,6 +404,169 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
     return ORBIS_OK;
 }
 
+s32 NpHandler::RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
+                              const u8* data, size_t size,
+                              std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "RecordGameData: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "RecordGameData: user_id={} not authenticated", user_id);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    shadnet::RecordScoreGameDataRequest proto;
+    proto.set_boardid(boardId);
+    proto.set_pcid(pcId);
+    proto.set_score(score);
+
+    const std::string proto_bytes = proto.SerializeAsString();
+    const std::string com_id = GetNpCommId(service_label);
+
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size() + size);
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+    if (data != nullptr && size > 0) {
+        payload.insert(payload.end(), data, data + size);
+    }
+
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::RecordScoreData, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::RecordScoreData;
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler,
+             "RecordGameData: user_id={} service_label={} board={} pcId={} score={} dataSize={} "
+             "pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, pcId, score, size, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
+s32 NpHandler::GetGameData(s32 user_id, s32 service_label, u32 boardId, const std::string& npId,
+                           s32 pcId, void* dataOut, u64 recvSize, u64* totalSizeOut,
+                           std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "GetGameData: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "GetGameData: user_id={} not authenticated", user_id);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    shadnet::GetScoreGameDataRequest proto;
+    proto.set_boardid(boardId);
+    proto.set_npid(npId);
+    proto.set_pcid(pcId);
+
+    const std::string proto_bytes = proto.SerializeAsString();
+    const std::string com_id = GetNpCommId(service_label);
+
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size());
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetScoreData, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::GetScoreData;
+        pending.dataOut = dataOut;
+        pending.recvSize = recvSize;
+        pending.totalSizeOut = totalSizeOut;
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler,
+             "GetGameData: user_id={} service_label={} board={} npId='{}' pcId={} recvSize={} "
+             "pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, npId, pcId, recvSize, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
+s32 NpHandler::GetGameDataByAccountId(s32 user_id, s32 service_label, u32 boardId, u64 accountId,
+                                      s32 pcId, void* dataOut, u64 recvSize, u64* totalSizeOut,
+                                      std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "GetGameDataByAccountId: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "GetGameDataByAccountId: user_id={} not authenticated", user_id);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    shadnet::GetScoreGameDataByAccountIdRequest proto;
+    proto.set_boardid(boardId);
+    proto.set_accountid(accountId);
+    proto.set_pcid(pcId);
+
+    const std::string proto_bytes = proto.SerializeAsString();
+    const std::string com_id = GetNpCommId(service_label);
+
+    std::vector<u8> payload;
+    payload.reserve(12 + 4 + proto_bytes.size());
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    const u32 sz = static_cast<u32>(proto_bytes.size());
+    payload.push_back(static_cast<u8>(sz));
+    payload.push_back(static_cast<u8>(sz >> 8));
+    payload.push_back(static_cast<u8>(sz >> 16));
+    payload.push_back(static_cast<u8>(sz >> 24));
+    payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
+
+    const u64 pkt_id =
+        client->SubmitRequest(ShadNet::CommandType::GetScoreGameDataByAccId, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::GetScoreGameDataByAccId;
+        pending.dataOut = dataOut;
+        pending.recvSize = recvSize;
+        pending.totalSizeOut = totalSizeOut;
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler,
+             "GetGameDataByAccountId: user_id={} service_label={} board={} accountId={} pcId={} "
+             "recvSize={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, accountId, pcId, recvSize, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
 s32 NpHandler::GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
                             NpScore::OrbisNpScoreBoardInfo* boardInfo,
                             std::shared_ptr<NpScore::ScoreRequestCtx> req) {
@@ -1104,6 +1267,59 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             LOG_INFO(NpHandler, "OnScoreReply: RecordScore user_id={} pkt_id={} rank={}", user_id,
                      pkt_id, rank);
         }
+        req->SetResult(ORBIS_OK);
+        break;
+    }
+
+    case ShadNet::CommandType::RecordScoreData: {
+        // Reply body is empty on success — error byte already consumed by
+        // the caller. Server-side errors are mapped to ErrorType values
+        // (NotFound / ScoreInvalid / ScoreHasData) which arrive as the
+        // packet's error byte; if we got here, error == NoError.
+        LOG_INFO(NpHandler, "OnScoreReply: RecordScoreData user_id={} pkt_id={} ok", user_id,
+                 pkt_id);
+        req->SetResult(ORBIS_OK);
+        break;
+    }
+
+    case ShadNet::CommandType::GetScoreData:
+    case ShadNet::CommandType::GetScoreGameDataByAccId: {
+        const char* cmd_name = (cmd == ShadNet::CommandType::GetScoreData)
+                                   ? "GetScoreData"
+                                   : "GetScoreGameDataByAccId";
+        if (body.size() < 4) {
+            LOG_ERROR(NpHandler, "OnScoreReply: {} body too small ({})", cmd_name, body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        const u32 stored_size = static_cast<u32>(body[0]) | (static_cast<u32>(body[1]) << 8) |
+                                (static_cast<u32>(body[2]) << 16) |
+                                (static_cast<u32>(body[3]) << 24);
+        if (static_cast<size_t>(4) + stored_size > body.size()) {
+            LOG_ERROR(NpHandler, "OnScoreReply: {} blob size {} exceeds body size {}", cmd_name,
+                      stored_size, body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+
+        // Always populate *totalSizeOut with the actual stored size on
+        // the server, even when truncating into a smaller dataOut buffer.
+        // Lets the caller know if they undersized their buffer and need
+        // to retry with a larger one.
+        if (pending.totalSizeOut != nullptr) {
+            *pending.totalSizeOut = stored_size;
+        }
+        if (pending.dataOut != nullptr && pending.recvSize > 0) {
+            const u64 copy_n = std::min<u64>(static_cast<u64>(stored_size), pending.recvSize);
+            std::memcpy(pending.dataOut, body.data() + 4, static_cast<size_t>(copy_n));
+            if (copy_n < stored_size) {
+                LOG_WARNING(NpHandler,
+                            "OnScoreReply: {} truncated user_id={} pkt_id={} stored={} recv={}",
+                            cmd_name, user_id, pkt_id, stored_size, pending.recvSize);
+            }
+        }
+        LOG_INFO(NpHandler, "OnScoreReply: {} user_id={} pkt_id={} storedSize={} recvSize={}",
+                 cmd_name, user_id, pkt_id, stored_size, pending.recvSize);
         req->SetResult(ORBIS_OK);
         break;
     }

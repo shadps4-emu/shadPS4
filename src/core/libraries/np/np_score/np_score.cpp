@@ -1222,6 +1222,209 @@ s32 PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boar
              PTR(boardInfo), PTR(option));
     return GetBoardInfoImpl(reqId, boardId, boardInfo, option, true);
 }
+
+//***********************************
+// GetGameData functions
+//***********************************
+static int GetGameDataImpl(s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npId,
+                           u64* totalSize, u64 recvSize, void* data, void* option, bool is_async) {
+    if (npId == nullptr) {
+        LOG_ERROR(Lib_NpScore, "GetGameData: npId must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "GetGameData: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    const std::string npIdStr(npId->handle.data,
+                              strnlen(npId->handle.data, sizeof(npId->handle.data)));
+    if (npIdStr.empty()) {
+        LOG_ERROR(Lib_NpScore, "GetGameData: npId.handle.data is empty");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    const s32 pcId = req->pcId;
+
+    const s32 dispatch_err =
+        NpHandler::GetInstance().GetGameData(req->userId, ServiceLabelForRequest(req), boardId,
+                                             npIdStr, pcId, data, recvSize, totalSize, req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+static int GetGameDataByAccountIdImpl(s32 reqId, OrbisNpScoreBoardId boardId,
+                                      OrbisNpAccountId accountId, u64* totalSize, u64 recvSize,
+                                      void* data, void* option, bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "GetGameDataByAccountId: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (accountId == 0) {
+        LOG_ERROR(Lib_NpScore, "GetGameDataByAccountId: accountId must be non-zero");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    const s32 pcId = req->pcId;
+
+    const s32 dispatch_err = NpHandler::GetInstance().GetGameDataByAccountId(
+        req->userId, ServiceLabelForRequest(req), boardId, accountId, pcId, data, recvSize,
+        totalSize, req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+                                       const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                       void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, npId={}, totalSize={}, recvSize={}, data={}, option={}",
+             reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
+    return GetGameDataImpl(reqId, boardId, npId, totalSize, recvSize, data, option, false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                            const OrbisNpId* npId, u64* totalSize, u64 recvSize,
+                                            void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, npId={}, totalSize={}, recvSize={}, data={}, option={}",
+             reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
+    return GetGameDataImpl(reqId, boardId, npId, totalSize, recvSize, data, option, true);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataByAccountId(s32 reqId, OrbisNpScoreBoardId boardId,
+                                                  OrbisNpAccountId accountId, u64* totalSize,
+                                                  u64 recvSize, void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, accountId={}, totalSize={}, recvSize={}, data={}, "
+             "option={}",
+             reqId, boardId, accountId, PTR(totalSize), recvSize, PTR(data), PTR(option));
+    return GetGameDataByAccountIdImpl(reqId, boardId, accountId, totalSize, recvSize, data, option,
+                                      false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetGameDataByAccountIdAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                                       OrbisNpAccountId accountId, u64* totalSize,
+                                                       u64 recvSize, void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, accountId={}, totalSize={}, recvSize={}, data={}, "
+             "option={}",
+             reqId, boardId, accountId, PTR(totalSize), recvSize, PTR(data), PTR(option));
+    return GetGameDataByAccountIdImpl(reqId, boardId, accountId, totalSize, recvSize, data, option,
+                                      true);
+}
+
+//***********************************
+// Record Game Data functions
+//***********************************
+static int RecordGameDataImpl(s32 reqId, OrbisNpScoreBoardId boardId, OrbisNpScoreValue score,
+                              u64 totalSize, u64 sendSize, const void* data, void* option,
+                              bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "RecordGameData: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (data == nullptr) {
+        LOG_ERROR(Lib_NpScore, "RecordGameData: data must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+    if (sendSize == 0) {
+        LOG_ERROR(Lib_NpScore, "RecordGameData: sendSize must be > 0");
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (totalSize > sendSize) {
+        // Chunked send not supported on the shadnet wire — the server
+        // stores whatever bytes arrive in this single command as the
+        // complete blob. Warn so callers can spot the truncation.
+        LOG_WARNING(Lib_NpScore,
+                    "RecordGameData: chunked send not supported (totalSize={} sendSize={}); "
+                    "storing first chunk only",
+                    totalSize, sendSize);
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    const s32 pcId = req->pcId;
+
+    const s32 dispatch_err = NpHandler::GetInstance().RecordGameData(
+        req->userId, ServiceLabelForRequest(req), boardId, pcId, score,
+        static_cast<const u8*>(data), static_cast<size_t>(sendSize), req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
+                                          OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
+                                          const void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, score={}, totalSize={}, sendSize={}, data={}, option={}",
+             reqId, boardId, score, totalSize, sendSize, PTR(data), PTR(option));
+    return RecordGameDataImpl(reqId, boardId, score, totalSize, sendSize, data, option, false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                               OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
+                                               const void* data, void* option) {
+    LOG_INFO(Lib_NpScore,
+             "called reqId={}, boardId={}, score={}, totalSize={}, sendSize={}, data={}, option={}",
+             reqId, boardId, score, totalSize, sendSize, PTR(data), PTR(option));
+    return RecordGameDataImpl(reqId, boardId, score, totalSize, sendSize, data, option, true);
+}
 //***********************************
 // Misc functions
 //***********************************
@@ -1307,46 +1510,6 @@ int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSaveAsync(
         reqId, boardId, includeSelf, PTR(rankArray), rankArraySize, PTR(commentArray),
         commentArraySize, PTR(infoArray), infoArraySize, arrayNum, PTR(lastSortDate),
         PTR(totalRecord), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetGameData(s32 reqId, OrbisNpScoreBoardId boardId,
-                                       const OrbisNpId* npId, u64* totalSize, u64 recvSize,
-                                       void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, npId={}, "
-              "totalSize={}, recvSize={}, data={}, option={}",
-              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                            const OrbisNpId* npId, u64* totalSize, u64 recvSize,
-                                            void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, npId={}, "
-              "totalSize={}, recvSize={}, data={}, option={}",
-              reqId, boardId, PTR(npId), PTR(totalSize), recvSize, PTR(data), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountId(s32 reqId, OrbisNpScoreBoardId boardId,
-                                                  OrbisNpAccountId accountId, u64* totalSize,
-                                                  u64 recvSize, void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, accountId={}, "
-              "totalSize={}, recvSize={}, data={}, option={}",
-              reqId, boardId, accountId, PTR(totalSize), recvSize, PTR(data), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetGameDataByAccountIdAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                                       OrbisNpAccountId accountId, u64* totalSize,
-                                                       u64 recvSize, void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, accountId={}, "
-              "totalSize={}, recvSize={}, data={}, option={}",
-              reqId, boardId, accountId, PTR(totalSize), recvSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 
@@ -1449,26 +1612,6 @@ int PS4_SYSV_ABI sceNpScoreGetRankingByRangeForCrossSaveAsync(
         reqId, boardId, startSerialRank, PTR(rankArray), rankArraySize, PTR(commentArray),
         commentArraySize, PTR(infoArray), infoArraySize, arrayNum, PTR(lastSortDate),
         PTR(totalRecord), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreRecordGameData(s32 reqId, OrbisNpScoreBoardId boardId,
-                                          OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
-                                          const void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, score={}, totalSize={}, "
-              "sendSize={}, data={}, option={}",
-              reqId, boardId, score, totalSize, sendSize, PTR(data), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreRecordGameDataAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                               OrbisNpScoreValue score, u64 totalSize, u64 sendSize,
-                                               const void* data, void* option) {
-    LOG_ERROR(Lib_NpScore,
-              "(STUBBED) called reqId={}, boardId={}, score={}, "
-              "totalSize={}, sendSize={}, data={}, option={}",
-              reqId, boardId, score, totalSize, sendSize, PTR(data), PTR(option));
     return ORBIS_OK;
 }
 

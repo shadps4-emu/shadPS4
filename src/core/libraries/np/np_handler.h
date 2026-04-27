@@ -77,6 +77,17 @@ public:
                     const char* comment, size_t commentLen, const u8* gameInfoData,
                     size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    s32 RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
+                       const u8* data, size_t size, std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
+    s32 GetGameData(s32 user_id, s32 service_label, u32 boardId, const std::string& npId, s32 pcId,
+                    void* dataOut, u64 recvSize, u64* totalSizeOut,
+                    std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
+    s32 GetGameDataByAccountId(s32 user_id, s32 service_label, u32 boardId, u64 accountId, s32 pcId,
+                               void* dataOut, u64 recvSize, u64* totalSizeOut,
+                               std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     s32 GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
                      NpScore::OrbisNpScoreBoardInfo* boardInfo,
                      std::shared_ptr<NpScore::ScoreRequestCtx> req);
@@ -185,6 +196,10 @@ private:
         NpScore::OrbisNpScoreComment* commentArray = nullptr;
         NpScore::OrbisNpScoreGameInfo* infoArray = nullptr;
         NpScore::OrbisNpScoreBoardInfo* boardInfo = nullptr;
+        // GetGameData / GetGameDataByAccountId output buffers.
+        void* dataOut = nullptr;
+        u64 recvSize = 0;
+        u64* totalSizeOut = nullptr;
         Libraries::Rtc::OrbisRtcTick* lastSortDate = nullptr;
         u32* totalRecord = nullptr;
         u64 arrayNum = 0;
