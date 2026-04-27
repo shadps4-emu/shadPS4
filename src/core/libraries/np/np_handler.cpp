@@ -1350,8 +1350,7 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             pending.boardInfo->updateMode = bi.updatemode();
             pending.boardInfo->sortMode = bi.sortmode();
             pending.boardInfo->uploadNumLimit = bi.uploadnumlimit();
-            pending.boardInfo->uploadSizeLimit =
-                bi.uploadsizelimit(); // TODO server has 32bit value fix it
+            pending.boardInfo->uploadSizeLimit = bi.uploadsizelimit();
         }
         LOG_INFO(NpHandler,
                  "OnScoreReply: GetBoardInfos user_id={} pkt_id={} rankLimit={} updateMode={} "

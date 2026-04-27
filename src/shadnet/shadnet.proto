@@ -78,7 +78,7 @@ message BoardInfo {
     uint32 updateMode      = 2;   // 0=NORMAL_UPDATE, 1=FORCE_UPDATE
     uint32 sortMode        = 3;   // 0=DESCENDING, 1=ASCENDING
     uint32 uploadNumLimit  = 4;
-    uint32 uploadSizeLimit = 5;
+    uint64 uploadSizeLimit = 5;
 }
 
 // Score: requests
