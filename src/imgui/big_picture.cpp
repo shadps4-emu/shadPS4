@@ -33,7 +33,7 @@ static std::vector<Game> gameVec = {};
 static float uiScale = 1.0f;
 static SDL_Renderer* renderer;
 
-void Launch() {
+void Launch(char* executableName) {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         LOG_ERROR(ImGui, "SDL_INIT_VIDEO Error: {}", SDL_GetError());
         SDL_Quit();
@@ -231,6 +231,7 @@ void Launch() {
 
     if (runEbootPath != "") {
         auto* emulator = Common::Singleton<Core::Emulator>::Instance();
+        emulator->executableName = executableName;
         emulator->Run(runEbootPath);
     }
 }
