@@ -1666,25 +1666,31 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     if (params.allow_nav_input) {
-        const bool imgui_move_left_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
-                                          ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false);
-        const bool imgui_move_right_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
-                                           ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false);
-        const bool imgui_move_up_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
-                                        ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false);
-        const bool imgui_move_down_once = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
-                                          ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false);
+        const bool use_imgui_lstick_nav = params.use_imgui_lstick_nav;
+        const bool imgui_move_left_once =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, false) ||
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, false));
+        const bool imgui_move_right_once =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, false) ||
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, false));
+        const bool imgui_move_up_once =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, false) ||
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, false));
+        const bool imgui_move_down_once =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, false) ||
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, false));
         const bool imgui_move_left_with_repeat =
             ImGui::IsKeyPressed(ImGuiKey_GamepadDpadLeft, true) ||
-            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, true);
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickLeft, true));
         const bool imgui_move_right_with_repeat =
             ImGui::IsKeyPressed(ImGuiKey_GamepadDpadRight, true) ||
-            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, true);
-        const bool imgui_move_up_with_repeat = ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, true) ||
-                                               ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, true);
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickRight, true));
+        const bool imgui_move_up_with_repeat =
+            ImGui::IsKeyPressed(ImGuiKey_GamepadDpadUp, true) ||
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickUp, true));
         const bool imgui_move_down_with_repeat =
             ImGui::IsKeyPressed(ImGuiKey_GamepadDpadDown, true) ||
-            ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, true);
+            (use_imgui_lstick_nav && ImGui::IsKeyPressed(ImGuiKey_GamepadLStickDown, true));
         const bool imgui_move_left_repeat = imgui_move_left_with_repeat && !imgui_move_left_once;
         const bool imgui_move_right_repeat = imgui_move_right_with_repeat && !imgui_move_right_once;
         const bool imgui_move_up_repeat = imgui_move_up_with_repeat && !imgui_move_up_once;
@@ -1749,22 +1755,60 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     state.selected_row = nav_state.cursor_row;
     state.selected_col = nav_state.cursor_col;
     if (selected_render_index >= 0) {
-        const auto& selected_key = rendered_keys[static_cast<std::size_t>(selected_render_index)];
-        state.selected_center = selected_key.center;
+        state.selected_center =
+            rendered_keys[static_cast<std::size_t>(selected_render_index)].center;
     }
 
     bool activate_selected = false;
     if (params.allow_activate_input) {
-        bool imgui_activate = imgui_activate_selected_once;
+        const auto action_allows_repeat = [](ImeKbKeyAction action) {
+            switch (action) {
+            case ImeKbKeyAction::Character:
+            case ImeKbKeyAction::Space:
+            case ImeKbKeyAction::Backspace:
+            case ImeKbKeyAction::ArrowLeft:
+            case ImeKbKeyAction::ArrowRight:
+            case ImeKbKeyAction::ArrowUp:
+            case ImeKbKeyAction::ArrowDown:
+            case ImeKbKeyAction::NewLine:
+                return true;
+            case ImeKbKeyAction::None:
+            case ImeKbKeyAction::Shift:
+            case ImeKbKeyAction::SymbolsMode:
+            case ImeKbKeyAction::SpecialsMode:
+            case ImeKbKeyAction::PagePrev:
+            case ImeKbKeyAction::PageNext:
+            case ImeKbKeyAction::Keyboard:
+            case ImeKbKeyAction::Menu:
+            case ImeKbKeyAction::Settings:
+            case ImeKbKeyAction::Done:
+            default:
+                return false;
+            }
+        };
+
+        bool activate_once = imgui_activate_selected_once;
+        bool activate_repeat = imgui_activate_selected_repeat && !imgui_activate_selected_once;
+        if (!activate_once && params.external_activate_pressed) {
+            if (params.external_activate_repeat) {
+                activate_repeat = true;
+            } else {
+                activate_once = true;
+            }
+        }
+
         if (selected_render_index >= 0) {
             const auto& selected_key =
                 rendered_keys[static_cast<std::size_t>(selected_render_index)];
-            if (selected_key.key && selected_key.key->action == ImeKbKeyAction::Backspace) {
-                // Mirror PS4 OSK behavior: holding Cross on selected Backspace should auto-repeat.
-                imgui_activate = imgui_activate_selected_repeat;
+            const ImeKbKeyAction action = (selected_key.key && selected_key.selectable)
+                                              ? selected_key.key->action
+                                              : ImeKbKeyAction::None;
+            if (!action_allows_repeat(action)) {
+                activate_repeat = false;
             }
         }
-        activate_selected = imgui_activate || (!imgui_activate && params.external_activate_pressed);
+
+        activate_selected = activate_once || activate_repeat;
     }
 
     const auto draw_key_glyph = [&](ImVec2 pos, ImVec2 size, ImeKbKeyGlyph glyph) {
@@ -1845,14 +1889,14 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     const auto draw_key = [&](ImVec2 pos, ImVec2 size, ImU32 bg, const char* label,
-                              const char* hotkey_label, ImeKbKeyGlyph glyph, float selected_alpha,
+                              const char* hotkey_label, ImeKbKeyGlyph glyph, bool selected,
                               bool emphasize_main_label, bool underline_main_label,
                               bool disabled_visual) {
-        if (selected_alpha > 0.0f) {
+        if (selected) {
             ImVec4 selected_bg = ImGui::ColorConvertU32ToFloat4(bg);
-            selected_bg.x = std::min(1.0f, selected_bg.x + 0.11f * selected_alpha);
-            selected_bg.y = std::min(1.0f, selected_bg.y + 0.11f * selected_alpha);
-            selected_bg.z = std::min(1.0f, selected_bg.z + 0.11f * selected_alpha);
+            selected_bg.x = std::min(1.0f, selected_bg.x + 0.11f);
+            selected_bg.y = std::min(1.0f, selected_bg.y + 0.11f);
+            selected_bg.z = std::min(1.0f, selected_bg.z + 0.11f);
             bg = ImGui::ColorConvertFloat4ToU32(selected_bg);
         }
         ImU32 key_text_color = params.key_text;
@@ -1868,13 +1912,10 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
 
         draw->AddRectFilled(pos, {pos.x + size.x, pos.y + size.y}, bg, layout.corner_radius);
-        draw->AddRect(pos, {pos.x + size.x, pos.y + size.y}, params.key_border,
-                      layout.corner_radius, 0, 1.0f);
-        if (selected_alpha > 0.0f) {
-            draw->AddRect(pos, {pos.x + size.x, pos.y + size.y},
-                          ApplyImeAlpha(IM_COL32(248, 248, 248, 255), selected_alpha),
-                          layout.corner_radius, 0, 2.0f);
-        }
+        const ImU32 border_color = selected ? IM_COL32(248, 248, 248, 255) : params.key_border;
+        const float border_thickness = selected ? 2.0f : 1.0f;
+        draw->AddRect(pos, {pos.x + size.x, pos.y + size.y}, border_color, layout.corner_radius, 0,
+                      border_thickness);
         ImFont* font = ImGui::GetFont();
         const float base_font_size = ImGui::GetFontSize();
         if (hotkey_label && hotkey_label[0] != '\0') {
@@ -1923,19 +1964,9 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     for (int i = 0; i < static_cast<int>(rendered_keys.size()); ++i) {
         const auto& key = rendered_keys[static_cast<std::size_t>(i)];
         const bool selected = params.show_selection_highlight && (i == selected_render_index);
-        float selected_alpha = selected ? 1.0f : 0.0f;
-        const bool has_fade =
-            params.selection_fade_alpha && params.selection_fade_rows == layout.rows &&
-            params.selection_fade_cols == layout.cols && key.row >= 0 && key.col >= 0 &&
-            key.row < params.selection_fade_rows && key.col < params.selection_fade_cols;
-        if (has_fade) {
-            float& alpha =
-                params.selection_fade_alpha[key.row * params.selection_fade_cols + key.col];
-            selected_alpha = UpdateImeSelectorFadeAlpha(alpha, selected, params.delta_time);
-        }
         const bool emphasize_main_label = key.key && key.key->action == ImeKbKeyAction::Character;
         const bool underline_main_label = key.underline_label;
-        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selected_alpha,
+        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selected,
                  emphasize_main_label, underline_main_label, key.disabled_visual);
 
         if (!key.selectable) {

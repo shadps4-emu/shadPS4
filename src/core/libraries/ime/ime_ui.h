@@ -80,6 +80,7 @@ class ImeUi : public ImGui::Layer {
     bool native_input_active = false;
     bool pointer_navigation_active = true;
     EditMenuPopup edit_menu_popup = EditMenuPopup::None;
+    bool menu_activate_armed = true;
     bool request_input_focus = false;
     bool request_input_select_all = false;
     bool text_select_mode = false;
@@ -91,6 +92,8 @@ class ImeUi : public ImGui::Layer {
     bool prev_virtual_lstick_down_down = false;
     int left_stick_repeat_dir = 0;
     double left_stick_next_repeat_time = 0.0;
+    double virtual_cross_next_repeat_time = 0.0;
+    double virtual_triangle_next_repeat_time = 0.0;
     u32 prev_virtual_buttons = 0;
     bool prev_virtual_square_down = false;
     bool prev_virtual_l1_down = false;
@@ -107,7 +110,6 @@ class ImeUi : public ImGui::Layer {
     double virtual_dpad_up_next_repeat_time = 0.0;
     double virtual_dpad_down_next_repeat_time = 0.0;
     ImeEdgeWrapNavState panel_vertical_nav_state{};
-    ImeSelectorFadeState selector_fade_state{};
     bool panel_position_initialized = false;
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;

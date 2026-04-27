@@ -37,7 +37,7 @@ enum class StickNavDirection : int {
     Down = 4,
 };
 
-constexpr float kNavAxisThreshold = 0.55f;
+constexpr float kNavAxisThreshold = 0.50f;
 constexpr double kStickNavInitialDelaySlow = 0.26;
 constexpr double kStickNavInitialDelayFast = 0.16;
 constexpr double kStickNavRepeatSlow = 0.20;
@@ -329,6 +329,168 @@ inline StickNavDirection ResolveStickNavDirection(const float lx, const float ly
         *strength = abs_y;
     }
     return (ly < 0.0f) ? StickNavDirection::Up : StickNavDirection::Down;
+}
+
+struct VirtualButtonRepeatResult {
+    bool pressed = false;
+    bool repeat = false;
+};
+
+inline VirtualButtonRepeatResult ProcessRepeatButton(const bool down, const bool edge_pressed,
+                                                     const double now, const double repeat_delay,
+                                                     const double repeat_rate,
+                                                     bool& prev_down_state,
+                                                     double& next_repeat_time) {
+    VirtualButtonRepeatResult result{};
+    if (!down) {
+        prev_down_state = false;
+        next_repeat_time = 0.0;
+        return result;
+    }
+
+    if (!prev_down_state) {
+        prev_down_state = true;
+        next_repeat_time = now + repeat_delay;
+        result.pressed = edge_pressed;
+        return result;
+    }
+
+    if (edge_pressed) {
+        next_repeat_time = now + repeat_delay;
+        result.pressed = true;
+        return result;
+    }
+
+    if (repeat_rate <= 0.0) {
+        return result;
+    }
+
+    if (now >= next_repeat_time) {
+        next_repeat_time = now + repeat_rate;
+        result.pressed = true;
+        result.repeat = true;
+    }
+    return result;
+}
+
+inline bool IsStickDirectionEdgePressed(const StickNavDirection direction, const bool left_edge,
+                                        const bool right_edge, const bool up_edge,
+                                        const bool down_edge) {
+    switch (direction) {
+    case StickNavDirection::Left:
+        return left_edge;
+    case StickNavDirection::Right:
+        return right_edge;
+    case StickNavDirection::Up:
+        return up_edge;
+    case StickNavDirection::Down:
+        return down_edge;
+    case StickNavDirection::None:
+    default:
+        return false;
+    }
+}
+
+struct StickNavPulseState {
+    int repeat_dir = 0;
+    double next_repeat_time = 0.0;
+};
+
+struct StickNavPulseResult {
+    bool left = false;
+    bool right = false;
+    bool up = false;
+    bool down = false;
+    bool left_repeat = false;
+    bool right_repeat = false;
+    bool up_repeat = false;
+    bool down_repeat = false;
+};
+
+inline StickNavPulseResult ProcessStickNavPulse(const bool enabled,
+                                                const StickNavDirection direction,
+                                                const float strength,
+                                                const bool direction_edge_pressed,
+                                                StickNavPulseState& state, const double now) {
+    StickNavPulseResult result{};
+    if (!enabled || direction == StickNavDirection::None) {
+        state.repeat_dir = 0;
+        state.next_repeat_time = 0.0;
+        return result;
+    }
+
+    const float t =
+        std::clamp((strength - kNavAxisThreshold) / (1.0f - kNavAxisThreshold), 0.0f, 1.0f);
+    const double initial_delay =
+        std::lerp(kStickNavInitialDelaySlow, kStickNavInitialDelayFast, static_cast<double>(t));
+    const double repeat_interval =
+        std::lerp(kStickNavRepeatSlow, kStickNavRepeatFast, static_cast<double>(t));
+
+    const int dir_id = static_cast<int>(direction);
+    const int prev_dir = state.repeat_dir;
+    bool pulse = false;
+    bool pulse_repeat = false;
+
+    if (prev_dir != dir_id) {
+        // Treat direction changes before the pending repeat tick as fast-rotate input.
+        const bool fast_rotate_change = (prev_dir != 0) && (now < state.next_repeat_time);
+        state.repeat_dir = dir_id;
+        state.next_repeat_time = now + initial_delay;
+        pulse = (prev_dir == 0) || direction_edge_pressed || fast_rotate_change;
+    } else if (direction_edge_pressed) {
+        pulse = true;
+        state.next_repeat_time = now + initial_delay;
+    } else if (now >= state.next_repeat_time) {
+        pulse = true;
+        pulse_repeat = true;
+        state.next_repeat_time = now + repeat_interval;
+    }
+
+    if (!pulse) {
+        return result;
+    }
+
+    switch (direction) {
+    case StickNavDirection::Left:
+        result.left = true;
+        result.left_repeat = pulse_repeat;
+        break;
+    case StickNavDirection::Right:
+        result.right = true;
+        result.right_repeat = pulse_repeat;
+        break;
+    case StickNavDirection::Up:
+        result.up = true;
+        result.up_repeat = pulse_repeat;
+        break;
+    case StickNavDirection::Down:
+        result.down = true;
+        result.down_repeat = pulse_repeat;
+        break;
+    case StickNavDirection::None:
+    default:
+        break;
+    }
+    return result;
+}
+
+inline void DisarmMenuActivate(bool& menu_activate_armed) {
+    menu_activate_armed = false;
+}
+
+inline void RearmMenuActivateOnRelease(const bool activate_down, bool& menu_activate_armed) {
+    if (!menu_activate_armed && !activate_down) {
+        menu_activate_armed = true;
+    }
+}
+
+inline bool ConsumeMenuActivatePress(const bool panel_activate_pressed,
+                                     const bool opened_menu_this_frame, bool& menu_activate_armed) {
+    if (!menu_activate_armed || opened_menu_this_frame || !panel_activate_pressed) {
+        return false;
+    }
+    menu_activate_armed = false;
+    return true;
 }
 
 } // namespace Libraries::Ime

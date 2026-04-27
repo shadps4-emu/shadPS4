@@ -4,9 +4,7 @@
 #pragma once
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
-#include <vector>
 #include <imgui.h>
 
 #include "core/libraries/ime/ime_common.h"
@@ -302,55 +300,6 @@ struct ImeStyleConfig {
     OrbisImeColor color_special{30, 90, 170, 255};
 };
 
-struct ImeSelectorFadeState {
-    static constexpr int PanelTargetCount = 4;
-
-    std::array<float, PanelTargetCount> panel_alpha{};
-    std::vector<float> keyboard_alpha{};
-    int keyboard_rows = 0;
-    int keyboard_cols = 0;
-};
-
-inline ImU32 ApplyImeAlpha(ImU32 color, float alpha) {
-    ImVec4 out = ImGui::ColorConvertU32ToFloat4(color);
-    out.w *= std::clamp(alpha, 0.0f, 1.0f);
-    return ImGui::ColorConvertFloat4ToU32(out);
-}
-
-inline float UpdateImeSelectorFadeAlpha(float& alpha, bool selected, float delta_time) {
-    constexpr float fade_out_sec = 0.25f;
-    if (selected) {
-        alpha = 1.0f;
-    } else {
-        const float step = delta_time > 0.0f ? (delta_time / fade_out_sec) : 1.0f;
-        alpha = std::clamp(alpha - step, 0.0f, 1.0f);
-    }
-    return alpha;
-}
-
-inline void DrawImeSelectorFrame(ImDrawList* draw, ImVec2 pos, ImVec2 size, float radius,
-                                 ImU32 overlay_color, ImU32 border_color, float border_thickness,
-                                 float alpha) {
-    if (!draw || size.x <= 0.0f || size.y <= 0.0f || alpha <= 0.0f) {
-        return;
-    }
-    const ImVec2 max{pos.x + size.x, pos.y + size.y};
-    draw->AddRectFilled(pos, max, ApplyImeAlpha(overlay_color, alpha), radius);
-    draw->AddRect(pos, max, ApplyImeAlpha(border_color, alpha), radius, 0, border_thickness);
-}
-
-inline void ResizeImeKeyboardSelectorFade(ImeSelectorFadeState& state, int rows, int cols) {
-    rows = std::max(0, rows);
-    cols = std::max(0, cols);
-    if (state.keyboard_rows == rows && state.keyboard_cols == cols &&
-        state.keyboard_alpha.size() == static_cast<std::size_t>(rows * cols)) {
-        return;
-    }
-    state.keyboard_rows = rows;
-    state.keyboard_cols = cols;
-    state.keyboard_alpha.assign(static_cast<std::size_t>(rows * cols), 0.0f);
-}
-
 // Shared edge-wrap hold state for controller navigation.
 // It tracks last successful move direction/time and active wrap hold window.
 struct ImeEdgeWrapNavState {
@@ -508,11 +457,8 @@ struct ImeKbDrawParams {
     OrbisImeLanguage supported_languages = static_cast<OrbisImeLanguage>(0);
     OrbisImeEnterLabel enter_label = OrbisImeEnterLabel::Default;
     bool show_selection_highlight = true;
-    float* selection_fade_alpha = nullptr;
-    int selection_fade_rows = 0;
-    int selection_fade_cols = 0;
-    float delta_time = 0.0f;
     bool allow_nav_input = true;
+    bool use_imgui_lstick_nav = true;
     bool allow_activate_input = true;
     bool external_nav_left = false;
     bool external_nav_right = false;
@@ -523,6 +469,7 @@ struct ImeKbDrawParams {
     bool external_nav_up_repeat = false;
     bool external_nav_down_repeat = false;
     bool external_activate_pressed = false;
+    bool external_activate_repeat = false;
     bool reset_nav_state = false;
     int requested_selected_row = -1;
     int requested_selected_col = -1;
