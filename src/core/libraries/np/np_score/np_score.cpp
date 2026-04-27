@@ -6,8 +6,10 @@
 #include <memory>
 #include <mutex>
 #include <core/user_settings.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler.h"
@@ -30,6 +32,7 @@ static std::map<OrbisNpScoreTitleCtxId, ScoreTitleCtx> g_title_ctxs;
 static std::map<OrbisNpScoreRequestId, std::shared_ptr<ScoreRequestCtx>> g_requests;
 static OrbisNpScoreTitleCtxId g_next_ctx_id = 1;
 static OrbisNpScoreRequestId g_next_req_id = 1;
+static s32 g_firmware_version = -1;
 
 // Internal helpers
 static ScoreTitleCtx* LookupTitleCtxUnlocked(OrbisNpScoreTitleCtxId id) {
@@ -703,7 +706,7 @@ s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountId(
     u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
     OrbisNpScoreRankNumber* totalRecord, void* option) {
     LOG_INFO(Lib_NpScore,
-             "(STUBBED) called reqId={}, boardId={}, accountIdArray={}, "
+             "called reqId={}, boardId={}, accountIdArray={}, "
              "accountIdArraySize={}, rankArray={}, rankArraySize={}, commentArray={}, "
              "commentArraySize={}, infoArray={}, infoArraySize={}, arrayNum={}, lastSortDate={}, "
              "totalRecord={}, option={}",
@@ -723,7 +726,7 @@ s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdAsync(
     u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
     OrbisNpScoreRankNumber* totalRecord, void* option) {
     LOG_INFO(Lib_NpScore,
-             "(STUBBED) called reqId={}, boardId={}, "
+             "called reqId={}, boardId={}, "
              "accountIdArray={}, accountIdArraySize={}, rankArray={}, rankArraySize={}, "
              "commentArray={}, commentArraySize={}, infoArray={}, infoArraySize={}, arrayNum={}, "
              "lastSortDate={}, totalRecord={}, option={}",
@@ -1160,6 +1163,66 @@ s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdAsync(
                                          true);
 }
 //***********************************
+// BoardInfo functions
+//***********************************
+static int GetBoardInfoImpl(s32 reqId, OrbisNpScoreBoardId boardId,
+                            OrbisNpScoreBoardInfo* boardInfo, void* option, bool is_async) {
+    if (option != nullptr) {
+        LOG_ERROR(Lib_NpScore, "GetBoardInfo: option must be null, got {}", PTR(option));
+        return ORBIS_NP_COMMUNITY_ERROR_INVALID_ARGUMENT;
+    }
+    if (g_firmware_version >= 0 && g_firmware_version >= Common::ElfInfo::FW_25 &&
+        boardInfo == nullptr) {
+        LOG_ERROR(Lib_NpScore, "GetBoardInfo: boardInfo must be non-null");
+        return ORBIS_NP_COMMUNITY_ERROR_INSUFFICIENT_ARGUMENT;
+    }
+
+    std::shared_ptr<ScoreRequestCtx> req;
+    {
+        std::lock_guard lock(g_mutex);
+        req = LookupRequestUnlocked(reqId);
+        if (!req) {
+            LOG_ERROR(Lib_NpScore, "invalid reqId {}", reqId);
+            return ORBIS_NP_COMMUNITY_ERROR_INVALID_ID;
+        }
+        if (IsRequestAborted(req)) {
+            return ORBIS_NP_COMMUNITY_ERROR_ABORTED;
+        }
+    }
+
+    if (boardInfo == nullptr) {
+        LOG_INFO(Lib_NpScore, "GetBoardInfo: legacy SDK with null boardInfo — no-op success");
+        return ORBIS_OK;
+    }
+
+    std::memset(boardInfo, 0, sizeof(OrbisNpScoreBoardInfo));
+
+    const s32 dispatch_err = NpHandler::GetInstance().GetBoardInfo(
+        req->userId, ServiceLabelForRequest(req), boardId, boardInfo, req);
+    if (dispatch_err != ORBIS_OK) {
+        req->SetResult(dispatch_err);
+        return dispatch_err;
+    }
+    if (is_async) {
+        return ORBIS_OK;
+    }
+    return req->Wait();
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
+                                        OrbisNpScoreBoardInfo* boardInfo, void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, boardId={}, boardInfo={}, option={}", reqId, boardId,
+             PTR(boardInfo), PTR(option));
+    return GetBoardInfoImpl(reqId, boardId, boardInfo, option, false);
+}
+
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                             OrbisNpScoreBoardInfo* boardInfo, void* option) {
+    LOG_INFO(Lib_NpScore, "called reqId={}, boardId={}, boardInfo={}, option={}", reqId, boardId,
+             PTR(boardInfo), PTR(option));
+    return GetBoardInfoImpl(reqId, boardId, boardInfo, option, true);
+}
+//***********************************
 // Misc functions
 //***********************************
 s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId) {
@@ -1211,20 +1274,6 @@ int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners() {
 
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx() {
     LOG_ERROR(Lib_NpScore, "(STUBBED) called");
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
-                                        OrbisNpScoreBoardInfo* boardInfo, void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, boardInfo={}, option={}", reqId,
-              boardId, PTR(boardInfo), PTR(option));
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                             OrbisNpScoreBoardInfo* boardInfo, void* option) {
-    LOG_ERROR(Lib_NpScore, "(STUBBED) called reqId={}, boardId={}, boardInfo={}, option={}", reqId,
-              boardId, PTR(boardInfo), PTR(option));
     return ORBIS_OK;
 }
 
@@ -1455,6 +1504,9 @@ int PS4_SYSV_ABI sceNpScoreSetTimeout(s32 id, s32 resolveRetry, s32 resolveTimeo
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
+    ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&g_firmware_version) == ORBIS_OK,
+               "Failed to get compiled SDK version.");
+
     LIB_FUNCTION("1i7kmKbX6hk", "libSceNpScore", 1, "libSceNpScore", sceNpScoreAbortRequest);
     LIB_FUNCTION("2b3TI0mDYiI", "libSceNpScore", 1, "libSceNpScore", sceNpScoreCensorComment);
     LIB_FUNCTION("4eOvDyN-aZc", "libSceNpScore", 1, "libSceNpScore", sceNpScoreCensorCommentAsync);

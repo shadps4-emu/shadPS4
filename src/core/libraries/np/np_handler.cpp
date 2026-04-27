@@ -404,6 +404,47 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
     return ORBIS_OK;
 }
 
+s32 NpHandler::GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
+                            NpScore::OrbisNpScoreBoardInfo* boardInfo,
+                            std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+    std::shared_ptr<ShadNet::ShadNetClient> client;
+    {
+        std::lock_guard lock(m_mutex_clients);
+        auto it = m_clients.find(user_id);
+        if (it == m_clients.end()) {
+            LOG_WARNING(NpHandler, "GetBoardInfo: user_id={} not connected", user_id);
+            return ORBIS_NP_ERROR_SIGNED_OUT;
+        }
+        client = it->second;
+    }
+    if (!client->IsAuthenticated()) {
+        LOG_WARNING(NpHandler, "GetBoardInfo: user_id={} not authenticated", user_id);
+        return ORBIS_NP_COMMUNITY_ERROR_NO_LOGIN;
+    }
+
+    const std::string com_id = GetNpCommId(service_label);
+    std::vector<u8> payload;
+    payload.reserve(12 + 4);
+    payload.insert(payload.end(), com_id.begin(), com_id.end());
+    payload.push_back(static_cast<u8>(boardId));
+    payload.push_back(static_cast<u8>(boardId >> 8));
+    payload.push_back(static_cast<u8>(boardId >> 16));
+    payload.push_back(static_cast<u8>(boardId >> 24));
+
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetBoardInfos, payload);
+    {
+        std::lock_guard lock(m_mutex_pending_score);
+        PendingScoreRequest pending;
+        pending.req = std::move(req);
+        pending.cmd = ShadNet::CommandType::GetBoardInfos;
+        pending.boardInfo = boardInfo;
+        m_pending_score.emplace(pkt_id, std::move(pending));
+    }
+    LOG_INFO(NpHandler, "GetBoardInfo: user_id={} service_label={} board={} pkt_id={} com_id='{}'",
+             user_id, service_label, boardId, pkt_id, com_id);
+    return ORBIS_OK;
+}
+
 s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
                                 const std::vector<std::string>& npIds,
                                 const std::vector<s32>& pcIds,
@@ -1063,6 +1104,44 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
             LOG_INFO(NpHandler, "OnScoreReply: RecordScore user_id={} pkt_id={} rank={}", user_id,
                      pkt_id, rank);
         }
+        req->SetResult(ORBIS_OK);
+        break;
+    }
+
+    case ShadNet::CommandType::GetBoardInfos: {
+        if (body.size() < 4) {
+            LOG_ERROR(NpHandler, "OnScoreReply: GetBoardInfos body too small ({})", body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        const u32 proto_size = static_cast<u32>(body[0]) | (static_cast<u32>(body[1]) << 8) |
+                               (static_cast<u32>(body[2]) << 16) |
+                               (static_cast<u32>(body[3]) << 24);
+        if (static_cast<size_t>(4) + proto_size > body.size()) {
+            LOG_ERROR(NpHandler, "OnScoreReply: GetBoardInfos proto size {} exceeds body size {}",
+                      proto_size, body.size());
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        shadnet::BoardInfo bi;
+        if (!bi.ParseFromArray(body.data() + 4, static_cast<int>(proto_size))) {
+            LOG_ERROR(NpHandler, "OnScoreReply: GetBoardInfos proto parse failed");
+            req->SetResult(ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE);
+            break;
+        }
+        if (pending.boardInfo != nullptr) {
+            pending.boardInfo->rankLimit = bi.ranklimit();
+            pending.boardInfo->updateMode = bi.updatemode();
+            pending.boardInfo->sortMode = bi.sortmode();
+            pending.boardInfo->uploadNumLimit = bi.uploadnumlimit();
+            pending.boardInfo->uploadSizeLimit =
+                bi.uploadsizelimit(); // TODO server has 32bit value fix it
+        }
+        LOG_INFO(NpHandler,
+                 "OnScoreReply: GetBoardInfos user_id={} pkt_id={} rankLimit={} updateMode={} "
+                 "sortMode={} uploadNumLimit={} uploadSizeLimit={}",
+                 user_id, pkt_id, bi.ranklimit(), bi.updatemode(), bi.sortmode(),
+                 bi.uploadnumlimit(), bi.uploadsizelimit());
         req->SetResult(ORBIS_OK);
         break;
     }

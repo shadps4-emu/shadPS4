@@ -302,6 +302,13 @@ s32 PS4_SYSV_ABI sceNpScoreGetRankingByAccountIdPcIdAsync(
     u64 infoArraySize, u64 arrayNum, Rtc::OrbisRtcTick* lastSortDate,
     OrbisNpScoreRankNumber* totalRecord, void* option);
 //***********************************
+// BoardInfo functions
+//***********************************
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
+                                        OrbisNpScoreBoardInfo* boardInfo, void* option);
+s32 PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
+                                             OrbisNpScoreBoardInfo* boardInfo, void* option);
+//***********************************
 // Misc functions
 //***********************************
 s32 PS4_SYSV_ABI sceNpScoreSetPlayerCharacterId(s32 ctxId, OrbisNpScorePcId pcId);
@@ -312,10 +319,6 @@ int PS4_SYSV_ABI sceNpScoreCensorComment(s32 reqId, const char* comment, void* o
 int PS4_SYSV_ABI sceNpScoreCensorCommentAsync(s32 reqId, const char* comment, void* option);
 int PS4_SYSV_ABI sceNpScoreChangeModeForOtherSaveDataOwners();
 int PS4_SYSV_ABI sceNpScoreCreateTitleCtx();
-int PS4_SYSV_ABI sceNpScoreGetBoardInfo(s32 reqId, OrbisNpScoreBoardId boardId,
-                                        OrbisNpScoreBoardInfo* boardInfo, void* option);
-int PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boardId,
-                                             OrbisNpScoreBoardInfo* boardInfo, void* option);
 int PS4_SYSV_ABI sceNpScoreGetFriendsRankingForCrossSave(
     s32 reqId, OrbisNpScoreBoardId boardId, s32 includeSelf,
     OrbisNpScoreRankDataForCrossSave* rankArray, u64 rankArraySize,

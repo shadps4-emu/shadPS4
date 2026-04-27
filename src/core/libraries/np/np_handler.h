@@ -77,6 +77,10 @@ public:
                     const char* comment, size_t commentLen, const u8* gameInfoData,
                     size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
+    s32 GetBoardInfo(s32 user_id, s32 service_label, u32 boardId,
+                     NpScore::OrbisNpScoreBoardInfo* boardInfo,
+                     std::shared_ptr<NpScore::ScoreRequestCtx> req);
+
     // Submit a GetRankingByNpId request to the shadNet server.
     s32 GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
                          const std::vector<std::string>& npIds, const std::vector<s32>& pcIds,
@@ -180,6 +184,7 @@ private:
         NpScore::OrbisNpScorePlayerRankDataA* aPlayerRankArray = nullptr;
         NpScore::OrbisNpScoreComment* commentArray = nullptr;
         NpScore::OrbisNpScoreGameInfo* infoArray = nullptr;
+        NpScore::OrbisNpScoreBoardInfo* boardInfo = nullptr;
         Libraries::Rtc::OrbisRtcTick* lastSortDate = nullptr;
         u32* totalRecord = nullptr;
         u64 arrayNum = 0;
