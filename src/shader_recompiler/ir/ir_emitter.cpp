@@ -82,6 +82,16 @@ IR::F16 IREmitter::BitCast<IR::F16, IR::U16>(const IR::U16& value) {
     return Inst<IR::F16>(Opcode::BitCastF16U16, value);
 }
 
+template <>
+IR::U64 IREmitter::BitCast<IR::U64, IR::F64>(const IR::F64& value) {
+    return Inst<IR::U64>(Opcode::BitCastU64F64, value);
+}
+
+template <>
+IR::F64 IREmitter::BitCast<IR::F64, IR::U64>(const IR::U64& value) {
+    return Inst<IR::F64>(Opcode::BitCastF64U64, value);
+}
+
 U1 IREmitter::ConditionRef(const U1& value) {
     return Inst<U1>(Opcode::ConditionRef, value);
 }
@@ -1363,6 +1373,22 @@ U1 IREmitter::FPIsInf(const F32F64& value) {
         return Inst<U1>(Opcode::FPIsInf32, value);
     case Type::F64:
         return Inst<U1>(Opcode::FPIsInf64, value);
+    default:
+        ThrowInvalidType(value.Type());
+    }
+}
+
+U1 IREmitter::FPIsDenorm(const F32F64& value) {
+    switch (value.Type()) {
+    case Type::F32: {
+        const IR::F32 flt_min = BitCast<IR::F32, IR::U32>(Imm32(0x00800000U));
+        return FPLessThan(FPAbs(value), flt_min, true);
+    }
+    case Type::F64: {
+        const u64 hex = 0x0010000000000000ULL;
+        const IR::F64 dbl_min = BitCast<IR::F64, IR::U64>(Imm64(hex));
+        return FPLessThan(FPAbs(value), dbl_min, true);
+    }
     default:
         ThrowInvalidType(value.Type());
     }
