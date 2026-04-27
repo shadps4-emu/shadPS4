@@ -26,9 +26,20 @@ struct OrbisSharePlayConnectionInfo {
     Libraries::UserService::OrbisUserServiceUserId visitorUserId;
 };
 
+struct OrbisSharePlayConnectionInfoA {
+    int status;
+    int mode;
+    Libraries::Np::OrbisNpOnlineId hostOnlineId;
+    Libraries::Np::OrbisNpOnlineId visitorOnlineId;
+    Libraries::Np::OrbisNpAccountId hostAccountId;
+    Libraries::Np::OrbisNpAccountId visitorAccountId;
+    Libraries::UserService::OrbisUserServiceUserId hostUserId;
+    Libraries::UserService::OrbisUserServiceUserId visitorUserId;
+};
+
 int PS4_SYSV_ABI sceSharePlayCrashDaemon();
 int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo);
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA();
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA(OrbisSharePlayConnectionInfoA* pInfo);
 int PS4_SYSV_ABI sceSharePlayGetCurrentInfo();
 int PS4_SYSV_ABI sceSharePlayGetEvent();
 int PS4_SYSV_ABI sceSharePlayInitialize();
