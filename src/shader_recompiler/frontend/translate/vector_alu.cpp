@@ -527,13 +527,25 @@ void Translator::V_MUL_I32_I24(const GcnInst& inst, bool is_signed) {
 void Translator::V_MIN_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
-    SetDst(inst.dst[0], ir.FPMin(src0, src1, is_legacy));
+
+    const IR::F32 fpmin = ir.FPMin(src0, src1);
+    const IR::F32 result =
+        is_legacy
+            ? IR::F32{ir.Select(ir.LogicalOr(ir.FPIsNan(src0), ir.FPIsNan(src1)), src1, fpmin)}
+            : fpmin;
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_MAX_F32(const GcnInst& inst, bool is_legacy) {
     const IR::F32 src0{GetSrc<IR::F32>(inst.src[0])};
     const IR::F32 src1{GetSrc<IR::F32>(inst.src[1])};
-    SetDst(inst.dst[0], ir.FPMax(src0, src1, is_legacy));
+
+    const IR::F32 fpmax = ir.FPMax(src0, src1);
+    const IR::F32 result =
+        is_legacy
+            ? IR::F32{ir.Select(ir.LogicalOr(ir.FPIsNan(src0), ir.FPIsNan(src1)), src1, fpmax)}
+            : fpmax;
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_MIN_I32(const GcnInst& inst) {

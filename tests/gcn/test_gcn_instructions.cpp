@@ -121,3 +121,43 @@ TEST_F(GcnTest, sub_f16) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, F16x2{half(-1.0f)}); //confirmed with neo
 }
+
+TEST_F(GcnTest, mul_legacy_nan) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_MUL_LEGACY_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<u32>(spirv, std::array{u32(0), u32(0x7fc00000)});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0);
+}
+
+TEST_F(GcnTest, mul_nan) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_MUL_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<float>(spirv, std::array{u32(0), u32(0x7fc00000)});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_TRUE(std::isnan(*result));
+}
+
+TEST_F(GcnTest, min_legacy_nan) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_MIN_LEGACY_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<u32>(spirv, std::array{u32(0), u32(0x7fc00000)});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x7fc00000);
+}
+
+TEST_F(GcnTest, min_nan) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP2(OpcodeVOP2::V_MIN_F32, VOperand8::V0, SOperand9::V0, VOperand8::V1).Get());
+    auto result = runner->run<float>(spirv, std::array{u32(0), u32(0x7fc00000)});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0);
+}
