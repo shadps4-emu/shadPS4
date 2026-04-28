@@ -275,7 +275,11 @@ public:
     void V_MUL_LO_U32(const GcnInst& inst);
     void V_MUL_HI_U32(bool is_signed, const GcnInst& inst);
     void V_MAD_U64_U32(const GcnInst& inst);
+    void V_LSHL_ADD_U32(const GcnInst& inst);
+    void V_ADD_LSHL_U32(const GcnInst& inst);
     void V_ADD3_U32(const GcnInst& inst);
+    void V_LSHL_OR_B32(const GcnInst& inst);
+    void V_AND_OR_B32(const GcnInst& inst);
     void V_OR3_B32(const GcnInst& inst);
 
     // Vector interpolation

@@ -458,6 +458,14 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MAD_U64_U32(inst);
     case Opcode::V_ADD3_U32:
         return V_ADD3_U32(inst);
+    case Opcode::V_ADD_LSHL_U32:
+        return V_ADD_LSHL_U32(inst);
+    case Opcode::V_LSHL_ADD_U32:
+        return V_LSHL_ADD_U32(inst);
+    case Opcode::V_LSHL_OR_B32:
+        return V_LSHL_OR_B32(inst);
+    case Opcode::V_AND_OR_B32:
+        return V_AND_OR_B32(inst);
     case Opcode::V_OR3_B32:
         return V_OR3_B32(inst);
     case Opcode::V_NOP:
@@ -1552,12 +1560,58 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     ir.SetVcc(did_overflow);
 }
 
+void Translator::V_ADD_LSHL_U32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    const auto shift = ir.BitwiseAnd(src2, ir.Imm32(0x1F));
+
+    const auto result = ir.ShiftLeftLogical(ir.IAdd(src0, src1), shift);
+
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::V_LSHL_ADD_U32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    const auto shift = ir.BitwiseAnd(src1, ir.Imm32(0x1F));
+
+    const auto result = ir.IAdd(ir.ShiftLeftLogical(src0, shift), src2);
+
+    SetDst(inst.dst[0], result);
+}
+
 void Translator::V_ADD3_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
     const auto src2 = GetSrc<IR::U32>(inst.src[2]);
 
     SetDst(inst.dst[0], ir.IAdd(src0, ir.IAdd(src1, src2)));
+}
+
+void Translator::V_LSHL_OR_B32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    const auto shift = ir.BitwiseAnd(src1, ir.Imm32(0x1F));
+
+    const auto result = ir.BitwiseOr(ir.ShiftLeftLogical(src0, shift), src2);
+
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::V_AND_OR_B32(const GcnInst& inst) {
+    const auto src0 = GetSrc<IR::U32>(inst.src[0]);
+    const auto src1 = GetSrc<IR::U32>(inst.src[1]);
+    const auto src2 = GetSrc<IR::U32>(inst.src[2]);
+
+    const auto result = ir.BitwiseOr(ir.BitwiseAnd(src0, src1), src2);
+
+    SetDst(inst.dst[0], result);
 }
 
 void Translator::V_OR3_B32(const GcnInst& inst) {

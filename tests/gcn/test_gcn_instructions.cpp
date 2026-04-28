@@ -244,3 +244,83 @@ TEST_F(GcnTest, or3_u32_4) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, 0xD7575757);
 }
+
+TEST_F(GcnTest, and_or_b32_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0xF0F0F0F0, 0x07070707, 0x11111111});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x11111111);
+}
+
+TEST_F(GcnTest, and_or_b32_2) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOmod(Omod::Mul2).Get());
+    auto result = runner->run<u32>(spirv, std::array{0x40404040, 0x40404040, 0x40404040});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x40404040);
+}
+
+TEST_F(GcnTest, and_or_b32_3) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetClamp(true).Get());
+    auto result = runner->run<u32>(spirv, std::array{0x40404040, 0x40404040, 0x40404040});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x40404040);
+}
+
+TEST_F(GcnTest, and_or_b32_4) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetNeg({1,0,0}).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0x07070707, 0x11111111, 0xF0F0F0F0});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0xF1F1F1F1);
+}
+
+TEST_F(GcnTest, and_or_b32_5) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetNeg({1,0,0}).SetAbs({1,0,0}).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0x77777777, 0xB0B0B0B0, 0x11111111});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0xB1313131);
+}
+
+TEST_F(GcnTest, and_or_b32_6) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOmod(Omod::Mul2).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0x40404040, 0xB0B0B0B0, 0x11111111});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x11111111);
+}
+
+TEST_F(GcnTest, and_or_b32_7) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOmod(Omod::Div2).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0xB0B0B0B0, 0x77777777, 0x40404040});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x70707070);
+}
+
+TEST_F(GcnTest, and_or_b32_8) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_AND_OR_B32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetAbs({1,1,0}).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,3>{0xB0B0B0B0, 0x11111111, 0x11111111});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x11111111);
+}
