@@ -45,6 +45,9 @@ constexpr VAddr USER_MIN = 0x1000000000ULL;
 #if defined(__linux__)
 // Linux maps the shadPS4 executable around here, so limit the user maximum
 constexpr VAddr USER_MAX = 0x54FFFFFFFFFFULL;
+#elif defined(__FreeBSD__)
+// FreeBSD address space is extremely volatile, keep this lower for safety.
+constexpr VAddr USER_MAX = 0xFFFFFFFFFFFULL;
 #else
 constexpr VAddr USER_MAX = 0x5FFFFFFFFFFFULL;
 #endif
