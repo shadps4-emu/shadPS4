@@ -141,3 +141,6 @@
 	url = https://github.com/gabime/spdlog.git
 	shallow = true
 	branch = v2.x
+[submodule "externals/protobuf"]
+	path = externals/protobuf
+	url = https://github.com/shadexternals/protobuf.git

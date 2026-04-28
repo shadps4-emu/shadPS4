@@ -15,14 +15,24 @@ int PS4_SYSV_ABI sceSharePlayCrashDaemon() {
 }
 
 int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo) {
+    if (pInfo == nullptr) {
+        LOG_ERROR(Lib_SharePlay, "sceSharePlayGetCurrentConnectionInfo: pInfo is null");
+        return ORBIS_OK;
+    }
     memset(pInfo, 0, sizeof(*pInfo));
     pInfo->status = ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT;
-    LOG_DEBUG(Lib_SharePlay, "(STUBBED) called");
+    LOG_DEBUG(Lib_SharePlay, "sceSharePlayGetCurrentConnectionInfo: returning DORMANT");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA() {
-    LOG_ERROR(Lib_SharePlay, "(STUBBED) called");
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA(OrbisSharePlayConnectionInfoA* pInfo) {
+    if (pInfo == nullptr) {
+        LOG_ERROR(Lib_SharePlay, "sceSharePlayGetCurrentConnectionInfoA: pInfo is null");
+        return ORBIS_OK;
+    }
+    memset(pInfo, 0, sizeof(*pInfo));
+    pInfo->status = ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT;
+    LOG_DEBUG(Lib_SharePlay, "sceSharePlayGetCurrentConnectionInfoA: returning DORMANT");
     return ORBIS_OK;
 }
 
