@@ -373,13 +373,12 @@ void DefineEntryPoint(const Info& info, EmitContext& ctx, Id main) {
         break;
     case LogicalStage::TessellationEval: {
         execution_model = spv::ExecutionModel::TessellationEvaluation;
-        const auto& vs_info = ctx.runtime_info.vs_info;
-        ctx.AddExecutionMode(main, ExecutionMode(vs_info.tess_type));
-        ctx.AddExecutionMode(main, ExecutionMode(vs_info.tess_partitioning));
-        ctx.AddExecutionMode(main,
-                             vs_info.tess_topology == AmdGpu::TessellationTopology::TriangleCcw
-                                 ? spv::ExecutionMode::VertexOrderCcw
-                                 : spv::ExecutionMode::VertexOrderCw);
+        ctx.AddExecutionMode(main, ExecutionMode(ctx.runtime_info.es_vs_info.tess_type));
+        ctx.AddExecutionMode(main, ExecutionMode(ctx.runtime_info.es_vs_info.tess_partitioning));
+        ctx.AddExecutionMode(main, ctx.runtime_info.es_vs_info.tess_topology ==
+                                           AmdGpu::TessellationTopology::TriangleCcw
+                                       ? spv::ExecutionMode::VertexOrderCcw
+                                       : spv::ExecutionMode::VertexOrderCw);
         break;
     }
     case LogicalStage::Fragment:

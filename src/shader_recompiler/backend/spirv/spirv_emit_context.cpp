@@ -520,7 +520,8 @@ void EmitContext::DefineInputs() {
         const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.ls_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
             input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
@@ -531,10 +532,12 @@ void EmitContext::DefineInputs() {
         tess_coord = DefineInput(F32[3], std::nullopt, spv::BuiltIn::TessCoord);
         primitive_id = DefineVariable(U32[1], spv::BuiltIn::PrimitiveId, spv::StorageClass::Input);
 
-        const u32 num_attrs = Common::AlignUp(runtime_info.vs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs =
+            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(per_vertex_type, ConstU32(32u))};
             input_attr_array = DefineInput(patch_array_type, 0);
             Name(input_attr_array, "in_attrs");
@@ -643,10 +646,12 @@ void EmitContext::DefineOutputs() {
             Decorate(output_tess_level_inner, spv::Decoration::Patch);
         }
 
-        const u32 num_attrs = Common::AlignUp(runtime_info.hs_info.hs_output_cp_stride, 16) >> 4;
+        const u32 num_attrs =
+            Common::AlignUp(runtime_info.hs_es_vs_info.hs_output_cp_stride, 16) >> 4;
         if (num_attrs > 0) {
             const Id per_vertex_type{TypeArray(F32[4], ConstU32(num_attrs))};
-            // The input vertex count isn't statically known, so make length 32 (what glslang does)
+            // The input vertex count isn't statically known, so make length 32 (what
+            // glslang does)
             const Id patch_array_type{TypeArray(
                 per_vertex_type, ConstU32(runtime_info.hs_info.NumOutputControlPoints()))};
             output_attr_array = DefineOutput(patch_array_type, 0);
@@ -709,7 +714,8 @@ void EmitContext::DefineOutputs() {
             ++num_render_targets;
         }
         // Dual source blending allows at most 2 render targets, one for each source.
-        // Fewer targets are allowed but the missing blending source values will be undefined.
+        // Fewer targets are allowed but the missing blending source values will be
+        // undefined.
         ASSERT_MSG(!runtime_info.fs_info.dual_source_blending || num_render_targets <= 2,
                    "Dual source blending enabled, there must be at most two MRT exports");
         break;
