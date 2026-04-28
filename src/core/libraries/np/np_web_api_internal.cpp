@@ -452,7 +452,7 @@ s32 createRequest(s32 titleUserCtxId, const char* pApiGroup, const char* pPath,
     }
 
     s64 user_ctx_id = static_cast<s64>(titleUserCtxId);
-    s32 request_id = (user_ctx_id << 0x20) | g_request_count;
+    s64 request_id = (user_ctx_id << 0x20) | g_request_count;
     while (user_context->requests.contains(request_id)) {
         request_id--;
     }
