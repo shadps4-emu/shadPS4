@@ -662,15 +662,15 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
     const bool tri_edge_pressed =
         virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle);
     bool prev_virtual_triangle_down = (prev_virtual_buttons & kMaskTriangle) != 0;
-    bool tri_repeat_pressed = false;
-    virtual_pad_input.RepeatPressed(Libraries::Pad::OrbisPadButtonDataOffset::Triangle,
-                                    prev_virtual_triangle_down,
-                                    repeat_state.triangle_next_repeat_time, &tri_repeat_pressed);
+    const bool tri_pressed = virtual_pad_input.RepeatPressed(
+        Libraries::Pad::OrbisPadButtonDataOffset::Triangle, prev_virtual_triangle_down,
+        repeat_state.triangle_next_repeat_time);
+    const bool tri_space_pressed = tri_pressed && !l2_down;
 
     const bool symbols_shortcut_pressed = (l2_down && tri_edge_pressed) || (tri_down && l2_pressed);
     if (symbols_shortcut_pressed) {
         result.action = ImeKbKeyAction::SymbolsMode;
-    } else if (tri_repeat_pressed && !l2_down) {
+    } else if (tri_space_pressed) {
         result.action = ImeKbKeyAction::Space;
     } else if (layout_family != ImeKbLayoutFamily::Symbols &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3)) {
