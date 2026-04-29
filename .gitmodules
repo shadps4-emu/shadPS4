@@ -106,10 +106,6 @@
 [submodule "externals/json"]
 	path = externals/json
 	url = https://github.com/nlohmann/json.git
-[submodule "externals/sdl3_mixer"]
-	path = externals/sdl3_mixer
-	url = https://github.com/libsdl-org/SDL_mixer
-	shallow = true
 [submodule "externals/miniz"]
 	path = externals/miniz
 	url = https://github.com/richgel999/miniz
@@ -129,10 +125,19 @@
 [submodule "externals/openal-soft"]
 	path = externals/openal-soft
 	url = https://github.com/shadexternals/openal-soft.git
-[submodule "externals/sdl3_image"]
-	path = externals/sdl3_image
-	url = https://github.com/libsdl-org/SDL_image
 [submodule "externals/libusb"]
 	path = externals/libusb
 	url = https://github.com/shadexternals/libusb.git
 	branch = shadps4
+[submodule "externals/minimp3"]
+	path = externals/minimp3
+	url = https://github.com/lieff/minimp3
+	shallow = true
+[submodule "externals/ImGuiFileDialog"]
+	path = externals/ImGuiFileDialog
+	url = https://github.com/shadexternals/ImGuiFileDialog.git
+[submodule "externals/spdlog"]
+	path = externals/spdlog
+	url = https://github.com/gabime/spdlog.git
+	shallow = true
+	branch = v2.x

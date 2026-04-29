@@ -840,8 +840,10 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
     if (ctx.registered)
         return ORBIS_NP_TROPHY_ERROR_ALREADY_REGISTERED;
 
-    if (!std::filesystem::exists(ctx.trophy_xml_path))
-        return ORBIS_NP_TROPHY_ERROR_TITLE_CONF_NOT_INSTALLED;
+    if (!std::filesystem::exists(ctx.trophy_xml_path)) {
+        LOG_ERROR(Lib_NpTrophy, "Could not find trophy files.");
+        // Stub success here to prevent issues specific to missing a trophy key.
+    }
 
     ctx.registered = true;
     LOG_INFO(Lib_NpTrophy, "Context {} registered", context);

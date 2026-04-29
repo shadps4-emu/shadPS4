@@ -23,9 +23,10 @@ sudo apt install build-essential clang git cmake libasound2-dev \
 #### Fedora
 
 ```bash
-sudo dnf install clang git cmake libatomic alsa-lib-devel \
+sudo dnf install ninja-build clang git cmake libatomic alsa-lib-devel \
     pipewire-jack-audio-connection-kit-devel openal-soft-devel \
     openssl-devel libevdev-devel libudev-devel libXext-devel \
+    libXcursor-devel libXi-devel libXrandr-devel libXScrnSaver-devel \
     vulkan-devel vulkan-validation-layers libpng-devel libuuid-devel
 ```
 

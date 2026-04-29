@@ -55,7 +55,7 @@ static constexpr u64 SystemReservedSize = SYSTEM_RESERVED_MAX - SYSTEM_RESERVED_
 static constexpr u64 UserSize = USER_MAX - USER_MIN + 1;
 
 // Required backing file size for mapping physical address space.
-static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO;
+static u64 BackingSize = ORBIS_KERNEL_TOTAL_MEM_DEV_PRO + ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE;
 
 #ifdef _WIN32
 
@@ -716,6 +716,12 @@ struct AddressSpace::Impl {
     void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot,
               int fd = -1) {
         m_free_regions.subtract({virtual_addr, virtual_addr + size});
+#ifdef __APPLE__
+        if ((prot & PROT_EXEC) != 0) {
+            ASSERT_MSG(fd == -1, "Requested execute permissions for file mapping");
+            phys_addr = -1;
+        }
+#endif
         const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
         const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
         const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);

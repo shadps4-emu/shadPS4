@@ -10,8 +10,9 @@
 #include "save_backup.h"
 #include "save_instance.h"
 
+#include "common/io_file.h"
+#include "common/logging/formatter.h"
 #include "common/logging/log.h"
-#include "common/logging/log_entry.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 
@@ -23,6 +24,41 @@ constexpr std::string_view backup_dir_old = "sce_backup_old"; // previous backup
 namespace fs = std::filesystem;
 
 namespace Libraries::SaveData::Backup {
+
+static void CopyShareReadWrite(const std::filesystem::path& from, const std::filesystem::path& to) {
+    std::error_code ec;
+    if (fs::is_directory(from, ec)) {
+        fs::create_directories(to, ec);
+        for (const auto& entry : fs::directory_iterator(from)) {
+            CopyShareReadWrite(entry.path(), to / entry.path().filename());
+        }
+        return;
+    }
+
+    Common::FS::IOFile src{from, Common::FS::FileAccessMode::Read, Common::FS::FileType::BinaryFile,
+                           Common::FS::FileShareFlag::ShareReadWrite};
+    if (!src.IsOpen()) {
+        LOG_ERROR(Lib_SaveData, "Backup: failed to open source {}", fmt::UTF(from.u8string()));
+        return;
+    }
+    const u64 size = src.GetSize();
+    std::vector<u8> buf(size);
+    if (size > 0) {
+        src.ReadRaw<u8>(buf.data(), size);
+    }
+    src.Close();
+
+    Common::FS::IOFile dst{to, Common::FS::FileAccessMode::Create, Common::FS::FileType::BinaryFile,
+                           Common::FS::FileShareFlag::ShareReadWrite};
+    if (!dst.IsOpen()) {
+        LOG_ERROR(Lib_SaveData, "Backup: failed to open destination {}", fmt::UTF(to.u8string()));
+        return;
+    }
+    if (size > 0) {
+        dst.WriteRaw<u8>(buf.data(), size);
+    }
+    dst.Close();
+}
 
 static std::jthread g_backup_thread;
 static std::counting_semaphore g_backup_thread_semaphore{0};
@@ -64,7 +100,7 @@ static void backup(const std::filesystem::path& dir_name) {
 
     fs::create_directory(backup_dir_tmp);
     for (const auto& file : backup_files) {
-        fs::copy(file, backup_dir_tmp / file.filename(), fs::copy_options::recursive);
+        CopyShareReadWrite(file, backup_dir_tmp / file.filename());
         current_count++;
         g_backup_progress = current_count * 100 / total_count;
     }

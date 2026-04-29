@@ -143,6 +143,9 @@ int PS4_SYSV_ABI scePadGetExtControllerInformation(s32 handle,
     pInfo->capability = 0;
 
     auto res = scePadGetControllerInformation(handle, &pInfo->base);
+    if (!EmulatorSettings.IsUsingSpecialPad()) {
+        pInfo->base.connected = false;
+    }
     return res;
 }
 
@@ -288,13 +291,6 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
     if (type == ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL) {
         return ORBIS_PAD_ERROR_INVALID_ARG;
     }
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
     auto u = UserManagement.GetUserByID(userId);
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
@@ -311,13 +307,6 @@ int PS4_SYSV_ABI scePadOpen(Libraries::UserService::OrbisUserServiceUserId userI
 int PS4_SYSV_ABI scePadOpenExt(Libraries::UserService::OrbisUserServiceUserId userId, s32 type,
                                s32 index, const OrbisPadOpenExtParam* pParam) {
     LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    if (EmulatorSettings.IsUsingSpecialPad()) {
-        if (type != ORBIS_PAD_PORT_TYPE_SPECIAL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    } else {
-        if (type != ORBIS_PAD_PORT_TYPE_STANDARD && type != ORBIS_PAD_PORT_TYPE_REMOTE_CONTROL)
-            return ORBIS_PAD_ERROR_DEVICE_NOT_CONNECTED;
-    }
     auto u = UserManagement.GetUserByID(userId);
     if (!u) {
         return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;

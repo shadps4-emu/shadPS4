@@ -1,15 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <SDL3/SDL_init.h>
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
-#include "common/assert.h"
+#include <queue>
+
+#define MINIMP3_IMPLEMENTATION
+#include <minimp3.h>
+
+#include "common/logging/formatter.h"
 #include "common/path_util.h"
-#include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "imgui/imgui_std.h"
@@ -22,9 +26,7 @@ namespace Libraries::Np::NpTrophy {
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
-
 std::string side = "right";
-
 double trophy_timer;
 
 TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
@@ -32,7 +34,6 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
     : trophy_name(trophyName), trophy_type(rarity) {
 
     side = EmulatorSettings.GetTrophyNotificationSide();
-
     trophy_timer = EmulatorSettings.GetTrophyNotificationDuration();
 
     if (std::filesystem::exists(trophyIconPath)) {
@@ -86,44 +87,86 @@ TrophyUI::TrophyUI(const std::filesystem::path& trophyIconPath, const std::strin
 
     AddLayer(this);
 
-    MIX_Init();
-    mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, NULL);
-    if (!mixer) {
-        LOG_ERROR(Lib_NpTrophy, "Could not initialize SDL Mixer, {}", SDL_GetError());
+    if (SDL_WasInit(SDL_INIT_AUDIO) != 0) {
+        if (!SDL_Init(SDL_INIT_AUDIO)) {
+            LOG_ERROR(Lib_NpTrophy, "Unable to init SDL Audio for trophy sound: {}",
+                      SDL_GetError());
+            return;
+        }
+    }
+
+    audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+
+    // user selected Sdl Backend, use same device as Sdl main Device
+    if (EmulatorSettings.GetAudioBackend() == 0) {
+        if (EmulatorSettings.GetSDLMainOutputDevice() != "Default Device") {
+            int count;
+            SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&count);
+
+            for (int i = 0; i < count; i++) {
+                std::string name = SDL_GetAudioDeviceName(devices[i]);
+                if (name == EmulatorSettings.GetSDLMainOutputDevice()) {
+                    audioDevice = SDL_OpenAudioDevice(devices[i], NULL);
+                }
+            }
+        }
+
+        // user selected OpenAl Backend, use same device as OpenAl main Device
+    } else if (EmulatorSettings.GetAudioBackend() == 1) {
+        if (EmulatorSettings.GetOpenALMainOutputDevice() != "Default Device") {
+            int count;
+            SDL_AudioDeviceID* devices = SDL_GetAudioPlaybackDevices(&count);
+
+            for (int i = 0; i < count; i++) {
+                std::string name = SDL_GetAudioDeviceName(devices[i]);
+                // Device names are the same for openAl/Sdl, just with an added prefix
+                name.erase(0, 15);
+                if (name == EmulatorSettings.GetOpenALMainOutputDevice()) {
+                    audioDevice = SDL_OpenAudioDevice(devices[i], NULL);
+                }
+            }
+        }
+    }
+
+    if (audioDevice == 0) {
+        LOG_ERROR(Lib_NpTrophy, "Unable to open audio device for trophy sound playback: {}",
+                  SDL_GetError());
         return;
     }
 
-    MIX_SetMasterGain(mixer, static_cast<float>(EmulatorSettings.GetVolumeSlider() / 100.f));
-    auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
-    auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
+    const auto musicPathMp3 = CustomTrophy_Dir / "trophy.mp3";
+    const auto musicPathWav = CustomTrophy_Dir / "trophy.wav";
+    std::vector<unsigned char> sound_data;
 
     if (std::filesystem::exists(musicPathMp3)) {
-        audio = MIX_LoadAudio(mixer, musicPathMp3.string().c_str(), false);
+        std::ifstream file(musicPathMp3, std::ios::binary);
+        sound_data = std::vector<unsigned char>((std::istreambuf_iterator<char>(file)),
+                                                std::istreambuf_iterator<char>());
+        file.close();
+        PlayMp3(sound_data);
     } else if (std::filesystem::exists(musicPathWav)) {
-        audio = MIX_LoadAudio(mixer, musicPathWav.string().c_str(), false);
+        std::ifstream file(musicPathWav, std::ios::binary);
+        sound_data = std::vector<unsigned char>((std::istreambuf_iterator<char>(file)),
+                                                std::istreambuf_iterator<char>());
+        file.close();
+        PlayWav(sound_data);
     } else {
         auto soundFile = resource.open("src/images/trophy.wav");
-        std::vector<u8> soundData = std::vector<u8>(soundFile.begin(), soundFile.end());
-        audio =
-            MIX_LoadAudio_IO(mixer, SDL_IOFromMem(soundData.data(), soundData.size()), false, true);
-        // due to low volume of default sound file
-        MIX_SetMasterGain(mixer, MIX_GetMasterGain(mixer) * 1.3f);
-    }
-
-    if (!audio) {
-        LOG_ERROR(Lib_NpTrophy, "Could not loud audio file, {}", SDL_GetError());
-        return;
-    }
-
-    if (!MIX_PlayAudio(mixer, audio)) {
-        LOG_ERROR(Lib_NpTrophy, "Could not play audio file, {}", SDL_GetError());
+        sound_data = std::vector<unsigned char>(soundFile.begin(), soundFile.end());
+        PlayWav(sound_data);
     }
 }
 
 TrophyUI::~TrophyUI() {
-    MIX_DestroyAudio(audio);
-    MIX_DestroyMixer(mixer);
-    MIX_Quit();
+    if (stream) {
+        SDL_DestroyAudioStream(stream);
+    }
+
+    // if emulator is not using sdl audio backend
+    if (EmulatorSettings.GetAudioBackend() != 0) {
+        SDL_CloseAudioDevice(audioDevice);
+        SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    }
 
     Finish();
 }
@@ -273,6 +316,64 @@ void TrophyUI::Draw() {
             current_trophy_ui.reset();
         }
     }
+}
+
+void TrophyUI::PlayMp3(std::vector<unsigned char> mp3Data) {
+    mp3dec_t mp3d;
+    mp3dec_frame_info_t info;
+    std::vector<short> pcm(MINIMP3_MAX_SAMPLES_PER_FRAME);
+    mp3dec_init(&mp3d);
+
+    // always s16 when decoded by minimp3, channels/frequency changed later on as necessary
+    SDL_AudioSpec spec = {SDL_AUDIO_S16, 2, 44100};
+    bool specInfoSet = false;
+
+    stream = SDL_CreateAudioStream(&spec, &spec);
+    SDL_BindAudioStream(audioDevice, stream);
+
+    // make this louder than game stream
+    SDL_SetAudioStreamGain(stream,
+                           static_cast<float>(EmulatorSettings.GetVolumeSlider() * 0.01f * 1.2f));
+    unsigned char* buffer_ptr = mp3Data.data();
+    size_t remaining_size = mp3Data.size();
+
+    while (remaining_size > 0) {
+        int samples = mp3dec_decode_frame(&mp3d, buffer_ptr, remaining_size, pcm.data(), &info);
+        if (samples > 0) {
+            if (!specInfoSet && info.hz > 0 && info.channels > 0) {
+                spec = {SDL_AUDIO_S16, info.channels, info.hz};
+                SDL_SetAudioStreamFormat(stream, &spec, &spec);
+                specInfoSet = true;
+            }
+
+            SDL_PutAudioStreamData(stream, pcm.data(), samples * 2 * sizeof(short));
+            buffer_ptr += info.frame_bytes;
+            remaining_size -= info.frame_bytes;
+        } else {
+            break;
+        }
+    }
+}
+
+void TrophyUI::PlayWav(std::vector<unsigned char> wavData) {
+    SDL_AudioSpec spec;
+    Uint8* audioBuf = nullptr;
+    Uint32 audioLen = 0;
+
+    SDL_IOStream* io = SDL_IOFromConstMem(wavData.data(), wavData.size());
+    if (!SDL_LoadWAV_IO(io, true, &spec, &audioBuf, &audioLen)) {
+        LOG_ERROR(Lib_NpTrophy, "Unable to load trophy wave file data: {}", SDL_GetError());
+        return;
+    }
+
+    SDL_AudioStream* stream = SDL_CreateAudioStream(&spec, &spec);
+    SDL_BindAudioStream(audioDevice, stream);
+
+    // make this louder than game stream
+    SDL_SetAudioStreamGain(stream,
+                           static_cast<float>(EmulatorSettings.GetVolumeSlider() * 0.01f * 1.2f));
+    SDL_PutAudioStreamData(stream, audioBuf, audioLen);
+    SDL_free(audioBuf);
 }
 
 void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName,

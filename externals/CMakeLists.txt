@@ -21,6 +21,15 @@ if (NOT TARGET Boost::headers)
     add_subdirectory(ext-boost)
 endif()
 
+# spdlog
+set(SPDLOG_NO_EXCEPTIONS ON)
+set(SPDLOG_DISABLE_GLOBAL_LOGGER ON)
+if (TARGET fmt::fmt)
+    set(SPDLOG_FMT_EXTERNAL ON)
+endif()
+add_subdirectory(spdlog EXCLUDE_FROM_ALL SYSTEM)
+target_compile_definitions(spdlog PUBLIC SPDLOG_FUNCTION=__func__)
+
 # fmtlib
 if (NOT TARGET fmt::fmt)
     add_subdirectory(fmt)
@@ -61,41 +70,6 @@ if (NOT TARGET SDL3::SDL3)
     set(SDL_TEST_LIBRARY OFF)
     set(SDL_PIPEWIRE OFF)
     add_subdirectory(sdl3)
-endif()
-
-# SDL3_image
-if (NOT TARGET SDL3_image::SDL3_image)
-    set(SDLIMAGE_VENDORED OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_ANI OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_AVIF OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_BMP OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_GIF OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_JPG  OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_JXL OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_LBM OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_PCX OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_PNM OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_QOI OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_SVG OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_TGA OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_TIF OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_WEBP OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_XCF OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_XPM OFF CACHE BOOL "" FORCE)
-    set(SDLIMAGE_XV OFF CACHE BOOL "" FORCE)
-    add_subdirectory(sdl3_image)
-endif()
-
-# SDL3_mixer
-if (NOT TARGET SDL3_mixer::SDL3_mixer)
-    set(SDLMIXER_FLAC OFF)
-    set(SDLMIXER_OGG OFF)
-    set(SDLMIXER_MOD OFF)
-    set(SDLMIXER_MIDI OFF)
-    set(SDLMIXER_OPUS OFF)
-    set(SDLMIXER_WAVPACK OFF)
-    set(BUILD_SHARED_LIBS OFF)
-    add_subdirectory(sdl3_mixer)
 endif()
 
 # vulkan-headers
@@ -311,6 +285,15 @@ if (NOT TARGET CLI11::CLI11)
     add_subdirectory(CLI11)
 endif()
 
+# minimp3
+add_library(minimp3 INTERFACE)
+target_include_directories(minimp3 INTERFACE minimp3)
+
+# ImGuiFileDialog
+add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
+target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)
+target_include_directories(ImGuiFileDialog INTERFACE ImGuiFileDialog/)
+target_link_libraries(ImGuiFileDialog PRIVATE Dear_ImGui)
 
 #openal
 if (NOT TARGET OpenAL::OpenAL)
