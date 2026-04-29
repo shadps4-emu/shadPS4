@@ -16,7 +16,7 @@ struct Game {
     bool focusState;
 };
 
-void Launch();
+void Launch(char* executableName);
 void SetGameIcons(std::vector<Game>& games);
 void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* texture = {});
 std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder);

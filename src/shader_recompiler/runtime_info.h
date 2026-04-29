@@ -40,16 +40,30 @@ constexpr Stage StageFromIndex(size_t index) noexcept {
     return static_cast<Stage>(index);
 }
 
+struct CommonHsEsVsRuntimeInfo {
+    u32 hs_output_cp_stride;
+
+    bool operator<=>(const CommonHsEsVsRuntimeInfo&) const noexcept = default;
+};
+
+struct CommonEsVsRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
+    AmdGpu::TessellationType tess_type;
+    AmdGpu::TessellationTopology tess_topology;
+    AmdGpu::TessellationPartitioning tess_partitioning;
+
+    bool operator<=>(const CommonEsVsRuntimeInfo&) const noexcept = default;
+};
+
 struct LocalRuntimeInfo {
     u32 ls_stride;
 
     auto operator<=>(const LocalRuntimeInfo&) const noexcept = default;
 };
 
-struct ExportRuntimeInfo {
+struct ExportRuntimeInfo : protected CommonEsVsRuntimeInfo {
     u32 vertex_data_size;
 
-    auto operator<=>(const ExportRuntimeInfo&) const noexcept = default;
+    bool operator<=>(const ExportRuntimeInfo&) const noexcept = default;
 };
 
 enum class Output : u8 {
@@ -79,49 +93,26 @@ enum class Output : u8 {
 };
 using OutputMap = std::array<Output, 4>;
 
-struct VertexRuntimeInfo {
+struct VertexRuntimeInfo : protected CommonEsVsRuntimeInfo {
     u32 num_outputs;
+    u32 num_exports;
     std::array<OutputMap, 3> outputs;
     bool tess_emulated_primitive{};
     bool emulate_depth_negative_one_to_one{};
     bool clip_disable{};
     u32 step_rate_0;
     u32 step_rate_1;
-    AmdGpu::TessellationType tess_type;
-    AmdGpu::TessellationTopology tess_topology;
-    AmdGpu::TessellationPartitioning tess_partitioning;
-    u32 hs_output_cp_stride{};
 
-    bool operator==(const VertexRuntimeInfo& other) const noexcept {
-        return num_outputs == other.num_outputs && outputs == other.outputs &&
-               tess_emulated_primitive == other.tess_emulated_primitive &&
-               emulate_depth_negative_one_to_one == other.emulate_depth_negative_one_to_one &&
-               clip_disable == other.clip_disable && tess_type == other.tess_type &&
-               tess_topology == other.tess_topology &&
-               tess_partitioning == other.tess_partitioning &&
-               hs_output_cp_stride == other.hs_output_cp_stride &&
-               step_rate_0 == other.step_rate_0 && step_rate_1 == other.step_rate_1;
-    }
-
-    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        hs_output_cp_stride = tess_constants.hs_cp_stride;
-    }
+    bool operator<=>(const VertexRuntimeInfo& other) const noexcept = default;
 };
 
-struct HullRuntimeInfo {
+struct HullRuntimeInfo : protected CommonHsEsVsRuntimeInfo {
     u32 num_input_control_points;
     u32 num_threads;
     AmdGpu::TessellationType tess_type;
     bool offchip_lds_enable;
     u32 ls_stride;
-    u32 hs_output_cp_stride;
     u32 hs_output_base;
-
-    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
-        ls_stride = tess_constants.ls_stride;
-        hs_output_cp_stride = tess_constants.hs_cp_stride;
-        hs_output_base = tess_constants.hs_output_base;
-    }
 
     bool operator==(const HullRuntimeInfo&) const = default;
 
@@ -247,6 +238,10 @@ struct RuntimeInfo {
         GeometryRuntimeInfo gs_info;
         FragmentRuntimeInfo fs_info;
         ComputeRuntimeInfo cs_info;
+        // Hs/Es/VsRuntimeInfo inherit from these so we can
+        // access common info with correct offsets
+        CommonHsEsVsRuntimeInfo hs_es_vs_info;
+        CommonEsVsRuntimeInfo es_vs_info;
     };
 
     void Initialize(Stage stage_) {
@@ -272,6 +267,14 @@ struct RuntimeInfo {
             return ls_info == other.ls_info;
         default:
             return true;
+        }
+    }
+
+    void InitFromTessConstants(Shader::TessellationDataConstantBuffer& tess_constants) {
+        hs_es_vs_info.hs_output_cp_stride = tess_constants.hs_cp_stride;
+        if (stage == Stage::Hull) {
+            hs_info.ls_stride = tess_constants.ls_stride;
+            hs_info.hs_output_base = tess_constants.hs_output_base;
         }
     }
 };

@@ -133,6 +133,7 @@ GcnInst GcnDecodeContext::decodeInstruction(GcnCodeSlice& code) {
     if (encodingLen == sizeof(u32)) {
         decodeLiteralConstant(encoding, code);
         decodeSubDwordAddressing(encoding, code);
+        decodeDataParallelPrimitive(encoding, code);
     }
 
     repairOperandType();
@@ -502,6 +503,41 @@ void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSl
         } else {
             LOG_WARNING(Render_Recompiler, "illegal instruction: SDWA used outside VOP1/VOP2/VOPC");
         }
+    }
+}
+
+void GcnDecodeContext::decodeDataParallelPrimitive(InstEncoding encoding, GcnCodeSlice& code) {
+    // Find if the instruction contains DPP
+    if (m_instruction.src[0].field == OperandField::Dpp) {
+        m_instruction.src[0].code = code.readu32();
+        m_instruction.length += sizeof(u32);
+
+        Dpp dpp = *reinterpret_cast<Dpp*>(&m_instruction.src[0].code);
+
+        m_instruction.src[0].field = OperandField::VectorGPR;
+        m_instruction.src[0].code = dpp.src0;
+
+        if (dpp.src0_abs) {
+            m_instruction.src[0].input_modifier.abs = true;
+        }
+        if (dpp.src0_neg) {
+            m_instruction.src[0].input_modifier.neg = true;
+        }
+        if (dpp.src1_abs) {
+            m_instruction.src[1].input_modifier.abs = true;
+        }
+        if (dpp.src1_neg) {
+            m_instruction.src[1].input_modifier.neg = true;
+        }
+
+        auto op = dpp.GetOperation();
+        LOG_ERROR(
+            Render_Recompiler,
+            "unhandled DPP operation: {} ({:#x}), value {}, bc {}, row_mask {:#b}, bank_mask {:#b}",
+            magic_enum::enum_name(op.op), u32(op.op), op.value, bool(dpp.bc), u8(dpp.row_mask),
+            u8(dpp.bank_mask));
+
+        m_instruction.src[0].dpp = op;
     }
 }
 
