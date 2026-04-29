@@ -80,6 +80,34 @@ static constexpr FT_Int32 kFtLoadFlagsBase =
 static constexpr FT_Int32 kFtLoadFlagsRender =
     static_cast<FT_Int32>(kFtLoadFlagsBase | FT_LOAD_RENDER);
 
+static s32 RoundFixedMul16x16ToS32(long fixed_16_16, s32 value) {
+    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
+    const long long sign_adj =
+        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
+    const long long base = sign_adj + prod;
+    long long tmp = base - 0x8000LL;
+    if (tmp < 0) {
+        tmp = base + 0x7FFFLL;
+    }
+    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
+}
+
+static int FloorIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) > v) {
+        --i;
+    }
+    return i;
+}
+
+static int CeilIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) < v) {
+        ++i;
+    }
+    return i;
+}
+
 } // namespace
 
 FT_Face CreateFreeTypeFaceFromBytes(const unsigned char* data, std::size_t size,
@@ -414,22 +442,9 @@ bool BuildTrueOutline(GeneratedGlyph& gg) {
         const long x_scale = static_cast<long>(resolved_face->size->metrics.x_scale);
         const long y_scale = static_cast<long>(resolved_face->size->metrics.y_scale);
 
-        const auto round_fixed_mul = [](long fixed_16_16, s32 value) -> s32 {
-            const long long prod =
-                static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-            const long long sign_adj =
-                (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-            const long long base = sign_adj + prod;
-            long long tmp = base - 0x8000LL;
-            if (tmp < 0) {
-                tmp = base + 0x7FFFLL;
-            }
-            return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-        };
-
         FT_Vector delta{};
-        delta.x = static_cast<FT_Pos>(round_fixed_mul(x_scale, shift_x_units));
-        delta.y = static_cast<FT_Pos>(round_fixed_mul(y_scale, shift_y_units));
+        delta.x = static_cast<FT_Pos>(RoundFixedMul16x16ToS32(x_scale, shift_x_units));
+        delta.y = static_cast<FT_Pos>(RoundFixedMul16x16ToS32(y_scale, shift_y_units));
         FT_Set_Transform(resolved_face, nullptr, &delta);
     } else {
         FT_Set_Transform(resolved_face, nullptr, nullptr);
@@ -974,21 +989,8 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
         const long x_scale = static_cast<long>(resolved_face->size->metrics.x_scale);
         const long y_scale = static_cast<long>(resolved_face->size->metrics.y_scale);
 
-        const auto round_fixed_mul = [](long fixed_16_16, s32 value) -> s32 {
-            const long long prod =
-                static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-            const long long sign_adj =
-                (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-            const long long base = sign_adj + prod;
-            long long tmp = base - 0x8000LL;
-            if (tmp < 0) {
-                tmp = base + 0x7FFFLL;
-            }
-            return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-        };
-
-        delta.x += static_cast<FT_Pos>(round_fixed_mul(x_scale, shift_x_units));
-        delta.y += static_cast<FT_Pos>(round_fixed_mul(y_scale, shift_y_units));
+        delta.x += static_cast<FT_Pos>(RoundFixedMul16x16ToS32(x_scale, shift_x_units));
+        delta.y += static_cast<FT_Pos>(RoundFixedMul16x16ToS32(y_scale, shift_y_units));
     }
     FT_Set_Transform(resolved_face, nullptr, &delta);
 
@@ -1115,40 +1117,25 @@ s32 RenderCodepointToSurface(FontState& st, Libraries::Font::OrbisFontHandle han
         static_cast<u8*>(surf->buffer) +
         static_cast<std::size_t>(result->UpdateRect.y) * static_cast<std::size_t>(surf->widthByte) +
         static_cast<std::size_t>(result->UpdateRect.x) * static_cast<std::size_t>(bpp);
-    const auto floor_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) > v) {
-            --i;
-        }
-        return i;
-    };
-    const auto ceil_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) < v) {
-            ++i;
-        }
-        return i;
-    };
-
     const float left_f = x + metrics->Horizontal.bearingX;
     const float top_f = y + metrics->Horizontal.bearingY;
     const float right_f = left_f + metrics->width;
     const float bottom_f = top_f - metrics->height;
 
-    const int left_i = floor_int(left_f);
-    const int top_i = floor_int(top_f);
-    const int right_i = ceil_int(right_f);
-    const int bottom_i = ceil_int(bottom_f);
+    const int left_i = FloorIntCompat(left_f);
+    const int top_i = FloorIntCompat(top_f);
+    const int right_i = CeilIntCompat(right_f);
+    const int bottom_i = CeilIntCompat(bottom_f);
 
     const float adv_f = x + metrics->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(floor_int(adv_f)) - x;
+    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
     int stride_i = right_i + 1;
     const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = floor_int(adv_f + adjust);
+    const int tmp_i = FloorIntCompat(adv_f + adjust);
     const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
     if (adv_trunc_i == 0) {
         stride_i = tmp_i;
@@ -1361,40 +1348,25 @@ s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontH
         static_cast<u8*>(surf->buffer) +
         static_cast<std::size_t>(result->UpdateRect.y) * static_cast<std::size_t>(surf->widthByte) +
         static_cast<std::size_t>(result->UpdateRect.x) * static_cast<std::size_t>(bpp);
-    const auto floor_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) > v) {
-            --i;
-        }
-        return i;
-    };
-    const auto ceil_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) < v) {
-            ++i;
-        }
-        return i;
-    };
-
     const float left_f = x + m->Horizontal.bearingX;
     const float top_f = y + m->Horizontal.bearingY;
     const float right_f = left_f + m->width;
     const float bottom_f = top_f - m->height;
 
-    const int left_i = floor_int(left_f);
-    const int top_i = floor_int(top_f);
-    const int right_i = ceil_int(right_f);
-    const int bottom_i = ceil_int(bottom_f);
+    const int left_i = FloorIntCompat(left_f);
+    const int top_i = FloorIntCompat(top_f);
+    const int right_i = CeilIntCompat(right_f);
+    const int bottom_i = CeilIntCompat(bottom_f);
 
     const float adv_f = x + m->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(floor_int(adv_f)) - x;
+    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
     int stride_i = right_i + 1;
     const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = floor_int(adv_f + adjust);
+    const int tmp_i = FloorIntCompat(adv_f + adjust);
     const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
     if (adv_trunc_i == 0) {
         stride_i = tmp_i;

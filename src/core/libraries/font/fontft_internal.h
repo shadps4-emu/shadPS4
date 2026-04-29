@@ -478,6 +478,14 @@ struct F32x2 {
     float hi = 0.0f;
 };
 
+float FixedMulUnitsToF26Dot6(long fixed_16_16, u16 units_per_em);
+s32 Cvttss2siCompat(float v);
+s32 RoundMul16x16ToS32(s64 value, s64 fixed_16_16);
+s32 TruncFixed16x16ToInt(s64 fixed_16_16);
+s32 RoundFixedMulValueScaleToS32(long value, long fixed_16_16);
+s64 TruncMulUnitsToS64(long fixed_16_16, u16 units);
+s64 RoundFixedMul16x16ToS64(long fixed_16_16, s32 value);
+
 struct RenderSurfaceSystemUse {
     Libraries::Font::OrbisFontStyleFrame* styleframe = nullptr;
     float catchedScale = 0.0f;

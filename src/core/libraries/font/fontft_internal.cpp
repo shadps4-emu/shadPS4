@@ -4,11 +4,13 @@
 #include "core/libraries/font/fontft_internal.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -82,6 +84,7 @@ static void LogGetCharGlyphMetricsFailOnce(std::string_view stage, s32 rc, FT_Er
         g_get_char_metrics_fail.suppression_logged = true;
     }
 }
+
 } // namespace
 
 static void UpdateFtFontObjShiftCache(u8* font_obj) {
@@ -100,6 +103,294 @@ static void UpdateFtFontObjShiftCache(u8* font_obj) {
     obj->layout_seed_vec[1] = static_cast<std::uint64_t>(static_cast<std::int64_t>(seed_high));
     obj->layout_scale_vec[0] = 0x0000000000010000ull;
     obj->layout_scale_vec[1] = 0x0000000000010000ull;
+}
+
+static FT_UInt ResolveGlyphIndexWithFallback(FT_Face face, u32 codepoint) {
+    if (!face) {
+        return 0;
+    }
+
+    const FT_ULong cp = static_cast<FT_ULong>(codepoint);
+    const FT_CharMap original = face->charmap;
+    FT_UInt glyph_index = FT_Get_Char_Index(face, cp);
+    if (glyph_index != 0 || !face->charmaps || face->num_charmaps <= 1) {
+        return glyph_index;
+    }
+
+    for (int i = 0; i < face->num_charmaps; i++) {
+        FT_CharMap cmap = face->charmaps[i];
+        if (!cmap || cmap == original) {
+            continue;
+        }
+        if (FT_Set_Charmap(face, cmap) != 0) {
+            continue;
+        }
+        glyph_index = FT_Get_Char_Index(face, cp);
+        if (glyph_index != 0) {
+            break;
+        }
+    }
+
+    if (original && face->charmap != original) {
+        (void)FT_Set_Charmap(face, original);
+    }
+    return glyph_index;
+}
+
+static FT_F26Dot6 ClampPpem26Dot6(FT_F26Dot6 value) {
+    constexpr FT_F26Dot6 kMaxPpem26Dot6 = static_cast<FT_F26Dot6>(65535 * 64);
+    if (value > kMaxPpem26Dot6) {
+        return kMaxPpem26Dot6;
+    }
+    if (value < -kMaxPpem26Dot6) {
+        return static_cast<FT_F26Dot6>(-kMaxPpem26Dot6);
+    }
+    return value;
+}
+
+static float ComputeRequestedAppliedScaleRatio(FT_F26Dot6 requested, FT_F26Dot6 applied) {
+    if (requested == 0 || applied == 0) {
+        return 1.0f;
+    }
+    const double req = static_cast<double>(std::abs(static_cast<long long>(requested)));
+    const double got = static_cast<double>(std::abs(static_cast<long long>(applied)));
+    if (!(req > 0.0) || !(got > 0.0)) {
+        return 1.0f;
+    }
+    const double ratio = req / got;
+    if (!std::isfinite(ratio) || ratio <= 0.0) {
+        return 1.0f;
+    }
+    return static_cast<float>(ratio);
+}
+
+static bool IsCjkLikeCodepoint(u32 cp) {
+    return (cp >= 0x3040u && cp <= 0x30FFu) || (cp >= 0x31F0u && cp <= 0x31FFu) ||
+           (cp >= 0x3400u && cp <= 0x4DBFu) || (cp >= 0x4E00u && cp <= 0x9FFFu) ||
+           (cp >= 0xAC00u && cp <= 0xD7AFu) || (cp >= 0xF900u && cp <= 0xFAFFu) ||
+           (cp >= 0x20000u && cp <= 0x2FA1Fu);
+}
+
+static bool IsArabicLikeCodepoint(u32 cp) {
+    return (cp >= 0x0600u && cp <= 0x06FFu) || (cp >= 0x0750u && cp <= 0x077Fu) ||
+           (cp >= 0x08A0u && cp <= 0x08FFu) || (cp >= 0xFB50u && cp <= 0xFDFFu) ||
+           (cp >= 0xFE70u && cp <= 0xFEFFu);
+}
+
+static bool IsSymbolLikeCodepoint(u32 cp) {
+    return (cp >= 0x25A0u && cp <= 0x25FFu) || (cp >= 0x2600u && cp <= 0x26FFu) ||
+           (cp >= 0x2700u && cp <= 0x27BFu);
+}
+
+static F32x2 LoadF32x2FromU64(u64 bits) {
+    const u32 lo = static_cast<u32>(bits & 0xFFFFFFFFull);
+    const u32 hi = static_cast<u32>(bits >> 32);
+    return {
+        .lo = std::bit_cast<float>(lo),
+        .hi = std::bit_cast<float>(hi),
+    };
+}
+
+static float FlipSignBitF32(float v) {
+    u32 bits = std::bit_cast<u32>(v);
+    bits ^= 0x80000000u;
+    return std::bit_cast<float>(bits);
+}
+
+static bool OrderedLtF32(float a, float b) {
+    return !std::isnan(a) && !std::isnan(b) && (a < b);
+}
+
+static float MaxSsCompat(float a, float b) {
+    if (std::isnan(a) || std::isnan(b)) {
+        return b;
+    }
+    if (a > b) {
+        return a;
+    }
+    if (a < b) {
+        return b;
+    }
+    if (a == 0.0f && b == 0.0f) {
+        const bool a_neg = std::signbit(a);
+        const bool b_neg = std::signbit(b);
+        if (a_neg != b_neg) {
+            return a_neg ? b : a;
+        }
+    }
+    return a;
+}
+
+static s32 RoundFixedMul16x16ToS32(long fixed_16_16, s32 value) {
+    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
+    const long long sign_adj =
+        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
+    const long long base = sign_adj + prod;
+    long long tmp = base - 0x8000LL;
+    if (tmp < 0) {
+        tmp = base + 0x7FFFLL;
+    }
+    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
+}
+
+static int FloorIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) > v) {
+        --i;
+    }
+    return i;
+}
+
+static int CeilIntCompat(float v) {
+    int i = static_cast<int>(std::trunc(v));
+    if (static_cast<float>(i) < v) {
+        ++i;
+    }
+    return i;
+}
+
+float FixedMulUnitsToF26Dot6(long fixed_16_16, u16 units_per_em) {
+    constexpr float kOneOver64Local = 1.0f / 64.0f;
+    const long prod = static_cast<long>(static_cast<long long>(fixed_16_16) *
+                                        static_cast<long long>(units_per_em));
+    long rounded = prod + 0xFFFF;
+    if (prod >= 0) {
+        rounded = prod;
+    }
+    const long v = rounded >> 16;
+    return static_cast<float>(v) * kOneOver64Local;
+}
+
+s32 Cvttss2siCompat(float v) {
+    if (!std::isfinite(v) || v > 2147483647.0f || v < -2147483648.0f) {
+        return std::numeric_limits<s32>::min();
+    }
+    return static_cast<s32>(v);
+}
+
+s32 RoundMul16x16ToS32(s64 value, s64 fixed_16_16) {
+    const s64 prod = value * fixed_16_16;
+    const s64 sign_adj = ((~value) >> 63) * -0x10000LL;
+    const s64 base = sign_adj + prod;
+    s64 tmp = base - 0x8000LL;
+    if (tmp < 0) {
+        tmp = base + 0x7FFFLL;
+    }
+    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
+}
+
+s32 TruncFixed16x16ToInt(s64 fixed_16_16) {
+    s64 tmp = fixed_16_16;
+    if (fixed_16_16 < 0) {
+        tmp = fixed_16_16 + 0xFFFFLL;
+    }
+    return static_cast<s32>(tmp >> 16);
+}
+
+s32 RoundFixedMulValueScaleToS32(long value, long fixed_16_16) {
+    const long long prod = static_cast<long long>(value) * static_cast<long long>(fixed_16_16);
+    const long long sign_adj = (value >= 0) ? 0x10000LL : 0LL;
+    long long tmp = sign_adj + prod - 0x8000LL;
+    if (tmp < 0) {
+        tmp = sign_adj + prod + 0x7FFFLL;
+    }
+    return static_cast<s32>(static_cast<u64>(tmp) >> 16);
+}
+
+s64 TruncMulUnitsToS64(long fixed_16_16, u16 units) {
+    const s64 prod = static_cast<s64>(fixed_16_16) * static_cast<s64>(units);
+    s64 rounded = prod;
+    if (prod < 0) {
+        rounded = prod + 0xFFFFLL;
+    }
+    return static_cast<s64>(static_cast<s32>(rounded >> 16));
+}
+
+s64 RoundFixedMul16x16ToS64(long fixed_16_16, s32 value) {
+    const long long prod = static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
+    const long long sign_adj =
+        (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
+    const long long base = sign_adj + prod;
+    long long tmp = base - 0x8000LL;
+    if (tmp < 0) {
+        tmp = base + 0x7FFFLL;
+    }
+    return static_cast<s64>(static_cast<s32>(static_cast<u64>(tmp) >> 16));
+}
+
+static FT_Error SetCharSizeCompat(FT_Face face, FT_F26Dot6 char_w, FT_F26Dot6 char_h, u32 dpi_x,
+                                  u32 dpi_y, FT_F26Dot6* out_used_w = nullptr,
+                                  FT_F26Dot6* out_used_h = nullptr) {
+    auto write_used = [&](FT_F26Dot6 used_w, FT_F26Dot6 used_h) {
+        if (out_used_w) {
+            *out_used_w = used_w;
+        }
+        if (out_used_h) {
+            *out_used_h = used_h;
+        }
+    };
+    if (!face) {
+        write_used(char_w, char_h);
+        return FT_Err_Invalid_Face_Handle;
+    }
+
+    FT_Error err = FT_Set_Char_Size(face, char_w, char_h, dpi_x, dpi_y);
+    if (err == 0) {
+        write_used(char_w, char_h);
+        return 0;
+    }
+
+    const FT_F26Dot6 clamped_w = ClampPpem26Dot6(char_w);
+    const FT_F26Dot6 clamped_h = ClampPpem26Dot6(char_h);
+    if (clamped_w != char_w || clamped_h != char_h) {
+        err = FT_Set_Char_Size(face, clamped_w, clamped_h, dpi_x, dpi_y);
+        if (err == 0) {
+            write_used(clamped_w, clamped_h);
+            return 0;
+        }
+    }
+
+    if (face->num_fixed_sizes <= 0 || !face->available_sizes) {
+        write_used(char_w, char_h);
+        return err;
+    }
+
+    const double req_w = static_cast<double>(std::abs(static_cast<long long>(char_w))) / 64.0;
+    const double req_h = static_cast<double>(std::abs(static_cast<long long>(char_h))) / 64.0;
+    const double target_w = (req_w > 0.0) ? req_w : req_h;
+    const double target_h = (req_h > 0.0) ? req_h : req_w;
+    if (target_w <= 0.0 || target_h <= 0.0) {
+        write_used(char_w, char_h);
+        return err;
+    }
+
+    int best_idx = -1;
+    double best_score = std::numeric_limits<double>::infinity();
+    for (int i = 0; i < face->num_fixed_sizes; i++) {
+        const FT_Bitmap_Size& strike = face->available_sizes[i];
+        const double strike_w = std::max(1.0, static_cast<double>(strike.x_ppem) / 64.0);
+        const double strike_h = std::max(1.0, static_cast<double>(strike.y_ppem) / 64.0);
+        const double rel_w = std::abs(strike_w - target_w) / target_w;
+        const double rel_h = std::abs(strike_h - target_h) / target_h;
+        const double score = rel_w + rel_h;
+        if (score < best_score) {
+            best_score = score;
+            best_idx = i;
+        }
+    }
+
+    if (best_idx < 0) {
+        write_used(char_w, char_h);
+        return err;
+    }
+    err = FT_Select_Size(face, best_idx);
+    if (err == 0) {
+        const FT_Bitmap_Size& strike = face->available_sizes[best_idx];
+        write_used(strike.x_ppem, strike.y_ppem);
+        return 0;
+    }
+    write_used(char_w, char_h);
+    return err;
 }
 
 SysFontDesc GetSysFontDesc(u32 font_id) {
@@ -382,29 +673,10 @@ u32 ResolveSysFontCodepoint(const void* record, u64 code, u32 flags, u32* out_fo
         const u32 arabic_id =
             selector->arabic_font_id != 0xffffffffu ? selector->arabic_font_id : roman_id;
 
-        auto is_cjk_like = [](u32 cp) -> bool {
-            if ((cp >= 0x3040u && cp <= 0x30FFu) || (cp >= 0x31F0u && cp <= 0x31FFu) ||
-                (cp >= 0x3400u && cp <= 0x4DBFu) || (cp >= 0x4E00u && cp <= 0x9FFFu) ||
-                (cp >= 0xAC00u && cp <= 0xD7AFu) || (cp >= 0xF900u && cp <= 0xFAFFu) ||
-                (cp >= 0x20000u && cp <= 0x2FA1Fu)) {
-                return true;
-            }
-            return false;
-        };
-        auto is_arabic_like = [](u32 cp) -> bool {
-            return (cp >= 0x0600u && cp <= 0x06FFu) || (cp >= 0x0750u && cp <= 0x077Fu) ||
-                   (cp >= 0x08A0u && cp <= 0x08FFu) || (cp >= 0xFB50u && cp <= 0xFDFFu) ||
-                   (cp >= 0xFE70u && cp <= 0xFEFFu);
-        };
-        auto is_symbol_like = [](u32 cp) -> bool {
-            return (cp >= 0x25A0u && cp <= 0x25FFu) || (cp >= 0x2600u && cp <= 0x26FFu) ||
-                   (cp >= 0x2700u && cp <= 0x27BFu);
-        };
-
         u32 selected_font_id = roman_id;
-        if (is_arabic_like(code_u32)) {
+        if (IsArabicLikeCodepoint(code_u32)) {
             selected_font_id = arabic_id;
-        } else if (is_cjk_like(code_u32) || is_symbol_like(code_u32)) {
+        } else if (IsCjkLikeCodepoint(code_u32) || IsSymbolLikeCodepoint(code_u32)) {
             selected_font_id = primary_id;
         }
 
@@ -634,45 +906,6 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
     F32x2 acc_u13_i8{};
     F32x2 acc_x_bounds{};
 
-    const auto load_f32x2_from_u64 = [](u64 bits) -> F32x2 {
-        const u32 lo = static_cast<u32>(bits & 0xFFFFFFFFull);
-        const u32 hi = static_cast<u32>(bits >> 32);
-        return {
-            .lo = std::bit_cast<float>(lo),
-            .hi = std::bit_cast<float>(hi),
-        };
-    };
-
-    const auto flip_sign_bit = [](float v) -> float {
-        u32 bits = std::bit_cast<u32>(v);
-        bits ^= 0x80000000u;
-        return std::bit_cast<float>(bits);
-    };
-
-    const auto ordered_lt = [](float a, float b) -> bool {
-        return !std::isnan(a) && !std::isnan(b) && (a < b);
-    };
-
-    const auto maxss = [](float a, float b) -> float {
-        if (std::isnan(a) || std::isnan(b)) {
-            return b;
-        }
-        if (a > b) {
-            return a;
-        }
-        if (a < b) {
-            return b;
-        }
-        if (a == 0.0f && b == 0.0f) {
-            const bool a_neg = std::signbit(a);
-            const bool b_neg = std::signbit(b);
-            if (a_neg != b_neg) {
-                return a_neg ? b : a;
-            }
-        }
-        return a;
-    };
-
     for (int n = entry_count; n != 0; --n) {
         const u32 font_id = *entry_indices;
         ++entry_indices;
@@ -787,19 +1020,19 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
 
         const float prev_baseline_max = baseline_max;
         const float prev_effect_for_baseline = effect_for_baseline;
-        const bool baseline_update = ordered_lt(prev_baseline_max, baseline);
-        baseline_max = maxss(baseline, prev_baseline_max);
+        const bool baseline_update = OrderedLtF32(prev_baseline_max, baseline);
+        baseline_max = MaxSsCompat(baseline, prev_baseline_max);
         effect_for_baseline = baseline_update ? effect_h : prev_effect_for_baseline;
 
         const float prev_delta_max = delta_max;
         const float prev_effect_for_delta = effect_for_delta;
         const float new_delta = line_advance - baseline;
-        const bool delta_update = ordered_lt(prev_delta_max, new_delta);
-        delta_max = maxss(new_delta, prev_delta_max);
+        const bool delta_update = OrderedLtF32(prev_delta_max, new_delta);
+        delta_max = MaxSsCompat(new_delta, prev_delta_max);
         effect_for_delta = delta_update ? effect_h : prev_effect_for_delta;
 
-        const F32x2 v_i8_adj_u13 = load_f32x2_from_u64(i8_adj_u13_bits);
-        const F32x2 v_x_bounds = load_f32x2_from_u64(x_bounds_bits);
+        const F32x2 v_i8_adj_u13 = LoadF32x2FromU64(i8_adj_u13_bits);
+        const F32x2 v_x_bounds = LoadF32x2FromU64(x_bounds_bits);
 
         const F32x2 perm = {.lo = v_i8_adj_u13.hi, .hi = v_i8_adj_u13.lo};
         const F32x2 diff = {.lo = v_x_bounds.lo - perm.lo, .hi = v_x_bounds.hi - perm.hi};
@@ -808,10 +1041,10 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
             .hi = prev_u13_i8.hi + prev_bounds.hi,
         };
 
-        const F32x2 inserted = {.lo = flip_sign_bit(v_i8_adj_u13.hi), .hi = v_i8_adj_u13.lo};
+        const F32x2 inserted = {.lo = FlipSignBitF32(v_i8_adj_u13.hi), .hi = v_i8_adj_u13.lo};
 
-        const bool mask_lo = ordered_lt(diff.lo, sum.lo);
-        const bool mask_hi = ordered_lt(diff.hi, sum.hi);
+        const bool mask_lo = OrderedLtF32(diff.lo, sum.lo);
+        const bool mask_hi = OrderedLtF32(diff.hi, sum.hi);
         if (mask_lo) {
             acc_x_bounds.lo = v_x_bounds.lo;
             acc_u13_i8.lo = inserted.lo;
@@ -827,7 +1060,7 @@ s32 ComputeHorizontalLayoutBlocks(OrbisFontHandle fontHandle, const void* style_
     }
 
     const float line_h = baseline_max + delta_max;
-    const float effect_h = maxss(effect_for_baseline, effect_for_delta);
+    const float effect_h = MaxSsCompat(effect_for_baseline, effect_for_delta);
 
     if ((reinterpret_cast<std::uintptr_t>(out_words) & (alignof(HorizontalLayoutBlocks) - 1)) ==
         0) {
@@ -1284,12 +1517,10 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
         }
     }
 
-    FT_UInt resolved_glyph_index =
-        FT_Get_Char_Index(resolved_face, static_cast<FT_ULong>(resolved_code));
+    FT_UInt resolved_glyph_index = ResolveGlyphIndexWithFallback(resolved_face, resolved_code);
     if (resolved_glyph_index == 0) {
         if (st->ext_face_ready && st->ext_ft_face && resolved_face != st->ext_ft_face) {
-            const FT_UInt gi =
-                FT_Get_Char_Index(st->ext_ft_face, static_cast<FT_ULong>(resolved_code));
+            const FT_UInt gi = ResolveGlyphIndexWithFallback(st->ext_ft_face, resolved_code);
             if (gi != 0) {
                 resolved_face = st->ext_ft_face;
                 resolved_glyph_index = gi;
@@ -1302,7 +1533,7 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
             if (!fb.ready || !fb.ft_face) {
                 continue;
             }
-            const FT_UInt gi = FT_Get_Char_Index(fb.ft_face, static_cast<FT_ULong>(resolved_code));
+            const FT_UInt gi = ResolveGlyphIndexWithFallback(fb.ft_face, resolved_code);
             if (gi == 0) {
                 continue;
             }
@@ -1368,7 +1599,9 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
 
     const auto char_w = static_cast<FT_F26Dot6>(static_cast<s32>(scaled_w * 64.0f));
     const auto char_h = static_cast<FT_F26Dot6>(static_cast<s32>(scaled_h * 64.0f));
-    if (FT_Set_Char_Size(resolved_face, char_w, char_h, 72, 72) != 0) {
+    FT_F26Dot6 used_char_w = char_w;
+    FT_F26Dot6 used_char_h = char_h;
+    if (SetCharSizeCompat(resolved_face, char_w, char_h, 72, 72, &used_char_w, &used_char_h) != 0) {
         if (use_cached_style) {
             font->cached_style.cache_lock_word = prev_cached_lock;
         }
@@ -1389,22 +1622,9 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
         const long x_scale = static_cast<long>(resolved_face->size->metrics.x_scale);
         const long y_scale = static_cast<long>(resolved_face->size->metrics.y_scale);
 
-        const auto round_fixed_mul = [](long fixed_16_16, s32 value) -> s32 {
-            const long long prod =
-                static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-            const long long sign_adj =
-                (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-            const long long base = sign_adj + prod;
-            long long tmp = base - 0x8000LL;
-            if (tmp < 0) {
-                tmp = base + 0x7FFFLL;
-            }
-            return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-        };
-
         FT_Vector delta{};
-        delta.x = static_cast<FT_Pos>(round_fixed_mul(x_scale, shift_x_units));
-        delta.y = static_cast<FT_Pos>(round_fixed_mul(y_scale, shift_y_units));
+        delta.x = static_cast<FT_Pos>(RoundFixedMul16x16ToS32(x_scale, shift_x_units));
+        delta.y = static_cast<FT_Pos>(RoundFixedMul16x16ToS32(y_scale, shift_y_units));
         FT_Set_Transform(resolved_face, nullptr, &delta);
     } else {
         FT_Set_Transform(resolved_face, nullptr, nullptr);
@@ -1430,12 +1650,14 @@ s32 GetCharGlyphMetrics(OrbisFontHandle fontHandle, u32 code, OrbisFontGlyphMetr
     const float advance = static_cast<float>(slot->metrics.horiAdvance) / 64.0f;
     const float width_px = static_cast<float>(slot->metrics.width) / 64.0f;
     const float height_px = static_cast<float>(slot->metrics.height) / 64.0f;
+    const float scale_ratio_x = ComputeRequestedAppliedScaleRatio(char_w, used_char_w);
+    const float scale_ratio_y = ComputeRequestedAppliedScaleRatio(char_h, used_char_h);
 
-    metrics->width = width_px;
-    metrics->height = height_px;
-    metrics->Horizontal.bearingX = bearing_x;
-    metrics->Horizontal.bearingY = bearing_y;
-    metrics->Horizontal.advance = advance;
+    metrics->width = width_px * scale_ratio_x;
+    metrics->height = height_px * scale_ratio_y;
+    metrics->Horizontal.bearingX = bearing_x * scale_ratio_x;
+    metrics->Horizontal.bearingY = bearing_y * scale_ratio_y;
+    metrics->Horizontal.advance = advance * scale_ratio_x;
     metrics->Vertical.bearingX = 0.0f;
     metrics->Vertical.bearingY = 0.0f;
     metrics->Vertical.advance = 0.0f;
@@ -1569,21 +1791,8 @@ static s32 RenderGlyphIndexToSurface(FontObj& font_obj, u32 glyph_index,
         const long x_scale = static_cast<long>(face->size->metrics.x_scale);
         const long y_scale = static_cast<long>(face->size->metrics.y_scale);
 
-        const auto round_fixed_mul = [](long fixed_16_16, s32 value) -> s32 {
-            const long long prod =
-                static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-            const long long sign_adj =
-                (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-            const long long base = sign_adj + prod;
-            long long tmp = base - 0x8000LL;
-            if (tmp < 0) {
-                tmp = base + 0x7FFFLL;
-            }
-            return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-        };
-
-        delta.x += static_cast<FT_Pos>(round_fixed_mul(x_scale, font_obj.shift_units_x));
-        delta.y += static_cast<FT_Pos>(round_fixed_mul(y_scale, font_obj.shift_units_y));
+        delta.x += static_cast<FT_Pos>(RoundFixedMul16x16ToS32(x_scale, font_obj.shift_units_x));
+        delta.y += static_cast<FT_Pos>(RoundFixedMul16x16ToS32(y_scale, font_obj.shift_units_y));
     }
 
     FT_Set_Transform(face, nullptr, &delta);
@@ -1717,40 +1926,25 @@ static s32 RenderGlyphIndexToSurface(FontObj& font_obj, u32 glyph_index,
         static_cast<std::size_t>(result->UpdateRect.y) * static_cast<std::size_t>(surf->widthByte) +
         static_cast<std::size_t>(result->UpdateRect.x) * static_cast<std::size_t>(bpp);
 
-    const auto floor_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) > v) {
-            --i;
-        }
-        return i;
-    };
-    const auto ceil_int = [](float v) -> int {
-        int i = static_cast<int>(std::trunc(v));
-        if (static_cast<float>(i) < v) {
-            ++i;
-        }
-        return i;
-    };
-
     const float left_f = x + metrics->Horizontal.bearingX;
     const float top_f = y + metrics->Horizontal.bearingY;
     const float right_f = left_f + metrics->width;
     const float bottom_f = top_f - metrics->height;
 
-    const int left_i = floor_int(left_f);
-    const int top_i = floor_int(top_f);
-    const int right_i = ceil_int(right_f);
-    const int bottom_i = floor_int(bottom_f);
+    const int left_i = FloorIntCompat(left_f);
+    const int top_i = FloorIntCompat(top_f);
+    const int right_i = CeilIntCompat(right_f);
+    const int bottom_i = FloorIntCompat(bottom_f);
 
     const float adv_f = x + metrics->Horizontal.advance;
-    const float adv_snapped = static_cast<float>(floor_int(adv_f)) - x;
+    const float adv_snapped = static_cast<float>(FloorIntCompat(adv_f)) - x;
 
     result->ImageMetrics.bearingX = static_cast<float>(left_i) - x;
     result->ImageMetrics.bearingY = static_cast<float>(top_i) - y;
     result->ImageMetrics.advance = adv_snapped;
     int stride_i = right_i + 1;
     const float adjust = static_cast<float>(right_i) - right_f;
-    const int tmp_i = floor_int(adv_f + adjust);
+    const int tmp_i = FloorIntCompat(adv_f + adjust);
     const int adv_trunc_i = static_cast<int>(std::trunc(adv_f));
     if (adv_trunc_i == 0) {
         stride_i = tmp_i;
@@ -2342,6 +2536,40 @@ using Libraries::Font::Internal::FontLibOpaque;
 using Libraries::Font::Internal::FontObj;
 
 static constexpr float kOneOver64 = 1.0f / 64.0f;
+
+static void write_u16(u8* out_params, std::size_t off, u16 value) {
+    std::memcpy(out_params + off, &value, sizeof(value));
+}
+
+static void write_u32(u8* out_params, std::size_t off, u32 value) {
+    std::memcpy(out_params + off, &value, sizeof(value));
+}
+
+static void write_s32(u8* out_params, std::size_t off, s32 value) {
+    std::memcpy(out_params + off, &value, sizeof(value));
+}
+
+static void write_f32(u8* out_params, std::size_t off, float value) {
+    std::memcpy(out_params + off, &value, sizeof(value));
+}
+
+static void write_ptr(u8* out_params, std::size_t off, const void* ptr) {
+    std::memcpy(out_params + off, &ptr, sizeof(ptr));
+}
+
+static s64 round_fixed_mul_s64(s64 value, s64 fixed_16_16) {
+    const s64 prod = value * fixed_16_16;
+    const s64 sign_adj = ((~value) >> 63) * -0x10000LL;
+    s64 tmp = sign_adj + prod - 0x8000LL;
+    if (tmp < 0) {
+        tmp = sign_adj + 0x7FFFLL + prod;
+    }
+    return static_cast<s64>(static_cast<s32>(static_cast<u64>(tmp) >> 16));
+}
+
+static float to_f26dot6_s64(s64 value) {
+    return static_cast<float>(value) * kOneOver64;
+}
 
 static std::optional<std::filesystem::path> ResolveKnownSysFontAlias(
     const std::filesystem::path& sysfonts_dir, std::string_view ps4_filename) {
@@ -3080,8 +3308,8 @@ s32 PS4_SYSV_ABI LibraryGetGlyphIndexStub(void* fontObj, u32 codepoint_u16, u32*
         return ORBIS_FONT_ERROR_FATAL;
     }
 
-    const auto glyph_index =
-        static_cast<u32>(FT_Get_Char_Index(face, static_cast<FT_ULong>(codepoint_u16)));
+    const auto glyph_index = static_cast<u32>(
+        Libraries::Font::Internal::ResolveGlyphIndexWithFallback(face, codepoint_u16));
     *out_glyph_index = glyph_index;
     return glyph_index ? ORBIS_OK : ORBIS_FONT_ERROR_NO_SUPPORT_GLYPH;
 }
@@ -3100,7 +3328,7 @@ s32 PS4_SYSV_ABI LibrarySetCharSizeWithDpiStub(void* fontObj, u32 dpi_x, u32 dpi
 
     const auto char_w = static_cast<FT_F26Dot6>(static_cast<s32>(scale_x * 64.0f));
     const auto char_h = static_cast<FT_F26Dot6>(static_cast<s32>(scale_y * 64.0f));
-    if (FT_Set_Char_Size(face, char_w, char_h, dpi_x, dpi_y) != 0) {
+    if (Libraries::Font::Internal::SetCharSizeCompat(face, char_w, char_h, dpi_x, dpi_y) != 0) {
         return ORBIS_FONT_ERROR_FATAL;
     }
 
@@ -3113,19 +3341,8 @@ s32 PS4_SYSV_ABI LibrarySetCharSizeWithDpiStub(void* fontObj, u32 dpi_x, u32 dpi
     const long x_scale = static_cast<long>(size->metrics.x_scale);
     const long y_scale = static_cast<long>(size->metrics.y_scale);
 
-    auto fixed_mul_units_to_f26dot6 = [](long fixed_16_16, u16 units_per_em) -> float {
-        const long prod = static_cast<long>(static_cast<long long>(fixed_16_16) *
-                                            static_cast<long long>(units_per_em));
-        long rounded = prod + 0xFFFF;
-        if (prod >= 0) {
-            rounded = prod;
-        }
-        const long v = rounded >> 16;
-        return static_cast<float>(v) * kOneOver64;
-    };
-
-    *out_scale_x = fixed_mul_units_to_f26dot6(x_scale, units);
-    *out_scale_y = fixed_mul_units_to_f26dot6(y_scale, units);
+    *out_scale_x = Libraries::Font::Internal::FixedMulUnitsToF26Dot6(x_scale, units);
+    *out_scale_y = Libraries::Font::Internal::FixedMulUnitsToF26Dot6(y_scale, units);
     return ORBIS_OK;
 }
 
@@ -3161,56 +3378,42 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutBlockStub(void* fontObj, const void* style_
     const s64 x_shift = obj->shift_cache_x;
     const s64 units_per_em = static_cast<s64>(static_cast<u16>(face->units_per_EM));
 
-    auto cvttss2si = [](float v) -> s32 {
-        if (!std::isfinite(v) || v > 2147483647.0f || v < -2147483648.0f) {
-            return std::numeric_limits<s32>::min();
-        }
-        return static_cast<s32>(v);
-    };
-
-    auto round_mul_16_16 = [](s64 value, s64 fixed_16_16) -> s32 {
-        const s64 prod = value * fixed_16_16;
-        const s64 sign_adj = (value >= 0) ? 0x10000LL : 0LL;
-        s64 tmp = sign_adj + prod - 0x8000LL;
-        if (tmp < 0) {
-            tmp = sign_adj + prod + 0x7FFFLL;
-        }
-        return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-    };
-
-    auto trunc_fixed_16_16_to_int = [](s64 fixed_16_16) -> s32 {
-        s64 tmp = fixed_16_16;
-        if (fixed_16_16 < 0) {
-            tmp = fixed_16_16 + 0xFFFFLL;
-        }
-        return static_cast<s32>(tmp >> 16);
-    };
-
-    s32 y_min_px = round_mul_16_16(static_cast<s64>(face->bbox.yMin) + y_shift, y_scale);
-    s32 y_max_px = round_mul_16_16(static_cast<s64>(face->bbox.yMax) + y_shift, y_scale);
+    s32 y_min_px = Libraries::Font::Internal::RoundMul16x16ToS32(
+        static_cast<s64>(face->bbox.yMin) + y_shift, y_scale);
+    s32 y_max_px = Libraries::Font::Internal::RoundMul16x16ToS32(
+        static_cast<s64>(face->bbox.yMax) + y_shift, y_scale);
 
     s32 half_effect_w_px = 0;
     s32 left_adjust_px = 0;
     if (effect_width != 0.0f) {
-        const s32 units_scaled_x = trunc_fixed_16_16_to_int(units_per_em * x_scale);
-        half_effect_w_px = cvttss2si(effect_width * static_cast<float>(units_scaled_x)) / 2;
+        const s32 units_scaled_x =
+            Libraries::Font::Internal::TruncFixed16x16ToInt(units_per_em * x_scale);
+        half_effect_w_px = Libraries::Font::Internal::Cvttss2siCompat(
+                               effect_width * static_cast<float>(units_scaled_x)) /
+                           2;
         left_adjust_px = -half_effect_w_px;
     }
 
     s32 half_effect_h_px = 0;
     float out_effect_h = 0.0f;
     if (effect_height != 0.0f) {
-        const s32 units_scaled_y = trunc_fixed_16_16_to_int(units_per_em * y_scale);
-        half_effect_h_px = cvttss2si(effect_height * static_cast<float>(units_scaled_y)) / 2;
+        const s32 units_scaled_y =
+            Libraries::Font::Internal::TruncFixed16x16ToInt(units_per_em * y_scale);
+        half_effect_h_px = Libraries::Font::Internal::Cvttss2siCompat(
+                               effect_height * static_cast<float>(units_scaled_y)) /
+                           2;
         out_effect_h = static_cast<float>(half_effect_h_px) * kOneOver64;
         y_min_px -= half_effect_h_px;
         y_max_px += half_effect_h_px;
     }
 
     if (slant != 0.0f) {
-        const s64 shear_16_16 = static_cast<s64>(cvttss2si(slant * 65536.0f));
-        left_adjust_px += round_mul_16_16(static_cast<s64>(y_min_px), shear_16_16);
-        half_effect_w_px += round_mul_16_16(static_cast<s64>(y_max_px), shear_16_16);
+        const s64 shear_16_16 =
+            static_cast<s64>(Libraries::Font::Internal::Cvttss2siCompat(slant * 65536.0f));
+        left_adjust_px +=
+            Libraries::Font::Internal::RoundMul16x16ToS32(static_cast<s64>(y_min_px), shear_16_16);
+        half_effect_w_px +=
+            Libraries::Font::Internal::RoundMul16x16ToS32(static_cast<s64>(y_max_px), shear_16_16);
     }
 
     auto out = LayoutOutIo{out_words}.fields();
@@ -3218,8 +3421,10 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutBlockStub(void* fontObj, const void* style_
     out.left_adjust = static_cast<float>(left_adjust_px) * kOneOver64;
     out.half_effect_width = static_cast<float>(half_effect_w_px) * kOneOver64;
 
-    const s32 x_min_px = round_mul_16_16(static_cast<s64>(face->bbox.xMin) + x_shift, x_scale);
-    const s32 x_max_px = round_mul_16_16(static_cast<s64>(face->bbox.xMax) + x_shift, x_scale);
+    const s32 x_min_px = Libraries::Font::Internal::RoundMul16x16ToS32(
+        static_cast<s64>(face->bbox.xMin) + x_shift, x_scale);
+    const s32 x_max_px = Libraries::Font::Internal::RoundMul16x16ToS32(
+        static_cast<s64>(face->bbox.xMax) + x_shift, x_scale);
 
     out.line_advance = static_cast<float>(y_max_px - y_min_px) * kOneOver64;
     out.baseline = static_cast<float>(y_max_px) * kOneOver64;
@@ -3227,14 +3432,16 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutBlockStub(void* fontObj, const void* style_
     out.x_bound_1 = static_cast<float>(x_max_px + half_effect_w_px) * kOneOver64;
 
     const s64 max_adv_w_units = static_cast<s64>(face->max_advance_width) + x_shift;
-    const s32 max_adv_w_px = round_mul_16_16(max_adv_w_units, x_scale);
+    const s32 max_adv_w_px =
+        Libraries::Font::Internal::RoundMul16x16ToS32(max_adv_w_units, x_scale);
     out.max_advance_width = static_cast<float>(max_adv_w_px) * kOneOver64;
 
     float hhea_out = 0.0f;
     if (const TT_HoriHeader* hhea =
             static_cast<const TT_HoriHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_hhea))) {
         const s64 caret_rise_units = x_shift + static_cast<s64>(hhea->caret_Slope_Rise);
-        const s32 caret_rise_px = trunc_fixed_16_16_to_int(caret_rise_units * x_scale);
+        const s32 caret_rise_px =
+            Libraries::Font::Internal::TruncFixed16x16ToInt(caret_rise_units * x_scale);
         hhea_out = static_cast<float>(caret_rise_px - half_effect_w_px) * kOneOver64;
     }
     out.hhea_caret_rise_adjust = hhea_out;
@@ -3262,16 +3469,6 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutAltBlockStub(void* fontObj, const void* sty
     const long x_scale = static_cast<long>(face->size->metrics.x_scale);
     const long y_scale = static_cast<long>(face->size->metrics.y_scale);
 
-    auto round_fixed_mul = [](long value, long fixed_16_16) -> s32 {
-        const long long prod = static_cast<long long>(value) * static_cast<long long>(fixed_16_16);
-        const long long sign_adj = (value >= 0) ? 0x10000LL : 0LL;
-        long long tmp = sign_adj + prod - 0x8000LL;
-        if (tmp < 0) {
-            tmp = sign_adj + prod + 0x7FFFLL;
-        }
-        return static_cast<s32>(static_cast<u64>(tmp) >> 16);
-    };
-
     const auto* vhea = static_cast<const TT_VertHeader*>(FT_Get_Sfnt_Table(face, ft_sfnt_vhea));
     const long y_shift = static_cast<long>(obj->shift_cache_y);
     const long x_shift = static_cast<long>(obj->shift_cache_x);
@@ -3287,8 +3484,10 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutAltBlockStub(void* fontObj, const void* sty
     const long left_in = static_cast<long>(face->bbox.xMin) + x_shift;
     const long right_in = static_cast<long>(face->bbox.xMax) + x_shift;
 
-    const s32 scaled_left = round_fixed_mul(left_in, x_scale);
-    const s32 scaled_right = round_fixed_mul(right_in, x_scale);
+    const s32 scaled_left =
+        Libraries::Font::Internal::RoundFixedMulValueScaleToS32(left_in, x_scale);
+    const s32 scaled_right =
+        Libraries::Font::Internal::RoundFixedMulValueScaleToS32(right_in, x_scale);
 
     s32 x_min_scaled = scaled_left;
     s32 x_max_scaled = scaled_right;
@@ -3359,8 +3558,8 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutAltBlockStub(void* fontObj, const void* sty
 
     const s32 lane0 = x_abs_max - x_min_scaled;
     const s32 lane1 = -x_abs_max;
-    const s32 lane2 = round_fixed_mul(y_ascender, x_scale);
-    const s32 lane3 = round_fixed_mul(y_descender, x_scale);
+    const s32 lane2 = Libraries::Font::Internal::RoundFixedMulValueScaleToS32(y_ascender, x_scale);
+    const s32 lane3 = Libraries::Font::Internal::RoundFixedMulValueScaleToS32(y_descender, x_scale);
 
     auto out = LayoutAltOutIo{out_words}.fields();
     out.metrics_0x00 = static_cast<float>(lane0) * kOneOver64;
@@ -3368,8 +3567,8 @@ s32 PS4_SYSV_ABI LibraryComputeLayoutAltBlockStub(void* fontObj, const void* sty
     out.metrics_0x08 = static_cast<float>(lane2) * kOneOver64;
     out.metrics_0x0C = static_cast<float>(lane3) * kOneOver64;
 
-    const s32 adv_h_scaled =
-        round_fixed_mul(static_cast<long>(face->max_advance_height) + y_shift, y_scale);
+    const s32 adv_h_scaled = Libraries::Font::Internal::RoundFixedMulValueScaleToS32(
+        static_cast<long>(face->max_advance_height) + y_shift, y_scale);
     out.adv_height = static_cast<float>(adv_h_scaled) * kOneOver64;
     out.effect_width = out_effect_width;
     out.slant_b = out_slant_b;
@@ -3471,39 +3670,21 @@ s32 PS4_SYSV_ABI LibraryLoadGlyphCachedStub(void* fontObj, u32 glyphIndex, s32 m
         const long x_scale = static_cast<long>(face->size->metrics.x_scale);
         const long y_scale = static_cast<long>(face->size->metrics.y_scale);
 
-        const auto trunc_mul_units = [](long fixed_16_16, u16 units) -> s64 {
-            const s64 prod = static_cast<s64>(fixed_16_16) * static_cast<s64>(units);
-            s64 rounded = prod;
-            if (prod < 0) {
-                rounded = prod + 0xFFFFLL;
-            }
-            return rounded >> 16;
-        };
-
-        const auto round_fixed_mul = [](long fixed_16_16, s32 value) -> s64 {
-            const long long prod =
-                static_cast<long long>(fixed_16_16) * static_cast<long long>(value);
-            const long long sign_adj =
-                (static_cast<long long>(~static_cast<long long>(value)) >> 63) * -0x10000LL;
-            const long long base = sign_adj + prod;
-            long long tmp = base - 0x8000LL;
-            if (tmp < 0) {
-                tmp = base + 0x7FFFLL;
-            }
-            return static_cast<s64>(static_cast<s32>(static_cast<u64>(tmp) >> 16));
-        };
-
-        obj->cached_units_x_0x68 = static_cast<u64>(trunc_mul_units(x_scale, units_per_em));
-        obj->cached_units_y_0x70 = static_cast<u64>(trunc_mul_units(y_scale, units_per_em));
-        obj->shift_cache_x = round_fixed_mul(x_scale, obj->shift_units_x);
-        obj->shift_cache_y = round_fixed_mul(y_scale, obj->shift_units_y);
+        obj->cached_units_x_0x68 =
+            static_cast<u64>(Libraries::Font::Internal::TruncMulUnitsToS64(x_scale, units_per_em));
+        obj->cached_units_y_0x70 =
+            static_cast<u64>(Libraries::Font::Internal::TruncMulUnitsToS64(y_scale, units_per_em));
+        obj->shift_cache_x =
+            Libraries::Font::Internal::RoundFixedMul16x16ToS64(x_scale, obj->shift_units_x);
+        obj->shift_cache_y =
+            Libraries::Font::Internal::RoundFixedMul16x16ToS64(y_scale, obj->shift_units_y);
 
         const s32 seed_low =
             static_cast<s32>(static_cast<u32>(obj->layout_seed_pair & 0xFFFFFFFFu));
         const s32 seed_high =
             static_cast<s32>(static_cast<u32>((obj->layout_seed_pair >> 32) & 0xFFFFFFFFu));
-        const s64 v0 = round_fixed_mul(x_scale, seed_low);
-        const s64 v1 = round_fixed_mul(y_scale, seed_high);
+        const s64 v0 = Libraries::Font::Internal::RoundFixedMul16x16ToS64(x_scale, seed_low);
+        const s64 v1 = Libraries::Font::Internal::RoundFixedMul16x16ToS64(y_scale, seed_high);
         obj->layout_seed_vec[0] = static_cast<u64>(v0);
         obj->layout_seed_vec[1] = static_cast<u64>(v1);
 
@@ -3519,8 +3700,8 @@ s32 PS4_SYSV_ABI LibraryLoadGlyphCachedStub(void* fontObj, u32 glyphIndex, s32 m
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI LibraryGetGlyphMetricsStub(void* fontObj, std::uint32_t* /*opt_param2*/,
-                                            std::uint8_t /*mode*/, std::uint8_t* out_params,
+s32 PS4_SYSV_ABI LibraryGetGlyphMetricsStub(void* fontObj, std::uint32_t* opt_param2,
+                                            std::uint8_t mode, std::uint8_t* out_params,
                                             Libraries::Font::OrbisFontGlyphMetrics* out_metrics) {
     if (!fontObj || !out_params || !out_metrics) {
         return ORBIS_FONT_ERROR_FATAL;
@@ -3528,38 +3709,203 @@ s32 PS4_SYSV_ABI LibraryGetGlyphMetricsStub(void* fontObj, std::uint32_t* /*opt_
 
     auto* obj = static_cast<Libraries::Font::Internal::FontObj*>(fontObj);
     FT_Face face = static_cast<FT_Face>(obj->ft_face);
-    if (!face || !face->glyph) {
+    if (!face || !face->glyph || !face->size) {
         return ORBIS_FONT_ERROR_FATAL;
     }
 
-    const FT_GlyphSlot slot = face->glyph;
-    out_metrics->width = static_cast<float>(slot->metrics.width) * kOneOver64;
-    out_metrics->height = static_cast<float>(slot->metrics.height) * kOneOver64;
-    out_metrics->Horizontal.bearingX = static_cast<float>(slot->metrics.horiBearingX) * kOneOver64;
-    out_metrics->Horizontal.bearingY = static_cast<float>(slot->metrics.horiBearingY) * kOneOver64;
-    out_metrics->Horizontal.advance = static_cast<float>(slot->metrics.horiAdvance) * kOneOver64;
-    out_metrics->Vertical.bearingX = static_cast<float>(slot->metrics.vertBearingX) * kOneOver64;
-    out_metrics->Vertical.bearingY = static_cast<float>(slot->metrics.vertBearingY) * kOneOver64;
-    out_metrics->Vertical.advance = static_cast<float>(slot->metrics.vertAdvance) * kOneOver64;
+    FT_GlyphSlot slot = face->glyph;
+    FT_Size size = face->size;
 
+    std::memset(out_params, 0, 0x48);
+
+    const void* outline_blob = static_cast<const void*>(&slot->outline);
     out_params[0] = 0xF2;
-    out_params[1] = 0;
+    write_ptr(out_params, 0x08, slot);
+    if (opt_param2) {
+        outline_blob = static_cast<const void*>(opt_param2);
+        out_params[0] = 0xF0;
+        write_ptr(out_params, 0x08, opt_param2);
+    }
 
     const u8 face_flag_bit = static_cast<u8>((static_cast<u32>(face->face_flags) >> 5) & 1u);
-    const u64 vec88_a = obj->layout_seed_vec[0];
-    const u64 vec88_b = obj->layout_seed_vec[1];
-    const u8 has_vec88 = (vec88_a != 0 || vec88_b != 0) ? 8 : 0;
-    out_params[2] = static_cast<u8>(0xF0 | has_vec88 | face_flag_bit);
+    const bool has_seed_vec = (obj->layout_seed_vec[0] != 0 || obj->layout_seed_vec[1] != 0);
+    out_params[2] = static_cast<u8>(0xF0u | (has_seed_vec ? 0x08u : 0u) | face_flag_bit);
     out_params[3] = 0;
+    write_u16(out_params, 0x04, static_cast<u16>(face->units_per_EM));
+    write_ptr(out_params, 0x10, outline_blob);
+    write_ptr(out_params, 0x18, out_metrics);
 
-    const u16 units_per_em = static_cast<u16>(face->units_per_EM);
-    std::memcpy(out_params + 4, &units_per_em, sizeof(units_per_em));
+    float style_shift_x = 0.0f;
+    float style_shift_y = 0.0f;
+    if (obj->reserved_0x04 != 0) {
+        style_shift_x = static_cast<float>(slot->metrics.vertBearingX - slot->metrics.horiBearingX);
+        style_shift_y =
+            static_cast<float>(-(slot->metrics.horiBearingY + slot->metrics.vertBearingY));
+        out_params[1] = 1;
+    } else {
+        out_params[1] = 0;
+    }
+    write_f32(out_params, 0x20, style_shift_x);
+    write_f32(out_params, 0x24, style_shift_y);
+    write_f32(out_params, 0x28, 1.0f);
 
-    void* outline_ptr = static_cast<void*>(&slot->outline);
-    std::memcpy(out_params + 0x10, &outline_ptr, sizeof(outline_ptr));
+    const s32 shift_x = static_cast<s32>(obj->shift_cache_x);
+    const s32 shift_y = static_cast<s32>(obj->shift_cache_y);
+    const s32 seed_x = static_cast<s32>(obj->layout_seed_vec[0]);
+    const s32 seed_y = static_cast<s32>(obj->layout_seed_vec[1]);
+    write_s32(out_params, 0x2C, shift_x);
+    write_s32(out_params, 0x30, shift_y);
+    write_s32(out_params, 0x34, seed_x);
+    write_s32(out_params, 0x38, seed_y);
+    write_f32(out_params, 0x3C,
+              static_cast<float>(static_cast<s64>(obj->cached_units_x_0x68)) * kOneOver64);
+    write_f32(out_params, 0x40,
+              static_cast<float>(static_cast<s64>(obj->cached_units_y_0x70)) * kOneOver64);
+    write_u32(out_params, 0x44, 0);
 
-    void* metrics_ptr = static_cast<void*>(out_metrics);
-    std::memcpy(out_params + 0x18, &metrics_ptr, sizeof(metrics_ptr));
+    s64 x_scale = static_cast<s64>(size->metrics.x_scale);
+    s64 y_scale = static_cast<s64>(size->metrics.y_scale);
+    const s64 obj_scale_x = static_cast<s64>(obj->layout_scale_vec[0]);
+    const s64 obj_scale_y = static_cast<s64>(obj->layout_scale_vec[1]);
+    if (obj_scale_x != 0 && obj_scale_x != 0x10000) {
+        x_scale = static_cast<s64>((x_scale << 16) / obj_scale_x);
+    }
+    if (obj_scale_y != 0 && obj_scale_y != 0x10000) {
+        y_scale = static_cast<s64>((y_scale << 16) / obj_scale_y);
+    }
+
+    const bool apply_scale = (mode & 0x0Fu) != 0;
+    auto scale_if = [&](s64 value, s64 scale) -> s64 {
+        return apply_scale ? round_fixed_mul_s64(value, scale) : value;
+    };
+
+    const s64 width_raw = static_cast<s64>(slot->metrics.width);
+    const s64 height_raw = static_cast<s64>(slot->metrics.height);
+    const s64 hori_bearing_x_raw = static_cast<s64>(slot->metrics.horiBearingX);
+    const s64 hori_advance_raw = static_cast<s64>(slot->metrics.horiAdvance);
+    const s64 vert_bearing_x_raw = static_cast<s64>(slot->metrics.vertBearingX);
+    const s64 vert_bearing_y_raw = static_cast<s64>(slot->metrics.vertBearingY);
+    const s64 vert_advance_raw = static_cast<s64>(slot->metrics.vertAdvance);
+
+    const s64 hori_advance_unscaled = static_cast<s64>(seed_x) + hori_advance_raw;
+    const s64 vert_advance_unscaled = static_cast<s64>(seed_y) + vert_advance_raw;
+    slot->metrics.horiAdvance = static_cast<FT_Pos>(hori_advance_unscaled);
+    slot->metrics.vertAdvance = static_cast<FT_Pos>(vert_advance_unscaled);
+
+    if (width_raw == 0 && height_raw == 0) {
+        const s64 hori_advance = scale_if(hori_advance_unscaled, x_scale);
+        const s64 vert_advance = scale_if(vert_advance_unscaled, y_scale);
+        out_metrics->width = 0.0f;
+        out_metrics->height = 0.0f;
+        out_metrics->Horizontal.bearingX = 0.0f;
+        out_metrics->Horizontal.bearingY = 0.0f;
+        out_metrics->Horizontal.advance = to_f26dot6_s64(hori_advance);
+        out_metrics->Vertical.bearingX = 0.0f;
+        out_metrics->Vertical.bearingY = 0.0f;
+        out_metrics->Vertical.advance = to_f26dot6_s64(vert_advance);
+        return ORBIS_OK;
+    }
+
+    const s64 top_shift = (height_raw == 0) ? 0 : static_cast<s64>(shift_y);
+    s64 left = hori_bearing_x_raw + static_cast<s64>(shift_x);
+    s64 top = vert_bearing_y_raw + top_shift;
+    s64 right = left + width_raw;
+    s64 bottom = top - height_raw;
+    s64 hori_advance = hori_advance_unscaled;
+    s64 vert_advance = vert_advance_unscaled;
+
+    left = scale_if(left, x_scale);
+    top = scale_if(top, y_scale);
+    right = scale_if(right, x_scale);
+    bottom = scale_if(bottom, y_scale);
+    hori_advance = scale_if(hori_advance, x_scale);
+    vert_advance = scale_if(vert_advance, y_scale);
+
+    const s64 out_width = right - left;
+    const s64 out_height = top - bottom;
+    s64 vert_bearing_x = 0;
+    s64 vert_bearing_y = 0;
+
+    if ((static_cast<u32>(face->face_flags) & 0x20u) == 0) {
+        vert_bearing_x = left - (hori_advance / 2);
+        vert_bearing_y = (vert_advance - out_height) / 2;
+    } else {
+        if (seed_x == 0) {
+            s64 vb_x = static_cast<s64>(shift_x) + vert_bearing_x_raw;
+            vert_bearing_x = scale_if(vb_x, x_scale);
+        } else {
+            slot->metrics.vertBearingX =
+                static_cast<FT_Pos>(hori_bearing_x_raw - (hori_advance_unscaled / 2));
+            vert_bearing_x = left - (hori_advance / 2);
+            write_f32(out_params, 0x20, static_cast<float>(-(hori_advance_unscaled / 2)));
+        }
+        s64 vb_y = top_shift + vert_bearing_y_raw;
+        vert_bearing_y = scale_if(vb_y, y_scale);
+    }
+
+    out_metrics->width = to_f26dot6_s64(out_width);
+    out_metrics->height = to_f26dot6_s64(out_height);
+    out_metrics->Horizontal.bearingX = to_f26dot6_s64(left);
+    out_metrics->Horizontal.bearingY = to_f26dot6_s64(top);
+    out_metrics->Horizontal.advance = to_f26dot6_s64(hori_advance);
+    out_metrics->Vertical.bearingX = to_f26dot6_s64(vert_bearing_x);
+    out_metrics->Vertical.bearingY = to_f26dot6_s64(vert_bearing_y);
+    out_metrics->Vertical.advance = to_f26dot6_s64(vert_advance);
+
+    if ((mode & 0x06u) != 0 && obj->font_handle) {
+        const auto* handle_u8 = reinterpret_cast<const std::uint8_t*>(obj->font_handle);
+        const std::size_t style_off = (mode & 0x04u) ? 0x68u : 0x40u;
+        const auto* style = reinterpret_cast<const Libraries::Font::Internal::StyleStateBlock*>(
+            handle_u8 + style_off);
+
+        const float slant_ratio = style->slant_ratio;
+        if ((slant_ratio != 0.0f || std::isnan(slant_ratio)) && slot->outline.points &&
+            slot->outline.n_points > 0) {
+            const s64 shear =
+                static_cast<s64>(static_cast<s32>(std::trunc(slant_ratio * 65536.0f)));
+            s64 min_x = std::numeric_limits<s64>::max();
+            s64 max_x = std::numeric_limits<s64>::min();
+            const int n_points = static_cast<int>(slot->outline.n_points);
+            for (int i = 0; i < n_points; ++i) {
+                const FT_Vector p = slot->outline.points[i];
+                s64 px = static_cast<s64>(p.x) + static_cast<s64>(shift_x);
+                s64 py = static_cast<s64>(p.y) + static_cast<s64>(shift_y);
+                px = scale_if(px, x_scale);
+                py = scale_if(py, y_scale);
+                const s64 slant_dx = round_fixed_mul_s64(py, shear);
+                const s64 slanted_x = px + slant_dx;
+                min_x = std::min(min_x, slanted_x);
+                max_x = std::max(max_x, slanted_x);
+            }
+            if (min_x <= max_x) {
+                out_metrics->width = to_f26dot6_s64(max_x - min_x);
+                out_metrics->Horizontal.bearingX = to_f26dot6_s64(min_x);
+            }
+        }
+
+        const float effect_x = style->effect_weight_x;
+        const float effect_y = style->effect_weight_y;
+        if ((effect_x != 0.0f || std::isnan(effect_x)) ||
+            (effect_y != 0.0f || std::isnan(effect_y))) {
+            const float dx = effect_x * obj->scale_x_0x50 * 0.5f;
+            const float dy = effect_y * obj->scale_y_0x54 * 0.5f;
+
+            out_metrics->width = out_metrics->width + dx + dx;
+            out_metrics->height = out_metrics->height + dy + dy;
+            out_metrics->Horizontal.bearingX -= dx;
+            out_metrics->Horizontal.bearingY += dy;
+            out_metrics->Vertical.bearingX -= dx;
+            out_metrics->Vertical.bearingY -= dy;
+            if (out_metrics->Horizontal.advance != 0.0f ||
+                std::isnan(out_metrics->Horizontal.advance)) {
+                out_metrics->Horizontal.advance += dx;
+            }
+            if (out_metrics->Vertical.advance != 0.0f ||
+                std::isnan(out_metrics->Vertical.advance)) {
+                out_metrics->Vertical.advance += dy;
+            }
+        }
+    }
 
     return ORBIS_OK;
 }
