@@ -95,7 +95,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(Stage stage, LogicalS
         info.num_input_vgprs = program.settings.vgpr_comp_cnt;
         info.num_allocated_vgprs = program.NumVgprs();
         info.fp_denorm_mode32 = program.settings.fp_denorm_mode32;
+        info.fp_denorm_mode16_64 = program.settings.fp_denorm_mode64;
         info.fp_round_mode32 = program.settings.fp_round_mode32;
+        info.fp_round_mode16_64 = program.settings.fp_round_mode64;
     };
     info.Initialize(stage);
     switch (stage) {
@@ -264,9 +266,25 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .support_int64 = instance.IsShaderInt64Supported(),
         .support_float16 = instance.IsShaderFloat16Supported(),
         .support_float64 = instance.IsShaderFloat64Supported(),
+        .supports_denorm_behavior_independence =
+            vk12_props.denormBehaviorIndependence != vk::ShaderFloatControlsIndependence::eNone,
+        .supports_rounding_mode_independence =
+            vk12_props.roundingModeIndependence != vk::ShaderFloatControlsIndependence::eNone,
+        .support_fp16_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat16),
+        .support_fp16_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat16),
+        .support_fp16_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat16),
         .support_fp32_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat32),
         .support_fp32_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat32),
         .support_fp32_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat32),
+        .support_fp64_denorm_preserve = bool(vk12_props.shaderDenormPreserveFloat64),
+        .support_fp64_denorm_flush = bool(vk12_props.shaderDenormFlushToZeroFloat64),
+        .support_fp64_round_to_zero = bool(vk12_props.shaderRoundingModeRTZFloat64),
+        .support_fp16_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat16),
+        .support_fp32_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat32),
+        .support_fp64_signed_zero_inf_nan_preserve =
+            bool(vk12_props.shaderSignedZeroInfNanPreserveFloat64),
         .support_legacy_vertex_attributes = instance_.IsLegacyVertexAttributesSupported(),
         .supports_image_load_store_lod = instance_.IsImageLoadStoreLodSupported(),
         .supports_native_cube_calc = instance_.IsAmdGcnShaderSupported(),

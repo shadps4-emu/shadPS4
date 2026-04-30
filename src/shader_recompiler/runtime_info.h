@@ -229,7 +229,9 @@ struct RuntimeInfo {
     u32 num_input_vgprs;
     u32 num_allocated_vgprs;
     AmdGpu::FpDenormMode fp_denorm_mode32;
+    AmdGpu::FpDenormMode fp_denorm_mode16_64;
     AmdGpu::FpRoundMode fp_round_mode32;
+    AmdGpu::FpRoundMode fp_round_mode16_64;
     union {
         LocalRuntimeInfo ls_info;
         ExportRuntimeInfo es_info;
