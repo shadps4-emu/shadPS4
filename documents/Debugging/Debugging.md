@@ -65,7 +65,7 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `true` and send that log instead.
   - `filter`: Sets the logging category for various logging classes.
     - Format: `<class>:<level> ...`
-    - Multiple classes can be set by separating them with a space. (example: `Render:Warning Debug:Critical Lib.Pad:Error`)
+    - Multiple classes can be set by separating them with a space. (example: `Render:Warning Lib.Pad:Error`)
     - Sub-classes can be specified in the same format as seen in the console/log (such as `Core.Linker`).  
     - Valid log levels: `trace, debug, info, warning, error, critical, off` - in this order, setting a level silences all levels preceding it and logs every level after it.
     - Examples:
