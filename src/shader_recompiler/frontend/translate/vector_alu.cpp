@@ -470,6 +470,15 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_OR3_B32(inst);
     case Opcode::V_NOP:
         return;
+
+    // VOP3P
+    case Opcode::V_MAD_MIX_F32:
+        return V_MAD_MIX_F32(inst);
+    case Opcode::V_MAD_MIXLO_F16:
+        return V_MAD_MIXLO_F16(inst);
+    case Opcode::V_MAD_MIXHI_F16:
+        return V_MAD_MIXHI_F16(inst);
+
     default:
         LogMissingOpcode(inst);
     }
@@ -1622,6 +1631,46 @@ void Translator::V_OR3_B32(const GcnInst& inst) {
     const auto result = ir.BitwiseOr(ir.BitwiseOr(src0, src1), src2);
 
     SetDst(inst.dst[0], result);
+}
+
+void Translator::V_MAD_MIX_F32(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::V_MAD_MIXLO_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F16 result_f16 = ir.FPConvert(16, result);
+    const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
+
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 new_value{
+        ir.BitFieldInsert(old_value, ir.UConvert(32, result_f16_u16), ir.Imm32(0U), ir.Imm32(16U))};
+    SetDst(inst.dst[0], new_value);
+}
+
+void Translator::V_MAD_MIXHI_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F16 result_f16 = ir.FPConvert(16, result);
+    const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
+
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 new_value{ir.BitFieldInsert(old_value, ir.UConvert(32, result_f16_u16),
+                                              ir.Imm32(16U), ir.Imm32(16U))};
+    SetDst(inst.dst[0], new_value);
 }
 
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {

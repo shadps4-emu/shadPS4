@@ -282,6 +282,11 @@ public:
     void V_AND_OR_B32(const GcnInst& inst);
     void V_OR3_B32(const GcnInst& inst);
 
+    // VOP3P
+    void V_MAD_MIX_F32(const GcnInst& inst);
+    void V_MAD_MIXLO_F16(const GcnInst& inst);
+    void V_MAD_MIXHI_F16(const GcnInst& inst);
+
     // Vector interpolation
     // VINTRP
     void V_INTERP_P1_F32(const GcnInst& inst);
@@ -325,6 +330,7 @@ private:
     [[nodiscard]] T GetSrc16(const InstOperand& operand);
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
+    [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
     void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     template <bool is_signed = false>

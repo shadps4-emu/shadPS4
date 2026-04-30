@@ -324,3 +324,53 @@ TEST_F(GcnTest, and_or_b32_8) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, 0x11111111);
 }
+
+TEST_F(GcnTest, mad_mix_f32_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_MAD_MIX_F32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOpSelHi({0}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<float>(spirv, std::array{2.0f, 3.0f, 4.0f});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 10.0f);
+}
+
+TEST_F(GcnTest, mad_mix_f32_2) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_MAD_MIX_F32, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOpSelHi({1,1,0}).SetOpSel({1,0,0}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<float>(spirv, std::array<u32,3>{
+        std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(4.0f)}
+    );
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 26.0f);
+}
+
+TEST_F(GcnTest, mad_mixlo_f16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_MAD_MIXLO_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOpSelHi({1,1,0}).SetOpSel({1,0,0}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<F16x2>(spirv, std::array<u32,3>{
+        std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(4.0f)}
+    );
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(26.0f), half(0.5f)}));
+}
+
+TEST_F(GcnTest, mad_mixhi_f16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_MAD_MIXHI_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1, SOperand9::V2).SetOpSelHi({1,1,0}).SetOpSel({1,0,0}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<F16x2>(spirv, std::array<u32,3>{
+        std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(F16x2{half(44.0f), half(0.5f)}), std::bit_cast<u32>(4.0f)}
+    );
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(44.0f), half(26.0f)}));
+}
