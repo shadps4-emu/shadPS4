@@ -9,26 +9,49 @@
 #include "common/cstring.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/ime/ime_kb_layout.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
 
 class ImeDialogUi;
+} // namespace Libraries::ImeDialog
+
+namespace Libraries::Ime {
+struct ImePanelMetrics;
+}
+
+namespace Libraries::ImeDialog {
 
 class ImeDialogState final {
     friend ImeDialogUi;
 
     bool input_changed = false;
+    int caret_index = 0;
+    int caret_byte_index = 0;
+    bool caret_dirty = false;
+    bool use_over2k = false;
+    OrbisImePositionAndForm panel_layout{};
+    bool panel_layout_valid = false;
+    u32 panel_req_width = 0;
+    u32 panel_req_height = 0;
+    OrbisImeExtOption ext_option = OrbisImeExtOption::DEFAULT;
+    OrbisImeDisableDevice disable_device = OrbisImeDisableDevice::DEFAULT;
+    OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
+    Libraries::Ime::ImeStyleConfig style_config{};
 
     s32 user_id{};
     bool is_multi_line{};
     bool is_numeric{};
+    bool fixed_position{};
     OrbisImeType type{};
+    OrbisImeLanguage supported_languages{};
     OrbisImeEnterLabel enter_label{};
     OrbisImeTextFilter text_filter{};
     OrbisImeExtKeyboardFilter keyboard_filter{};
     u32 max_text_length{};
     char16_t* text_buffer{};
+    std::vector<char16_t> original_text;
     std::vector<char> title;
     std::vector<char> placeholder;
 
@@ -48,8 +71,10 @@ public:
     ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
-    bool CopyTextToOrbisBuffer();
+    bool CopyTextToOrbisBuffer(bool use_original);
     bool CallTextFilter();
+    bool NormalizeNewlines();
+    bool ClampCurrentTextToMaxLen();
 
 private:
     bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
@@ -61,11 +86,83 @@ private:
 };
 
 class ImeDialogUi final : public ImGui::Layer {
+    enum class PanelSelectionTarget : u8 {
+        Input = 0,
+        Prediction = 1,
+        Close = 2,
+        Keyboard = 3,
+    };
+
+    enum class EditMenuPopup : u8 {
+        None = 0,
+        Main = 1,
+        Actions = 2,
+    };
+
     ImeDialogState* state{};
     OrbisImeDialogStatus* status{};
     OrbisImeDialogResult* result{};
 
     bool first_render = true;
+    bool accept_armed = false;
+    bool native_input_active = false;
+    bool pointer_navigation_active = true;
+    EditMenuPopup edit_menu_popup = EditMenuPopup::None;
+    bool menu_activate_armed = true;
+    bool l2_shortcut_armed = true;
+    bool request_input_focus = false;
+    bool request_input_select_all = false;
+    bool text_select_mode = false;
+    bool pending_input_selection_apply = false;
+    bool prev_virtual_cross_down = false;
+    bool prev_virtual_lstick_left_down = false;
+    bool prev_virtual_lstick_right_down = false;
+    bool prev_virtual_lstick_up_down = false;
+    bool prev_virtual_lstick_down_down = false;
+    int left_stick_repeat_dir = 0;
+    double left_stick_next_repeat_time = 0.0;
+    double virtual_cross_next_repeat_time = 0.0;
+    double virtual_triangle_next_repeat_time = 0.0;
+    u32 prev_virtual_buttons = 0;
+    bool prev_virtual_square_down = false;
+    bool prev_virtual_l1_down = false;
+    bool prev_virtual_r1_down = false;
+    bool prev_virtual_dpad_left_down = false;
+    bool prev_virtual_dpad_right_down = false;
+    bool prev_virtual_dpad_up_down = false;
+    bool prev_virtual_dpad_down_down = false;
+    double virtual_square_next_repeat_time = 0.0;
+    double virtual_l1_next_repeat_time = 0.0;
+    double virtual_r1_next_repeat_time = 0.0;
+    double virtual_dpad_left_next_repeat_time = 0.0;
+    double virtual_dpad_right_next_repeat_time = 0.0;
+    double virtual_dpad_up_next_repeat_time = 0.0;
+    double virtual_dpad_down_next_repeat_time = 0.0;
+    Libraries::Ime::ImeEdgeWrapNavState panel_vertical_nav_state{};
+    bool panel_position_initialized = false;
+    bool panel_layout_anchor_initialized = false;
+    bool panel_drag_active = false;
+    bool gamepad_input_capture_active = false;
+    ImVec2 panel_position{};
+    ImVec2 panel_layout_anchor{};
+    ImVec2 panel_drag_press_offset{};
+    int input_cursor_utf16 = 0;
+    int input_cursor_byte = 0;
+    int input_selection_start_byte = 0;
+    int input_selection_end_byte = 0;
+    int text_select_anchor_utf16 = -1;
+    int text_select_focus_utf16 = -1;
+    int top_virtual_col = 0;
+    PanelSelectionTarget panel_selection = PanelSelectionTarget::Keyboard;
+    int pending_keyboard_row = -1;
+    int pending_keyboard_col = -1;
+    int last_keyboard_selected_row = 0;
+    int last_keyboard_selected_col = 0;
+    int edit_menu_index = 0;
+    Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
+    Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
+    bool nav_layout_selection_initialized = false;
+    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
     std::mutex draw_mutex;
 
 public:
@@ -79,10 +176,13 @@ public:
     void Draw() override;
 
 private:
+    void FinishDialog(OrbisImeDialogEndStatus endstatus, bool restore_original, const char* reason);
     void Free();
 
-    void DrawInputText();
-    void DrawMultiLineInputText();
+    bool DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
+                       bool pointer_selection_enabled);
+    bool DrawMultiLineInputText(const Libraries::Ime::ImePanelMetrics& metrics,
+                                bool pointer_selection_enabled);
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data);
 };

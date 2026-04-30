@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <cstdint>
 #include <SDL3/SDL_events.h>
 #include <imgui.h>
 
@@ -32,10 +34,30 @@ static std::deque<std::pair<bool, ImGui::Layer*>> change_layers{};
 static std::mutex change_layers_mutex{};
 
 static ImGuiID dock_id;
+static std::atomic<std::uint32_t> force_gamepad_input_capture_count{0};
 
 namespace ImGui {
 
 namespace Core {
+
+void AcquireGamepadInputCapture() {
+    force_gamepad_input_capture_count.fetch_add(1, std::memory_order_relaxed);
+}
+
+void ReleaseGamepadInputCapture() {
+    std::uint32_t expected = force_gamepad_input_capture_count.load(std::memory_order_relaxed);
+    while (expected != 0) {
+        if (force_gamepad_input_capture_count.compare_exchange_weak(
+                expected, expected - 1, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            return;
+        }
+    }
+    LOG_WARNING(ImGui, "ReleaseGamepadInputCapture called with no active capture");
+}
+
+bool IsGamepadInputCaptured() {
+    return force_gamepad_input_capture_count.load(std::memory_order_relaxed) > 0;
+}
 
 void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& window,
                 const u32 image_count, vk::Format surface_format,
@@ -156,14 +178,28 @@ bool ProcessEvent(SDL_Event* event) {
     }
     case SDL_EVENT_TEXT_INPUT:
     case SDL_EVENT_KEY_DOWN: {
+        if (IsGamepadInputCaptured()) {
+            // Keep keyboard events flowing through the regular input-binding path while IME/OSK
+            // captures gamepad input, so keyboard equivalents of pad buttons still update the
+            // virtual controller state.
+            return false;
+        }
         const auto& io = GetIO();
         return io.WantCaptureKeyboard && io.Ctx->NavWindow != nullptr &&
                io.Ctx->NavWindow->ID != dock_id;
     }
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+    case SDL_EVENT_GAMEPAD_BUTTON_UP:
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
-    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION: {
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+    case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
+    case SDL_EVENT_GAMEPAD_SENSOR_UPDATE: {
+        if (IsGamepadInputCaptured()) {
+            // Let controller events continue to input bindings so OSK shortcuts and virtual
+            // controller state keep updating; game-side pad reads are blocked in libScePad.
+            return false;
+        }
         const auto& io = GetIO();
         return io.NavActive && io.Ctx->NavWindow != nullptr && io.Ctx->NavWindow->ID != dock_id;
     }

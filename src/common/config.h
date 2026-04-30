@@ -163,6 +163,8 @@ std::string getDefaultControllerID();
 void setDefaultControllerID(std::string id);
 bool getBackgroundControllerInput();
 void setBackgroundControllerInput(bool enable, bool is_game_specific = false);
+bool getLoggingEnabled();
+void setLoggingEnabled(bool enable, bool is_game_specific = false);
 bool getFsrEnabled();
 void setFsrEnabled(bool enable, bool is_game_specific = false);
 bool getRcasEnabled();
