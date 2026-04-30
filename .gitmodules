@@ -141,3 +141,6 @@
 	url = https://github.com/gabime/spdlog.git
 	shallow = true
 	branch = v2.x
+[submodule "externals/psmoveapi"]
+	path = externals/psmoveapi
+	url = https://github.com/thp/psmoveapi.git
