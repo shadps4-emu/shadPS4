@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <iostream>
 #include <string>
 
 #include "common/assert.h"
@@ -200,12 +201,17 @@ void Setup(std::string_view log_filename) {
     std::unordered_map<std::string, spdlog::level> log_level_per_class;
 
     if (EmulatorSettings.IsLogEnable()) {
-        for (const auto class_level : std::views::split(EmulatorSettings.GetLogFilter(), ',')) {
+        for (const auto class_level : std::views::split(EmulatorSettings.GetLogFilter(), ' ')) {
             const auto class_level_pair =
-                std::views::split(class_level, '=') | std::ranges::to<std::vector<std::string>>();
+                std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
 
-            if (class_level_pair.size() == 1) {
-                default_log_level = spdlog::level_from_str(class_level_pair.front() |
+            if (class_level_pair.size() != 2) {
+                std::cerr << "bad log filter provided" << std::endl;
+                continue;
+            }
+
+            if (class_level_pair.front()[0] == '*') {
+                default_log_level = spdlog::level_from_str(class_level_pair.back() |
                                                            std::ranges::to<std::string>());
             } else {
                 log_level_per_class[class_level_pair.front() | std::ranges::to<std::string>()] =
