@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "core/debug_state.h"
+#include "core/libraries/ime/ime_ui_shared.h"
 
 namespace Libraries::Ime {
 namespace {
@@ -65,6 +66,8 @@ constexpr float kPadBottomSingle = 26.0f;
 constexpr float kPadBottomMulti = 26.0f;
 constexpr float kKeyFontRatio = 0.042f;
 constexpr float kTypingKeyLabelScale = 1.60f;
+constexpr float kFunctionKeyLabelScale = 1.26f;
+constexpr float kHotkeyLabelScale = 0.74f;
 constexpr float kCornerRatio = 0.004f;
 constexpr float kSingleLineTextFill = 0.85f;
 constexpr float kMultiLineTextFill = 0.85f;
@@ -77,6 +80,15 @@ constexpr char kCurrencyEuro[] = "\xE2\x82\xAC";
 constexpr char kCurrencyPound[] = "\xC2\xA3";
 constexpr char kCurrencyYen[] = "\xC2\xA5";
 constexpr char kCurrencyWon[] = "\xE2\x82\xA9";
+constexpr char kHotkeyTriangleRounded[] = "\xE2\x96\xB3";
+constexpr char kHotkeySquareRounded[] = "\xE2\x96\xA2";
+constexpr char kHotkeyL2TriangleRounded[] = "L2+\xE2\x96\xB3";
+constexpr char kArrowLabelUp[] = "\xE2\x96\xB2";
+constexpr char kArrowLabelRight[] = "\xE2\x96\xB6";
+constexpr char kArrowLabelDown[] = "\xE2\x96\xBC";
+constexpr char kArrowLabelLeft[] = "\xE2\x97\x80";
+constexpr char kLanguageSwitchLabel[] = "\xE2\x8C\xA8";
+constexpr char kControlModeGyroLabel[] = "\xE2\x98\x89/\xE2\x8C\x96";
 // SCE_IME keycodes follow USB HID usage IDs.
 constexpr u16 kCodeSym1 = 0x003A;       // SCE_IME_KEYCODE_F1
 constexpr u16 kCodeAccents = 0x003B;    // SCE_IME_KEYCODE_F2
@@ -368,7 +380,7 @@ const char* ResolveSymbolOverrideLabel(const ImeKbLayoutSelection& selection,
 
 const char* ResolveShiftOverrideLabel(const ImeKbLayoutSelection& selection,
                                       const ImeKbKeySpec& key, const char* fallback_label) {
-    if (key.action != ImeKbKeyAction::Shift) {
+    if (key.action != ImeKbKeyAction::Shift || !fallback_label || fallback_label[0] == '\0') {
         return fallback_label;
     }
 
@@ -379,6 +391,23 @@ const char* ResolveShiftOverrideLabel(const ImeKbLayoutSelection& selection,
     case ImeKbCaseState::Lower:
     default:
         return "shift";
+    }
+}
+
+ImeKbKeyGlyph ResolveShiftOverrideGlyph(const ImeKbLayoutSelection& selection,
+                                        const ImeKbKeySpec& key, ImeKbKeyGlyph fallback_glyph) {
+    if (key.action != ImeKbKeyAction::Shift) {
+        return fallback_glyph;
+    }
+
+    switch (selection.case_state) {
+    case ImeKbCaseState::Upper:
+        return ImeKbKeyGlyph::ShiftFilled;
+    case ImeKbCaseState::CapsLock:
+        return ImeKbKeyGlyph::CapsLockFilled;
+    case ImeKbCaseState::Lower:
+    default:
+        return ImeKbKeyGlyph::ShiftOutline;
     }
 }
 
@@ -448,20 +477,20 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinLowerKeys = {{
     KEY(3, 8, ".", Character),
     KEY(3, 9, "?", Character),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(4, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(4, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(4, 2, "\xC3\xA0", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(4, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(4, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
+    KEY(5, 4, kLanguageSwitchLabel, Keyboard),
     KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -511,20 +540,20 @@ constexpr std::array<ImeKbKeySpec, 55> kLatinUpperKeys = {{
     KEY(3, 8, "_", Character),
     KEY(3, 9, "/", Character),
 
-    KEYHOT(4, 0, "Shift", "L2", Shift),
-    KEYHOT(4, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(4, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(4, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(4, 2, "\xC3\xA0", "L3", SpecialsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(4, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(4, 7, nullptr, None),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(4, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
+    KEY(5, 4, kLanguageSwitchLabel, Keyboard),
     KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -573,17 +602,17 @@ constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage1Keys = {{
     KEY(3, 7, "\xE2\x80\x98", Character),
     KEY(3, 8, "\xE2\x80\x99", Character),
 
-    KEYHOT(4, 1, "ABC", "L2+Tri", SymbolsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYHOT(4, 1, "ABC", kHotkeyL2TriangleRounded, SymbolsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
+    KEYSPANHOTGLYPH(4, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
+    KEY(5, 4, kLanguageSwitchLabel, Keyboard),
     KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -632,17 +661,17 @@ constexpr std::array<ImeKbKeySpec, 51> kSymbolsPage2Keys = {{
     KEY(3, 7, nullptr, None),
     KEY(3, 8, nullptr, None),
 
-    KEYHOT(4, 1, "ABC", "L2+Tri", SymbolsMode),
-    KEYSPANHOT(4, 3, 4, 1, "Space", "Tri", Space),
-    KEYSPANHOT(4, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYHOT(4, 1, "ABC", kHotkeyL2TriangleRounded, SymbolsMode),
+    KEYSPANHOT(4, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
+    KEYSPANHOTGLYPH(4, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(5, 0, ArrowDown, ArrowDown),
     KEYGLYPH(5, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(5, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(5, 3, "R1", ArrowRight, ArrowRight),
-    KEY(5, 4, nullptr, None),
+    KEY(5, 4, kLanguageSwitchLabel, Keyboard),
     KEY(5, 5, "...", Menu),
-    KEYHOT(5, 6, "Gyro", "R3", Settings),
+    KEYHOT(5, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(5, 7, nullptr, None),
     KEYSPANHOT(5, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -703,20 +732,20 @@ constexpr std::array<ImeKbKeySpec, 65> kSpecialsPage1Keys = {{
     KEY(4, 8, nullptr, None),
     KEY(4, 9, nullptr, None),
 
-    KEYHOT(5, 0, "Shift", "L2", Shift),
-    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(5, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(5, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(5, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(5, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(6, 0, ArrowDown, ArrowDown),
     KEYGLYPH(6, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
-    KEY(6, 4, nullptr, None),
+    KEY(6, 4, kLanguageSwitchLabel, Keyboard),
     KEY(6, 5, "...", Menu),
-    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEYHOT(6, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(6, 7, nullptr, None),
     KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -777,20 +806,20 @@ constexpr std::array<ImeKbKeySpec, 65> kSpecialsPage1UpperKeys = {{
     KEY(4, 8, nullptr, None),
     KEY(4, 9, nullptr, None),
 
-    KEYHOT(5, 0, "Shift", "L2", Shift),
-    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(5, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(5, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(5, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(5, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(6, 0, ArrowDown, ArrowDown),
     KEYGLYPH(6, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
-    KEY(6, 4, nullptr, None),
+    KEY(6, 4, kLanguageSwitchLabel, Keyboard),
     KEY(6, 5, "...", Menu),
-    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEYHOT(6, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(6, 7, nullptr, None),
     KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -840,20 +869,20 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2Keys = {{
     KEY(3, 8, nullptr, None),
     KEY(3, 9, nullptr, None),
 
-    KEYHOT(5, 0, "Shift", "L2", Shift),
-    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(5, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(5, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(5, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(5, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(6, 0, ArrowDown, ArrowDown),
     KEYGLYPH(6, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
-    KEY(6, 4, nullptr, None),
+    KEY(6, 4, kLanguageSwitchLabel, Keyboard),
     KEY(6, 5, "...", Menu),
-    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEYHOT(6, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(6, 7, nullptr, None),
     KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -903,20 +932,20 @@ constexpr std::array<ImeKbKeySpec, 55> kSpecialsPage2UpperKeys = {{
     KEY(3, 8, nullptr, None),
     KEY(3, 9, nullptr, None),
 
-    KEYHOT(5, 0, "Shift", "L2", Shift),
-    KEYHOT(5, 1, "@#:", "L2+Tri", SymbolsMode),
+    KEYHOTGLYPH(5, 0, "L2", ShiftOutline, Shift),
+    KEYHOT(5, 1, "@#:", kHotkeyL2TriangleRounded, SymbolsMode),
     KEYHOT(5, 2, "ABC", "L3", SpecialsMode),
-    KEYSPANHOT(5, 3, 4, 1, "Space", "Tri", Space),
+    KEYSPANHOT(5, 3, 4, 1, "Space", kHotkeyTriangleRounded, Space),
     KEY(5, 7, nullptr, None),
-    KEYSPANHOT(5, 8, 2, 1, "Backspace", "Sq", Backspace),
+    KEYSPANHOTGLYPH(5, 8, 2, 1, kHotkeySquareRounded, Backspace, Backspace),
 
     KEYGLYPH(6, 0, ArrowDown, ArrowDown),
     KEYGLYPH(6, 1, ArrowUp, ArrowUp),
     KEYHOTGLYPH(6, 2, "L1", ArrowLeft, ArrowLeft),
     KEYHOTGLYPH(6, 3, "R1", ArrowRight, ArrowRight),
-    KEY(6, 4, nullptr, None),
+    KEY(6, 4, kLanguageSwitchLabel, Keyboard),
     KEY(6, 5, "...", Menu),
-    KEYHOT(6, 6, "Gyro", "R3", Settings),
+    KEYHOT(6, 6, kControlModeGyroLabel, "R3", Settings),
     KEY(6, 7, nullptr, None),
     KEYSPANHOT(6, 8, 2, 1, nullptr, "R2", Done),
 }};
@@ -1036,6 +1065,10 @@ void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder) {
     AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Go));
     AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Search));
     AddImeKeyLabelGlyphs(builder, GetEnterLabel(OrbisImeEnterLabel::Send));
+    AddImeKeyLabelGlyphs(builder, kArrowLabelUp);
+    AddImeKeyLabelGlyphs(builder, kArrowLabelRight);
+    AddImeKeyLabelGlyphs(builder, kArrowLabelDown);
+    AddImeKeyLabelGlyphs(builder, kArrowLabelLeft);
 }
 
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k) {
@@ -1452,8 +1485,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                     label = ResolveSymbolOverrideLabel(params.selection, params.supported_languages,
                                                        *key, label);
                     label = ResolveShiftOverrideLabel(params.selection, *key, label);
-                    underline_label = key->action == ImeKbKeyAction::Shift &&
-                                      params.selection.case_state == ImeKbCaseState::CapsLock;
+                    glyph = ResolveShiftOverrideGlyph(params.selection, *key, glyph);
                 }
             }
 
@@ -1485,6 +1517,14 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         ImeEdgeWrapNavState edge_wrap_nav{};
         int last_grid_rows = -1;
         int last_grid_cols = -1;
+        int highlighted_row = -1;
+        int highlighted_col = -1;
+        int fade_row = -1;
+        int fade_col = -1;
+        double fade_started_at = 0.0;
+        int press_pulse_row = -1;
+        int press_pulse_col = -1;
+        double press_pulse_started_at = -1.0;
         int mouse_hold_row = -1;
         int mouse_hold_col = -1;
         bool mouse_hold_prev_down = false;
@@ -1499,6 +1539,16 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         nav_state.mouse_hold_prev_down = false;
         nav_state.mouse_hold_next_repeat_time = 0.0;
     };
+    const auto clear_selection_fade = [&]() {
+        nav_state.highlighted_row = -1;
+        nav_state.highlighted_col = -1;
+        nav_state.fade_row = -1;
+        nav_state.fade_col = -1;
+        nav_state.fade_started_at = 0.0;
+        nav_state.press_pulse_row = -1;
+        nav_state.press_pulse_col = -1;
+        nav_state.press_pulse_started_at = -1.0;
+    };
     const bool grid_shape_changed =
         nav_state.last_grid_rows != grid_rows || nav_state.last_grid_cols != grid_cols;
     if (grid_shape_changed) {
@@ -1506,10 +1556,12 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         nav_state.last_grid_cols = grid_cols;
         ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
         clear_mouse_hold();
+        clear_selection_fade();
     }
     if (params.reset_nav_state) {
         ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
         clear_mouse_hold();
+        clear_selection_fade();
     }
 
     const auto is_selectable_cell = [&](int row, int col) {
@@ -1598,9 +1650,13 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     if (params.requested_selected_row >= 0 && params.requested_selected_col >= 0) {
         const int row = std::clamp(params.requested_selected_row, 0, std::max(0, grid_rows - 1));
         const int col = std::clamp(params.requested_selected_col, 0, std::max(0, grid_cols - 1));
-        if (nearest_selectable_cell(row, col).first >= 0) {
-            nav_state.cursor_row = row;
-            nav_state.cursor_col = col;
+        auto requested = nearest_selectable_cell_on_row(row, col, 0);
+        if (requested.first < 0 || requested.second < 0) {
+            requested = nearest_selectable_cell(row, col);
+        }
+        if (requested.first >= 0 && requested.second >= 0) {
+            nav_state.cursor_row = requested.first;
+            nav_state.cursor_col = requested.second;
             nav_state.fallback_prefer_col_dir = 0;
             ResetImeEdgeWrapNav(nav_state.edge_wrap_nav);
         }
@@ -1658,6 +1714,9 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             col = (next_col + grid_cols) % grid_cols;
 
             const ImeKbKeySpec* candidate_key = occupied[static_cast<std::size_t>(idx(row, col))];
+            if (!candidate_key || candidate_key->action == ImeKbKeyAction::None) {
+                continue;
+            }
             // Treat each spanned key as one navigation node in every direction.
             if (origin_key && candidate_key == origin_key) {
                 continue;
@@ -1738,9 +1797,14 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     const bool imgui_activate_selected_once = ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, false);
     const bool imgui_activate_selected_repeat = ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown, true);
 
-    const auto activate_key = [&](const RenderedKey& render_key) {
+    const auto activate_key = [&](const RenderedKey& render_key, bool trigger_press_pulse) {
         if (!render_key.key || !render_key.selectable) {
             return;
+        }
+        if (trigger_press_pulse) {
+            nav_state.press_pulse_row = render_key.row;
+            nav_state.press_pulse_col = render_key.col;
+            nav_state.press_pulse_started_at = ImGui::GetTime();
         }
         state.pressed_action = render_key.key->action;
         state.pressed_label = render_key.label;
@@ -1771,6 +1835,43 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             rendered_keys[static_cast<std::size_t>(selected_render_index)].center;
     }
 
+    constexpr double kSelectionFadeOutDurationSec = 0.2;
+    int highlighted_row = -1;
+    int highlighted_col = -1;
+    if (params.show_selection_highlight && selected_render_index >= 0) {
+        const auto& highlighted_key =
+            rendered_keys[static_cast<std::size_t>(selected_render_index)];
+        highlighted_row = highlighted_key.row;
+        highlighted_col = highlighted_key.col;
+    }
+    if (highlighted_row != nav_state.highlighted_row ||
+        highlighted_col != nav_state.highlighted_col) {
+        if (nav_state.highlighted_row >= 0 && nav_state.highlighted_col >= 0) {
+            nav_state.fade_row = nav_state.highlighted_row;
+            nav_state.fade_col = nav_state.highlighted_col;
+            nav_state.fade_started_at = ImGui::GetTime();
+        } else {
+            nav_state.fade_row = -1;
+            nav_state.fade_col = -1;
+            nav_state.fade_started_at = 0.0;
+        }
+        nav_state.highlighted_row = highlighted_row;
+        nav_state.highlighted_col = highlighted_col;
+    }
+
+    float faded_selection_alpha = 0.0f;
+    if (nav_state.fade_row >= 0 && nav_state.fade_col >= 0 && kSelectionFadeOutDurationSec > 0.0) {
+        const double elapsed = ImGui::GetTime() - nav_state.fade_started_at;
+        if (elapsed >= 0.0 && elapsed < kSelectionFadeOutDurationSec) {
+            faded_selection_alpha =
+                1.0f - static_cast<float>(elapsed / kSelectionFadeOutDurationSec);
+        } else {
+            nav_state.fade_row = -1;
+            nav_state.fade_col = -1;
+            nav_state.fade_started_at = 0.0;
+        }
+    }
+
     const auto action_allows_repeat = [](ImeKbKeyAction action) {
         switch (action) {
         case ImeKbKeyAction::Character:
@@ -1798,6 +1899,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     bool activate_selected = false;
+    bool activate_selected_pulse = false;
     if (params.allow_activate_input) {
         bool activate_once = imgui_activate_selected_once;
         bool activate_repeat = imgui_activate_selected_repeat && !imgui_activate_selected_once;
@@ -1821,6 +1923,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
         }
 
         activate_selected = activate_once || activate_repeat;
+        activate_selected_pulse = activate_once;
     }
 
     const auto draw_key_glyph = [&](ImVec2 pos, ImVec2 size, ImeKbKeyGlyph glyph) {
@@ -1828,18 +1931,68 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             return;
         }
 
-        const float thickness = std::max(1.2f, size.y * 0.05f);
+        const float glyph_extent = std::min(size.x, size.y);
+        const float thickness = std::max(1.2f, glyph_extent * 0.05f);
         const ImU32 color = params.key_text;
         const float cx = pos.x + size.x * 0.5f;
         const float cy = pos.y + size.y * 0.5f;
+        const auto draw_symbol_glyph = [&](const char* symbol) {
+            ImFont* font = ImGui::GetFont();
+            const float symbol_font_size = std::max(8.0f, glyph_extent * 0.62f);
+            const ImVec2 symbol_size = font->CalcTextSizeA(
+                symbol_font_size, std::numeric_limits<float>::max(), -1.0f, symbol);
+            const ImVec2 symbol_pos{cx - symbol_size.x * 0.5f, cy - symbol_size.y * 0.5f};
+            draw->AddText(font, symbol_font_size, symbol_pos, color, symbol);
+        };
+        const auto draw_shift_glyph = [&](bool filled, bool caps_locked) {
+            const float extent = std::min(size.x, size.y);
+            const float scale = 0.88f;
+            const float y_offset = extent * 0.03f;
+            const float tip_y = cy + y_offset - extent * (0.30f * scale);
+            const float shoulder_y = cy + y_offset - extent * (0.03f * scale);
+            const float base_y = cy + y_offset + extent * (0.21f * scale);
+            const float head_half_w = extent * (0.30f * scale);
+            const float stem_half_w = extent * (0.11f * scale);
+
+            const std::array<ImVec2, 7> shape{
+                ImVec2{cx, tip_y},
+                ImVec2{cx - head_half_w, shoulder_y},
+                ImVec2{cx - stem_half_w, shoulder_y},
+                ImVec2{cx - stem_half_w, base_y},
+                ImVec2{cx + stem_half_w, base_y},
+                ImVec2{cx + stem_half_w, shoulder_y},
+                ImVec2{cx + head_half_w, shoulder_y},
+            };
+
+            if (filled) {
+                draw->AddConvexPolyFilled(shape.data(), static_cast<int>(shape.size()), color);
+            } else {
+                draw->AddPolyline(shape.data(), static_cast<int>(shape.size()), color, true,
+                                  thickness);
+            }
+
+            if (caps_locked) {
+                const float marker_w = extent * (0.24f * scale);
+                const float marker_h = std::max(thickness * 1.25f, extent * 0.07f);
+                const float marker_y =
+                    std::min(pos.y + size.y - marker_h * 0.9f, base_y + extent * (0.10f * scale));
+                const ImVec2 marker_min{cx - marker_w * 0.5f, marker_y - marker_h * 0.5f};
+                const ImVec2 marker_max{cx + marker_w * 0.5f, marker_y + marker_h * 0.5f};
+                draw->AddRectFilled(marker_min, marker_max, color, marker_h * 0.45f);
+            }
+        };
 
         switch (glyph) {
         case ImeKbKeyGlyph::Backspace: {
-            const float left = pos.x + size.x * 0.32f;
-            const float right = pos.x + size.x * 0.78f;
-            const float top = pos.y + size.y * 0.30f;
-            const float bottom = pos.y + size.y * 0.70f;
-            const ImVec2 tip{pos.x + size.x * 0.16f, cy};
+            const float extent = std::min(size.x, size.y);
+            const float body_w = extent * 0.56f;
+            const float body_h = extent * 0.42f;
+            const float tip_w = extent * 0.28f;
+            const float left = cx - (body_w - tip_w) * 0.5f;
+            const float right = left + body_w;
+            const float top = cy - body_h * 0.5f;
+            const float bottom = cy + body_h * 0.5f;
+            const ImVec2 tip{left - tip_w, cy};
             const std::array<ImVec2, 5> frame{
                 ImVec2{left, top},
                 ImVec2{right, top},
@@ -1849,51 +2002,39 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             };
             draw->AddPolyline(frame.data(), static_cast<int>(frame.size()), color, true, thickness);
 
-            const float cross_half_x = (right - left) * 0.18f;
-            const float cross_half_y = (bottom - top) * 0.22f;
-            const float cross_cx = left + (right - left) * 0.55f;
-            draw->AddLine({cross_cx - cross_half_x, cy - cross_half_y},
-                          {cross_cx + cross_half_x, cy + cross_half_y}, color, thickness);
-            draw->AddLine({cross_cx + cross_half_x, cy - cross_half_y},
-                          {cross_cx - cross_half_x, cy + cross_half_y}, color, thickness);
+            const float cross_half = extent * 0.10f;
+            const float cross_cx = left + body_w * 0.57f;
+            draw->AddLine({cross_cx - cross_half, cy - cross_half},
+                          {cross_cx + cross_half, cy + cross_half}, color, thickness);
+            draw->AddLine({cross_cx + cross_half, cy - cross_half},
+                          {cross_cx - cross_half, cy + cross_half}, color, thickness);
             break;
         }
         case ImeKbKeyGlyph::ArrowLeft: {
-            const float tri_half_h = size.y * 0.18f;
-            const float tri_w = size.x * 0.28f;
-            const ImVec2 tip{cx - tri_w * 0.5f, cy};
-            const ImVec2 top{cx + tri_w * 0.5f, cy - tri_half_h};
-            const ImVec2 bottom{cx + tri_w * 0.5f, cy + tri_half_h};
-            draw->AddTriangleFilled(tip, top, bottom, color);
+            draw_symbol_glyph(kArrowLabelLeft);
             break;
         }
         case ImeKbKeyGlyph::ArrowRight: {
-            const float tri_half_h = size.y * 0.18f;
-            const float tri_w = size.x * 0.28f;
-            const ImVec2 tip{cx + tri_w * 0.5f, cy};
-            const ImVec2 top{cx - tri_w * 0.5f, cy - tri_half_h};
-            const ImVec2 bottom{cx - tri_w * 0.5f, cy + tri_half_h};
-            draw->AddTriangleFilled(tip, top, bottom, color);
+            draw_symbol_glyph(kArrowLabelRight);
             break;
         }
         case ImeKbKeyGlyph::ArrowUp: {
-            const float tri_half_w = size.x * 0.18f;
-            const float tri_h = size.y * 0.28f;
-            const ImVec2 tip{cx, cy - tri_h * 0.5f};
-            const ImVec2 left{cx - tri_half_w, cy + tri_h * 0.5f};
-            const ImVec2 right{cx + tri_half_w, cy + tri_h * 0.5f};
-            draw->AddTriangleFilled(tip, left, right, color);
+            draw_symbol_glyph(kArrowLabelUp);
             break;
         }
         case ImeKbKeyGlyph::ArrowDown: {
-            const float tri_half_w = size.x * 0.18f;
-            const float tri_h = size.y * 0.28f;
-            const ImVec2 tip{cx, cy + tri_h * 0.5f};
-            const ImVec2 left{cx - tri_half_w, cy - tri_h * 0.5f};
-            const ImVec2 right{cx + tri_half_w, cy - tri_h * 0.5f};
-            draw->AddTriangleFilled(tip, left, right, color);
+            draw_symbol_glyph(kArrowLabelDown);
             break;
         }
+        case ImeKbKeyGlyph::ShiftOutline:
+            draw_shift_glyph(false, false);
+            break;
+        case ImeKbKeyGlyph::ShiftFilled:
+            draw_shift_glyph(true, false);
+            break;
+        case ImeKbKeyGlyph::CapsLockFilled:
+            draw_shift_glyph(true, true);
+            break;
         case ImeKbKeyGlyph::None:
         default:
             break;
@@ -1901,14 +2042,16 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     };
 
     const auto draw_key = [&](ImVec2 pos, ImVec2 size, ImU32 bg, const char* label,
-                              const char* hotkey_label, ImeKbKeyGlyph glyph, bool selected,
-                              bool emphasize_main_label, bool underline_main_label,
-                              bool disabled_visual) {
-        if (selected) {
+                              const char* hotkey_label, ImeKbKeyGlyph glyph, float selection_alpha,
+                              float pulse_expand_px, bool emphasize_main_label,
+                              bool underline_main_label, bool disabled_visual, bool done_key) {
+        const float clamped_selection_alpha = std::clamp(selection_alpha, 0.0f, 1.0f);
+        if (clamped_selection_alpha > 0.0f) {
+            const float selection_boost = 0.11f * clamped_selection_alpha;
             ImVec4 selected_bg = ImGui::ColorConvertU32ToFloat4(bg);
-            selected_bg.x = std::min(1.0f, selected_bg.x + 0.11f);
-            selected_bg.y = std::min(1.0f, selected_bg.y + 0.11f);
-            selected_bg.z = std::min(1.0f, selected_bg.z + 0.11f);
+            selected_bg.x = std::min(1.0f, selected_bg.x + selection_boost);
+            selected_bg.y = std::min(1.0f, selected_bg.y + selection_boost);
+            selected_bg.z = std::min(1.0f, selected_bg.z + selection_boost);
             bg = ImGui::ColorConvertFloat4ToU32(selected_bg);
         }
         ImU32 key_text_color = params.key_text;
@@ -1922,18 +2065,40 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             key_text_color = IM_COL32(150, 150, 150, 255);
             key_hotkey_color = IM_COL32(122, 122, 122, 255);
         }
-
-        draw->AddRectFilled(pos, {pos.x + size.x, pos.y + size.y}, bg, layout.corner_radius);
-        const ImU32 border_color = selected ? IM_COL32(248, 248, 248, 255) : params.key_border;
+        const float expand = std::max(0.0f, pulse_expand_px);
+        const ImVec2 draw_min{pos.x - expand, pos.y - expand};
+        const ImVec2 draw_max{pos.x + size.x + expand, pos.y + size.y + expand};
+        const float draw_corner_radius = layout.corner_radius + expand;
+        draw->AddRectFilled(draw_min, draw_max, bg, draw_corner_radius);
+        const bool selected = clamped_selection_alpha > 0.0f;
+        ImU32 border_color = params.key_border;
+        if (done_key) {
+            ImVec4 done_border = ImGui::ColorConvertU32ToFloat4(bg);
+            done_border.x = std::clamp(done_border.x * 0.72f, 0.0f, 1.0f);
+            done_border.y = std::clamp(done_border.y * 0.72f, 0.0f, 1.0f);
+            done_border.z = std::clamp(done_border.z * 0.72f, 0.0f, 1.0f);
+            done_border.w = 1.0f;
+            border_color = ImGui::ColorConvertFloat4ToU32(done_border);
+        }
+        if (selected) {
+            border_color = IM_COL32(248, 248, 248, 255);
+        }
         const float border_thickness = selected ? 2.0f : 1.0f;
-        draw->AddRect(pos, {pos.x + size.x, pos.y + size.y}, border_color, layout.corner_radius, 0,
-                      border_thickness);
+        if (selected && clamped_selection_alpha < 1.0f) {
+            ImVec4 border = ImGui::ColorConvertU32ToFloat4(border_color);
+            border.w *= clamped_selection_alpha;
+            border_color = ImGui::ColorConvertFloat4ToU32(border);
+        }
+        draw->AddRect(draw_min, draw_max, border_color, draw_corner_radius, 0, border_thickness);
         ImFont* font = ImGui::GetFont();
         const float base_font_size = ImGui::GetFontSize();
-        if (hotkey_label && hotkey_label[0] != '\0') {
-            const float hotkey_padding = std::max(3.0f, size.y * 0.08f);
-            const float hotkey_max_w = std::max(0.0f, size.x - hotkey_padding * 2.0f);
-            float hotkey_font_size = std::max(6.0f, base_font_size * 0.58f);
+        const auto draw_hotkey_badge = [&]() {
+            if (!hotkey_label || hotkey_label[0] == '\0') {
+                return;
+            }
+            const float hotkey_padding_x = std::max(3.0f, size.y * 0.08f);
+            const float hotkey_max_w = std::max(0.0f, size.x - hotkey_padding_x * 2.0f);
+            float hotkey_font_size = std::max(6.0f, base_font_size * kHotkeyLabelScale);
             ImVec2 hotkey_size = font->CalcTextSizeA(
                 hotkey_font_size, std::numeric_limits<float>::max(), -1.0f, hotkey_label);
             if (hotkey_max_w > 0.0f && hotkey_size.x > hotkey_max_w && hotkey_size.x > 0.0f) {
@@ -1941,15 +2106,29 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                 hotkey_size = font->CalcTextSizeA(
                     hotkey_font_size, std::numeric_limits<float>::max(), -1.0f, hotkey_label);
             }
-            ImVec2 hotkey_pos{pos.x + hotkey_padding, pos.y + hotkey_padding};
+            ImVec2 hotkey_pos{pos.x + hotkey_padding_x, pos.y};
+            const float hotkey_bg_pad_x = std::max(2.0f, hotkey_font_size * 0.28f);
+            const float hotkey_bg_pad_bottom = std::max(1.0f, hotkey_font_size * 0.16f);
+            const ImVec2 hotkey_bg_min{hotkey_pos.x - hotkey_bg_pad_x, pos.y};
+            const ImVec2 hotkey_bg_max{hotkey_pos.x + hotkey_size.x + hotkey_bg_pad_x,
+                                       hotkey_pos.y + hotkey_size.y + hotkey_bg_pad_bottom};
+            const float hotkey_bg_rounding = std::max(2.0f, hotkey_font_size * 0.24f);
+            const ImU32 hotkey_bg_color =
+                disabled_visual ? IM_COL32(16, 16, 16, 120) : IM_COL32(10, 10, 10, 132);
+            const ImU32 hotkey_bg_border =
+                disabled_visual ? IM_COL32(70, 70, 70, 90) : IM_COL32(92, 92, 92, 105);
+            draw->AddRectFilled(hotkey_bg_min, hotkey_bg_max, hotkey_bg_color, hotkey_bg_rounding);
+            draw->AddRect(hotkey_bg_min, hotkey_bg_max, hotkey_bg_border, hotkey_bg_rounding, 0,
+                          1.0f);
             draw->AddText(font, hotkey_font_size, hotkey_pos, key_hotkey_color, hotkey_label);
-        }
+        };
         if ((!label || label[0] == '\0') && glyph != ImeKbKeyGlyph::None) {
             draw_key_glyph(pos, size, glyph);
         }
         if (label && label[0] != '\0') {
             float label_font_size =
-                base_font_size * (emphasize_main_label ? kTypingKeyLabelScale : 1.0f);
+                base_font_size *
+                (emphasize_main_label ? kTypingKeyLabelScale : kFunctionKeyLabelScale);
             const float label_padding_x = std::max(4.0f, size.x * 0.08f);
             const float label_max_w = std::max(0.0f, size.x - label_padding_x * 2.0f);
             ImVec2 text_size = font->CalcTextSizeA(label_font_size,
@@ -1971,15 +2150,31 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                               key_text_color, underline_thickness);
             }
         }
+        // Draw hotkey tag last so it always stays over main key label/glyph.
+        draw_hotkey_badge();
     };
 
     for (int i = 0; i < static_cast<int>(rendered_keys.size()); ++i) {
         const auto& key = rendered_keys[static_cast<std::size_t>(i)];
         const bool selected = params.show_selection_highlight && (i == selected_render_index);
+        float selection_alpha = selected ? 1.0f : 0.0f;
+        if (!selected && faded_selection_alpha > 0.0f && key.row == nav_state.fade_row &&
+            key.col == nav_state.fade_col) {
+            selection_alpha = faded_selection_alpha;
+        }
+        constexpr float kSelectedBorderThickness = 2.0f;
+        float press_pulse_expand = 0.0f;
+        if (selected && key.row == nav_state.press_pulse_row &&
+            key.col == nav_state.press_pulse_col) {
+            press_pulse_expand = ComputePressPulseExpand(
+                nav_state.press_pulse_started_at, ImGui::GetTime(), kSelectorPressPulseDurationSec,
+                kSelectedBorderThickness * kSelectorPressPulseExpandBorderFactor);
+        }
         const bool emphasize_main_label = key.key && key.key->action == ImeKbKeyAction::Character;
         const bool underline_main_label = key.underline_label;
-        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selected,
-                 emphasize_main_label, underline_main_label, key.disabled_visual);
+        draw_key(key.pos, key.size, key.bg, key.label, key.hotkey_label, key.glyph, selection_alpha,
+                 press_pulse_expand, emphasize_main_label, underline_main_label,
+                 key.disabled_visual, key.is_done);
 
         if (!key.selectable) {
             continue;
@@ -1998,7 +2193,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             nav_state.cursor_row = key.row;
             nav_state.cursor_col = key.col;
             nav_state.fallback_prefer_col_dir = 0;
-            activate_key(key);
+            activate_key(key, true);
             if (key.key && action_allows_repeat(key.key->action)) {
                 nav_state.mouse_hold_row = key.row;
                 nav_state.mouse_hold_col = key.col;
@@ -2057,14 +2252,15 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
                 }
 
                 if (trigger_repeat) {
-                    activate_key(hold_key);
+                    activate_key(hold_key, false);
                 }
             }
         }
     }
 
     if (activate_selected && selected_render_index >= 0) {
-        activate_key(rendered_keys[static_cast<std::size_t>(selected_render_index)]);
+        activate_key(rendered_keys[static_cast<std::size_t>(selected_render_index)],
+                     activate_selected_pulse);
     }
 }
 

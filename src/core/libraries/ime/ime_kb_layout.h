@@ -240,6 +240,9 @@ enum class ImeKbKeyGlyph : u8 {
     ArrowRight = 3,
     ArrowUp = 4,
     ArrowDown = 5,
+    ShiftOutline = 6,
+    ShiftFilled = 7,
+    CapsLockFilled = 8,
 };
 
 struct ImeKbKeySpec {
@@ -443,6 +446,9 @@ inline bool DoesImeKeyboardNavigationWrap(const ImeKbLayoutModel& layout, int fr
         col = (next_col + grid_cols) % grid_cols;
 
         const auto* candidate_key = ResolveImeKeyboardKeyAt(layout, row, col);
+        if (!candidate_key || candidate_key->action == ImeKbKeyAction::None) {
+            continue;
+        }
         if (origin_key && candidate_key == origin_key) {
             continue;
         }

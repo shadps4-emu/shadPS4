@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <numbers>
 
 #include "common/singleton.h"
 #include "input/controller.h"
@@ -26,6 +27,8 @@ constexpr double kStickNavInitialDelaySlow = 0.26;
 constexpr double kStickNavInitialDelayFast = 0.16;
 constexpr double kStickNavRepeatSlow = 0.20;
 constexpr double kStickNavRepeatFast = 0.11;
+constexpr double kCaretBlinkCycleSec = 1.20;
+constexpr double kCaretBlinkOnSec = 0.80;
 
 struct VirtualButtonRepeatResult {
     bool pressed = false;
@@ -47,6 +50,15 @@ struct StickNavPulseResult {
     bool up_repeat = false;
     bool down_repeat = false;
 };
+
+bool IsCaretBlinkVisible() {
+    const ImGuiIO& io = ImGui::GetIO();
+    if (!io.ConfigInputTextCursorBlink) {
+        return true;
+    }
+    const double phase = std::fmod(ImGui::GetTime(), kCaretBlinkCycleSec);
+    return phase <= kCaretBlinkOnSec;
+}
 
 } // namespace
 
@@ -118,6 +130,94 @@ ImVec4 BrightenColor(ImU32 color, float delta) {
     return out;
 }
 
+static ImU32 ScaleColorAlpha(ImU32 color, float alpha_scale) {
+    ImVec4 c = ImGui::ColorConvertU32ToFloat4(color);
+    c.w = std::clamp(c.w * alpha_scale, 0.0f, 1.0f);
+    return ImGui::ColorConvertFloat4ToU32(c);
+}
+
+void TriggerSelectorPressPulse(SelectorFadeState& state, double now) {
+    state.press_pulse_started_at = now;
+}
+
+float ComputePressPulseExpand(double pulse_started_at, double now, float pulse_duration_sec,
+                              float max_expand_px) {
+    if (pulse_started_at < 0.0 || pulse_duration_sec <= 0.0f || max_expand_px <= 0.0f) {
+        return 0.0f;
+    }
+    const double elapsed = now - pulse_started_at;
+    if (elapsed < 0.0 || elapsed >= static_cast<double>(pulse_duration_sec)) {
+        return 0.0f;
+    }
+
+    const float t = static_cast<float>(elapsed / static_cast<double>(pulse_duration_sec));
+    const float envelope = std::sin(t * std::numbers::pi_v<float>);
+    return std::max(0.0f, envelope) * max_expand_px;
+}
+
+void UpdateSelectorFadeState(SelectorFadeState& state, ImVec2 pos, ImVec2 size, float inset,
+                             float corner_radius, bool selected, double now) {
+    bool next_visible = false;
+    ImVec2 next_min{};
+    ImVec2 next_max{};
+    if (selected && size.x > inset * 2.0f && size.y > inset * 2.0f) {
+        next_visible = true;
+        next_min = {pos.x + inset, pos.y + inset};
+        next_max = {pos.x + size.x - inset, pos.y + size.y - inset};
+    }
+
+    const bool was_visible = state.current_visible;
+    if (was_visible && !next_visible) {
+        state.previous_min = state.current_min;
+        state.previous_max = state.current_max;
+        state.previous_corner_radius = state.current_corner_radius;
+        state.previous_visible = true;
+        state.previous_started_at = now;
+    }
+
+    state.current_visible = next_visible;
+    if (!next_visible) {
+        return;
+    }
+    state.current_min = next_min;
+    state.current_max = next_max;
+    state.current_corner_radius = std::max(0.0f, corner_radius);
+}
+
+void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list,
+                           ImU32 overlay_color, ImU32 border_color, float border_thickness,
+                           float fade_duration_sec, double now, float current_expand_px) {
+    if (!draw_list) {
+        return;
+    }
+
+    if (state.previous_visible && fade_duration_sec > 0.0f) {
+        const double elapsed = now - state.previous_started_at;
+        if (elapsed >= 0.0 && elapsed < static_cast<double>(fade_duration_sec)) {
+            const float alpha =
+                1.0f - static_cast<float>(elapsed / static_cast<double>(fade_duration_sec));
+            if (alpha > 0.0f) {
+                draw_list->AddRectFilled(state.previous_min, state.previous_max,
+                                         ScaleColorAlpha(overlay_color, alpha),
+                                         state.previous_corner_radius);
+                draw_list->AddRect(state.previous_min, state.previous_max,
+                                   ScaleColorAlpha(border_color, alpha),
+                                   state.previous_corner_radius, 0, border_thickness);
+            }
+        }
+    }
+
+    if (!state.current_visible) {
+        return;
+    }
+    const float expand = std::max(0.0f, current_expand_px);
+    const ImVec2 current_min{state.current_min.x - expand, state.current_min.y - expand};
+    const ImVec2 current_max{state.current_max.x + expand, state.current_max.y + expand};
+    const float corner_radius = state.current_corner_radius + expand;
+    draw_list->AddRectFilled(current_min, current_max, overlay_color, corner_radius);
+    draw_list->AddRect(current_min, current_max, border_color, corner_radius, 0, border_thickness);
+}
+
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_option,
                                                      OrbisImePanelPriority panel_priority) {
     ImeKbLayoutSelection selection{};
@@ -144,6 +244,99 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
         selection.case_state = ImeKbCaseState::CapsLock;
     }
     return selection;
+}
+
+void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_selection,
+                                         OrbisImeExtOption ext_option, int& pending_row,
+                                         int& pending_col, int& last_row, int& last_col) {
+    constexpr int kLatinLowerDefaultRow = 2;
+    constexpr int kLatinLowerDefaultCol = 4;
+
+    const bool is_default_latin_lower = layout_selection.family == ImeKbLayoutFamily::Latin &&
+                                        layout_selection.case_state == ImeKbCaseState::Lower;
+    const bool game_requested_other =
+        True(ext_option & OrbisImeExtOption::SET_PRIORITY) && !is_default_latin_lower;
+    if (!is_default_latin_lower || game_requested_other) {
+        return;
+    }
+
+    pending_row = kLatinLowerDefaultRow;
+    pending_col = kLatinLowerDefaultCol;
+    last_row = kLatinLowerDefaultRow;
+    last_col = kLatinLowerDefaultCol;
+}
+
+void CycleKeyboardCaseState(ImeKbLayoutSelection& selection) {
+    switch (selection.case_state) {
+    case ImeKbCaseState::Lower:
+        selection.case_state = ImeKbCaseState::Upper;
+        break;
+    case ImeKbCaseState::Upper:
+        selection.case_state = ImeKbCaseState::CapsLock;
+        break;
+    case ImeKbCaseState::CapsLock:
+    default:
+        selection.case_state = ImeKbCaseState::Lower;
+        break;
+    }
+}
+
+void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily& alpha_family,
+                              ImeKbLayoutFamily target_family) {
+    const auto set_family_and_reset_page = [&](const ImeKbLayoutFamily family) {
+        selection.family = family;
+        selection.page = 0;
+        if (family == ImeKbLayoutFamily::Latin || family == ImeKbLayoutFamily::Specials) {
+            alpha_family = family;
+        }
+    };
+
+    if (target_family == ImeKbLayoutFamily::Symbols) {
+        if (selection.family == ImeKbLayoutFamily::Symbols) {
+            set_family_and_reset_page(alpha_family);
+        } else {
+            if (selection.family == ImeKbLayoutFamily::Latin ||
+                selection.family == ImeKbLayoutFamily::Specials) {
+                alpha_family = selection.family;
+            }
+            set_family_and_reset_page(ImeKbLayoutFamily::Symbols);
+        }
+        return;
+    }
+
+    if (selection.family == target_family) {
+        set_family_and_reset_page(ImeKbLayoutFamily::Latin);
+    } else {
+        set_family_and_reset_page(target_family);
+    }
+}
+
+bool FocusKeyboardActionKeySelection(const ImeKbLayoutSelection& selection, ImeKbKeyAction action,
+                                     int& out_row, int& out_col) {
+    const auto& layout = GetImeKeyboardLayout(selection);
+    if (!layout.keys || layout.key_count == 0) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < layout.key_count; ++i) {
+        const auto& key = layout.keys[i];
+        if (key.action != action) {
+            continue;
+        }
+        out_row = static_cast<int>(key.row);
+        out_col = static_cast<int>(key.col);
+        return true;
+    }
+    return false;
+}
+
+void FlipKeyboardModePage(ImeKbLayoutSelection& selection, int direction) {
+    if (selection.family != ImeKbLayoutFamily::Symbols &&
+        selection.family != ImeKbLayoutFamily::Specials) {
+        return;
+    }
+    const int page = static_cast<int>(selection.page);
+    selection.page = static_cast<u8>((page + direction + 2) % 2);
 }
 
 int Utf16CountFromUtf8Range(const char* text, const char* end) {
@@ -238,6 +431,9 @@ void DrawInactiveCaretOverlay(const ImRect& frame_rect, const char* text, int ca
         return;
     }
     if (selection_start_byte != selection_end_byte) {
+        return;
+    }
+    if (!IsCaretBlinkVisible()) {
         return;
     }
 
@@ -584,7 +780,7 @@ bool OskVirtualPadInputView::RepeatPressed(Libraries::Pad::OrbisPadButtonDataOff
     return result.pressed;
 }
 
-void ResetOskShortcutRepeatState(OskShortcutRepeatState& state) {
+static void ResetOskShortcutRepeatState(OskShortcutRepeatState& state) {
     state.prev_square_down = false;
     state.prev_l1_down = false;
     state.prev_r1_down = false;
@@ -595,8 +791,8 @@ void ResetOskShortcutRepeatState(OskShortcutRepeatState& state) {
     state.triangle_next_repeat_time = 0.0;
 }
 
-bool ConsumeTriggerShortcutPress(bool trigger_down, bool trigger_edge_pressed,
-                                 float trigger_analog_value, bool& shortcut_armed) {
+static bool ConsumeTriggerShortcutPress(bool trigger_down, bool trigger_edge_pressed,
+                                        float trigger_analog_value, bool& shortcut_armed) {
     // Require clear release before accepting another trigger shortcut press.
     constexpr float kTriggerReleaseThreshold = 0.20f;
     if (!trigger_down && trigger_analog_value <= kTriggerReleaseThreshold) {

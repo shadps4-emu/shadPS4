@@ -7,6 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <imgui_internal.h>
@@ -26,6 +27,9 @@ constexpr ImU32 kSelectorBorderColor = IM_COL32(248, 248, 248, 255);
 constexpr ImU32 kSelectorOverlayColor = IM_COL32(255, 255, 255, 18);
 constexpr float kSelectorBorderThickness = 2.0f;
 constexpr float kSelectorInnerMargin = 2.0f;
+constexpr const char* kSelectorInputId = "##ImeSelectorInput";
+constexpr const char* kSelectorPredictId = "##ImeSelectorPredict";
+constexpr const char* kSelectorCloseId = "##ImeSelectorClose";
 
 } // namespace
 
@@ -237,6 +241,9 @@ ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExt
         kb_alpha_family = (kb_layout_selection.family == ImeKbLayoutFamily::Specials)
                               ? ImeKbLayoutFamily::Specials
                               : ImeKbLayoutFamily::Latin;
+        InitializeDefaultOskSelectionAnchor(kb_layout_selection, ext_option, pending_keyboard_row,
+                                            pending_keyboard_col, last_keyboard_selected_row,
+                                            last_keyboard_selected_col);
         AddLayer(this);
         ImGui::Core::AcquireGamepadInputCapture();
         gamepad_input_capture_active = true;
@@ -708,14 +715,18 @@ void ImeUi::Draw() {
             return std::clamp(clamped_col, element.min_col, element.max_col);
         };
         const bool menu_modal = (edit_menu_popup != EditMenuPopup::None);
-        const int keyboard_row_before_panel_nav =
+        const int keyboard_row_before_panel_nav_raw =
             (pending_keyboard_row >= keyboard_min_row && pending_keyboard_row <= keyboard_max_row)
                 ? pending_keyboard_row
                 : last_keyboard_selected_row;
-        const int keyboard_col_before_panel_nav =
+        const int keyboard_col_before_panel_nav_raw =
             (pending_keyboard_col >= keyboard_min_col && pending_keyboard_col <= keyboard_max_col)
                 ? pending_keyboard_col
                 : last_keyboard_selected_col;
+        const int keyboard_row_before_panel_nav =
+            std::clamp(keyboard_row_before_panel_nav_raw, keyboard_min_row, keyboard_max_row);
+        const int keyboard_col_before_panel_nav =
+            std::clamp(keyboard_col_before_panel_nav_raw, keyboard_min_col, keyboard_max_col);
         bool entered_top_from_keyboard = false;
         const auto move_keyboard_edge_to_top = [&](int wrap_dir_y, int keyboard_col) {
             const int top_col = keyboard_to_top_col(keyboard_col);
@@ -756,36 +767,41 @@ void ImeUi::Draw() {
         const bool input_hovered = DrawInputText(metrics, pointer_navigation_active);
         const bool input_selected =
             pointer_navigation_active && (input_hovered || native_input_active);
-        auto draw_selector = [&](ImVec2 pos, ImVec2 size, bool selected) {
-            if (!selected) {
-                return;
+        const bool input_clicked = pointer_navigation_active && input_hovered &&
+                                   IsMouseClicked(ImGuiMouseButton_Left, false);
+        static std::unordered_map<ImGuiID, SelectorFadeState> s_selector_fade_states;
+        const auto draw_selector = [&](const char* selector_id, ImVec2 pos, ImVec2 size,
+                                       bool selected, bool pulse_triggered) {
+            auto& fade_state = s_selector_fade_states[ImGui::GetID(selector_id)];
+            const double now = ImGui::GetTime();
+            if (selected && pulse_triggered) {
+                TriggerSelectorPressPulse(fade_state, now);
             }
-            const float inset = kSelectorInnerMargin;
-            if (size.x <= inset * 2.0f || size.y <= inset * 2.0f) {
-                return;
-            }
-            const ImVec2 sel_min{pos.x + inset, pos.y + inset};
-            const ImVec2 sel_max{pos.x + size.x - inset, pos.y + size.y - inset};
-            const float selector_corner_radius = std::max(0.0f, metrics.corner_radius - inset);
-            auto* selector_draw = GetWindowDrawList();
-            selector_draw->AddRectFilled(sel_min, sel_max, kSelectorOverlayColor,
-                                         selector_corner_radius);
-            selector_draw->AddRect(sel_min, sel_max, kSelectorBorderColor, selector_corner_radius,
-                                   0, kSelectorBorderThickness);
+            const float selector_corner_radius =
+                std::max(0.0f, metrics.corner_radius - kSelectorInnerMargin);
+            UpdateSelectorFadeState(fade_state, pos, size, kSelectorInnerMargin,
+                                    selector_corner_radius, selected, now);
+            const float press_pulse_expand =
+                selected
+                    ? ComputePressPulseExpand(
+                          fade_state.press_pulse_started_at, now, kSelectorPressPulseDurationSec,
+                          kSelectorBorderThickness * kSelectorPressPulseExpandBorderFactor)
+                    : 0.0f;
+            DrawSelectorFadeState(fade_state, GetWindowDrawList(), kSelectorOverlayColor,
+                                  kSelectorBorderColor, kSelectorBorderThickness,
+                                  kSelectorFadeOutDurationSec, now, press_pulse_expand);
         };
-        draw_selector(metrics.input_pos_screen, metrics.input_size, input_selected);
+        draw_selector(kSelectorInputId, metrics.input_pos_screen, metrics.input_size,
+                      input_selected,
+                      input_clicked || (panel_selection == PanelSelectionTarget::Input &&
+                                        panel_activate_pressed_raw));
 
         auto* draw = GetWindowDrawList();
         const ImU32 pane_bg = ImeColorToImU32(style_config.color_base);
-        const ImU32 pane_border = ImeColorToImU32(style_config.color_line);
         draw->AddRectFilled(metrics.predict_pos,
                             {metrics.predict_pos.x + metrics.predict_size.x,
                              metrics.predict_pos.y + metrics.predict_size.y},
                             pane_bg, metrics.corner_radius);
-        draw->AddRect(metrics.predict_pos,
-                      {metrics.predict_pos.x + metrics.predict_size.x,
-                       metrics.predict_pos.y + metrics.predict_size.y},
-                      pane_border, metrics.corner_radius);
         SetCursorScreenPos(metrics.predict_pos);
         PushID("##ImePredict");
         PushItemFlag(ImGuiItemFlags_NoNav, true);
@@ -804,16 +820,25 @@ void ImeUi::Draw() {
                                   prediction_element.min_col, prediction_element.max_col));
         }
         PopID();
-        draw_selector(metrics.predict_pos, metrics.predict_size,
-                      panel_selection == PanelSelectionTarget::Prediction);
+        draw_selector(kSelectorPredictId, metrics.predict_pos, metrics.predict_size,
+                      panel_selection == PanelSelectionTarget::Prediction,
+                      prediction_clicked || (panel_selection == PanelSelectionTarget::Prediction &&
+                                             panel_activate_pressed_raw));
         const ImU32 close_button_bg = ImeColorToImU32(style_config.color_button_function);
         PushStyleColor(ImGuiCol_Button, BrightenColor(close_button_bg, 0.0f));
         PushStyleColor(ImGuiCol_ButtonHovered, BrightenColor(close_button_bg, 0.08f));
         PushStyleColor(ImGuiCol_ButtonActive, BrightenColor(close_button_bg, 0.16f));
         SetCursorScreenPos(metrics.close_pos);
         PushItemFlag(ImGuiItemFlags_NoNav, true);
-        bool cancel_pressed = Button("X##ImeClose", {metrics.close_size.x, metrics.close_size.y});
+        bool cancel_pressed = Button("##ImeClose", {metrics.close_size.x, metrics.close_size.y});
         PopItemFlag();
+        constexpr const char* kCloseLabel = "\xE2\x9C\x95";
+        const ImVec2 close_label_size = CalcTextSize(kCloseLabel, nullptr, true);
+        const float close_pad_y = std::max(1.0f, metrics.close_size.y * 0.04f);
+        const ImVec2 close_label_pos{metrics.close_pos.x +
+                                         (metrics.close_size.x - close_label_size.x) * 0.5f,
+                                     metrics.close_pos.y + close_pad_y};
+        draw->AddText(close_label_pos, ImeColorToImU32(style_config.color_text), kCloseLabel);
         cancel_pressed = cancel_pressed || cancel_shortcut_pressed;
         const bool close_clicked = IsMouseClicked(ImGuiMouseButton_Left, false) && IsItemHovered();
         const int close_element_idx = element_index_for_target(PanelSelectionTarget::Close);
@@ -822,8 +847,10 @@ void ImeUi::Draw() {
             set_top_selection(PanelSelectionTarget::Close, close_element.min_col);
         }
         PopStyleColor(3);
-        draw_selector(metrics.close_pos, metrics.close_size,
-                      panel_selection == PanelSelectionTarget::Close);
+        draw_selector(kSelectorCloseId, metrics.close_pos, metrics.close_size,
+                      panel_selection == PanelSelectionTarget::Close,
+                      close_clicked || (panel_selection == PanelSelectionTarget::Close &&
+                                        panel_activate_pressed_raw));
         if (!cancel_pressed && panel_selection == PanelSelectionTarget::Close &&
             panel_activate_pressed) {
             cancel_pressed = true;
@@ -1152,72 +1179,6 @@ void ImeUi::Draw() {
             panel_selection = PanelSelectionTarget::Keyboard;
         }
 
-        const auto cycle_case_state = [&]() {
-            switch (kb_layout_selection.case_state) {
-            case ImeKbCaseState::Lower:
-                kb_layout_selection.case_state = ImeKbCaseState::Upper;
-                break;
-            case ImeKbCaseState::Upper:
-                kb_layout_selection.case_state = ImeKbCaseState::CapsLock;
-                break;
-            case ImeKbCaseState::CapsLock:
-            default:
-                kb_layout_selection.case_state = ImeKbCaseState::Lower;
-                break;
-            }
-        };
-        const auto set_family_and_reset_page = [&](ImeKbLayoutFamily family) {
-            kb_layout_selection.family = family;
-            kb_layout_selection.page = 0;
-            if (family == ImeKbLayoutFamily::Latin || family == ImeKbLayoutFamily::Specials) {
-                kb_alpha_family = family;
-            }
-        };
-        const auto toggle_family_mode = [&](ImeKbLayoutFamily target_family) {
-            if (target_family == ImeKbLayoutFamily::Symbols) {
-                if (kb_layout_selection.family == ImeKbLayoutFamily::Symbols) {
-                    set_family_and_reset_page(kb_alpha_family);
-                } else {
-                    if (kb_layout_selection.family == ImeKbLayoutFamily::Latin ||
-                        kb_layout_selection.family == ImeKbLayoutFamily::Specials) {
-                        kb_alpha_family = kb_layout_selection.family;
-                    }
-                    set_family_and_reset_page(ImeKbLayoutFamily::Symbols);
-                }
-                return;
-            }
-            if (kb_layout_selection.family == target_family) {
-                set_family_and_reset_page(ImeKbLayoutFamily::Latin);
-            } else {
-                set_family_and_reset_page(target_family);
-            }
-        };
-        const auto focus_keyboard_action_key = [&](ImeKbKeyAction action) {
-            const auto& focus_layout = GetImeKeyboardLayout(kb_layout_selection);
-            if (!focus_layout.keys || focus_layout.key_count == 0) {
-                return;
-            }
-            for (std::size_t i = 0; i < focus_layout.key_count; ++i) {
-                const auto& key = focus_layout.keys[i];
-                if (key.action != action) {
-                    continue;
-                }
-                pending_keyboard_row = static_cast<int>(key.row);
-                pending_keyboard_col = static_cast<int>(key.col);
-                last_keyboard_selected_row = pending_keyboard_row;
-                last_keyboard_selected_col = pending_keyboard_col;
-                panel_selection = PanelSelectionTarget::Keyboard;
-                return;
-            }
-        };
-        const auto flip_mode_page = [&](int direction) {
-            if (kb_layout_selection.family != ImeKbLayoutFamily::Symbols &&
-                kb_layout_selection.family != ImeKbLayoutFamily::Specials) {
-                return;
-            }
-            const int page = static_cast<int>(kb_layout_selection.page);
-            kb_layout_selection.page = static_cast<u8>((page + direction + 2) % 2);
-        };
         const auto consume_temporary_uppercase = [&](bool typed_character) {
             if (typed_character && kb_layout_selection.case_state == ImeKbCaseState::Upper) {
                 kb_layout_selection.case_state = ImeKbCaseState::Lower;
@@ -1273,6 +1234,25 @@ void ImeUi::Draw() {
             emit_update_caret_events(base, next);
             return next != base;
         };
+        const auto move_text_caret_to_boundary = [&](bool to_end, bool preserve_selection) {
+            const int len = text_length_utf16();
+            int base = text_select_mode ? text_select_focus_utf16 : state->caret_index;
+            if (base < 0) {
+                base = state->caret_index;
+            }
+            base = std::clamp(base, 0, len);
+            const int next = to_end ? len : 0;
+            if (preserve_selection && text_select_mode) {
+                text_select_focus_utf16 = next;
+                apply_selection_state();
+                panel_selection = PanelSelectionTarget::Keyboard;
+                emit_update_caret_events(base, next);
+                return next != base;
+            }
+            collapse_selection_to_caret(next);
+            emit_update_caret_events(base, next);
+            return next != base;
+        };
         const auto begin_text_selection_from_caret = [&]() {
             text_select_mode = true;
             const int len = text_length_utf16();
@@ -1291,14 +1271,10 @@ void ImeUi::Draw() {
             panel_selection = PanelSelectionTarget::Keyboard;
         };
         const auto open_main_menu = [&]() {
-            edit_menu_popup = EditMenuPopup::Main;
-            edit_menu_index = 0;
-            DisarmMenuActivate(menu_activate_armed);
+            OpenOskMainEditMenu(edit_menu_popup, edit_menu_index, menu_activate_armed);
         };
         const auto open_actions_menu = [&]() {
-            edit_menu_popup = EditMenuPopup::Actions;
-            edit_menu_index = 0;
-            DisarmMenuActivate(menu_activate_armed);
+            OpenOskActionsEditMenu(edit_menu_popup, edit_menu_index, menu_activate_armed);
         };
         const auto apply_main_menu_action = [&](int action_index) {
             switch (action_index) {
@@ -1353,24 +1329,34 @@ void ImeUi::Draw() {
             kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None, panel_input,
             virtual_pad_input, prev_virtual_buttons, kb_layout_selection.family,
             shortcut_repeat_state);
+        bool keyboard_action_from_hotkey = false;
         if (shortcut_action.clear_all) {
             (void)clear_all_text();
         } else if (shortcut_action.action != Libraries::Ime::ImeKbKeyAction::None) {
             kb_state.pressed_action = shortcut_action.action;
+            keyboard_action_from_hotkey = true;
         }
         switch (kb_state.pressed_action) {
         case Libraries::Ime::ImeKbKeyAction::Character:
             consume_temporary_uppercase(insert_text_at_caret(kb_state.pressed_label));
             break;
         case Libraries::Ime::ImeKbKeyAction::Shift:
-            cycle_case_state();
+            CycleKeyboardCaseState(kb_layout_selection);
             break;
         case Libraries::Ime::ImeKbKeyAction::SymbolsMode:
-            toggle_family_mode(ImeKbLayoutFamily::Symbols);
+            ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
+                                     ImeKbLayoutFamily::Symbols);
             break;
         case Libraries::Ime::ImeKbKeyAction::SpecialsMode:
-            toggle_family_mode(ImeKbLayoutFamily::Specials);
-            focus_keyboard_action_key(ImeKbKeyAction::SpecialsMode);
+            ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
+                                     ImeKbLayoutFamily::Specials);
+            if (!keyboard_action_from_hotkey &&
+                FocusKeyboardActionKeySelection(kb_layout_selection, ImeKbKeyAction::SpecialsMode,
+                                                pending_keyboard_row, pending_keyboard_col)) {
+                last_keyboard_selected_row = pending_keyboard_row;
+                last_keyboard_selected_col = pending_keyboard_col;
+                panel_selection = PanelSelectionTarget::Keyboard;
+            }
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowLeft:
             (void)move_text_caret(-1, text_select_mode);
@@ -1378,11 +1364,23 @@ void ImeUi::Draw() {
         case Libraries::Ime::ImeKbKeyAction::ArrowRight:
             (void)move_text_caret(1, text_select_mode);
             break;
+        case Libraries::Ime::ImeKbKeyAction::ArrowUp:
+            if (!metrics_cfg.multiline) {
+                // Single-line OSK behavior: up jumps caret to the beginning.
+                (void)move_text_caret_to_boundary(false, text_select_mode);
+            }
+            break;
+        case Libraries::Ime::ImeKbKeyAction::ArrowDown:
+            if (!metrics_cfg.multiline) {
+                // Single-line OSK behavior: down jumps caret to the end.
+                (void)move_text_caret_to_boundary(true, text_select_mode);
+            }
+            break;
         case Libraries::Ime::ImeKbKeyAction::PagePrev:
-            flip_mode_page(-1);
+            FlipKeyboardModePage(kb_layout_selection, -1);
             break;
         case Libraries::Ime::ImeKbKeyAction::PageNext:
-            flip_mode_page(1);
+            FlipKeyboardModePage(kb_layout_selection, 1);
             break;
         case Libraries::Ime::ImeKbKeyAction::Space:
             (void)insert_text_at_caret(" ");
@@ -1451,10 +1449,8 @@ void ImeUi::Draw() {
             }
         }
 
-        if (edit_menu_popup != EditMenuPopup::None && cancel_pressed) {
-            cancel_pressed = false;
-            edit_menu_popup = EditMenuPopup::None;
-            menu_activate_armed = true;
+        if (CloseOskEditMenuOnCancel(edit_menu_popup, cancel_pressed, menu_activate_armed)) {
+            // Popup closed.
         } else if (text_select_mode && cancel_pressed) {
             cancel_pressed = false;
             text_select_mode = false;
@@ -1466,113 +1462,21 @@ void ImeUi::Draw() {
         }
 
         if (edit_menu_popup != EditMenuPopup::None) {
-            constexpr std::array<const char*, 3> kMainMenuItems = {"Select", "Select All", "Paste"};
-            constexpr std::array<const char*, 2> kActionMenuItems = {"Copy", "Paste"};
-            const bool is_main_menu = (edit_menu_popup == EditMenuPopup::Main);
-            const int item_count = is_main_menu ? static_cast<int>(kMainMenuItems.size())
-                                                : static_cast<int>(kActionMenuItems.size());
             const bool clipboard_ready = has_clipboard_text();
-            const auto item_label = [&](int index) -> const char* {
-                return is_main_menu ? kMainMenuItems[static_cast<std::size_t>(index)]
-                                    : kActionMenuItems[static_cast<std::size_t>(index)];
-            };
-            const auto item_enabled = [&](int index) {
-                if (is_main_menu && index == 2) {
-                    return clipboard_ready;
-                }
-                if (!is_main_menu && index == 1) {
-                    return clipboard_ready;
-                }
-                return true;
-            };
-
-            if (!pointer_navigation_active) {
-                if (nav_up) {
-                    edit_menu_index = (edit_menu_index + item_count - 1) % item_count;
-                } else if (nav_down) {
-                    edit_menu_index = (edit_menu_index + 1) % item_count;
-                }
-            }
-            edit_menu_index = std::clamp(edit_menu_index, 0, item_count - 1);
-
-            const float menu_w = std::min(metrics.kb_size.x * 0.42f, 280.0f);
-            const float menu_inner_pad = std::max(6.0f, metrics.key_gap * 0.7f);
-            const float item_gap = std::max(3.0f, metrics.key_gap * 0.35f);
-            const float item_h = std::max(28.0f, metrics.key_h * 0.70f);
-            const float menu_h = menu_inner_pad * 2.0f + item_h * static_cast<float>(item_count) +
-                                 item_gap * static_cast<float>(item_count - 1);
-            const ImVec2 menu_pos{
-                metrics.kb_pos.x + (metrics.kb_size.x - menu_w) * 0.5f,
-                metrics.kb_pos.y + (metrics.kb_size.y - menu_h) * 0.5f,
-            };
-            const ImVec2 menu_max{menu_pos.x + menu_w, menu_pos.y + menu_h};
-            draw->AddRectFilled(menu_pos, menu_max, IM_COL32(16, 16, 16, 245),
-                                metrics.corner_radius);
-            draw->AddRect(menu_pos, menu_max, IM_COL32(100, 100, 100, 255), metrics.corner_radius);
-
-            RearmMenuActivateOnRelease(cross_down, menu_activate_armed);
-            const bool menu_activate = ConsumeMenuActivatePress(
-                panel_activate_pressed, opened_menu_this_frame, menu_activate_armed);
-            bool click_activate = false;
-            for (int i = 0; i < item_count; ++i) {
-                const float item_y = menu_pos.y + menu_inner_pad + i * (item_h + item_gap);
-                const ImVec2 item_pos{menu_pos.x + menu_inner_pad, item_y};
-                const ImVec2 item_size{menu_w - menu_inner_pad * 2.0f, item_h};
-                const bool selected = (i == edit_menu_index);
-                const bool enabled = item_enabled(i);
-                const ImU32 item_bg = !enabled   ? IM_COL32(30, 30, 30, 255)
-                                      : selected ? IM_COL32(60, 96, 146, 255)
-                                                 : IM_COL32(45, 45, 45, 255);
-                draw->AddRectFilled(item_pos, {item_pos.x + item_size.x, item_pos.y + item_size.y},
-                                    item_bg, metrics.corner_radius * 0.6f);
-                draw->AddRect(item_pos, {item_pos.x + item_size.x, item_pos.y + item_size.y},
-                              IM_COL32(90, 90, 90, 255), metrics.corner_radius * 0.6f);
-
-                ImGui::PushID(1000 + i);
-                ImGui::SetCursorScreenPos(item_pos);
-                ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
-                ImGui::InvisibleButton("##ImeEditMenuItem", item_size);
-                ImGui::PopItemFlag();
-                if (ImGui::IsItemHovered()) {
-                    edit_menu_index = i;
-                }
-                if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && enabled) {
-                    edit_menu_index = i;
-                    click_activate = true;
-                }
-                ImGui::PopID();
-
-                const char* label = item_label(i);
-                const ImVec2 text_size = ImGui::CalcTextSize(label);
-                const ImVec2 text_pos{
-                    item_pos.x + (item_size.x - text_size.x) * 0.5f,
-                    item_pos.y + (item_size.y - text_size.y) * 0.5f,
-                };
-                const ImU32 text_col =
-                    enabled ? IM_COL32(232, 232, 232, 255) : IM_COL32(128, 128, 128, 255);
-                draw->AddText(text_pos, text_col, label);
-            }
-
-            if (pointer_navigation_active && ImGui::IsMouseClicked(ImGuiMouseButton_Left, false) &&
-                !ImGui::IsMouseHoveringRect(menu_pos, menu_max, false)) {
-                edit_menu_popup = EditMenuPopup::None;
-                menu_activate_armed = true;
-            } else if (menu_activate || click_activate) {
-                if (item_enabled(edit_menu_index)) {
-                    const EditMenuPopup previous_popup = edit_menu_popup;
-                    if (previous_popup == EditMenuPopup::Main) {
-                        apply_main_menu_action(edit_menu_index);
+            const auto previous_popup = edit_menu_popup;
+            (void)DrawAndHandleOskEditMenuPopup(
+                edit_menu_popup, edit_menu_index, metrics, draw, pointer_navigation_active, nav_up,
+                nav_down, cross_down, panel_activate_pressed, opened_menu_this_frame,
+                menu_activate_armed, clipboard_ready, 1000, "##ImeEditMenuItem", true,
+                [&](const EditMenuPopup source_popup, const int action_index) {
+                    if (source_popup == EditMenuPopup::Main) {
+                        apply_main_menu_action(action_index);
                     } else {
-                        apply_actions_menu_action(edit_menu_index);
+                        apply_actions_menu_action(action_index);
                     }
-                    if (edit_menu_popup != EditMenuPopup::None &&
-                        edit_menu_popup != previous_popup) {
-                        opened_menu_this_frame = true;
-                    }
-                    if (edit_menu_popup == EditMenuPopup::None) {
-                        menu_activate_armed = true;
-                    }
-                }
+                });
+            if (edit_menu_popup != EditMenuPopup::None && edit_menu_popup != previous_popup) {
+                opened_menu_this_frame = true;
             }
         }
 
