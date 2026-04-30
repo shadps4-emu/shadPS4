@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstdlib>
+#include <iostream>
 #include <string>
 
 #include "common/assert.h"
