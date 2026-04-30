@@ -4,14 +4,17 @@
 #pragma once
 
 #include <map>
-#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <string_view>
+
+#include "common/assert.h"
 #include "common/enum.h"
 #include "common/shared_first_mutex.h"
 #include "common/singleton.h"
 #include "common/types.h"
 #include "core/address_space.h"
+#include "core/blockpool.h"
 #include "core/libraries/kernel/memory.h"
 
 namespace Vulkan {
@@ -61,9 +64,8 @@ enum class PhysicalMemoryType : u32 {
     Free = 0,
     Allocated = 1,
     Mapped = 2,
-    Pooled = 3,
-    Committed = 4,
-    Flexible = 5,
+    Committed = 3,
+    Flexible = 4,
 };
 
 struct PhysicalMemoryArea {
@@ -96,21 +98,21 @@ enum class VMAType : u32 {
     Direct = 2,
     Flexible = 3,
     Pooled = 4,
-    PoolReserved = 5,
-    Stack = 6,
-    Code = 7,
-    File = 8,
+    Stack = 5,
+    Code = 6,
+    File = 7,
 };
 
 struct VirtualMemoryArea {
     VAddr base = 0;
     u64 size = 0;
-    std::map<uintptr_t, PhysicalMemoryArea> phys_areas;
+    PAddr phys_base = 0;
     VMAType type = VMAType::Free;
     MemoryProt prot = MemoryProt::NoAccess;
     std::string name = "";
     s32 fd = 0;
     bool disallow_merge = false;
+    std::vector<DmemBlock> blocks;
 
     bool Contains(VAddr addr, u64 size) const {
         return addr >= base && (addr + size) <= (base + this->size);
@@ -125,7 +127,11 @@ struct VirtualMemoryArea {
     }
 
     bool IsMapped() const noexcept {
-        return type != VMAType::Free && type != VMAType::Reserved && type != VMAType::PoolReserved;
+        return type != VMAType::Free && type != VMAType::Reserved;
+    }
+
+    bool HasPhysicalBacking() const noexcept {
+        return type == VMAType::Direct || type == VMAType::Flexible || type == VMAType::Pooled;
     }
 
     bool CanMergeWith(VirtualMemoryArea& next) {
@@ -135,13 +141,9 @@ struct VirtualMemoryArea {
         if (base + size != next.base) {
             return false;
         }
-        if (type == VMAType::Direct && next.type == VMAType::Direct) {
-            auto& last_phys = std::prev(phys_areas.end())->second;
-            auto& first_next_phys = next.phys_areas.begin()->second;
-            if (last_phys.base + last_phys.size != first_next_phys.base ||
-                last_phys.memory_type != first_next_phys.memory_type) {
-                return false;
-            }
+        if ((type == VMAType::Direct || type == VMAType::Flexible) &&
+            phys_base + size != next.phys_base) {
+            return false;
         }
         if (prot != next.prot || type != next.type) {
             return false;
@@ -173,6 +175,10 @@ public:
         return impl;
     }
 
+    Blockpool& GetBlockpool() {
+        return blockpool;
+    }
+
     u64 GetTotalDirectSize() const {
         return total_direct_size;
     }
@@ -195,42 +201,31 @@ public:
         return virtual_addr + size < max_gpu_address;
     }
 
-    bool IsValidMapping(const VAddr virtual_addr, const u64 size = 0) {
-        const auto end_it = std::prev(vma_map.end());
-        const VAddr end_addr = end_it->first + end_it->second.size;
+    bool ForEachBackingRegion(VAddr virtual_addr, u64 size, auto&& func) {
+        std::shared_lock lk{mutex};
 
-        // If the address fails boundary checks, return early.
-        if (virtual_addr < vma_map.begin()->first || virtual_addr >= end_addr) {
-            return false;
-        }
-
-        // If size is zero and boundary checks succeed, then skip more robust checking
-        if (size == 0) {
-            return true;
-        }
-
-        // Now make sure the full address range is contained in vma_map.
-        auto vma_handle = FindVMA(virtual_addr);
-        auto addr_to_check = virtual_addr;
-        u64 size_to_validate = size;
-        while (vma_handle != vma_map.end() && size_to_validate > 0) {
-            const auto offset_in_vma = addr_to_check - vma_handle->second.base;
-            const auto size_in_vma =
-                std::min<u64>(vma_handle->second.size - offset_in_vma, size_to_validate);
-            size_to_validate -= size_in_vma;
-            addr_to_check += size_in_vma;
-            vma_handle++;
-
-            // Make sure there isn't any gap here
-            if (size_to_validate > 0 && vma_handle != vma_map.end() &&
-                addr_to_check != vma_handle->second.base) {
+        const VAddr base_addr = virtual_addr;
+        auto vma = FindVMA(virtual_addr);
+        while (vma->second.Overlaps(virtual_addr, size)) {
+            if (!vma->second.HasPhysicalBacking()) {
                 return false;
             }
+            if (vma->second.type == VMAType::Pooled) {
+                return false;
+            }
+            const u64 start_in_vma = virtual_addr - vma->first;
+            const u64 size_in_vma = std::min<u64>(vma->second.size - start_in_vma, size);
+            u8* backing = impl.BackingBase() + vma->second.phys_base + start_in_vma;
+            func(virtual_addr - base_addr, size_in_vma, backing);
+            size -= size_in_vma;
+            virtual_addr += size_in_vma;
+            ++vma;
         }
 
-        // If we reach this point and size to validate is not positive, then this mapping is valid.
-        return size_to_validate <= 0;
+        return true;
     }
+
+    bool IsValidMapping(const VAddr virtual_addr, const u64 size = 0);
 
     u64 ClampRangeSize(VAddr virtual_addr, u64 size);
 
@@ -238,11 +233,7 @@ public:
 
     void CopySparseMemory(VAddr source, u8* dest, u64 size);
 
-    bool TryWriteBacking(void* address, const void* data, u64 size);
-
     void SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1, bool use_extended_mem2);
-
-    PAddr PoolExpand(PAddr search_start, PAddr search_end, u64 size, u64 alignment);
 
     PAddr Allocate(PAddr search_start, PAddr search_end, u64 size, u64 alignment, s32 memory_type);
 
@@ -284,8 +275,6 @@ public:
 
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
-    s32 GetMemoryPoolStats(::Libraries::Kernel::OrbisKernelMemoryPoolBlockStats* stats);
-
     void InvalidateMemory(VAddr addr, u64 size) const;
 
 private:
@@ -301,19 +290,30 @@ private:
         return std::prev(fmem_map.upper_bound(target));
     }
 
-    bool HasPhysicalBacking(VirtualMemoryArea vma) {
-        return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
-               vma.type == VMAType::Pooled;
-    }
-
     VMAHandle CreateArea(VAddr virtual_addr, u64 size, MemoryProt prot, MemoryMapFlags flags,
                          VMAType type, std::string_view name, u64 alignment);
 
     VAddr SearchFree(VAddr virtual_addr, u64 size, u32 alignment);
 
-    VMAHandle MergeAdjacent(VMAMap& map, VMAHandle iter);
+    template <typename Handle>
+    Handle MergeAdjacent(auto& handle_map, Handle iter) {
+        const auto next_vma = std::next(iter);
+        if (next_vma != handle_map.end() && iter->second.CanMergeWith(next_vma->second)) {
+            iter->second.size += next_vma->second.size;
+            handle_map.erase(next_vma);
+        }
 
-    PhysHandle MergeAdjacent(PhysMap& map, PhysHandle iter);
+        if (iter != handle_map.begin()) {
+            auto prev_vma = std::prev(iter);
+            if (prev_vma->second.CanMergeWith(iter->second)) {
+                prev_vma->second.size += iter->second.size;
+                handle_map.erase(iter);
+                iter = prev_vma;
+            }
+        }
+
+        return iter;
+    }
 
     VMAHandle CarveVMA(VAddr virtual_addr, u64 size);
 
@@ -323,7 +323,7 @@ private:
 
     PhysHandle Split(PhysMap& map, PhysHandle dmem_handle, u64 offset_in_area);
 
-    u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
+    u64 UnmapBytesFromEntry(VAddr virtual_addr, const VirtualMemoryArea& vma_base, u64 size);
 
     s32 UnmapMemoryImpl(VAddr virtual_addr, u64 size);
 
@@ -332,12 +332,11 @@ private:
     PhysMap dmem_map;
     PhysMap fmem_map;
     VMAMap vma_map;
+    Blockpool blockpool;
     Common::SharedFirstMutex mutex{};
-    std::mutex unmap_mutex{};
     u64 total_direct_size{};
     u64 total_flexible_size{};
     u64 flexible_usage{};
-    u64 pool_budget{};
     s32 sdk_version{};
     Vulkan::Rasterizer* rasterizer{};
 

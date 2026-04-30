@@ -12,13 +12,13 @@ namespace Common {
 class SharedFirstMutex {
 public:
     void lock() {
-        std::unique_lock<std::mutex> lock(mtx);
+        std::unique_lock lock(mtx);
         cv.wait(lock, [this]() { return !writer_active && readers == 0; });
         writer_active = true;
     }
 
     bool try_lock() {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard lock(mtx);
         if (writer_active || readers > 0) {
             return false;
         }
@@ -27,19 +27,19 @@ public:
     }
 
     void unlock() {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard lock(mtx);
         writer_active = false;
         cv.notify_all();
     }
 
     void lock_shared() {
-        std::unique_lock<std::mutex> lock(mtx);
+        std::unique_lock lock(mtx);
         cv.wait(lock, [this]() { return !writer_active; });
         ++readers;
     }
 
     void unlock_shared() {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard lock(mtx);
         if (--readers == 0) {
             cv.notify_all();
         }
