@@ -204,8 +204,10 @@ void Setup(std::string_view log_filename) {
             const auto class_level_pair =
                 std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
 
-            if (class_level_pair.size() == 1) {
-                default_log_level = spdlog::level_from_str(class_level_pair.front() |
+            ASSERT_MSG(class_level_pair.size() == 2, "bad log filter provided");
+
+            if (class_level_pair.front()[0] == '*') {
+                default_log_level = spdlog::level_from_str(class_level_pair.back() |
                                                            std::ranges::to<std::string>());
             } else {
                 log_level_per_class[class_level_pair.front() | std::ranges::to<std::string>()] =
@@ -222,16 +224,10 @@ void Setup(std::string_view log_filename) {
                                    : (EmulatorSettings.IsLogSync() ? sinks : async_sink));
 
         if (EmulatorSettings.IsLogEnable()) {
-            const auto wildcard_it = log_level_per_class.find(std::string("*"));
             const auto level_it = log_level_per_class.find(std::string(name));
 
-            if (level_it != log_level_per_class.end()) {
-                logger->set_level(level_it->second);
-            } else if (wildcard_it != log_level_per_class.end()) {
-                logger->set_level(wildcard_it->second);
-            } else {
-                logger->set_level(default_log_level);
-            }
+            logger->set_level(level_it != log_level_per_class.end() ? level_it->second
+                                                                    : default_log_level);
         } else {
             logger->set_level(spdlog::level::off);
         }
