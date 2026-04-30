@@ -6,7 +6,11 @@ project(ImGui_Resources)
 add_executable(Dear_ImGui_FontEmbed ${CMAKE_SOURCE_DIR}/externals/dear_imgui/misc/fonts/binary_to_compressed_c.cpp)
 
 set(FONT_LIST
-    NotoSansJP-Regular.ttf
+    NotoSansArabic-Regular.ttf
+    NotoSansCJK-Regular.ttc
+    NotoSans-Regular.ttf
+    NotoSansSymbols2-Regular.ttf
+    NotoSansThai-Regular.ttf
     ProggyVector-Regular.ttf
 )
 
@@ -14,7 +18,7 @@ set(OutputList "")
 FOREACH (FONT_FILE ${FONT_LIST})
     string(REGEX REPLACE "-" "_" fontname ${FONT_FILE})
     string(TOLOWER ${fontname} fontname)
-    string(REGEX REPLACE ".ttf" "" fontname_cpp ${fontname})
+    string(REGEX REPLACE "\\.(ttf|otf|ttc)$" "" fontname_cpp ${fontname})
     set(fontname_cpp "imgui_font_${fontname_cpp}")
 
     MESSAGE(STATUS "Embedding font ${FONT_FILE}")
