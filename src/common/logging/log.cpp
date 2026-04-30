@@ -204,7 +204,10 @@ void Setup(std::string_view log_filename) {
             const auto class_level_pair =
                 std::views::split(class_level, ':') | std::ranges::to<std::vector<std::string>>();
 
-            ASSERT_MSG(class_level_pair.size() == 2, "bad log filter provided");
+            if (class_level_pair.size() != 2) {
+                std::cerr << "bad log filter provided" << std::endl;
+                continue;
+            }
 
             if (class_level_pair.front()[0] == '*') {
                 default_log_level = spdlog::level_from_str(class_level_pair.back() |
