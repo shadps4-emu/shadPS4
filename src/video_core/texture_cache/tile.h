@@ -348,4 +348,40 @@ constexpr std::tuple<u32, u32, size_t> ImageSizeMacroTiled(u32 pitch, u32 height
     return {pitch_aligned, height_aligned, (log_sz * bpp + 7) / 8};
 }
 
+std::tuple<u32, u32, size_t> ImageSizeMacroTiled3D(u32 pitch, u32 height, u32 depth, u32 bpp,
+                                                   u32 num_samples, AmdGpu::TileMode tile_mode,
+                                                   u32 mip, bool alt) {
+
+    const u32 thickness = (tile_mode == AmdGpu::TileMode::Thick2DXThick ||
+                           tile_mode == AmdGpu::TileMode::Thick3DXThick)
+                              ? 8
+                          : (tile_mode == AmdGpu::TileMode::Thick2DThick ||
+                             tile_mode == AmdGpu::TileMode::Thick3DThick ||
+                             tile_mode == AmdGpu::TileMode::Thick1DThick)
+                              ? 4
+                              : 1;
+
+    const auto [pitch_align, height_align] = GetMacroTileExtents(tile_mode, bpp, num_samples, alt);
+    ASSERT(pitch_align != 0 && height_align != 0);
+    bool downgrade_to_micro = false;
+    if (mip > 0) {
+        const bool is_less_than_tile = pitch < pitch_align || height < height_align;
+        downgrade_to_micro = is_less_than_tile;
+    }
+
+    if (downgrade_to_micro) {
+        const auto [p, h, size2d] = ImageSizeMicroTiled(pitch, height, thickness, bpp, num_samples);
+        const u32 aligned_d = (depth + thickness - 1) & ~(thickness - 1);
+        return {p, h, size2d * aligned_d};
+    }
+
+    const u32 pitch_aligned = (pitch + pitch_align - 1) & ~(pitch_align - 1);
+    const u32 height_aligned = (height + height_align - 1) & ~(height_align - 1);
+    const u32 depth_aligned = (depth + thickness - 1) & ~(thickness - 1);
+    const size_t slice_size = ((size_t)pitch_aligned * height_aligned * num_samples * bpp + 7) / 8;
+    const size_t total_size = slice_size * depth_aligned;
+
+    return {pitch_aligned, height_aligned, total_size};
+}
+
 } // namespace VideoCore
