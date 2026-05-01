@@ -136,7 +136,7 @@ jobs:
         shell: bash
 
       - name: Build all tests
-        run: cmake --build build
+        run: cmake --build build --target tests
         shell: bash
 
       - name: Run tests with CTest

@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <memory>
 #include <span>
 #include <string>
 #include <type_traits>
@@ -41,7 +42,7 @@ struct ErrorInfo {
 
 class Runner {
 public:
-    static std::expected<Runner*, ErrorInfo> instance();
+    static std::expected<std::unique_ptr<Runner>, ErrorInfo> instance();
 
     std::expected<void, ErrorInfo> run_raw(
         std::span<const std::uint32_t> spirv,
