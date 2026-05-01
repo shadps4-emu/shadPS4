@@ -39,7 +39,7 @@
 #include "core/libraries/np/np_partner.h"
 #include "core/libraries/np/np_party.h"
 #include "core/libraries/np/np_profile_dialog/np_profile_dialog.h"
-#include "core/libraries/np/np_score.h"
+#include "core/libraries/np/np_score/np_score.h"
 #include "core/libraries/np/np_sns_facebook_dialog.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/np_tus.h"
