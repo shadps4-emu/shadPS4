@@ -110,7 +110,7 @@ int PS4_SYSV_ABI sceGnmGetShaderStatus();
 VAddr PS4_SYSV_ABI sceGnmGetTheTessellationFactorRingBufferBaseAddress();
 void PS4_SYSV_ABI sceGnmGpuPaDebugEnter();
 void PS4_SYSV_ABI sceGnmGpuPaDebugLeave();
-int PS4_SYSV_ABI sceGnmInsertDingDongMarker();
+s32 PS4_SYSV_ABI sceGnmInsertDingDongMarker(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmInsertPopMarker(u32* cmdbuf, u32 size);
 s32 PS4_SYSV_ABI sceGnmInsertPushColorMarker(u32* cmdbuf, u32 size, const char* marker, u32 color);
 s32 PS4_SYSV_ABI sceGnmInsertPushMarker(u32* cmdbuf, u32 size, const char* marker);
