@@ -10,6 +10,8 @@
 #include "input/controller.h"
 #include "move.h"
 
+#include <psmove.h>
+
 auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
 
 namespace Libraries::Move {
@@ -17,6 +19,7 @@ namespace Libraries::Move {
 static bool g_library_initialized = false;
 
 s32 PS4_SYSV_ABI sceMoveInit() {
+    psmove_init(PSMOVE_CURRENT_VERSION);
     if (g_library_initialized) {
         return ORBIS_MOVE_ERROR_ALREADY_INIT;
     }

@@ -143,4 +143,4 @@
 	branch = v2.x
 [submodule "externals/psmoveapi"]
 	path = externals/psmoveapi
-	url = https://github.com/thp/psmoveapi.git
+	url = https://github.com/kalaposfos13/psmoveapi.git

@@ -331,3 +331,5 @@ endif()
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
 
+add_subdirectory(psmoveapi)
+add_library(psmoveapi::psmoveapi ALIAS psmoveapi)
