@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <condition_variable>
 #include <mutex>
+
+#ifdef _WIN64
+#include <list>
+#include "core/libraries/kernel/sync/semaphore.h"
+#include "core/libraries/kernel/threads/pthread.h"
+#else
+#include <condition_variable>
 #include <thread>
+#endif
 
 #include "common/assert.h"
 #include "common/logging/log.h"
@@ -34,6 +41,49 @@ public:
         : m_name(name), m_thread_mode(thread_mode), m_queue_mode(queue_mode), m_bits(bits) {};
 
     int Wait(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result, u32* ptr_micros) {
+#ifdef _WIN64
+        std::unique_lock lock{m_mutex};
+
+        if (m_thread_mode == ThreadMode::Single && !m_wait_list.empty()) {
+            return ORBIS_KERNEL_ERROR_EPERM;
+        }
+
+        // condition already satisfied, no need to block.
+        if (CheckBits(bits, wait_mode)) {
+            if (result != nullptr) {
+                *result = m_bits;
+            }
+            ApplyClear(bits, clear_mode);
+            return ORBIS_OK;
+        }
+
+        // no timeout caller does not want to block.
+        if (ptr_micros != nullptr && *ptr_micros == 0) {
+            if (result != nullptr) {
+                *result = m_bits;
+            }
+            return ORBIS_KERNEL_ERROR_ETIMEDOUT;
+        }
+
+        // Enqueue a per-waiter entry and block on its semaphore alertably.
+        WaitingThread waiter{bits, wait_mode, m_queue_mode == QueueMode::Fifo};
+        const auto it = AddWaiter(&waiter);
+
+        const int wait_result = waiter.Wait(lock, ptr_micros);
+
+        if (wait_result == ORBIS_KERNEL_ERROR_ETIMEDOUT) {
+            m_wait_list.erase(it);
+        }
+
+        if (result != nullptr) {
+            *result = m_bits;
+        }
+        if (wait_result == ORBIS_OK) {
+            ApplyClear(bits, clear_mode);
+        }
+
+        return wait_result;
+#else
         std::unique_lock lock{m_mutex};
 
         uint32_t micros = 0;
@@ -96,6 +146,7 @@ public:
         }
 
         return ORBIS_OK;
+#endif
     }
 
     int Poll(u64 bits, WaitMode wait_mode, ClearMode clear_mode, u64* result) {
@@ -109,6 +160,11 @@ public:
     }
 
     void Set(u64 bits) {
+#ifdef _WIN64
+        std::scoped_lock lock{m_mutex};
+        m_bits |= bits;
+        WakeWaiters();
+#else
         std::unique_lock lock{m_mutex};
 
         while (m_status != Status::Set) {
@@ -119,9 +175,14 @@ public:
 
         m_bits |= bits;
         m_cond_var.notify_all();
+#endif
     }
 
     void Clear(u64 bits) {
+#ifdef _WIN64
+        std::scoped_lock lock{m_mutex};
+        m_bits &= bits;
+#else
         std::unique_lock lock{m_mutex};
         while (m_status != Status::Set) {
             m_mutex.unlock();
@@ -130,9 +191,25 @@ public:
         }
 
         m_bits &= bits;
+#endif
     }
 
     void Cancel(u64 setPattern, int* numWaitThreads) {
+#ifdef _WIN64
+        std::scoped_lock lock{m_mutex};
+
+        if (numWaitThreads) {
+            *numWaitThreads = static_cast<int>(m_wait_list.size());
+        }
+
+        m_bits = setPattern;
+
+        for (auto* waiter : m_wait_list) {
+            waiter->was_canceled = true;
+            waiter->sem.release();
+        }
+        m_wait_list.clear();
+#else
         std::unique_lock lock{m_mutex};
 
         while (m_status != Status::Set) {
@@ -157,19 +234,115 @@ public:
         }
 
         m_status = Status::Set;
+#endif
     }
 
 private:
-    enum class Status { Set, Canceled, Deleted };
-
     std::mutex m_mutex;
-    std::condition_variable m_cond_var;
-    Status m_status = Status::Set;
-    int m_waiting_threads = 0;
     std::string m_name;
     ThreadMode m_thread_mode = ThreadMode::Single;
     QueueMode m_queue_mode = QueueMode::Fifo;
     u64 m_bits = 0;
+#ifdef _WIN64
+    struct WaitingThread {
+        BinarySemaphore sem;
+        u64 bits;
+        WaitMode wait_mode;
+        u32 priority;
+        bool was_signaled{};
+        bool was_canceled{};
+
+        explicit WaitingThread(u64 bits_, WaitMode wait_mode_, bool is_fifo)
+            : sem{0}, bits{bits_}, wait_mode{wait_mode_}, priority{0} {
+            if (!is_fifo) {
+                priority = g_curthread->attr.prio;
+            }
+        }
+
+        [[nodiscard]] int GetResult() const {
+            if (was_signaled) {
+                return ORBIS_OK;
+            }
+            if (was_canceled) {
+                return ORBIS_KERNEL_ERROR_ECANCELED;
+            }
+            return ORBIS_KERNEL_ERROR_ETIMEDOUT;
+        }
+
+        int Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
+            lk.unlock();
+            if (!timeout) {
+                sem.acquire();
+            } else {
+                const auto start = std::chrono::high_resolution_clock::now();
+                sem.try_acquire_for(std::chrono::microseconds(*timeout));
+                const auto end = std::chrono::high_resolution_clock::now();
+                const auto elapsed =
+                    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+                lk.lock();
+                if (was_signaled) {
+                    *timeout = static_cast<u32>(elapsed < *timeout ? *timeout - elapsed : 0);
+                } else {
+                    *timeout = 0;
+                }
+                return GetResult();
+            }
+            lk.lock();
+            return GetResult();
+        }
+    };
+
+    using WaitList = std::list<WaitingThread*>;
+    WaitList m_wait_list;
+
+    bool CheckBits(u64 bits, WaitMode wait_mode) const {
+        if (wait_mode == WaitMode::And) {
+            return (m_bits & bits) == bits;
+        }
+        return (m_bits & bits) != 0;
+    }
+
+    void ApplyClear(u64 bits, ClearMode clear_mode) {
+        if (clear_mode == ClearMode::All) {
+            m_bits = 0;
+        } else if (clear_mode == ClearMode::Bits) {
+            m_bits &= ~bits;
+        }
+    }
+
+    // Release only waiters whose specific bit condition is now satisfied.
+    void WakeWaiters() {
+        for (auto it = m_wait_list.begin(); it != m_wait_list.end();) {
+            auto* waiter = *it;
+            if (CheckBits(waiter->bits, waiter->wait_mode)) {
+                it = m_wait_list.erase(it);
+                waiter->was_signaled = true;
+                waiter->sem.release();
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    WaitList::iterator AddWaiter(WaitingThread* waiter) {
+        if (m_queue_mode == QueueMode::Fifo) {
+            m_wait_list.push_back(waiter);
+            return --m_wait_list.end();
+        }
+        // Priority order: insert before the first waiter with strictly lower priority.
+        auto it = m_wait_list.begin();
+        while (it != m_wait_list.end() && (*it)->priority <= waiter->priority) {
+            ++it;
+        }
+        return m_wait_list.insert(it, waiter);
+    }
+#else
+    enum class Status { Set, Canceled, Deleted };
+
+    std::condition_variable m_cond_var;
+    Status m_status = Status::Set;
+    int m_waiting_threads = 0;
+#endif
 };
 
 using OrbisKernelUseconds = u32;
@@ -325,6 +498,7 @@ int PS4_SYSV_ABI sceKernelPollEventFlag(OrbisKernelEventFlag ef, u64 bitPattern,
 
     return result;
 }
+
 int PS4_SYSV_ABI sceKernelWaitEventFlag(OrbisKernelEventFlag ef, u64 bitPattern, u32 waitMode,
                                         u64* pResultPat, OrbisKernelUseconds* pTimeout) {
     LOG_DEBUG(Kernel_Event, "called bitPattern = {:#x} waitMode = {:#x}", bitPattern, waitMode);
