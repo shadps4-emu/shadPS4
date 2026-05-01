@@ -279,6 +279,41 @@ void GameControllers::TryOpenSDLControllers() {
             continue;
         }
 
+        SDL_GUID guid = SDL_GetJoystickGUID(SDL_GetJoystickFromID(new_joysticks[j]));
+        Uint16 vendor = 0, product = 0;
+        SDL_GetJoystickGUIDInfo(guid, &vendor, &product, nullptr, nullptr);
+        if (vendor == 0x054C &&    // Sony
+            (product == 0x03D5 ||  // PSMove ZCM1
+             product == 0x0C5E)) { // PSMove ZCM2
+            LOG_INFO(Input, "PS Move controller found at slot {}!", j);
+            if (is_first_check) { // ABSOLUTELY HORRIBLE HACK but I just want it hooked up
+                // quickly
+                auto c = move_controllers[move_count];
+                c->m_sdl_gamepad = pad;
+                auto u = UserManagement.GetDefaultUser();
+                c->user_id = u.user_id;
+                c->m_connected = true;
+                move_count++;
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                    c->gyro_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                    LOG_INFO(Input, "Gyro initialized, poll rate: {}", c->gyro_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                              c->user_id);
+                }
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                    c->accel_poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                    LOG_INFO(Input, "Accel initialized, poll rate: {}", c->accel_poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                              c->user_id);
+                }
+            }
+            continue;
+        }
+
         for (int i = 0; i < 4; i++) {
             if (!slot_taken[i]) {
                 auto u = UserManagement.GetUserByPlayerIndex(i + 1);
@@ -391,7 +426,16 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
             return i;
         }
     }
-    // LOG_TRACE(Input, "Gamepad index: {}", index);
+    return -1;
+}
+
+u8 GameControllers::GetMoveIndexFromJoystickId(SDL_JoystickID id) {
+    auto g = SDL_GetGamepadFromID(id);
+    for (int i = 0; i < 4; i++) {
+        if (move_controllers[i]->m_sdl_gamepad == g) {
+            return i;
+        }
+    }
     return -1;
 }
 

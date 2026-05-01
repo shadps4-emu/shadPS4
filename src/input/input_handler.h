@@ -132,6 +132,7 @@ const std::map<std::string, u32> string_to_cbutton_map = {
     {"pad_left", SDL_GAMEPAD_BUTTON_DPAD_LEFT},
     {"pad_right", SDL_GAMEPAD_BUTTON_DPAD_RIGHT},
     {"options", SDL_GAMEPAD_BUTTON_START},
+    {"move", SDL_GAMEPAD_BUTTON_MISC1},
 
     // these are outputs only (touchpad can only be bound to itself)
     {"touchpad_left", SDL_GAMEPAD_BUTTON_TOUCHPAD_LEFT},
@@ -179,6 +180,7 @@ const std::map<std::string, AxisMapping> string_to_axis_map = {
 
     {"l2", {SDL_GAMEPAD_AXIS_LEFT_TRIGGER, 127}},
     {"r2", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}},
+    {"move_t", {SDL_GAMEPAD_AXIS_RIGHT_TRIGGER, 127}},
 
     // should only use these to bind analog inputs to analog outputs
     {"axis_left_x", {SDL_GAMEPAD_AXIS_LEFTX, 127}},
@@ -530,7 +532,7 @@ public:
 
 class ControllerAllOutputs {
 public:
-    static constexpr u64 output_count = 41;
+    static constexpr u64 output_count = 42;
     std::array<ControllerOutput, output_count> data = {
         // Important: these have to be the first, or else they will update in the wrong order
         ControllerOutput(LEFTJOYSTICK_HALFMODE),
@@ -555,6 +557,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_DOWN),       // Down
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_LEFT),       // Left
         ControllerOutput(SDL_GAMEPAD_BUTTON_DPAD_RIGHT),      // Right
+        ControllerOutput(SDL_GAMEPAD_BUTTON_MISC1),           // Move
 
         // Axis mappings
         // ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFTX, false),
@@ -567,7 +570,7 @@ public:
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHTY),
 
         ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_LEFT_TRIGGER),
-        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
+        ControllerOutput(SDL_GAMEPAD_BUTTON_INVALID, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), // R2 / Move T
 
         ControllerOutput(HOTKEY_FULLSCREEN),
         ControllerOutput(HOTKEY_PAUSE),
