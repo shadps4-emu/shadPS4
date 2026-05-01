@@ -36,6 +36,7 @@ endif()
 option(ENABLE_DISCORD_RPC "Enable the Discord RPC integration" ON)
 option(ENABLE_UPDATER "Enables the options to updater" ON)
 option(ENABLE_TESTS "Build unit tests (requires GTest)" OFF)
+option(ENABLE_PSMOVE "Enable PS Move support (needs D-Bus on Linux)" ON)
 
 # First, determine whether to use CMAKE_OSX_ARCHITECTURES or CMAKE_SYSTEM_PROCESSOR.
 if (APPLE AND CMAKE_OSX_ARCHITECTURES)
@@ -1164,6 +1165,10 @@ target_compile_definitions(Dear_ImGui PRIVATE IMGUI_USER_CONFIG="${PROJECT_SOURC
 
 if (ENABLE_DISCORD_RPC)
     target_compile_definitions(shadps4 PRIVATE ENABLE_DISCORD_RPC)
+endif()
+
+if (ENABLE_PSMOVE)
+    target_compile_definitions(shadps4 PRIVATE ENABLE_PSMOVE)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")

@@ -10,6 +10,8 @@
 #include "input/controller.h"
 #include "move.h"
 
+#if ENABLE_PSMOVE
+
 #include <psmove.h>
 
 auto controllers = *Common::Singleton<Input::GameControllers>::Instance();
@@ -186,3 +188,10 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 };
 
 } // namespace Libraries::Move
+#else
+namespace Libraries::Move {
+
+void RegisterLib(Core::Loader::SymbolsResolver* sym) {}
+
+} // namespace Libraries::Move
+#endif
