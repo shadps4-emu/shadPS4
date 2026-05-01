@@ -193,9 +193,9 @@ endforeach()
 
 include(GoogleTest)
 
+add_custom_target(tests)
+
 foreach(t ${TEST_TARGETS})
-    gtest_discover_tests(${t}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        PROPERTIES TIMEOUT 60
-    )
+    add_dependencies(tests ${t})
+    add_test(NAME ${t} COMMAND ${t})
 endforeach()

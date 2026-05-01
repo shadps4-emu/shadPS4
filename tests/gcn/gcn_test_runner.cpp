@@ -7,7 +7,6 @@
 #include <array>
 #include <format>
 #include <memory>
-#include <mutex>
 #include <ranges>
 #include <string_view>
 #include <vector>
@@ -103,14 +102,11 @@ auto create_host_buffer(vk::Device dev, vk::PhysicalDevice pd, vk::DeviceSize si
     return buf;
 }
 
-std::mutex g_runner_mutex;
-std::unique_ptr<Runner> g_runner;
-
 } // namespace
 
 Runner::~Runner() {
     if (device_) {
-        device_.waitIdle();
+        std::ignore = device_.waitIdle();
         if (fence_)
             device_.destroyFence(fence_);
         if (pipeline_layout_)
@@ -125,15 +121,11 @@ Runner::~Runner() {
         instance_.destroy();
 }
 
-std::expected<Runner*, ErrorInfo> Runner::instance() {
-    std::lock_guard lock{g_runner_mutex};
-    if (g_runner)
-        return g_runner.get();
+std::expected<std::unique_ptr<Runner>, ErrorInfo> Runner::instance() {
     auto r = std::unique_ptr<Runner>(new Runner{});
     if (auto init = r->initialize(); !init)
         return std::unexpected(init.error());
-    g_runner = std::move(r);
-    return g_runner.get();
+    return r;
 }
 
 std::expected<void, ErrorInfo> Runner::initialize() {
@@ -358,8 +350,8 @@ std::expected<void, ErrorInfo> Runner::run_raw(std::span<const std::uint32_t> sp
     } sg{device_, shader};
 
     // Reset cached command buffer + fence --------------------------------
-    device_.resetFences(fence_);
-    command_buffer_.reset();
+    std::ignore = device_.resetFences(fence_);
+    std::ignore = command_buffer_.reset();
 
     if (command_buffer_.begin({
             .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
