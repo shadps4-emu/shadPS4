@@ -56,6 +56,7 @@ public:
         static constexpr size_t AddressSpaceBits = 40;
         static constexpr size_t FirstLevelBits = 16;
         static constexpr size_t PageBits = CACHING_PAGEBITS;
+        static constexpr bool NullCheck = true;
     };
     using PageTable = MultiLevelPageTable<Traits>;
 
@@ -134,11 +135,11 @@ public:
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(VAddr addr, size_t size);
 
-    /// Return true when a CPU region is modified from the CPU
-    [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
-
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(VAddr addr, size_t size);
+
+    /// Return true when a CPU region is modified from the CPU
+    [[nodiscard]] bool IsRegionCpuModified(VAddr addr, size_t size);
 
     /// Return buffer id for the specified region
     BufferId FindBuffer(VAddr device_addr, u32 size);

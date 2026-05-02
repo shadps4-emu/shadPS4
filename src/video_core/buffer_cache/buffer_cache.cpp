@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/debug.h"
+#include "common/div_ceil.h"
 #include "common/scope_exit.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -131,10 +132,7 @@ void BufferCache::DownloadBufferMemory(Buffer& buffer, VAddr device_addr, u64 si
             memory->TryWriteBacking(std::bit_cast<u8*>(copy_device_addr), download + dst_offset,
                                     copy.size);
         }
-        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size);
-        if (is_write) {
-            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-        }
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, is_write);
     };
     if constexpr (async) {
         scheduler.DeferOperation(write_data);
@@ -416,12 +414,12 @@ bool BufferCache::IsRegionRegistered(VAddr addr, size_t size) {
     return buffer_ranges.Intersects(addr, size);
 }
 
-bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
-    return memory_tracker->IsRegionCpuModified(addr, size);
-}
-
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
+}
+
+bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
+    return memory_tracker->IsRegionCpuModified(addr, size);
 }
 
 BufferId BufferCache::FindBuffer(VAddr device_addr, u32 size) {
