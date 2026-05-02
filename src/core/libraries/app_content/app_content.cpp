@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <cstring>
 
 #include "app_content.h"
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
@@ -13,6 +15,7 @@
 #include "core/libraries/app_content/app_content_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/system/systemservice.h"
+#include "core/linker.h"
 
 namespace Libraries::AppContent {
 
@@ -280,11 +283,19 @@ int PS4_SYSV_ABI sceAppContentGetRegion() {
 int PS4_SYSV_ABI sceAppContentInitialize(const OrbisAppContentInitParam* initParam,
                                          OrbisAppContentBootParam* bootParam) {
     LOG_ERROR(Lib_AppContent, "(DUMMY) called");
+    if (bootParam != nullptr) {
+        std::memset(bootParam, 0, sizeof(*bootParam));
+    }
+
     auto* param_sfo = Common::Singleton<PSF>::Instance();
 
     const auto addons_dir = EmulatorSettings.GetAddonInstallDir();
     if (const auto value = param_sfo->GetString("TITLE_ID"); value.has_value()) {
         title_id = *value;
+    } else if (Core::IsGlobalPs5RuntimeMode()) {
+        title_id = std::string{Common::ElfInfo::Instance().GameSerial()};
+        LOG_WARNING(Lib_AppContent,
+                    "PS5 mode: TITLE_ID missing from PSF, using game serial {}", title_id);
     } else {
         UNREACHABLE_MSG("Failed to get TITLE_ID");
     }

@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <map>
+#include <cctype>
+#include <cstdio>
+#include <limits>
+#include <mutex>
 #include <ranges>
+#include <unordered_map>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -26,6 +31,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/sockets.h"
+#include "core/linker.h"
 #include "core/memory.h"
 #include "kernel.h"
 
@@ -73,6 +79,31 @@ static std::map<std::string, FactoryDevice> available_device = {
 };
 
 namespace Libraries::Kernel {
+
+static std::mutex g_apr_file_registry_mutex;
+static std::unordered_map<u32, fs::path> g_apr_file_registry;
+
+//Need to fix!
+static bool IsPs5SyntheticUnrealProjectPath(std::string_view path) {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return false;
+    }
+    std::string lower_path(path);
+    std::ranges::transform(lower_path, lower_path.begin(),
+                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    return lower_path.ends_with(".uproject");
+}
+
+//Need to fix!
+static bool IsPs5OptionalUnrealDirectory(std::string_view path) {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return false;
+    }
+    std::string lower_path(path);
+    std::ranges::transform(lower_path, lower_path.begin(),
+                           [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    return lower_path.ends_with("/deepfiles") || lower_path.ends_with("/paks");
+}
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
@@ -155,6 +186,16 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
         }
     } else if (!exists) {
+        if (directory && IsPs5OptionalUnrealDirectory(path)) {
+            file->type = Core::FileSys::FileType::Directory;
+            file->is_opened = true;
+            if (file->m_guest_name.starts_with("/app0")) {
+                file->directory = Core::Directories::PfsDirectory::Create(file->m_guest_name);
+            } else {
+                file->directory = Core::Directories::NormalDirectory::Create(file->m_guest_name);
+            }
+            return handle;
+        }
         // If we're not creating a file, and it doesn't exist, return ENOENT
         h->DeleteHandle(handle);
         *__Error() = POSIX_ENOENT;
@@ -676,6 +717,14 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     const bool is_dir = fs::is_directory(path_name);
     const bool is_file = fs::is_regular_file(path_name);
     if (!is_dir && !is_file) {
+        if (IsPs5SyntheticUnrealProjectPath(path)) {
+            std::memset(sb, 0, sizeof(OrbisKernelStat));
+            sb->st_mode = 0000777u | 0100000u;
+            sb->st_size = 2;
+            sb->st_blksize = 512;
+            sb->st_blocks = 1;
+            return ORBIS_OK;
+        }
         *__Error() = POSIX_ENOENT;
         return -1;
     }
@@ -1512,6 +1561,127 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, fd_set* readfds, fd_set* writefds, fd_se
 }
 #endif
 
+static u32 ComputeAprFileId(std::string_view guest_path) {
+    u32 hash = 2166136261u;
+    for (const char ch : guest_path) {
+        hash ^= static_cast<u8>(ch);
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
+static void RegisterAprHostPath(u32 file_id, const fs::path& host_path) {
+    std::scoped_lock lock{g_apr_file_registry_mutex};
+    g_apr_file_registry[file_id] = host_path;
+}
+
+bool TryGetAprHostPath(u32 file_id, fs::path& out) {
+    std::scoped_lock lock{g_apr_file_registry_mutex};
+    const auto it = g_apr_file_registry.find(file_id);
+    if (it == g_apr_file_registry.end()) {
+        return false;
+    }
+    out = it->second;
+    return true;
+}
+
+static bool TryReadGuestCString(VAddr addr, std::string& out) {
+    auto* memory = Core::Memory::Instance();
+    if (!memory->IsValidMapping(addr, 1)) {
+        return false;
+    }
+
+    out.clear();
+    for (u32 i = 0; i < ORBIS_MAX_PATH; i++) {
+        if (!memory->IsValidMapping(addr + i, 1)) {
+            return false;
+        }
+        const char ch = *reinterpret_cast<const char*>(addr + i);
+        if (ch == '\0') {
+            return !out.empty();
+        }
+        out.push_back(ch);
+    }
+    return false;
+}
+
+static bool TryReadAprPathPointer(VAddr pointer_addr, std::string& out) {
+    auto* memory = Core::Memory::Instance();
+    if (!memory->IsValidMapping(pointer_addr, sizeof(VAddr))) {
+        return false;
+    }
+    const VAddr candidate = *reinterpret_cast<const VAddr*>(pointer_addr);
+    return candidate != 0 && TryReadGuestCString(candidate, out);
+}
+
+static bool TryResolveAprFilepath(VAddr path_list, u64 index, std::string& out) {
+    if (TryReadAprPathPointer(path_list + index * sizeof(VAddr), out)) {
+        return true;
+    }
+    if (index != 0) {
+        return false;
+    }
+    if (TryReadGuestCString(path_list, out)) {
+        return true;
+    }
+    for (u64 offset = 0; offset < 0x40; offset += sizeof(VAddr)) {
+        if (TryReadAprPathPointer(path_list + offset, out)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+s32 PS4_SYSV_ABI sceKernelAprResolveFilepathsToIdsAndFileSizes(const void* path_list, u64 count,
+                                                               u32* ids, u32* sizes) {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return ORBIS_KERNEL_ERROR_ENOSYS;
+    }
+    if (path_list == nullptr || count == 0 || sizes == nullptr || count > 1024) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    auto* memory = Core::Memory::Instance();
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const VAddr path_list_addr = reinterpret_cast<VAddr>(path_list);
+    for (u64 i = 0; i < count; i++) {
+        std::string guest_path;
+        if (!TryResolveAprFilepath(path_list_addr, i, guest_path)) {
+            return ORBIS_KERNEL_ERROR_EFAULT;
+        }
+
+        const auto host_path = mnt->GetHostPath(guest_path);
+        u32 file_size = 0;
+        if (fs::is_directory(host_path)) {
+            file_size = 0x10000;
+        } else if (fs::is_regular_file(host_path)) {
+            const auto size = fs::file_size(host_path);
+            file_size = size > std::numeric_limits<u32>::max()
+                            ? std::numeric_limits<u32>::max()
+                            : static_cast<u32>(size);
+        } else {
+            LOG_WARNING(Kernel_Fs, "APR resolve failed for missing path {}", guest_path);
+            return ORBIS_KERNEL_ERROR_ENOENT;
+        }
+
+        if (ids != nullptr) {
+            const VAddr out_id = reinterpret_cast<VAddr>(&ids[i]);
+            if (!memory->IsValidMapping(out_id, sizeof(u32))) {
+                return ORBIS_KERNEL_ERROR_EFAULT;
+            }
+            ids[i] = ComputeAprFileId(guest_path);
+            RegisterAprHostPath(ids[i], host_path);
+        }
+
+        const VAddr out_size = reinterpret_cast<VAddr>(&sizes[i]);
+        if (!memory->IsValidMapping(out_size, sizeof(u32))) {
+            return ORBIS_KERNEL_ERROR_EFAULT;
+        }
+        sizes[i] = file_size;
+    }
+    return ORBIS_OK;
+}
+
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6c3rCVE-fTU", "libkernel", 1, "libkernel", open);
     LIB_FUNCTION("wuCroIGjt2g", "libScePosix", 1, "libkernel", posix_open);
@@ -1573,6 +1743,10 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
     LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", posix_select);
     LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", posix_select);
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LIB_FUNCTION("gEpBkcwxUjw", "libkernel", 1, "libkernel",
+                     sceKernelAprResolveFilepathsToIdsAndFileSizes);
+    }
 }
 
 } // namespace Libraries::Kernel

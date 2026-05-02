@@ -28,6 +28,7 @@ constexpr auto Kernel_Sce = "Kernel.Sce";                           ///< The Son
 constexpr auto Kernel_Vmm = "Kernel.Vmm";                           ///< The virtual memory implementation of the kernel.
 constexpr auto KeyManager = "KeyManager";                           ///< Key management system
 constexpr auto Lib = "Lib";                                         ///< HLE implementation of system library. Each major library  should have its own subclass.
+constexpr auto Lib_Agc = "Lib.Agc";                                 ///< The LibSceAgc implementation.
 constexpr auto Lib_Ajm = "Lib.Ajm";                                 ///< The LibSceAjm implementation.
 constexpr auto Lib_AppContent = "Lib.AppContent";                   ///< The LibSceAppContent implementation.
 constexpr auto Lib_Audio3d = "Lib.Audio3d";                         ///< The LibSceAudio3d implementation.

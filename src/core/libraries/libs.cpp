@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/libraries/ajm/ajm.h"
+#include "core/libraries/agc/agc.h"
+#include "core/libraries/ampr/ampr.h"
 #include "core/libraries/app_content/app_content.h"
 #include "core/libraries/audio/audioin.h"
 #include "core/libraries/audio/audioout.h"
@@ -51,6 +53,7 @@
 #include "core/libraries/random/random.h"
 #include "core/libraries/razor_cpu/razor_cpu.h"
 #include "core/libraries/remote_play/remoteplay.h"
+#include "core/libraries/rtc/rtc.h"
 #include "core/libraries/rudp/rudp.h"
 #include "core/libraries/save_data/dialog/savedatadialog.h"
 #include "core/libraries/save_data/savedata.h"
@@ -72,6 +75,7 @@
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
 #include "core/libraries/zlib/zlib_sce.h"
+#include "core/linker.h"
 #include "fiber/fiber.h"
 
 namespace Libraries {
@@ -80,6 +84,11 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
     LOG_INFO(Lib_Kernel, "Initializing HLE libraries");
     Libraries::Kernel::RegisterLib(sym);
     Libraries::LibcInternal::ForceRegisterLib(sym);
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        Libraries::Ampr::RegisterLib(sym);
+        Libraries::Rtc::RegisterLib(sym);
+        Libraries::Agc::RegisterLib(sym);
+    }
     Libraries::GnmDriver::RegisterLib(sym);
     Libraries::VideoOut::RegisterLib(sym);
     Libraries::UserService::RegisterLib(sym);

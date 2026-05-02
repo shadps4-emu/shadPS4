@@ -4,6 +4,9 @@
 #include "common/logging/log.h"
 #include "core/aerolib/aerolib.h"
 #include "core/aerolib/stubs.h"
+#include <mutex>
+#include <string>
+#include <unordered_map>
 
 namespace Core::AeroLib {
 
@@ -19,7 +22,7 @@ namespace Core::AeroLib {
 // and to longer compile / CI times
 //
 // Must match STUBS_LIST define
-constexpr u32 MAX_STUBS = 2048;
+constexpr u32 MAX_STUBS = 4096;
 
 u64 UnresolvedStub() {
     LOG_ERROR(Core, "Returning zero to {}", __builtin_return_address(0));
@@ -33,6 +36,8 @@ static u64 UnknownStub() {
 
 static const NidEntry* stub_nids[MAX_STUBS];
 static std::string stub_nids_unknown[MAX_STUBS];
+static std::unordered_map<std::string, u64> nid_stub_cache{};
+static std::mutex stub_mutex{};
 
 template <int stub_index>
 static u64 CommonStub() {
@@ -62,13 +67,24 @@ static u32 UsedStubEntries;
 #define XREP_512(x) XREP_256(x) XREP_256(x + 256)
 #define XREP_1024(x) XREP_512(x) XREP_512(x + 512)
 #define XREP_2048(x) XREP_1024(x) XREP_1024(x + 1024)
+#define XREP_4096(x) XREP_2048(x) XREP_2048(x + 2048)
 
-#define STUBS_LIST XREP_2048(0)
+#define STUBS_LIST XREP_4096(0)
 
 static u64 (*stub_handlers[MAX_STUBS])() = {STUBS_LIST};
 
 u64 GetStub(const char* nid) {
+    if (nid == nullptr || nid[0] == '\0') {
+        return (u64)&UnknownStub;
+    }
+    const std::string nid_key{nid};
+    std::scoped_lock lk{stub_mutex};
+    if (const auto it = nid_stub_cache.find(nid_key); it != nid_stub_cache.end()) {
+        return it->second;
+    }
+
     if (UsedStubEntries >= MAX_STUBS) {
+        LOG_ERROR(Core, "Stub slot exhausted for nid {} (max={})", nid_key, MAX_STUBS);
         return (u64)&UnknownStub;
     }
 
@@ -79,7 +95,9 @@ u64 GetStub(const char* nid) {
         stub_nids[UsedStubEntries] = entry;
     }
 
-    return (u64)stub_handlers[UsedStubEntries++];
+    const u64 stub_addr = (u64)stub_handlers[UsedStubEntries++];
+    nid_stub_cache.emplace(nid_key, stub_addr);
+    return stub_addr;
 }
 
 } // namespace Core::AeroLib

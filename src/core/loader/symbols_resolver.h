@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "common/assert.h"
 #include "common/types.h"
@@ -42,6 +43,7 @@ public:
 
     void AddSymbol(const SymbolResolver& s, u64 virtual_addr);
     const SymbolRecord* FindSymbol(const SymbolResolver& s) const;
+    const SymbolRecord* FindSymbolByNid(std::string_view nid, SymbolType preferred_type) const;
 
     void DebugDump(const std::filesystem::path& file_name);
 

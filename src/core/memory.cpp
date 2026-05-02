@@ -10,8 +10,11 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
+#include "core/linker.h"
 #include "core/memory.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
+
+#include <cstdio>
 
 namespace Core {
 
@@ -53,7 +56,9 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     // Calculate actual direct and flexible memory sizes
     const bool is_neo = ::Libraries::Kernel::sceKernelIsNeoMode();
     auto total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_PRO : ORBIS_KERNEL_TOTAL_MEM;
-    if (EmulatorSettings.IsDevKit()) {
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        total_size = ORBIS_KERNEL_TOTAL_MEM_PS5;
+    } else if (EmulatorSettings.IsDevKit()) {
         total_size = is_neo ? ORBIS_KERNEL_TOTAL_MEM_DEV_PRO : ORBIS_KERNEL_TOTAL_MEM_DEV;
     }
     s32 extra_dmem = EmulatorSettings.GetExtraDmemInMBytes();
@@ -63,10 +68,10 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
                     extra_dmem, total_size, total_size + extra_dmem * 1_MB);
         total_size += extra_dmem * 1_MB;
     }
-    if (!use_extended_mem1 && is_neo) {
+    if (!Core::IsGlobalPs5RuntimeMode() && !use_extended_mem1 && is_neo) {
         total_size -= 256_MB;
     }
-    if (!use_extended_mem2 && !is_neo) {
+    if (!Core::IsGlobalPs5RuntimeMode() && !use_extended_mem2 && !is_neo) {
         total_size -= 128_MB;
     }
 
@@ -76,15 +81,29 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
     u64 old_direct_size = total_direct_size;
     total_direct_size = total_size - flexible_size;
 
-    // Limit direct memory space to match actual limit
-    auto last_dmem_area = FindDmemArea(total_direct_size);
-    ASSERT_MSG(last_dmem_area->second.dma_type == PhysicalMemoryType::Free &&
-                   last_dmem_area->second.size >= old_direct_size - total_direct_size,
-               "Unable to shrink dmem map");
-    last_dmem_area->second.size -= (old_direct_size - total_direct_size);
+    if (total_direct_size > old_direct_size) {
+        auto last_dmem_area = std::prev(dmem_map.end());
+        ASSERT_MSG(last_dmem_area->second.dma_type == PhysicalMemoryType::Free &&
+                       last_dmem_area->second.GetEnd() == old_direct_size,
+                   "Unable to grow dmem map");
+        last_dmem_area->second.size += total_direct_size - old_direct_size;
+    } else {
+        // Limit direct memory space to match actual limit.
+        auto last_dmem_area = FindDmemArea(total_direct_size);
+        ASSERT_MSG(last_dmem_area->second.dma_type == PhysicalMemoryType::Free &&
+                       last_dmem_area->second.size >= old_direct_size - total_direct_size,
+                   "Unable to shrink dmem map");
+        last_dmem_area->second.size -= (old_direct_size - total_direct_size);
+    }
 
     LOG_INFO(Kernel_Vmm, "Configured memory regions: flexible size = {:#x}, direct size = {:#x}",
              total_flexible_size, total_direct_size);
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        std::fprintf(stderr,
+                     "Configured PS5 memory: flexible=0x%llx direct=0x%llx\n",
+                     static_cast<unsigned long long>(total_flexible_size),
+                     static_cast<unsigned long long>(total_direct_size));
+    }
 }
 
 u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
@@ -397,7 +416,7 @@ s32 MemoryManager::PoolCommit(VAddr virtual_addr, u64 size, MemoryProt prot, s32
         pool_budget -= size;
     }
 
-    if (True(prot & MemoryProt::CpuWrite)) {
+    if (!Core::IsGlobalPs5RuntimeMode() && True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
         prot |= MemoryProt::CpuRead;
     }
@@ -485,7 +504,7 @@ MemoryManager::VMAHandle MemoryManager::CreateArea(VAddr virtual_addr, u64 size,
     const auto new_vma_handle = CarveVMA(virtual_addr, size);
     auto& new_vma = new_vma_handle->second;
     const bool is_exec = True(prot & MemoryProt::CpuExec);
-    if (True(prot & MemoryProt::CpuWrite)) {
+    if (!Core::IsGlobalPs5RuntimeMode() && True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
         prot |= MemoryProt::CpuRead;
     }
@@ -695,7 +714,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         return ORBIS_KERNEL_ERROR_EBADF;
     }
 
-    if (True(prot & MemoryProt::CpuWrite)) {
+    if (!Core::IsGlobalPs5RuntimeMode() && True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
         prot |= MemoryProt::CpuRead;
     }
@@ -989,7 +1008,7 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         return adjusted_size;
     }
 
-    if (True(prot & MemoryProt::CpuWrite)) {
+    if (!Core::IsGlobalPs5RuntimeMode() && True(prot & MemoryProt::CpuWrite)) {
         // On PS4, read is appended to write mappings.
         prot |= MemoryProt::CpuRead;
     }
@@ -1016,8 +1035,9 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
         perms |= Core::MemoryPermission::ReadWrite;
     }
 
-    if (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
-        vma_base.type == VMAType::File) {
+    if (!Core::IsGlobalPs5RuntimeMode() &&
+        (vma_base.type == VMAType::Direct || vma_base.type == VMAType::Pooled ||
+         vma_base.type == VMAType::File)) {
         // On PS4, execute permissions are hidden from direct memory and file mappings.
         // Tests show that execute permissions still apply, so handle this after reading perms.
         prot &= ~MemoryProt::CpuExec;
@@ -1091,8 +1111,19 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     std::shared_lock lk{mutex};
     auto it = FindVMA(query_addr);
 
-    while (it != vma_map.end() && it->second.type == VMAType::Free && flags == 1) {
-        ++it;
+    if (Core::IsGlobalPs5RuntimeMode() && flags == 1) {
+        const bool contains_query =
+            it != vma_map.end() && it->second.Contains(query_addr, 1);
+        if (!contains_query && it != vma_map.end() && it->second.base <= query_addr) {
+            ++it;
+        }
+        while (it != vma_map.end() && it->second.type == VMAType::Free) {
+            ++it;
+        }
+    } else {
+        while (it != vma_map.end() && it->second.type == VMAType::Free && flags == 1) {
+            ++it;
+        }
     }
     if (it == vma_map.end() || it->second.type == VMAType::Free) {
         LOG_WARNING(Kernel_Vmm, "VirtualQuery on free memory region");

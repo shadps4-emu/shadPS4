@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <atomic>
+#include <cstdio>
+#include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <boost/asio/io_context.hpp>
 
 #include "common/assert.h"
@@ -27,6 +32,9 @@
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/sys_net.h"
+#include "core/linker.h"
+#include "core/tls.h"
+#include "core/memory.h"
 
 #ifdef _WIN64
 #include <Rpc.h>
@@ -42,6 +50,16 @@
 namespace Libraries::Kernel {
 
 static u64 g_stack_chk_guard = 0xDEADBEEF54321ABC; // dummy return
+static u64 g_thread_atexit_count_callback = 0;
+static u64 g_thread_atexit_report_callback = 0;
+static u64 g_thread_dtors_callback = 0;
+static std::atomic<s32> g_thread_atexit_count = 0;
+static u64 g_coredump_handler = 0;
+static u64 g_coredump_handler_context = 0;
+static std::atomic<u32> g_next_apr_submission_id = 1;
+static std::mutex g_apr_submission_mutex;
+static std::unordered_map<u32, VAddr> g_apr_submissions;
+static thread_local std::array<u8, 0x68> g_sanitizer_new_replace_fallback{};
 
 boost::asio::io_context io_context;
 static std::mutex m_asio_req;
@@ -298,6 +316,147 @@ s32 PS4_SYSV_ABI sceKernelGetAppInfo(s32 pid, OrbisKernelAppInfo* app_info) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI _sceKernelSetThreadAtexitCount(u64 callback) {
+    g_thread_atexit_count_callback = callback;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI _sceKernelSetThreadAtexitReport(u64 callback) {
+    g_thread_atexit_report_callback = callback;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI _sceKernelSetThreadDtors(u64 callback) {
+    g_thread_dtors_callback = callback;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI _sceKernelRtldThreadAtexitIncrement() {
+    ++g_thread_atexit_count;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI _sceKernelRtldThreadAtexitDecrement() {
+    --g_thread_atexit_count;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceCoredumpRegisterCoredumpHandler(u64 handler, u64 context) {
+    g_coredump_handler = handler;
+    g_coredump_handler_context = context;
+    return ORBIS_OK;
+}
+
+static bool IsValidGuestRange(VAddr addr, u64 size) {
+    if (size == 0) {
+        return true;
+    }
+    return addr != 0 && Core::Memory::Instance()->IsValidMapping(addr, size);
+}
+
+static u32 AllocateAprSubmissionId(VAddr command_buffer) {
+    u32 id = g_next_apr_submission_id.fetch_add(1);
+    if (id == 0) {
+        id = g_next_apr_submission_id.fetch_add(1);
+    }
+    std::scoped_lock lock{g_apr_submission_mutex};
+    g_apr_submissions[id] = command_buffer;
+    return id;
+}
+
+static s32 WriteAprResult(void* result) {
+    if (result == nullptr) {
+        return ORBIS_OK;
+    }
+    const auto addr = reinterpret_cast<VAddr>(result);
+    if (!IsValidGuestRange(addr, sizeof(u64))) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    *reinterpret_cast<u64*>(result) = 0;
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelAprSubmitCommandBufferAndGetResult(void* command_buffer, u64,
+                                                             void* result,
+                                                             u32* out_submission_id) {
+    if (!Core::IsGlobalPs5RuntimeMode() || command_buffer == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    const u32 id = AllocateAprSubmissionId(reinterpret_cast<VAddr>(command_buffer));
+    if (out_submission_id != nullptr) {
+        if (!IsValidGuestRange(reinterpret_cast<VAddr>(out_submission_id), sizeof(u32))) {
+            return ORBIS_KERNEL_ERROR_EFAULT;
+        }
+        *out_submission_id = id;
+    }
+    return WriteAprResult(result);
+}
+
+s32 PS4_SYSV_ABI sceKernelAprWaitCommandBuffer(u32 submission_id, u64, void* result) {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return ORBIS_KERNEL_ERROR_ENOSYS;
+    }
+    {
+        std::scoped_lock lock{g_apr_submission_mutex};
+        if (g_apr_submissions.erase(submission_id) == 0) {
+            LOG_WARNING(Kernel, "PS5 mode: APR wait for unknown submission id {:#x}; "
+                                "treating as completed",
+                        submission_id);
+        }
+    }
+    return WriteAprResult(result);
+}
+
+s32 PS4_SYSV_ABI sceKernelWaitCommandBufferCompletion(u64 submission_id, u64 arg1, void* result,
+                                                      u64 arg3, u64 arg4, u64 arg5) {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return ORBIS_KERNEL_ERROR_ENOSYS;
+    }
+    const auto write_result = WriteAprResult(result);
+    return write_result;
+}
+
+s32 PS4_SYSV_ABI sceKernelAprSubmitCommandBuffer(void* command_buffer, u64) {
+    if (!Core::IsGlobalPs5RuntimeMode() || command_buffer == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    AllocateAprSubmissionId(reinterpret_cast<VAddr>(command_buffer));
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI sceKernelAprSubmitCommandBufferAndGetId(void* command_buffer, u64,
+                                                         u32* out_submission_id) {
+    if (!Core::IsGlobalPs5RuntimeMode() || command_buffer == nullptr ||
+        out_submission_id == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (!IsValidGuestRange(reinterpret_cast<VAddr>(out_submission_id), sizeof(u32))) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    *out_submission_id = AllocateAprSubmissionId(reinterpret_cast<VAddr>(command_buffer));
+    return ORBIS_OK;
+}
+
+void* PS4_SYSV_ABI sceKernelGetSanitizerNewReplaceExternal() {
+    if (!Core::IsGlobalPs5RuntimeMode()) {
+        return nullptr;
+    }
+
+    constexpr u64 TlsNewReplaceOffset = 0x300;
+    constexpr u64 NewReplaceSize = 0x68;
+    VAddr address = 0;
+    if (auto* tcb = Core::GetTcbBase(); tcb != nullptr) {
+        address = reinterpret_cast<VAddr>(tcb) + TlsNewReplaceOffset;
+    }
+    if (!IsValidGuestRange(address, NewReplaceSize)) {
+        address = reinterpret_cast<VAddr>(g_sanitizer_new_replace_fallback.data());
+    }
+
+    std::memset(reinterpret_cast<void*>(address), 0, NewReplaceSize);
+    *reinterpret_cast<u64*>(address) = NewReplaceSize;
+    return reinterpret_cast<void*>(address);
+}
+
 // Nominally: long sysconf(int name);
 u64 PS4_SYSV_ABI posix_sysconf(s32 name) {
     switch (name) {
@@ -497,6 +656,32 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("ca7v6Cxulzs", "libkernel", 1, "libkernel", sceKernelSetGPO);
     LIB_FUNCTION("iKJMWrAumPE", "libkernel", 1, "libkernel", getargc);
     LIB_FUNCTION("FJmglmTMdr4", "libkernel", 1, "libkernel", getargv);
+
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LIB_FUNCTION("pB-yGZ2nQ9o", "libkernel", 1, "libkernel",
+                     _sceKernelSetThreadAtexitCount);
+        LIB_FUNCTION("WhCc1w3EhSI", "libkernel", 1, "libkernel",
+                     _sceKernelSetThreadAtexitReport);
+        LIB_FUNCTION("rNhWz+lvOMU", "libkernel", 1, "libkernel", _sceKernelSetThreadDtors);
+        LIB_FUNCTION("Tz4RNUCBbGI", "libkernel", 1, "libkernel",
+                     _sceKernelRtldThreadAtexitIncrement);
+        LIB_FUNCTION("8OnWXlgQlvo", "libkernel", 1, "libkernel",
+                     _sceKernelRtldThreadAtexitDecrement);
+        LIB_FUNCTION("8zLSfEfW5AU", "libSceCoredump", 1, "libSceCoredump",
+                     sceCoredumpRegisterCoredumpHandler);
+        LIB_FUNCTION("ASoW5WE-UPo", "libkernel", 1, "libkernel",
+                     sceKernelAprSubmitCommandBufferAndGetResult);
+        LIB_FUNCTION("rqwFKI4PAiM", "libkernel", 1, "libkernel",
+                     sceKernelAprWaitCommandBuffer);
+        LIB_FUNCTION("eE4Szl8sil8", "libkernel", 1, "libkernel",
+                     sceKernelAprSubmitCommandBuffer);
+        LIB_FUNCTION("qvMUCyyaCSI", "libkernel", 1, "libkernel",
+                     sceKernelAprSubmitCommandBufferAndGetId);
+        LIB_FUNCTION("3GqBPApWgPY", "libkernel", 1, "libkernel",
+                     sceKernelWaitCommandBufferCompletion);
+        LIB_FUNCTION("bnZxYgAFeA0", "libkernel", 1, "libkernel",
+                     sceKernelGetSanitizerNewReplaceExternal);
+    }
 }
 
 } // namespace Libraries::Kernel

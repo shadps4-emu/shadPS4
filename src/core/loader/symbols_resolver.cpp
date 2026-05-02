@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fmt/format.h>
+#include <array>
 #include "common/io_file.h"
 #include "common/string_util.h"
 #include "common/types.h"
@@ -28,6 +29,54 @@ const SymbolRecord* SymbolsResolver::FindSymbol(const SymbolResolver& s) const {
     }
 
     // LOG_INFO(Core_Linker, "Unresolved! {}", name);
+    return nullptr;
+}
+
+const SymbolRecord* SymbolsResolver::FindSymbolByNid(std::string_view nid,
+                                                      SymbolType preferred_type) const {
+    if (nid.empty()) {
+        return nullptr;
+    }
+
+    const auto find_by_type = [&](SymbolType type) -> const SymbolRecord* {
+        for (const auto& symbol : m_symbols) {
+            const std::string_view full_name{symbol.name};
+            const size_t first_sep = full_name.find('#');
+            if (first_sep == std::string_view::npos || full_name.substr(0, first_sep) != nid) {
+                continue;
+            }
+            if (type == SymbolType::Unknown) {
+                return &symbol;
+            }
+            const size_t last_sep = full_name.rfind('#');
+            if (last_sep == std::string_view::npos) {
+                continue;
+            }
+            if (full_name.substr(last_sep + 1) == SymbolTypeToS(type)) {
+                return &symbol;
+            }
+        }
+        return nullptr;
+    };
+
+    if (const auto* record = find_by_type(preferred_type)) {
+        return record;
+    }
+
+    static constexpr std::array<SymbolType, 4> FallbackTypes = {
+        SymbolType::Function,
+        SymbolType::Object,
+        SymbolType::NoType,
+        SymbolType::Unknown,
+    };
+    for (const auto type : FallbackTypes) {
+        if (type == preferred_type) {
+            continue;
+        }
+        if (const auto* record = find_by_type(type)) {
+            return record;
+        }
+    }
     return nullptr;
 }
 

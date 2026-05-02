@@ -4,6 +4,7 @@
 #include "core/libraries/kernel/threads.h"
 #include "core/libraries/libc_internal/libc_internal_threads.h"
 #include "core/libraries/libs.h"
+#include "core/linker.h"
 
 namespace Libraries::LibcInternal {
 
@@ -40,6 +41,29 @@ s32 PS4_SYSV_ABI internal__Mtxinit(Libraries::Kernel::PthreadMutexT* mtx, const 
     return 1;
 }
 
+s32 PS4_SYSV_ABI internal__MtxinitPs5(Libraries::Kernel::PthreadMutexT* mtx, s32 type) {
+    Libraries::Kernel::PthreadMutexAttrT attr{};
+    s32 result = Libraries::Kernel::posix_pthread_mutexattr_init(&attr);
+    if (result != 0) {
+        return 1;
+    }
+
+    // PS5 libc uses a type  _Mtx_init ABI here. 
+    // A recursive native mutex avoids self-lock stalls in CRT startup.
+    result = Libraries::Kernel::posix_pthread_mutexattr_settype(
+        &attr, Libraries::Kernel::PthreadMutexType::Recursive);
+
+    s32 mtx_init_result = result;
+    if (result == 0) {
+        char mtx_name[0x20];
+        std::snprintf(mtx_name, sizeof(mtx_name), "SceLibcI_%d", type);
+        mtx_init_result = Libraries::Kernel::scePthreadMutexInit(mtx, &attr, mtx_name);
+    }
+
+    result = Libraries::Kernel::posix_pthread_mutexattr_destroy(&attr);
+    return (mtx_init_result == 0 && result == 0) ? 0 : 1;
+}
+
 s32 PS4_SYSV_ABI internal__Mtxlock(Libraries::Kernel::PthreadMutexT* mtx) {
     s32 result = Libraries::Kernel::posix_pthread_mutex_lock(mtx);
     return result != 0;
@@ -57,6 +81,13 @@ s32 PS4_SYSV_ABI internal__Mtxdst(Libraries::Kernel::PthreadMutexT* mtx) {
 
 void RegisterlibSceLibcInternalThreads(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("z7STeF6abuU", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxinit);
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LIB_FUNCTION("YaHc3GS7y7g", "libSceLibcInternal", 1, "libSceLibcInternal",
+                     internal__MtxinitPs5);
+    } else {
+        LIB_FUNCTION("YaHc3GS7y7g", "libSceLibcInternal", 1, "libSceLibcInternal",
+                     internal__Mtxinit);
+    }
     LIB_FUNCTION("pE4Ot3CffW0", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxlock);
     LIB_FUNCTION("cMwgSSmpE5o", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxunlock);
     LIB_FUNCTION("LaPaA6mYA38", "libSceLibcInternal", 1, "libSceLibcInternal", internal__Mtxdst);

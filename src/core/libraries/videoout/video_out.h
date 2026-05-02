@@ -119,10 +119,18 @@ struct OrbisVideoOutEventData {
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel);
+void PS4_SYSV_ABI sceVideoOutSetBufferAttribute2(BufferAttribute2* attribute, u64 pixelFormat,
+                                                 u32 tilingMode, u32 width, u32 height,
+                                                 u64 option, u32 dccControl,
+                                                 u64 dccCbRegisterClearColor);
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handle, void* udata);
 s32 PS4_SYSV_ABI sceVideoOutAddVblankEvent(Kernel::OrbisKernelEqueue eq, s32 handle, void* udata);
 s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* const* addresses,
                                             s32 bufferNum, const BufferAttribute* attribute);
+s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers2(s32 handle, s32 setIndex, s32 bufferIndexStart,
+                                             const VideoOutBuffers* buffers, s32 bufferNum,
+                                             const BufferAttribute2* attribute, s32 category,
+                                             void* option);
 s32 PS4_SYSV_ABI sceVideoOutGetBufferLabelAddress(s32 handle, uintptr_t* label_addr);
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate);
 s32 PS4_SYSV_ABI sceVideoOutIsFlipPending(s32 handle);

@@ -238,15 +238,30 @@ bool Elf::IsSelfFile() const {
         return false;
     }
 
-    if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.endian != 0x01 ||
-        m_self.attributes != 0x12) [[unlikely]] {
-        LOG_INFO(Loader, "Unknown SELF file");
+    if (m_self.endian != 0x01) [[unlikely]] {
+        LOG_INFO(Loader, "Unknown SELF file endian = {:#x}", m_self.endian);
         return false;
     }
 
-    if (m_self.category != 0x01 || m_self.program_type != 0x01) [[unlikely]] {
-        LOG_INFO(Loader, "Unknown SELF file");
-        return false;
+    if (!ps5_runtime_mode) {
+        if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.attributes != 0x12) [[unlikely]] {
+            LOG_INFO(Loader, "Unknown SELF file");
+            return false;
+        }
+
+        if (m_self.category != 0x01 || m_self.program_type != 0x01) [[unlikely]] {
+            LOG_INFO(Loader, "Unknown SELF file");
+            return false;
+        }
+    } else {
+        if (m_self.version != 0x00 || m_self.mode != 0x01 || m_self.attributes != 0x12 ||
+            m_self.category != 0x01 || m_self.program_type != 0x01) {
+            LOG_WARNING(Loader,
+                        "PS5 mode accepted non-PS4 SELF header fields "
+                        "(version={:#x}, mode={:#x}, attr={:#x}, category={:#x}, program={:#x})",
+                        m_self.version, m_self.mode, m_self.attributes, m_self.category,
+                        m_self.program_type);
+        }
     }
 
     return true;
@@ -278,16 +293,30 @@ bool Elf::IsElfFile() const {
         return false;
     }
 
-    if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
-        LOG_INFO(Loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})",
-                 static_cast<u32>(m_elf_header.e_ident.ei_osabi));
-        return false;
-    }
+    if (!ps5_runtime_mode) {
+        if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
+            LOG_INFO(Loader, "e_ident[EI_OSABI] expected 0x09 is ({:#x})",
+                     static_cast<u32>(m_elf_header.e_ident.ei_osabi));
+            return false;
+        }
 
-    if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
-        LOG_INFO(Loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})",
-                 static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
-        return false;
+        if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2) {
+            LOG_INFO(Loader, "e_ident[EI_ABIVERSION] expected 0x00 is ({:#x})",
+                     static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
+            return false;
+        }
+    } else {
+        if (m_elf_header.e_ident.ei_osabi != ELF_OSABI_FREEBSD) {
+            LOG_WARNING(Loader, "PS5 mode accepting non-FreeBSD EI_OSABI ({:#x})",
+                        static_cast<u32>(m_elf_header.e_ident.ei_osabi));
+        }
+        if (m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V2 &&
+            m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V3 &&
+            m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V4 &&
+            m_elf_header.e_ident.ei_abiversion != ELF_ABI_VERSION_AMDGPU_HSA_V5) {
+            LOG_WARNING(Loader, "PS5 mode encountered unknown EI_ABIVERSION ({:#x})",
+                        static_cast<u32>(m_elf_header.e_ident.ei_abiversion));
+        }
     }
 
     if (m_elf_header.e_type != ET_SCE_DYNEXEC && m_elf_header.e_type != ET_SCE_DYNAMIC &&

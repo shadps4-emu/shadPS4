@@ -465,6 +465,14 @@ public:
     Elf() = default;
     ~Elf();
 
+    void SetPs5RuntimeMode(bool enable) {
+        ps5_runtime_mode = enable;
+    }
+
+    bool IsPs5RuntimeMode() const noexcept {
+        return ps5_runtime_mode;
+    }
+
     void Open(const std::filesystem::path& file_name);
     bool IsSelfFile() const;
     bool IsElfFile() const;
@@ -508,6 +516,7 @@ public:
     void PHeaderDebugDump(const std::filesystem::path& file_name);
 
 private:
+    bool ps5_runtime_mode{};
     Common::FS::IOFile m_f{};
     bool is_self{};
     self_header m_self{};

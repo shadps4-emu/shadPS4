@@ -11,6 +11,8 @@ constexpr u64 ORBIS_KERNEL_TOTAL_MEM_PRO = 5888_MB;
 constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV = 6656_MB;
 // TODO: This value needs confirmation
 constexpr u64 ORBIS_KERNEL_TOTAL_MEM_DEV_PRO = 7936_MB;
+// PS5 has 16 GB of unified physical memory.
+constexpr u64 ORBIS_KERNEL_TOTAL_MEM_PS5 = 16_GB;
 
 constexpr u64 ORBIS_KERNEL_FLEXIBLE_MEMORY_BASE = 64_MB;
 constexpr u64 ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE = 512_MB;

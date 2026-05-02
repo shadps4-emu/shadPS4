@@ -15,6 +15,7 @@
 #include "core/memory.h"
 #include "core/module.h"
 #include "core/tls.h"
+#include <cstdio>
 
 namespace Core {
 
@@ -83,8 +84,11 @@ static std::string StringToNid(std::string_view symbol) {
     return dst;
 }
 
-Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index)
-    : memory{memory_}, file{file_}, name{file.filename().string()} {
+Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_, u32& max_tls_index,
+               bool ps5_runtime_mode)
+    : memory{memory_}, file{file_}, name{file.filename().string()},
+      is_ps5_runtime_mode{ps5_runtime_mode} {
+    elf.SetPs5RuntimeMode(is_ps5_runtime_mode);
     elf.Open(file);
     if (elf.IsElfFile()) {
         LoadModuleToMemory(max_tls_index);
@@ -97,7 +101,19 @@ Module::~Module() = default;
 
 s32 Module::Start(u64 args, const void* argp, void* param) {
     LOG_INFO(Core_Linker, "Module started : {}", name);
-    const VAddr addr = dynamic_info.init_virtual_addr + GetBaseAddress();
+    const VAddr addr =
+        is_ps5_runtime_mode && dynamic_info.init_virtual_addr >= GetBaseAddress()
+            ? dynamic_info.init_virtual_addr
+            : dynamic_info.init_virtual_addr + GetBaseAddress();
+    if (is_ps5_runtime_mode && addr < 0x10000) {
+        LOG_INFO(Core_Linker,
+                 "PS5 mode: skipping low DT_INIT for module {} (addr={:#x})", name,
+                 dynamic_info.init_virtual_addr);
+        return ORBIS_OK;
+    }
+    if (is_ps5_runtime_mode) {
+        LOG_INFO(Core_Linker, "PS5 mode: starting module {} DT_INIT at {:#x}", name, addr);
+    }
     return reinterpret_cast<EntryFunc>(addr)(args, argp, param);
 }
 
@@ -134,11 +150,14 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", base_virtual_addr);
     LOG_INFO(Core_Linker, "base_size ..............: {:#018x}", base_size);
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", aligned_base_size);
+    std::vector<std::pair<VAddr, VAddr>> ps5_mapped_ranges{};
 
-    const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
+    const auto add_segment = [this, &ps5_mapped_ranges](const elf_program_header& phdr,
+                                                         bool do_map = true) {
         const VAddr segment_vaddr = base_virtual_addr + phdr.p_vaddr;
         void* segment_addr = std::bit_cast<void*>(segment_vaddr);
         const u64 segment_size = GetAlignedSize(phdr);
+        const VAddr segment_end = segment_vaddr + segment_size;
         if (do_map) {
             // Convert ELF flags to memory prot.
             auto segment_prot = MemoryProt::NoAccess;
@@ -151,14 +170,77 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             if ((phdr.p_flags & PF_EXEC) != 0) {
                 segment_prot |= MemoryProt::CpuExec;
             }
+            if (is_ps5_runtime_mode && segment_prot == MemoryProt::NoAccess && phdr.p_filesz != 0) {
+                // PS5 binaries may expose loadable file-backed segments with no PF_* bits.
+                // Mapping these as NoAccess creates unbacked map regions that are fragile to split.
+                // Keep this PS5-only and writable so the segment payload can be loaded reliably.
+                segment_prot = MemoryProt::CpuReadWrite;
+            }
 
-            // Map module segments
-            const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
-            s32 result = memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
-                                           MemoryMapFlags::Fixed, memory_type, name);
-            ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",
-                       segment_vaddr, name);
-            elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
+            bool mapped_in_existing_ps5_range = false;
+            if (is_ps5_runtime_mode) {
+                mapped_in_existing_ps5_range = std::ranges::any_of(
+                    ps5_mapped_ranges,
+                    [segment_vaddr, segment_end](const std::pair<VAddr, VAddr>& mapped_range) {
+                        return mapped_range.first <= segment_vaddr &&
+                               segment_end <= mapped_range.second;
+                    });
+            }
+
+            VAddr mapped_segment_vaddr = segment_vaddr;
+            u64 mapped_segment_size = segment_size;
+#ifdef _WIN32
+            if (is_ps5_runtime_mode) {
+                // Some PS5 PT_LOAD virtual addresses are not page-aligned.
+                // Align to host page granularity to keep it valid.
+                constexpr u64 HostPlaceholderGranularity = 0x1000;
+                mapped_segment_vaddr = Common::AlignDown(segment_vaddr, HostPlaceholderGranularity);
+                mapped_segment_size =
+                    Common::AlignUp(segment_end - mapped_segment_vaddr, HostPlaceholderGranularity);
+            }
+#endif
+            if (!mapped_in_existing_ps5_range) {
+                const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
+                s32 result =
+                    memory->MapMemory(&segment_addr, mapped_segment_vaddr, mapped_segment_size,
+                                      segment_prot, MemoryMapFlags::Fixed, memory_type, name);
+                ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",
+                           mapped_segment_vaddr, name);
+                if (is_ps5_runtime_mode) {
+                    ps5_mapped_ranges.emplace_back(mapped_segment_vaddr,
+                                                   mapped_segment_vaddr + mapped_segment_size);
+                }
+            } else {
+                LOG_INFO(Core_Linker,
+                         "PS5 mode: segment range [{:#x}, {:#x}) already mapped, skipping "
+                         "remap",
+                         segment_vaddr, segment_end);
+            }
+
+            if (phdr.p_filesz != 0) {
+                if (is_ps5_runtime_mode && !True(segment_prot & MemoryProt::CpuWrite)) {
+                    const auto load_prot =
+                        segment_prot | MemoryProt::CpuRead | MemoryProt::CpuWrite;
+                    s32 result = memory->Protect(segment_vaddr, segment_size, load_prot);
+                    ASSERT_MSG(result == ORBIS_OK,
+                               "Failed to set temporary load protections at {:#x} for module {}",
+                               segment_vaddr, name);
+                    elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
+                    if (!mapped_in_existing_ps5_range) {
+                        result = memory->Protect(segment_vaddr, segment_size, segment_prot);
+                        ASSERT_MSG(result == ORBIS_OK,
+                                   "Failed to restore segment protections at {:#x} for module {}",
+                                   segment_vaddr, name);
+                        if (is_ps5_runtime_mode && True(segment_prot & MemoryProt::CpuExec)) {
+                            memory->GetAddressSpace().Protect(mapped_segment_vaddr,
+                                                               mapped_segment_size,
+                                                               MemoryPermission::ReadWriteExecute);
+                        }
+                    }
+                } else {
+                    elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
+                }
+            }
         }
         if (info.num_segments < 4) {
             auto& segment = info.segments[info.num_segments++];
@@ -198,6 +280,16 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 #endif
             break;
         }
+        case PT_GNU_RELRO:
+            if (is_ps5_runtime_mode) {
+                LOG_INFO(Core_Linker,
+                         "PS5 mode: accepting PT_GNU_RELRO descriptor at {:#018x}, "
+                         "size={:#018x}",
+                         elf_pheader[i].p_vaddr + base_virtual_addr, elf_pheader[i].p_memsz);
+                break;
+            }
+            LOG_ERROR(Core_Linker, "Unimplemented type {}", header_type);
+            break;
         case PT_DYNAMIC:
             add_segment(elf_pheader[i], false);
             if (elf_pheader[i].p_filesz != 0) {
@@ -263,26 +355,80 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 }
 
 void Module::LoadDynamicInfo() {
+    constexpr s64 DT_STD_PLTGOT = 0x00000003;
+    constexpr s64 DT_STD_STRTAB = 0x00000005;
+    constexpr s64 DT_STD_SYMTAB = 0x00000006;
+    constexpr s64 DT_STD_RELASZ = 0x00000008;
+    constexpr s64 DT_STD_RELAENT = 0x00000009;
+    constexpr s64 DT_STD_STRSZ = 0x0000000a;
+    constexpr s64 DT_STD_SYMENT = 0x0000000b;
+    constexpr s64 DT_STD_PLTREL = 0x00000014;
+    constexpr s64 DT_STD_JMPREL = 0x00000017;
+    constexpr s64 DT_STD_PLTRELSZ = 0x00000002;
+
+    std::vector<u64> deferred_needed_offsets{};
+    const auto resolve_dynamic_ptr = [this](u64 value) -> u8* {
+        // PS4 dynlib metadata uses offsets in PT_SCE_DYNLIBDATA.
+        if (value < m_dynamic_data.size()) {
+            return m_dynamic_data.data() + value;
+        }
+        if (is_ps5_runtime_mode) {
+            // PS5 metadata often uses image-relative virtual addresses.
+            const VAddr image_addr = base_virtual_addr + value;
+            if (image_addr >= base_virtual_addr && image_addr < base_virtual_addr + aligned_base_size) {
+                return reinterpret_cast<u8*>(image_addr);
+            }
+        }
+        return nullptr;
+    };
+
     for (const auto* dyn = reinterpret_cast<elf_dynamic*>(m_dynamic.data()); dyn->d_tag != DT_NULL;
          dyn++) {
         switch (dyn->d_tag) {
         case DT_SCE_HASH: // Offset of the hash table.
-            dynamic_info.hash_table =
-                reinterpret_cast<void*>(m_dynamic_data.data() + dyn->d_un.d_ptr);
+            if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                dynamic_info.hash_table = const_cast<u8*>(ptr);
+            }
             break;
         case DT_SCE_HASHSZ: // Size of the hash table
             dynamic_info.hash_table_size = dyn->d_un.d_val;
             break;
+        case DT_STD_STRTAB:
+            if (is_ps5_runtime_mode) {
+                if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                    dynamic_info.str_table = reinterpret_cast<char*>(const_cast<u8*>(ptr));
+                }
+            }
+            break;
+        case DT_STD_STRSZ:
+            if (is_ps5_runtime_mode && dynamic_info.str_table_size == 0) {
+                dynamic_info.str_table_size = dyn->d_un.d_val;
+            }
+            break;
         case DT_SCE_STRTAB: // Offset of the string table.
-            dynamic_info.str_table =
-                reinterpret_cast<char*>(m_dynamic_data.data() + dyn->d_un.d_ptr);
+            if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                dynamic_info.str_table = reinterpret_cast<char*>(const_cast<u8*>(ptr));
+            }
             break;
         case DT_SCE_STRSZ: // Size of the string table.
             dynamic_info.str_table_size = dyn->d_un.d_val;
             break;
+        case DT_STD_SYMTAB:
+            if (is_ps5_runtime_mode) {
+                if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                    dynamic_info.symbol_table = reinterpret_cast<elf_symbol*>(const_cast<u8*>(ptr));
+                }
+            }
+            break;
         case DT_SCE_SYMTAB: // Offset of the symbol table.
-            dynamic_info.symbol_table =
-                reinterpret_cast<elf_symbol*>(m_dynamic_data.data() + dyn->d_un.d_ptr);
+            if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                dynamic_info.symbol_table = reinterpret_cast<elf_symbol*>(const_cast<u8*>(ptr));
+            }
+            break;
+        case DT_STD_SYMENT:
+            if (is_ps5_runtime_mode && dynamic_info.symbol_table_entries_size == 0) {
+                dynamic_info.symbol_table_entries_size = dyn->d_un.d_val;
+            }
             break;
         case DT_SCE_SYMTABSZ: // Size of the symbol table.
             dynamic_info.symbol_table_total_size = dyn->d_un.d_val;
@@ -296,12 +442,37 @@ void Module::LoadDynamicInfo() {
         case DT_SCE_PLTGOT: // Offset of the global offset table.
             dynamic_info.pltgot_virtual_addr = dyn->d_un.d_ptr;
             break;
+        case DT_STD_PLTGOT:
+            if (is_ps5_runtime_mode && dynamic_info.pltgot_virtual_addr == 0) {
+                dynamic_info.pltgot_virtual_addr = dyn->d_un.d_ptr;
+            }
+            break;
+        case DT_STD_JMPREL:
+            if (is_ps5_runtime_mode) {
+                if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                    dynamic_info.jmp_relocation_table =
+                        reinterpret_cast<elf_relocation*>(const_cast<u8*>(ptr));
+                }
+            }
+            break;
         case DT_SCE_JMPREL: // Offset of the table containing jump slots.
-            dynamic_info.jmp_relocation_table =
-                reinterpret_cast<elf_relocation*>(m_dynamic_data.data() + dyn->d_un.d_ptr);
+            if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                dynamic_info.jmp_relocation_table =
+                    reinterpret_cast<elf_relocation*>(const_cast<u8*>(ptr));
+            }
+            break;
+        case DT_STD_PLTRELSZ:
+            if (is_ps5_runtime_mode && dynamic_info.jmp_relocation_table_size == 0) {
+                dynamic_info.jmp_relocation_table_size = dyn->d_un.d_val;
+            }
             break;
         case DT_SCE_PLTRELSZ: // Size of the global offset table.
             dynamic_info.jmp_relocation_table_size = dyn->d_un.d_val;
+            break;
+        case DT_STD_PLTREL:
+            if (is_ps5_runtime_mode && dynamic_info.jmp_relocation_type == 0) {
+                dynamic_info.jmp_relocation_type = dyn->d_un.d_val;
+            }
             break;
         case DT_SCE_PLTREL: // The type of relocations in the relocation table. Should be DT_RELA
             dynamic_info.jmp_relocation_type = dyn->d_un.d_val;
@@ -309,12 +480,32 @@ void Module::LoadDynamicInfo() {
                 LOG_WARNING(Core_Linker, "DT_SCE_PLTREL is NOT DT_RELA should check!");
             }
             break;
+        case DT_RELA:
+            if (is_ps5_runtime_mode) {
+                if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                    dynamic_info.relocation_table =
+                        reinterpret_cast<elf_relocation*>(const_cast<u8*>(ptr));
+                }
+            }
+            break;
         case DT_SCE_RELA: // Offset of the relocation table.
-            dynamic_info.relocation_table =
-                reinterpret_cast<elf_relocation*>(m_dynamic_data.data() + dyn->d_un.d_ptr);
+            if (const auto* ptr = resolve_dynamic_ptr(dyn->d_un.d_ptr)) {
+                dynamic_info.relocation_table =
+                    reinterpret_cast<elf_relocation*>(const_cast<u8*>(ptr));
+            }
+            break;
+        case DT_STD_RELASZ:
+            if (is_ps5_runtime_mode && dynamic_info.relocation_table_size == 0) {
+                dynamic_info.relocation_table_size = dyn->d_un.d_val;
+            }
             break;
         case DT_SCE_RELASZ: // Size of the relocation table.
             dynamic_info.relocation_table_size = dyn->d_un.d_val;
+            break;
+        case DT_STD_RELAENT:
+            if (is_ps5_runtime_mode && dynamic_info.relocation_table_entries_size == 0) {
+                dynamic_info.relocation_table_entries_size = dyn->d_un.d_val;
+            }
             break;
         case DT_SCE_RELAENT: // The size of relocation table entries.
             dynamic_info.relocation_table_entries_size = dyn->d_un.d_val;
@@ -364,6 +555,8 @@ void Module::LoadDynamicInfo() {
             // In theory this should already be filled from about just make a test case
             if (dynamic_info.str_table) {
                 dynamic_info.needed.push_back(dynamic_info.str_table + dyn->d_un.d_val);
+            } else if (is_ps5_runtime_mode) {
+                deferred_needed_offsets.push_back(dyn->d_un.d_val);
             } else {
                 LOG_ERROR(Core_Linker, "DT_NEEDED str table is not loaded should check!");
             }
@@ -423,6 +616,19 @@ void Module::LoadDynamicInfo() {
             LOG_INFO(Core_Linker, "unsupported dynamic tag ..........: {:#018x}", dyn->d_tag);
         }
     }
+
+    if (is_ps5_runtime_mode && dynamic_info.symbol_table_total_size == 0 &&
+        dynamic_info.symbol_table && dynamic_info.str_table &&
+        dynamic_info.str_table > reinterpret_cast<char*>(dynamic_info.symbol_table)) {
+        dynamic_info.symbol_table_total_size = reinterpret_cast<u8*>(dynamic_info.str_table) -
+                                               reinterpret_cast<u8*>(dynamic_info.symbol_table);
+    }
+    if (is_ps5_runtime_mode && dynamic_info.str_table && !deferred_needed_offsets.empty()) {
+        for (const auto needed_offset : deferred_needed_offsets) {
+            dynamic_info.needed.push_back(dynamic_info.str_table + needed_offset);
+        }
+    }
+
     const u32 relabits_num = dynamic_info.relocation_table_size / sizeof(elf_relocation) +
                              dynamic_info.jmp_relocation_table_size / sizeof(elf_relocation);
     rela_bits.resize((relabits_num + 7) / 8);
@@ -450,7 +656,12 @@ void Module::LoadSymbols() {
 
             const auto* library = FindLibrary(ids[1]);
             const auto* module = FindModule(ids[2]);
-            ASSERT_MSG(library && module, "Unable to find library and module");
+            if (!library || !module) {
+                if (is_ps5_runtime_mode) {
+                    continue;
+                }
+                ASSERT_MSG(library && module, "Unable to find library and module");
+            }
             if ((bind != STB_GLOBAL && bind != STB_WEAK) ||
                 (type != STT_FUN && type != STT_OBJECT) || export_func != (sym->st_value != 0)) {
                 continue;

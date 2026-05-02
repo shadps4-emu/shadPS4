@@ -283,6 +283,14 @@ set(AJM_LIB src/core/libraries/ajm/ajm.cpp
             src/core/libraries/ajm/ajm_mp3.h
 )
 
+set(AMPR_LIB src/core/libraries/ampr/ampr.cpp
+             src/core/libraries/ampr/ampr.h
+)
+
+set(AGC_LIB src/core/libraries/agc/agc.cpp
+            src/core/libraries/agc/agc.h
+)
+
 set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioin.h
               src/core/libraries/audio/audioin_backend.h
@@ -834,6 +842,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/libraries/libs.h
          src/core/libraries/libs.cpp
          ${AJM_LIB}
+         ${AGC_LIB}
+         ${AMPR_LIB}
          ${AVPLAYER_LIB}
          ${AUDIO_LIB}
          ${GNM_LIB}

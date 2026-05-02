@@ -60,6 +60,13 @@ const char* PS4_SYSV_ABI internal_strchr(const char* str, int c) {
     return std::strchr(str, c);
 }
 
+char* PS4_SYSV_ABI internal_strrchr(const char* str, int c) {
+    if (str == nullptr) {
+        return nullptr;
+    }
+    return const_cast<char*>(std::strrchr(str, c));
+}
+
 void RegisterlibSceLibcInternalStr(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("5Xa2ACNECdo", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcpy_s);
     LIB_FUNCTION("K+gcnFFJKVc", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcat_s);
@@ -70,6 +77,7 @@ void RegisterlibSceLibcInternalStr(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("YNzNkJzYqEg", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strncpy_s);
     LIB_FUNCTION("Ls4tzzhimqQ", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strcat);
     LIB_FUNCTION("ob5xAW4ln-0", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strchr);
+    LIB_FUNCTION("9yDWMxEFdJU", "libSceLibcInternal", 1, "libSceLibcInternal", internal_strrchr);
 }
 
 } // namespace Libraries::LibcInternal

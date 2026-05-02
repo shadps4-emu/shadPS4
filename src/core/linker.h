@@ -15,6 +15,15 @@ struct DynamicModuleInfo;
 class Linker;
 class MemoryManager;
 
+enum class RuntimePlatform : u8 {
+    PS4 = 0,
+    PS5 = 1,
+};
+
+void SetGlobalRuntimePlatform(RuntimePlatform platform) noexcept;
+RuntimePlatform GetGlobalRuntimePlatform() noexcept;
+bool IsGlobalPs5RuntimeMode() noexcept;
+
 struct OrbisKernelMemParam {
     u64 size;
     u64* extended_page_table;
@@ -49,7 +58,17 @@ class Linker;
 struct EntryParams {
     int argc;
     u32 padding;
-    const char* argv[33];
+    const char** argv;
+    const char* argv_storage[33];
+    VAddr entry_addr;
+};
+
+struct Ps5EntryParams {
+    u32 argc;
+    u32 padding;
+    const char* argv0;
+    u64 reserved0;
+    u64 reserved1;
     VAddr entry_addr;
 };
 
@@ -135,6 +154,16 @@ public:
         heap_api = reinterpret_cast<AppHeapAPI>(func);
     }
 
+    void SetRuntimePlatform(RuntimePlatform platform) noexcept;
+
+    RuntimePlatform GetRuntimePlatform() const noexcept {
+        return runtime_platform;
+    }
+
+    bool IsPs5RuntimeMode() const noexcept {
+        return runtime_platform == RuntimePlatform::PS5;
+    }
+
     void AdvanceGenerationCounter() noexcept {
         dtv_generation_counter++;
     }
@@ -156,6 +185,8 @@ public:
 
 private:
     const Module* FindExportedModule(const ModuleInfo& m, const LibraryInfo& l);
+    void PreloadPs5AdjacentModules();
+    void StartPs5PreloadedModules();
 
     MemoryManager* memory;
     Libraries::Kernel::Thread main_thread;
@@ -165,6 +196,7 @@ private:
     u32 max_tls_index{};
     u32 num_static_modules{};
     AppHeapAPI heap_api{};
+    RuntimePlatform runtime_platform{RuntimePlatform::PS4};
     std::vector<std::unique_ptr<Module>> m_modules;
     Loader::SymbolsResolver m_hle_symbols{};
 };

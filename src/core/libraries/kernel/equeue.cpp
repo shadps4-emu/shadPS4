@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdio>
 #include <thread>
+#include <fmt/core.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
@@ -15,6 +17,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/linker.h"
 
 namespace Libraries::Kernel {
 
@@ -642,6 +645,68 @@ u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev) {
     return ev->data;
 }
 
+s32 PS4_SYSV_ABI sceKernelAddAmprEvent(OrbisKernelEqueue eq, int id, void* udata) {
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LOG_INFO(Kernel_Event, "PS5 mode: sceKernelAddAmprEvent eq={} id={} udata={}", eq,
+                 id, fmt::ptr(udata));
+        if (kqueues.contains(eq)) {
+            EqueueEvent event{};
+            event.event.ident = id;
+            event.event.filter = OrbisKernelEvent::Filter::User;
+            event.event.flags = OrbisKernelEvent::Flags::Add;
+            event.event.fflags = 0;
+            event.event.data = 0;
+            event.event.udata = udata;
+            kqueues[eq]->AddEvent(event);
+        }
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_ENOSYS;
+}
+
+s32 PS4_SYSV_ABI sceKernelAddAmprSystemEvent(OrbisKernelEqueue eq, int id, void* udata) {
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LOG_INFO(Kernel_Event,
+                 "PS5 mode: sceKernelAddAmprSystemEvent eq={} id={} udata={}", eq, id,
+                 fmt::ptr(udata));
+        if (kqueues.contains(eq)) {
+            EqueueEvent event{};
+            event.event.ident = id;
+            event.event.filter = OrbisKernelEvent::Filter::User;
+            event.event.flags = OrbisKernelEvent::Flags::Add;
+            event.event.fflags = 0;
+            event.event.data = 0;
+            event.event.udata = udata;
+            kqueues[eq]->AddEvent(event);
+        }
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_ENOSYS;
+}
+
+s32 PS4_SYSV_ABI sceKernelDeleteAmprEvent(OrbisKernelEqueue eq, int id) {
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LOG_INFO(Kernel_Event, "PS5 mode: sceKernelDeleteAmprEvent eq={} id={}", eq, id);
+        if (kqueues.contains(eq)) {
+            kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::User);
+        }
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_ENOSYS;
+}
+
+s32 PS4_SYSV_ABI sceKernelDeleteAmprSystemEvent(OrbisKernelEqueue eq, int id) {
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LOG_INFO(Kernel_Event, "PS5 mode: sceKernelDeleteAmprSystemEvent eq={} id={}", eq,
+                 id);
+        if (kqueues.contains(eq)) {
+            kqueues[eq]->RemoveEvent(id, OrbisKernelEvent::Filter::User);
+        }
+        return ORBIS_OK;
+    }
+    return ORBIS_KERNEL_ERROR_ENOSYS;
+}
+
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
     LIB_FUNCTION("RW-GEfpnsqg", "libScePosix", 1, "libkernel", posix_kevent);
@@ -660,6 +725,13 @@ void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("mJ7aghmgvfc", "libkernel", 1, "libkernel", sceKernelGetEventId);
     LIB_FUNCTION("23CPPI1tyBY", "libkernel", 1, "libkernel", sceKernelGetEventFilter);
     LIB_FUNCTION("kwGyyjohI50", "libkernel", 1, "libkernel", sceKernelGetEventData);
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        LIB_FUNCTION("bBfz7kMF2Ho", "libkernel", 1, "libkernel", sceKernelAddAmprEvent);
+        LIB_FUNCTION("vuae5JPNt9A", "libkernel", 1, "libkernel", sceKernelAddAmprSystemEvent);
+        LIB_FUNCTION("bMmid3pfyjo", "libkernel", 1, "libkernel", sceKernelDeleteAmprEvent);
+        LIB_FUNCTION("Ij+ryuEClXQ", "libkernel", 1, "libkernel",
+                     sceKernelDeleteAmprSystemEvent);
+    }
 }
 
 } // namespace Libraries::Kernel

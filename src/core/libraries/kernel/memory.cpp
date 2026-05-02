@@ -16,6 +16,7 @@
 #include "core/libraries/libs.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include <atomic>
 
 namespace Libraries::Kernel {
 
@@ -36,6 +37,7 @@ s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
 
 s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u64 len,
                                                u64 alignment, s32 memoryType, s64* physAddrOut) {
+    s32 alloc_memory_type = memoryType;
     if (searchStart < 0 || searchEnd < 0) {
         LOG_ERROR(Kernel_Vmm, "Invalid parameters!");
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -48,7 +50,10 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
         LOG_ERROR(Kernel_Vmm, "Alignment {:#x} is invalid!", alignment);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-    if (memoryType > 10) {
+    if (memoryType == 0xC && Core::IsGlobalPs5RuntimeMode()) {
+        // keep direct memory type 0xC as-is.
+        alloc_memory_type = memoryType;
+    } else if (memoryType > 10) {
         LOG_ERROR(Kernel_Vmm, "Memory type {:#x} is invalid!", memoryType);
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -67,7 +72,7 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     }
 
     auto* memory = Core::Memory::Instance();
-    PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, memoryType);
+    PAddr phys_addr = memory->Allocate(searchStart, searchEnd, len, alignment, alloc_memory_type);
     if (phys_addr == -1) {
         return ORBIS_KERNEL_ERROR_EAGAIN;
     }
@@ -77,7 +82,7 @@ s32 PS4_SYSV_ABI sceKernelAllocateDirectMemory(s64 searchStart, s64 searchEnd, u
     LOG_INFO(Kernel_Vmm,
              "searchStart = {:#x}, searchEnd = {:#x}, len = {:#x}, "
              "alignment = {:#x}, memoryType = {:#x}, physAddrOut = {:#x}",
-             searchStart, searchEnd, len, alignment, memoryType, phys_addr);
+             searchStart, searchEnd, len, alignment, alloc_memory_type, phys_addr);
 
     return ORBIS_OK;
 }
@@ -209,7 +214,7 @@ s32 PS4_SYSV_ABI sceKernelMapNamedDirectMemory(void** addr, u64 len, s32 prot, s
     }
 
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+    if (True(mem_prot & Core::MemoryProt::CpuExec) && !Core::IsGlobalPs5RuntimeMode()) {
         LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
@@ -262,7 +267,7 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(void** addr, u64 len, s32 type, s32 p
     }
 
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+    if (True(mem_prot & Core::MemoryProt::CpuExec) && !Core::IsGlobalPs5RuntimeMode()) {
         LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
@@ -571,7 +576,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolCommit(void* addr, u64 len, s32 type, s32 pr
     }
 
     const auto mem_prot = static_cast<Core::MemoryProt>(prot);
-    if (True(mem_prot & Core::MemoryProt::CpuExec)) {
+    if (True(mem_prot & Core::MemoryProt::CpuExec) && !Core::IsGlobalPs5RuntimeMode()) {
         LOG_ERROR(Kernel_Vmm, "Executable permissions are not allowed.");
         return ORBIS_KERNEL_ERROR_EINVAL;
     }

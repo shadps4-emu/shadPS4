@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <thread>
+#include <atomic>
+#include <cstdio>
 #include "common/assert.h"
 #include "common/types.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/libs.h"
+#include "core/linker.h"
 
 namespace Libraries::Kernel {
 
@@ -98,7 +101,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_init(PthreadMutexT* mutex,
 s32 PS4_SYSV_ABI scePthreadMutexInit(PthreadMutexT* mutex, const PthreadMutexAttrT* mutex_attr,
                                      const char* name) {
     return MutexInit(mutex, mutex_attr ? *mutex_attr : nullptr, name);
-}
+    }
 
 s32 PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex) {
     PthreadMutexT m = *mutex;
@@ -152,6 +155,10 @@ s32 PthreadMutex::SelfLock(const OrbisKernelTimespec* abstime, u64 usec) {
     switch (Type()) {
     case PthreadMutexType::ErrorCheck:
     case PthreadMutexType::AdaptiveNp: {
+        if (Core::IsGlobalPs5RuntimeMode() && Type() == PthreadMutexType::AdaptiveNp && !abstime) {
+            m_count++;
+            return 0;
+        }
         if (abstime) {
             return DoSleep();
         }
@@ -162,6 +169,10 @@ s32 PthreadMutex::SelfLock(const OrbisKernelTimespec* abstime, u64 usec) {
         return POSIX_EDEADLK;
     }
     case PthreadMutexType::Normal: {
+        if (Core::IsGlobalPs5RuntimeMode() && !abstime) {
+            m_count++;
+            return 0;
+        }
         /*
          * What SS2 define as a 'normal' mutex.  Intentionally
          * deadlock on attempts to get a lock you already own.
@@ -278,7 +289,11 @@ s32 PthreadMutex::Unlock() {
         return POSIX_EPERM;
     }
 
-    if (Type() == PthreadMutexType::Recursive && m_count > 0) [[unlikely]] {
+    if (Core::IsGlobalPs5RuntimeMode() &&
+        (Type() == PthreadMutexType::Normal || Type() == PthreadMutexType::AdaptiveNp) &&
+        m_count > 0) [[unlikely]] {
+        m_count--;
+    } else if (Type() == PthreadMutexType::Recursive && m_count > 0) [[unlikely]] {
         m_count--;
     } else {
         const bool deferred = True(m_flags & PthreadMutexFlags::Deferred);
@@ -396,6 +411,10 @@ s32 PS4_SYSV_ABI posix_pthread_mutexattr_gettype(PthreadMutexAttrT* attr, Pthrea
 s32 PS4_SYSV_ABI posix_pthread_mutexattr_destroy(PthreadMutexAttrT* attr) {
     if (attr == nullptr || *attr == nullptr) {
         return POSIX_EINVAL;
+    }
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        // PS5 runtime paths may keep using attr handles after destroy?.
+        return 0;
     }
     delete *attr;
     *attr = nullptr;

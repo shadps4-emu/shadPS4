@@ -107,16 +107,19 @@ void NormalDirectory::RebuildDirents() {
         sizeof(NormalDirectoryDirent::d_fileno) + sizeof(NormalDirectoryDirent::d_type) +
         sizeof(NormalDirectoryDirent::d_namlen) + sizeof(NormalDirectoryDirent::d_reclen);
 
-    u64 next_ceiling = 0;
+    u64 next_ceiling = 512;
     u64 dirent_offset = 0;
     u64 last_reclen_offset = 4;
+    bool has_previous_entry = false;
     dirent_cache_bin.clear();
-    dirent_cache_bin.reserve(512);
+    dirent_cache_bin.resize(next_ceiling);
+    std::fill(dirent_cache_bin.begin(), dirent_cache_bin.end(), 0);
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
 
     mnt->IterateDirectory(
-        guest_directory, [this, &next_ceiling, &dirent_offset, &last_reclen_offset](
+        guest_directory, [this, &next_ceiling, &dirent_offset, &last_reclen_offset,
+                          &has_previous_entry](
                              const std::filesystem::path& ent_path, const bool ent_is_file) {
             NormalDirectoryDirent tmp{};
             std::string leaf(ent_path.filename().string());
@@ -131,8 +134,10 @@ void NormalDirectory::RebuildDirents() {
             // next element may break 512 byte alignment
             if (tmp.d_reclen + dirent_offset > next_ceiling) {
                 // align previous dirent's size to the current ceiling
-                *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) +
-                                        last_reclen_offset) += next_ceiling - dirent_offset;
+                if (has_previous_entry) {
+                    *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) +
+                                            last_reclen_offset) += next_ceiling - dirent_offset;
+                }
                 // set writing pointer to the aligned start position (current ceiling)
                 dirent_offset = next_ceiling;
                 // move the ceiling up and zero-out the buffer
@@ -146,9 +151,16 @@ void NormalDirectory::RebuildDirents() {
             last_reclen_offset = dirent_offset + 4;
             memcpy(dirent_cache_bin.data() + dirent_offset, &tmp, tmp.d_reclen);
             dirent_offset += tmp.d_reclen;
+            has_previous_entry = true;
         });
 
     // last reclen, as before
+    if (!has_previous_entry) {
+        dirent_cache_bin.clear();
+        directory_size = 0;
+        return;
+    }
+
     *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) + last_reclen_offset) +=
         next_ceiling - dirent_offset;
 

@@ -142,7 +142,7 @@ class MemoryManager;
 class Module {
 public:
     explicit Module(Core::MemoryManager* memory, const std::filesystem::path& file,
-                    u32& max_tls_index);
+                    u32& max_tls_index, bool ps5_runtime_mode = false);
     ~Module();
 
     VAddr GetBaseAddress() const noexcept {
@@ -242,6 +242,7 @@ public:
     ThreadLocalImage tls{};
     OrbisKernelModuleInfo info{};
     std::vector<u8> rela_bits;
+    bool is_ps5_runtime_mode{};
 };
 
 } // namespace Core

@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/app_content/app_content.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
@@ -125,6 +126,35 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
     OrbisSysmoduleModuleInternal& mod = g_modules_array[index];
     if (mod.is_loaded > 0) {
         mod.is_loaded++;
+        return ORBIS_OK;
+    }
+
+    if (Core::IsGlobalPs5RuntimeMode()) {
+        static s32 ps5_stub_handle = 0x5000;
+        bool registered_hle = false;
+        auto& hle_symbols = linker->GetHLESymbols();
+        if (std::strcmp(mod.name, "libSceAppContent") == 0) {
+            Libraries::AppContent::RegisterLib(&hle_symbols);
+            registered_hle = true;
+        } else if (std::strcmp(mod.name, "libSceRtc") == 0) {
+            Libraries::Rtc::RegisterLib(&hle_symbols);
+            registered_hle = true;
+        } else if (std::strcmp(mod.name, "libSceLibcInternal") == 0) {
+            Libraries::LibcInternal::RegisterLib(&hle_symbols);
+            registered_hle = true;
+        }
+
+        if (registered_hle) {
+            linker->RelocateAllImports();
+        }
+        mod.handle = ps5_stub_handle++;
+        mod.is_loaded++;
+        if (res_out != nullptr) {
+            *res_out = ORBIS_OK;
+        }
+        LOG_INFO(Lib_SysModule,
+                 "PS5 mode: satisfied sysmodule {} with HLE/stub handle {:#x}",
+                 mod.name, mod.handle);
         return ORBIS_OK;
     }
 

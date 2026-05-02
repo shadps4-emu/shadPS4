@@ -19,6 +19,10 @@ namespace Libraries::VideoOut {
 
 static std::unique_ptr<VideoOutDriver> driver;
 
+static PixelFormat ConvertPixelFormat2(u64 pixelFormat) {
+    return static_cast<PixelFormat>((pixelFormat >> 32u) | ((pixelFormat >> 16u) & 0xffffu));
+}
+
 void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, PixelFormat pixelFormat,
                                                 u32 tilingMode, u32 aspectRatio, u32 width,
                                                 u32 height, u32 pitchInPixel) {
@@ -36,6 +40,27 @@ void PS4_SYSV_ABI sceVideoOutSetBufferAttribute(BufferAttribute* attribute, Pixe
     attribute->height = height;
     attribute->pitch_in_pixel = pitchInPixel;
     attribute->option = SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE;
+}
+
+void PS4_SYSV_ABI sceVideoOutSetBufferAttribute2(BufferAttribute2* attribute, u64 pixelFormat,
+                                                 u32 tilingMode, u32 width, u32 height,
+                                                 u64 option, u32 dccControl,
+                                                 u64 dccCbRegisterClearColor) {
+    LOG_INFO(Lib_VideoOut,
+             "pixelFormat = {:#x}, tilingMode = {}, width = {}, height = {}, option = {:#x}, "
+             "dccControl = {:#x}, dccCbRegisterClearColor = {:#x}",
+             pixelFormat, tilingMode, width, height, option, dccControl, dccCbRegisterClearColor);
+
+    std::memset(attribute, 0, sizeof(BufferAttribute2));
+    attribute->pixel_format = pixelFormat;
+    attribute->tiling_mode = static_cast<TilingMode>(tilingMode);
+    attribute->aspect_ratio = 0;
+    attribute->width = width;
+    attribute->height = height;
+    attribute->pitch_in_pixel = 0;
+    attribute->option = option;
+    attribute->dcc_control = dccControl;
+    attribute->dcc_cb_register_clear_color = dccCbRegisterClearColor;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutAddFlipEvent(Kernel::OrbisKernelEqueue eq, s32 handle, void* udata) {
@@ -136,6 +161,86 @@ s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers(s32 handle, s32 startIndex, void* co
     }
 
     return driver->RegisterBuffers(port, startIndex, addresses, bufferNum, attribute);
+}
+
+s32 PS4_SYSV_ABI sceVideoOutRegisterBuffers2(s32 handle, s32 setIndex, s32 bufferIndexStart,
+                                             const VideoOutBuffers* buffers, s32 bufferNum,
+                                             const BufferAttribute2* attribute, s32 category,
+                                             void* option) {
+    if (!buffers) {
+        LOG_ERROR(Lib_VideoOut, "Buffers are null");
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+    }
+    if (!attribute) {
+        LOG_ERROR(Lib_VideoOut, "Attribute is null");
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_OPTION;
+    }
+
+    auto* port = driver->GetPort(handle);
+    if (!port || !port->is_open) {
+        LOG_ERROR(Lib_VideoOut, "Invalid handle = {}", handle);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_HANDLE;
+    }
+
+    if (bufferIndexStart < 0 || bufferIndexStart > MaxDisplayBuffers || bufferNum < 1 ||
+        bufferNum > MaxDisplayBuffers || bufferIndexStart + bufferNum > MaxDisplayBuffers) {
+        LOG_ERROR(Lib_VideoOut,
+                  "Invalid buffer range bufferIndexStart = {}, bufferNum = {}", bufferIndexStart,
+                  bufferNum);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+
+    if (option != nullptr || category != 0) {
+        LOG_ERROR(Lib_VideoOut, "Unsupported category = {}, option = {}", category, fmt::ptr(option));
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_OPTION;
+    }
+    if (attribute->reserved0 != 0 || attribute->pad0 != 0 || attribute->reserved1[0] != 0 ||
+        attribute->reserved1[1] != 0 || attribute->reserved1[2] != 0) {
+        LOG_ERROR(Lib_VideoOut, "Invalid reserved members");
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    if (attribute->dcc_control != 0 || attribute->dcc_cb_register_clear_color != 0) {
+        LOG_ERROR(Lib_VideoOut, "DCC attributes are not supported");
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_VALUE;
+    }
+    if (attribute->pitch_in_pixel != 0) {
+        LOG_ERROR(Lib_VideoOut, "Invalid pitchInPixel = {}", attribute->pitch_in_pixel);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_PITCH;
+    }
+    if (attribute->option != SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE &&
+        attribute->option != SCE_VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY) {
+        LOG_ERROR(Lib_VideoOut, "Invalid option = {:#x}", attribute->option);
+        return ORBIS_VIDEO_OUT_ERROR_INVALID_OPTION;
+    }
+
+    std::array<void*, MaxDisplayBuffers> addresses{};
+    for (s32 i = 0; i < bufferNum; ++i) {
+        if (buffers[i].metadata != nullptr) {
+            LOG_ERROR(Lib_VideoOut, "Metadata buffers are not supported");
+            return ORBIS_VIDEO_OUT_ERROR_INVALID_ADDRESS;
+        }
+        addresses[i] = const_cast<void*>(buffers[i].data);
+    }
+
+    const BufferAttribute normalized = {
+        .pixel_format = ConvertPixelFormat2(attribute->pixel_format),
+        .tiling_mode = attribute->tiling_mode,
+        .aspect_ratio = attribute->aspect_ratio,
+        .width = attribute->width,
+        .height = attribute->height,
+        .pitch_in_pixel = attribute->width,
+        .option = static_cast<u32>(attribute->option),
+        .reserved0 = 0,
+        .reserved1 = 0,
+    };
+
+    LOG_INFO(Lib_VideoOut,
+             "setIndex = {}, bufferIndexStart = {}, bufferNum = {}, pixelFormat = {:#x}",
+             setIndex, bufferIndexStart, bufferNum, attribute->pixel_format);
+
+    const s32 result =
+        driver->RegisterBuffers(port, bufferIndexStart, addresses.data(), bufferNum, &normalized);
+    return result >= 0 ? ORBIS_OK : result;
 }
 
 s32 PS4_SYSV_ABI sceVideoOutSetFlipRate(s32 handle, s32 rate) {
@@ -461,11 +566,15 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("SbU3dwp80lQ", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutGetFlipStatus);
     LIB_FUNCTION("U46NwOiJpys", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutSubmitFlip);
     LIB_FUNCTION("w3BY+tAEiQY", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutRegisterBuffers);
+    LIB_FUNCTION("rKBUtgRrtbk", "libSceVideoOut", 1, "libSceVideoOut",
+                 sceVideoOutRegisterBuffers2);
     LIB_FUNCTION("HXzjK9yI30k", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutAddFlipEvent);
     LIB_FUNCTION("Xru92wHJRmg", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutAddVblankEvent);
     LIB_FUNCTION("CBiu4mCE1DA", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutSetFlipRate);
     LIB_FUNCTION("i6-sR91Wt-4", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutSetBufferAttribute);
+    LIB_FUNCTION("PjS5uASwcV8", "libSceVideoOut", 1, "libSceVideoOut",
+                 sceVideoOutSetBufferAttribute2);
     LIB_FUNCTION("6kPnj51T62Y", "libSceVideoOut", 1, "libSceVideoOut",
                  sceVideoOutGetResolutionStatus);
     LIB_FUNCTION("Up36PTk687E", "libSceVideoOut", 1, "libSceVideoOut", sceVideoOutOpen);

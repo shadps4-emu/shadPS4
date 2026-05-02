@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <set>
 #include <sstream>
 #include <fmt/core.h>
@@ -32,12 +33,14 @@
 #include "core/file_format/psf.h"
 #include "core/file_format/trp.h"
 #include "core/file_sys/fs.h"
+#include "core/loader/elf.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
 #include "core/linker.h"
 #include "core/memory.h"
+#include "core/signals.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "video_core/cache_storage.h"
@@ -89,6 +92,55 @@ s32 ReadCompiledSdkVersion(const std::filesystem::path& file) {
         return param.sdk_version;
     }
     return 0;
+}
+
+static bool TryReadExecutableElfHeader(const std::filesystem::path& file_path, elf_header& out_header) {
+    Common::FS::IOFile file(file_path, Common::FS::FileAccessMode::Read);
+    if (!file.IsOpen()) {
+        return false;
+    }
+
+    self_header self{};
+    if (!file.ReadObject(self)) {
+        return false;
+    }
+
+    if (self.magic == self_header::signature) {
+        const u64 elf_offset =
+            sizeof(self_header) + static_cast<u64>(self.segment_count) * sizeof(self_segment_header);
+        if (!file.Seek(static_cast<s64>(elf_offset), Common::FS::SeekOrigin::SetOrigin)) {
+            return false;
+        }
+    } else if (!file.Seek(0, Common::FS::SeekOrigin::SetOrigin)) {
+        return false;
+    }
+
+    return file.ReadObject(out_header);
+}
+
+static bool DetectPs5ExecutableAbi(const std::filesystem::path& file_path, u8* abi_version_out) {
+    elf_header header{};
+    if (!TryReadExecutableElfHeader(file_path, header)) {
+        if (abi_version_out != nullptr) {
+            *abi_version_out = 0xff;
+        }
+        return false;
+    }
+
+    const auto& ident = header.e_ident;
+    if (ident.magic[EI_MAG0] != ELFMAG0 || ident.magic[EI_MAG1] != ELFMAG1 ||
+        ident.magic[EI_MAG2] != ELFMAG2 || ident.magic[EI_MAG3] != ELFMAG3) {
+        if (abi_version_out != nullptr) {
+            *abi_version_out = 0xff;
+        }
+        return false;
+    }
+
+    if (abi_version_out != nullptr) {
+        *abi_version_out = static_cast<u8>(ident.ei_abiversion);
+    }
+
+    return ident.ei_abiversion == ELF_ABI_VERSION_AMDGPU_HSA_V4;
 }
 
 void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
@@ -336,6 +388,22 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     memory = Core::Memory::Instance();
     controllers = Common::Singleton<Input::GameControllers>::Instance();
     linker = Common::Singleton<Core::Linker>::Instance();
+
+    u8 elf_abi_version = 0xff;
+    const bool ps5_runtime_mode = DetectPs5ExecutableAbi(eboot_path, &elf_abi_version);
+    linker->SetRuntimePlatform(ps5_runtime_mode ? Core::RuntimePlatform::PS5
+                                                : Core::RuntimePlatform::PS4);
+    if (elf_abi_version != 0xff) {
+        LOG_INFO(Loader, "Executable EI_ABIVERSION: {:#x}", elf_abi_version);
+    } else {
+        LOG_WARNING(Loader, "Unable to detect executable EI_ABIVERSION, defaulting to PS4 mode");
+    }
+    if (ps5_runtime_mode) {
+        LOG_INFO(Loader, "Detected PS5 ABI executable: enabling PS5 mode");
+
+        // Ensure vectored exception hooks are active before PS5 guest entry,
+        (void)Core::Signals::Instance();
+    }
 
     // Load renderdoc module
     VideoCore::LoadRenderDoc();

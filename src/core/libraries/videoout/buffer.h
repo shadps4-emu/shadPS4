@@ -60,9 +60,30 @@ struct BufferAttribute {
     u64 reserved1;
 };
 
+struct BufferAttribute2 {
+    u32 reserved0;
+    TilingMode tiling_mode;
+    s32 aspect_ratio;
+    u32 width;
+    u32 height;
+    u32 pitch_in_pixel;
+    u64 option;
+    u64 pixel_format;
+    u64 dcc_cb_register_clear_color;
+    u32 dcc_control;
+    u32 pad0;
+    u64 reserved1[3];
+};
+
 struct BufferAttributeGroup {
     bool is_occupied;
     BufferAttribute attrib;
+};
+
+struct VideoOutBuffers {
+    const void* data;
+    const void* metadata;
+    const void* reserved[2];
 };
 
 struct VideoOutBuffer {
