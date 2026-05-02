@@ -550,7 +550,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
                    virtual_addr);
         auto vma = FindVMA(virtual_addr)->second;
         auto remaining_size = vma.base + vma.size - virtual_addr;
-        if (!vma.IsFree() || remaining_size < size) {
+        if (vma.IsMapped() || remaining_size < size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, virtual_addr);
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
@@ -726,7 +726,7 @@ s32 MemoryManager::MapFile(void** out_addr, VAddr virtual_addr, u64 size, Memory
         auto vma = FindVMA(virtual_addr)->second;
 
         auto remaining_size = vma.base + vma.size - virtual_addr;
-        if (!vma.IsFree() || remaining_size < size) {
+        if (vma.IsMapped() || remaining_size < size) {
             LOG_ERROR(Kernel_Vmm, "Unable to map {:#x} bytes at address {:#x}", size, virtual_addr);
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }

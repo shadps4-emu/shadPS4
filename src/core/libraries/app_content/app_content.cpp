@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cmath>
+#include <cstring>
 
 #include "app_content.h"
 #include "common/assert.h"
@@ -400,6 +401,7 @@ int PS4_SYSV_ABI sceAppContentTemporaryDataMount2(OrbisAppContentTemporaryDataOp
     if (mountPoint == nullptr) {
         return ORBIS_APP_CONTENT_ERROR_PARAMETER;
     }
+    memset(mountPoint, 0, sizeof(OrbisAppContentMountPoint));
     static constexpr std::string_view TmpMount = "/temp0";
     TmpMount.copy(mountPoint->data, TmpMount.size());
     LOG_INFO(Lib_AppContent, "sceAppContentTemporaryDataMount2: option = {}, mountPoint = {}",
