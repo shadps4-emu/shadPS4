@@ -37,6 +37,7 @@ public:
 private:
 #ifdef _WIN64
     void* native_handle;
+    void* exception_stack_ptr{};
 #else
     uintptr_t native_handle;
     void* sig_stack_ptr = nullptr;
