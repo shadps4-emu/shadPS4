@@ -75,6 +75,11 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
 
     // Avoid exploding atlas size on Metal/MoltenVK when CJK fallback is enabled.
     FontStack::AddPrimaryUiFont(io.Fonts, 128.0f, console_language, font_cfg, false);
+
+    // Big Picture
+    FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(),
+                                font_cfg, true);
+
     io.Fonts->Build();
 
     io.FontGlobalScale = 0.5f;

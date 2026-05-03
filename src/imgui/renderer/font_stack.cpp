@@ -25,6 +25,7 @@ constexpr int kNotoSansCjkFontIndexTc = 3;
 constexpr ImWchar kLatinExtendedRanges[] = {
     0x0100, 0x024F, // Latin Extended-A + Latin Extended-B
     0x1E00, 0x1EFF, // Latin Extended Additional
+    0x2122, 0x2122, // TM symbol
     0,
 };
 
