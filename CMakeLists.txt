@@ -1108,6 +1108,8 @@ set(IMGUI src/imgui/imgui_config.h
           src/imgui/big_picture/big_picture.h
           src/imgui/big_picture/settings_dialog_imgui.cpp
           src/imgui/big_picture/settings_dialog_imgui.h
+          src/imgui/big_picture/settings_dialog_layer.cpp
+          src/imgui/big_picture/settings_dialog_layer.h
           src/imgui/big_picture/imgui_impl_sdl3_big_picture.cpp
           src/imgui/big_picture/imgui_impl_sdl3_big_picture.h
           src/imgui/big_picture/imgui_impl_sdlrenderer3.cpp
@@ -1274,7 +1276,6 @@ cmrc_add_resource_library(embedded-resources
         NAMESPACE res
         src/images/big_picture/folder.png
         src/images/big_picture/settings.png
-        src/images/big_picture/global-settings.png
         src/images/big_picture/experimental.png
         src/images/big_picture/graphics.png
         src/images/big_picture/controller.png

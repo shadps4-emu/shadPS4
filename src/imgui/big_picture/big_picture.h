@@ -4,12 +4,16 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 #include <SDL3/SDL.h>
+#include <imgui.h>
+
+#include "common/types.h"
 
 namespace BigPictureMode {
 
-struct Game {
-    SDL_Texture* iconTexture;
+struct IconInfo {
+    ImTextureID textureId;
     std::filesystem::path ebootPath;
     std::string title;
     std::string serial;
@@ -17,12 +21,8 @@ struct Game {
 };
 
 void Launch(char* executableName);
-void SetGameIcons(std::vector<Game>& games);
-void GetGameInfo(std::vector<Game>& games, bool AddGlobalSettings, SDL_Texture* texture = {});
-std::filesystem::path UpdateChecker(const std::string sceItem, std::filesystem::path game_folder);
-
-void LoadTextureDataFromFile(std::filesystem::path filePath, SDL_Texture*& texture,
-                             SDL_Renderer* renderer);
-void LoadTextureData(std::vector<char> data, SDL_Texture*& texture, SDL_Renderer* renderer);
+void GetGameIconInfo(std::vector<IconInfo>& icons);
+SDL_Texture* LoadSdlTextureData(std::vector<u8> data);
+SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath);
 
 } // namespace BigPictureMode
