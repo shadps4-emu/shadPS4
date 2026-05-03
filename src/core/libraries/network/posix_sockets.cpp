@@ -590,7 +590,7 @@ int PosixSocket::SetSocketOptions(int level, int optname, const void* optval, u3
         }
     }
 
-    UNREACHABLE_MSG("Unknown level ={} optname ={}", level, optname);
+    LOG_ERROR(Lib_Net, "Unknown level ={} optname ={}", level, optname);
     return 0;
 }
 
