@@ -362,8 +362,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                     auto temp = user_trophy_file.parent_path();
                     std::filesystem::create_directories(temp);
                     std::error_code discard;
-                    std::filesystem::copy_file(trophyOutputDir / "Xml" / "TROPCONF.XML", user_trophy_file,
-                                               discard);
+                    std::filesystem::copy_file(trophyOutputDir / "Xml" / "TROPCONF.XML",
+                                               user_trophy_file, discard);
                 }
             }
             index++;
