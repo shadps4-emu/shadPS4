@@ -44,17 +44,14 @@ static void hexToBytes(const char* hex, unsigned char* dst) {
 
 bool TRP::Extract(const std::filesystem::path& trophyPath, int index, std::string npCommId,
                   const std::filesystem::path& outputPath) {
-
-    std::filesystem::path trophyDir = trophyPath / "sce_sys/trophy";
-
-    if (!std::filesystem::exists(trophyDir)) {
-        LOG_WARNING(Common_Filesystem, "Trophy directory doesn't exist: {}", trophyDir.string());
+    if (!std::filesystem::exists(trophyPath)) {
+        LOG_WARNING(Common_Filesystem, "Trophy directory doesn't exist: {}", trophyPath.string());
         return false;
     }
 
     // Collect all .trp files in the directory
     std::vector<std::filesystem::path> trpFiles;
-    for (const auto& entry : std::filesystem::directory_iterator(trophyDir)) {
+    for (const auto& entry : std::filesystem::directory_iterator(trophyPath)) {
         if (entry.is_regular_file() && entry.path().extension() == ".trp") {
             trpFiles.push_back(entry.path());
         }
