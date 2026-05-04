@@ -478,6 +478,16 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return;
 
     // VOP3P
+    case Opcode::V_PK_FMA_F16:
+        return V_PK_FMA_F16(inst);
+    case Opcode::V_PK_ADD_F16:
+        return V_PK_ADD_F16(inst);
+    case Opcode::V_PK_MUL_F16:
+        return V_PK_MUL_F16(inst);
+    case Opcode::V_PK_MIN_F16:
+        return V_PK_MIN_F16(inst);
+    case Opcode::V_PK_MAX_F16:
+        return V_PK_MAX_F16(inst);
     case Opcode::V_MAD_MIX_F32:
         return V_MAD_MIX_F32(inst);
     case Opcode::V_MAD_MIXLO_F16:
@@ -1632,6 +1642,62 @@ void Translator::V_ADD3_U32(const GcnInst& inst) {
     const auto src2 = GetSrc<IR::U32>(inst.src[2]);
 
     SetDst(inst.dst[0], ir.IAdd(src0, ir.IAdd(src1, src2)));
+}
+
+void Translator::V_PK_FMA_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+    const auto src2 = GetSrcPk<IR::F32>(inst.src[2]);
+
+    const auto result_lo = ir.FPFma(src0.first, src1.first, src2.first);
+    const auto result_hi = ir.FPFma(src0.second, src1.second, src2.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_ADD_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPAdd(src0.first, src1.first);
+    const auto result_hi = ir.FPAdd(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MUL_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMul(src0.first, src1.first);
+    const auto result_hi = ir.FPMul(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MIN_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMin(src0.first, src1.first);
+    const auto result_hi = ir.FPMin(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MAX_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMax(src0.first, src1.first);
+    const auto result_hi = ir.FPMax(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
 }
 
 void Translator::V_LSHL_OR_B32(const GcnInst& inst) {

@@ -424,3 +424,87 @@ TEST_F(GcnTest, ashrrev_i16_1) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, 0x1234F111);
 }
+
+TEST_F(GcnTest, pk_add_f16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f), half(2.0f)}, F16x2{half(3.0f), half(4.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(4.0f), half(6.0f)}));
+}
+
+TEST_F(GcnTest, pk_add_f16_2) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::Const0, SOperand9::ConstInv2Pi).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<u32>(spirv, 0U);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x00003118);
+}
+
+TEST_F(GcnTest, pk_add_f16_3) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::Const0, SOperand9::ConstInv2Pi).SetOpSel({0,1,1}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<u32>(spirv, 0U);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0);
+}
+
+TEST_F(GcnTest, pk_add_f16_4) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::Const0p5, SOperand9::Const0p5).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<u32>(spirv, 0U);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x3C00);
+}
+
+TEST_F(GcnTest, pk_add_f16_5) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto inst = VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::Const0, SOperand9::ConstInv2Pi).SetOpSelHi({0,0,0}).Get();
+    auto spirv = TranslateToSpirv(inst);
+    auto result = runner->run<u32>(spirv, 0U);
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x31183118);
+}
+
+TEST_F(GcnTest, pk_add_f16_neg_lo) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetNeg({1,1,0}).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f), half(2.0f)}, F16x2{half(3.0f), half(4.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(-4.0f), half(6.0f)}));
+}
+
+TEST_F(GcnTest, pk_add_f16_neg_hi) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetNegHi({1,1,0}).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f), half(2.0f)}, F16x2{half(3.0f), half(4.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(4.0f), half(-6.0f)}));
+}
+
+TEST_F(GcnTest, pk_add_f16_op_sel_reversed) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3P(OpcodeVOP3P::V_PK_ADD_F16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetOpSel({1,1,1}).SetOpSelHi({0,0,0}).Get());
+    auto result = runner->run<F16x2>(spirv, std::array{F16x2{half(1.0f), half(2.0f)}, F16x2{half(3.0f), half(4.0f)}});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, (F16x2{half(6.0f), half(4.0f)}));
+}

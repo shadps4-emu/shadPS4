@@ -54,6 +54,9 @@ enum class NegateMode : u32 {
     Result,
 };
 
+template <typename T>
+using pk_type = std::pair<T, T>;
+
 static constexpr size_t MaxInterpVgpr = 16;
 
 class Translator {
@@ -286,6 +289,11 @@ public:
     void V_OR3_B32(const GcnInst& inst);
 
     // VOP3P
+    void V_PK_FMA_F16(const GcnInst& inst);
+    void V_PK_ADD_F16(const GcnInst& inst);
+    void V_PK_MUL_F16(const GcnInst& inst);
+    void V_PK_MIN_F16(const GcnInst& inst);
+    void V_PK_MAX_F16(const GcnInst& inst);
     void V_MAD_MIX_F32(const GcnInst& inst);
     void V_MAD_MIXLO_F16(const GcnInst& inst);
     void V_MAD_MIXHI_F16(const GcnInst& inst);
@@ -334,6 +342,8 @@ private:
     template <typename T = IR::U64>
     [[nodiscard]] T GetSrc64(const InstOperand& operand);
     [[nodiscard]] IR::F32 GetSrcMix(const InstOperand& operand);
+    template <typename T = IR::U32>
+    [[nodiscard]] pk_type<T> GetSrcPk(const InstOperand& operand);
     void SetDst1(const InstOperand& operand, const IR::U1& value);
     void SetDst(const InstOperand& operand, const IR::U32F32& value);
     template <bool is_signed = false>
