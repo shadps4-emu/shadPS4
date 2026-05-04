@@ -374,3 +374,53 @@ TEST_F(GcnTest, mad_mixhi_f16_1) {
     EXPECT_TRUE(result.has_value());
     EXPECT_EQ(*result, (F16x2{half(44.0f), half(26.0f)}));
 }
+
+TEST_F(GcnTest, lshrrev_b16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_LSHRREV_B16, VOperand8::V0, SOperand9::V0, SOperand9::V1).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,2>{0xFFFFFFF2, 0x88881000});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0xFFFF0400);
+}
+
+TEST_F(GcnTest, lshrrev_b16_2) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_LSHRREV_B16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetOpSel({0,0,0,1}).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,2>{0xFFFFFFF2, 0x88881000});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x0400FFF2);
+}
+
+TEST_F(GcnTest, lshrrev_b16_3) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_LSHRREV_B16, VOperand8::V0, SOperand9::V0, SOperand9::V1).SetOpSel({0,1,0,0}).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,2>{0xFFFFFFF2, 0x88881000});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0xFFFF2222);
+}
+
+TEST_F(GcnTest, lshlrev_b16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_LSHLREV_B16, VOperand8::V0, SOperand9::V0, SOperand9::V1).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,2>{0xFFFFFFF3, 0x88888888});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0xFFFF4440);
+}
+
+TEST_F(GcnTest, ashrrev_i16_1) {
+    auto runner = gcn_test::Runner::instance().value();
+
+    auto spirv = TranslateToSpirv(VOP3A(OpcodeVOP3::V_ASHRREV_I16, VOperand8::V0, SOperand9::V0, SOperand9::V1).Get());
+    auto result = runner->run<u32>(spirv, std::array<u32,2>{0x1234FFF3, 0x88888888});
+
+    EXPECT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0x1234F111);
+}

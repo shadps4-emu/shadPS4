@@ -456,6 +456,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_HI_U32(true, inst);
     case Opcode::V_MAD_U64_U32:
         return V_MAD_U64_U32(inst);
+    case Opcode::V_LSHRREV_B16:
+        return V_LSHRREV_B16(inst);
+    case Opcode::V_ASHRREV_I16:
+        return V_ASHRREV_I16(inst);
+    case Opcode::V_LSHLREV_B16:
+        return V_LSHLREV_B16(inst);
     case Opcode::V_ADD3_U32:
         return V_ADD3_U32(inst);
     case Opcode::V_ADD_LSHL_U32:
@@ -1567,6 +1573,33 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     const IR::U1 less_src1 = ir.ILessThan(sum_result, src2, false);
     const IR::U1 did_overflow = ir.LogicalOr(less_src0, less_src1);
     ir.SetVcc(did_overflow);
+}
+
+void Translator::V_LSHLREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32>(inst.src[1]);
+
+    const auto result = ir.ShiftLeftLogical(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_LSHRREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32>(inst.src[1]);
+
+    const auto result = ir.ShiftRightLogical(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_ASHRREV_I16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32, true>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32, true>(inst.src[1]);
+
+    const auto result = ir.ShiftRightArithmetic(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16<true>(inst.dst[0], result);
 }
 
 void Translator::V_ADD_LSHL_U32(const GcnInst& inst) {
