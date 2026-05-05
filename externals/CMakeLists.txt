@@ -341,15 +341,18 @@ endif()
 
 if (APPLE AND NOT OPENSSL_ROOT_DIR)
     execute_process(
-        COMMAND brew --prefix openssl
+        COMMAND arch -x86_64 brew --prefix openssl
         RESULT_VARIABLE BREW_RESULT
         OUTPUT_VARIABLE BREW_OPENSSL
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
-    if (BREW_RESULT EQUAL 0)
+    if (BREW_RESULT EQUAL 0 AND BREW_OPENSSL)
         set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
         set(OPENSSL_USE_STATIC_LIBS TRUE)
+        message(STATUS "macOS: using x86_64 brew OpenSSL at ${OPENSSL_ROOT_DIR}")
+    else()
+        message(STATUS "macOS: arch -x86_64 brew --prefix openssl failed (exit ${BREW_RESULT}); install x86_64 Homebrew + openssl@3, or set OPENSSL_ROOT_DIR explicitly")
     endif()
 elseif (APPLE AND OPENSSL_ROOT_DIR)
     if (NOT DEFINED OPENSSL_USE_STATIC_LIBS)
