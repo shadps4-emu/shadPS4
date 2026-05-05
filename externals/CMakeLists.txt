@@ -327,6 +327,17 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 add_subdirectory(openal-soft EXCLUDE_FROM_ALL)
 endif()
 
+# LibreSSL
+if (NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto)
+    set(LIBRESSL_SKIP_INSTALL ON CACHE BOOL "" FORCE)
+    set(LIBRESSL_APPS OFF CACHE BOOL "" FORCE)
+    set(LIBRESSL_TESTS OFF CACHE BOOL "" FORCE)
+    add_subdirectory(libressl EXCLUDE_FROM_ALL)
+    get_directory_property(OPENSSL_TARGETS DIRECTORY libressl DEFINITION OPENSSL_LIBS)
+else()
+    set(OPENSSL_TARGETS OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
 # cpp-httplib
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
@@ -339,76 +350,10 @@ else()
     message(STATUS "cpp-httplib: zlib not available — gzip responses will arrive uncompressed")
 endif()
 
-if (APPLE AND NOT OPENSSL_ROOT_DIR)
-    execute_process(
-        COMMAND arch -x86_64 brew --prefix openssl
-        RESULT_VARIABLE BREW_RESULT
-        OUTPUT_VARIABLE BREW_OPENSSL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if (BREW_RESULT EQUAL 0 AND BREW_OPENSSL)
-        set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
-        set(OPENSSL_USE_STATIC_LIBS TRUE)
-        message(STATUS "macOS: using x86_64 brew OpenSSL at ${OPENSSL_ROOT_DIR}")
-    else()
-        message(STATUS "macOS: arch -x86_64 brew --prefix openssl failed (exit ${BREW_RESULT}); install x86_64 Homebrew + openssl@3, or set OPENSSL_ROOT_DIR explicitly")
-    endif()
-elseif (APPLE AND OPENSSL_ROOT_DIR)
-    if (NOT DEFINED OPENSSL_USE_STATIC_LIBS)
-        set(OPENSSL_USE_STATIC_LIBS TRUE)
-    endif()
-    message(STATUS "macOS: using caller-supplied OPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}")
-endif()
-
-find_package(OpenSSL QUIET)
-
-if (NOT OPENSSL_FOUND AND MSVC)
-    message(STATUS "OpenSSL not found in system, downloading FireDaemon prebuilt for Windows...")
-    if (NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
-        file(DOWNLOAD https://download.firedaemon.com/FireDaemon-OpenSSL/openssl-3.6.1.zip
-             "${CMAKE_BINARY_DIR}/external/openssl.zip" SHOW_PROGRESS
-             STATUS OPENSSL_DOWNLOAD_STATUS)
-        list(GET OPENSSL_DOWNLOAD_STATUS 0 OPENSSL_DOWNLOAD_CODE)
-        if (NOT OPENSSL_DOWNLOAD_CODE EQUAL 0)
-            file(REMOVE "${CMAKE_BINARY_DIR}/external/openssl.zip")
-            message(WARNING "Failed to download FireDaemon OpenSSL prebuilt; "
-                            "libSceHttp HTTPS will fall back to mock at runtime. "
-                            "Status: ${OPENSSL_DOWNLOAD_STATUS}")
-        endif()
-    endif()
-    if (EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip" AND
-        NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl")
-        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/openssl.zip"
-                        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
-    endif()
-    if (EXISTS "${CMAKE_BINARY_DIR}/external/openssl/x64")
-        set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/x64" CACHE STRING "Path to OpenSSL root" FORCE)
-        unset(OPENSSL_FOUND CACHE)
-        find_package(OpenSSL QUIET)
-    endif()
-endif()
-
-if (OPENSSL_FOUND)
-    target_link_libraries(Cpp_Httplib INTERFACE OpenSSL::SSL OpenSSL::Crypto)
+if (DEFINED OPENSSL_TARGETS)
+    target_link_libraries(Cpp_Httplib INTERFACE ${OPENSSL_TARGETS})
     target_compile_definitions(Cpp_Httplib INTERFACE CPPHTTPLIB_OPENSSL_SUPPORT)
-    message(STATUS "cpp-httplib: OpenSSL ${OPENSSL_VERSION} found at ${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "cpp-httplib: real HTTPS in libSceHttp enabled")
-    if (WIN32 AND DEFINED OPENSSL_ROOT_DIR)
-        file(GLOB OPENSSL_DLLS
-             "${OPENSSL_ROOT_DIR}/bin/libssl-*.dll"
-             "${OPENSSL_ROOT_DIR}/bin/libcrypto-*.dll")
-        if (OPENSSL_DLLS)
-            set(OPENSSL_RUNTIME_DLLS "${OPENSSL_DLLS}" CACHE INTERNAL
-                "OpenSSL DLLs to copy next to shadps4.exe (consumed by top-level CMakeLists)")
-            list(LENGTH OPENSSL_DLLS OPENSSL_DLL_COUNT)
-            message(STATUS "cpp-httplib: ${OPENSSL_DLL_COUNT} OpenSSL DLL(s) staged in OPENSSL_RUNTIME_DLLS for post-build copy")
-        endif()
-    endif()
-    set(SHADPS4_OPENSSL_FOUND TRUE CACHE INTERNAL "OpenSSL was found and linked into Cpp_Httplib")
+    message(STATUS "cpp-httplib: SSL support enabled (TLS connections)")
 else()
-    message(STATUS "cpp-httplib: OpenSSL not available — libSceHttp HTTPS will fall back to mock at runtime.")
-    set(SHADPS4_OPENSSL_FOUND FALSE CACHE INTERNAL "OpenSSL was not found")
+    message(STATUS "cpp-httplib: OpenSSL/LibreSSL not available — libSceHttp HTTPS will fall back to mock at runtime.")
 endif()
-
