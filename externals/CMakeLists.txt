@@ -331,6 +331,14 @@ endif()
 add_library(Cpp_Httplib INTERFACE)
 target_include_directories(Cpp_Httplib INTERFACE cpp-httplib/)
 
+if (TARGET ZLIB::ZLIB)
+    target_link_libraries(Cpp_Httplib INTERFACE ZLIB::ZLIB)
+    target_compile_definitions(Cpp_Httplib INTERFACE CPPHTTPLIB_ZLIB_SUPPORT)
+    message(STATUS "cpp-httplib: zlib support enabled (gzip response decompression)")
+else()
+    message(STATUS "cpp-httplib: zlib not available — gzip responses will arrive uncompressed")
+endif()
+
 if (APPLE AND NOT OPENSSL_ROOT_DIR)
     execute_process(
         COMMAND brew --prefix openssl
