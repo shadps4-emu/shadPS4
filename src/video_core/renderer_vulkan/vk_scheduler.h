@@ -47,6 +47,17 @@ struct RenderState {
     u16 num_color_attachments;
 
     bool operator==(const RenderState& other) const noexcept {
+        // Fast path: check most commonly different fields first
+        if (num_color_attachments != other.num_color_attachments) [[likely]] {
+            return false;
+        }
+        if (width != other.width || height != other.height) [[likely]] {
+            return false;
+        }
+        if (num_layers != other.num_layers) [[likely]] {
+            return false;
+        }
+        // Full comparison only if quick checks pass
         return std::memcmp(this, &other, sizeof(RenderState)) == 0;
     }
 };
