@@ -21,11 +21,11 @@ const char* PS4_SYSV_ABI sceKernelGetFsSandboxRandomWord();
 
 extern Core::EntryParams entry_params;
 
-template <class F, F f>
+template <auto f>
 struct OrbisWrapperImpl;
 
 template <class R, class... Args, PS4_SYSV_ABI R (*f)(Args...)>
-struct OrbisWrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
+struct OrbisWrapperImpl<f> {
     static R PS4_SYSV_ABI wrap(Args... args) {
         u32 ret = f(args...);
         if (ret != 0) {
@@ -35,7 +35,7 @@ struct OrbisWrapperImpl<PS4_SYSV_ABI R (*)(Args...), f> {
     }
 };
 
-#define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<decltype(&(func)), func>::wrap)
+#define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
 #define CURRENT_FIRMWARE_VERSION 0x13500011
 
