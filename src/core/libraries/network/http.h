@@ -138,7 +138,6 @@ int PS4_SYSV_ABI sceHttpDeleteConnection(int connId);
 int PS4_SYSV_ABI sceHttpDeleteRequest(int reqId);
 int PS4_SYSV_ABI sceHttpDeleteTemplate(int tmplId);
 int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh);
-int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetAllResponseHeaders(int reqId, char** header, u64* headerSize);
 int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
@@ -170,7 +169,6 @@ int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
-int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cbfunc,
                                             void* userArg);
@@ -186,12 +184,10 @@ int PS4_SYSV_ABI sceHttpSetCookieRecvCallback(int id, OrbisHttpCookieRecvCallbac
 int PS4_SYSV_ABI sceHttpSetCookieSendCallback(int id, OrbisHttpCookieSendCallback cbfunc,
                                               void* userArg);
 int PS4_SYSV_ABI sceHttpSetCookieTotalMaxSize(int libhttpCtxId, u32 size);
-int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable);
 int PS4_SYSV_ABI sceHttpSetDelayBuildRequestEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetEpoll(int id, OrbisHttpEpollHandle eh, void* userArg);
 int PS4_SYSV_ABI sceHttpSetEpollId();
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable);
-int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetNonblock(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetPolicyOption();
 int PS4_SYSV_ABI sceHttpSetPriorityOption();
@@ -225,6 +221,16 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
                                     int timeout);
 
 int PS4_SYSV_ABI sceHttpUriCopy();
+//***********************************
+// Get functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable);
+//***********************************
+// Set functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable);
+int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
+int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
 //***********************************
 // URI functions
 //***********************************

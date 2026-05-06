@@ -71,6 +71,14 @@ constexpr u32 SCE_HTTP_NB_EVENT_OUT = 0x08; // Ready to send (request can write)
 constexpr u32 SCE_HTTP_NB_EVENT_ICM = 0x10;
 constexpr u32 SCE_HTTP_NB_EVENT_HUP = 0x20;
 
+struct HttpSettings {
+    bool inflate_gzip = true;
+    bool accept_encoding_gzip = true;
+};
+
+struct HttpContextSettings {
+    bool default_accept_encoding_gzip = true;
+};
 struct HttpTemplate {
     std::string user_agent;
     int http_version;
@@ -79,6 +87,7 @@ struct HttpTemplate {
     bool nonblock = false;
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    HttpSettings settings;
 };
 
 struct HttpConnection {
@@ -94,6 +103,7 @@ struct HttpConnection {
     bool nonblock = false;
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    HttpSettings settings;
 };
 
 enum class HttpRequestState {
@@ -134,6 +144,7 @@ struct HttpRequest {
     bool deleted = false;
     int epoll_id = 0;
     void* epoll_user_arg = nullptr;
+    HttpSettings settings;
 };
 
 struct Epoll {
@@ -150,6 +161,7 @@ struct HttpState {
     int next_ctx_id = 0;
     int next_obj_id = 0;
     std::unordered_set<int> active_contexts;
+    std::unordered_map<int, HttpContextSettings> context_settings;
     std::unordered_map<int, HttpTemplate> templates;
     std::unordered_map<int, HttpConnection> connections;
     std::unordered_map<int, std::shared_ptr<HttpRequest>> requests;
@@ -183,7 +195,25 @@ struct RealRequestPlan {
     std::string method_str; // populated for the *2 variants if `method` is invalid
     std::map<std::string, std::string> headers;
     std::vector<u8> body;
+    HttpSettings settings;
 };
+
+static HttpSettings* ResolveSettings(int id, const char*& level) {
+    if (auto it = g_state.templates.find(id); it != g_state.templates.end()) {
+        level = "template";
+        return &it->second.settings;
+    }
+    if (auto it = g_state.connections.find(id); it != g_state.connections.end()) {
+        level = "connection";
+        return &it->second.settings;
+    }
+    if (auto it = g_state.requests.find(id); it != g_state.requests.end()) {
+        level = "request";
+        return &it->second->settings;
+    }
+    level = "";
+    return nullptr;
+}
 
 // Parse the request's URL into scheme/host/port/path.
 static bool ParseRequestUrl(const std::string& url, std::string& scheme, std::string& host,
@@ -285,6 +315,34 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
         cli.set_follow_location(true);
 
         auto headers = BuildHttplibHeaders(plan.headers);
+        if (plan.settings.accept_encoding_gzip) {
+            constexpr std::string_view kAcceptEncoding = "Accept-Encoding";
+            auto iequals = [](std::string_view a, std::string_view b) {
+                if (a.size() != b.size())
+                    return false;
+                for (size_t i = 0; i < a.size(); ++i) {
+                    if (std::tolower(static_cast<unsigned char>(a[i])) !=
+                        std::tolower(static_cast<unsigned char>(b[i]))) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            bool already_has_accept_encoding = false;
+            for (const auto& kv : headers) {
+                if (iequals(kv.first, kAcceptEncoding)) {
+                    already_has_accept_encoding = true;
+                    break;
+                }
+            }
+            if (!already_has_accept_encoding) {
+                headers.emplace("Accept-Encoding", "gzip");
+            }
+        }
+#ifdef CPPHTTPLIB_ZLIB_SUPPORT
+        cli.set_decompress(plan.settings.inflate_gzip);
+#endif
+
         std::string content_type;
         if (auto it = plan.headers.find("Content-Type"); it != plan.headers.end()) {
             content_type = it->second;
@@ -587,6 +645,7 @@ int PS4_SYSV_ABI sceHttpCreateConnection(int tmplId, const char* serverName, con
         conn.nonblock = tmpl_it->second.nonblock;
         conn.epoll_id = tmpl_it->second.epoll_id;
         conn.epoll_user_arg = tmpl_it->second.epoll_user_arg;
+        conn.settings = tmpl_it->second.settings;
     }
     g_state.connections.emplace(conn_id, std::move(conn));
     LOG_INFO(Lib_Http, "created connection connId={} url={}", conn_id,
@@ -662,6 +721,7 @@ int PS4_SYSV_ABI sceHttpCreateConnectionWithURL(int tmplId, const char* url, boo
         conn.nonblock = tmpl_it->second.nonblock;
         conn.epoll_id = tmpl_it->second.epoll_id;
         conn.epoll_user_arg = tmpl_it->second.epoll_user_arg;
+        conn.settings = tmpl_it->second.settings;
     }
     g_state.connections.emplace(conn_id, std::move(conn));
     LOG_INFO(Lib_Http, "created connection connId={} host={} port={} scheme={}", conn_id,
@@ -825,6 +885,7 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL(int connId, s32 method, const char*
     req->nonblock = conn_it->second.nonblock;
     req->epoll_id = conn_it->second.epoll_id;
     req->epoll_user_arg = conn_it->second.epoll_user_arg;
+    req->settings = conn_it->second.settings;
 
     auto tmpl_it = g_state.templates.find(conn_it->second.tmpl_id);
     if (tmpl_it != g_state.templates.end()) {
@@ -885,7 +946,6 @@ int PS4_SYSV_ABI sceHttpCreateRequestWithURL2(int connId, const char* method, co
     }
     return reqId;
 }
-
 int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, int httpVer,
                                        int isAutoProxyConf) {
     LOG_INFO(Lib_Http, "called libhttpCtxId={}, userAgent={}, httpVer={}, isAutoProxyConf={}",
@@ -913,6 +973,11 @@ int PS4_SYSV_ABI sceHttpCreateTemplate(int libhttpCtxId, const char* userAgent, 
     tmpl.user_agent = userAgent;
     tmpl.http_version = httpVer;
     tmpl.auto_proxy_conf = isAutoProxyConf;
+    // Inherit ctx-level defaults
+    if (auto cs_it = g_state.context_settings.find(libhttpCtxId);
+        cs_it != g_state.context_settings.end()) {
+        tmpl.settings.accept_encoding_gzip = cs_it->second.default_accept_encoding_gzip;
+    }
     g_state.templates.emplace(tmpl_id, std::move(tmpl));
     LOG_INFO(Lib_Http, "created template tmplId={}", tmpl_id);
     return tmpl_id;
@@ -1032,11 +1097,6 @@ int PS4_SYSV_ABI sceHttpDestroyEpoll(int libhttpCtxId, OrbisHttpEpollHandle eh) 
     epoll_ptr->cv.notify_all();
     g_state.epolls.erase(it);
     LOG_INFO(Lib_Http, "destroyed epoll id={}", epoll_id);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
     return ORBIS_OK;
 }
 
@@ -1259,6 +1319,13 @@ int PS4_SYSV_ABI sceHttpInit(int libnetMemId, int libsslCtxId, u64 poolSize) {
 #else
         LOG_INFO(Lib_Http, "cpp-httplib was built WITHOUT OpenSSL,every https:// real-"
                            "network request will throw and be caught and fall back to mock.");
+#endif
+#ifdef CPPHTTPLIB_ZLIB_SUPPORT
+        LOG_INFO(Lib_Http, "cpp-httplib was built with zlib, gzip-compressed responses "
+                           "will be transparently decompressed");
+#else
+        LOG_INFO(Lib_Http, "cpp-httplib was built WITHOUT zlib, gzip-compressed responses "
+                           "will be returned to games as raw gzip bytes");
 #endif
     }
     int ctx_id = ++g_state.next_ctx_id;
@@ -1510,6 +1577,7 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         plan.method_str = req.method_str;
         plan.headers = req.headers;
         plan.body = std::move(body_copy);
+        plan.settings = req.settings;
         ParseRequestUrl(req.url, plan.scheme, plan.host, plan.port, plan.path);
     }
 
@@ -1569,11 +1637,6 @@ int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size) {
         }
     }).detach();
 
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
 }
 
@@ -1643,11 +1706,6 @@ int PS4_SYSV_ABI sceHttpSetCookieTotalMaxSize(int libhttpCtxId, u32 size) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called libhttpCtxId={}, isEnable={}", libhttpCtxId, isEnable);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetDelayBuildRequestEnabled(int id, int isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
@@ -1698,11 +1756,6 @@ int PS4_SYSV_ABI sceHttpSetEpollId() {
 }
 
 int PS4_SYSV_ABI sceHttpSetHttp09Enabled(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
     return ORBIS_OK;
 }
@@ -1999,6 +2052,67 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
+    return ORBIS_OK;
+}
+
+//***********************************
+// Get functions
+//***********************************
+int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    if (!isEnable) {
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    *isEnable = s->accept_encoding_gzip ? 1 : 0;
+    return ORBIS_OK;
+}
+
+//***********************************
+// Set functions
+//***********************************
+int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable) {
+    LOG_INFO(Lib_Http, "called libhttpCtxId={}, isEnable={}", libhttpCtxId, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    if (!g_state.active_contexts.contains(libhttpCtxId))
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    g_state.context_settings[libhttpCtxId].default_accept_encoding_gzip = (isEnable != 0);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->accept_encoding_gzip = (isEnable != 0);
+    LOG_INFO(Lib_Http, "accept_encoding_gzip={} at {} level (id={})", s->accept_encoding_gzip,
+             level, id);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->inflate_gzip = (isEnable != 0);
     return ORBIS_OK;
 }
 
