@@ -72,6 +72,10 @@ constexpr u32 SCE_HTTP_NB_EVENT_ICM = 0x10;
 constexpr u32 SCE_HTTP_NB_EVENT_HUP = 0x20;
 
 struct HttpSettings {
+    u32 connect_timeout_us = 0;
+    u32 send_timeout_us = 0;
+    u32 recv_timeout_us = 0;
+    bool auto_redirect = true;
     bool inflate_gzip = true;
     bool accept_encoding_gzip = true;
 };
@@ -308,11 +312,21 @@ static bool ExecuteRealRequest(const RealRequestPlan& plan, HttpResponse& out_re
             base_url += ":" + std::to_string(plan.port);
         }
         httplib::Client cli(base_url);
-        cli.set_connection_timeout(std::chrono::seconds(10));
-        cli.set_read_timeout(std::chrono::seconds(30));
-        cli.set_write_timeout(std::chrono::seconds(30));
-        // auto-follow redirects
-        cli.set_follow_location(true);
+        // Connection / send / read timeouts.  Defaults: 10/30/30 seconds
+        auto pick_timeout_seconds = [](u32 us, u32 default_s) -> std::chrono::seconds {
+            if (us == 0) {
+                return std::chrono::seconds(default_s);
+            }
+            // Round up to the next whole second
+            u64 secs = (static_cast<u64>(us) + 999'999ull) / 1'000'000ull;
+            if (secs == 0)
+                secs = 1;
+            return std::chrono::seconds(secs);
+        };
+        cli.set_connection_timeout(pick_timeout_seconds(plan.settings.connect_timeout_us, 10));
+        cli.set_read_timeout(pick_timeout_seconds(plan.settings.recv_timeout_us, 30));
+        cli.set_write_timeout(pick_timeout_seconds(plan.settings.send_timeout_us, 30));
+        cli.set_follow_location(plan.settings.auto_redirect);
 
         auto headers = BuildHttplibHeaders(plan.headers);
         if (plan.settings.accept_encoding_gzip) {
@@ -1134,11 +1148,6 @@ int PS4_SYSV_ABI sceHttpGetAuthEnabled(int id, int* isEnable) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, fmt::ptr(isEnable));
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpGetConnectionStat() {
     LOG_ERROR(Lib_Http, "(STUBBED) called");
     return ORBIS_OK;
@@ -1652,18 +1661,8 @@ int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cb
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetChunkedTransferEnabled(int id, int isEnable) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, isEnable={}", id, isEnable);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
     return ORBIS_OK;
 }
 
@@ -1808,11 +1807,6 @@ int PS4_SYSV_ABI sceHttpSetRecvBlockSize(int id, u32 blockSize) {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
-    return ORBIS_OK;
-}
-
 int PS4_SYSV_ABI sceHttpSetRedirectCallback(int id, OrbisHttpRedirectCallback cbfunc,
                                             void* userArg) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, cbfunc={}, userArg={}", id,
@@ -1844,11 +1838,6 @@ int PS4_SYSV_ABI sceHttpSetResolveTimeOut(int id, u32 usec) {
 
 int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize) {
     LOG_ERROR(Lib_Http, "(STUBBED) called id={}, headerSize={}", id, headerSize);
-    return ORBIS_OK;
-}
-
-int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec) {
-    LOG_ERROR(Lib_Http, "(STUBBED) called id={}, usec={}", id, usec);
     return ORBIS_OK;
 }
 
@@ -2074,6 +2063,22 @@ int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable) {
     return ORBIS_OK;
 }
 
+int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, fmt::ptr(isEnable));
+    if (!isEnable) {
+        return ORBIS_HTTP_ERROR_INVALID_VALUE;
+    }
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    *isEnable = s->auto_redirect ? 1 : 0;
+    return ORBIS_OK;
+}
+
 //***********************************
 // Set functions
 //***********************************
@@ -2113,6 +2118,59 @@ int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable) {
     if (!s)
         return ORBIS_HTTP_ERROR_INVALID_ID;
     s->inflate_gzip = (isEnable != 0);
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->connect_timeout_us = usec;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetSendTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->send_timeout_us = usec;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetRecvTimeOut(int id, u32 usec) {
+    LOG_INFO(Lib_Http, "called id={}, usec={}", id, usec);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->recv_timeout_us = usec;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceHttpSetAutoRedirect(int id, int isEnable) {
+    LOG_INFO(Lib_Http, "called id={}, isEnable={}", id, isEnable);
+    std::lock_guard<std::mutex> lock(g_state.m_mutex);
+    if (!g_state.inited)
+        return ORBIS_HTTP_ERROR_BEFORE_INIT;
+    const char* level = "";
+    HttpSettings* s = ResolveSettings(id, level);
+    if (!s)
+        return ORBIS_HTTP_ERROR_INVALID_ID;
+    s->auto_redirect = (isEnable != 0);
+    LOG_INFO(Lib_Http, "auto_redirect={} at {} level (id={})", s->auto_redirect, level, id);
     return ORBIS_OK;
 }
 
