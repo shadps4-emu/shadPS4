@@ -170,7 +170,7 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
 
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 
 // Sets the debugger-visible name of the current thread.
 void SetCurrentThreadName(const char* name) {
@@ -184,7 +184,7 @@ void SetThreadName(void* thread, const char* name) {
     SetThreadDescription(thread, UTF8ToUTF16W(name).data());
 }
 
-#else // !MSVC_VER, so must be POSIX threads
+#else // !_WIN32, so must be POSIX threads
 
 // MinGW with the POSIX threading model does not support pthread_setname_np
 #if !defined(_WIN32) || defined(_MSC_VER)
