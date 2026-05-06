@@ -13,6 +13,26 @@ class SymbolsResolver;
 
 namespace Libraries::Http {
 
+enum OrbisHttpsFlags : u32 {
+    ORBIS_HTTPS_FLAG_SERVER_VERIFY = 0x01,
+    ORBIS_HTTPS_FLAG_CLIENT_VERIFY = 0x02,
+    ORBIS_HTTPS_FLAG_CN_CHECK = 0x04,
+    ORBIS_HTTPS_FLAG_NOT_AFTER_CHECK = 0x08,
+    ORBIS_HTTPS_FLAG_NOT_BEFORE_CHECK = 0x10,
+    ORBIS_HTTPS_FLAG_KNOWN_CA_CHECK = 0x20,
+    ORBIS_HTTPS_FLAG_SESSION_REUSE = 0x40,
+    ORBIS_HTTPS_FLAG_SNI = 0x80,
+};
+
+enum OrbisHttpsErrFlags : u32 {
+    ORBIS_HTTPS_ERR_INTERNAL = 0x01,         // internal library error during validation
+    ORBIS_HTTPS_ERR_INVALID_CERT = 0x02,     // cert format is malformed
+    ORBIS_HTTPS_ERR_CN_CHECK = 0x04,         // CN/SAN doesn't match hostname
+    ORBIS_HTTPS_ERR_NOT_AFTER_CHECK = 0x08,  // validity period has expired
+    ORBIS_HTTPS_ERR_NOT_BEFORE_CHECK = 0x10, // validity period hasn't started
+    ORBIS_HTTPS_ERR_UNKNOWN_CA = 0x20,       // issuing RootCA isn't in the trust store
+};
+
 enum OrbisUriBuild : s32 {
     ORBIS_HTTP_URI_BUILD_WITH_SCHEME = 0x01,
     ORBIS_HTTP_URI_BUILD_WITH_HOSTNAME = 0x02,
@@ -147,7 +167,6 @@ int PS4_SYSV_ABI sceHttpGetCookieEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetCookieStats(int libhttpCtxId, OrbisHttpCookieStats* stats);
 int PS4_SYSV_ABI sceHttpGetEpoll(int id, OrbisHttpEpollHandle* eh, void** userArg);
 int PS4_SYSV_ABI sceHttpGetEpollId();
-int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum);
 int PS4_SYSV_ABI sceHttpGetMemoryPoolStats(int libhttpCtxId, OrbisHttpMemoryPoolStats* currentStat);
 int PS4_SYSV_ABI sceHttpGetNonblock(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetRegisteredCtxIds();
@@ -163,10 +182,6 @@ int PS4_SYSV_ABI sceHttpReadData(s32 reqId, void* data, u64 size);
 int PS4_SYSV_ABI sceHttpRedirectCacheFlush(int libhttpCtxId);
 int PS4_SYSV_ABI sceHttpRemoveRequestHeader(int id, const char* name);
 int PS4_SYSV_ABI sceHttpRequestGetAllHeaders();
-int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
-int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
 int PS4_SYSV_ABI sceHttpSendRequest(int reqId, const void* postData, u64 size);
 int PS4_SYSV_ABI sceHttpSetAuthEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetAuthInfoCallback(int id, OrbisHttpAuthInfoCallback cbfunc,
@@ -201,7 +216,6 @@ int PS4_SYSV_ABI sceHttpSetResponseHeaderMaxSize(int id, u64 headerSize);
 int PS4_SYSV_ABI sceHttpSetSocketCreationCallback();
 int PS4_SYSV_ABI sceHttpsFreeCaList(int libhttpCtxId, OrbisHttpsCaList* caList);
 int PS4_SYSV_ABI sceHttpsGetCaList(int httpCtxId, OrbisHttpsCaList* list);
-int PS4_SYSV_ABI sceHttpsGetSslError(int id, int* errNum, u32* detail);
 int PS4_SYSV_ABI sceHttpsLoadCert(int libhttpCtxId, int caCertNum, const void** caList,
                                   const void* cert, const void* privKey);
 int PS4_SYSV_ABI sceHttpsSetMinSslVersion(int id, int version);
@@ -217,14 +231,23 @@ int PS4_SYSV_ABI sceHttpWaitRequest(OrbisHttpEpollHandle eh, OrbisHttpNBEvent* n
 
 int PS4_SYSV_ABI sceHttpUriCopy();
 //***********************************
+// Enable/Disable functions
+//***********************************
+int PS4_SYSV_ABI sceHttpsDisableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsDisableOptionPrivate(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOption(int id, u32 sslFlags);
+int PS4_SYSV_ABI sceHttpsEnableOptionPrivate(int id, u32 sslFlags);
+//***********************************
 // Get functions
 //***********************************
 int PS4_SYSV_ABI sceHttpGetAcceptEncodingGZIPEnabled(int id, int* isEnable);
 int PS4_SYSV_ABI sceHttpGetAutoRedirect(int id, int* isEnable);
+int PS4_SYSV_ABI sceHttpsGetSslError(int id, int* errNum, u32* detail);
+int PS4_SYSV_ABI sceHttpGetLastErrno(int reqId, int* errNum);
 //***********************************
 // Set functions
 //***********************************
-int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int libhttpCtxId, int isEnable);
+int PS4_SYSV_ABI sceHttpSetDefaultAcceptEncodingGZIPEnabled(int isEnable);
 int PS4_SYSV_ABI sceHttpSetAcceptEncodingGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetInflateGZIPEnabled(int id, int isEnable);
 int PS4_SYSV_ABI sceHttpSetConnectTimeOut(int id, u32 usec);
