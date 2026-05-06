@@ -435,6 +435,7 @@ s32 preloadModulesForLibkernel() {
             // libkernel and libSceLibcInternal aren't directly loaded here.
             // All we do for those is increment is_loaded
             g_modules_array[module_index].is_loaded++;
+            continue;
         }
 
         // Load the actual module
