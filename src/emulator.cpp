@@ -199,15 +199,15 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
 
     game_info.game_folder = game_folder;
-    std::filesystem::path npbindPath = game_folder / "sce_sys/npbind.dat";
-    std::filesystem::path trophyDir = game_folder / "sce_sys/trophy";
+    std::filesystem::path npbindPath = mnt->GetHostPath("/app0/sce_sys/npbind.dat");
+    std::filesystem::path trophyDir = mnt->GetHostPath("/app0/sce_sys/trophy");
     NPBindFile npbind;
     if (!npbind.Load(npbindPath.string())) {
         LOG_WARNING(Common_Filesystem, "Failed to load npbind.dat file");
     } else {
         auto npCommIds = npbind.GetNpCommIds();
-        if (npCommIds.empty()) {
-            LOG_WARNING(Common_Filesystem, "No NPComm IDs found in npbind.dat");
+        if (!std::filesystem::exists(trophyDir) || npCommIds.empty()) {
+            LOG_WARNING(Common_Filesystem, "Cannot extract game trophies");
         } else {
             std::vector<std::pair<int, std::string>> trophyFiles; // (trophy_index, filename)
             std::string pattern = "trophy";
@@ -346,11 +346,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
         int index = 0;
         for (std::string npCommId : game_info.npCommIds) {
-            const auto trophyDir =
+            const auto trophyOutputDir =
                 Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / npCommId;
-            if (!std::filesystem::exists(trophyDir)) {
+            if (!std::filesystem::exists(trophyOutputDir)) {
                 TRP trp;
-                if (!trp.Extract(game_folder, index, npCommId, trophyDir)) {
+                if (!trp.Extract(trophyDir, index, npCommId, trophyOutputDir)) {
                     LOG_ERROR(Loader, "Couldn't extract trophies");
                 }
             }
@@ -362,8 +362,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
                     auto temp = user_trophy_file.parent_path();
                     std::filesystem::create_directories(temp);
                     std::error_code discard;
-                    std::filesystem::copy_file(trophyDir / "Xml" / "TROPCONF.XML", user_trophy_file,
-                                               discard);
+                    std::filesystem::copy_file(trophyOutputDir / "Xml" / "TROPCONF.XML",
+                                               user_trophy_file, discard);
                 }
             }
             index++;
