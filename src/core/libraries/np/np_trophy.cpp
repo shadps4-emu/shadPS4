@@ -225,9 +225,12 @@ s32 PS4_SYSV_ABI sceNpTrophyCreateContext(OrbisNpTrophyContext* context,
     if (it != trophyMap.end()) {
         np_comm_id = it->second;
     } else {
-        LOG_ERROR(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}",
-                  service_label);
-        return ORBIS_NP_TROPHY_ERROR_UNKNOWN;
+        // Trophy data may not be available (no npbind.dat, extraction failed, etc.).
+        // Fall back to a generated id rather than returning an error, which can
+        // cause the game to stop rendering (e.g. black screen after logo).
+        np_comm_id = std::string("np_comm_") + std::to_string(service_label);
+        LOG_WARNING(Lib_NpTrophy, "No npCommId found for trophy index/service_label: {}, using {}",
+                    service_label, np_comm_id);
     }
     const auto trophy_base =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "trophy" / np_comm_id;
