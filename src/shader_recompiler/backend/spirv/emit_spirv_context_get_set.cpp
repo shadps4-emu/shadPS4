@@ -144,6 +144,25 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     case IR::Attribute::BaryCoordNoPersp:
         return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
                                                         ctx.ConstU32(comp)));
+    case IR::Attribute::BaryCoordPullModel:
+        if (ctx.profile.supports_amd_shader_explicit_vertex_parameter) {
+            return ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_pullmodel,
+                                                            ctx.ConstU32(comp)));
+        } else {
+            switch (comp) {
+            case 0:
+                return ctx.OpLoad(
+                    ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.frag_coord, ctx.ConstU32(3U)));
+            case 1:
+            case 2:
+                return ctx.OpFDiv(
+                    ctx.F32[1], ctx.ConstF32(1.0f),
+                    ctx.OpLoad(ctx.F32[1], ctx.OpAccessChain(ctx.input_f32, ctx.bary_coord_nopersp,
+                                                             ctx.ConstU32(comp))));
+            default:
+                UNREACHABLE_MSG("BaryCoordPullModel comp {}", comp);
+            }
+        }
     default:
         UNREACHABLE_MSG("Read attribute {}", attr);
     }

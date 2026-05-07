@@ -418,6 +418,15 @@ void EmitContext::DefineInputs() {
                                                     spv::StorageClass::Input);
             }
         }
+        if (info.loads.GetAny(IR::Attribute::BaryCoordPullModel)) {
+            if (profile.supports_amd_shader_explicit_vertex_parameter) {
+                bary_coord_pullmodel = DefineVariable(F32[3], spv::BuiltIn::BaryCoordPullModelAMD,
+                                                      spv::StorageClass::Input);
+            } else if (profile.supports_fragment_shader_barycentric) {
+                bary_coord_nopersp = DefineVariable(F32[3], spv::BuiltIn::BaryCoordNoPerspKHR,
+                                                    spv::StorageClass::Input);
+            }
+        }
 
         const bool has_clip_distance_inputs = runtime_info.fs_info.clip_distance_emulation;
         // Clip distances attribute vector is the last in inputs array
