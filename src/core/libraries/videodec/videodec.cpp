@@ -20,7 +20,7 @@ static u64 ComputeFrameSizeBytes(s32 width, s32 height) {
         return 0;
     }
 
-    const u32 aligned_width = AlignUp((u32)width, 16);
+    const u32 aligned_width = AlignUp((u32)width, 256);
     const u32 aligned_height = AlignUp((u32)height, 16);
 
     const u64 pixels = (u64)aligned_width * (u64)aligned_height;
@@ -35,6 +35,23 @@ static s32 ComputeDpbCount(const OrbisVideodecConfigInfo& cfg) {
     }
 
     return 8;
+}
+
+static void ComputeWorstCaseDimensions(const OrbisVideodecConfigInfo& cfg, s32& out_width,
+                                       s32& out_height) {
+    if (cfg.maxFrameWidth > 0 && cfg.maxFrameHeight > 0) {
+        out_width = cfg.maxFrameWidth;
+        out_height = cfg.maxFrameHeight;
+        return;
+    }
+
+    out_width = 1920;
+    out_height = 1080;
+
+    if (cfg.maxLevel >= 150) {
+        out_width = 3840;
+        out_height = 2160;
+    }
 }
 
 int PS4_SYSV_ABI sceVideodecCreateDecoder(const OrbisVideodecConfigInfo* pCfgInfoIn,
@@ -136,7 +153,11 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
         return ORBIS_VIDEODEC_ERROR_STRUCT_SIZE;
     }
 
-    const u64 frame_size = ComputeFrameSizeBytes(pCfgInfoIn->maxFrameWidth, pCfgInfoIn->maxFrameHeight);
+    s32 width = 0;
+    s32 height = 0;
+    ComputeWorstCaseDimensions(*pCfgInfoIn, width, height);
+
+    const u64 frame_size = ComputeFrameSizeBytes(width, height);
     const s32 dpb_count = ComputeDpbCount(*pCfgInfoIn);
 
     u64 cpu_gpu_size = 0;
@@ -148,10 +169,13 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
         cpu_size = kFallbackMemorySize;
         max_frame_buffer = kFallbackMemorySize;
     } else {
+        const u64 padded_frame = AlignUp((u32)frame_size, 256) + 0x4000;
         const u64 surfaces = (u64)dpb_count + 2;
-        cpu_gpu_size = (frame_size * surfaces) + 4_MB;
-        cpu_size = 2_MB;
-        max_frame_buffer = frame_size;
+
+        max_frame_buffer = padded_frame;
+
+        cpu_gpu_size = (padded_frame * surfaces) + 8_MB;
+        cpu_size = 16_MB;
     }
 
     pRsrcInfoOut->thisSize = sizeof(OrbisVideodecResourceInfo);
@@ -162,7 +186,7 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
     pRsrcInfoOut->cpuMemorySize = cpu_size;
 
     pRsrcInfoOut->maxFrameBufferSize = max_frame_buffer;
-    pRsrcInfoOut->frameBufferAlignment = 0x1000;
+    pRsrcInfoOut->frameBufferAlignment = 0x100;
 
     return ORBIS_OK;
 }
