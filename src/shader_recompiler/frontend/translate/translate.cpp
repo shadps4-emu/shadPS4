@@ -768,6 +768,134 @@ T Translator::GetSrc64(const InstOperand& operand) {
 template IR::U64 Translator::GetSrc64<IR::U64>(const InstOperand&);
 template IR::F64 Translator::GetSrc64<IR::F64>(const InstOperand&);
 
+template <typename T>
+pk_type<T> Translator::GetSrcPk(const InstOperand& operand) {
+    constexpr bool is_float = std::is_same_v<T, IR::F32>;
+
+    const auto get_imm = [&](auto value) -> pk_type<T> {
+        if constexpr (is_float) {
+            auto imm = ir.Imm32(std::bit_cast<float>(value));
+            return {operand.op_sel.op_sel ? ir.Imm32(0.f) : imm,
+                    operand.op_sel.op_sel_hi ? ir.Imm32(0.f) : imm};
+        } else {
+            auto imm = ir.Imm32(std::bit_cast<u32>(value));
+            return {operand.op_sel.op_sel ? ir.Imm32(0U) : imm,
+                    operand.op_sel.op_sel_hi ? ir.Imm32(0U) : imm};
+        }
+    };
+
+    constexpr auto number_format = [&]() {
+        if constexpr (is_float) {
+            return AmdGpu::NumberFormat::Float;
+        } else {
+            return AmdGpu::NumberFormat::Uint;
+        }
+    }();
+
+    const auto cast = [&](auto value) -> T {
+        if constexpr (is_float) {
+            return value;
+        } else {
+            return ir.BitCast<IR::U32>(value);
+        }
+    };
+
+    const auto extract = [&](auto value) -> pk_type<T> {
+        auto v_unpacked = ir.Unpack2x16(number_format, value);
+        return {cast(IR::F32{ir.CompositeExtract(v_unpacked, operand.op_sel.op_sel)}),
+                cast(IR::F32{ir.CompositeExtract(v_unpacked, operand.op_sel.op_sel_hi)})};
+    };
+
+    pk_type<T> value{};
+    switch (operand.field) {
+    case OperandField::ScalarGPR: {
+        value = extract(ir.GetScalarReg<IR::U32>(IR::ScalarReg(operand.code)));
+        break;
+    }
+    case OperandField::VectorGPR: {
+        value = extract(ir.GetVectorReg<IR::U32>(IR::VectorReg(operand.code)));
+        break;
+    }
+    case OperandField::ConstZero: {
+        value = get_imm(0U);
+        break;
+    }
+    case OperandField::SignedConstIntPos: {
+        value = get_imm(operand.code - SignedConstIntPosMin + 1);
+        break;
+    }
+    case OperandField::SignedConstIntNeg: {
+        value = get_imm(-s32(operand.code) + SignedConstIntNegMin - 1);
+        break;
+    }
+    case OperandField::LiteralConst: {
+        value = get_imm(operand.code);
+        break;
+    }
+    case OperandField::ConstFloatPos_1_0: {
+        value = get_imm(1.f);
+        break;
+    }
+    case OperandField::ConstFloatPos_0_5: {
+        value = get_imm(0.5f);
+        break;
+    }
+    case OperandField::ConstFloatPos_2_0: {
+        value = get_imm(2.0f);
+        break;
+    }
+    case OperandField::ConstFloatPos_4_0: {
+        value = get_imm(4.0f);
+        break;
+    }
+    case OperandField::ConstFloatNeg_0_5: {
+        value = get_imm(-0.5f);
+        break;
+    }
+    case OperandField::ConstFloatNeg_1_0: {
+        value = get_imm(-1.0f);
+        break;
+    }
+    case OperandField::ConstFloatNeg_2_0: {
+        value = get_imm(-2.0f);
+        break;
+    }
+    case OperandField::ConstFloatNeg_4_0: {
+        value = get_imm(-4.0f);
+        break;
+    }
+    case OperandField::Inv2Pi: {
+        value = get_imm(1.0f / (2.0f * std::numbers::pi_v<float>));
+        break;
+    }
+    case OperandField::VccLo:
+        value = extract(ir.GetVccLo());
+        break;
+    default:
+        UNREACHABLE_MSG("unexpected operand: {}", std::to_underlying(operand.field));
+    }
+
+    if constexpr (is_float) {
+        if (operand.input_modifier.neg) {
+            value.first = ir.FPNeg(value.first);
+        }
+        if (operand.input_modifier.neg_hi) {
+            value.second = ir.FPNeg(value.second);
+        }
+    } else {
+        if (operand.input_modifier.neg) {
+            value.first = ir.INeg(value.first);
+        }
+        if (operand.input_modifier.neg_hi) {
+            value.second = ir.INeg(value.second);
+        }
+    }
+    return value;
+}
+
+template pk_type<IR::U32> Translator::GetSrcPk<IR::U32>(const InstOperand&);
+template pk_type<IR::F32> Translator::GetSrcPk<IR::F32>(const InstOperand&);
+
 void Translator::SetDst1(const InstOperand& operand, const IR::U1& value) {
     switch (operand.field) {
     case OperandField::VccLo:
