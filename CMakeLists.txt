@@ -234,6 +234,7 @@ find_package(miniz 3.1 CONFIG)
 find_package(nlohmann_json 3.12 CONFIG)
 find_package(PNG 1.6 MODULE)
 find_package(OpenAL CONFIG)
+find_package(OpenSSL 3.0 MODULE)
 find_package(RenderDoc 1.6.0 MODULE)
 find_package(SDL3 3.1.2 CONFIG)
 find_package(stb MODULE)
@@ -1256,15 +1257,6 @@ endif()
 
 if (WIN32)
     target_sources(shadps4 PRIVATE src/shadps4.rc)
-endif()
-
-if (WIN32 AND OPENSSL_RUNTIME_DLLS)
-    foreach(dll ${OPENSSL_RUNTIME_DLLS})
-        add_custom_command(TARGET shadps4 POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${dll}" "$<TARGET_FILE_DIR:shadps4>"
-            COMMENT "Copying OpenSSL runtime DLL: ${dll}")
-    endforeach()
 endif()
 
 add_compile_definitions(BOOST_ASIO_STANDALONE)
