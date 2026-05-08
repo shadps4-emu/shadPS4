@@ -754,7 +754,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                               vk::AccessFlagBits2::eShaderRead |
                                   (image.info.props.is_depth
                                        ? vk::AccessFlagBits2::eDepthStencilAttachmentWrite
-                                       : vk::AccessFlagBits2::eColorAttachmentWrite),
+                                       : vk::AccessFlagBits2::eColorAttachmentWrite |
+                                             vk::AccessFlagBits2::eColorAttachmentRead),
                               {});
             } else {
                 if (is_storage) {
