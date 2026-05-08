@@ -575,16 +575,35 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         }
     }
 
-    if (image_id) {
+if (image_id) {
         Image& image_resolved = slot_images[image_id];
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
-            // Cannot reuse this image as we need the exact requested format.
+            // Cannot reuse this image
             image_id = {};
         } else if (image_resolved.info.resources < info.resources) {
-            // The image was clearly picked up wrong.
-            FreeImage(image_id);
-            image_id = {};
-            LOG_WARNING(Render_Vulkan, "Image overlap resolve failed");
+            // Check if types are expandable
+            if (image_resolved.info.type == info.type) {
+                LOG_INFO(Render_Vulkan, 
+                         "Expanding imag {} at {:#x}:\n"
+                         "  Mips:   {} -> {}\n"
+                         "  Layers: {} -> {}\n"
+                         "  Format: {} -> {}",
+                         image_id.index, info.guest_address,
+                         image_resolved.info.resources.levels, info.resources.levels,
+                         image_resolved.info.resources.layers, info.resources.layers,
+                         vk::to_string(image_resolved.info.pixel_format), vk::to_string(info.pixel_format));
+
+                image_id = ExpandImage(info, image_id);
+            } else {
+                // If the types differ (2D vs 3D), expansion is unsafe.
+                LOG_WARNING(Render_Vulkan, 
+                            "Image overlap resolve failed: Type mismatch at {:#x} ({} vs {})", 
+                            info.guest_address, 
+                            static_cast<int>(image_resolved.info.type), 
+                            static_cast<int>(info.type));
+                FreeImage(image_id);
+                image_id = {};
+            }
         }
     }
     // Create and register a new image
