@@ -325,6 +325,14 @@ private:
         s32 clear_mask = -1;
     };
     tsl::robin_map<VAddr, MetaDataInfo> surface_metas;
+
+    // Expansion recursion guard: prevents ResolveOverlap -> ExpandImage -> TrackImage
+    // from re-entering overlap resolution on the newly registered large image.
+    bool is_expanding = false;
+
+    // Per-frame copy budget: reset each GC tick to prevent copy storms that
+    // stall the GPU when many overlapping images resolve in the same frame.
+    u32 num_transfers_this_frame = 0;
 };
 
 } // namespace VideoCore
