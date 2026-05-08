@@ -137,8 +137,6 @@ void Linker::Execute(const std::vector<std::string>& args) {
 
         // Start main module.
         EntryParams& params = Libraries::Kernel::entry_params;
-        params.argc = 1;
-        params.argv[0] = "eboot.bin";
         if (!args.empty()) {
             constexpr int MaxArgs = sizeof(params.argv) / sizeof(params.argv[0]);
             params.argc = std::min<int>(args.size(), MaxArgs);

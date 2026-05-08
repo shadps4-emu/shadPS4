@@ -482,7 +482,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         });
     }
 
-    args.insert(args.begin(), eboot_name.generic_string());
+    args.insert(args.begin(), guest_eboot_path);
     linker->Execute(args);
 
     window->InitTimers();
