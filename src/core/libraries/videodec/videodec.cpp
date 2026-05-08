@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/alignment.h"
 #include "common/logging/log.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/videodec/videodec.h"
@@ -11,22 +12,16 @@ namespace Libraries::Videodec {
 
 static constexpr u64 kFallbackMemorySize = 16_MB;
 
-static constexpr u32 AlignUp(u32 value, u32 alignment) {
-    return (value + (alignment - 1)) & ~(alignment - 1);
-}
-
 static u64 ComputeFrameSizeBytes(s32 width, s32 height) {
     if (width <= 0 || height <= 0) {
         return 0;
     }
 
-    const u32 aligned_width = AlignUp((u32)width, 256);
-    const u32 aligned_height = AlignUp((u32)height, 16);
+    const u32 aligned_width = Common::AlignUp<u32>((u32)width, 256);
+    const u32 aligned_height = Common::AlignUp<u32>((u32)height, 16);
 
     const u64 pixels = (u64)aligned_width * (u64)aligned_height;
-    const u64 bytes = (pixels * 3) / 2;
-
-    return bytes;
+    return (pixels * 3) / 2;
 }
 
 static s32 ComputeDpbCount(const OrbisVideodecConfigInfo& cfg) {
@@ -169,7 +164,7 @@ int PS4_SYSV_ABI sceVideodecQueryResourceInfo(const OrbisVideodecConfigInfo* pCf
         cpu_size = kFallbackMemorySize;
         max_frame_buffer = kFallbackMemorySize;
     } else {
-        const u64 padded_frame = AlignUp((u32)frame_size, 256) + 0x4000;
+        const u64 padded_frame = Common::AlignUp<u64>(frame_size, 256) + 0x4000;
         const u64 surfaces = (u64)dpb_count + 2;
 
         max_frame_buffer = padded_frame;
