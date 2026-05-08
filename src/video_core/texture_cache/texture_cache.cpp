@@ -575,7 +575,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         }
     }
 
-if (image_id) {
+  if (image_id) {
         Image& image_resolved = slot_images[image_id];
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image
