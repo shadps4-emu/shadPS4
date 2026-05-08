@@ -101,9 +101,8 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
 
     const u32 num_mips = image.info.resources.levels;
     const u32 num_layers = image.info.resources.layers;
-    const vk::ImageAspectFlags aspect =
-        image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
-                                  : vk::ImageAspectFlagBits::eColor;
+    const vk::ImageAspectFlags aspect = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                                  : vk::ImageAspectFlagBits::eColor;
 
     // Build one copy region per mip level, using the pre-computed layout offsets
     // so the download buffer mirrors the guest memory layout exactly.
@@ -119,12 +118,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
             .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
             .bufferImageHeight = mip_height,
-            .imageSubresource = {
-                .aspectMask = aspect,
-                .mipLevel = m,
-                .baseArrayLayer = 0,
-                .layerCount = num_layers,
-            },
+            .imageSubresource =
+                {
+                    .aspectMask = aspect,
+                    .mipLevel = m,
+                    .baseArrayLayer = 0,
+                    .layerCount = num_layers,
+                },
             .imageOffset = {0, 0, 0},
             .imageExtent = {extent_width, extent_height, 1},
         });
@@ -288,7 +288,8 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
                 if (instance.IsMaintenance8Supported()) {
                     new_image.CopyImage(cache_image);
                 } else {
-                    const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+                    const auto& copy_buffer =
+                        buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
                     new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
                 }
                 ++num_transfers_this_frame;
@@ -311,9 +312,10 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
                     new_image.GetImage());
                 ++num_transfers_this_frame;
             } else {
-                LOG_WARNING(Render_Vulkan,
-                            "Skipping ReinterpretColorAsMsDepth: per-frame transfer budget ({}) exhausted",
-                            MAX_COPIES_PER_FRAME);
+                LOG_WARNING(
+                    Render_Vulkan,
+                    "Skipping ReinterpretColorAsMsDepth: per-frame transfer budget ({}) exhausted",
+                    MAX_COPIES_PER_FRAME);
             }
         } else {
             LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
@@ -557,7 +559,9 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
         return {};
     }
     is_expanding = true;
-    SCOPE_EXIT { is_expanding = false; };
+    SCOPE_EXIT {
+        is_expanding = false;
+    };
 
     const auto new_image_id =
         slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
@@ -854,8 +858,8 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     if (image_copies.empty()) {
-        image.flags &= ~(ImageFlagBits::Dirty | ImageFlagBits::MaybeCpuDirty |
-                         ImageFlagBits::CpuDirty);
+        image.flags &=
+            ~(ImageFlagBits::Dirty | ImageFlagBits::MaybeCpuDirty | ImageFlagBits::CpuDirty);
         return;
     }
 
