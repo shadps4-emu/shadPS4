@@ -25,10 +25,10 @@ private:
     NotificationInfo currentNotification;
 
     // notification animation
-    const float animation_duration = 0.5f;     // Animation duration
-    const float fade_out_duration = 0.5f;      // Final fade duration
-    float fade_opacity = 0.0f;                 // Initial opacity (invisible)
-    float elapsed_time = 0.0f;                 // Animation time
+    const float animation_duration = 0.5f; // Animation duration
+    const float fade_out_duration = 0.5f;  // Final fade duration
+    float fade_opacity = 0.0f;             // Initial opacity (invisible)
+    float elapsed_time = 0.0f;             // Animation time
 };
 
 void QueueNotification(std::string message, float timer);
