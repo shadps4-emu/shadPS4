@@ -20,6 +20,7 @@ namespace VideoCore {
 
 static constexpr u64 PageShift = 12;
 static constexpr u64 NumFramesBeforeRemoval = 32;
+static constexpr u32 MAX_COPIES_PER_FRAME = 32;
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
                            AmdGpu::Liverpool* liverpool_, BufferCache& buffer_cache_,
@@ -85,6 +86,7 @@ ImageId TextureCache::GetNullImage(const vk::Format format) {
 }
 
 void TextureCache::ProcessDownloadImages() {
+    std::scoped_lock lock{mutex};
     for (const ImageId image_id : download_images) {
         DownloadImageMemory(image_id);
     }
@@ -96,32 +98,54 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
     if (False(image.flags & ImageFlagBits::GpuModified)) {
         return;
     }
-    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
-    const u32 download_size = image.info.pitch * image.info.size.height *
-                              image.info.resources.layers * (image.info.num_bits / 8);
+
+    const u32 num_mips = image.info.resources.levels;
+    const u32 num_layers = image.info.resources.layers;
+    const vk::ImageAspectFlags aspect = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
+                                                                  : vk::ImageAspectFlagBits::eColor;
+
+    // Build one copy region per mip level, using the pre-computed layout offsets
+    // so the download buffer mirrors the guest memory layout exactly.
+    boost::container::small_vector<vk::BufferImageCopy, 14> mip_copies;
+    u32 download_size = 0;
+    for (u32 m = 0; m < num_mips; m++) {
+        const auto [mip_size, mip_pitch, mip_height, mip_offset] = image.info.mips_layout[m];
+        const u32 width = std::max(image.info.size.width >> m, 1u);
+        const u32 height = std::max(image.info.size.height >> m, 1u);
+        const u32 extent_width = mip_pitch ? std::min(mip_pitch, width) : width;
+        const u32 extent_height = mip_height ? std::min(mip_height, height) : height;
+        mip_copies.push_back({
+            .bufferOffset = mip_offset,
+            .bufferRowLength = mip_pitch,
+            .bufferImageHeight = mip_height,
+            .imageSubresource =
+                {
+                    .aspectMask = aspect,
+                    .mipLevel = m,
+                    .baseArrayLayer = 0,
+                    .layerCount = num_layers,
+                },
+            .imageOffset = {0, 0, 0},
+            .imageExtent = {extent_width, extent_height, 1},
+        });
+        download_size = std::max(download_size, mip_offset + mip_size * num_layers);
+    }
+
     ASSERT(download_size <= image.info.guest_size);
+    auto& download_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::Download);
     const auto [download, offset] = download_buffer.Map(download_size);
     download_buffer.Commit();
-    const vk::BufferImageCopy image_download = {
-        .bufferOffset = offset,
-        .bufferRowLength = image.info.pitch,
-        .bufferImageHeight = image.info.size.height,
-        .imageSubresource =
-            {
-                .aspectMask = image.info.props.is_depth ? vk::ImageAspectFlagBits::eDepth
-                                                        : vk::ImageAspectFlagBits::eColor,
-                .mipLevel = 0,
-                .baseArrayLayer = 0,
-                .layerCount = image.info.resources.layers,
-            },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {image.info.size.width, image.info.size.height, 1},
-    };
+
+    // Apply the buffer allocation offset to all copy regions.
+    for (auto& copy : mip_copies) {
+        copy.bufferOffset += offset;
+    }
+
     scheduler.EndRendering();
     const auto cmdbuf = scheduler.CommandBuffer();
     image.Transit(vk::ImageLayout::eTransferSrcOptimal, vk::AccessFlagBits2::eTransferRead, {});
     cmdbuf.copyImageToBuffer(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                             download_buffer.Handle(), image_download);
+                             download_buffer.Handle(), mip_copies);
 
     scheduler.DeferPriorityOperation(
         [this, device_addr = image.info.guest_address, download, download_size] {
@@ -132,9 +156,13 @@ void TextureCache::DownloadImageMemory(ImageId image_id) {
 
 void TextureCache::MarkAsMaybeDirty(ImageId image_id, Image& image) {
     if (image.hash == 0) {
-        // Initialize hash
+        // Snapshot the same small region that RefreshImage will check, so the
+        // first comparison in RefreshImage can actually produce a match.
         const u8* addr = std::bit_cast<u8*>(image.info.guest_address);
-        image.hash = XXH3_64bits(addr, image.info.guest_size);
+        const u32 w = std::min(image.info.size.width, u32(8));
+        const u32 h = std::min(image.info.size.height, u32(8));
+        const u32 size = w * h * image.info.num_bits >> (image.info.props.is_block ? 7 : 3);
+        image.hash = XXH3_64bits(addr, size);
     }
     image.flags |= ImageFlagBits::MaybeCpuDirty;
     UntrackImage(image_id);
@@ -256,23 +284,39 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
 
         if (cache_image.info.num_samples == 1 && new_info.num_samples == 1) {
             // Perform depth<->color copy using the intermediate copy buffer.
-            if (instance.IsMaintenance8Supported()) {
-                new_image.CopyImage(cache_image);
+            if (num_transfers_this_frame < MAX_COPIES_PER_FRAME) {
+                if (instance.IsMaintenance8Supported()) {
+                    new_image.CopyImage(cache_image);
+                } else {
+                    const auto& copy_buffer =
+                        buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
+                    new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+                }
+                ++num_transfers_this_frame;
             } else {
-                const auto& copy_buffer = buffer_cache.GetUtilityBuffer(MemoryUsage::DeviceLocal);
-                new_image.CopyImageWithBuffer(cache_image, copy_buffer.Handle(), 0);
+                LOG_WARNING(Render_Vulkan,
+                            "Skipping depth<->color copy: per-frame transfer budget ({}) exhausted",
+                            MAX_COPIES_PER_FRAME);
             }
         } else if (cache_image.info.num_samples == 1 && new_info.props.is_depth &&
                    new_info.num_samples > 1) {
             // Perform a rendering pass to transfer the channels of source as samples in dest.
-            cache_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal,
-                                vk::AccessFlagBits2::eShaderRead, {});
-            new_image.Transit(vk::ImageLayout::eDepthAttachmentOptimal,
-                              vk::AccessFlagBits2::eDepthStencilAttachmentWrite, {});
-            blit_helper.ReinterpretColorAsMsDepth(
-                new_info.size.width, new_info.size.height, new_info.num_samples,
-                cache_image.info.pixel_format, new_info.pixel_format, cache_image.GetImage(),
-                new_image.GetImage());
+            if (num_transfers_this_frame < MAX_COPIES_PER_FRAME) {
+                cache_image.Transit(vk::ImageLayout::eShaderReadOnlyOptimal,
+                                    vk::AccessFlagBits2::eShaderRead, {});
+                new_image.Transit(vk::ImageLayout::eDepthAttachmentOptimal,
+                                  vk::AccessFlagBits2::eDepthStencilAttachmentWrite, {});
+                blit_helper.ReinterpretColorAsMsDepth(
+                    new_info.size.width, new_info.size.height, new_info.num_samples,
+                    cache_image.info.pixel_format, new_info.pixel_format, cache_image.GetImage(),
+                    new_image.GetImage());
+                ++num_transfers_this_frame;
+            } else {
+                LOG_WARNING(
+                    Render_Vulkan,
+                    "Skipping ReinterpretColorAsMsDepth: per-frame transfer budget ({}) exhausted",
+                    MAX_COPIES_PER_FRAME);
+            }
         } else {
             LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
         }
@@ -425,7 +469,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                   image_info.size.width, image_info.size.height, image_info.size.depth,
                   image_info.pitch, image_info.resources.levels, image_info.resources.layers,
                   image_info.num_samples, static_cast<u32>(image_info.tile_mode),
-                  image_info.num_bits, image_info.props.is_block, image_info.guest_size,
+                  image_info.num_bits, +image_info.props.is_block, image_info.guest_size,
 
                   // Comparison
                   (image_info.pixel_format == cache_image.info.pixel_format),
@@ -485,10 +529,18 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                     return {merged_image_id, -1, -1};
                 }
 
-                // We need to have a larger, already allocated image to copy this one into
+                // We need to have a larger, already allocated image to copy this one into.
+                // Guard with the per-frame transfer budget to prevent copy storms.
                 if (merged_image_id) {
-                    auto& merged_image = slot_images[merged_image_id];
-                    merged_image.CopyMip(cache_image, mip, slice);
+                    if (num_transfers_this_frame < MAX_COPIES_PER_FRAME) {
+                        auto& merged_image = slot_images[merged_image_id];
+                        merged_image.CopyMip(cache_image, mip, slice);
+                        ++num_transfers_this_frame;
+                    } else {
+                        LOG_WARNING(Render_Vulkan,
+                                    "Skipping CopyMip: per-frame transfer budget ({}) exhausted",
+                                    MAX_COPIES_PER_FRAME);
+                    }
                     FreeImage(cache_image_id);
                 }
             }
@@ -499,6 +551,18 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 }
 
 ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
+    // Guard against recursive expansion: ResolveOverlap -> ExpandImage ->
+    // RegisterImage (adds to page table) -> overlap re-triggered by TrackImage.
+    // Return null so FindImage allocates a fresh image rather than reusing the
+    // wrong-sized original.
+    if (is_expanding) {
+        return {};
+    }
+    is_expanding = true;
+    SCOPE_EXIT {
+        is_expanding = false;
+    };
+
     const auto new_image_id =
         slot_images.insert(instance, scheduler, blit_helper, slot_image_views, info);
     RegisterImage(new_image_id);
@@ -507,7 +571,12 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     auto& new_image = slot_images[new_image_id];
 
     RefreshImage(new_image);
-    new_image.CopyImage(src_image);
+
+    // Respect per-frame copy budget to avoid GPU stalls from copy storms.
+    if (num_transfers_this_frame < MAX_COPIES_PER_FRAME) {
+        new_image.CopyImage(src_image);
+        ++num_transfers_this_frame;
+    }
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
         src_image.binding.needs_rebind = 1u;
@@ -561,6 +630,12 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     int view_slice{-1};
     if (!image_id) {
         for (const auto& cache_id : image_ids) {
+            // Skip any ID that was already consumed (freed or merged) by a
+            // previous ResolveOverlap call in this same loop iteration.
+            if (cache_id == image_id) {
+                continue;
+            }
+
             view_mip = -1;
             view_slice = -1;
 
@@ -727,11 +802,13 @@ void TextureCache::RefreshImage(Image& image) {
         False(image.flags & ImageFlagBits::CpuDirty)) {
         // The image size should be less than page size to be considered MaybeCpuDirty
         // So this calculation should be very uncommon and reasonably fast
-        // For now we'll just check up to 64 first pixels
+        // For now we'll just check up to 64 first pixels.
+        // Non-block: >> 3 converts bits to bytes.
+        // Block-compressed: >> 7 accounts for 4x4 block footprint reduction then bytes.
         const auto addr = std::bit_cast<u8*>(image.info.guest_address);
         const u32 w = std::min(image.info.size.width, u32(8));
         const u32 h = std::min(image.info.size.height, u32(8));
-        const u32 size = w * h * image.info.num_bits >> (3 + image.info.props.is_block ? 4 : 0);
+        const u32 size = w * h * image.info.num_bits >> (image.info.props.is_block ? 7 : 3);
         const u64 hash = XXH3_64bits(addr, size);
         if (image.hash == hash) {
             image.flags &= ~ImageFlagBits::MaybeCpuDirty;
@@ -781,7 +858,8 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     if (image_copies.empty()) {
-        image.flags &= ~ImageFlagBits::Dirty;
+        image.flags &=
+            ~(ImageFlagBits::Dirty | ImageFlagBits::MaybeCpuDirty | ImageFlagBits::CpuDirty);
         return;
     }
 
@@ -805,6 +883,7 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     image.Upload(image_copies, buffer, offset);
+    image.flags &= ~(ImageFlagBits::MaybeCpuDirty | ImageFlagBits::CpuDirty);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sampler,
@@ -959,6 +1038,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
 void TextureCache::RunGarbageCollector() {
     SCOPE_EXIT {
         ++gc_tick;
+        num_transfers_this_frame = 0;
     };
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
