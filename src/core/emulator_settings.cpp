@@ -545,6 +545,29 @@ bool EmulatorSettingsImpl::TransferSettings() {
 #endif
     }
 
+    if (og_data.contains("General")) {
+        const toml::value& general = og_data.at("General");
+        auto& s = m_log;
+
+        setFromToml(s.filter, general, "logFilter");
+        setFromToml(s.skip_duplicate, general, "isIdenticalLogGrouped");
+        Setting<std::string> logType("sync");
+        setFromToml(logType, general, "logType");
+        if (logType.get() == "sync") {
+            s.sync = true;
+        } else {
+            s.sync = false;
+        }
+    }
+
+    if (og_data.contains("Debug")) {
+        const toml::value& debug = og_data.at("Debug");
+        auto& s = m_log;
+
+        setFromToml(s.enable, debug, "logEnabled");
+        setFromToml(s.separate, debug, "isSeparateLogFilesEnabled");
+    }
+
     if (og_data.contains("Input")) {
         const toml::value& input = og_data.at("Input");
         auto& s = m_input;
