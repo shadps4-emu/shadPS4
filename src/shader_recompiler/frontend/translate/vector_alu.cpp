@@ -456,6 +456,12 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_MUL_HI_U32(true, inst);
     case Opcode::V_MAD_U64_U32:
         return V_MAD_U64_U32(inst);
+    case Opcode::V_LSHRREV_B16:
+        return V_LSHRREV_B16(inst);
+    case Opcode::V_ASHRREV_I16:
+        return V_ASHRREV_I16(inst);
+    case Opcode::V_LSHLREV_B16:
+        return V_LSHLREV_B16(inst);
     case Opcode::V_ADD3_U32:
         return V_ADD3_U32(inst);
     case Opcode::V_ADD_LSHL_U32:
@@ -470,6 +476,25 @@ void Translator::EmitVectorAlu(const GcnInst& inst) {
         return V_OR3_B32(inst);
     case Opcode::V_NOP:
         return;
+
+    // VOP3P
+    case Opcode::V_PK_FMA_F16:
+        return V_PK_FMA_F16(inst);
+    case Opcode::V_PK_ADD_F16:
+        return V_PK_ADD_F16(inst);
+    case Opcode::V_PK_MUL_F16:
+        return V_PK_MUL_F16(inst);
+    case Opcode::V_PK_MIN_F16:
+        return V_PK_MIN_F16(inst);
+    case Opcode::V_PK_MAX_F16:
+        return V_PK_MAX_F16(inst);
+    case Opcode::V_MAD_MIX_F32:
+        return V_MAD_MIX_F32(inst);
+    case Opcode::V_MAD_MIXLO_F16:
+        return V_MAD_MIXLO_F16(inst);
+    case Opcode::V_MAD_MIXHI_F16:
+        return V_MAD_MIXHI_F16(inst);
+
     default:
         LogMissingOpcode(inst);
     }
@@ -1560,6 +1585,33 @@ void Translator::V_MAD_U64_U32(const GcnInst& inst) {
     ir.SetVcc(did_overflow);
 }
 
+void Translator::V_LSHLREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32>(inst.src[1]);
+
+    const auto result = ir.ShiftLeftLogical(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_LSHRREV_B16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32>(inst.src[1]);
+
+    const auto result = ir.ShiftRightLogical(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16(inst.dst[0], result);
+}
+
+void Translator::V_ASHRREV_I16(const GcnInst& inst) {
+    const auto shift = GetSrc16<IR::U32, true>(inst.src[0]);
+    const auto src = GetSrc16<IR::U32, true>(inst.src[1]);
+
+    const auto result = ir.ShiftRightArithmetic(src, ir.BitwiseAnd(shift, ir.Imm32(0xF)));
+
+    SetDst16<true>(inst.dst[0], result);
+}
+
 void Translator::V_ADD_LSHL_U32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
@@ -1592,6 +1644,62 @@ void Translator::V_ADD3_U32(const GcnInst& inst) {
     SetDst(inst.dst[0], ir.IAdd(src0, ir.IAdd(src1, src2)));
 }
 
+void Translator::V_PK_FMA_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+    const auto src2 = GetSrcPk<IR::F32>(inst.src[2]);
+
+    const auto result_lo = ir.FPFma(src0.first, src1.first, src2.first);
+    const auto result_hi = ir.FPFma(src0.second, src1.second, src2.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_ADD_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPAdd(src0.first, src1.first);
+    const auto result_hi = ir.FPAdd(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MUL_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMul(src0.first, src1.first);
+    const auto result_hi = ir.FPMul(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MIN_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMin(src0.first, src1.first);
+    const auto result_hi = ir.FPMin(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
+void Translator::V_PK_MAX_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcPk<IR::F32>(inst.src[0]);
+    const auto src1 = GetSrcPk<IR::F32>(inst.src[1]);
+
+    const auto result_lo = ir.FPMax(src0.first, src1.first);
+    const auto result_hi = ir.FPMax(src0.second, src1.second);
+
+    SetDst(inst.dst[0],
+           ir.Pack2x16(AmdGpu::NumberFormat::Float, ir.CompositeConstruct(result_lo, result_hi)));
+}
+
 void Translator::V_LSHL_OR_B32(const GcnInst& inst) {
     const auto src0 = GetSrc<IR::U32>(inst.src[0]);
     const auto src1 = GetSrc<IR::U32>(inst.src[1]);
@@ -1622,6 +1730,46 @@ void Translator::V_OR3_B32(const GcnInst& inst) {
     const auto result = ir.BitwiseOr(ir.BitwiseOr(src0, src1), src2);
 
     SetDst(inst.dst[0], result);
+}
+
+void Translator::V_MAD_MIX_F32(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+
+    SetDst(inst.dst[0], result);
+}
+
+void Translator::V_MAD_MIXLO_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F16 result_f16 = ir.FPConvert(16, result);
+    const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
+
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 new_value{
+        ir.BitFieldInsert(old_value, ir.UConvert(32, result_f16_u16), ir.Imm32(0U), ir.Imm32(16U))};
+    SetDst(inst.dst[0], new_value);
+}
+
+void Translator::V_MAD_MIXHI_F16(const GcnInst& inst) {
+    const auto src0 = GetSrcMix(inst.src[0]);
+    const auto src1 = GetSrcMix(inst.src[1]);
+    const auto src2 = GetSrcMix(inst.src[2]);
+
+    const IR::F32 result = ir.FPFma(src0, src1, src2);
+    const IR::F16 result_f16 = ir.FPConvert(16, result);
+    const IR::U16 result_f16_u16 = ir.BitCast<IR::U16, IR::F16>(result_f16);
+
+    const IR::U32 old_value{GetSrc(inst.dst[0])};
+    const IR::U32 new_value{ir.BitFieldInsert(old_value, ir.UConvert(32, result_f16_u16),
+                                              ir.Imm32(16U), ir.Imm32(16U))};
+    SetDst(inst.dst[0], new_value);
 }
 
 IR::U32 Translator::GetCarryIn(const GcnInst& inst) {

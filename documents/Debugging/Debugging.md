@@ -64,13 +64,13 @@ You can configure the emulator by editing the `config.toml` file found in the `u
     - It can be beneficial to set this to `false` for better performance.
     - When communicating about issues with games and the log messages aren't clear due to potentially confusing order, set this to `true` and send that log instead.
   - `filter`: Sets the logging category for various logging classes.
-    - Format: `<class>=<level>,...`
-    - Multiple classes can be set by separating them with a comma. (example: `Render=warning,Debug=critical,Lib.Pad=error`)
+    - Format: `<class>:<level> ...`
+    - Multiple classes can be set by separating them with a space. (example: `Render:Warning Lib.Pad:Error`)
     - Sub-classes can be specified in the same format as seen in the console/log (such as `Core.Linker`).  
-    - Valid log levels: `trace, debug, info, warning, error, critical` - in this order, setting a level silences all levels preceding it and logs every level after it.
+    - Valid log levels: `trace, debug, info, warning, error, critical, off` - in this order, setting a level silences all levels preceding it and logs every level after it.
     - Examples:
-      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad=critical` to only log critical-level messages.
-      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `off,Render.Vulkan=info` (if you want critical at least `critical,Render.Vulkan=info`)
+      - If the log is being spammed with messages coming from Lib.Pad, you can use `Lib.Pad:Critical` to only log critical-level messages.
+      - If you'd like to mute everything, but still want to receive messages from Vulkan rendering: `*:Off Render.Vulkan:Info` (if you want critical at least `*:Critical Render.Vulkan:Info`)
   - `skipDuplicate`: Skip same lines with a `Skipped N duplicate messages..` message (`true`/`false`)
     - By default, the emulator will skip same lines for `maxSkipDuration` milliseconds.
   - `append`: Append log to the existing file (`true`/`false`)
