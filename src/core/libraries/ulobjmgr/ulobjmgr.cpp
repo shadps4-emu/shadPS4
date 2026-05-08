@@ -9,7 +9,7 @@
 
 namespace Libraries::Ulobjmgr {
 
-s32 PS4_SYSV_ABI Func_046DBA8411A2365C(u64 arg0, s32 arg1, u32* arg2) {
+s32 PS4_SYSV_ABI _sceUlobjmgrRegisterObject(u64 arg0, s32 arg1, u32* arg2) {
     if (arg0 == 0 || arg1 == 0 || arg2 == nullptr) {
         return POSIX_EINVAL;
     }
@@ -17,14 +17,14 @@ s32 PS4_SYSV_ABI Func_046DBA8411A2365C(u64 arg0, s32 arg1, u32* arg2) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI Func_1D9F50D9CFB8054E() {
-    return ORBIS_OK;
-}
-
-s32 PS4_SYSV_ABI Func_4A67FE7D435B94F7(u32 arg0) {
+s32 PS4_SYSV_ABI _sceUlobjmgrUnregisterObject(u32 arg0) {
     if (arg0 >= 0x4000) {
         return POSIX_EINVAL;
     }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI Func_1D9F50D9CFB8054E() {
     return ORBIS_OK;
 }
 
@@ -36,9 +36,9 @@ s32 PS4_SYSV_ABI Func_4B07893BBB77A649(u64 arg0) {
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("BG26hBGiNlw", "ulobjmgr", 1, "ulobjmgr", Func_046DBA8411A2365C);
+    LIB_FUNCTION("BG26hBGiNlw", "ulobjmgr", 1, "ulobjmgr", _sceUlobjmgrRegisterObject);
+    LIB_FUNCTION("Smf+fUNblPc", "ulobjmgr", 1, "ulobjmgr", _sceUlobjmgrUnregisterObject);
     LIB_FUNCTION("HZ9Q2c+4BU4", "ulobjmgr", 1, "ulobjmgr", Func_1D9F50D9CFB8054E);
-    LIB_FUNCTION("Smf+fUNblPc", "ulobjmgr", 1, "ulobjmgr", Func_4A67FE7D435B94F7);
     LIB_FUNCTION("SweJO7t3pkk", "ulobjmgr", 1, "ulobjmgr", Func_4B07893BBB77A649);
 };
 

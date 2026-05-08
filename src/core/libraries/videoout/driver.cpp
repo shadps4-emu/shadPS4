@@ -62,10 +62,26 @@ int VideoOutDriver::Open(const ServiceThreadParams* params) {
 void VideoOutDriver::Close(s32 handle) {
     std::scoped_lock lock{mutex};
 
+    // Mark as closed
     main_port.is_open = false;
     main_port.flip_rate = 0;
     main_port.prev_index = -1;
+
+    // Clear port information
+    std::memset(main_port.buffer_labels.data(), 0, sizeof(main_port.buffer_labels));
+    std::memset(main_port.groups.data(), 0, sizeof(main_port.groups));
+    std::memset(&main_port.flip_status, 0, sizeof(main_port.flip_status));
+    std::memset(&main_port.vblank_status, 0, sizeof(main_port.vblank_status));
+
+    // Re-initialize buffers
+    std::memset(main_port.buffer_slots.data(), 0, sizeof(main_port.buffer_slots));
+    for (auto& buffer : main_port.buffer_slots) {
+        buffer.group_index = -1;
+    }
+
+    // TODO: Remove events?
     ASSERT(main_port.flip_events.empty());
+    ASSERT(main_port.vblank_events.empty());
 }
 
 VideoOutPort* VideoOutDriver::GetPort(int handle) {

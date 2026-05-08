@@ -1045,8 +1045,13 @@ void PS4_SYSV_ABI sceGnmGpuPaDebugLeave() {
     // Not available in retail firmware
 }
 
-int PS4_SYSV_ABI sceGnmInsertDingDongMarker() {
-    LOG_ERROR(Lib_GnmDriver, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceGnmInsertDingDongMarker(u32* cmdbuf, u32 size) {
+    LOG_TRACE(Lib_GnmDriver, "called");
+
+    if (cmdbuf == nullptr || size != 4) {
+        return -1;
+    }
+    WritePacket<PM4ItOpcode::Nop>(cmdbuf, PM4ShaderType::ShaderGraphics, 0u, 0u, 0u);
     return ORBIS_OK;
 }
 

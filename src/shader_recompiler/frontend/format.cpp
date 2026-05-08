@@ -1464,16 +1464,30 @@ constexpr std::array<InstFormat, 883> InstructionFormatVOP3 = {
      {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Uint32, ScalarType::Uint32},
      // 305 = V_CVT_PK_I16_I32
      {InstClass::VectorConv, InstCategory::VectorALU, 2, 1, ScalarType::Sint32, ScalarType::Sint32},
+     // 306 = V_ADD_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 307 = V_SUB_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 308 = V_SUBREV_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 309 = V_MUL_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
      {},
      {},
      {},
-     {},
-     {},
-     {},
-     {},
-     {},
-     {},
-     {},
+     // 313 = V_MAX_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 314 = V_MIN_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 315 = V_LDEXP_F16
+     {InstClass::VectorFpArith16, InstCategory::VectorALU, 2, 1, ScalarType::Float16,
+      ScalarType::Float16},
      {},
      {},
      {},
@@ -1854,8 +1868,12 @@ constexpr std::array<InstFormat, 883> InstructionFormatVOP3 = {
      {},
      {},
      {},
-     {},
-     {},
+     // 84 = V_RCP_F16
+     {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+      ScalarType::Float16},
+     // 85 = V_SQRT_F16
+     {InstClass::VectorFpTran16, InstCategory::VectorALU, 1, 1, ScalarType::Float16,
+      ScalarType::Float16},
      {},
      {},
      {},

@@ -116,13 +116,20 @@ Instance::Instance(Frontend::WindowSDL& window, s32 physical_device_index,
         std::sort(properties2.begin(), properties2.end(), [](const auto& left, const auto& right) {
             const vk::PhysicalDeviceProperties& left_prop = std::get<1>(left).properties;
             const vk::PhysicalDeviceProperties& right_prop = std::get<1>(right).properties;
-            if (left_prop.apiVersion >= TargetVulkanApiVersion &&
-                right_prop.apiVersion < TargetVulkanApiVersion) {
-                return true;
+            const bool left_supports_api = left_prop.apiVersion >= TargetVulkanApiVersion;
+            const bool right_supports_api = right_prop.apiVersion >= TargetVulkanApiVersion;
+            if (left_supports_api != right_supports_api) {
+                return left_supports_api;
             }
-            if (left_prop.deviceType != right_prop.deviceType) {
-                return left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+
+            const bool left_is_discrete =
+                left_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            const bool right_is_discrete =
+                right_prop.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            if (left_is_discrete != right_is_discrete) {
+                return left_is_discrete;
             }
+
             constexpr auto get_mem = [](const vk::PhysicalDeviceMemoryProperties& mem) -> size_t {
                 size_t max = 0;
                 for (u32 i = 0; i < mem.memoryHeapCount; i++) {

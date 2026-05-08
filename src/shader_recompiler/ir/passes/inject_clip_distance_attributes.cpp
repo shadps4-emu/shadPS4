@@ -5,10 +5,19 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/profile.h"
 
 namespace Shader {
 
-void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info) {
+void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info,
+                                  const Profile& profile) {
+    if (program.info.stage == Stage::Vertex && profile.needs_clip_distance_emulation &&
+        program.info.stores.GetAny(IR::Attribute::ClipDistance)) {
+        // Increment to include the added clip distance export.
+        ++runtime_info.vs_info.num_exports;
+        return;
+    }
+
     auto& info = runtime_info.fs_info;
 
     if (!info.clip_distance_emulation || program.info.l_stage != LogicalStage::Fragment) {
