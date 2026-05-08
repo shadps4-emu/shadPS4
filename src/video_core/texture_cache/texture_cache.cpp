@@ -598,8 +598,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
                 // If the types differ (e.g., 2D vs 3D), expansion is unsafe.
                 LOG_WARNING(Render_Vulkan,
                             "Image overlap resolve failed: Type mismatch at {:#x} ({} vs {})",
-                            info.guest_address,
-                            static_cast<int>(image_resolved.info.type),
+                            info.guest_address, static_cast<int>(image_resolved.info.type),
                             static_cast<int>(info.type));
                 FreeImage(image_id);
                 image_id = {};
